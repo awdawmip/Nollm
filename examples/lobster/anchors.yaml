@@ -2,11 +2,55 @@ notebook: lobster
 anchors:
   - id: project:nollm
     label: Nollm project
-    description: The project identity and direction for Nollm.
+    definition: The project identity and direction for Nollm.
+    scope: Project-level orientation, not every implementation topic.
+    status: confirmed
+    aliases:
+      - nollm
+      - external notebook
+    neighbors:
+      - decision:identity
+      - protocol:core
+    max_aliases: 8
+    max_neighbors: 12
+    max_active_cards: 50
+    created: 2026-06-12
   - id: decision:identity
     label: Identity decision
-    description: Decisions about what Nollm is and is not.
+    definition: Decisions about what Nollm is and is not.
+    scope: Identity boundaries only.
+    status: confirmed
+    aliases:
+      - not an llm
+    neighbors:
+      - project:nollm
+    max_aliases: 8
+    max_neighbors: 12
+    max_active_cards: 25
+    created: 2026-06-12
   - id: protocol:core
     label: Core protocol
-    description: Stable source-of-truth structures for Nollm Core.
-
+    definition: Stable source-of-truth structures for Nollm Core.
+    scope: Core protocol objects and validation boundaries.
+    status: confirmed
+    aliases:
+      - nollm core
+    neighbors:
+      - project:nollm
+    max_aliases: 8
+    max_neighbors: 12
+    max_active_cards: 50
+    created: 2026-06-12
+  - id: session:p0-freeze
+    label: P0 protocol freeze session
+    definition: Temporary orientation for protocol freeze edits.
+    scope: Current protocol hardening session only.
+    status: draft
+    aliases: []
+    neighbors:
+      - protocol:core
+    max_aliases: 2
+    max_neighbors: 3
+    max_active_cards: 5
+    created: 2026-06-12
+    expires: 2026-06-30

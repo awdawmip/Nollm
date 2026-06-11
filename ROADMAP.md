@@ -3,6 +3,8 @@
 ## v0.1: Protocol Scaffold
 
 - Define Core documents for cards, anchors, ledgers, recall digests, and memory addresses.
+- Define statuses and LLM-facing actions before runtime implementation.
+- Freeze protocol vocabulary for statuses, types, trust, sources, actions, and validation before P1 CLI work.
 - Define Cortex guidance for prompts, anchor composition, and read/write policy.
 - Provide a small example notebook.
 - Keep all source of truth in Markdown, YAML, and JSONL.
@@ -19,6 +21,7 @@
 - Formalize recall digest generation.
 - Define conflict and supersession conventions.
 - Add review workflows for human audit.
+- Preserve status transition history in the ledger.
 
 ## Non-Goals
 
@@ -27,4 +30,3 @@
 - No vector database.
 - No embedding dependency.
 - No automatic ontology engine.
-
