@@ -1,0 +1,12 @@
+notebook: lobster
+anchors:
+  - id: project:nollm
+    label: Nollm project
+    description: The project identity and direction for Nollm.
+  - id: decision:identity
+    label: Identity decision
+    description: Decisions about what Nollm is and is not.
+  - id: protocol:core
+    label: Core protocol
+    description: Stable source-of-truth structures for Nollm Core.
+
