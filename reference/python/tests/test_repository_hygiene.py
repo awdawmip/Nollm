@@ -38,5 +38,16 @@ def test_required_hygiene_fixtures_remain_present() -> None:
     assert missing == []
 
 
+def test_canonical_test_command_is_documented() -> None:
+    docs = [
+        ROOT / "README.md",
+        ROOT / "reference" / "python" / "PACKAGING.md",
+    ]
+    for path in docs:
+        text = path.read_text(encoding="utf-8")
+        assert "python3 run_tests.py" in text or "python run_tests.py" in text
+        assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" in text
+
+
 def relative_paths(paths) -> list[str]:
     return sorted(path.relative_to(ROOT).as_posix() for path in paths)

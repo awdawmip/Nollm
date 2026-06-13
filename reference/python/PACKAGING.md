@@ -22,6 +22,16 @@ Recommended packaging paths:
 
 If a helper script is added later, it must use only the Python standard library unless the project explicitly accepts a packaging dependency.
 
+## Test Command
+
+Use the project test command before packaging or upload:
+
+```bash
+python3 run_tests.py
+```
+
+The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` before invoking `python3 -m pytest -q` so ambient pytest plugins do not affect Nollm tests.
+
 ## Clean Tree Guard
 
 Before packaging or uploading, remove ignored local artifacts:

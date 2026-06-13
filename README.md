@@ -105,8 +105,10 @@ Run tests:
 
 ```powershell
 cd C:\Users\chaos\nollm\reference\python
-python -m pytest -q
+python run_tests.py
 ```
+
+Use the project test command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and then runs `python -m pytest -q`.
 
 The reference CLI uses only the Python standard library and keeps Markdown, YAML, JSONL, and JSON as source-of-truth files.
 
