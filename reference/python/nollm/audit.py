@@ -21,6 +21,8 @@ BOUNDARIES = {
     "performs_semantic_completeness_scoring": False,
 }
 
+AUDIT_COMPARE_IGNORED_FIELDS = ("notebook.path",)
+
 
 AUDIT_SCHEMA: dict[str, dict[str, str]] = {
     "validation": {
@@ -140,6 +142,50 @@ def audit_type_matches(value: object, expected_type: str) -> bool:
     if expected_type == "object":
         return isinstance(value, dict)
     return False
+
+
+def normalize_audit_for_compare(report: dict[str, object]) -> dict[str, object]:
+    normalized = json.loads(json.dumps(report, ensure_ascii=False))
+    for field_path in AUDIT_COMPARE_IGNORED_FIELDS:
+        remove_field_path(normalized, field_path.split("."))
+    return normalized
+
+
+def compare_audit_reports(expected: dict[str, object], actual: dict[str, object]) -> dict[str, object]:
+    expected_normalized = normalize_audit_for_compare(expected)
+    actual_normalized = normalize_audit_for_compare(actual)
+    drifts = sorted(
+        compare_values("", expected_normalized, actual_normalized),
+        key=lambda drift: drift["path"],
+    )
+    return {
+        "ok": True,
+        "matches": not drifts,
+        "drift_count": len(drifts),
+        "drifts": drifts,
+        "ignored_fields": list(AUDIT_COMPARE_IGNORED_FIELDS),
+    }
+
+
+def compare_values(path: str, expected: object, actual: object) -> list[dict[str, object]]:
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        drifts: list[dict[str, object]] = []
+        for key in sorted(set(expected) | set(actual)):
+            child_path = f"{path}.{key}" if path else str(key)
+            drifts.extend(compare_values(child_path, expected.get(key), actual.get(key)))
+        return drifts
+    if expected != actual:
+        return [{"path": path, "expected": expected, "actual": actual}]
+    return []
+
+
+def remove_field_path(value: object, path_parts: list[str]) -> None:
+    if not path_parts or not isinstance(value, dict):
+        return
+    if len(path_parts) == 1:
+        value.pop(path_parts[0], None)
+        return
+    remove_field_path(value.get(path_parts[0]), path_parts[1:])
 
 
 def read_cards(path: Path) -> list[dict[str, Any]]:

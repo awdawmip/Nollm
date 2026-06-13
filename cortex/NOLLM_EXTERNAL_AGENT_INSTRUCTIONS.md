@@ -7,6 +7,14 @@
 - Shift laterally if another anchor field becomes stronger.
 - Stop when sufficient scale is reached.
 - Prefer recall for one-shot context retrieval.
+- Nollm is LLM-first.
+- Human inspection is optional, active, and ledgered.
+- Human input is an operator action, not an oracle.
+- Use review to inspect cards matching active metadata filters.
+- Do not use review as proof that a card is true or false.
+- Do not use review as memory recall.
+- Do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm.
+- Do not treat review as a read gate.
 - Use audit only to inspect notebook health and metadata distribution.
 - Do not use audit as memory recall.
 - Do not cite audit output as factual memory content.
@@ -18,14 +26,17 @@
 - Do not infer geometry overlap from `scale_path`.
 - Do not infer semantic completeness from `sufficient_scale_reached`.
 - Read `warnings` and `do_not_assume` before relying on recalled points.
-- Do not assume candidates are confirmed facts.
+- Do not assume candidates are confirmed stable notebook records.
 - Treat hypotheses as tentative.
 - Do not use anchors as folders.
 - Do not search a tree.
 - Do not look for a leaf node.
 - Do not create new anchors automatically.
 - Default writes are candidate.
-- Confirmed requires explicit human approval.
+- Confirmed requires explicit operator approval.
+- Confirmed does not mean factually true.
+- `human-approved` does not prove factual truth.
 - Do not confirm `source: llm_inference` directly.
+- Use status/update_status for operator-approved transitions.
 - Use honest `actor` and `actor_type` metadata.
 - Do not use Nollm as a RAG engine or autonomous memory agent.

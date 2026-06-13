@@ -43,7 +43,9 @@ Nollm Cortex is model-side and prompt-side. It helps an LLM orient itself, compo
 
 Core stores. Cortex orients.
 
-Core confirmations require explicit human approval in v0.1. Cortex may propose drafts, candidates, and recall digests, but it must not silently mutate Core.
+Core confirmations require explicit operator approval in v0.1. Cortex may propose drafts, candidates, and recall digests, but it must not silently mutate Core.
+
+Nollm is LLM-first. Human inspection is optional, active, and ledgered. Human input is an operator action, not an oracle.
 
 ## Source Of Truth
 
@@ -87,6 +89,7 @@ python -m nollm.cli write ./demo-notebook \
 python -m nollm.cli validate ./demo-notebook
 python -m nollm.cli recall ./demo-notebook "filesystem memory"
 python -m nollm.cli audit ./demo-notebook
+python -m nollm.cli review ./demo-notebook
 ```
 
 Cortex read flow:
@@ -109,6 +112,14 @@ The reference CLI uses only the Python standard library and keeps Markdown, YAML
 
 Audit reports are deterministic derived projections over notebook files. They are not memory, not a recall index, and not source of truth. The stable JSON contract is documented in `protocol/AUDIT_SCHEMA.md`; the OpenClaw golden snapshot lives at `examples/audit_reports/openclaw_audit.json`. Audit schema stability is for inspection and governance, not memory or recall.
 
+Compare current audit output with a snapshot:
+
+```bash
+python -m nollm.cli audit-check ./demo-notebook --against ../../examples/audit_reports/openclaw_audit.json
+```
+
+`audit-check` is read-only and CI-friendly: exit code `0` means no drift, `1` means drift detected, and `2` means invalid input or schema error. Audit drift is structural inspection drift only; it is not semantic correctness, memory, recall, or a hidden index.
+
 ## JSON Tool Bridge
 
 P3 adds a dependency-free JSON bridge for external LLM tool callers. It is not an MCP server and does not start a network service.
@@ -116,6 +127,7 @@ P3 adds a dependency-free JSON bridge for external LLM tool callers. It is not a
 ```bash
 python -m nollm.cli tools
 python -m nollm.cli tool ../../../examples/tool_requests/orient.json
+python -m nollm.cli tool ../../../examples/tool_requests/review_openclaw.json
 ```
 
 Tool requests use the `nollm.tool.v0.1` envelope and return structured `ok: true` or `ok: false` JSON responses.
@@ -132,3 +144,16 @@ orient -> surface -> focus -> recall
 For one-shot use, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
 
 External LLM tools should write only candidate cards unless a human explicitly approves a later status update. Nollm is not a RAG engine, autonomous memory agent, or MCP server.
+
+## Active Inspection
+
+Use `review` to inspect draft and candidate cards matching active metadata filters:
+
+```bash
+python -m nollm.cli review ./demo-notebook
+python -m nollm.cli review ./demo-notebook --status candidate --type decision --limit 20
+```
+
+Review is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, block reads, or replace the `status` command. `confirmed` does not mean factually true, and `human-approved` does not prove factual truth. See `protocol/REVIEW.md`.
+
+External tools can call the same queue with `nollm.review`.

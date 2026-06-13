@@ -36,7 +36,7 @@ Recommended fields:
 - Each event ID is unique within a notebook.
 - Each event records the affected object and canonical address.
 - Status changes must record `from_status` and `to_status`.
-- Human approval must be visible when promoting to `confirmed` in v0.1.
+- Operator approval must be visible when promoting to `confirmed` in v0.1.
 - Correction events should append a new event rather than editing history.
 - Derived indexes must be rebuildable from ledger and source files.
 

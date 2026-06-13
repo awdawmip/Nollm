@@ -8,7 +8,7 @@ Trust answers: how should Cortex weigh the claim?
 
 ## Allowed Values
 
-- `human-approved`: Explicitly approved by a human.
+- `human-approved`: Explicitly accepted by an operator for current notebook use.
 - `source-backed`: Supported by cited project files, ledger events, or references.
 - `llm-proposed`: Proposed by Cortex and awaiting review.
 - `unverified`: Recorded but not checked.
@@ -20,4 +20,6 @@ Trust answers: how should Cortex weigh the claim?
 
 ## v0.1 Rule
 
-`confirmed` cards should usually have `human-approved` or `source-backed` trust. LLM inference alone must not be recorded as confirmed fact. `policy-approved` is reserved for future protocol work, not a v0.1 confirmation path.
+`confirmed` cards should usually have `human-approved` or `source-backed` trust. LLM inference alone must not be recorded as a confirmed stable notebook record. `policy-approved` is reserved for future protocol work, not a v0.1 confirmation path.
+
+`human-approved` is a provenance and trust label. It means an operator accepted the record for current notebook use. It is not proof of factual truth, does not make the operator an oracle, and does not outrank source evidence, ledger consistency, or later corrections.

@@ -11,7 +11,7 @@ Validation keeps Nollm Core deterministic before runtime implementation exists.
 - Ledger event IDs must be unique within a notebook.
 - Every card must have a creation ledger event.
 - Every status change must have a ledger event.
-- `confirmed` transitions require explicit human approval in v0.1.
+- `confirmed` transitions require explicit operator approval in v0.1.
 - Recall source addresses must resolve or be marked external.
 - Derived indexes must be rebuildable from Markdown, YAML, JSON, and JSONL source files.
 
@@ -38,6 +38,8 @@ Recall digest JSON files must include the current recall key set:
 Scale-scan metadata is structural metadata only. `active_anchor_fields` must be a list of strings. `scale_path` must be a list of mappings with a non-negative integer `layer`, string `card`, list-of-string `anchor_fields`, and optional string `note`. `lateral_recovery` must be a list. `sufficient_scale_reached` must be a boolean.
 
 Validation does not infer semantic completeness, geometry correctness, or recall quality from these fields.
+
+Validation treats `confirmed` and `human-approved` as lifecycle and provenance metadata. It does not validate factual truth, permanent correctness, or operator oracle authority.
 
 ## Audit Report Invariants
 

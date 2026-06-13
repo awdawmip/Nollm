@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .audit import build_audit_report, render_audit_json, render_audit_markdown
+from .audit import build_audit_report, compare_audit_reports, render_audit_json, render_audit_markdown, validate_audit_report_shape
 from .filesystem import (
     append_ledger,
     card_address,
@@ -24,6 +24,7 @@ from .cortex import focus_cards, orient_notebook, surface_anchor
 from .ids import card_id_for, next_event_id
 from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
+from .review import build_review_queue
 from .tool_api import dispatch_tool_request, error_response, load_tool_manifest
 from .validation import validate_notebook
 
@@ -103,6 +104,20 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--format", choices=["json", "markdown"], default="json")
     audit.add_argument("--out")
     audit.set_defaults(func=cmd_audit)
+
+    audit_check = sub.add_parser("audit-check")
+    audit_check.add_argument("notebook_path")
+    audit_check.add_argument("--against", required=True)
+    audit_check.set_defaults(func=cmd_audit_check)
+
+    review = sub.add_parser("review")
+    review.add_argument("notebook_path")
+    review.add_argument("--status", action="append", choices=sorted(STATUSES))
+    review.add_argument("--type", choices=sorted(CARD_TYPES))
+    review.add_argument("--anchor")
+    review.add_argument("--trust", choices=sorted(TRUST_VALUES))
+    review.add_argument("--limit", type=int, default=20)
+    review.set_defaults(func=cmd_review)
 
     tools = sub.add_parser("tools")
     tools.set_defaults(func=cmd_tools)
@@ -314,6 +329,64 @@ def cmd_audit(args: argparse.Namespace) -> int:
         Path(args.out).write_text(output, encoding="utf-8")
     else:
         print(output, end="")
+    return 0
+
+
+def cmd_audit_check(args: argparse.Namespace) -> int:
+    try:
+        expected = json.loads(Path(args.against).read_text(encoding="utf-8-sig"))
+    except OSError as exc:
+        print(json.dumps(audit_check_error("unreadable_snapshot", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    except json.JSONDecodeError as exc:
+        print(json.dumps(audit_check_error("invalid_snapshot_json", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    actual = build_audit_report(Path(args.notebook_path))
+    expected_issues = validate_audit_report_shape(expected)
+    actual_issues = validate_audit_report_shape(actual)
+    if expected_issues or actual_issues:
+        response = audit_check_error(
+            "invalid_audit_schema",
+            "Snapshot or current audit report does not match the audit schema.",
+        )
+        response["schema_issues"] = {
+            "expected": expected_issues,
+            "actual": actual_issues,
+        }
+        print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
+        return 2
+    response = compare_audit_reports(expected, actual)
+    print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0 if response["matches"] else 1
+
+
+def audit_check_error(code: str, message: str) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "matches": False,
+        "drift_count": 0,
+        "drifts": [],
+        "ignored_fields": ["notebook.path"],
+        "error": {
+            "code": code,
+            "message": message,
+        },
+    }
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    if args.limit < 0:
+        print("--limit must be non-negative", file=sys.stderr)
+        return 2
+    response = build_review_queue(
+        Path(args.notebook_path),
+        statuses=args.status,
+        card_type=args.type,
+        anchor=args.anchor,
+        trust=args.trust,
+        limit=args.limit,
+    )
+    print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
     return 0
 
 

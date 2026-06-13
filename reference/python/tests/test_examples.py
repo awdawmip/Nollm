@@ -90,6 +90,17 @@ class StaticExampleTests(unittest.TestCase):
             self.assertIn(section, response["result"])
         self.assertTrue(all(value is False for value in response["result"]["boundaries"].values()))
 
+    def test_review_tool_response_example_is_valid_json(self) -> None:
+        path = ROOT / "examples" / "tool_responses" / "review_openclaw_response.json"
+        response = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["action"], "nollm.review")
+        result = response["result"]
+        for field in ("ok", "notebook", "review_filters", "review_count", "cards"):
+            self.assertIn(field, result)
+        self.assertEqual(result["review_count"], 0)
+        self.assertEqual(result["cards"], [])
+
     def test_top_level_tool_requests_run_from_reference_python(self) -> None:
         request_paths = sorted((ROOT / "examples" / "tool_requests").glob("*.json"))
         self.assertTrue(request_paths, "expected runnable top-level tool request examples")

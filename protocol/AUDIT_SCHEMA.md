@@ -91,3 +91,27 @@ All boundary flags must be `false` for the current reference implementation.
 `examples/audit_reports/openclaw_audit.json` is a deterministic OpenClaw audit snapshot.
 
 `examples/audit_reports/*.json` files are examples and regression fixtures. They are not notebook source memory and must not be read by recall.
+
+## Drift Comparison
+
+Audit snapshots may be compared with current audit output using:
+
+```bash
+python3 -m nollm.cli audit-check <notebook_path> --against <snapshot.json>
+```
+
+Drift comparison validates both reports against this schema, removes environment-dependent fields, and compares the remaining structure deterministically.
+
+Ignored fields:
+
+- `notebook.path`
+
+The result is a JSON object with:
+
+- `ok`: boolean
+- `matches`: boolean
+- `drift_count`: integer
+- `drifts`: list
+- `ignored_fields`: list
+
+Audit drift is a structural regression signal. It is not semantic scoring, not recall, not memory, and not a hidden index.

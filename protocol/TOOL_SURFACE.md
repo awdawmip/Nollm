@@ -8,6 +8,7 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 
 - `nollm.validate`
 - `nollm.audit`
+- `nollm.review`
 - `nollm.orient`
 - `nollm.surface`
 - `nollm.focus`
@@ -20,6 +21,12 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 `nollm.audit` returns a deterministic derived audit report. It is read-only, does not append ledger events, does not create files, does not use SQLite, and must not be used as memory recall.
 
 The audit report JSON shape is a stable inspection contract documented in `protocol/AUDIT_SCHEMA.md`. It is not a memory schema, not a recall digest schema, and not source memory. `examples/audit_reports/*.json` files are deterministic audit snapshots for examples and regression tests, not notebook memory.
+
+`nollm.review` returns a deterministic active inspection surface for cards matching metadata filters. It is read-only, does not append ledger events, does not include full card bodies by default, does not approve cards, and does not change status.
+
+Use review for optional operator inspection. Do not use review as proof that a card is true or false, do not use it as memory recall, and do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm. Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
+
+Review is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata.
 
 `nollm.recall` returns a digest with scale-scan metadata:
 
@@ -63,7 +70,7 @@ These actions must preserve Core validation rules:
 - `write_card` must not create `confirmed` cards directly.
 - `write_card` must not create anchors automatically.
 - `update_status` must append a ledger event.
-- `confirmed` requires explicit human approval.
+- `confirmed` requires explicit operator approval.
 - Cards with `source: llm_inference` must not be directly confirmed.
 - Self-supersede must be rejected.
 

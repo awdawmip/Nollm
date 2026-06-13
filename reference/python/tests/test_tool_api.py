@@ -16,6 +16,7 @@ from test_write_read import init_notebook
 REQUIRED_ACTIONS = {
     "nollm.validate",
     "nollm.audit",
+    "nollm.review",
     "nollm.orient",
     "nollm.surface",
     "nollm.focus",
@@ -116,6 +117,81 @@ class ToolApiTests(unittest.TestCase):
             self.assertEqual(len(read_ledger(notebook)), event_count_before)
             files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
             self.assertEqual(files_after, files_before)
+
+    def test_tool_request_can_run_review_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            self.write_candidate(notebook, Path(tmp), title="Review Tool Card")
+            event_count_before = len(read_ledger(notebook))
+            files_before = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            request = tool_request(notebook, "nollm.review", {"statuses": ["candidate"], "limit": 20})
+            request["request_id"] = "req_review"
+            request_path = write_request(Path(tmp), request)
+
+            code, response = run_json_cli(["tool", str(request_path)])
+
+            self.assertEqual(code, 0)
+            self.assertTrue(response["ok"])
+            self.assertEqual(response["request_id"], "req_review")
+            self.assertEqual(response["action"], "nollm.review")
+            result = response["result"]
+            for field in ("ok", "notebook", "review_filters", "review_count", "cards"):
+                self.assertIn(field, result)
+            self.assertEqual(result["review_count"], 1)
+            self.assertEqual(result["cards"][0]["title"], "Review Tool Card")
+            self.assertNotIn("body", result["cards"][0])
+            self.assertEqual(len(read_ledger(notebook)), event_count_before)
+            files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            self.assertEqual(files_after, files_before)
+
+    def test_tool_review_filters(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            self.write_candidate(notebook, Path(tmp), title="Fact Candidate")
+            self.write_candidate(notebook, Path(tmp), title="Decision Candidate", card_type="decision", trust="llm-proposed")
+            request_path = write_request(
+                Path(tmp),
+                tool_request(
+                    notebook,
+                    "nollm.review",
+                    {
+                        "statuses": ["candidate"],
+                        "type": "decision",
+                        "anchor": "project:demo",
+                        "trust": "llm-proposed",
+                        "limit": 1,
+                    },
+                ),
+            )
+
+            code, response = run_json_cli(["tool", str(request_path)])
+
+            self.assertEqual(code, 0)
+            self.assertTrue(response["ok"])
+            result = response["result"]
+            self.assertEqual(result["review_count"], 1)
+            self.assertEqual(result["cards"][0]["title"], "Decision Candidate")
+            self.assertEqual(result["review_filters"]["statuses"], ["candidate"])
+            self.assertEqual(result["review_filters"]["type"], "decision")
+            self.assertEqual(result["review_filters"]["anchor"], "project:demo")
+            self.assertEqual(result["review_filters"]["trust"], "llm-proposed")
+            self.assertEqual(result["review_filters"]["limit"], 1)
+
+    def test_tool_review_rejects_invalid_status_type_and_trust(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            cases = [
+                ({"statuses": ["needs_review"]}, "invalid_status"),
+                ({"type": "unknown"}, "invalid_type"),
+                ({"trust": "trusted"}, "invalid_trust"),
+            ]
+            for payload, expected_code in cases:
+                with self.subTest(expected_code=expected_code):
+                    request_path = write_request(Path(tmp), tool_request(notebook, "nollm.review", payload))
+                    code, response = run_json_cli(["tool", str(request_path)])
+                    self.assertNotEqual(code, 0)
+                    self.assertFalse(response["ok"])
+                    self.assertEqual(response["error"]["code"], expected_code)
 
     def test_tool_request_can_run_recall_and_create_digest(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -308,20 +384,35 @@ class ToolApiTests(unittest.TestCase):
         metadata["scale_links"] = {"children": []}
         self.assert_invalid_architecture_metadata(metadata, "scale_links has invalid key")
 
-    def write_payload(self, *, title: str = "Tool Candidate", status: str = "candidate") -> dict:
+    def write_payload(
+        self,
+        *,
+        title: str = "Tool Candidate",
+        status: str = "candidate",
+        card_type: str = "fact",
+        trust: str = "unverified",
+    ) -> dict:
         return {
-            "type": "fact",
+            "type": card_type,
             "title": title,
             "claim": "Tool bridge writes candidate cards.",
             "reason": "Tool API test.",
             "anchors": ["project:demo"],
             "source": "user_statement",
-            "trust": "unverified",
+            "trust": trust,
             "status": status,
         }
 
-    def write_candidate(self, notebook: Path, tmp: Path, *, title: str = "Tool Candidate") -> dict:
-        request_path = write_request(tmp, tool_request(notebook, "nollm.write_card", self.write_payload(title=title)))
+    def write_candidate(
+        self,
+        notebook: Path,
+        tmp: Path,
+        *,
+        title: str = "Tool Candidate",
+        card_type: str = "fact",
+        trust: str = "unverified",
+    ) -> dict:
+        request_path = write_request(tmp, tool_request(notebook, "nollm.write_card", self.write_payload(title=title, card_type=card_type, trust=trust)))
         code, response = run_json_cli(["tool", str(request_path)])
         self.assertEqual(code, 0)
         return response

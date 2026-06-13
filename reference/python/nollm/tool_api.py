@@ -19,8 +19,9 @@ from .filesystem import (
     write_card_file,
 )
 from .ids import card_id_for, next_event_id
-from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
+from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
+from .review import build_review_queue
 from .validation import architecture_metadata_issues, validate_notebook
 
 PROTOCOL = "nollm.tool.v0.1"
@@ -117,6 +118,45 @@ def action_audit(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
     if audit_format != "json":
         return error_response("nollm.audit", "unsupported_format", "nollm.audit supports only format=json in the tool bridge")
     return success_response("nollm.audit", build_audit_report(path))
+
+
+def action_review(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    statuses = payload.get("statuses")
+    if statuses is None:
+        review_statuses = None
+    elif isinstance(statuses, list):
+        review_statuses = [str(status) for status in statuses]
+    else:
+        return error_response("nollm.review", "invalid_input", "input.statuses must be a list")
+    if review_statuses:
+        invalid_statuses = [status for status in review_statuses if status not in STATUSES]
+        if invalid_statuses:
+            return error_response("nollm.review", "invalid_status", f"Invalid status: {invalid_statuses[0]}")
+    card_type = payload.get("type")
+    if card_type is not None:
+        card_type = str(card_type)
+        if card_type not in CARD_TYPES:
+            return error_response("nollm.review", "invalid_type", f"Invalid card type: {card_type}")
+    trust = payload.get("trust")
+    if trust is not None:
+        trust = str(trust)
+        if trust not in TRUST_VALUES:
+            return error_response("nollm.review", "invalid_trust", f"Invalid trust: {trust}")
+    try:
+        limit = int(payload.get("limit", 20))
+    except (TypeError, ValueError):
+        return error_response("nollm.review", "invalid_input", "input.limit must be an integer")
+    if limit < 0:
+        return error_response("nollm.review", "invalid_input", "input.limit must be non-negative")
+    result = build_review_queue(
+        path,
+        statuses=review_statuses,
+        card_type=card_type,
+        anchor=str(payload["anchor"]) if "anchor" in payload else None,
+        trust=trust,
+        limit=limit,
+    )
+    return success_response("nollm.review", result, addresses=[card["address"] for card in result["cards"]])
 
 
 def action_orient(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
@@ -314,6 +354,7 @@ def anchor_ids(path: Path) -> set[str]:
 REQUIRED_FIELDS = {
     "nollm.validate": [],
     "nollm.audit": [],
+    "nollm.review": [],
     "nollm.orient": ["query_or_task"],
     "nollm.surface": ["anchor"],
     "nollm.focus": ["anchor"],
@@ -327,6 +368,7 @@ REQUIRED_FIELDS = {
 ACTIONS: dict[str, Callable[[Path, dict[str, Any]], dict[str, Any]]] = {
     "nollm.validate": action_validate,
     "nollm.audit": action_audit,
+    "nollm.review": action_review,
     "nollm.orient": action_orient,
     "nollm.surface": action_surface,
     "nollm.focus": action_focus,

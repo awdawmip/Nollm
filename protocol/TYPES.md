@@ -72,7 +72,7 @@ Card type tells Cortex how to use a memory. Type is not status, trust, or source
 - Meaning: A plausible but unconfirmed explanation or proposal.
 - Write when: The idea may guide investigation.
 - Cortex use: Treat as tentative.
-- Must not infer: That it is confirmed fact.
+- Must not infer: That it is a confirmed stable notebook record.
 
 ### `evidence`
 
@@ -87,4 +87,3 @@ Card type tells Cortex how to use a memory. Type is not status, trust, or source
 - Write when: Context matters but does not fit a stronger type.
 - Cortex use: Recall cautiously.
 - Must not infer: That a note is a decision, fact, or constraint.
-

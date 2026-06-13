@@ -8,6 +8,7 @@ Nollm actions describe the LLM-facing cognitive interface. They are protocol ver
 - `surface`: Read current-scale cards influenced by those fields.
 - `focus`: Select sufficient-scale cards.
 - `recall`: Produce a digest after scale scan.
+- `review`: Inspect draft and candidate cards matching active metadata filters.
 - `write_card`: Propose or write a structured card according to policy.
 - `link_cards`: Record explicit relationships between cards.
 - `update_status`: Change lifecycle state through an auditable event.
@@ -94,6 +95,27 @@ recalled_points: []
 source_addresses: []
 do_not_assume: []
 ```
+
+### `review`
+
+Input:
+
+```yaml
+statuses: [candidate, draft]
+type: string | null
+anchor: string | null
+trust: string | null
+limit: integer
+```
+
+Output:
+
+```yaml
+review_count: integer
+cards: []
+```
+
+`review` is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, assign priority, block reads, or perform semantic scoring.
 
 ### `write_card`
 

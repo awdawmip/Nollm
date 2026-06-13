@@ -10,7 +10,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from nollm.audit import build_audit_report, validate_audit_report_shape
+from nollm.audit import build_audit_report, compare_audit_reports, validate_audit_report_shape
 from nollm.cli import main
 from nollm.filesystem import read_ledger
 from test_write_read import init_notebook, write_card
@@ -206,6 +206,135 @@ class AuditTests(unittest.TestCase):
         self.assertIn("## Validation", first)
         self.assertIn("## Boundaries", first)
 
+    def test_audit_check_reports_no_drift_for_openclaw_snapshot(self) -> None:
+        completed = run_subprocess(
+            [
+                sys.executable,
+                "-m",
+                "nollm.cli",
+                "audit-check",
+                "../../examples/openclaw",
+                "--against",
+                "../../examples/audit_reports/openclaw_audit.json",
+            ],
+            cwd=REFERENCE_PYTHON,
+        )
+        self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON))
+        response = json.loads(completed.stdout)
+
+        self.assertTrue(response["ok"])
+        self.assertTrue(response["matches"])
+        self.assertEqual(response["drift_count"], 0)
+        self.assertEqual(response["drifts"], [])
+        self.assertEqual(response["ignored_fields"], ["notebook.path"])
+
+    def test_audit_check_detects_snapshot_drift(self) -> None:
+        golden = json.loads((ROOT / "examples" / "audit_reports" / "openclaw_audit.json").read_text(encoding="utf-8"))
+        golden["notebook"]["cards"] = 3
+        with tempfile.TemporaryDirectory() as tmp:
+            snapshot = Path(tmp) / "drifted_snapshot.json"
+            snapshot.write_text(json.dumps(golden), encoding="utf-8")
+            completed = run_subprocess(
+                [
+                    sys.executable,
+                    "-m",
+                    "nollm.cli",
+                    "audit-check",
+                    "../../examples/openclaw",
+                    "--against",
+                    str(snapshot),
+                ],
+                cwd=REFERENCE_PYTHON,
+            )
+        self.assertEqual(completed.returncode, 1, subprocess_failure_message(completed, REFERENCE_PYTHON))
+        response = json.loads(completed.stdout)
+
+        self.assertTrue(response["ok"])
+        self.assertFalse(response["matches"])
+        self.assertGreater(response["drift_count"], 0)
+        self.assertIn({"path": "notebook.cards", "expected": 3, "actual": 2}, response["drifts"])
+
+    def test_audit_check_returns_schema_error_for_invalid_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            snapshot = Path(tmp) / "invalid_snapshot.json"
+            snapshot.write_text(json.dumps({"validation": {"pass": True}}), encoding="utf-8")
+            completed = run_subprocess(
+                [
+                    sys.executable,
+                    "-m",
+                    "nollm.cli",
+                    "audit-check",
+                    "../../examples/openclaw",
+                    "--against",
+                    str(snapshot),
+                ],
+                cwd=REFERENCE_PYTHON,
+            )
+        self.assertEqual(completed.returncode, 2, subprocess_failure_message(completed, REFERENCE_PYTHON))
+        response = json.loads(completed.stdout)
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "invalid_audit_schema")
+        self.assertTrue(response["schema_issues"]["expected"])
+
+    def test_audit_check_returns_error_for_unreadable_snapshot(self) -> None:
+        missing_snapshot = ROOT / "examples" / "audit_reports" / "missing_snapshot.json"
+        completed = run_subprocess(
+            [
+                sys.executable,
+                "-m",
+                "nollm.cli",
+                "audit-check",
+                "../../examples/openclaw",
+                "--against",
+                str(missing_snapshot),
+            ],
+            cwd=REFERENCE_PYTHON,
+        )
+        self.assertEqual(completed.returncode, 2, subprocess_failure_message(completed, REFERENCE_PYTHON))
+        response = json.loads(completed.stdout)
+
+        self.assertFalse(response["ok"])
+        self.assertEqual(response["error"]["code"], "unreadable_snapshot")
+
+    def test_audit_compare_ignores_notebook_path_only(self) -> None:
+        expected = build_audit_report(ROOT / "examples" / "openclaw")
+        actual = build_audit_report(ROOT / "examples" / "openclaw")
+        actual["notebook"]["path"] = "different/environment/path"
+
+        response = compare_audit_reports(expected, actual)
+
+        self.assertTrue(response["matches"])
+        self.assertEqual(response["drift_count"], 0)
+        self.assertEqual(response["ignored_fields"], ["notebook.path"])
+
+    def test_audit_check_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = Path(tmp) / "openclaw"
+            shutil.copytree(ROOT / "examples" / "openclaw", notebook)
+            remove_generated_recall_artifacts(notebook)
+            ledger_before = read_ledger(notebook)
+            files_before = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+
+            completed = run_subprocess(
+                [
+                    sys.executable,
+                    "-m",
+                    "nollm.cli",
+                    "audit-check",
+                    str(notebook),
+                    "--against",
+                    str(ROOT / "examples" / "audit_reports" / "openclaw_audit.json"),
+                ],
+                cwd=REFERENCE_PYTHON,
+            )
+
+            self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON))
+            self.assertEqual(read_ledger(notebook), ledger_before)
+            files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            self.assertEqual(files_after, files_before)
+            self.assertEqual(generated_recall_artifacts(notebook), [])
+
 def run_subprocess(command: list[str], *, cwd: Path, request_path: Path | None = None) -> subprocess.CompletedProcess[str]:
     try:
         return subprocess.run(
@@ -246,6 +375,15 @@ def remove_generated_recall_artifacts(notebook: Path) -> None:
     for pattern in ("recall_*.json", "recall_*.md"):
         for path in (notebook / "recalls").glob(pattern):
             path.unlink()
+
+
+def generated_recall_artifacts(notebook: Path) -> list[str]:
+    recalls = notebook / "recalls"
+    return sorted(
+        path.name
+        for pattern in ("recall_*.json", "recall_*.md")
+        for path in recalls.glob(pattern)
+    )
 
 
 if __name__ == "__main__":

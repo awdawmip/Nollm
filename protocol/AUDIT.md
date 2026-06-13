@@ -36,6 +36,20 @@ Audit schema stability is for inspection and governance. The schema is not a mem
 
 `examples/audit_reports/openclaw_audit.json` is the deterministic OpenClaw golden snapshot used as an example and regression fixture. Files under `examples/audit_reports/*.json` are not notebook source memory and must not be read by recall.
 
+## Drift Check
+
+`nollm audit-check <notebook_path> --against <snapshot.json>` compares current derived audit output with a saved audit snapshot.
+
+Audit snapshots are regression fixtures. Audit drift checks compare derived inspection output only. Drift means the structural audit report changed; it does not prove semantic correctness or incorrectness.
+
+The comparison ignores environment-dependent fields:
+
+- `notebook.path`
+
+All drifts are sorted deterministically by path. The CLI returns `0` when no drift is found, `1` when drift is found, and `2` for invalid input or schema errors.
+
+Audit drift is not recall, not memory, and not a hidden index.
+
 ## Tool Surface
 
 `nollm.audit` exposes the same derived report through the JSON tool bridge.

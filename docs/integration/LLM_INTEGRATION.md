@@ -46,6 +46,18 @@ Conceptually this is now interpreted as anchor-field orientation and scale scann
 
 For one-shot context retrieval, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
 
+## Review
+
+Use `nollm.review` to inspect draft and candidate cards matching active metadata filters.
+
+Nollm is LLM-first. Human inspection is optional, active, and ledgered. Human input is an operator action, not an oracle.
+
+Review is deterministic metadata inspection. Do not use review as proof that a card is true or false. Do not use review as memory recall. Do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm.
+
+Review is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata. LLMs may use draft or candidate cards cautiously when surfaced by recall or read workflows.
+
+Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
+
 ## Audit
 
 Use `nollm.audit` to inspect notebook health, validation status, file counts, metadata distribution, recall digest shape, and boundary flags.
@@ -55,6 +67,14 @@ Audit is derived and read-only. Do not use audit as memory recall. Do not treat 
 The audit JSON contract is documented in `protocol/AUDIT_SCHEMA.md`. Audit schema stability is for inspection and governance only. It is not a memory schema, not a recall digest schema, and not source memory.
 
 `examples/audit_reports/openclaw_audit.json` is a deterministic audit snapshot for examples and regression tests. It must not be read as notebook memory or used by recall.
+
+Use `audit-check` to compare current derived audit output with a saved snapshot:
+
+```bash
+python3 -m nollm.cli audit-check ../../examples/openclaw --against ../../examples/audit_reports/openclaw_audit.json
+```
+
+Exit code `0` means no drift, `1` means structural drift was detected, and `2` means invalid input or schema error. Audit drift is useful for governance and CI, but it does not prove semantic correctness or incorrectness. Audit drift is not recall, not memory, and not a hidden index.
 
 ## Recall Digest Consumption
 
@@ -72,7 +92,11 @@ Anchor is Field, not Folder. Recall is Scale Scan, not Tree Descent. SQLite is A
 
 External LLMs may propose durable memory with `nollm.write_card`, but default writes are `candidate`.
 
-External LLMs must not write `confirmed` cards directly. `confirmed` requires explicit human approval through a status update.
+External LLMs must not write `confirmed` cards directly. `confirmed` requires explicit operator approval through a status update.
+
+`confirmed` means currently accepted as stable within the notebook. It does not mean factually true, permanently correct, or human oracle truth.
+
+`human-approved` means an operator accepted the record for current notebook use. It is not proof of factual truth and does not outrank source evidence, ledger consistency, or later corrections.
 
 Cards with `source: llm_inference` cannot be confirmed directly. First replace or support the source with human decision, project file, ledger event, user statement, or external reference.
 
@@ -93,7 +117,7 @@ Allowed `actor_type` values are `human`, `llm`, `tool`, and `system`.
 
 - `candidate`: Plausible, not confirmed. Do not treat as fact.
 - `hypothesis`: Tentative explanation or proposal.
-- `confirmed`: Human-approved or source-backed memory suitable for normal recall.
+- `confirmed`: Currently accepted as stable within the notebook. Not a factual truth guarantee.
 - `superseded`: Replaced by newer memory. Preserve for audit.
 - `rejected`: Preserved as rejected with reason.
 - `archived`: Readable history, not surfaced by default.

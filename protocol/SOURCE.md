@@ -13,5 +13,4 @@ Source records where a card claim came from. It helps Cortex separate remembered
 
 ## Rule
 
-LLM inference must not be recorded as confirmed fact without human review. It may be written as `draft`, `candidate`, `hypothesis`, or another clearly tentative form.
-
+LLM inference must not be recorded as a confirmed stable notebook record without operator approval and a source change or supporting source. It may be written as `draft`, `candidate`, `hypothesis`, or another clearly tentative form.

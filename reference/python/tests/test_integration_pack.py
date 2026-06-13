@@ -62,6 +62,10 @@ class IntegrationPackTests(unittest.TestCase):
             focus = dispatch_tool_request(request(notebook, "nollm.focus", {"anchor": "project:demo"}))
             self.assert_envelope(focus, True)
 
+            review = dispatch_tool_request(request(notebook, "nollm.review", {"statuses": ["candidate"]}))
+            self.assert_envelope(review, True)
+            self.assertEqual(review["result"]["review_count"], 1)
+
             recall = dispatch_tool_request(request(notebook, "nollm.recall", {"query_or_task": "project:demo workflow"}))
             self.assert_envelope(recall, True)
 
@@ -100,4 +104,3 @@ def contains_invalid_focus_intent(value) -> bool:
 
 if __name__ == "__main__":
     unittest.main()
-
