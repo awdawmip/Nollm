@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .audit import build_audit_report, render_audit_json, render_audit_markdown
 from .filesystem import (
     append_ledger,
     card_address,
@@ -14,13 +15,16 @@ from .filesystem import (
     notebook_name,
     read_card,
     read_ledger,
+    read_yaml_file,
     render_card,
     utc_timestamp,
     write_card_file,
 )
+from .cortex import focus_cards, orient_notebook, surface_anchor
 from .ids import card_id_for, next_event_id
-from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, TRUST_VALUES, WRITE_STATUSES
+from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
+from .tool_api import dispatch_tool_request, error_response, load_tool_manifest
 from .validation import validate_notebook
 
 
@@ -36,6 +40,26 @@ def build_parser() -> argparse.ArgumentParser:
     validate = sub.add_parser("validate")
     validate.add_argument("notebook_path")
     validate.set_defaults(func=cmd_validate)
+
+    orient = sub.add_parser("orient")
+    orient.add_argument("notebook_path")
+    orient.add_argument("query_or_task")
+    orient.set_defaults(func=cmd_orient)
+
+    surface = sub.add_parser("surface")
+    surface.add_argument("notebook_path")
+    surface.add_argument("--anchor", required=True)
+    surface.add_argument("--limit", type=int, default=5)
+    surface.set_defaults(func=cmd_surface)
+
+    focus = sub.add_parser("focus")
+    focus.add_argument("notebook_path")
+    focus.add_argument("--anchor", required=True)
+    focus.add_argument("--type")
+    focus.add_argument("--status")
+    focus.add_argument("--limit", type=int, default=5)
+    focus.add_argument("--include-body", action="store_true")
+    focus.set_defaults(func=cmd_focus)
 
     write = sub.add_parser("write")
     write.add_argument("notebook_path")
@@ -74,6 +98,19 @@ def build_parser() -> argparse.ArgumentParser:
     ledger.add_argument("--limit", type=int, default=10)
     ledger.set_defaults(func=cmd_ledger)
 
+    audit = sub.add_parser("audit")
+    audit.add_argument("notebook_path")
+    audit.add_argument("--format", choices=["json", "markdown"], default="json")
+    audit.add_argument("--out")
+    audit.set_defaults(func=cmd_audit)
+
+    tools = sub.add_parser("tools")
+    tools.set_defaults(func=cmd_tools)
+
+    tool = sub.add_parser("tool")
+    tool.add_argument("request_json_file")
+    tool.set_defaults(func=cmd_tool)
+
     return parser
 
 
@@ -94,11 +131,51 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_orient(args: argparse.Namespace) -> int:
+    print(json.dumps(orient_notebook(Path(args.notebook_path), args.query_or_task), indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_surface(args: argparse.Namespace) -> int:
+    try:
+        surface = surface_anchor(Path(args.notebook_path), args.anchor, args.limit)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    print(json.dumps(surface, indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_focus(args: argparse.Namespace) -> int:
+    try:
+        focus = focus_cards(
+            Path(args.notebook_path),
+            anchor_id=args.anchor,
+            card_type=args.type,
+            status=args.status,
+            limit=args.limit,
+            include_body=args.include_body,
+        )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    print(json.dumps(focus, indent=2, ensure_ascii=False))
+    return 0
+
+
 def cmd_write(args: argparse.Namespace) -> int:
     if args.status not in WRITE_STATUSES:
         print("write refuses confirmed/superseded/rejected/archived status; use status command", file=sys.stderr)
         return 2
     path = Path(args.notebook_path)
+    if not args.anchor:
+        print("write requires at least one --anchor", file=sys.stderr)
+        return 2
+    known_anchors = anchor_ids(path)
+    missing_anchors = [anchor for anchor in args.anchor if anchor not in known_anchors]
+    if missing_anchors:
+        print(f"unknown anchor(s): {', '.join(missing_anchors)}", file=sys.stderr)
+        return 2
     notebook = notebook_name(path)
     card_id = card_id_for(args.title, path / "cards")
     event_id = next_event_id(path / "ledger" / "events.jsonl")
@@ -161,9 +238,17 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     front, body, card_path = read_card(path, args.card_id_or_address)
     from_status = front.get("status")
+    if (from_status, args.to) not in STATUS_TRANSITIONS:
+        print(f"invalid status transition: {from_status} -> {args.to}", file=sys.stderr)
+        return 2
+    if args.to == "confirmed" and front.get("source") == "llm_inference":
+        print("cannot confirm a card with source llm_inference; change the source before confirming", file=sys.stderr)
+        return 2
     event_id = next_event_id(path / "ledger" / "events.jsonl")
     card_id = str(front["id"])
     notebook = notebook_name(path)
+    trust_before = front.get("trust")
+    trust_after = "human-approved" if args.to == "confirmed" and args.human_approval else trust_before
     event: dict[str, Any] = {
         "event_id": event_id,
         "op": "update_status",
@@ -176,14 +261,25 @@ def cmd_status(args: argparse.Namespace) -> int:
         "object_type": "card",
         "object_id": card_id,
         "address": card_address(notebook, card_id),
+        "trust_before": trust_before,
+        "trust_after": trust_after,
     }
     if args.human_approval:
         event["human_approval"] = args.human_approval
     if args.superseded_by:
-        event["superseded_by"] = args.superseded_by.rstrip("/").split("/")[-1]
+        try:
+            superseded_path = find_card_path(path, args.superseded_by)
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"--superseded-by must resolve to an existing card: {exc}", file=sys.stderr)
+            return 2
+        if superseded_path.stem == card_id:
+            print("--superseded-by must not refer to the same card", file=sys.stderr)
+            return 2
+        event["superseded_by"] = superseded_path.stem
         front["superseded_by"] = event["superseded_by"]
     append_ledger(path, event)
     front["status"] = args.to
+    front["trust"] = trust_after
     front["ledger_event"] = event_id
     card_path.write_text(render_card(front, body), encoding="utf-8")
     print(f"{card_id}: {from_status} -> {args.to}")
@@ -208,6 +304,45 @@ def cmd_ledger(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_audit(args: argparse.Namespace) -> int:
+    report = build_audit_report(Path(args.notebook_path))
+    if args.format == "markdown":
+        output = render_audit_markdown(report)
+    else:
+        output = render_audit_json(report)
+    if args.out:
+        Path(args.out).write_text(output, encoding="utf-8")
+    else:
+        print(output, end="")
+    return 0
+
+
+def cmd_tools(args: argparse.Namespace) -> int:
+    print(json.dumps(load_tool_manifest(), indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_tool(args: argparse.Namespace) -> int:
+    try:
+        request = json.loads(Path(args.request_json_file).read_text(encoding="utf-8-sig"))
+    except json.JSONDecodeError as exc:
+        response = error_response("", "invalid_json", str(exc))
+        print(json.dumps(response, indent=2, ensure_ascii=False))
+        return 1
+    response = dispatch_tool_request(request)
+    print(json.dumps(response, indent=2, ensure_ascii=False))
+    return 0 if response.get("ok") else 1
+
+
+def anchor_ids(path: Path) -> set[str]:
+    anchors_doc = read_yaml_file(path / "anchors.yaml")
+    return {
+        str(anchor.get("id"))
+        for anchor in anchors_doc.get("anchors", []) or []
+        if isinstance(anchor, dict) and anchor.get("id")
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -216,4 +351,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

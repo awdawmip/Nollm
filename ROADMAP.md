@@ -8,13 +8,14 @@
 - Define Cortex guidance for prompts, anchor composition, and read/write policy.
 - Provide a small example notebook.
 - Keep all source of truth in Markdown, YAML, and JSONL.
+- Align protocol language to Anchor is Field, not Folder and Recall is Scale Scan, not Tree Descent.
 
 ## v0.2: Validation And Tooling
 
 - Add schema checks for anchors, aliases, cards, and ledger events.
 - Add deterministic address validation.
 - Add simple local inspection commands.
-- Keep any SQLite index derived and rebuildable.
+- Keep SQLite, if used, only as an optional audit projection.
 
 ## v0.3: Recall Workflow
 
@@ -30,3 +31,4 @@
 - No vector database.
 - No embedding dependency.
 - No automatic ontology engine.
+- No geometry runtime or runtime coordinate placement yet.

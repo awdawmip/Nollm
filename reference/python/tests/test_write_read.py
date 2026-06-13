@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from nollm.cli import main
@@ -15,7 +15,13 @@ def init_notebook(tmp: str) -> Path:
     return notebook
 
 
-def write_card(notebook: Path, title: str = "A Fact", status: str = "candidate") -> tuple[str, str]:
+def write_card(
+    notebook: Path,
+    title: str = "A Fact",
+    status: str = "candidate",
+    source: str = "user_statement",
+    trust: str = "unverified",
+) -> tuple[str, str]:
     output = io.StringIO()
     with redirect_stdout(output):
         code = main(
@@ -33,9 +39,9 @@ def write_card(notebook: Path, title: str = "A Fact", status: str = "candidate")
                 "--anchor",
                 "project:demo",
                 "--source",
-                "user_statement",
+                source,
                 "--trust",
-                "unverified",
+                trust,
                 "--status",
                 status,
                 "--body",
@@ -85,6 +91,60 @@ class WriteReadTests(unittest.TestCase):
             )
             self.assertNotEqual(code, 0)
 
+    def test_write_rejects_missing_anchors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            error = io.StringIO()
+            with redirect_stderr(error):
+                code = main(
+                    [
+                        "write",
+                        str(notebook),
+                        "--type",
+                        "fact",
+                        "--title",
+                        "No Anchor",
+                        "--claim",
+                        "x",
+                        "--reason",
+                        "x",
+                        "--source",
+                        "user_statement",
+                        "--trust",
+                        "unverified",
+                    ]
+                )
+            self.assertNotEqual(code, 0)
+            self.assertIn("requires at least one --anchor", error.getvalue())
+
+    def test_write_rejects_unknown_anchors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            error = io.StringIO()
+            with redirect_stderr(error):
+                code = main(
+                    [
+                        "write",
+                        str(notebook),
+                        "--type",
+                        "fact",
+                        "--title",
+                        "Unknown Anchor",
+                        "--claim",
+                        "x",
+                        "--reason",
+                        "x",
+                        "--anchor",
+                        "project:missing",
+                        "--source",
+                        "user_statement",
+                        "--trust",
+                        "unverified",
+                    ]
+                )
+            self.assertNotEqual(code, 0)
+            self.assertIn("unknown anchor", error.getvalue())
+
     def test_read_resolves_card_id_and_memory_address(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             notebook = init_notebook(tmp)
@@ -99,4 +159,3 @@ class WriteReadTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

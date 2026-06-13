@@ -1,0 +1,11 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "req_audit_openclaw_001",
+  "action": "nollm.audit",
+  "notebook_path": "../../examples/openclaw",
+  "actor": "codex",
+  "actor_type": "tool",
+  "input": {
+    "format": "json"
+  }
+}

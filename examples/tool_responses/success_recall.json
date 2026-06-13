@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "example_recall_001",
+  "action": "nollm.recall",
+  "result": {
+    "digest": {
+      "query_or_task": "project:demo filesystem memory",
+      "memory_intent": "recall_focus",
+      "anchors_used": ["project:demo"],
+      "cards_read": ["nollm://demo/card/card_20260612_filesystem_memory"],
+      "recalled_points": ["Nollm stores memory in local files."],
+      "warnings": [],
+      "do_not_assume": [],
+      "source_addresses": ["nollm://demo/card/card_20260612_filesystem_memory"],
+      "open_questions": [],
+      "active_anchor_fields": [],
+      "scale_path": [],
+      "lateral_recovery": [],
+      "sufficient_scale_reached": true,
+      "fallback_mode": "none",
+      "fallback_reason": "",
+      "fallback_warning": "",
+      "anchors_discovered_from_cards": []
+    },
+    "json_path": "./demo-notebook/recalls/recall_20260612_000001.json",
+    "markdown_path": "./demo-notebook/recalls/recall_20260612_000001.md"
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [
+    "nollm://demo/recall/recall_20260612_000001",
+    "nollm://demo/card/card_20260612_filesystem_memory"
+  ]
+}

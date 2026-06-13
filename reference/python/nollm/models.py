@@ -33,6 +33,19 @@ CARD_DIRS = {
 STATUSES = {"draft", "candidate", "confirmed", "superseded", "rejected", "archived"}
 WRITE_STATUSES = {"draft", "candidate"}
 
+STATUS_TRANSITIONS = {
+    ("draft", "candidate"),
+    ("draft", "rejected"),
+    ("draft", "archived"),
+    ("candidate", "confirmed"),
+    ("candidate", "rejected"),
+    ("candidate", "archived"),
+    ("confirmed", "superseded"),
+    ("confirmed", "archived"),
+    ("superseded", "archived"),
+    ("rejected", "archived"),
+}
+
 TRUST_VALUES = {
     "human-approved",
     "source-backed",
@@ -60,5 +73,8 @@ RECALL_KEYS = [
     "do_not_assume",
     "source_addresses",
     "open_questions",
+    "active_anchor_fields",
+    "scale_path",
+    "lateral_recovery",
+    "sufficient_scale_reached",
 ]
-

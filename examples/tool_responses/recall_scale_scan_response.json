@@ -1,0 +1,60 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "example_recall_scale_scan_001",
+  "action": "nollm.recall",
+  "result": {
+    "digest": {
+      "query_or_task": "Recall Nollm honeycomb metadata alignment.",
+      "memory_intent": "recall_focus",
+      "anchors_used": [
+        "project:nollm",
+        "protocol:core"
+      ],
+      "cards_read": [
+        "nollm://openclaw/card/card_0002_honeycomb_metadata_alignment"
+      ],
+      "recalled_points": [
+        "Nollm Core preserves honeycomb, anchor field, and scale link metadata without becoming a geometry runtime."
+      ],
+      "warnings": [],
+      "do_not_assume": [
+        "Do not infer geometric overlap from scale_path.",
+        "Do not infer semantic completeness from sufficient_scale_reached."
+      ],
+      "source_addresses": [
+        "nollm://openclaw/card/card_0002_honeycomb_metadata_alignment"
+      ],
+      "open_questions": [],
+      "active_anchor_fields": [
+        "architecture_is_index",
+        "sqlite_audit_projection"
+      ],
+      "scale_path": [
+        {
+          "layer": 1,
+          "card": "nollm://openclaw/card/card_0002_honeycomb_metadata_alignment",
+          "anchor_fields": [
+            "architecture_is_index",
+            "sqlite_audit_projection"
+          ],
+          "note": "metadata-only; Core did not perform geometry-based recall"
+        }
+      ],
+      "lateral_recovery": [],
+      "sufficient_scale_reached": true,
+      "fallback_mode": "none",
+      "fallback_reason": "",
+      "fallback_warning": "",
+      "anchors_discovered_from_cards": []
+    },
+    "json_path": "./examples/openclaw/recalls/recall_20260612_000001.json",
+    "markdown_path": "./examples/openclaw/recalls/recall_20260612_000001.md"
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [
+    "nollm://openclaw/recall/recall_20260612_000001",
+    "nollm://openclaw/card/card_0002_honeycomb_metadata_alignment"
+  ]
+}

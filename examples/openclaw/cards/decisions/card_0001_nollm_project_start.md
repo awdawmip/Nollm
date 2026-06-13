@@ -13,7 +13,7 @@ reason: Establish the project identity and Core/Cortex boundary.
 source: human_decision
 trust: human-approved
 evidence_refs:
-  - nollm://lobster/ledger/event/evt_0001
+  - nollm://openclaw/ledger/event/evt_0001
 implications:
   - Keep Core deterministic and auditable.
   - Keep Cortex model-side and advisory.

@@ -4,10 +4,24 @@ Not an LLM. A notebook for LLMs.
 
 Nollm is a structured external notebook protocol for LLMs. It gives a model a stable way to write, read, locate, and recall memory without turning the notebook into an agent, a model, a vector database, or an automatic knowledge system.
 
+## Architecture Principles
+
+- Not an LLM.
+- Architecture is the Index.
+- Anchor is Field, not Folder.
+- Recall is Scale Scan, not Tree Descent.
+- SQLite is Audit Projection, not Memory.
+
+Nollm is aligned around a layered rotating honeycomb memory field. Anchors are column fields / semantic fields that cross layers. Cards are durable memory expressions at every scale. Recall scans across scale, re-evaluating active anchor fields, rather than descending a tree.
+
+There is no absolute leaf layer. The current reference runtime remains filesystem-first and deterministic; it does not implement geometric placement yet.
+
+P5.1 preserves and validates optional card metadata for layer, hex coordinates, anchor fields, and scale links. Core stores these fields as auditable memory metadata; Cortex may interpret them during orientation.
+
 ## What Nollm Is
 
 - A card-based memory structure.
-- An anchor-oriented recall system.
+- An anchor-field-oriented recall system.
 - A ledgered and auditable external memory.
 - A protocol for memory addresses, statuses, actions, recall digests, and write discipline.
 
@@ -33,9 +47,11 @@ Core confirmations require explicit human approval in v0.1. Cortex may propose d
 
 ## Source Of Truth
 
-Markdown, YAML, and JSONL are the project identity. SQLite may exist later as a derived local index, but it must never become the source of truth.
+Markdown, YAML, and JSONL are the project identity. SQLite, if used, is only an optional audit projection.
 
 Nollm v0.1 does not include embeddings, vector databases, graph providers, external LLM extraction, automatic ontology generation, or autonomous memory mutation.
+
+For canonical English/Chinese terminology and project namespace rules, see `protocol/TERMINOLOGY.md`.
 
 ## Protocol Freeze
 
@@ -55,11 +71,64 @@ python -m nollm.cli validate .\demo-notebook
 python -m nollm.cli recall .\demo-notebook "filesystem memory"
 ```
 
+POSIX shell:
+
+```bash
+cd reference/python
+python -m nollm.cli init ./demo-notebook --notebook demo
+python -m nollm.cli write ./demo-notebook \
+  --type fact \
+  --title "Filesystem memory" \
+  --claim "Nollm stores memory in local files." \
+  --reason "Demo card." \
+  --anchor project:demo \
+  --source user_statement \
+  --trust unverified
+python -m nollm.cli validate ./demo-notebook
+python -m nollm.cli recall ./demo-notebook "filesystem memory"
+python -m nollm.cli audit ./demo-notebook
+```
+
+Cortex read flow:
+
+```bash
+python -m nollm.cli orient ./demo-notebook "why not turn Nollm into Cognee"
+python -m nollm.cli surface ./demo-notebook --anchor project:demo
+python -m nollm.cli focus ./demo-notebook --anchor project:demo --status candidate
+python -m nollm.cli recall ./demo-notebook "why not turn Nollm into Cognee"
+```
+
 Run tests:
 
 ```powershell
 cd C:\Users\chaos\nollm\reference\python
-python -m unittest discover -s tests
+python -m pytest -q
 ```
 
 The reference CLI uses only the Python standard library and keeps Markdown, YAML, JSONL, and JSON as source-of-truth files.
+
+Audit reports are deterministic derived projections over notebook files. They are not memory, not a recall index, and not source of truth. The stable JSON contract is documented in `protocol/AUDIT_SCHEMA.md`; the OpenClaw golden snapshot lives at `examples/audit_reports/openclaw_audit.json`. Audit schema stability is for inspection and governance, not memory or recall.
+
+## JSON Tool Bridge
+
+P3 adds a dependency-free JSON bridge for external LLM tool callers. It is not an MCP server and does not start a network service.
+
+```bash
+python -m nollm.cli tools
+python -m nollm.cli tool ../../../examples/tool_requests/orient.json
+```
+
+Tool requests use the `nollm.tool.v0.1` envelope and return structured `ok: true` or `ok: false` JSON responses.
+Optional `request_id`, `actor`, and `actor_type` fields are echoed or ledgered where appropriate.
+
+## Using Nollm From External LLM Tools
+
+Recommended read flow:
+
+```text
+orient -> surface -> focus -> recall
+```
+
+For one-shot use, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
+
+External LLM tools should write only candidate cards unless a human explicitly approves a later status update. Nollm is not a RAG engine, autonomous memory agent, or MCP server.

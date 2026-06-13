@@ -1,0 +1,74 @@
+# Tool Surface
+
+The Nollm tool surface exposes deterministic filesystem actions through JSON envelopes.
+
+This is MCP-preparation only. It is not an MCP server, HTTP server, websocket server, agent runtime, or model integration.
+
+## Read-Only Actions
+
+- `nollm.validate`
+- `nollm.audit`
+- `nollm.orient`
+- `nollm.surface`
+- `nollm.focus`
+- `nollm.recall`
+- `nollm.read_card`
+- `nollm.ledger`
+
+`nollm.recall` writes recall digest files, but it does not mutate canonical memory or append ledger events.
+
+`nollm.audit` returns a deterministic derived audit report. It is read-only, does not append ledger events, does not create files, does not use SQLite, and must not be used as memory recall.
+
+The audit report JSON shape is a stable inspection contract documented in `protocol/AUDIT_SCHEMA.md`. It is not a memory schema, not a recall digest schema, and not source memory. `examples/audit_reports/*.json` files are deterministic audit snapshots for examples and regression tests, not notebook memory.
+
+`nollm.recall` returns a digest with scale-scan metadata:
+
+- `active_anchor_fields`
+- `scale_path`
+- `lateral_recovery`
+- `sufficient_scale_reached`
+
+Treat these as metadata-only reading aids. `scale_path` is not a tree path, not a geometry result, and not evidence that Core calculated polygon overlap. `sufficient_scale_reached` does not mean semantic completeness.
+
+## Path Resolution
+
+`notebook_path` is resolved relative to the current working directory of the `nollm tool` process.
+
+It is not resolved relative to the request JSON file.
+
+Example tool requests in this repository are written for a documented working directory. The built-in runnable OpenClaw recall example is intended to be run from `reference/python`:
+
+```bash
+cd reference/python
+python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
+```
+
+In that request, `notebook_path: "../../examples/openclaw"` resolves from the `reference/python` process directory.
+
+## Example Request Convention
+
+Top-level files in `examples/tool_requests/*.json` are runnable examples. They are intended to be executed from `reference/python` unless a file says otherwise.
+
+Files under `examples/tool_requests/templates/` are request templates and may contain placeholders. They are not expected to run as-is.
+
+If `examples/tool_requests/error_cases/` exists, files inside it are intentional failure examples and must return structured `ok: false` errors.
+
+## Ledger-Writing Actions
+
+- `nollm.write_card`
+- `nollm.update_status`
+
+These actions must preserve Core validation rules:
+
+- `write_card` must not create `confirmed` cards directly.
+- `write_card` must not create anchors automatically.
+- `update_status` must append a ledger event.
+- `confirmed` requires explicit human approval.
+- Cards with `source: llm_inference` must not be directly confirmed.
+- Self-supersede must be rejected.
+
+Tool bridge ledger events should record honest actor metadata. The default is `actor: tool_user` and `actor_type: tool`; requests may provide `actor` and `actor_type`.
+
+## Boundary
+
+The tool surface formats requests and responses. It does not add embeddings, vector databases, graph databases, external LLM extraction, automatic ontology generation, network calls, or autonomous memory mutation.

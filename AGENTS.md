@@ -26,13 +26,17 @@ Do not turn Nollm into:
 
 - Nollm Core must be dumb, stable, deterministic, and auditable.
 - Nollm Cortex may be model-side, prompt-based, and adaptive.
-- Architecture is the index.
-- Anchors are coordinates, not infinite directories.
-- Cards are the primary memory unit.
+- Architecture is the Index.
+- Anchor is Field, not Folder.
+- Recall is Scale Scan, not Tree Descent.
+- SQLite is Audit Projection, not Memory.
+- Anchors are column fields / semantic fields, not folders or tree nodes.
+- Cards are memory expressions at every scale.
+- There is no absolute leaf layer.
 - Ledger events are append-only.
 - Recall output must be small, structured, and suitable for LLM context.
 - Markdown/YAML/JSONL are the source of truth.
-- SQLite, if used, is only a derived index.
+- SQLite, if used, is only an optional audit projection.
 
 ## v0.1 restrictions
 
@@ -45,6 +49,7 @@ Do not introduce:
 - automatic ontology generation
 - autonomous memory rewriting
 - production dependencies without explicit approval
+- geometry runtime or runtime coordinate placement
 
 ## Development style
 

@@ -1,10 +1,14 @@
 # Anchor
 
-An anchor is a coordinate for recall. It is not a category, folder, taxonomy, ontology node, infinite directory, or semantic embedding.
+Anchor is Field, not Folder.
+
+An anchor is a cross-layer semantic field, not a folder, category, parent node, tree node, ontology node, index entry, infinite directory, or semantic embedding.
+
+Cards do not belong to anchors. Cards are influenced by anchor fields.
 
 ## Purpose
 
-Anchors help Cortex and humans locate memory by stable orientation points.
+Anchors help Cortex and humans orient memory by stable column fields / semantic fields.
 
 Examples:
 
@@ -14,10 +18,12 @@ Examples:
 
 ## Anchor Rules
 
-- Anchors should be stable.
-- Anchors should be specific enough to locate memory.
+- Anchor fields should be stable.
+- Anchor fields should be specific enough to orient memory.
 - Anchors should not become unbounded taxonomies.
-- Anchors may have aliases, but the canonical anchor remains the coordinate.
+- Anchors may have aliases, but the canonical anchor remains the field identity.
+- Anchors do not list children.
+- Anchors do not define a path.
 
 ## Creation Criteria
 
@@ -46,6 +52,37 @@ If an anchor exceeds these limits, Cortex should propose splitting, narrowing, o
 
 Temporary anchors must include an expiration date or event. After expiration, they should be removed, archived, or promoted through explicit review.
 
+## Card Influence
+
+Current v0.1 cards may use:
+
+```yaml
+anchors:
+  - project:nollm
+```
+
+This is a shorthand for anchor field presence, not ownership.
+
+Future cards may use:
+
+```yaml
+anchor_fields:
+  project:nollm:
+    weight: 0.9
+    role: primary
+  protocol:core:
+    weight: 0.4
+    role: supporting
+```
+
+Allowed roles:
+
+- `primary`
+- `supporting`
+- `adjacent`
+- `boundary`
+- `recovery`
+
 ## Core Boundary
 
-Core records anchor definitions. Cortex composes and selects anchors during recall.
+Core records anchor field definitions. Cortex identifies active anchor fields during recall.

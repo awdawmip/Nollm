@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "example_write_001",
+  "action": "nollm.write_card",
+  "result": {
+    "card_id": "card_20260612_filesystem_memory",
+    "address": "nollm://demo/card/card_20260612_filesystem_memory",
+    "event_id": "evt_20260612_000001",
+    "path": "./demo-notebook/cards/facts/card_20260612_filesystem_memory.md"
+  },
+  "warnings": [],
+  "ledger_events": ["evt_20260612_000001"],
+  "addresses": ["nollm://demo/card/card_20260612_filesystem_memory"]
+}
+

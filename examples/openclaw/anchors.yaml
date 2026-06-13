@@ -1,4 +1,4 @@
-notebook: lobster
+notebook: openclaw
 anchors:
   - id: project:nollm
     label: Nollm project

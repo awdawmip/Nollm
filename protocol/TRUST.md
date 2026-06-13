@@ -9,12 +9,15 @@ Trust answers: how should Cortex weigh the claim?
 ## Allowed Values
 
 - `human-approved`: Explicitly approved by a human.
-- `policy-approved`: Reserved for later versions; not valid for promoting to `confirmed` in v0.1.
 - `source-backed`: Supported by cited project files, ledger events, or references.
 - `llm-proposed`: Proposed by Cortex and awaiting review.
 - `unverified`: Recorded but not checked.
 - `conflicted`: Known to conflict with another source or card.
 
+## Reserved Values
+
+- `policy-approved`: Reserved for later versions; not accepted by the v0.1 reference runtime and not valid for promoting to `confirmed` in v0.1.
+
 ## v0.1 Rule
 
-`confirmed` cards should usually have `human-approved` or `source-backed` trust. LLM inference alone must not be recorded as confirmed fact. `policy-approved` is vocabulary reserved for future protocol work, not a v0.1 confirmation path.
+`confirmed` cards should usually have `human-approved` or `source-backed` trust. LLM inference alone must not be recorded as confirmed fact. `policy-approved` is reserved for future protocol work, not a v0.1 confirmation path.

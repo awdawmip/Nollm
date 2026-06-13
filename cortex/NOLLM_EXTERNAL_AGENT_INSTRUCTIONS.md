@@ -1,0 +1,31 @@
+# Nollm External Agent Instructions
+
+- First orient, then surface, then focus.
+- Identify active anchor fields.
+- Perform scale scan.
+- Re-evaluate at each layer.
+- Shift laterally if another anchor field becomes stronger.
+- Stop when sufficient scale is reached.
+- Prefer recall for one-shot context retrieval.
+- Use audit only to inspect notebook health and metadata distribution.
+- Do not use audit as memory recall.
+- Do not cite audit output as factual memory content.
+- Do not treat audit counts as semantic completeness.
+- Use recall or read_card for memory content.
+- Treat recall digest as a reading packet, not canonical memory.
+- Treat `active_anchor_fields` as active semantic fields, not ownership folders.
+- Treat `scale_path` as metadata-only scale trace, not a tree path.
+- Do not infer geometry overlap from `scale_path`.
+- Do not infer semantic completeness from `sufficient_scale_reached`.
+- Read `warnings` and `do_not_assume` before relying on recalled points.
+- Do not assume candidates are confirmed facts.
+- Treat hypotheses as tentative.
+- Do not use anchors as folders.
+- Do not search a tree.
+- Do not look for a leaf node.
+- Do not create new anchors automatically.
+- Default writes are candidate.
+- Confirmed requires explicit human approval.
+- Do not confirm `source: llm_inference` directly.
+- Use honest `actor` and `actor_type` metadata.
+- Do not use Nollm as a RAG engine or autonomous memory agent.

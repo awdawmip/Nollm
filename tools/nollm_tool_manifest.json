@@ -1,0 +1,95 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "actions": [
+    {
+      "name": "nollm.validate",
+      "kind": "read",
+      "description": "Validate a filesystem notebook against Nollm invariants.",
+      "required_fields": [],
+      "optional_fields": [],
+      "writes_ledger": false,
+      "returns": "Validation pass flag and issue list."
+    },
+    {
+      "name": "nollm.audit",
+      "kind": "read",
+      "description": "Return a deterministic derived audit report. Audit is read-only, derived, not memory, not a recall index, not source of truth, and does not append ledger events.",
+      "required_fields": [],
+      "optional_fields": ["format"],
+      "writes_ledger": false,
+      "returns": "Audit sections for validation, notebook, cards, honeycomb, anchor_fields, recall_digests, ledger, and boundaries. Audit does not use SQLite and does not perform geometry recall, polygon overlap, automatic placement, or semantic completeness scoring."
+    },
+    {
+      "name": "nollm.orient",
+      "kind": "read",
+      "description": "Orient a query to candidate anchors.",
+      "required_fields": ["query_or_task"],
+      "optional_fields": [],
+      "writes_ledger": false,
+      "returns": "Memory intent, candidate anchors, matched anchors, and warnings."
+    },
+    {
+      "name": "nollm.surface",
+      "kind": "read",
+      "description": "Return a finite surface for one anchor.",
+      "required_fields": ["anchor"],
+      "optional_fields": ["limit"],
+      "writes_ledger": false,
+      "returns": "Anchor metadata, active card counts, and top card summaries."
+    },
+    {
+      "name": "nollm.focus",
+      "kind": "read",
+      "description": "Return focused card front matter and claims.",
+      "required_fields": ["anchor"],
+      "optional_fields": ["type", "status", "limit", "include_body"],
+      "writes_ledger": false,
+      "returns": "Selected cards and warnings."
+    },
+    {
+      "name": "nollm.recall",
+      "kind": "read",
+      "description": "Run deterministic orient-surface-focus recall and write digest files. The digest includes active_anchor_fields, scale_path, lateral_recovery, and sufficient_scale_reached as scale-scan metadata.",
+      "required_fields": ["query_or_task"],
+      "optional_fields": [],
+      "writes_ledger": false,
+      "returns": "Recall digest plus JSON and Markdown digest paths. scale_path is metadata-only; Core does not perform geometry-based recall, calculate polygon overlap, or infer semantic completeness."
+    },
+    {
+      "name": "nollm.write_card",
+      "kind": "write",
+      "description": "Write a draft or candidate card and append a creation ledger event.",
+      "required_fields": ["type", "title", "claim", "reason", "anchors", "source", "trust"],
+      "optional_fields": ["status", "body", "evidence_refs", "implications", "do_not_infer", "layer", "hex", "anchor_fields", "scale_links"],
+      "writes_ledger": true,
+      "returns": "Card id, card address, ledger event id, and file path."
+    },
+    {
+      "name": "nollm.read_card",
+      "kind": "read",
+      "description": "Read a card by id or memory address.",
+      "required_fields": ["card_id_or_address"],
+      "optional_fields": [],
+      "writes_ledger": false,
+      "returns": "Card front matter, body, and file path."
+    },
+    {
+      "name": "nollm.update_status",
+      "kind": "write",
+      "description": "Update card status and append a ledger event.",
+      "required_fields": ["card_id_or_address", "to", "reason"],
+      "optional_fields": ["human_approval", "superseded_by"],
+      "writes_ledger": true,
+      "returns": "Updated card id, status transition, and ledger event id."
+    },
+    {
+      "name": "nollm.ledger",
+      "kind": "read",
+      "description": "Return recent ledger events.",
+      "required_fields": [],
+      "optional_fields": ["limit"],
+      "writes_ledger": false,
+      "returns": "Ledger events."
+    }
+  ]
+}

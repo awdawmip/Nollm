@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "example_error_001",
+  "action": "nollm.unknown",
+  "error": {
+    "code": "unknown_action",
+    "message": "Unknown tool action: nollm.unknown"
+  },
+  "warnings": []
+}
+

@@ -1,1 +1,0 @@
-{"event_id":"evt_0001","op":"write_card","actor":"project_owner","actor_type":"human","from_status":null,"to_status":"confirmed","reason":"Record initial human-approved Nollm identity decision.","timestamp":"2026-06-12T00:00:00+08:00","object_type":"card","object_id":"card_0001_nollm_project_start","address":"nollm://lobster/card/card_0001_nollm_project_start","action":"create"}

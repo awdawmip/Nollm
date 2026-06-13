@@ -128,11 +128,31 @@ def parse_scalar(value: str) -> Any:
     value = value.strip()
     if value == "null":
         return None
+    if value == "true":
+        return True
+    if value == "false":
+        return False
     if value == "[]":
         return []
-    if value.isdigit():
+    if value.lstrip("-").isdigit():
         return int(value)
+    try:
+        if any(marker in value for marker in (".", "e", "E")):
+            return float(value)
+    except ValueError:
+        pass
     return value.strip("\"'")
+
+
+def split_mapping_line(line: str) -> tuple[str, str]:
+    stripped = line.strip()
+    if stripped.endswith(":") and ": " not in stripped:
+        return stripped[:-1].strip(), ""
+    if ": " in stripped:
+        key, raw = stripped.split(": ", 1)
+        return key.strip(), raw.strip()
+    key, _, raw = stripped.partition(":")
+    return key.strip(), raw.strip()
 
 
 def parse_yaml(text: str) -> dict[str, Any]:
@@ -144,9 +164,7 @@ def parse_yaml(text: str) -> dict[str, Any]:
         if line.startswith("  "):
             index += 1
             continue
-        key, _, raw = line.partition(":")
-        key = key.strip()
-        raw = raw.strip()
+        key, raw = split_mapping_line(line)
         if raw:
             data[key] = parse_scalar(raw)
             index += 1
@@ -164,9 +182,7 @@ def parse_block(lines: list[str], index: int, indent: int) -> tuple[Any, int]:
         result: dict[str, Any] = {}
         while index < len(lines) and lines[index].startswith(prefix):
             line = lines[index]
-            key, _, raw = line[indent:].partition(":")
-            key = key.strip()
-            raw = raw.strip()
+            key, raw = split_mapping_line(line[indent:])
             if raw:
                 result[key] = parse_scalar(raw)
                 index += 1
@@ -183,14 +199,12 @@ def parse_block(lines: list[str], index: int, indent: int) -> tuple[Any, int]:
             index += 1
             continue
         item_dict: dict[str, Any] = {}
-        key, _, raw = item.partition(":")
-        item_dict[key.strip()] = parse_scalar(raw)
+        key, raw = split_mapping_line(item)
+        item_dict[key] = parse_scalar(raw)
         index += 1
         while index < len(lines) and lines[index].startswith(prefix + "  "):
             child_line = lines[index][indent + 2 :]
-            child_key, _, child_raw = child_line.partition(":")
-            child_key = child_key.strip()
-            child_raw = child_raw.strip()
+            child_key, child_raw = split_mapping_line(child_line)
             if child_raw:
                 item_dict[child_key] = parse_scalar(child_raw)
                 index += 1
@@ -211,6 +225,9 @@ def render_yaml(data: dict[str, Any]) -> str:
 def render_yaml_value(lines: list[str], key: str, value: Any, indent: int) -> None:
     prefix = " " * indent
     if isinstance(value, list):
+        if not value:
+            lines.append(f"{prefix}{key}: []")
+            return
         lines.append(f"{prefix}{key}:")
         for item in value:
             if isinstance(item, dict):
@@ -248,4 +265,6 @@ def format_scalar(value: Any) -> str:
         return "null"
     if value == []:
         return "[]"
+    if value == "":
+        return '""'
     return str(value)

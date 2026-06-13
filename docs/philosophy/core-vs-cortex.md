@@ -14,7 +14,6 @@ Cortex is the model-side orientation layer:
 - Adaptive.
 - Prompt-guided.
 - Task-sensitive.
-- Responsible for reading and write proposals.
+- Responsible for active anchor field orientation, scale scan, reading, and write proposals.
 
 The distinction prevents the notebook from becoming an autonomous memory engine.
-

@@ -4,14 +4,19 @@ Nollm actions describe the LLM-facing cognitive interface. They are protocol ver
 
 ## Allowed Actions
 
-- `orient`: Identify task context and candidate anchors.
-- `surface`: List likely relevant anchors or cards without deep reading.
-- `focus`: Select a smaller set of anchors or cards for recall.
-- `recall`: Read selected Core records and assemble memory context.
+- `orient`: Identify active anchor fields.
+- `surface`: Read current-scale cards influenced by those fields.
+- `focus`: Select sufficient-scale cards.
+- `recall`: Produce a digest after scale scan.
 - `write_card`: Propose or write a structured card according to policy.
 - `link_cards`: Record explicit relationships between cards.
 - `update_status`: Change lifecycle state through an auditable event.
 - `append_ledger`: Append a ledger event for a Core change.
+
+Future optional actions, not implemented as commands yet:
+
+- `rescale`: Move attention across scale.
+- `shift`: Shift laterally when another anchor field becomes stronger.
 
 ## Minimal Shapes
 
@@ -27,10 +32,14 @@ known_context: string
 Output:
 
 ```yaml
-memory_intent: read_none | orient_only | surface | focus | write_candidate | ask_user_confirmation
+memory_intent: read_none | orient_only | recall_surface | recall_focus | write_candidate | ask_user_confirmation
 candidate_anchors: []
+read_depth: none | orient | surface | focus | full_card
+write_intent: none | candidate | needs_confirmation
 warnings: []
 ```
+
+`candidate_anchors` is a compact list of anchor IDs for downstream commands. `matched_anchors` is the audit-rich list of objects with `anchor`, `confidence`, `match_type`, and `reason`.
 
 ### `surface`
 
@@ -38,7 +47,7 @@ Input:
 
 ```yaml
 candidate_anchors: []
-read_depth: shallow
+read_depth: surface
 ```
 
 Output:
@@ -46,6 +55,7 @@ Output:
 ```yaml
 surfaced_anchors: []
 surfaced_cards: []
+active_card_counts: {}
 warnings: []
 ```
 
@@ -63,6 +73,7 @@ Output:
 ```yaml
 focused_cards: []
 excluded_cards: []
+warnings: []
 reason: string
 ```
 
@@ -163,7 +174,7 @@ timestamp: string
 
 ## Search
 
-`search` may exist as an implementation helper, but it is not the primary cognitive interface. The preferred flow is anchor-oriented: orient, surface, focus, then recall.
+`search` may exist as an implementation helper, but it is not the primary cognitive interface. The preferred flow is anchor-field-oriented: orient, surface, focus, then recall. Conceptually this is Recall is Scale Scan, not Tree Descent.
 
 ## Core Boundary
 

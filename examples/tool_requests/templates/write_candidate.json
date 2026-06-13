@@ -1,0 +1,22 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "replace-me",
+  "action": "nollm.write_card",
+  "notebook_path": "replace-with-notebook-path",
+  "actor": "external_agent",
+  "actor_type": "tool",
+  "input": {
+    "type": "fact",
+    "title": "Filesystem memory",
+    "claim": "Nollm stores memory in local files.",
+    "reason": "External agent candidate write.",
+    "anchors": ["project:demo"],
+    "source": "llm_inference",
+    "trust": "llm-proposed",
+    "status": "candidate",
+    "evidence_refs": [],
+    "implications": [],
+    "do_not_infer": []
+  }
+}
+

@@ -27,7 +27,18 @@ class ValidateTests(unittest.TestCase):
             issues = validate_notebook(notebook)
             self.assertTrue(any("unknown anchor" in issue for issue in issues))
 
+    def test_validate_fails_on_self_supersede(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            address, _event_id = write_card(notebook)
+            card_id = address.rsplit("/", 1)[-1]
+            front, body, card_path = read_card(notebook, address)
+            front["status"] = "superseded"
+            front["superseded_by"] = card_id
+            write_card_file(card_path, front, body)
+            issues = validate_notebook(notebook)
+            self.assertTrue(any("cannot supersede itself" in issue for issue in issues))
+
 
 if __name__ == "__main__":
     unittest.main()
-

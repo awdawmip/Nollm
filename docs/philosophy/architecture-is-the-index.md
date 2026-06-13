@@ -1,8 +1,9 @@
 # Architecture Is The Index
 
-Nollm does not begin with retrieval machinery. It begins with addressable structure.
+Nollm does not begin with retrieval machinery. It begins with architecture.
 
-Files, folders, anchors, front matter, and ledger events are the index. A generated database may accelerate lookup, but it must be rebuildable from source files.
+Architecture is the Index.
+
+Files, cards, anchor fields, front matter, and ledger events express the memory field. SQLite, if used, is an optional audit projection and must be rebuildable from source files.
 
 This keeps the notebook portable, inspectable, and resistant to hidden state.
-

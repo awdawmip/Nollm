@@ -1,0 +1,89 @@
+{
+  "anchor_fields": {
+    "anchor_count": 4,
+    "anchor_field_usage_counts": {
+      "architecture_is_index": 1,
+      "sqlite_audit_projection": 1
+    },
+    "anchor_ids": [
+      "decision:identity",
+      "project:nollm",
+      "protocol:core",
+      "session:p0-freeze"
+    ],
+    "card_anchor_usage_counts": {
+      "decision:identity": 1,
+      "project:nollm": 2,
+      "protocol:core": 2
+    }
+  },
+  "boundaries": {
+    "performs_automatic_placement": false,
+    "performs_geometry_recall": false,
+    "performs_polygon_overlap": false,
+    "performs_semantic_completeness_scoring": false,
+    "uses_embeddings": false,
+    "uses_external_llm": false,
+    "uses_graph_db": false,
+    "uses_sqlite": false,
+    "uses_vector_db": false
+  },
+  "cards": {
+    "by_layer": {
+      "1": 1
+    },
+    "by_source": {
+      "human_decision": 2
+    },
+    "by_status": {
+      "confirmed": 2
+    },
+    "by_trust": {
+      "human-approved": 2
+    },
+    "by_type": {
+      "decision": 2
+    }
+  },
+  "honeycomb": {
+    "cards_with_anchor_fields": 1,
+    "cards_with_hex": 1,
+    "cards_with_layer": 1,
+    "cards_with_scale_links": 1,
+    "invalid_honeycomb_metadata_count": 0
+  },
+  "ledger": {
+    "actor_type_count": {
+      "human": 2
+    },
+    "ledger_event_count": 2,
+    "missing_referenced_object_count": 0,
+    "ops_count": {
+      "write_card": 2
+    },
+    "status_transition_count": 2
+  },
+  "notebook": {
+    "anchors": 4,
+    "cards": 2,
+    "ledger_events": 2,
+    "name": "openclaw",
+    "path": "../../examples/openclaw",
+    "recall_digests": 1
+  },
+  "recall_digests": {
+    "digests_with_active_anchor_fields": 1,
+    "digests_with_lateral_recovery": 1,
+    "digests_with_scale_path": 1,
+    "digests_with_sufficient_scale_reached": 1,
+    "memory_intent_counts": {
+      "recall_focus": 1
+    },
+    "recall_digest_count": 1
+  },
+  "validation": {
+    "issue_count": 0,
+    "issues": [],
+    "pass": true
+  }
+}
