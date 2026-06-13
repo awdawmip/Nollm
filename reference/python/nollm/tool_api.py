@@ -121,33 +121,41 @@ def action_audit(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def action_review(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    return action_inspect_surface("nollm.review", path, payload)
+
+
+def action_inspect(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    return action_inspect_surface("nollm.inspect", path, payload)
+
+
+def action_inspect_surface(action: str, path: Path, payload: dict[str, Any]) -> dict[str, Any]:
     statuses = payload.get("statuses")
     if statuses is None:
         review_statuses = None
     elif isinstance(statuses, list):
         review_statuses = [str(status) for status in statuses]
     else:
-        return error_response("nollm.review", "invalid_input", "input.statuses must be a list")
+        return error_response(action, "invalid_input", "input.statuses must be a list")
     if review_statuses:
         invalid_statuses = [status for status in review_statuses if status not in STATUSES]
         if invalid_statuses:
-            return error_response("nollm.review", "invalid_status", f"Invalid status: {invalid_statuses[0]}")
+            return error_response(action, "invalid_status", f"Invalid status: {invalid_statuses[0]}")
     card_type = payload.get("type")
     if card_type is not None:
         card_type = str(card_type)
         if card_type not in CARD_TYPES:
-            return error_response("nollm.review", "invalid_type", f"Invalid card type: {card_type}")
+            return error_response(action, "invalid_type", f"Invalid card type: {card_type}")
     trust = payload.get("trust")
     if trust is not None:
         trust = str(trust)
         if trust not in TRUST_VALUES:
-            return error_response("nollm.review", "invalid_trust", f"Invalid trust: {trust}")
+            return error_response(action, "invalid_trust", f"Invalid trust: {trust}")
     try:
         limit = int(payload.get("limit", 20))
     except (TypeError, ValueError):
-        return error_response("nollm.review", "invalid_input", "input.limit must be an integer")
+        return error_response(action, "invalid_input", "input.limit must be an integer")
     if limit < 0:
-        return error_response("nollm.review", "invalid_input", "input.limit must be non-negative")
+        return error_response(action, "invalid_input", "input.limit must be non-negative")
     result = build_review_queue(
         path,
         statuses=review_statuses,
@@ -156,7 +164,7 @@ def action_review(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
         trust=trust,
         limit=limit,
     )
-    return success_response("nollm.review", result, addresses=[card["address"] for card in result["cards"]])
+    return success_response(action, result, addresses=[card["address"] for card in result["cards"]])
 
 
 def action_orient(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
@@ -354,6 +362,7 @@ def anchor_ids(path: Path) -> set[str]:
 REQUIRED_FIELDS = {
     "nollm.validate": [],
     "nollm.audit": [],
+    "nollm.inspect": [],
     "nollm.review": [],
     "nollm.orient": ["query_or_task"],
     "nollm.surface": ["anchor"],
@@ -368,6 +377,7 @@ REQUIRED_FIELDS = {
 ACTIONS: dict[str, Callable[[Path, dict[str, Any]], dict[str, Any]]] = {
     "nollm.validate": action_validate,
     "nollm.audit": action_audit,
+    "nollm.inspect": action_inspect,
     "nollm.review": action_review,
     "nollm.orient": action_orient,
     "nollm.surface": action_surface,

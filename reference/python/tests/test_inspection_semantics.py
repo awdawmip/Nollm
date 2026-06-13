@@ -59,5 +59,23 @@ def test_review_manifest_uses_active_inspection_semantics() -> None:
         assert required in combined
 
 
+def test_inspect_manifest_uses_active_inspection_semantics() -> None:
+    manifest = json.loads((ROOT / "tools" / "nollm_tool_manifest.json").read_text(encoding="utf-8"))
+    inspect = next(action for action in manifest["actions"] if action["name"] == "nollm.inspect")
+    combined = f"{inspect['description']} {inspect['returns']}".lower()
+
+    for required in (
+        "active inspection surface",
+        "metadata-derived",
+        "not approval",
+        "not truth assessment",
+        "not semantic scoring",
+        "not memory recall",
+        "does not change status",
+        "does not append ledger events",
+    ):
+        assert required in combined
+
+
 def normalized_text(path: Path) -> str:
     return path.read_text(encoding="utf-8").lower()

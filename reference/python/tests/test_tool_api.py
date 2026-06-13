@@ -16,6 +16,7 @@ from test_write_read import init_notebook
 REQUIRED_ACTIONS = {
     "nollm.validate",
     "nollm.audit",
+    "nollm.inspect",
     "nollm.review",
     "nollm.orient",
     "nollm.surface",
@@ -139,6 +140,32 @@ class ToolApiTests(unittest.TestCase):
                 self.assertIn(field, result)
             self.assertEqual(result["review_count"], 1)
             self.assertEqual(result["cards"][0]["title"], "Review Tool Card")
+            self.assertNotIn("body", result["cards"][0])
+            self.assertEqual(len(read_ledger(notebook)), event_count_before)
+            files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            self.assertEqual(files_after, files_before)
+
+    def test_tool_request_can_run_inspect_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            self.write_candidate(notebook, Path(tmp), title="Inspect Tool Card")
+            event_count_before = len(read_ledger(notebook))
+            files_before = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            request = tool_request(notebook, "nollm.inspect", {"statuses": ["candidate"], "limit": 20})
+            request["request_id"] = "req_inspect"
+            request_path = write_request(Path(tmp), request)
+
+            code, response = run_json_cli(["tool", str(request_path)])
+
+            self.assertEqual(code, 0)
+            self.assertTrue(response["ok"])
+            self.assertEqual(response["request_id"], "req_inspect")
+            self.assertEqual(response["action"], "nollm.inspect")
+            result = response["result"]
+            for field in ("ok", "notebook", "review_filters", "review_count", "cards"):
+                self.assertIn(field, result)
+            self.assertEqual(result["review_count"], 1)
+            self.assertEqual(result["cards"][0]["title"], "Inspect Tool Card")
             self.assertNotIn("body", result["cards"][0])
             self.assertEqual(len(read_ledger(notebook)), event_count_before)
             files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())

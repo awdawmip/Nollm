@@ -89,7 +89,7 @@ python -m nollm.cli write ./demo-notebook \
 python -m nollm.cli validate ./demo-notebook
 python -m nollm.cli recall ./demo-notebook "filesystem memory"
 python -m nollm.cli audit ./demo-notebook
-python -m nollm.cli review ./demo-notebook
+python -m nollm.cli inspect ./demo-notebook
 ```
 
 Cortex read flow:
@@ -129,7 +129,7 @@ P3 adds a dependency-free JSON bridge for external LLM tool callers. It is not a
 ```bash
 python -m nollm.cli tools
 python -m nollm.cli tool ../../../examples/tool_requests/orient.json
-python -m nollm.cli tool ../../../examples/tool_requests/review_openclaw.json
+python -m nollm.cli tool ../../../examples/tool_requests/inspect_openclaw.json
 ```
 
 Tool requests use the `nollm.tool.v0.1` envelope and return structured `ok: true` or `ok: false` JSON responses.
@@ -149,13 +149,15 @@ External LLM tools should write only candidate cards unless a human explicitly a
 
 ## Active Inspection
 
-Use `review` to inspect draft and candidate cards matching active metadata filters:
+Use `inspect` to inspect draft and candidate cards matching active metadata filters:
 
 ```bash
-python -m nollm.cli review ./demo-notebook
-python -m nollm.cli review ./demo-notebook --status candidate --type decision --limit 20
+python -m nollm.cli inspect ./demo-notebook
+python -m nollm.cli inspect ./demo-notebook --status candidate --type decision --limit 20
 ```
 
-Review is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, block reads, or replace the `status` command. `confirmed` does not mean factually true, and `human-approved` does not prove factual truth. See `protocol/REVIEW.md`.
+Inspect is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, block reads, or replace the `status` command. `confirmed` does not mean factually true, and `human-approved` does not prove factual truth. See `protocol/REVIEW.md`.
 
-External tools can call the same queue with `nollm.review`.
+External tools should call the same surface with `nollm.inspect`.
+
+`review` remains a compatibility command; its semantics are active inspection.

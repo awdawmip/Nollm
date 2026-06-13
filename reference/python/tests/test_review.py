@@ -113,6 +113,38 @@ class ReviewTests(unittest.TestCase):
             self.assertEqual([card["title"] for card in review["cards"]], ["Candidate Card"])
             self.assertEqual(review["review_filters"]["statuses"], ["candidate"])
 
+    def test_inspect_alias_uses_review_filters(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            write_card(notebook, title="Fact Card", card_type="fact")
+            write_card(notebook, title="Decision Card", card_type="decision", trust="llm-proposed")
+
+            inspection = run_json(
+                [
+                    "inspect",
+                    str(notebook),
+                    "--status",
+                    "candidate",
+                    "--type",
+                    "decision",
+                    "--anchor",
+                    "project:demo",
+                    "--trust",
+                    "llm-proposed",
+                    "--limit",
+                    "20",
+                ]
+            )
+
+            self.assertTrue(inspection["ok"])
+            self.assertEqual(inspection["review_count"], 1)
+            self.assertEqual(inspection["cards"][0]["title"], "Decision Card")
+            self.assertNotIn("body", inspection["cards"][0])
+            self.assertEqual(inspection["review_filters"]["statuses"], ["candidate"])
+            self.assertEqual(inspection["review_filters"]["type"], "decision")
+            self.assertEqual(inspection["review_filters"]["anchor"], "project:demo")
+            self.assertEqual(inspection["review_filters"]["trust"], "llm-proposed")
+
     def test_review_type_filter(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             notebook = init_notebook(tmp)
@@ -175,6 +207,20 @@ class ReviewTests(unittest.TestCase):
             self.assertEqual(files_after, files_before)
             self.assertEqual(list((notebook / "recalls").glob("recall_*")), [])
             self.assertEqual(list(notebook.glob("*audit*")), [])
+
+    def test_inspect_alias_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            write_card(notebook, title="Read Only Inspect Card")
+            ledger_before = read_ledger(notebook)
+            files_before = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+
+            inspection = run_json(["inspect", str(notebook)])
+
+            self.assertTrue(inspection["ok"])
+            self.assertEqual(read_ledger(notebook), ledger_before)
+            files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
+            self.assertEqual(files_after, files_before)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ Run them from `reference/python`:
 
 ```bash
 python3 -m nollm.cli tool ../../examples/tool_requests/audit_openclaw.json
+python3 -m nollm.cli tool ../../examples/tool_requests/inspect_openclaw.json
 python3 -m nollm.cli tool ../../examples/tool_requests/orient.json
 python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
 ```

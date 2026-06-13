@@ -8,6 +8,7 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 
 - `nollm.validate`
 - `nollm.audit`
+- `nollm.inspect`
 - `nollm.review`
 - `nollm.orient`
 - `nollm.surface`
@@ -22,11 +23,13 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 
 The audit report JSON shape is a stable inspection contract documented in `protocol/AUDIT_SCHEMA.md`. It is not a memory schema, not a recall digest schema, and not source memory. `examples/audit_reports/*.json` files are deterministic audit snapshots for examples and regression tests, not notebook memory.
 
-`nollm.review` returns a deterministic active inspection surface for cards matching metadata filters. It is read-only, does not append ledger events, does not include full card bodies by default, does not approve cards, and does not change status.
+`nollm.inspect` returns a deterministic active inspection surface for cards matching metadata filters. It is read-only, does not append ledger events, does not include full card bodies by default, does not approve cards, and does not change status.
 
-Use review for optional operator inspection. Do not use review as proof that a card is true or false, do not use it as memory recall, and do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm. Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
+Use inspect for optional operator inspection. Do not use inspect as proof that a card is true or false, do not use it as memory recall, and do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm. Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
 
-Review is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata.
+`review` remains a compatibility command; its semantics are active inspection.
+
+Inspect is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata.
 
 `nollm.recall` returns a digest with scale-scan metadata:
 

@@ -119,6 +119,15 @@ def build_parser() -> argparse.ArgumentParser:
     review.add_argument("--limit", type=int, default=20)
     review.set_defaults(func=cmd_review)
 
+    inspect = sub.add_parser("inspect")
+    inspect.add_argument("notebook_path")
+    inspect.add_argument("--status", action="append", choices=sorted(STATUSES))
+    inspect.add_argument("--type", choices=sorted(CARD_TYPES))
+    inspect.add_argument("--anchor")
+    inspect.add_argument("--trust", choices=sorted(TRUST_VALUES))
+    inspect.add_argument("--limit", type=int, default=20)
+    inspect.set_defaults(func=cmd_review)
+
     tools = sub.add_parser("tools")
     tools.set_defaults(func=cmd_tools)
 

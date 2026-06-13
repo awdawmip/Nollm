@@ -20,9 +20,18 @@
       "returns": "Audit sections for validation, notebook, cards, honeycomb, anchor_fields, recall_digests, ledger, and boundaries. Audit does not use SQLite and does not perform geometry recall, polygon overlap, automatic placement, or semantic completeness scoring."
     },
     {
+      "name": "nollm.inspect",
+      "kind": "read",
+      "description": "Return a deterministic read-only active inspection surface for cards matching metadata filters. Inspect is metadata-derived, not a passive operator queue, not approval, not truth assessment, not semantic scoring, and not memory recall.",
+      "required_fields": [],
+      "optional_fields": ["statuses", "type", "anchor", "trust", "limit"],
+      "writes_ledger": false,
+      "returns": "Inspection filters, review_count, and compact card metadata. Inspect does not include full card bodies by default, does not change status, does not append ledger events, does not create an approval gate, and does not use SQLite, embeddings, vector search, graph search, geometry recall, or external LLM operations."
+    },
+    {
       "name": "nollm.review",
       "kind": "read",
-      "description": "Return a deterministic read-only active inspection surface for cards matching metadata filters. Review is metadata-derived, not passive human review, not approval, not truth assessment, not semantic scoring, and not memory recall.",
+      "description": "Compatibility alias for nollm.inspect. Review remains a deterministic read-only active inspection surface for cards matching metadata filters. Review is metadata-derived, not a passive operator queue, not approval, not truth assessment, not semantic scoring, and not memory recall.",
       "required_fields": [],
       "optional_fields": ["statuses", "type", "anchor", "trust", "limit"],
       "writes_ledger": false,

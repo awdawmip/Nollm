@@ -46,17 +46,19 @@ Conceptually this is now interpreted as anchor-field orientation and scale scann
 
 For one-shot context retrieval, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
 
-## Review
+## Active Inspection
 
-Use `nollm.review` to inspect draft and candidate cards matching active metadata filters.
+Use `nollm.inspect` to inspect draft and candidate cards matching active metadata filters.
 
 Nollm is LLM-first. Human inspection is optional, active, and ledgered. Human input is an operator action, not an oracle.
 
-Review is deterministic metadata inspection. Do not use review as proof that a card is true or false. Do not use review as memory recall. Do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm.
+Inspect is deterministic metadata inspection. Do not use inspect as proof that a card is true or false. Do not use inspect as memory recall. Do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm.
 
-Review is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata. LLMs may use draft or candidate cards cautiously when surfaced by recall or read workflows.
+Inspect is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata. LLMs may use draft or candidate cards cautiously when surfaced by recall or read workflows.
 
 Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
+
+`review` remains a compatibility command; its semantics are active inspection.
 
 ## Audit
 
