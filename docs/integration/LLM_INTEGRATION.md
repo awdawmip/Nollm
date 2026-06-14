@@ -70,6 +70,14 @@ Do not use annotations as recall content by default. Do not treat annotation tex
 
 Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. annotation_count means there are operator notes, not that a card is more or less reliable.
 
+## Ledger And History
+
+Use `nollm.ledger` to query compact ledger events. Use `nollm.history` for object-level ledger inspection.
+
+Ledger is an audit trail, not memory recall. History is object-level ledger inspection. Ledger/history do not prove truth. Ledger/history do not approve memory. Ledger/history do not change status or trust. Ledger/history are read-only unless an explicit write action such as annotate/status is used.
+
+Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.
+
 ## Audit
 
 Use `nollm.audit` to inspect notebook health, validation status, file counts, metadata distribution, recall digest shape, and boundary flags.

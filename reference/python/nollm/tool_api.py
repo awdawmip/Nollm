@@ -20,6 +20,7 @@ from .filesystem import (
     write_card_file,
 )
 from .ids import card_id_for, next_event_id
+from .history import ledger_query, object_history
 from .models import ACTOR_TYPES, CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
 from .review import build_review_queue
@@ -387,8 +388,36 @@ def action_update_status(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def action_ledger(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    limit = int(payload.get("limit", 10))
-    return success_response("nollm.ledger", {"events": read_ledger(path)[-limit:]})
+    try:
+        limit = int(payload.get("limit", 20))
+    except (TypeError, ValueError):
+        return error_response("nollm.ledger", "invalid_input", "input.limit must be an integer")
+    result = ledger_query(
+        path,
+        object_id=str(payload["object_id"]) if "object_id" in payload else None,
+        object_type=str(payload["object_type"]) if "object_type" in payload else None,
+        op=str(payload["op"]) if "op" in payload else None,
+        actor=str(payload["actor"]) if "actor" in payload else None,
+        actor_type=str(payload["actor_type"]) if "actor_type" in payload else None,
+        since=str(payload["since"]) if "since" in payload else None,
+        until=str(payload["until"]) if "until" in payload else None,
+        limit=limit,
+    )
+    return success_response("nollm.ledger", result)
+
+
+def action_history(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        limit = int(payload.get("limit", 20))
+    except (TypeError, ValueError):
+        return error_response("nollm.history", "invalid_input", "input.limit must be an integer")
+    result = object_history(
+        path,
+        str(payload["target"]),
+        op=str(payload["op"]) if "op" in payload else None,
+        limit=limit,
+    )
+    return success_response("nollm.history", result, addresses=[result["address"]])
 
 
 def anchor_ids(path: Path) -> set[str]:
@@ -415,6 +444,7 @@ REQUIRED_FIELDS = {
     "nollm.read_card": ["card_id_or_address"],
     "nollm.update_status": ["card_id_or_address", "to", "reason"],
     "nollm.ledger": [],
+    "nollm.history": ["target"],
 }
 
 ACTIONS: dict[str, Callable[[Path, dict[str, Any]], dict[str, Any]]] = {
@@ -432,4 +462,5 @@ ACTIONS: dict[str, Callable[[Path, dict[str, Any]], dict[str, Any]]] = {
     "nollm.read_card": action_read_card,
     "nollm.update_status": action_update_status,
     "nollm.ledger": action_ledger,
+    "nollm.history": action_history,
 }

@@ -92,6 +92,8 @@ python -m nollm.cli audit ./demo-notebook
 python -m nollm.cli inspect ./demo-notebook
 python -m nollm.cli annotate ./demo-notebook card-id --note "Needs source verification."
 python -m nollm.cli annotations ./demo-notebook card-id
+python -m nollm.cli ledger ./demo-notebook --object-id card-id --limit 20
+python -m nollm.cli history ./demo-notebook card-id
 ```
 
 Cortex read flow:
@@ -178,3 +180,16 @@ Annotations are operator notes. Annotations are ledgered. Annotations do not mod
 Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. annotation_count means there are operator notes, not that a card is more or less reliable.
 
 External tools can call `nollm.annotate` and `nollm.annotations`. Mutating annotation examples live under `examples/tool_requests/templates/` so committed OpenClaw examples remain stable.
+
+## Ledger And History
+
+Use `ledger` to query compact ledger events and `history` to inspect the ledger trail for one card:
+
+```bash
+python -m nollm.cli ledger ./demo-notebook --object-id card-id --limit 20
+python -m nollm.cli history ./demo-notebook card-id
+```
+
+Ledger is an audit trail, not memory recall. History is object-level ledger inspection. Ledger/history do not prove truth, approve memory, change status, change trust, or perform semantic scoring. Ledger/history are read-only unless an explicit write action such as annotate/status is used.
+
+Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.

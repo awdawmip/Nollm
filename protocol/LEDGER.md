@@ -6,6 +6,8 @@ The ledger is an append-only JSONL record of memory events.
 
 The ledger makes Nollm auditable. It records what changed, when it changed, and which Core object was affected.
 
+Ledger is an audit trail, not memory recall. Ledger/history do not prove truth. Ledger/history do not approve memory. Ledger/history do not change status or trust. Ledger/history are read-only unless an explicit write action such as annotate/status is used.
+
 ## Event Shape
 
 Each line is one JSON object.
@@ -48,6 +50,12 @@ Recommended fields:
 Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
 
 Annotation events use `op: annotate_card`. Listing annotations is a read action over ledger events.
+
+## Query And History
+
+Ledger queries may filter by object, operation, actor, actor type, and limit. History is object-level ledger inspection for one card or object.
+
+Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.
 
 ## Core Boundary
 

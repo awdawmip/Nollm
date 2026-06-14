@@ -17,6 +17,7 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 - `nollm.recall`
 - `nollm.read_card`
 - `nollm.ledger`
+- `nollm.history`
 
 `nollm.recall` writes recall digest files, but it does not mutate canonical memory or append ledger events.
 
@@ -35,6 +36,10 @@ Inspect is not a read gate. Unconfirmed cards remain readable with status, trust
 `nollm.annotations` lists ledgered operator notes for a card. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
 
 Inspect/review may show `annotation_count`. Audit may count annotations. Annotation text is not recall content. Annotation counts are not semantic risk scores. `annotation_count` means there are operator notes, not that a card is more or less reliable.
+
+`nollm.ledger` returns filtered audit trail events. `nollm.history` returns object-level ledger inspection. Ledger/history do not prove truth, approve memory, change status, change trust, perform semantic scoring, or act as recall.
+
+Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.
 
 `nollm.recall` returns a digest with scale-scan metadata:
 

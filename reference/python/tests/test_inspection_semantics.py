@@ -20,6 +20,7 @@ DOC_PATHS = [
     ROOT / "README.md",
     ROOT / "protocol" / "REVIEW.md",
     ROOT / "protocol" / "ANNOTATION.md",
+    ROOT / "protocol" / "HISTORY.md",
     ROOT / "protocol" / "TOOL_SURFACE.md",
     ROOT / "protocol" / "STATUS.md",
     ROOT / "protocol" / "TRUST.md",
@@ -105,6 +106,28 @@ def test_annotation_docs_preserve_operator_action_boundaries() -> None:
         "annotation text does not prove truth",
         "annotation counts are not semantic risk scores",
         "annotation_count means there are operator notes, not that a card is more or less reliable",
+    ):
+        assert required in combined
+
+
+def test_ledger_history_docs_preserve_audit_trail_boundaries() -> None:
+    combined = "\n".join(
+        normalized_text(path)
+        for path in (
+            ROOT / "README.md",
+            ROOT / "protocol" / "LEDGER.md",
+            ROOT / "protocol" / "HISTORY.md",
+            ROOT / "docs" / "integration" / "LLM_INTEGRATION.md",
+        )
+    )
+    for required in (
+        "ledger is an audit trail, not memory recall",
+        "history is object-level ledger inspection",
+        "ledger/history do not prove truth",
+        "ledger/history do not approve memory",
+        "ledger/history do not change status or trust",
+        "ledger/history are read-only unless an explicit write action such as annotate/status is used",
+        "annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content",
     ):
         assert required in combined
 

@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "action": "nollm.history",
+  "result": {
+    "ok": true,
+    "notebook": "openclaw",
+    "object_id": "card_0001_nollm_project_start",
+    "address": "nollm://openclaw/card/card_0001_nollm_project_start",
+    "event_count": 1,
+    "events": [
+      {
+        "event_id": "evt_0001",
+        "timestamp": "2026-06-12T00:00:00+08:00",
+        "op": "write_card",
+        "actor": "project_owner",
+        "actor_type": "human",
+        "reason": "Record initial human-approved Nollm identity decision.",
+        "from_status": null,
+        "to_status": "confirmed"
+      }
+    ]
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [
+    "nollm://openclaw/card/card_0001_nollm_project_start"
+  ],
+  "request_id": "req_history_openclaw_001"
+}

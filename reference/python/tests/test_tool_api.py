@@ -28,6 +28,7 @@ REQUIRED_ACTIONS = {
     "nollm.read_card",
     "nollm.update_status",
     "nollm.ledger",
+    "nollm.history",
 }
 
 

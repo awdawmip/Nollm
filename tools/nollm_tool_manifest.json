@@ -121,11 +121,20 @@
     {
       "name": "nollm.ledger",
       "kind": "read",
-      "description": "Return recent ledger events.",
+      "description": "Return filtered ledger audit trail events. Ledger is an audit trail, not memory recall, not truth assessment, not approval, not semantic scoring, and does not change status or trust.",
       "required_fields": [],
-      "optional_fields": ["limit"],
+      "optional_fields": ["object_id", "object_type", "op", "actor", "actor_type", "since", "until", "limit"],
       "writes_ledger": false,
-      "returns": "Ledger events."
+      "returns": "Filtered compact ledger events without card bodies."
+    },
+    {
+      "name": "nollm.history",
+      "kind": "read",
+      "description": "Return object-level ledger inspection for one card. History is audit trail inspection, not memory recall, not truth assessment, not approval, not semantic scoring, and does not change status or trust.",
+      "required_fields": ["target"],
+      "optional_fields": ["op", "limit"],
+      "writes_ledger": false,
+      "returns": "Compact ledger events for one object. Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content."
     }
   ]
 }

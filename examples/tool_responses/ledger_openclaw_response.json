@@ -1,0 +1,35 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "action": "nollm.ledger",
+  "result": {
+    "ok": true,
+    "notebook": "openclaw",
+    "filters": {
+      "object_id": "card_0001_nollm_project_start",
+      "object_type": null,
+      "op": null,
+      "actor": null,
+      "actor_type": null,
+      "since": null,
+      "until": null,
+      "limit": 20
+    },
+    "event_count": 1,
+    "events": [
+      {
+        "event_id": "evt_0001",
+        "timestamp": "2026-06-12T00:00:00+08:00",
+        "op": "write_card",
+        "actor": "project_owner",
+        "actor_type": "human",
+        "object_type": "card",
+        "object_id": "card_0001_nollm_project_start"
+      }
+    ]
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [],
+  "request_id": "req_ledger_openclaw_001"
+}

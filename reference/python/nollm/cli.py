@@ -23,6 +23,7 @@ from .filesystem import (
 )
 from .cortex import focus_cards, orient_notebook, surface_anchor
 from .ids import card_id_for, next_event_id
+from .history import ledger_query, object_history
 from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
 from .review import build_review_queue
@@ -98,7 +99,21 @@ def build_parser() -> argparse.ArgumentParser:
     ledger = sub.add_parser("ledger")
     ledger.add_argument("notebook_path")
     ledger.add_argument("--limit", type=int, default=10)
+    ledger.add_argument("--object-id")
+    ledger.add_argument("--object-type")
+    ledger.add_argument("--op")
+    ledger.add_argument("--actor")
+    ledger.add_argument("--actor-type")
+    ledger.add_argument("--since")
+    ledger.add_argument("--until")
     ledger.set_defaults(func=cmd_ledger)
+
+    history = sub.add_parser("history")
+    history.add_argument("notebook_path")
+    history.add_argument("card_id_or_address")
+    history.add_argument("--op")
+    history.add_argument("--limit", type=int, default=20)
+    history.set_defaults(func=cmd_history)
 
     audit = sub.add_parser("audit")
     audit.add_argument("notebook_path")
@@ -339,9 +354,37 @@ def cmd_recall(args: argparse.Namespace) -> int:
 
 
 def cmd_ledger(args: argparse.Namespace) -> int:
-    events = read_ledger(Path(args.notebook_path))[-args.limit :]
-    for event in events:
-        print(json.dumps(event, ensure_ascii=False))
+    try:
+        response = ledger_query(
+            Path(args.notebook_path),
+            object_id=args.object_id,
+            object_type=args.object_type,
+            op=args.op,
+            actor=args.actor,
+            actor_type=args.actor_type,
+            since=args.since,
+            until=args.until,
+            limit=args.limit,
+        )
+    except ValueError as exc:
+        print(json.dumps(error_response("ledger", "invalid_request", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+def cmd_history(args: argparse.Namespace) -> int:
+    try:
+        response = object_history(
+            Path(args.notebook_path),
+            args.card_id_or_address,
+            op=args.op,
+            limit=args.limit,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        print(json.dumps(error_response("history", "invalid_request", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
     return 0
 
 

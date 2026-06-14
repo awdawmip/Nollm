@@ -1,0 +1,12 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "req_ledger_openclaw_001",
+  "action": "nollm.ledger",
+  "notebook_path": "../../examples/openclaw",
+  "actor": "codex",
+  "actor_type": "tool",
+  "input": {
+    "object_id": "card_0001_nollm_project_start",
+    "limit": 20
+  }
+}
