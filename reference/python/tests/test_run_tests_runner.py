@@ -8,14 +8,21 @@ RUNNER = ROOT / "reference" / "python" / "run_tests.py"
 HARNESS = ROOT / "reference" / "python" / "tests" / "subprocess_harness.py"
 
 
-def test_canonical_runner_uses_robust_process_management() -> None:
+def test_canonical_runner_delegates_to_full_pytest() -> None:
     runner_text = RUNNER.read_text(encoding="utf-8")
+
+    assert "sys.dont_write_bytecode = True" in runner_text
+    assert 'os.environ.setdefault("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")' in runner_text
+    assert "from pytest import main as pytest_main" in runner_text
+    assert 'pytest_main(["-q"])' in runner_text
+    assert "subprocess_harness" not in runner_text
+    assert "GROUP_TIMEOUT_SECONDS" not in runner_text
+    assert "subprocess.run" not in runner_text
+
+
+def test_shared_subprocess_harness_remains_robust() -> None:
     harness_text = HARNESS.read_text(encoding="utf-8")
 
-    assert "GROUP_TIMEOUT_SECONDS" in runner_text
-    assert 'env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"' in runner_text
-    assert "from subprocess_harness import run_subprocess" in runner_text
-    assert "subprocess.run" not in runner_text
     assert "subprocess.Popen" in harness_text
     assert "subprocess.run" not in harness_text
     assert "start_new_session=os.name != \"nt\"" in harness_text
