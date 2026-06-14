@@ -108,3 +108,26 @@ For `nollm.annotate`, the annotation default actor is `operator` and the default
 ## Boundary
 
 The tool surface formats requests and responses. It does not add embeddings, vector databases, graph databases, external LLM extraction, automatic ontology generation, network calls, or autonomous memory mutation.
+
+## V1 Tool Surface Finalization
+
+Every V1 tool response uses the existing `nollm.tool.v0.1` envelope:
+
+- `ok`
+- `protocol`
+- `action`
+- `request_id`
+- `result`
+- `warnings`
+- `ledger_events`
+- `addresses`
+
+For read-only tools, `ledger_events` must be `[]`.
+
+For write tools, `ledger_events` contains appended event ids.
+
+Error responses are structured and must not expose raw Python tracebacks.
+
+V1 stable tool actions are `nollm.validate`, `nollm.orient`, `nollm.recall`, `nollm.read_card`, `nollm.inspect`, `nollm.review`, `nollm.annotate`, `nollm.annotations`, `nollm.ledger`, `nollm.history`, and `nollm.audit`.
+
+Additional existing actions are internal or experimental unless later promoted. They must still preserve Core boundaries.
