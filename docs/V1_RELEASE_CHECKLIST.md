@@ -46,6 +46,22 @@ python3 -m nollm.cli tool ../../examples/tool_requests/read_openclaw_card.json
 - Confirm no local `audit.json`, `audit.md`, `*_audit.json`, or `*_audit.md` outputs outside committed fixtures.
 - Confirm no machine-local absolute paths in committed fixtures.
 
+## Source Archive
+
+Create the archive outside the source tree from the repository root:
+
+```bash
+git archive --format=zip --prefix=nollm/ -o ../nollm_v1.0.0_rc1_source.zip HEAD
+```
+
+Verify:
+
+- Archive is outside the repository and is not committed.
+- Entry paths use POSIX-style `/` separators.
+- Backslash entry count is zero.
+- No cache, pyc, settings, local audit, or generated recall artifacts are present.
+- Committed fixtures are included.
+
 ## Release Readiness
 
 - Review `docs/V1_KNOWN_LIMITATIONS.md`.
@@ -56,4 +72,11 @@ python3 -m nollm.cli tool ../../examples/tool_requests/read_openclaw_card.json
 ```bash
 git tag v1.0.0-rc1
 git push origin v1.0.0-rc1
+```
+
+Final V1 tag, later and only after authorization:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
 ```

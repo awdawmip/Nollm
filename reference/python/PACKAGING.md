@@ -63,6 +63,22 @@ Top-level `examples/tool_requests/*.json` are safe against committed OpenClaw. G
 
 Run the V1 release checklist in `docs/V1_RELEASE_CHECKLIST.md`.
 
+Create a source archive outside the repository root:
+
+```bash
+git archive --format=zip --prefix=nollm/ -o ../nollm_v1.0.0_rc1_source.zip HEAD
+```
+
+Verify the archive before upload:
+
+- Every entry uses POSIX-style `/` separators.
+- No entry contains `\`.
+- No `.pytest_cache/`, `__pycache__/`, or `*.pyc` entries.
+- No `settings.json`.
+- No generated `examples/openclaw/recalls/recall_*.json` or `recall_*.md`.
+- Committed fixtures are included.
+- The archive is not committed.
+
 Prepare tag commands only after validation and project-owner authorization:
 
 ```bash

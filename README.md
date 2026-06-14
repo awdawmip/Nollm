@@ -66,7 +66,7 @@ V1 includes a minimal filesystem-first Python CLI in `reference/python`.
 Run without installing:
 
 ```powershell
-cd C:\Users\chaos\nollm\reference\python
+cd path\to\nollm\reference\python
 python -m nollm.cli init .\demo-notebook --notebook demo
 python -m nollm.cli validate .\demo-notebook
 python -m nollm.cli recall .\demo-notebook "filesystem memory"
@@ -98,7 +98,7 @@ python -m nollm.cli recall ./demo-notebook "why not turn Nollm into Cognee"
 Run tests:
 
 ```powershell
-cd C:\Users\chaos\nollm\reference\python
+cd path\to\nollm\reference\python
 python run_tests.py
 ```
 
