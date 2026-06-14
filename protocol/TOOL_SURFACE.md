@@ -34,6 +34,8 @@ Inspect is not a read gate. Unconfirmed cards remain readable with status, trust
 
 `nollm.annotations` lists ledgered operator notes for a card. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
 
+Inspect/review may show `annotation_count`. Audit may count annotations. Annotation text is not recall content. Annotation counts are not semantic risk scores. `annotation_count` means there are operator notes, not that a card is more or less reliable.
+
 `nollm.recall` returns a digest with scale-scan metadata:
 
 - `active_anchor_fields`

@@ -12,8 +12,8 @@ DISCOURAGED_PHRASES = (
     "cards needing human attention",
     "humans must review",
     "review inbox",
-    "semantic risk score",
-    "semantic risk scoring",
+    "assigns semantic risk",
+    "calculates semantic risk",
     "confirmed fact",
 )
 DOC_PATHS = [
@@ -98,6 +98,13 @@ def test_annotation_docs_preserve_operator_action_boundaries() -> None:
         "annotations do not block llm usage",
         "annotations are not passive human review",
         "annotations are active operator actions",
+        "audit may count annotations",
+        "inspect/review may show `annotation_count`",
+        "annotation text is not recall content",
+        "annotation text does not change status or trust",
+        "annotation text does not prove truth",
+        "annotation counts are not semantic risk scores",
+        "annotation_count means there are operator notes, not that a card is more or less reliable",
     ):
         assert required in combined
 

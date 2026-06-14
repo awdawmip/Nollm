@@ -19,3 +19,5 @@ Allowed annotation types:
 The ledger event uses `op: annotate_card` and records equal `from_status` and `to_status` to make clear that annotation is not a status transition.
 
 Annotation listing reads ledger events for a card. It returns compact event metadata and does not include card bodies.
+
+Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. `annotation_count` means there are operator notes, not that a card is more or less reliable.

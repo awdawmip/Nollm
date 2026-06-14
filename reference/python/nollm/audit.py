@@ -73,6 +73,13 @@ AUDIT_SCHEMA: dict[str, dict[str, str]] = {
         "status_transition_count": "integer",
         "missing_referenced_object_count": "integer",
     },
+    "annotations": {
+        "annotation_event_count": "integer",
+        "annotated_card_count": "integer",
+        "by_annotation_type": "object",
+        "by_actor_type": "object",
+        "cards_with_annotations": "object",
+    },
     "boundaries": {key: "boolean" for key in BOUNDARIES},
 }
 
@@ -104,6 +111,7 @@ def build_audit_report(path: Path) -> dict[str, Any]:
         "anchor_fields": anchor_field_summary(cards, anchors),
         "recall_digests": recall_digest_summary(recalls),
         "ledger": ledger_summary(events, cards),
+        "annotations": annotation_summary(events),
         "boundaries": dict(BOUNDARIES),
     }
 
@@ -310,6 +318,28 @@ def ledger_summary(events: list[dict[str, Any]], cards: list[dict[str, Any]]) ->
     }
 
 
+def annotation_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+    annotation_types: Counter[str] = Counter()
+    actor_types: Counter[str] = Counter()
+    cards: Counter[str] = Counter()
+    for event in events:
+        if event.get("op") != "annotate_card":
+            continue
+        if event.get("annotation_type"):
+            annotation_types[str(event["annotation_type"])] += 1
+        if event.get("actor_type"):
+            actor_types[str(event["actor_type"])] += 1
+        if event.get("object_id"):
+            cards[str(event["object_id"])] += 1
+    return {
+        "annotation_event_count": sum(cards.values()),
+        "annotated_card_count": len(cards),
+        "by_annotation_type": dict(sorted(annotation_types.items())),
+        "by_actor_type": dict(sorted(actor_types.items())),
+        "cards_with_annotations": dict(sorted(cards.items())),
+    }
+
+
 def render_audit_json(report: dict[str, Any]) -> str:
     return json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
@@ -327,6 +357,9 @@ def render_audit_markdown(report: dict[str, Any]) -> str:
         "",
     ]
     for key, value in report["notebook"].items():
+        lines.append(f"- {key}: `{value}`")
+    lines.extend(["", "## Annotations", ""])
+    for key, value in report["annotations"].items():
         lines.append(f"- {key}: `{value}`")
     lines.extend(["", "## Boundaries", ""])
     for key, value in report["boundaries"].items():

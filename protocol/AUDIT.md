@@ -10,7 +10,8 @@ It summarizes existing source-of-truth files:
 - recall digests;
 - validation results;
 - honeycomb metadata;
-- scale-scan metadata.
+- scale-scan metadata;
+- annotation counts.
 
 Audit output is not memory.
 
@@ -19,6 +20,8 @@ Audit output is not a recall index.
 Audit output is not source of truth.
 
 Deleting audit output must not change recall behavior.
+
+Audit may count annotations. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. `annotation_count` means there are operator notes, not that a card is more or less reliable.
 
 ## P6.0 Scope
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from .annotation import annotation_counts_by_card
 from .filesystem import card_address, notebook_name, read_card
 
 
@@ -20,12 +21,14 @@ def build_review_queue(
 ) -> dict[str, object]:
     review_statuses = statuses or list(DEFAULT_REVIEW_STATUSES)
     notebook = notebook_name(notebook_path)
+    annotation_counts = annotation_counts_by_card(notebook_path)
     cards = []
     for card_path in sorted((notebook_path / "cards").rglob("*.md")):
         front, _body, _resolved_path = read_card(notebook_path, card_path.stem)
         if not include_card(front, review_statuses, card_type, anchor, trust):
             continue
-        cards.append(review_card(notebook, front))
+        card_id = str(front.get("id", ""))
+        cards.append(review_card(notebook, front, annotation_counts.get(card_id, 0)))
 
     cards.sort(key=review_sort_key)
     limited_cards = cards[: max(limit, 0)]
@@ -62,7 +65,7 @@ def include_card(
     return True
 
 
-def review_card(notebook: str, front: dict[str, Any]) -> dict[str, object]:
+def review_card(notebook: str, front: dict[str, Any], annotation_count: int = 0) -> dict[str, object]:
     card_id = str(front.get("id", ""))
     anchor_fields = front.get("anchor_fields", {})
     return {
@@ -77,6 +80,7 @@ def review_card(notebook: str, front: dict[str, Any]) -> dict[str, object]:
         "anchor_fields": sorted(str(key) for key in anchor_fields) if isinstance(anchor_fields, dict) else [],
         "ledger_event": str(front.get("ledger_event", "")),
         "created": str(front.get("created", "")),
+        "annotation_count": annotation_count,
         "review_reason": review_reason(front),
     }
 

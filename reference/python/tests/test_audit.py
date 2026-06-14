@@ -51,6 +51,14 @@ class AuditTests(unittest.TestCase):
 
         self.assertIn("missing top-level section: honeycomb", issues)
 
+    def test_schema_checker_requires_annotations_section(self) -> None:
+        report = build_audit_report(ROOT / "examples" / "openclaw")
+        report.pop("annotations")
+
+        issues = validate_audit_report_shape(report)
+
+        self.assertIn("missing top-level section: annotations", issues)
+
     def test_schema_checker_detects_missing_nested_field(self) -> None:
         report = build_audit_report(ROOT / "examples" / "openclaw")
         report["notebook"].pop("cards")
@@ -83,6 +91,16 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(report["cards"]["by_trust"], {"human-approved": 2})
         self.assertEqual(report["cards"]["by_source"], {"human_decision": 2})
         self.assertEqual(report["cards"]["by_layer"], {"1": 1})
+        self.assertEqual(
+            report["annotations"],
+            {
+                "annotation_event_count": 0,
+                "annotated_card_count": 0,
+                "by_annotation_type": {},
+                "by_actor_type": {},
+                "cards_with_annotations": {},
+            },
+        )
 
     def test_audit_includes_required_sections_and_metadata_summaries(self) -> None:
         report = run_cli_json(["audit", str(ROOT / "examples" / "openclaw")])
@@ -95,6 +113,7 @@ class AuditTests(unittest.TestCase):
             "anchor_fields",
             "recall_digests",
             "ledger",
+            "annotations",
             "boundaries",
         ):
             self.assertIn(section, report)
@@ -181,6 +200,53 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(read_ledger(notebook), ledger_before)
             files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
             self.assertEqual(files_after, files_before)
+
+    def test_audit_counts_annotations_without_using_text_as_memory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            address, _event_id = write_card(notebook)
+            card_id = address.rsplit("/", 1)[-1]
+            self.assertEqual(
+                main(
+                    [
+                        "annotate",
+                        str(notebook),
+                        card_id,
+                        "--note",
+                        "Needs source verification.",
+                        "--annotation-type",
+                        "source_request",
+                        "--actor-type",
+                        "human",
+                    ]
+                ),
+                0,
+            )
+            self.assertEqual(
+                main(
+                    [
+                        "annotate",
+                        str(notebook),
+                        card_id,
+                        "--note",
+                        "Check concern.",
+                        "--annotation-type",
+                        "concern",
+                        "--actor-type",
+                        "tool",
+                    ]
+                ),
+                0,
+            )
+
+            report = build_audit_report(notebook)
+
+            self.assertEqual(report["annotations"]["annotation_event_count"], 2)
+            self.assertEqual(report["annotations"]["annotated_card_count"], 1)
+            self.assertEqual(report["annotations"]["by_annotation_type"], {"concern": 1, "source_request": 1})
+            self.assertEqual(report["annotations"]["by_actor_type"], {"human": 1, "tool": 1})
+            self.assertEqual(report["annotations"]["cards_with_annotations"], {card_id: 2})
+            self.assertNotIn("Needs source verification.", json.dumps(report))
 
     def test_audit_out_writes_file_without_ledger_event(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

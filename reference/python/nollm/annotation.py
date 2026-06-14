@@ -107,3 +107,15 @@ def list_annotations(
         "annotation_count": len(limited),
         "annotations": limited,
     }
+
+
+def annotation_counts_by_card(notebook_path: Path) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for event in read_ledger(notebook_path):
+        if event.get("op") != "annotate_card":
+            continue
+        card_id = str(event.get("object_id", ""))
+        if not card_id:
+            continue
+        counts[card_id] = counts.get(card_id, 0) + 1
+    return dict(sorted(counts.items()))

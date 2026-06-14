@@ -112,6 +112,16 @@ class StaticExampleTests(unittest.TestCase):
         self.assertEqual(result["review_count"], 0)
         self.assertEqual(result["cards"], [])
 
+    def test_annotations_tool_response_example_is_valid_json(self) -> None:
+        path = ROOT / "examples" / "tool_responses" / "annotations_openclaw_response.json"
+        response = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["action"], "nollm.annotations")
+        result = response["result"]
+        self.assertEqual(result["annotation_count"], 0)
+        self.assertEqual(result["annotations"], [])
+        self.assertEqual(result["object_id"], "card_0001_nollm_project_start")
+
     def test_top_level_tool_requests_run_from_reference_python(self) -> None:
         request_paths = sorted((ROOT / "examples" / "tool_requests").glob("*.json"))
         self.assertTrue(request_paths, "expected runnable top-level tool request examples")
@@ -136,7 +146,20 @@ class StaticExampleTests(unittest.TestCase):
                     self.assertIsInstance(scale_item["layer"], int)
                     self.assertIsInstance(scale_item["card"], str)
                     self.assertIsInstance(scale_item["anchor_fields"], list)
+                if request_path.name == "annotations_openclaw.json":
+                    self.assertEqual(response["result"]["annotation_count"], 0)
+                    self.assertEqual(response["result"]["annotations"], [])
         self.assert_no_source_generated_recall_artifacts()
+
+    def test_mutating_annotate_example_is_template_only(self) -> None:
+        top_level_actions = []
+        for request_path in sorted((ROOT / "examples" / "tool_requests").glob("*.json")):
+            request = json.loads(request_path.read_text(encoding="utf-8"))
+            top_level_actions.append((request_path.name, request.get("action")))
+
+        self.assertNotIn(("annotate_openclaw.json", "nollm.annotate"), top_level_actions)
+        self.assertFalse(any(action == "nollm.annotate" for _name, action in top_level_actions))
+        self.assertTrue((ROOT / "examples" / "tool_requests" / "templates" / "annotate_card.json").exists())
 
     def test_source_openclaw_has_no_generated_recall_artifacts(self) -> None:
         self.assert_no_source_generated_recall_artifacts()

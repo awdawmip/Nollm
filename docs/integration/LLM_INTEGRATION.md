@@ -68,6 +68,8 @@ Annotations are operator notes. Annotations are ledgered. Annotations do not mod
 
 Do not use annotations as recall content by default. Do not treat annotation text as source evidence, truth scoring, approval, or priority assigned by Nollm.
 
+Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. annotation_count means there are operator notes, not that a card is more or less reliable.
+
 ## Audit
 
 Use `nollm.audit` to inspect notebook health, validation status, file counts, metadata distribution, recall digest shape, and boundary flags.

@@ -222,6 +222,33 @@ class ReviewTests(unittest.TestCase):
             files_after = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
             self.assertEqual(files_after, files_before)
 
+    def test_inspect_and_review_include_annotation_count_without_annotation_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            notebook = init_notebook(tmp)
+            address = write_card(notebook, title="Annotated Candidate")
+            card_id = address.rsplit("/", 1)[-1]
+            secret_note = "Needs source verification."
+            self.assertEqual(
+                main(
+                    [
+                        "annotate",
+                        str(notebook),
+                        card_id,
+                        "--note",
+                        secret_note,
+                        "--annotation-type",
+                        "source_request",
+                    ]
+                ),
+                0,
+            )
+
+            for command in ("inspect", "review"):
+                with self.subTest(command=command):
+                    output = run_json([command, str(notebook)])
+                    self.assertEqual(output["cards"][0]["annotation_count"], 1)
+                    self.assertNotIn(secret_note, json.dumps(output))
+
 
 if __name__ == "__main__":
     unittest.main()

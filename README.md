@@ -175,4 +175,6 @@ python -m nollm.cli annotations ./demo-notebook card-id --limit 20
 
 Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review. Annotations are active operator actions, not recall inputs.
 
+Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. annotation_count means there are operator notes, not that a card is more or less reliable.
+
 External tools can call `nollm.annotate` and `nollm.annotations`. Mutating annotation examples live under `examples/tool_requests/templates/` so committed OpenClaw examples remain stable.

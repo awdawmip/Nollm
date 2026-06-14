@@ -79,6 +79,13 @@
       "status_transition_count": 2,
       "missing_referenced_object_count": 0
     },
+    "annotations": {
+      "annotation_event_count": 0,
+      "annotated_card_count": 0,
+      "by_annotation_type": {},
+      "by_actor_type": {},
+      "cards_with_annotations": {}
+    },
     "boundaries": {
       "uses_sqlite": false,
       "uses_embeddings": false,

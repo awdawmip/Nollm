@@ -26,7 +26,7 @@
       "required_fields": [],
       "optional_fields": ["statuses", "type", "anchor", "trust", "limit"],
       "writes_ledger": false,
-      "returns": "Inspection filters, review_count, and compact card metadata. Inspect does not include full card bodies by default, does not change status, does not append ledger events, does not create an approval gate, and does not use SQLite, embeddings, vector search, graph search, geometry recall, or external LLM operations."
+      "returns": "Inspection filters, review_count, annotation_count per returned card, and compact card metadata. Inspect does not include full card bodies or annotation text by default, does not change status, does not append ledger events, does not create an approval gate, and does not use SQLite, embeddings, vector search, graph search, geometry recall, or external LLM operations."
     },
     {
       "name": "nollm.review",
@@ -35,7 +35,7 @@
       "required_fields": [],
       "optional_fields": ["statuses", "type", "anchor", "trust", "limit"],
       "writes_ledger": false,
-      "returns": "Review filters, review_count, and compact card metadata. Review does not include full card bodies by default, does not change status, does not append ledger events, does not create an approval gate, and does not use SQLite, embeddings, vector search, graph search, geometry recall, or external LLM operations."
+      "returns": "Review filters, review_count, annotation_count per returned card, and compact card metadata. Review does not include full card bodies or annotation text by default, does not change status, does not append ledger events, does not create an approval gate, and does not use SQLite, embeddings, vector search, graph search, geometry recall, or external LLM operations."
     },
     {
       "name": "nollm.annotate",
@@ -53,7 +53,7 @@
       "required_fields": ["target"],
       "optional_fields": ["annotation_type", "limit"],
       "writes_ledger": false,
-      "returns": "Compact annotation ledger event metadata without card bodies."
+      "returns": "Compact annotation ledger event metadata without card bodies. Annotation counts are not semantic risk scores."
     },
     {
       "name": "nollm.orient",

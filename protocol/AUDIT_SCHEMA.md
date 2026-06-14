@@ -15,6 +15,7 @@ Audit reports are rebuildable from notebook source files. The current reference 
 - `anchor_fields`
 - `recall_digests`
 - `ledger`
+- `annotations`
 - `boundaries`
 
 ## `validation`
@@ -71,6 +72,16 @@ Audit reports are rebuildable from notebook source files. The current reference 
 - `actor_type_count`: object
 - `status_transition_count`: integer
 - `missing_referenced_object_count`: integer
+
+## `annotations`
+
+- `annotation_event_count`: integer
+- `annotated_card_count`: integer
+- `by_annotation_type`: object
+- `by_actor_type`: object
+- `cards_with_annotations`: object
+
+Audit may count annotations. Annotation counts are metadata visibility only. Annotation counts are not semantic risk scores. `annotation_count` means there are operator notes, not that a card is more or less reliable.
 
 ## `boundaries`
 

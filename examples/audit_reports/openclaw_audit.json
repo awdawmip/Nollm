@@ -17,6 +17,13 @@
       "protocol:core": 2
     }
   },
+  "annotations": {
+    "annotated_card_count": 0,
+    "annotation_event_count": 0,
+    "by_actor_type": {},
+    "by_annotation_type": {},
+    "cards_with_annotations": {}
+  },
   "boundaries": {
     "performs_automatic_placement": false,
     "performs_geometry_recall": false,
