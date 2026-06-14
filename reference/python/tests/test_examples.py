@@ -3,11 +3,12 @@ from __future__ import annotations
 import ast
 import json
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from subprocess_harness import run_subprocess, subprocess_failure_message
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -272,59 +273,12 @@ def run_tool_request_against_temp_notebook(request_path: Path) -> dict:
         completed = run_subprocess(
             [sys.executable, "-m", "nollm.cli", "tool", str(temp_request)],
             cwd=REFERENCE_PYTHON,
-            request_path=request_path,
+            timeout_seconds=SUBPROCESS_TIMEOUT,
+            label=request_path.as_posix(),
         )
     if completed.returncode != 0:
-        raise AssertionError(subprocess_failure_message(completed, REFERENCE_PYTHON, request_path))
+        raise AssertionError(subprocess_failure_message(completed, REFERENCE_PYTHON, request_path.as_posix()))
     return json.loads(completed.stdout)
-
-
-def run_subprocess(command: list[str], *, cwd: Path, request_path: Path | None = None) -> subprocess.CompletedProcess[str]:
-    stdout_path: Path | None = None
-    stderr_path: Path | None = None
-    try:
-        with tempfile.TemporaryDirectory() as tmp:
-            stdout_path = Path(tmp) / "stdout.txt"
-            stderr_path = Path(tmp) / "stderr.txt"
-            with stdout_path.open("w", encoding="utf-8") as stdout_file, stderr_path.open("w", encoding="utf-8") as stderr_file:
-                completed = subprocess.run(
-                    command,
-                    cwd=cwd,
-                    check=False,
-                    stdout=stdout_file,
-                    stderr=stderr_file,
-                    text=True,
-                    timeout=SUBPROCESS_TIMEOUT,
-                )
-            stdout = stdout_path.read_text(encoding="utf-8")
-            stderr = stderr_path.read_text(encoding="utf-8")
-            return subprocess.CompletedProcess(command, completed.returncode, stdout, stderr)
-    except subprocess.TimeoutExpired as exc:
-        stdout = stdout_path.read_text(encoding="utf-8") if stdout_path and stdout_path.exists() else ""
-        stderr = stderr_path.read_text(encoding="utf-8") if stderr_path and stderr_path.exists() else ""
-        message = [
-            f"subprocess timed out after {SUBPROCESS_TIMEOUT}s",
-            f"command: {' '.join(command)}",
-            f"cwd: {cwd}",
-        ]
-        if request_path:
-            message.append(f"request: {request_path}")
-        message.append(f"stdout: {stdout or exc.stdout or ''}")
-        message.append(f"stderr: {stderr or exc.stderr or ''}")
-        raise AssertionError("\n".join(message)) from exc
-
-
-def subprocess_failure_message(completed: subprocess.CompletedProcess[str], cwd: Path, request_path: Path | None = None) -> str:
-    message = [
-        f"command: {' '.join(str(part) for part in completed.args)}",
-        f"cwd: {cwd}",
-    ]
-    if request_path:
-        message.append(f"request: {request_path}")
-    message.append(f"exit_code: {completed.returncode}")
-    message.append(f"stdout: {completed.stdout}")
-    message.append(f"stderr: {completed.stderr}")
-    return "\n".join(message)
 
 
 def generated_recall_artifacts(notebook: Path) -> list[str]:
