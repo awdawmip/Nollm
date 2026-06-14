@@ -102,7 +102,7 @@ cd C:\Users\chaos\nollm\reference\python
 python run_tests.py
 ```
 
-Use the project test command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and then runs `python -m pytest -q`.
+Use the project test command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, runs every test file in deterministic order, and applies a hard timeout to each group.
 
 The reference CLI uses only the Python standard library and keeps Markdown, YAML, JSONL, and JSON as source-of-truth files.
 

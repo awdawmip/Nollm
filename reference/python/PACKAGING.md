@@ -32,7 +32,7 @@ Use the project test command before packaging or upload:
 python3 run_tests.py
 ```
 
-The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` before invoking `python3 -m pytest -q` so ambient pytest plugins do not affect Nollm tests.
+The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, runs every test file in deterministic order, and applies a hard timeout to each group so ambient pytest plugins or host subprocess behavior do not stall the canonical command indefinitely.
 
 ## Clean Tree Guard
 
