@@ -10,6 +10,7 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 - `nollm.audit`
 - `nollm.inspect`
 - `nollm.review`
+- `nollm.annotations`
 - `nollm.orient`
 - `nollm.surface`
 - `nollm.focus`
@@ -30,6 +31,8 @@ Use inspect for optional operator inspection. Do not use inspect as proof that a
 `review` remains a compatibility command; its semantics are active inspection.
 
 Inspect is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata.
+
+`nollm.annotations` lists ledgered operator notes for a card. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
 
 `nollm.recall` returns a digest with scale-scan metadata:
 
@@ -67,17 +70,21 @@ If `examples/tool_requests/error_cases/` exists, files inside it are intentional
 
 - `nollm.write_card`
 - `nollm.update_status`
+- `nollm.annotate`
 
 These actions must preserve Core validation rules:
 
 - `write_card` must not create `confirmed` cards directly.
 - `write_card` must not create anchors automatically.
 - `update_status` must append a ledger event.
+- `annotate` must append a ledger event and must not mutate the target card.
 - `confirmed` requires explicit operator approval.
 - Cards with `source: llm_inference` must not be directly confirmed.
 - Self-supersede must be rejected.
 
 Tool bridge ledger events should record honest actor metadata. The default is `actor: tool_user` and `actor_type: tool`; requests may provide `actor` and `actor_type`.
+
+For `nollm.annotate`, the annotation default actor is `operator` and the default `actor_type` is `human` when no actor metadata is provided. Annotation is an active operator action, not approval or truth judgment.
 
 ## Boundary
 

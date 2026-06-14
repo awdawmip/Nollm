@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
+from .annotation import append_annotation, list_annotations
 from .audit import build_audit_report
 from .cortex import focus_cards, orient_notebook, surface_anchor
 from .filesystem import (
@@ -19,13 +20,12 @@ from .filesystem import (
     write_card_file,
 )
 from .ids import card_id_for, next_event_id
-from .models import CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
+from .models import ACTOR_TYPES, CARD_DIRS, CARD_TYPES, SOURCE_KINDS, STATUSES, STATUS_TRANSITIONS, TRUST_VALUES, WRITE_STATUSES
 from .recall import deterministic_recall
 from .review import build_review_queue
 from .validation import architecture_metadata_issues, validate_notebook
 
 PROTOCOL = "nollm.tool.v0.1"
-ACTOR_TYPES = {"human", "llm", "tool", "system"}
 OPTIONAL_LIST_FIELDS = ("evidence_refs", "implications", "do_not_infer")
 OPTIONAL_ARCHITECTURE_FIELDS = ("layer", "hex", "anchor_fields", "scale_links")
 
@@ -49,19 +49,28 @@ def dispatch_tool_request(request: Any) -> dict[str, Any]:
         return error_response(action, "unsupported_protocol", f"Unsupported protocol: {protocol}", request_id=request_id)
     if action not in ACTIONS:
         return error_response(action, "unknown_action", f"Unknown tool action: {action}", request_id=request_id)
-    if "notebook_path" not in request:
+    arguments = request.get("arguments", {})
+    if arguments is not None and not isinstance(arguments, dict):
+        return error_response(action, "invalid_input", "Request arguments must be an object.", request_id=request_id)
+    if "notebook_path" in request:
+        notebook_path = Path(str(request["notebook_path"]))
+    elif isinstance(arguments, dict) and "notebook_path" in arguments:
+        notebook_path = Path(str(arguments["notebook_path"]))
+    else:
         return error_response(action, "missing_field", "Missing required field: notebook_path", request_id=request_id)
 
-    notebook_path = Path(str(request["notebook_path"]))
-    payload = request.get("input", {})
+    payload = request.get("input", arguments if isinstance(arguments, dict) else {})
     if not isinstance(payload, dict):
         return error_response(action, "invalid_input", "Request input must be an object.", request_id=request_id)
     actor_type = str(request.get("actor_type", "tool"))
     if actor_type not in ACTOR_TYPES:
         return error_response(action, "invalid_actor_type", f"Invalid actor_type: {actor_type}", request_id=request_id)
     payload = dict(payload)
+    payload.pop("notebook_path", None)
     payload["__actor"] = str(request.get("actor", "tool_user"))
     payload["__actor_type"] = actor_type
+    payload["__actor_provided"] = "actor" in request
+    payload["__actor_type_provided"] = "actor_type" in request
 
     missing = [field for field in REQUIRED_FIELDS[action] if field not in payload]
     if missing:
@@ -165,6 +174,38 @@ def action_inspect_surface(action: str, path: Path, payload: dict[str, Any]) -> 
         limit=limit,
     )
     return success_response(action, result, addresses=[card["address"] for card in result["cards"]])
+
+
+def action_annotate(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    actor = payload.get("actor")
+    if actor is None:
+        actor = payload.get("__actor") if payload.get("__actor_provided") else "operator"
+    actor_type = payload.get("actor_type")
+    if actor_type is None:
+        actor_type = payload.get("__actor_type") if payload.get("__actor_type_provided") else "human"
+    result = append_annotation(
+        path,
+        str(payload["target"]),
+        str(payload["note"]),
+        annotation_type=str(payload.get("annotation_type", "note")),
+        actor=str(actor),
+        actor_type=str(actor_type),
+    )
+    return success_response("nollm.annotate", result, ledger_events=[result["event_id"]], addresses=[result["address"]])
+
+
+def action_annotations(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        limit = int(payload.get("limit", 20))
+    except (TypeError, ValueError):
+        return error_response("nollm.annotations", "invalid_input", "input.limit must be an integer")
+    result = list_annotations(
+        path,
+        str(payload["target"]),
+        annotation_type=str(payload["annotation_type"]) if "annotation_type" in payload else None,
+        limit=limit,
+    )
+    return success_response("nollm.annotations", result, addresses=[result["address"]])
 
 
 def action_orient(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
@@ -364,6 +405,8 @@ REQUIRED_FIELDS = {
     "nollm.audit": [],
     "nollm.inspect": [],
     "nollm.review": [],
+    "nollm.annotate": ["target", "note"],
+    "nollm.annotations": ["target"],
     "nollm.orient": ["query_or_task"],
     "nollm.surface": ["anchor"],
     "nollm.focus": ["anchor"],
@@ -379,6 +422,8 @@ ACTIONS: dict[str, Callable[[Path, dict[str, Any]], dict[str, Any]]] = {
     "nollm.audit": action_audit,
     "nollm.inspect": action_inspect,
     "nollm.review": action_review,
+    "nollm.annotate": action_annotate,
+    "nollm.annotations": action_annotations,
     "nollm.orient": action_orient,
     "nollm.surface": action_surface,
     "nollm.focus": action_focus,

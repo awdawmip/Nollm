@@ -29,6 +29,8 @@ Recommended fields:
 - `action`: Backward-compatible human label for `op`.
 - `supersedes`
 - `replaces`
+- `annotation_type`: Type of operator annotation when `op` is `annotate_card`.
+- `annotation`: Operator note text when `op` is `annotate_card`.
 
 ## Append-Only Invariants
 
@@ -36,9 +38,16 @@ Recommended fields:
 - Each event ID is unique within a notebook.
 - Each event records the affected object and canonical address.
 - Status changes must record `from_status` and `to_status`.
+- Annotation events must record equal `from_status` and `to_status`; annotations are not status transitions.
 - Operator approval must be visible when promoting to `confirmed` in v0.1.
 - Correction events should append a new event rather than editing history.
 - Derived indexes must be rebuildable from ledger and source files.
+
+## Annotation Events
+
+Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
+
+Annotation events use `op: annotate_card`. Listing annotations is a read action over ledger events.
 
 ## Core Boundary
 

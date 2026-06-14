@@ -90,6 +90,8 @@ python -m nollm.cli validate ./demo-notebook
 python -m nollm.cli recall ./demo-notebook "filesystem memory"
 python -m nollm.cli audit ./demo-notebook
 python -m nollm.cli inspect ./demo-notebook
+python -m nollm.cli annotate ./demo-notebook card-id --note "Needs source verification."
+python -m nollm.cli annotations ./demo-notebook card-id
 ```
 
 Cortex read flow:
@@ -161,3 +163,16 @@ Inspect is a deterministic active inspection surface. It does not judge truth, a
 External tools should call the same surface with `nollm.inspect`.
 
 `review` remains a compatibility command; its semantics are active inspection.
+
+## Operator Annotations
+
+Use `annotate` to append operator notes to the ledger for an existing card:
+
+```bash
+python -m nollm.cli annotate ./demo-notebook card-id --note "Needs source verification." --annotation-type source_request
+python -m nollm.cli annotations ./demo-notebook card-id --limit 20
+```
+
+Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review. Annotations are active operator actions, not recall inputs.
+
+External tools can call `nollm.annotate` and `nollm.annotations`. Mutating annotation examples live under `examples/tool_requests/templates/` so committed OpenClaw examples remain stable.

@@ -89,6 +89,7 @@ def validate_notebook(path: Path) -> list[str]:
         if status == "confirmed":
             has_human_approval = any(
                 event.get("object_id") == card_id
+                and event.get("op") in {"update_status", "write_card"}
                 and event.get("to_status") == "confirmed"
                 and (event.get("actor_type") == "human" or bool(event.get("human_approval")))
                 for event in events

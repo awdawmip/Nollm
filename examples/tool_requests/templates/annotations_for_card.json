@@ -1,0 +1,13 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "req_annotations_for_card_001",
+  "action": "nollm.annotations",
+  "notebook_path": "replace-with-notebook-path",
+  "actor": "operator",
+  "actor_type": "human",
+  "input": {
+    "target": "replace-with-card-id-or-address",
+    "annotation_type": "note",
+    "limit": 20
+  }
+}

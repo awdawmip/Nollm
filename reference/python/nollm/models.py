@@ -63,6 +63,16 @@ SOURCE_KINDS = {
     "llm_inference",
 }
 
+ACTOR_TYPES = {"human", "llm", "tool", "system"}
+
+ANNOTATION_TYPES = {
+    "note",
+    "concern",
+    "question",
+    "correction_request",
+    "source_request",
+}
+
 RECALL_KEYS = [
     "query_or_task",
     "memory_intent",

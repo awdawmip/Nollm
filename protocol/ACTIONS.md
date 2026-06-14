@@ -9,6 +9,8 @@ Nollm actions describe the LLM-facing cognitive interface. They are protocol ver
 - `focus`: Select sufficient-scale cards.
 - `recall`: Produce a digest after scale scan.
 - `review`: Inspect draft and candidate cards matching active metadata filters.
+- `annotate_card`: Append an operator annotation ledger event for a card.
+- `list_annotations`: List annotation ledger events for a card.
 - `write_card`: Propose or write a structured card according to policy.
 - `link_cards`: Record explicit relationships between cards.
 - `update_status`: Change lifecycle state through an auditable event.
@@ -116,6 +118,48 @@ cards: []
 ```
 
 `review` is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, assign priority, block reads, or perform semantic scoring.
+
+### `annotate_card`
+
+Input:
+
+```yaml
+target: card id or memory address
+note: string
+annotation_type: note | concern | question | correction_request | source_request
+actor: string
+actor_type: human | llm | tool | system
+```
+
+Output:
+
+```yaml
+event_id: string
+address: ledger event address
+object_id: card id
+annotation_type: string
+```
+
+Annotations are operator notes. They are ledgered, active operator actions. They do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review.
+
+### `list_annotations`
+
+Input:
+
+```yaml
+target: card id or memory address
+annotation_type: string | null
+limit: integer
+```
+
+Output:
+
+```yaml
+annotation_count: integer
+annotations: []
+```
+
+Annotation listing reads ledger events only and does not return card bodies.
 
 ### `write_card`
 

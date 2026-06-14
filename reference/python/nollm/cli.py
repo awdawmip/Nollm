@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .annotation import append_annotation, list_annotations
 from .audit import build_audit_report, compare_audit_reports, render_audit_json, render_audit_markdown, validate_audit_report_shape
 from .filesystem import (
     append_ledger,
@@ -127,6 +128,22 @@ def build_parser() -> argparse.ArgumentParser:
     inspect.add_argument("--trust", choices=sorted(TRUST_VALUES))
     inspect.add_argument("--limit", type=int, default=20)
     inspect.set_defaults(func=cmd_review)
+
+    annotate = sub.add_parser("annotate")
+    annotate.add_argument("notebook_path")
+    annotate.add_argument("card_id_or_address")
+    annotate.add_argument("--note", required=True)
+    annotate.add_argument("--annotation-type", default="note")
+    annotate.add_argument("--actor", default="operator")
+    annotate.add_argument("--actor-type", default="human")
+    annotate.set_defaults(func=cmd_annotate)
+
+    annotations = sub.add_parser("annotations")
+    annotations.add_argument("notebook_path")
+    annotations.add_argument("card_id_or_address")
+    annotations.add_argument("--annotation-type")
+    annotations.add_argument("--limit", type=int, default=20)
+    annotations.set_defaults(func=cmd_annotations)
 
     tools = sub.add_parser("tools")
     tools.set_defaults(func=cmd_tools)
@@ -396,6 +413,38 @@ def cmd_review(args: argparse.Namespace) -> int:
         limit=args.limit,
     )
     print(json.dumps(response, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+def cmd_annotate(args: argparse.Namespace) -> int:
+    try:
+        result = append_annotation(
+            Path(args.notebook_path),
+            args.card_id_or_address,
+            args.note,
+            annotation_type=args.annotation_type,
+            actor=args.actor,
+            actor_type=args.actor_type,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        print(json.dumps(error_response("annotate", "invalid_request", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0
+
+
+def cmd_annotations(args: argparse.Namespace) -> int:
+    try:
+        result = list_annotations(
+            Path(args.notebook_path),
+            args.card_id_or_address,
+            annotation_type=args.annotation_type,
+            limit=args.limit,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        print(json.dumps(error_response("annotations", "invalid_request", str(exc)), indent=2, ensure_ascii=False))
+        return 2
+    print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
     return 0
 
 

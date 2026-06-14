@@ -60,3 +60,5 @@ Do not treat `review_reason` as semantic scoring, truth assessment, or priority 
 Inspect is not a read gate. Unconfirmed cards remain readable with status, trust, and source metadata. LLMs may use draft or candidate cards cautiously when surfaced by recall or read workflows.
 
 Inspect does not block LLM usage of Nollm.
+
+Annotations may be used for active operator notes during inspection, but annotations are not approval, truth, status changes, trust changes, card content, passive human review, or memory recall.

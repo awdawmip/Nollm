@@ -1,0 +1,13 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "req_annotate_card_001",
+  "action": "nollm.annotate",
+  "notebook_path": "replace-with-notebook-path",
+  "actor": "operator",
+  "actor_type": "human",
+  "input": {
+    "target": "replace-with-card-id-or-address",
+    "note": "Needs source verification.",
+    "annotation_type": "source_request"
+  }
+}

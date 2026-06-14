@@ -19,6 +19,7 @@ DISCOURAGED_PHRASES = (
 DOC_PATHS = [
     ROOT / "README.md",
     ROOT / "protocol" / "REVIEW.md",
+    ROOT / "protocol" / "ANNOTATION.md",
     ROOT / "protocol" / "TOOL_SURFACE.md",
     ROOT / "protocol" / "STATUS.md",
     ROOT / "protocol" / "TRUST.md",
@@ -73,6 +74,30 @@ def test_inspect_manifest_uses_active_inspection_semantics() -> None:
         "not memory recall",
         "does not change status",
         "does not append ledger events",
+    ):
+        assert required in combined
+
+
+def test_annotation_docs_preserve_operator_action_boundaries() -> None:
+    combined = "\n".join(
+        normalized_text(path)
+        for path in (
+            ROOT / "README.md",
+            ROOT / "protocol" / "ANNOTATION.md",
+            ROOT / "docs" / "integration" / "LLM_INTEGRATION.md",
+        )
+    )
+    for required in (
+        "annotations are operator notes",
+        "annotations are ledgered",
+        "annotations do not modify card content",
+        "annotations do not change status",
+        "annotations do not change trust",
+        "annotations do not prove truth",
+        "annotations do not approve memory",
+        "annotations do not block llm usage",
+        "annotations are not passive human review",
+        "annotations are active operator actions",
     ):
         assert required in combined
 

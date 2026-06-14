@@ -18,6 +18,8 @@ REQUIRED_ACTIONS = {
     "nollm.audit",
     "nollm.inspect",
     "nollm.review",
+    "nollm.annotate",
+    "nollm.annotations",
     "nollm.orient",
     "nollm.surface",
     "nollm.focus",

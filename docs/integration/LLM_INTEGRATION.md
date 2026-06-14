@@ -60,6 +60,14 @@ Use `nollm.update_status` or the CLI `status` command for operator-approved tran
 
 `review` remains a compatibility command; its semantics are active inspection.
 
+## Operator Annotations
+
+Use `nollm.annotate` to append an operator annotation ledger event to an existing card. Use `nollm.annotations` to list annotation events for a card.
+
+Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content. Annotations do not change status. Annotations do not change trust. Annotations do not prove truth. Annotations do not approve memory. Annotations do not block LLM usage. Annotations are not passive human review. Annotations are active operator actions.
+
+Do not use annotations as recall content by default. Do not treat annotation text as source evidence, truth scoring, approval, or priority assigned by Nollm.
+
 ## Audit
 
 Use `nollm.audit` to inspect notebook health, validation status, file counts, metadata distribution, recall digest shape, and boundary flags.
