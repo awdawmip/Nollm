@@ -55,20 +55,19 @@ Nollm v0.1 does not include embeddings, vector databases, graph providers, exter
 
 For canonical English/Chinese terminology and project namespace rules, see `protocol/TERMINOLOGY.md`.
 
-## Protocol Freeze
+## V1 Spec Freeze
 
-P0.2 freezes protocol vocabulary before P1 CLI implementation: statuses, types, trust, sources, actions, addresses, and validation invariants must stay explicit and auditable.
+Nollm V1 is scoped and frozen around explicit filesystem-backed objects, deterministic validation, audit projections, and JSON tool envelopes. Core stores, validates, reads, appends ledgered operator actions, and produces derived audit/recall outputs. Core does not compose context, rank related cards, infer truth, or run autonomous memory workflows.
 
 ## Reference CLI
 
-P1 includes a minimal filesystem-first Python CLI in `reference/python`.
+V1 includes a minimal filesystem-first Python CLI in `reference/python`.
 
 Run without installing:
 
 ```powershell
 cd C:\Users\chaos\nollm\reference\python
 python -m nollm.cli init .\demo-notebook --notebook demo
-python -m nollm.cli write .\demo-notebook --type fact --title "Filesystem memory" --claim "Nollm stores memory in local files." --reason "Demo card." --anchor project:demo --source user_statement --trust unverified
 python -m nollm.cli validate .\demo-notebook
 python -m nollm.cli recall .\demo-notebook "filesystem memory"
 ```
@@ -78,14 +77,6 @@ POSIX shell:
 ```bash
 cd reference/python
 python -m nollm.cli init ./demo-notebook --notebook demo
-python -m nollm.cli write ./demo-notebook \
-  --type fact \
-  --title "Filesystem memory" \
-  --claim "Nollm stores memory in local files." \
-  --reason "Demo card." \
-  --anchor project:demo \
-  --source user_statement \
-  --trust unverified
 python -m nollm.cli validate ./demo-notebook
 python -m nollm.cli recall ./demo-notebook "filesystem memory"
 python -m nollm.cli audit ./demo-notebook
@@ -96,12 +87,11 @@ python -m nollm.cli ledger ./demo-notebook --object-id card-id --limit 20
 python -m nollm.cli history ./demo-notebook card-id
 ```
 
-Cortex read flow:
+Cortex-side read flow:
 
 ```bash
 python -m nollm.cli orient ./demo-notebook "why not turn Nollm into Cognee"
-python -m nollm.cli surface ./demo-notebook --anchor project:demo
-python -m nollm.cli focus ./demo-notebook --anchor project:demo --status candidate
+python -m nollm.cli inspect ./demo-notebook --anchor project:demo
 python -m nollm.cli recall ./demo-notebook "why not turn Nollm into Cognee"
 ```
 
@@ -128,10 +118,9 @@ python -m nollm.cli audit-check ./demo-notebook --against ../../examples/audit_r
 
 ## JSON Tool Bridge
 
-P3 adds a dependency-free JSON bridge for external LLM tool callers. It is not an MCP server and does not start a network service.
+V1 includes a dependency-free JSON bridge for external LLM tool callers. It is not an MCP server and does not start a network service.
 
 ```bash
-python -m nollm.cli tools
 python -m nollm.cli tool ../../../examples/tool_requests/orient.json
 python -m nollm.cli tool ../../../examples/tool_requests/inspect_openclaw.json
 ```
@@ -141,13 +130,13 @@ Optional `request_id`, `actor`, and `actor_type` fields are echoed or ledgered w
 
 ## Using Nollm From External LLM Tools
 
-Recommended read flow:
+Recommended stable read flow:
 
 ```text
-orient -> surface -> focus -> recall
+orient -> inspect/read/ledger/history as needed -> recall when a digest is useful
 ```
 
-For one-shot use, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
+For one-shot use, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then explicit stable reads such as `nollm.inspect`, `nollm.read_card`, `nollm.ledger`, or `nollm.history`. Cortex / the LLM composes any resulting context outside Core.
 
 External LLM tools should write only candidate cards unless a human explicitly approves a later status update. Nollm is not a RAG engine, autonomous memory agent, or MCP server.
 
@@ -238,37 +227,27 @@ Cortex / LLM:
 
 ## V1 Allowed Surface
 
-V1 CLI commands:
-
-- `validate`
-- `orient`
-- `recall`
-- `read`
-- `inspect`
-- `review`
-- `annotate`
-- `annotations`
-- `ledger`
-- `history`
-- `audit`
-- `audit-check`
-- `tool`
-
-Stable V1 tool actions:
-
-- `nollm.validate`
-- `nollm.orient`
-- `nollm.recall`
-- `nollm.read_card`
-- `nollm.inspect`
-- `nollm.review`
-- `nollm.annotate`
-- `nollm.annotations`
-- `nollm.ledger`
-- `nollm.history`
-- `nollm.audit`
-
-Internal or experimental tool actions that remain available but are not the V1 external surface: `nollm.surface`, `nollm.focus`, `nollm.write_card`, `nollm.update_status`, and `nollm.read_card` legacy `card_id_or_address` input compatibility. They must preserve the same Core boundaries and must not introduce new V1 concepts.
+| CLI command | Tool action | Read/write | Writes ledger? | Mutates card files? | Returns body/text? | V1 status | Notes / boundaries |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `validate` | `nollm.validate` | read | no | no | no | stable | Deterministic structural validation only. |
+| `orient` | `nollm.orient` | read | no | no | no | stable | Anchor-field orientation; not context composition. |
+| `recall` | `nollm.recall` | derived write | no | no | yes | stable | May write recall digest files; not canonical memory or semantic completeness. |
+| `read` | `nollm.read_card` | read | no | no | yes | stable | Explicit single-card read; no neighbors or ranking. |
+| `inspect` | `nollm.inspect` | read | no | no | no | stable | Active metadata inspection; not truth or approval. |
+| `review` | `nollm.review` | read | no | no | no | stable | Compatibility name for active inspection. |
+| `annotate` | `nollm.annotate` | write | yes | no | no | stable | Appends operator notes; does not approve or change trust/status. |
+| `annotations` | `nollm.annotations` | read | no | no | yes | stable | Lists annotation ledger events. |
+| `ledger` | `nollm.ledger` | read | no | no | yes | stable | Audit trail query; not recall or truth. |
+| `history` | `nollm.history` | read | no | no | yes | stable | Object-level ledger inspection. |
+| `audit` | `nollm.audit` | read | no | no | no | stable | Derived inspection projection; not memory. |
+| `audit-check` | none | read | no | no | no | stable | Compares audit snapshots; structural drift only. |
+| `tool` | envelope runner | read/write by action | by action | by action | by action | stable | Executes JSON envelope actions. |
+| `surface` | `nollm.surface` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
+| `focus` | `nollm.focus` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
+| `write` | `nollm.write_card` | write | yes | yes | yes | internal/experimental | Candidate/draft writing helper; no direct confirmed writes. |
+| `status` | `nollm.update_status` | write | yes | yes | no | internal/experimental | Operator transition helper; must preserve confirmation boundaries. |
+| `tools` | none | read | no | no | no | internal/experimental | Local manifest inspection helper, not a protocol action. |
+| `init` | none | write | no | yes | no | internal/experimental | Local notebook bootstrap helper, not a memory protocol action. |
 
 Compatibility labels:
 

@@ -33,18 +33,17 @@ If `examples/tool_requests/error_cases/` exists, files inside it are intentional
 
 ## Read Flow
 
-Use the deterministic Cortex read flow:
+Use the stable V1 read flow:
 
-`orient -> surface -> focus -> recall`
+`orient -> inspect/read/ledger/history as needed -> recall when a digest is useful`
 
 - `orient`: Identify active anchor fields.
-- `surface`: Read finite current-scale cards influenced by those fields.
-- `focus`: Select sufficient-scale card front matter and claims.
-- `recall`: Produce a one-shot digest when the caller wants context in a single step.
+- `inspect` / `read_card` / `ledger` / `history`: Explicit stable reads selected by Cortex / the LLM.
+- `recall`: Produce a one-shot digest when the caller wants a reading packet.
 
 Conceptually this is now interpreted as anchor-field orientation and scale scanning.
 
-For one-shot context retrieval, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then `nollm.surface`, then `nollm.focus`.
+For one-shot context retrieval, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then stable explicit read actions. `nollm.surface` and `nollm.focus` remain internal/experimental helpers, not the stable V1 external surface.
 
 ## Explicit Read
 

@@ -21,7 +21,7 @@
 
 - Formalize recall digest generation.
 - Define conflict and supersession conventions.
-- Add deterministic review queues for human approval workflows.
+- Keep active inspection deterministic without introducing passive human review queues.
 - Preserve status transition history in the ledger.
 
 ## Non-Goals

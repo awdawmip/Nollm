@@ -2,9 +2,33 @@
 
 The Nollm tool surface exposes deterministic filesystem actions through JSON envelopes.
 
-This is MCP-preparation only. It is not an MCP server, HTTP server, websocket server, agent runtime, or model integration.
+This is a local JSON bridge only. It is not an MCP server, HTTP server, websocket server, agent runtime, or model integration.
 
-## Read-Only Actions
+## V1 Surface Table
+
+| CLI command | Tool action | Read/write | Writes ledger? | Mutates card files? | Returns body/text? | V1 status | Notes / boundaries |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `validate` | `nollm.validate` | read | no | no | no | stable | Deterministic structural validation only. |
+| `orient` | `nollm.orient` | read | no | no | no | stable | Anchor-field orientation; not context composition. |
+| `recall` | `nollm.recall` | derived write | no | no | yes | stable | May write recall digest files; not canonical memory or semantic completeness. |
+| `read` | `nollm.read_card` | read | no | no | yes | stable | Explicit single-card read; no neighbors or ranking. |
+| `inspect` | `nollm.inspect` | read | no | no | no | stable | Active metadata inspection; not truth or approval. |
+| `review` | `nollm.review` | read | no | no | no | stable | Compatibility name for active inspection. |
+| `annotate` | `nollm.annotate` | write | yes | no | no | stable | Appends operator notes; does not approve or change trust/status. |
+| `annotations` | `nollm.annotations` | read | no | no | yes | stable | Lists annotation ledger events. |
+| `ledger` | `nollm.ledger` | read | no | no | yes | stable | Audit trail query; not recall or truth. |
+| `history` | `nollm.history` | read | no | no | yes | stable | Object-level ledger inspection. |
+| `audit` | `nollm.audit` | read | no | no | no | stable | Derived inspection projection; not memory. |
+| `audit-check` | none | read | no | no | no | stable | Compares audit snapshots; structural drift only. |
+| `tool` | envelope runner | read/write by action | by action | by action | by action | stable | Executes JSON envelope actions. |
+| `surface` | `nollm.surface` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
+| `focus` | `nollm.focus` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
+| `write` | `nollm.write_card` | write | yes | yes | yes | internal/experimental | Candidate/draft writing helper; no direct confirmed writes. |
+| `status` | `nollm.update_status` | write | yes | yes | no | internal/experimental | Operator transition helper; must preserve confirmation boundaries. |
+| `tools` | none | read | no | no | no | internal/experimental | Local manifest inspection helper, not a protocol action. |
+| `init` | none | write | no | yes | no | internal/experimental | Local notebook bootstrap helper, not a memory protocol action. |
+
+## Stable Read-Only Actions
 
 - `nollm.validate`
 - `nollm.audit`
@@ -12,8 +36,6 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 - `nollm.review`
 - `nollm.annotations`
 - `nollm.orient`
-- `nollm.surface`
-- `nollm.focus`
 - `nollm.recall`
 - `nollm.read_card`
 - `nollm.ledger`
@@ -87,9 +109,8 @@ If `examples/tool_requests/error_cases/` exists, files inside it are intentional
 
 ## Ledger-Writing Actions
 
-- `nollm.write_card`
-- `nollm.update_status`
-- `nollm.annotate`
+- Stable V1: `nollm.annotate`
+- Internal/experimental: `nollm.write_card`, `nollm.update_status`
 
 These actions must preserve Core validation rules:
 

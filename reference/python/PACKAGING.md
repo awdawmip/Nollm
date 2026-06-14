@@ -1,6 +1,6 @@
 # Packaging
 
-Release archives must use POSIX-style `/` path separators.
+V1 packaging remains simple. Release archives must use POSIX-style `/` path separators.
 
 Valid archive entry:
 
@@ -21,6 +21,8 @@ Recommended packaging paths:
 - Use a Python zip creation script that writes archive names with `Path.as_posix()`.
 
 If a helper script is added later, it must use only the Python standard library unless the project explicitly accepts a packaging dependency.
+
+Packaging is not the project identity and does not introduce a runtime, database, MCP server, external LLM call, or dependency.
 
 ## Test Command
 

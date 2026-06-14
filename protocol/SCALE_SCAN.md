@@ -18,7 +18,7 @@ This is not full-library `O(N)` scan.
 
 ## Runtime Status
 
-The current reference CLI approximates this concept with deterministic `orient -> surface -> focus -> recall`. It does not implement geometry runtime behavior yet.
+The stable V1 external surface supports this concept through `orient`, explicit reads such as `inspect` or `read`, and `recall` when a digest is useful. Existing `surface` and `focus` helpers are internal/experimental and are not part of the stable V1 external surface. The current reference CLI does not implement geometry runtime behavior.
 
 P5.4 stores and validates optional `scale_links` metadata with the keys `coarser`, `finer`, `overlaps`, and `recovery`.
 
