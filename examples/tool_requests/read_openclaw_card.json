@@ -1,0 +1,11 @@
+{
+  "protocol": "nollm.tool.v0.1",
+  "request_id": "req_read_openclaw_card_001",
+  "action": "nollm.read_card",
+  "notebook_path": "../../examples/openclaw",
+  "actor": "codex",
+  "actor_type": "tool",
+  "input": {
+    "target": "card_0001_nollm_project_start"
+  }
+}

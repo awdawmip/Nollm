@@ -103,11 +103,11 @@
     {
       "name": "nollm.read_card",
       "kind": "read",
-      "description": "Read a card by id or memory address.",
-      "required_fields": ["card_id_or_address"],
-      "optional_fields": [],
+      "description": "Read exactly one explicit card by id or memory address. read_card is not recall, not context composition, does not return neighbors, does not rank related cards, and does not change status or trust.",
+      "required_fields": ["target"],
+      "optional_fields": ["include_body", "include_frontmatter", "card_id_or_address"],
       "writes_ledger": false,
-      "returns": "Card front matter, body, and file path."
+      "returns": "Requested card id, address, optional frontmatter, and optional body. No neighboring cards, related cards, semantic matches, recommendations, or context bundles are returned."
     },
     {
       "name": "nollm.update_status",

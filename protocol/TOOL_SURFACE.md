@@ -25,6 +25,8 @@ This is MCP-preparation only. It is not an MCP server, HTTP server, websocket se
 
 The audit report JSON shape is a stable inspection contract documented in `protocol/AUDIT_SCHEMA.md`. It is not a memory schema, not a recall digest schema, and not source memory. `examples/audit_reports/*.json` files are deterministic audit snapshots for examples and regression tests, not notebook memory.
 
+`nollm.read_card` reads exactly one explicit card. `read_card` is not recall. `read_card` is not context composition. `read_card` does not return neighbors. `read_card` does not rank related cards. Core does not assemble deterministic context. Context composition belongs to Cortex / LLM using explicit calls.
+
 `nollm.inspect` returns a deterministic active inspection surface for cards matching metadata filters. It is read-only, does not append ledger events, does not include full card bodies by default, does not approve cards, and does not change status.
 
 Use inspect for optional operator inspection. Do not use inspect as proof that a card is true or false, do not use it as memory recall, and do not treat `review_reason` as semantic scoring, truth assessment, or priority assigned by Nollm. Use `nollm.update_status` or the CLI `status` command for operator-approved transitions.
@@ -40,6 +42,16 @@ Inspect/review may show `annotation_count`. Audit may count annotations. Annotat
 `nollm.ledger` returns filtered audit trail events. `nollm.history` returns object-level ledger inspection. Ledger/history do not prove truth, approve memory, change status, change trust, perform semantic scoring, or act as recall.
 
 Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.
+
+## Surface Relation
+
+- `read` / `read_card` = explicit object read
+- `inspect` / `review` = active metadata surface
+- `history` = object-level ledger trail
+- `ledger` = ledger query
+- `annotations` = annotation listing
+- `recall` = scale-scan digest
+- context composition = Cortex-side, not Core
 
 `nollm.recall` returns a digest with scale-scan metadata:
 

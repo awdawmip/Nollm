@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "action": "nollm.read_card",
+  "result": {
+    "ok": true,
+    "notebook": "openclaw",
+    "id": "card_0001_nollm_project_start",
+    "address": "nollm://openclaw/card/card_0001_nollm_project_start",
+    "frontmatter": {
+      "id": "card_0001_nollm_project_start",
+      "title": "Nollm Project Start",
+      "type": "decision",
+      "anchors": [
+        "project:nollm",
+        "decision:identity",
+        "protocol:core"
+      ],
+      "created": "2026-06-12",
+      "status": "confirmed",
+      "claim": "Nollm is an external notebook for LLMs, not another LLM or autonomous memory engine.",
+      "reason": "Establish the project identity and Core/Cortex boundary.",
+      "source": "human_decision",
+      "trust": "human-approved",
+      "evidence_refs": [
+        "nollm://openclaw/ledger/event/evt_0001"
+      ],
+      "implications": [
+        "Keep Core deterministic and auditable.",
+        "Keep Cortex model-side and advisory."
+      ],
+      "do_not_infer": [
+        "Nollm provides model inference.",
+        "Nollm autonomously mutates memory."
+      ],
+      "ledger_event": "evt_0001"
+    },
+    "body": "# Nollm Project Start\n\nNollm is an external notebook for LLMs, not another LLM or autonomous memory engine.\n\nThis decision establishes the Core/Cortex boundary. Nollm Core stores stable, auditable memory records. Nollm Cortex may help an LLM orient, recall, and propose writes, but it does not become the source of truth.\n\n## Do Not Infer\n\n- Nollm provides model inference.\n- Nollm autonomously mutates memory.\n"
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [
+    "nollm://openclaw/card/card_0001_nollm_project_start"
+  ],
+  "request_id": "req_read_openclaw_card_001"
+}

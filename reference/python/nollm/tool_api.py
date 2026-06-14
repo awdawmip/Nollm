@@ -324,8 +324,26 @@ def action_write_card(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def action_read_card(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
-    front, body, card_path = read_card(path, str(payload["card_id_or_address"]))
-    return success_response("nollm.read_card", {"front": front, "body": body, "path": str(card_path)}, addresses=[card_address(notebook_name(path), str(front.get("id")))])
+    target = payload.get("target", payload.get("card_id_or_address"))
+    if target is None:
+        return error_response("nollm.read_card", "missing_field", "Missing required field: input.target")
+    include_body = bool(payload.get("include_body", True))
+    include_frontmatter = bool(payload.get("include_frontmatter", True))
+    front, body, _card_path = read_card(path, str(target))
+    notebook = notebook_name(path)
+    card_id = str(front.get("id", ""))
+    address = card_address(notebook, card_id)
+    result: dict[str, Any] = {
+        "ok": True,
+        "notebook": notebook,
+        "id": card_id,
+        "address": address,
+    }
+    if include_frontmatter:
+        result["frontmatter"] = front
+    if include_body:
+        result["body"] = body
+    return success_response("nollm.read_card", result, addresses=[address])
 
 
 def action_update_status(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
@@ -441,7 +459,7 @@ REQUIRED_FIELDS = {
     "nollm.focus": ["anchor"],
     "nollm.recall": ["query_or_task"],
     "nollm.write_card": ["type", "title", "claim", "reason", "anchors", "source", "trust"],
-    "nollm.read_card": ["card_id_or_address"],
+    "nollm.read_card": [],
     "nollm.update_status": ["card_id_or_address", "to", "reason"],
     "nollm.ledger": [],
     "nollm.history": ["target"],

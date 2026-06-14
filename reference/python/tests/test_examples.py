@@ -142,6 +142,18 @@ class StaticExampleTests(unittest.TestCase):
         self.assertEqual(result["event_count"], 1)
         self.assertEqual(result["events"][0]["op"], "write_card")
 
+    def test_read_card_tool_response_example_is_valid_json(self) -> None:
+        path = ROOT / "examples" / "tool_responses" / "read_openclaw_card_response.json"
+        response = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["action"], "nollm.read_card")
+        result = response["result"]
+        self.assertEqual(result["id"], "card_0001_nollm_project_start")
+        self.assertIn("frontmatter", result)
+        self.assertIn("body", result)
+        for forbidden in ("neighbors", "related_cards", "context", "ranked_cards", "semantic_matches"):
+            self.assertNotIn(forbidden, result)
+
     def test_top_level_tool_requests_run_from_reference_python(self) -> None:
         request_paths = sorted((ROOT / "examples" / "tool_requests").glob("*.json"))
         self.assertTrue(request_paths, "expected runnable top-level tool request examples")
@@ -173,6 +185,8 @@ class StaticExampleTests(unittest.TestCase):
                     self.assertEqual(response["result"]["event_count"], 1)
                 if request_path.name == "history_openclaw_card.json":
                     self.assertEqual(response["result"]["event_count"], 1)
+                if request_path.name == "read_openclaw_card.json":
+                    self.assertEqual(response["result"]["id"], "card_0001_nollm_project_start")
         self.assert_no_source_generated_recall_artifacts()
 
     def test_mutating_annotate_example_is_template_only(self) -> None:
