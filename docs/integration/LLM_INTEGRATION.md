@@ -14,20 +14,22 @@ Each request uses the `nollm.tool.v0.1` envelope and receives a structured `ok: 
 
 `notebook_path` is resolved relative to the current working directory of the `nollm tool` process, not relative to the request JSON file.
 
-Runnable OpenClaw scale-scan recall example:
+Generated-output OpenClaw scale-scan recall example:
 
 ```bash
 cd reference/python
-python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
+python3 -m nollm.cli tool ../../examples/tool_requests/generated_output_examples/recall_scale_scan.json
 ```
 
-That request uses `notebook_path: "../../examples/openclaw"` so it resolves correctly from `reference/python`.
+That request uses `notebook_path: "../../examples/openclaw"` so it resolves correctly from `reference/python`, but it may write generated recall digest files. Run it against a temporary notebook copy or clean generated `recall_*.json` and `recall_*.md` files before committing.
 
 ## Example Request Convention
 
-Top-level files in `examples/tool_requests/*.json` are runnable examples. Run them from `reference/python` unless a file says otherwise.
+Top-level files in `examples/tool_requests/*.json` are safe runnable examples. Run them from `reference/python` unless a file says otherwise.
 
 Files under `examples/tool_requests/templates/` are request templates and may contain placeholders. They are not expected to run as-is.
+
+Files under `examples/tool_requests/generated_output_examples/` may create generated outputs and should be run against temporary notebook copies.
 
 If `examples/tool_requests/error_cases/` exists, files inside it are intentional failure examples and should return structured `ok: false` errors.
 

@@ -12,11 +12,11 @@ python3 -m nollm.cli tool ../../examples/tool_requests/history_openclaw_card.jso
 python3 -m nollm.cli tool ../../examples/tool_requests/inspect_openclaw.json
 python3 -m nollm.cli tool ../../examples/tool_requests/orient.json
 python3 -m nollm.cli tool ../../examples/tool_requests/read_openclaw_card.json
-python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
+python3 -m nollm.cli tool ../../examples/tool_requests/review_openclaw.json
 ```
 
-Some examples mutate derived output. `recall_scale_scan.json` may create generated recall files under the target notebook's `recalls/` directory when run manually.
+Top-level examples are safe against committed OpenClaw: they are read-only or non-mutating and do not create generated recall files.
 
-Tests execute mutating examples against temporary notebook copies. Generated `recall_*.json` and `recall_*.md` files are not source memory unless they are explicitly committed as example fixtures.
+Generated-output examples live under `generated_output_examples/`. `generated_output_examples/recall_scale_scan.json` calls `nollm.recall` and may create generated recall files under the target notebook's `recalls/` directory when run manually. Run it against a temporary notebook copy or clean generated `recall_*.json` and `recall_*.md` files before committing.
 
-Files under `templates/` are templates and may contain placeholders. They are not expected to run as-is.
+Files under `templates/` are templates and may contain placeholders. Mutating examples belong there unless a test explicitly runs them against a temporary notebook fixture.

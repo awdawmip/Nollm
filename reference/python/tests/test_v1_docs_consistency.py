@@ -76,7 +76,7 @@ def test_known_limitations_file_exists_and_matches_roadmap() -> None:
         "No formal CONTRIBUTING.md yet.",
         "No public AGENTS.example.md yet.",
         "Packaging remains simple.",
-        "recall_scale_scan example requires care because it may generate digest files.",
+        "recall_scale_scan is isolated under generated-output examples because it may generate digest files.",
         "SQLite audit projection remains future research, not V1 runtime.",
         "MCP remains future consideration, not V1.",
     )

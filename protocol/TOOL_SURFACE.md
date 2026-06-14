@@ -90,20 +90,22 @@ Treat these as metadata-only reading aids. `scale_path` is not a tree path, not 
 
 It is not resolved relative to the request JSON file.
 
-Example tool requests in this repository are written for a documented working directory. The built-in runnable OpenClaw recall example is intended to be run from `reference/python`:
+Example tool requests in this repository are written for a documented working directory. Safe top-level examples run from `reference/python`. Generated-output examples, including the OpenClaw recall example, should run against temporary notebook copies or be cleaned after use:
 
 ```bash
 cd reference/python
-python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
+python3 -m nollm.cli tool ../../examples/tool_requests/generated_output_examples/recall_scale_scan.json
 ```
 
-In that request, `notebook_path: "../../examples/openclaw"` resolves from the `reference/python` process directory.
+In that request, `notebook_path: "../../examples/openclaw"` resolves from the `reference/python` process directory and may create generated recall digest files.
 
 ## Example Request Convention
 
-Top-level files in `examples/tool_requests/*.json` are runnable examples. They are intended to be executed from `reference/python` unless a file says otherwise.
+Top-level files in `examples/tool_requests/*.json` are safe runnable examples. They are intended to be executed from `reference/python` unless a file says otherwise.
 
 Files under `examples/tool_requests/templates/` are request templates and may contain placeholders. They are not expected to run as-is.
+
+Files under `examples/tool_requests/generated_output_examples/` may create generated outputs and should be run against temporary notebook copies.
 
 If `examples/tool_requests/error_cases/` exists, files inside it are intentional failure examples and must return structured `ok: false` errors.
 

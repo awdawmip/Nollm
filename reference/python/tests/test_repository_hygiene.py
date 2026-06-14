@@ -14,6 +14,7 @@ REQUIRED_FIXTURES = {
     "examples/audit_reports/openclaw_audit.json",
     *ALLOWED_RECALL_FIXTURES,
 }
+FIXTURE_EXTENSIONS = {".json", ".jsonl", ".md", ".yaml", ".yml"}
 
 
 def test_repository_tree_has_no_generated_artifacts() -> None:
@@ -38,6 +39,18 @@ def test_required_hygiene_fixtures_remain_present() -> None:
     assert missing == []
 
 
+def test_committed_fixtures_do_not_contain_machine_local_absolute_paths() -> None:
+    offenders = []
+    for path in (ROOT / "examples").rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in FIXTURE_EXTENSIONS:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if has_machine_local_absolute_path(text):
+            offenders.append(path.relative_to(ROOT).as_posix())
+
+    assert offenders == []
+
+
 def test_canonical_test_command_is_documented() -> None:
     docs = [
         ROOT / "README.md",
@@ -51,3 +64,14 @@ def test_canonical_test_command_is_documented() -> None:
 
 def relative_paths(paths) -> list[str]:
     return sorted(path.relative_to(ROOT).as_posix() for path in paths)
+
+
+def has_machine_local_absolute_path(text: str) -> bool:
+    markers = (
+        "C:\\",
+        "C:/",
+        "\\Users\\",
+        "/Users/",
+        "/home/",
+    )
+    return any(marker in text for marker in markers)

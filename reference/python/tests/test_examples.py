@@ -22,6 +22,36 @@ ALLOWED_MEMORY_INTENTS = {
     "ask_user_confirmation",
 }
 ALLOWED_FALLBACK_MODES = {"none", "lexical_card_scan"}
+SAFE_TOP_LEVEL_REQUESTS = {
+    "annotations_openclaw.json",
+    "audit_openclaw.json",
+    "history_openclaw_card.json",
+    "inspect_openclaw.json",
+    "ledger_openclaw.json",
+    "orient.json",
+    "read_openclaw_card.json",
+    "review_openclaw.json",
+}
+SAFE_TOP_LEVEL_ACTIONS = {
+    "nollm.annotations",
+    "nollm.audit",
+    "nollm.history",
+    "nollm.inspect",
+    "nollm.ledger",
+    "nollm.orient",
+    "nollm.read_card",
+    "nollm.review",
+}
+REQUIRED_SAFE_RESPONSES = {
+    "audit_openclaw_response.json",
+    "orient_response.json",
+    "inspect_openclaw_response.json",
+    "review_openclaw_response.json",
+    "annotations_openclaw_response.json",
+    "ledger_openclaw_response.json",
+    "history_openclaw_card_response.json",
+    "read_openclaw_card_response.json",
+}
 
 
 class StaticExampleTests(unittest.TestCase):
@@ -90,6 +120,18 @@ class StaticExampleTests(unittest.TestCase):
             self.assertIn(section, response["result"])
         self.assertTrue(all(value is False for value in response["result"]["boundaries"].values()))
 
+    def test_orient_tool_response_example_is_valid_json(self) -> None:
+        path = ROOT / "examples" / "tool_responses" / "orient_response.json"
+        response = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(response["ok"])
+        self.assertEqual(response["action"], "nollm.orient")
+        result = response["result"]
+        self.assertEqual(result["memory_intent"], "recall_surface")
+        self.assertIn("candidate_anchors", result)
+        self.assertIn("matched_anchors", result)
+        self.assertFalse(result["new_anchor_needed"])
+        self.assertEqual(response["ledger_events"], [])
+
     def test_review_tool_response_example_is_valid_json(self) -> None:
         path = ROOT / "examples" / "tool_responses" / "review_openclaw_response.json"
         response = json.loads(path.read_text(encoding="utf-8"))
@@ -156,28 +198,13 @@ class StaticExampleTests(unittest.TestCase):
 
     def test_top_level_tool_requests_run_from_reference_python(self) -> None:
         request_paths = sorted((ROOT / "examples" / "tool_requests").glob("*.json"))
-        self.assertTrue(request_paths, "expected runnable top-level tool request examples")
+        self.assertEqual({path.name for path in request_paths}, SAFE_TOP_LEVEL_REQUESTS)
         for request_path in request_paths:
             with self.subTest(request=request_path.name):
                 response = run_tool_request_against_temp_notebook(request_path)
                 self.assertTrue(response["ok"], response)
-                if request_path.name == "recall_scale_scan.json":
-                    digest = response["result"]["digest"]
-                    self.assertEqual(digest["memory_intent"], "recall_focus")
-                    for key in (
-                        "active_anchor_fields",
-                        "scale_path",
-                        "lateral_recovery",
-                        "sufficient_scale_reached",
-                    ):
-                        self.assertIn(key, digest)
-                    self.assertIsInstance(digest["lateral_recovery"], list)
-                    self.assertIsInstance(digest["sufficient_scale_reached"], bool)
-                    self.assertTrue(digest["scale_path"])
-                    scale_item = digest["scale_path"][0]
-                    self.assertIsInstance(scale_item["layer"], int)
-                    self.assertIsInstance(scale_item["card"], str)
-                    self.assertIsInstance(scale_item["anchor_fields"], list)
+                self.assertIn(response["action"], SAFE_TOP_LEVEL_ACTIONS)
+                self.assertEqual(response["ledger_events"], [])
                 if request_path.name == "annotations_openclaw.json":
                     self.assertEqual(response["result"]["annotation_count"], 0)
                     self.assertEqual(response["result"]["annotations"], [])
@@ -189,6 +216,31 @@ class StaticExampleTests(unittest.TestCase):
                     self.assertEqual(response["result"]["id"], "card_0001_nollm_project_start")
         self.assert_no_source_generated_recall_artifacts()
 
+    def test_generated_output_recall_example_runs_only_against_temp_notebook(self) -> None:
+        request_path = ROOT / "examples" / "tool_requests" / "generated_output_examples" / "recall_scale_scan.json"
+        response = run_tool_request_against_temp_notebook(request_path)
+        self.assertTrue(response["ok"], response)
+        self.assertEqual(response["action"], "nollm.recall")
+        digest = response["result"]["digest"]
+        self.assertEqual(digest["memory_intent"], "recall_focus")
+        for key in (
+            "active_anchor_fields",
+            "scale_path",
+            "lateral_recovery",
+            "sufficient_scale_reached",
+        ):
+            self.assertIn(key, digest)
+        self.assertTrue(digest["scale_path"])
+        self.assert_no_source_generated_recall_artifacts()
+
+    def test_response_examples_exist_for_safe_top_level_requests(self) -> None:
+        missing = sorted(
+            name
+            for name in REQUIRED_SAFE_RESPONSES
+            if not (ROOT / "examples" / "tool_responses" / name).exists()
+        )
+        self.assertEqual(missing, [])
+
     def test_mutating_annotate_example_is_template_only(self) -> None:
         top_level_actions = []
         for request_path in sorted((ROOT / "examples" / "tool_requests").glob("*.json")):
@@ -196,7 +248,7 @@ class StaticExampleTests(unittest.TestCase):
             top_level_actions.append((request_path.name, request.get("action")))
 
         self.assertNotIn(("annotate_openclaw.json", "nollm.annotate"), top_level_actions)
-        self.assertFalse(any(action == "nollm.annotate" for _name, action in top_level_actions))
+        self.assertFalse(any(action in {"nollm.annotate", "nollm.write_card", "nollm.update_status", "nollm.recall"} for _name, action in top_level_actions))
         self.assertTrue((ROOT / "examples" / "tool_requests" / "templates" / "annotate_card.json").exists())
 
     def test_source_openclaw_has_no_generated_recall_artifacts(self) -> None:

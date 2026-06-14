@@ -47,3 +47,5 @@ Before packaging or uploading, remove ignored local artifacts:
 - temporary archives
 
 Keep committed fixtures such as `examples/audit_reports/openclaw_audit.json` and `examples/openclaw/recalls/sample_recall_digest.*`.
+
+Top-level `examples/tool_requests/*.json` are safe against committed OpenClaw. Generated-output examples, including `examples/tool_requests/generated_output_examples/recall_scale_scan.json`, must be run against a temporary notebook copy or cleaned before packaging.

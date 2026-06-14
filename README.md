@@ -128,6 +128,8 @@ python -m nollm.cli tool ../../../examples/tool_requests/inspect_openclaw.json
 Tool requests use the `nollm.tool.v0.1` envelope and return structured `ok: true` or `ok: false` JSON responses.
 Optional `request_id`, `actor`, and `actor_type` fields are echoed or ledgered where appropriate.
 
+Top-level examples in `examples/tool_requests/*.json` are safe against committed OpenClaw. Generated-output examples, including recall examples that may write `recall_*.json` or `recall_*.md`, live under `examples/tool_requests/generated_output_examples/` and should be run against temporary notebook copies.
+
 ## Using Nollm From External LLM Tools
 
 Recommended stable read flow:

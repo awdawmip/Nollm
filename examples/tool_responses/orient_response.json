@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "protocol": "nollm.tool.v0.1",
+  "action": "nollm.orient",
+  "result": {
+    "input": "project:nollm honeycomb metadata",
+    "memory_intent": "recall_surface",
+    "candidate_anchors": [
+      "project:nollm",
+      "decision:identity",
+      "protocol:core"
+    ],
+    "matched_anchors": [
+      {
+        "anchor": "project:nollm",
+        "confidence": 1.0,
+        "match_type": "id",
+        "reason": "Query contains anchor id project:nollm."
+      },
+      {
+        "anchor": "decision:identity",
+        "confidence": 0.55,
+        "match_type": "keyword",
+        "reason": "Query overlaps anchor definition keywords."
+      },
+      {
+        "anchor": "protocol:core",
+        "confidence": 0.55,
+        "match_type": "keyword",
+        "reason": "Query overlaps anchor definition keywords."
+      }
+    ],
+    "new_anchor_needed": false,
+    "new_anchor_candidate": null,
+    "read_depth": "surface",
+    "write_candidate": false,
+    "write_intent": "none",
+    "reason": "Matched existing anchors.",
+    "warnings": []
+  },
+  "warnings": [],
+  "ledger_events": [],
+  "addresses": [],
+  "request_id": "example_orient_001"
+}

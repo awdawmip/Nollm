@@ -63,11 +63,11 @@ Allowed tool bridge `actor_type` values are `human`, `llm`, `tool`, and `system`
 
 It is not resolved relative to the request JSON file.
 
-Repository example requests that are marked runnable state their working directory explicitly. The OpenClaw scale-scan recall example is run from `reference/python`:
+Repository example requests that are marked runnable state their working directory explicitly. Safe top-level examples run from `reference/python`. The generated-output OpenClaw scale-scan recall example is run from `reference/python` against a temporary notebook copy or cleaned after use:
 
 ```bash
 cd reference/python
-python3 -m nollm.cli tool ../../examples/tool_requests/recall_scale_scan.json
+python3 -m nollm.cli tool ../../examples/tool_requests/generated_output_examples/recall_scale_scan.json
 ```
 
-The request uses `notebook_path: "../../examples/openclaw"` because that path resolves from the process working directory.
+The request uses `notebook_path: "../../examples/openclaw"` because that path resolves from the process working directory. It may create generated recall digest files.
