@@ -106,6 +106,8 @@ Use the project test command so ambient pytest plugins do not affect Nollm tests
 
 The reference CLI uses only the Python standard library and keeps Markdown, YAML, JSONL, and JSON as source-of-truth files.
 
+Release packaging is source-first and simple. Before packaging, review `docs/V1_RELEASE_CHECKLIST.md` and run `python3 scripts/check_package_hygiene.py ../..` from `reference/python`.
+
 Audit reports are deterministic derived projections over notebook files. They are not memory, not a recall index, and not source of truth. The stable JSON contract is documented in `protocol/AUDIT_SCHEMA.md`; the OpenClaw golden snapshot lives at `examples/audit_reports/openclaw_audit.json`. Audit schema stability is for inspection and governance, not memory or recall.
 
 Compare current audit output with a snapshot:

@@ -36,11 +36,20 @@ The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, runs every test file in dete
 
 ## Clean Tree Guard
 
-Before packaging or uploading, remove ignored local artifacts:
+Before packaging or uploading, run:
+
+```bash
+python3 scripts/check_package_hygiene.py ../..
+```
+
+The checker is a release hygiene guard only. It does not create archives and does not add runtime behavior.
+
+It rejects:
 
 - `.pytest_cache/`
 - `__pycache__/`
 - `*.pyc`
+- `settings.json`
 - generated `examples/openclaw/recalls/recall_*.json`
 - generated `examples/openclaw/recalls/recall_*.md`
 - local `audit.json` / `audit.md` outputs
@@ -49,3 +58,14 @@ Before packaging or uploading, remove ignored local artifacts:
 Keep committed fixtures such as `examples/audit_reports/openclaw_audit.json` and `examples/openclaw/recalls/sample_recall_digest.*`.
 
 Top-level `examples/tool_requests/*.json` are safe against committed OpenClaw. Generated-output examples, including `examples/tool_requests/generated_output_examples/recall_scale_scan.json`, must be run against a temporary notebook copy or cleaned before packaging.
+
+## Release Candidate Procedure
+
+Run the V1 release checklist in `docs/V1_RELEASE_CHECKLIST.md`.
+
+Prepare tag commands only after validation and project-owner authorization:
+
+```bash
+git tag v1.0.0-rc1
+git push origin v1.0.0-rc1
+```

@@ -27,12 +27,16 @@ audit.json
 audit.md
 *_audit.json
 *_audit.md
+out/
+output/
+outputs/
 !examples/audit_reports/openclaw_audit.json
 
 # Packages / archives
 *.zip
 *.tar
 *.tar.gz
+*.tgz
 
 # OS
 .DS_Store

@@ -127,7 +127,7 @@ def test_known_limitations_are_documented() -> None:
         "No formal CONTRIBUTING.md yet.",
         "No public AGENTS.example.md yet.",
         "Packaging remains simple.",
-        "recall_scale_scan is isolated under generated-output examples because it may generate digest files.",
+        "Generated-output recall examples are isolated and should be run against temp notebooks.",
         "SQLite audit projection remains future research, not V1 runtime.",
         "MCP remains future consideration, not V1.",
     ):

@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent / "tests"))
 from subprocess_harness import run_subprocess  # noqa: E402
 
