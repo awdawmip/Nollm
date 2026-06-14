@@ -3,17 +3,16 @@ from __future__ import annotations
 import ast
 import json
 import shutil
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from subprocess_harness import run_subprocess, subprocess_failure_message
+from cli_harness import run_cli
+from subprocess_harness import subprocess_failure_message
 
 
 ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_PYTHON = ROOT / "reference" / "python"
-SUBPROCESS_TIMEOUT = 20
 ALLOWED_MEMORY_INTENTS = {
     "read_none",
     "orient_only",
@@ -270,12 +269,7 @@ def run_tool_request_against_temp_notebook(request_path: Path) -> dict:
         request["notebook_path"] = str(notebook)
         temp_request = temp_root / request_path.name
         temp_request.write_text(json.dumps(request), encoding="utf-8")
-        completed = run_subprocess(
-            [sys.executable, "-m", "nollm.cli", "tool", str(temp_request)],
-            cwd=REFERENCE_PYTHON,
-            timeout_seconds=SUBPROCESS_TIMEOUT,
-            label=request_path.as_posix(),
-        )
+        completed = run_cli(["tool", str(temp_request)], cwd=REFERENCE_PYTHON)
     if completed.returncode != 0:
         raise AssertionError(subprocess_failure_message(completed, REFERENCE_PYTHON, request_path.as_posix()))
     return json.loads(completed.stdout)

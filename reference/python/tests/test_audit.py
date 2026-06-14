@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import json
 import shutil
-import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -12,13 +11,13 @@ from pathlib import Path
 from nollm.audit import build_audit_report, compare_audit_reports, validate_audit_report_shape
 from nollm.cli import main
 from nollm.filesystem import read_ledger
-from subprocess_harness import run_subprocess, subprocess_failure_message
+from cli_harness import run_cli
+from subprocess_harness import subprocess_failure_message
 from test_write_read import init_notebook, write_card
 
 
 ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_PYTHON = ROOT / "reference" / "python"
-SUBPROCESS_TIMEOUT = 20
 
 
 def run_cli_json(args: list[str]) -> dict:
@@ -131,22 +130,15 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(report["ledger"]["missing_referenced_object_count"], 0)
 
     def test_cli_output_passes_schema_checker(self) -> None:
-        completed = run_subprocess(
-            [sys.executable, "-m", "nollm.cli", "audit", "../../examples/openclaw"],
-            cwd=REFERENCE_PYTHON,
-        )
+        completed = run_cli(["audit", "../../examples/openclaw"], cwd=REFERENCE_PYTHON)
         self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON))
         report = json.loads(completed.stdout)
 
         self.assertEqual(validate_audit_report_shape(report), [])
 
     def test_tool_output_passes_schema_checker(self) -> None:
-        completed = run_subprocess(
-            [sys.executable, "-m", "nollm.cli", "tool", "../../examples/tool_requests/audit_openclaw.json"],
-            cwd=REFERENCE_PYTHON,
-            request_path=ROOT / "examples" / "tool_requests" / "audit_openclaw.json",
-        )
-        self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON, ROOT / "examples" / "tool_requests" / "audit_openclaw.json"))
+        completed = run_cli(["tool", "../../examples/tool_requests/audit_openclaw.json"], cwd=REFERENCE_PYTHON)
+        self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON, "audit_openclaw.json"))
         response = json.loads(completed.stdout)
 
         self.assertTrue(response["ok"])
@@ -159,10 +151,7 @@ class AuditTests(unittest.TestCase):
             notebook = Path(tmp) / "openclaw"
             shutil.copytree(ROOT / "examples" / "openclaw", notebook)
             remove_generated_recall_artifacts(notebook)
-            completed = run_subprocess(
-                [sys.executable, "-m", "nollm.cli", "audit", str(notebook)],
-                cwd=REFERENCE_PYTHON,
-            )
+            completed = run_cli(["audit", str(notebook)], cwd=REFERENCE_PYTHON)
             self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON))
             current = json.loads(completed.stdout)
             current["notebook"]["path"] = golden["notebook"]["path"]
@@ -273,16 +262,8 @@ class AuditTests(unittest.TestCase):
         self.assertIn("## Boundaries", first)
 
     def test_audit_check_reports_no_drift_for_openclaw_snapshot(self) -> None:
-        completed = run_subprocess(
-            [
-                sys.executable,
-                "-m",
-                "nollm.cli",
-                "audit-check",
-                "../../examples/openclaw",
-                "--against",
-                "../../examples/audit_reports/openclaw_audit.json",
-            ],
+        completed = run_cli(
+            ["audit-check", "../../examples/openclaw", "--against", "../../examples/audit_reports/openclaw_audit.json"],
             cwd=REFERENCE_PYTHON,
         )
         self.assertEqual(completed.returncode, 0, subprocess_failure_message(completed, REFERENCE_PYTHON))
@@ -300,18 +281,7 @@ class AuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             snapshot = Path(tmp) / "drifted_snapshot.json"
             snapshot.write_text(json.dumps(golden), encoding="utf-8")
-            completed = run_subprocess(
-                [
-                    sys.executable,
-                    "-m",
-                    "nollm.cli",
-                    "audit-check",
-                    "../../examples/openclaw",
-                    "--against",
-                    str(snapshot),
-                ],
-                cwd=REFERENCE_PYTHON,
-            )
+            completed = run_cli(["audit-check", "../../examples/openclaw", "--against", str(snapshot)], cwd=REFERENCE_PYTHON)
         self.assertEqual(completed.returncode, 1, subprocess_failure_message(completed, REFERENCE_PYTHON))
         response = json.loads(completed.stdout)
 
@@ -324,18 +294,7 @@ class AuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             snapshot = Path(tmp) / "invalid_snapshot.json"
             snapshot.write_text(json.dumps({"validation": {"pass": True}}), encoding="utf-8")
-            completed = run_subprocess(
-                [
-                    sys.executable,
-                    "-m",
-                    "nollm.cli",
-                    "audit-check",
-                    "../../examples/openclaw",
-                    "--against",
-                    str(snapshot),
-                ],
-                cwd=REFERENCE_PYTHON,
-            )
+            completed = run_cli(["audit-check", "../../examples/openclaw", "--against", str(snapshot)], cwd=REFERENCE_PYTHON)
         self.assertEqual(completed.returncode, 2, subprocess_failure_message(completed, REFERENCE_PYTHON))
         response = json.loads(completed.stdout)
 
@@ -345,18 +304,7 @@ class AuditTests(unittest.TestCase):
 
     def test_audit_check_returns_error_for_unreadable_snapshot(self) -> None:
         missing_snapshot = ROOT / "examples" / "audit_reports" / "missing_snapshot.json"
-        completed = run_subprocess(
-            [
-                sys.executable,
-                "-m",
-                "nollm.cli",
-                "audit-check",
-                "../../examples/openclaw",
-                "--against",
-                str(missing_snapshot),
-            ],
-            cwd=REFERENCE_PYTHON,
-        )
+        completed = run_cli(["audit-check", "../../examples/openclaw", "--against", str(missing_snapshot)], cwd=REFERENCE_PYTHON)
         self.assertEqual(completed.returncode, 2, subprocess_failure_message(completed, REFERENCE_PYTHON))
         response = json.loads(completed.stdout)
 
@@ -382,16 +330,8 @@ class AuditTests(unittest.TestCase):
             ledger_before = read_ledger(notebook)
             files_before = sorted(path.relative_to(notebook).as_posix() for path in notebook.rglob("*") if path.is_file())
 
-            completed = run_subprocess(
-                [
-                    sys.executable,
-                    "-m",
-                    "nollm.cli",
-                    "audit-check",
-                    str(notebook),
-                    "--against",
-                    str(ROOT / "examples" / "audit_reports" / "openclaw_audit.json"),
-                ],
+            completed = run_cli(
+                ["audit-check", str(notebook), "--against", str(ROOT / "examples" / "audit_reports" / "openclaw_audit.json")],
                 cwd=REFERENCE_PYTHON,
             )
 
