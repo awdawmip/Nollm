@@ -1,0 +1,367 @@
+{
+  "chart_id": "openclaw-chart-demo",
+  "coarse_emergence_candidates": [
+    {
+      "center": {
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      },
+      "chart_id": "openclaw-chart-demo",
+      "pressure_sum": 1.4835164835164836,
+      "radius": 1,
+      "sample_count": 2,
+      "status": "candidate"
+    }
+  ],
+  "parameter_results": [
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "sqrt3_30_benchmark",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.012345679012345685
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "phi_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.02128623625220818
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "sqrt2_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.062499999999999965
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "beta_2q_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.25000000000000006
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "beta_2q_22_5",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.25000000000000006
+    }
+  ],
+  "pressure_samples": [
+    {
+      "address": {
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      },
+      "chart_id": "openclaw-chart-demo",
+      "placement_count": 1,
+      "pressure": 0.7692307692307692,
+      "reasons": [
+        "offline fixture candidate"
+      ]
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 1,
+        "r": -1
+      },
+      "chart_id": "openclaw-chart-demo",
+      "placement_count": 1,
+      "pressure": 0.7142857142857143,
+      "reasons": [
+        "offline fixture candidate"
+      ]
+    }
+  ],
+  "ranked_placements": [
+    {
+      "address": {
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      },
+      "anchors_used": [
+        "openclaw"
+      ],
+      "chart_id": "openclaw-chart-demo",
+      "energy": {
+        "compute_cost": 0.0,
+        "coverage_potential_cost": 0.1,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.0,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.2
+      },
+      "reasons": [
+        "offline fixture candidate"
+      ],
+      "shard_id": "openclaw-shard-0001",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 1,
+        "r": -1
+      },
+      "anchors_used": [
+        "placement"
+      ],
+      "chart_id": "openclaw-chart-demo",
+      "energy": {
+        "compute_cost": 0.0,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.1,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.3
+      },
+      "reasons": [
+        "offline fixture candidate"
+      ],
+      "shard_id": "openclaw-shard-0002",
+      "status": "placed_uncertain"
+    }
+  ],
+  "run_id": "openclaw-dream-e1",
+  "scale_scan_plans": [
+    {
+      "plan_id": "scale-scan:openclaw-shard-0001:openclaw-chart-demo:nollm://layer/0/hex/0/0:1:1",
+      "shard_id": "openclaw-shard-0001",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 0,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "openclaw-chart-demo",
+          "layer": 0,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "openclaw-chart-demo",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:openclaw-shard-0002:openclaw-chart-demo:nollm://layer/0/hex/1/-1:1:1",
+      "shard_id": "openclaw-shard-0002",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 0,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "openclaw-chart-demo",
+          "layer": 0,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "openclaw-chart-demo",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    }
+  ],
+  "shards": [
+    {
+      "anchors_hint": [
+        "openclaw",
+        "dream-geometry"
+      ],
+      "metadata": {
+        "fixture": "d7",
+        "runtime": "offline"
+      },
+      "shard_id": "openclaw-shard-0001",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "OpenClaw output can be captured as pre-card dream shard material."
+    },
+    {
+      "anchors_hint": [
+        "placement"
+      ],
+      "metadata": {
+        "fixture": "d7"
+      },
+      "shard_id": "openclaw-shard-0002",
+      "source": "project_note",
+      "status": "draft",
+      "text": "Fixture placement remains uncertain and does not write cards."
+    }
+  ],
+  "status": "experimental_candidate",
+  "warnings": [
+    "placements are candidates, not confirmed memory",
+    "coarse emergence is candidate-only",
+    "scale scan plans are traversal planning, not autonomous recall",
+    "parameter results are diagnostics, not final parameter lock",
+    "audit/history remain support organs, not the project center"
+  ]
+}

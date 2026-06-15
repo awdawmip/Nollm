@@ -11,6 +11,9 @@ They are not yet the stable V1 external recall/tool surface.
 - D7 OpenClaw dream experiment is a fixture, not a production integration.
 - D8 parameter experiments are diagnostics, not final parameter lock.
 - D9 keeps audit/history as support organs, not the project center.
+- E1 adds an internal Dream Geometry experiment runner. It composes D3-D8
+  records over the OpenClaw fixture and writes a deterministic experimental
+  report. It is not a stable V1 recall/tool surface and does not write cards.
 
 Stable Core remains filesystem-first, explicit, ledgered, and auditable. Dream
 Geometry records are experimental primitives unless a later task explicitly
