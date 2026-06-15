@@ -23,6 +23,7 @@ SOURCE_REPORTS = (
     "examples/openclaw_dream/dream_suite_report.json",
     "examples/openclaw_dream/real_corpus_dry_run_report.json",
     "examples/openclaw_dream/all_dream_checks_manifest.json",
+    "examples/openclaw_dream/local_gate_report.json",
 )
 SOURCE_DIRS = (
     "examples/openclaw_dream/batch",
@@ -110,7 +111,7 @@ class DreamGoldenRegressionTests(unittest.TestCase):
             self.assertEqual(compare.returncode, 0)
             target = root / GOLDEN_REPORTS["local_gate_report"]
             data = json.loads(target.read_text(encoding="utf-8"))
-            data["ok"] = False
+            data["warnings"].append("intentional golden mismatch")
             target.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
             mismatch = run_subprocess(
                 [

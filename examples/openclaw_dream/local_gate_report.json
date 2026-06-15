@@ -4,19 +4,29 @@
       "detail": "dream checks manifest",
       "included": true,
       "ok": true,
-      "returncode": 0
+      "returncode": 0,
+      "timeout_seconds": 0
+    },
+    "dream_failure_triage": {
+      "detail": "dream failure triage",
+      "included": true,
+      "ok": true,
+      "returncode": 0,
+      "timeout_seconds": 0
     },
     "package_hygiene": {
       "detail": "package hygiene",
       "included": true,
       "ok": true,
-      "returncode": 0
+      "returncode": 0,
+      "timeout_seconds": 120
     },
     "pytest": {
       "detail": "pytest skipped",
       "included": false,
       "ok": true,
-      "returncode": 0
+      "returncode": 0,
+      "timeout_seconds": 120
     }
   },
   "forbidden_semantics": {

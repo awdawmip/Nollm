@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Mapping
 
 from nollm.dream_checks_manifest import build_all_dream_checks_manifest
+from nollm.dream_triage import build_dream_triage_report
 
 GATE_WARNINGS = (
     "E7 is an internal local gate",
@@ -28,6 +29,7 @@ class GateComponent:
     included: bool = True
     returncode: int = 0
     detail: str = ""
+    timeout_seconds: int = 0
 
     def to_record(self) -> dict[str, object]:
         return {
@@ -35,6 +37,7 @@ class GateComponent:
             "included": self.included,
             "returncode": self.returncode,
             "detail": self.detail,
+            "timeout_seconds": self.timeout_seconds,
         }
 
 
@@ -42,6 +45,7 @@ def build_local_gate_report(
     repo_root: Path | str,
     *,
     include_pytest: bool = False,
+    pytest_timeout_seconds: int = 120,
 ) -> dict[str, object]:
     root = Path(repo_root).resolve()
     reference_python = root / "reference" / "python"
@@ -55,15 +59,22 @@ def build_local_gate_report(
         detail="package hygiene",
     )
     dream_manifest = _dream_manifest_component(root)
+    dream_triage = _dream_triage_component(root)
     pytest_component = (
-        _run_component([sys.executable, "run_tests.py"], cwd=reference_python, detail="pytest")
+        _run_component(
+            [sys.executable, "run_tests.py"],
+            cwd=reference_python,
+            detail="pytest",
+            timeout_seconds=pytest_timeout_seconds,
+        )
         if include_pytest
-        else GateComponent(ok=True, included=False, detail="pytest skipped")
+        else GateComponent(ok=True, included=False, detail="pytest skipped", timeout_seconds=pytest_timeout_seconds)
     )
 
     components = {
         "package_hygiene": package_hygiene.to_record(),
         "dream_checks_manifest": dream_manifest.to_record(),
+        "dream_failure_triage": dream_triage.to_record(),
         "pytest": pytest_component.to_record(),
     }
     forbidden_semantics = _forbidden_semantics_from_manifest(root)
@@ -135,6 +146,18 @@ def _dream_manifest_component(root: Path) -> GateComponent:
     )
 
 
+def _dream_triage_component(root: Path) -> GateComponent:
+    try:
+        triage = build_dream_triage_report(root)
+    except Exception as exc:
+        return GateComponent(ok=False, returncode=1, detail=f"dream failure triage failed: {exc}")
+    return GateComponent(
+        ok=bool(triage["ok"]),
+        returncode=0 if triage["ok"] else 1,
+        detail="dream failure triage",
+    )
+
+
 def _forbidden_semantics_from_manifest(root: Path) -> dict[str, bool]:
     try:
         manifest = build_all_dream_checks_manifest(root)
@@ -146,23 +169,40 @@ def _forbidden_semantics_from_manifest(root: Path) -> dict[str, bool]:
     return {key: bool(flags.get(key, False)) for key in FORBIDDEN_FLAG_KEYS}
 
 
-def _run_component(command: list[str], *, cwd: Path, detail: str) -> GateComponent:
+def _run_component(
+    command: list[str],
+    *,
+    cwd: Path,
+    detail: str,
+    timeout_seconds: int = 120,
+) -> GateComponent:
     try:
         result = subprocess.run(
             command,
             cwd=cwd,
             text=True,
             capture_output=True,
-            timeout=120,
+            timeout=timeout_seconds,
         )
     except subprocess.TimeoutExpired:
-        return GateComponent(ok=False, returncode=-1, detail=f"{detail} timed out")
+        return GateComponent(
+            ok=False,
+            returncode=-1,
+            detail=f"{detail} timed out",
+            timeout_seconds=timeout_seconds,
+        )
     except Exception as exc:
-        return GateComponent(ok=False, returncode=1, detail=f"{detail} failed: {exc}")
+        return GateComponent(
+            ok=False,
+            returncode=1,
+            detail=f"{detail} failed: {exc}",
+            timeout_seconds=timeout_seconds,
+        )
     return GateComponent(
         ok=result.returncode == 0,
         returncode=int(result.returncode),
         detail=detail,
+        timeout_seconds=timeout_seconds,
     )
 
 

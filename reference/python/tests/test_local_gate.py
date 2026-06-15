@@ -3,14 +3,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from subprocess_harness import run_subprocess, subprocess_failure_message
 
 from nollm.dream_checks_manifest import REQUIRED_REPORTS
+from nollm.dream_triage import TRIAGE_REPORTS
 from nollm.local_gate import (
+    _run_component,
     aggregate_local_gate_report,
     build_local_gate_report,
     validate_local_gate_report,
@@ -42,6 +46,20 @@ class LocalGateTests(unittest.TestCase):
             root = _temp_gate_root(Path(tmp))
             report = build_local_gate_report(root, include_pytest=False)
             self.assertTrue(report["components"]["dream_checks_manifest"]["ok"])
+
+    def test_dream_failure_triage_result_is_included_and_ok(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _temp_gate_root(Path(tmp))
+            report = build_local_gate_report(root, include_pytest=False)
+            self.assertTrue(report["components"]["dream_failure_triage"]["ok"])
+
+    def test_gate_fails_when_dream_failure_triage_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _temp_gate_root(Path(tmp))
+            (root / TRIAGE_REPORTS["local_gate"]).unlink()
+            report = build_local_gate_report(root, include_pytest=False)
+            self.assertFalse(report["ok"])
+            self.assertFalse(report["components"]["dream_failure_triage"]["ok"])
 
     def test_forbidden_semantics_remain_false(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -99,9 +117,22 @@ class LocalGateTests(unittest.TestCase):
         )
         self.assertFalse(report["ok"])
 
+    def test_pytest_timeout_is_reported(self) -> None:
+        with patch("nollm.local_gate.subprocess.run", side_effect=subprocess.TimeoutExpired("pytest", 3)):
+            component = _run_component(
+                [sys.executable, "run_tests.py"],
+                cwd=REFERENCE_PYTHON,
+                detail="pytest",
+                timeout_seconds=3,
+            ).to_record()
+        self.assertFalse(component["ok"])
+        self.assertEqual(component["returncode"], -1)
+        self.assertEqual(component["detail"], "pytest timed out")
+        self.assertEqual(component["timeout_seconds"], 3)
+
 
 def _temp_gate_root(root: Path) -> Path:
-    for rel in REQUIRED_REPORTS:
+    for rel in sorted(set(REQUIRED_REPORTS).union(TRIAGE_REPORTS.values())):
         source = ROOT / rel
         target = root / rel
         target.parent.mkdir(parents=True, exist_ok=True)

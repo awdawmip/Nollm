@@ -21,12 +21,17 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--include-pytest", action="store_true", help="Run python run_tests.py.")
     mode.add_argument("--skip-pytest", action="store_true", help="Skip pytest and record included=false.")
+    parser.add_argument("--pytest-timeout", type=int, default=120, help="Timeout for run_tests.py when included.")
     args = parser.parse_args(argv)
 
     include_pytest = bool(args.include_pytest)
     repo_root = Path(args.repo_root).resolve()
     output = Path(args.output).resolve()
-    report = build_local_gate_report(repo_root, include_pytest=include_pytest)
+    report = build_local_gate_report(
+        repo_root,
+        include_pytest=include_pytest,
+        pytest_timeout_seconds=args.pytest_timeout,
+    )
     write_local_gate_report(report, output)
     print(
         "wrote nollm local gate report "
