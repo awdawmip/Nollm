@@ -1,0 +1,41 @@
+{
+  "failed_report_count": 0,
+  "ok": true,
+  "reports": {
+    "all_dream_checks_manifest": {
+      "golden_path": "examples/openclaw_dream/golden/all_dream_checks_manifest.golden.json",
+      "matched": true,
+      "ok": true,
+      "reason": "",
+      "summary": ""
+    },
+    "dream_suite_report": {
+      "golden_path": "examples/openclaw_dream/golden/dream_suite_report.golden.json",
+      "matched": true,
+      "ok": true,
+      "reason": "",
+      "summary": ""
+    },
+    "local_gate_report": {
+      "golden_path": "examples/openclaw_dream/golden/local_gate_report.golden.json",
+      "matched": true,
+      "ok": true,
+      "reason": "",
+      "summary": ""
+    },
+    "real_corpus_dry_run_report": {
+      "golden_path": "examples/openclaw_dream/golden/real_corpus_dry_run_report.golden.json",
+      "matched": true,
+      "ok": true,
+      "reason": "",
+      "summary": ""
+    }
+  },
+  "schema": "nollm.dream_golden_regression.v1",
+  "status": "experimental_internal_only",
+  "update": false,
+  "warnings": [
+    "E8 is an internal regression guard",
+    "E8 is not a stable V1 recall/tool surface"
+  ]
+}

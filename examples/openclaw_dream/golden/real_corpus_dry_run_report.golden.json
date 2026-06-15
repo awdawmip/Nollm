@@ -1,0 +1,1223 @@
+{
+  "failed_invariant_count": 0,
+  "file_count": 8,
+  "forbidden_semantics": {
+    "anchor_ownership": false,
+    "confirmed_placement": false,
+    "folder_tree": false,
+    "parent_child": false
+  },
+  "invariant_check_count": 4,
+  "mode": "real_corpus_dry_run",
+  "ok": true,
+  "parameter_results": [
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "sqrt3_30_benchmark",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.012345679012345685
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "phi_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.02128623625220818
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "sqrt2_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.062499999999999965
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "beta_2q_15",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.25000000000000006
+    },
+    {
+      "layers": 8,
+      "notes": [
+        "deterministic diagnostic"
+      ],
+      "regime_id": "beta_2q_22_5",
+      "rotation_cycle_hit": true,
+      "side_length_ratio_after_layers": 0.25000000000000006
+    }
+  ],
+  "placement_count": 8,
+  "pressure_samples": [
+    {
+      "address": {
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 1.0,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 2,
+        "r": -2
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.9433962264150942,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 3,
+        "r": -3
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.8849557522123894,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 0,
+        "r": 0
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.8771929824561403,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 1,
+        "r": -1
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.8264462809917356,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 2,
+        "q": 2,
+        "r": -2
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.819672131147541,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 3,
+        "r": -3
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.7874015748031495,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    },
+    {
+      "address": {
+        "layer": 2,
+        "q": 1,
+        "r": -1
+      },
+      "chart_id": "real-corpus-dry-run",
+      "placement_count": 1,
+      "pressure": 0.7407407407407407,
+      "reasons": [
+        "deterministic corpus dry-run"
+      ]
+    }
+  ],
+  "processed_paths": [
+    "README.md",
+    "ARCHITECTURE.md",
+    "ROADMAP.md",
+    "protocol/DREAM_SHARD.md",
+    "protocol/DREAM_PLACEMENT.md",
+    "protocol/DREAM_SCALE_SCAN.md",
+    "protocol/CLUSTER_PRESSURE.md",
+    "docs/geometry/D1_PURE_GEOMETRY_KERNEL.md"
+  ],
+  "ranked_placements": [
+    {
+      "address": {
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.0,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.0,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.0
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0000",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 2,
+        "r": -2
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.06,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.0,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.0
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0006",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 0,
+        "q": 3,
+        "r": -3
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.03,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.1,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.0
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0003",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 0,
+        "r": 0
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.04,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.0,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.1
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0004",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 1,
+        "r": -1
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.01,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.1,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.1
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0001",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 2,
+        "q": 2,
+        "r": -2
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.02,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.0,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.2
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0002",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 1,
+        "q": 3,
+        "r": -3
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.07,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.1,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.1
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0007",
+      "status": "candidate"
+    },
+    {
+      "address": {
+        "layer": 2,
+        "q": 1,
+        "r": -1
+      },
+      "anchors_used": [
+        "real-corpus"
+      ],
+      "chart_id": "real-corpus-dry-run",
+      "energy": {
+        "compute_cost": 0.05,
+        "coverage_potential_cost": 0.0,
+        "density_pressure_cost": 0.0,
+        "future_scan_cost": 0.0,
+        "geometric_distance_cost": 0.1,
+        "merge_complexity_cost": 0.0,
+        "semantic_hint_cost": 0.2
+      },
+      "reasons": [
+        "deterministic corpus dry-run"
+      ],
+      "shard_id": "real-corpus-shard-0005",
+      "status": "candidate"
+    }
+  ],
+  "scale_scan_plans": [
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0000:real-corpus-dry-run:nollm://layer/0/hex/0/0:1:1",
+      "shard_id": "real-corpus-shard-0000",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 0,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 0,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 0,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0001:real-corpus-dry-run:nollm://layer/0/hex/2/-2:1:1",
+      "shard_id": "real-corpus-shard-0001",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -1
+            },
+            {
+              "layer": 0,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 0,
+              "q": 3,
+              "r": -2
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 0,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -2
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0002:real-corpus-dry-run:nollm://layer/0/hex/3/-3:1:1",
+      "shard_id": "real-corpus-shard-0002",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 0,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 3,
+              "r": -4
+            },
+            {
+              "layer": 0,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 0,
+              "q": 3,
+              "r": -2
+            },
+            {
+              "layer": 0,
+              "q": 4,
+              "r": -4
+            },
+            {
+              "layer": 0,
+              "q": 4,
+              "r": -3
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 0,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -4
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 4,
+              "r": -4
+            },
+            {
+              "layer": 1,
+              "q": 4,
+              "r": -3
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0003:real-corpus-dry-run:nollm://layer/1/hex/0/0:1:1",
+      "shard_id": "real-corpus-shard-0003",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 2,
+              "q": -1,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": -1,
+              "r": 1
+            },
+            {
+              "layer": 2,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": 0,
+              "r": 1
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": 0
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 2,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0004:real-corpus-dry-run:nollm://layer/1/hex/1/-1:1:1",
+      "shard_id": "real-corpus-shard-0004",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 1,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 2,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 2,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0005:real-corpus-dry-run:nollm://layer/2/hex/2/-2:1:1",
+      "shard_id": "real-corpus-shard-0005",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 2,
+              "q": 3,
+              "r": -2
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 2,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 3,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 3,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 3,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 3,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 3,
+              "q": 2,
+              "r": -1
+            },
+            {
+              "layer": 3,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 3,
+              "q": 3,
+              "r": -2
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 3,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0006:real-corpus-dry-run:nollm://layer/1/hex/3/-3:1:1",
+      "shard_id": "real-corpus-shard-0006",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -4
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 1,
+              "q": 3,
+              "r": -2
+            },
+            {
+              "layer": 1,
+              "q": 4,
+              "r": -4
+            },
+            {
+              "layer": 1,
+              "q": 4,
+              "r": -3
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 1,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -3
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 3,
+              "r": -4
+            },
+            {
+              "layer": 2,
+              "q": 3,
+              "r": -3
+            },
+            {
+              "layer": 2,
+              "q": 3,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 4,
+              "r": -4
+            },
+            {
+              "layer": 2,
+              "q": 4,
+              "r": -3
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 2,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    },
+    {
+      "plan_id": "scale-scan:real-corpus-shard-0007:real-corpus-dry-run:nollm://layer/2/hex/1/-1:1:1",
+      "shard_id": "real-corpus-shard-0007",
+      "status": "candidate",
+      "steps": [
+        {
+          "addresses": [
+            {
+              "layer": 2,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 2,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 2,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 2,
+          "reason": "linear scale scan candidate step"
+        },
+        {
+          "addresses": [
+            {
+              "layer": 3,
+              "q": 0,
+              "r": -1
+            },
+            {
+              "layer": 3,
+              "q": 0,
+              "r": 0
+            },
+            {
+              "layer": 3,
+              "q": 1,
+              "r": -2
+            },
+            {
+              "layer": 3,
+              "q": 1,
+              "r": -1
+            },
+            {
+              "layer": 3,
+              "q": 1,
+              "r": 0
+            },
+            {
+              "layer": 3,
+              "q": 2,
+              "r": -2
+            },
+            {
+              "layer": 3,
+              "q": 2,
+              "r": -1
+            }
+          ],
+          "chart_id": "real-corpus-dry-run",
+          "layer": 3,
+          "reason": "linear scale scan candidate step"
+        }
+      ],
+      "stop_reason": "max_layers_reached"
+    }
+  ],
+  "shard_count": 8,
+  "shards": [
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "README.md"
+      },
+      "shard_id": "real-corpus-shard-0000",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "README.md: Not an LLM. A notebook for LLMs."
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "ARCHITECTURE.md"
+      },
+      "shard_id": "real-corpus-shard-0001",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "ARCHITECTURE.md: Architecture"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "ROADMAP.md"
+      },
+      "shard_id": "real-corpus-shard-0002",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "ROADMAP.md: v0.1: Protocol Scaffold"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "protocol/DREAM_SHARD.md"
+      },
+      "shard_id": "real-corpus-shard-0003",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "protocol/DREAM_SHARD.md: Dream Shard"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "protocol/DREAM_PLACEMENT.md"
+      },
+      "shard_id": "real-corpus-shard-0004",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "protocol/DREAM_PLACEMENT.md: Dream Placement"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "protocol/DREAM_SCALE_SCAN.md"
+      },
+      "shard_id": "real-corpus-shard-0005",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "protocol/DREAM_SCALE_SCAN.md: Dream Scale Scan"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "protocol/CLUSTER_PRESSURE.md"
+      },
+      "shard_id": "real-corpus-shard-0006",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "protocol/CLUSTER_PRESSURE.md: Cluster Pressure"
+    },
+    {
+      "anchors_hint": [
+        "real-corpus"
+      ],
+      "metadata": {
+        "path": "docs/geometry/D1_PURE_GEOMETRY_KERNEL.md"
+      },
+      "shard_id": "real-corpus-shard-0007",
+      "source": "imported_text",
+      "status": "candidate",
+      "text": "docs/geometry/D1_PURE_GEOMETRY_KERNEL.md: D1 Pure Geometry Kernel"
+    }
+  ],
+  "skipped_paths": [],
+  "status": "experimental_candidate",
+  "warnings": [
+    "E5 is an internal dry-run experiment",
+    "E5 does not write cards or confirm placement",
+    "E5 does not create anchors or change stable recall/tool surface"
+  ]
+}
