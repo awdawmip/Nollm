@@ -1,0 +1,79 @@
+# Dream Shard
+
+## Definition
+
+A dream shard is an independently meaningful utterance.
+
+A dream shard is larger than a token and smaller than a stable card. It is
+pre-card material that may later support geometry-aware placement work.
+
+## Scope
+
+- Preserve a small utterance-like unit.
+- Track a conservative source and status.
+- Carry optional anchor hints.
+- Carry flat string metadata.
+
+## Non-Scope
+
+A dream shard is not a card, folder, parent node, vector embedding, graph node,
+recall result, global atlas entry, final memory fact, or confirmed project
+decision.
+
+## Record Shape
+
+```text
+shard_id
+text
+source
+status
+anchors_hint
+metadata
+```
+
+Allowed statuses:
+
+```text
+draft
+candidate
+rejected
+archived
+```
+
+Allowed sources:
+
+```text
+user_utterance
+assistant_utterance
+llm_work_residue
+project_note
+imported_text
+```
+
+## Validation Rules
+
+Text is normalized by trimming surrounding whitespace and collapsing internal
+whitespace runs. The normalized text must be non-empty, at least eight
+characters long, and contain at least one non-punctuation, non-whitespace
+character.
+
+Anchor hints are advisory strings only. Empty anchor hints are invalid.
+
+Metadata is flat string-to-string data. Nested objects are not part of D3.
+
+## Relation to Cards
+
+A dream shard is pre-card material. D3 does not create cards automatically, does
+not confirm memory, and does not decide card trust or status.
+
+## Relation to Geometry
+
+D3 does not place shards into geometry. Geometry-based placement is deferred to
+later work and must not be inferred from anchor hints.
+
+## Boundary
+
+A dream shard may carry anchor hints, but anchor hints do not create ownership.
+D3 does not perform recall, semantic scoring, clustering, vector search, graph
+search, MCP behavior, audit expansion, history expansion, or automatic card
+writing.
