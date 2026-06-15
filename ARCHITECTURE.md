@@ -139,7 +139,7 @@ Compatibility labels:
 - No MCP server.
 - No external LLM calls.
 - No geometry recall.
-- No polygon overlap.
+- No polygon-overlap-driven V1 recall.
 - No automatic card placement.
 - No automatic anchor creation.
 - No automatic status approval.

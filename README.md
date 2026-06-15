@@ -14,7 +14,7 @@ Nollm is a structured external notebook protocol for LLMs. It gives a model a st
 
 Nollm is aligned around a layered rotating honeycomb memory field. Anchors are column fields / semantic fields that cross layers. Cards are durable memory expressions at every scale. Recall scans across scale, re-evaluating active anchor fields, rather than descending a tree.
 
-There is no absolute leaf layer. The current reference runtime remains filesystem-first and deterministic; it does not implement geometric placement yet.
+There is no absolute leaf layer. The stable reference runtime remains filesystem-first and deterministic; it does not perform geometry recall or automatic card placement. D-series reference modules contain experimental Dream Geometry records and diagnostics outside the stable V1 tool surface.
 
 P5.1 preserves and validates optional card metadata for layer, hex coordinates, anchor fields, and scale links. Core stores these fields as auditable memory metadata; Cortex may interpret them during orientation.
 

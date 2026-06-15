@@ -31,7 +31,8 @@
 - No vector database.
 - No embedding dependency.
 - No automatic ontology engine.
-- No geometry runtime or runtime coordinate placement yet.
+- Stable V1 Core/tool surfaces do not perform geometry recall or automatic runtime placement.
+- D-series reference modules may contain experimental pure geometry, placement candidate records, and deterministic diagnostics.
 
 ## Nollm V1 Route Lock
 
@@ -109,7 +110,7 @@ Compatibility labels:
 - No MCP server.
 - No external LLM calls.
 - No geometry recall.
-- No polygon overlap.
+- No polygon-overlap-driven V1 recall.
 - No automatic card placement.
 - No automatic anchor creation.
 - No automatic status approval.
