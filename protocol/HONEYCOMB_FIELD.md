@@ -40,4 +40,9 @@ P5.4 preserves and validates optional card metadata:
 - `hex.rotation` as numeric metadata matching `(layer * 22.5) mod 60`.
 - `hex.scale` as positive numeric metadata matching `2 ** (-layer / 4)`.
 
-Core does not implement geometric runtime behavior, visualization, automatic coordinate placement, or polygon overlap calculation.
+Honeycomb metadata does not perform geometric runtime behavior, visualization,
+automatic coordinate placement, geometry recall, or parent-child assignment.
+
+Pure polygon overlap is allowed only inside the D1 geometry kernel as a
+deterministic geometry primitive. It is not card placement, recall ranking, or
+ownership.
