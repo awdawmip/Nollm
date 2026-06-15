@@ -1,0 +1,35 @@
+{
+  "components": {
+    "dream_checks_manifest": {
+      "detail": "dream checks manifest",
+      "included": true,
+      "ok": true,
+      "returncode": 0
+    },
+    "package_hygiene": {
+      "detail": "package hygiene",
+      "included": true,
+      "ok": true,
+      "returncode": 0
+    },
+    "pytest": {
+      "detail": "pytest skipped",
+      "included": false,
+      "ok": true,
+      "returncode": 0
+    }
+  },
+  "forbidden_semantics": {
+    "anchor_ownership": false,
+    "confirmed_placement": false,
+    "folder_tree": false,
+    "parent_child": false
+  },
+  "ok": true,
+  "schema": "nollm.local_gate.v1",
+  "status": "experimental_internal_only",
+  "warnings": [
+    "E7 is an internal local gate",
+    "E7 is not a stable V1 recall/tool surface"
+  ]
+}
