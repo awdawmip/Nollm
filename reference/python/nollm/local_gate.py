@@ -177,7 +177,7 @@ def _dream_manifest_component(root: Path) -> GateComponent:
 
 def _dream_triage_component(root: Path) -> GateComponent:
     try:
-        triage = build_dream_triage_report(root, ignored_reports=("local_gate",))
+        triage = build_dream_triage_report(root, ignored_reports=("local_gate", "golden_regression"))
     except Exception as exc:
         return GateComponent(ok=False, returncode=1, detail=f"dream failure triage failed: {exc}")
     return GateComponent(

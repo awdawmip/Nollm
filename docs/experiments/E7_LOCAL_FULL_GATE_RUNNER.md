@@ -12,6 +12,10 @@ python scripts/run_nollm_local_gate.py --skip-pytest
 python scripts/run_nollm_local_gate.py --include-pytest
 ```
 
+By default the runner writes to ignored runtime output under
+`out/nollm_runtime/`. Use `--output` only when intentionally refreshing a
+tracked report fixture.
+
 E7 is not a stable V1 recall/tool surface. It does not write cards, confirm
 placement, create anchors, or change recall behavior.
 

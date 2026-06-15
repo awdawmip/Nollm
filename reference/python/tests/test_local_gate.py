@@ -119,7 +119,7 @@ class LocalGateTests(unittest.TestCase):
     def test_gate_fails_when_dream_failure_triage_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = _temp_gate_root(Path(tmp))
-            (root / TRIAGE_REPORTS["golden_regression"]).unlink()
+            (root / TRIAGE_REPORTS["real_corpus_dry_run"]).unlink()
             report = build_local_gate_report(root, include_pytest=False)
             self.assertFalse(report["ok"])
             self.assertFalse(report["components"]["dream_failure_triage"]["ok"])
@@ -163,6 +163,78 @@ class LocalGateTests(unittest.TestCase):
             data = json.loads(output.read_text(encoding="utf-8"))
             self.assertTrue(data["ok"])
             self.assertFalse(data["components"]["pytest"]["included"])
+
+    def test_cli_default_output_is_ignored_runtime_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _temp_gate_root(Path(tmp) / "repo")
+            result = run_subprocess(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--repo-root",
+                    str(root),
+                    "--skip-pytest",
+                ],
+                cwd=REFERENCE_PYTHON,
+                timeout_seconds=20,
+            )
+            output = root / "out" / "nollm_runtime" / "local_gate_report.json"
+            self.assertEqual(
+                result.returncode,
+                0,
+                subprocess_failure_message(result, REFERENCE_PYTHON, "run_nollm_local_gate"),
+            )
+            self.assertTrue(output.exists())
+            self.assertFalse((root / "reference" / "python" / "examples").exists())
+            self.assertIn("out/nollm_runtime/local_gate_report.json", result.stdout.replace("\\", "/"))
+
+    def test_cli_default_run_does_not_modify_tracked_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _temp_gate_root(Path(tmp) / "repo")
+            fixture = root / TRIAGE_REPORTS["local_gate"]
+            before = fixture.read_text(encoding="utf-8")
+            result = run_subprocess(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--repo-root",
+                    str(root),
+                    "--skip-pytest",
+                ],
+                cwd=REFERENCE_PYTHON,
+                timeout_seconds=20,
+            )
+
+            self.assertEqual(
+                result.returncode,
+                0,
+                subprocess_failure_message(result, REFERENCE_PYTHON, "run_nollm_local_gate"),
+            )
+            self.assertEqual(fixture.read_text(encoding="utf-8"), before)
+
+    def test_cli_timeout_path_writes_default_runtime_report(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = _temp_gate_root(Path(tmp) / "repo")
+            result = run_subprocess(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--repo-root",
+                    str(root),
+                    "--include-pytest",
+                    "--pytest-timeout",
+                    "0",
+                ],
+                cwd=REFERENCE_PYTHON,
+                timeout_seconds=20,
+            )
+            output = root / "out" / "nollm_runtime" / "local_gate_report.json"
+            data = json.loads(output.read_text(encoding="utf-8"))
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue(output.exists())
+            self.assertEqual(data["components"]["pytest"]["returncode"], -1)
+            self.assertEqual(data["components"]["pytest"]["detail"], "pytest timed out")
 
     def test_failure_propagates_from_component_aggregation(self) -> None:
         report = aggregate_local_gate_report(

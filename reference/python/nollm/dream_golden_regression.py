@@ -29,6 +29,7 @@ NOISY_KEYS = frozenset(
         "duration_seconds",
         "elapsed",
         "elapsed_seconds",
+        "runtime_cache_cleanup",
     }
 )
 

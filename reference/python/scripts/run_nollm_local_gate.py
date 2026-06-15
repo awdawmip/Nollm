@@ -15,8 +15,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", default="../..", help="Repository root path.")
     parser.add_argument(
         "--output",
-        default="../../examples/openclaw_dream/local_gate_report.json",
-        help="Output local gate JSON path.",
+        default=None,
+        help="Output local gate JSON path. Defaults to <repo-root>/out/nollm_runtime/local_gate_report.json.",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--include-pytest", action="store_true", help="Run python run_tests.py.")
@@ -26,7 +26,11 @@ def main(argv: list[str] | None = None) -> int:
 
     include_pytest = bool(args.include_pytest)
     repo_root = Path(args.repo_root).resolve()
-    output = Path(args.output).resolve()
+    output = (
+        Path(args.output).resolve()
+        if args.output is not None
+        else repo_root / "out" / "nollm_runtime" / "local_gate_report.json"
+    )
     report = build_local_gate_report(
         repo_root,
         include_pytest=include_pytest,
