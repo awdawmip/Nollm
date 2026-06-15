@@ -1,0 +1,44 @@
+[
+  {
+    "shard_id": "collision-shard-001",
+    "chart_id": "placement_collision-chart",
+    "address": {
+      "layer": 0,
+      "q": 1,
+      "r": -1
+    },
+    "energy": {
+      "semantic_hint_cost": 0.5,
+      "geometric_distance_cost": 0.1,
+      "density_pressure_cost": 0.0,
+      "coverage_potential_cost": 0.0,
+      "future_scan_cost": 0.0,
+      "merge_complexity_cost": 0.0,
+      "compute_cost": 0.0
+    },
+    "anchors_used": ["collision"],
+    "reasons": ["higher energy alternative"],
+    "status": "candidate"
+  },
+  {
+    "shard_id": "collision-shard-001",
+    "chart_id": "placement_collision-chart",
+    "address": {
+      "layer": 0,
+      "q": 0,
+      "r": 0
+    },
+    "energy": {
+      "semantic_hint_cost": 0.2,
+      "geometric_distance_cost": 0.0,
+      "density_pressure_cost": 0.0,
+      "coverage_potential_cost": 0.0,
+      "future_scan_cost": 0.0,
+      "merge_complexity_cost": 0.0,
+      "compute_cost": 0.0
+    },
+    "anchors_used": ["collision"],
+    "reasons": ["lower energy alternative"],
+    "status": "placed_uncertain"
+  }
+]

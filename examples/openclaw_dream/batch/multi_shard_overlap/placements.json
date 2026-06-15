@@ -1,0 +1,44 @@
+[
+  {
+    "shard_id": "overlap-shard-001",
+    "chart_id": "multi_shard_overlap-chart",
+    "address": {
+      "layer": 0,
+      "q": 0,
+      "r": 0
+    },
+    "energy": {
+      "semantic_hint_cost": 0.2,
+      "geometric_distance_cost": 0.1,
+      "density_pressure_cost": 0.0,
+      "coverage_potential_cost": 0.0,
+      "future_scan_cost": 0.0,
+      "merge_complexity_cost": 0.0,
+      "compute_cost": 0.0
+    },
+    "anchors_used": ["overlap"],
+    "reasons": ["overlap candidate one"],
+    "status": "candidate"
+  },
+  {
+    "shard_id": "overlap-shard-002",
+    "chart_id": "multi_shard_overlap-chart",
+    "address": {
+      "layer": 0,
+      "q": 0,
+      "r": 0
+    },
+    "energy": {
+      "semantic_hint_cost": 0.3,
+      "geometric_distance_cost": 0.0,
+      "density_pressure_cost": 0.0,
+      "coverage_potential_cost": 0.0,
+      "future_scan_cost": 0.0,
+      "merge_complexity_cost": 0.0,
+      "compute_cost": 0.0
+    },
+    "anchors_used": ["overlap"],
+    "reasons": ["overlap candidate two"],
+    "status": "candidate"
+  }
+]

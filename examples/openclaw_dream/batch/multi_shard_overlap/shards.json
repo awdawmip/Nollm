@@ -1,0 +1,22 @@
+[
+  {
+    "shard_id": "overlap-shard-001",
+    "text": "First overlap shard enters the same local chart.",
+    "source": "imported_text",
+    "status": "candidate",
+    "anchors_hint": ["overlap"],
+    "metadata": {
+      "fixture": "multi_shard_overlap"
+    }
+  },
+  {
+    "shard_id": "overlap-shard-002",
+    "text": "Second overlap shard stays candidate material.",
+    "source": "imported_text",
+    "status": "candidate",
+    "anchors_hint": ["overlap"],
+    "metadata": {
+      "fixture": "multi_shard_overlap"
+    }
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "shard_id": "parameter-shard-001",
+    "text": "Parameter probe fixture keeps diagnostics separate from policy.",
+    "source": "project_note",
+    "status": "candidate",
+    "anchors_hint": ["parameter"],
+    "metadata": {
+      "fixture": "parameter_probe"
+    }
+  }
+]

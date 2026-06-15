@@ -1,0 +1,12 @@
+[
+  {
+    "shard_id": "single-shard-001",
+    "text": "A sparse dream shard remains only a candidate.",
+    "source": "project_note",
+    "status": "candidate",
+    "anchors_hint": ["sparse"],
+    "metadata": {
+      "fixture": "single_shard_sparse"
+    }
+  }
+]
