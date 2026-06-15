@@ -36,6 +36,11 @@
     "parent_child": false
   },
   "ok": true,
+  "runtime_cache_cleanup": {
+    "after_count": 0,
+    "before_count": 0,
+    "removed_paths": []
+  },
   "schema": "nollm.local_gate.v1",
   "status": "experimental_internal_only",
   "warnings": [

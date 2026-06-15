@@ -25,14 +25,21 @@ TRIAGE_WARNINGS = (
 )
 
 
-def build_dream_triage_report(repo_root: Path | str) -> dict[str, object]:
+def build_dream_triage_report(
+    repo_root: Path | str,
+    *,
+    ignored_reports: tuple[str, ...] = (),
+) -> dict[str, object]:
     root = Path(repo_root)
     reports: dict[str, object] = {}
     forbidden = {key: False for key in FORBIDDEN_FLAGS}
     missing = 0
     failed = 0
+    ignored = set(ignored_reports).intersection(TRIAGE_REPORTS)
 
     for name, rel_path in TRIAGE_REPORTS.items():
+        if name in ignored:
+            continue
         path = root / rel_path
         if not path.exists():
             missing += 1
@@ -73,7 +80,7 @@ def build_dream_triage_report(repo_root: Path | str) -> dict[str, object]:
         "status": "experimental_internal_only",
         "ok": missing == 0 and failed == 0,
         "summary": {
-            "report_count": len(TRIAGE_REPORTS),
+            "report_count": len(TRIAGE_REPORTS) - len(ignored),
             "missing_report_count": missing,
             "failed_report_count": failed,
             "forbidden_semantics_detected": forbidden_detected,
