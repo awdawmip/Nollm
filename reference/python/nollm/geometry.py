@@ -7,6 +7,7 @@ from typing import Literal
 Point = tuple[float, float]
 Polygon = list[Point]
 Denominator = Literal["source", "target", "union"]
+Orientation = Literal["pointy", "flat"]
 
 EPS = 1e-12
 
@@ -42,6 +43,7 @@ class LayerSpec:
     theta_deg: float = 22.5
     origin: Point = (0.0, 0.0)
     translation: Point = (0.0, 0.0)
+    orientation: Orientation = "pointy"
     finer_down: bool = True
     rotation_mod_deg: float | None = 60.0
 
@@ -56,6 +58,8 @@ class LayerSpec:
             raise ValueError("theta_deg must be numeric")
         if not isinstance(self.finer_down, bool):
             raise ValueError("finer_down must be a boolean")
+        if self.orientation not in ("pointy", "flat"):
+            raise ValueError("orientation must be 'pointy' or 'flat'")
         if self.rotation_mod_deg is not None and (
             not _is_number(self.rotation_mod_deg) or self.rotation_mod_deg <= 0
         ):
@@ -108,6 +112,14 @@ class Coverage:
     weight_source: float
     weight_target: float
     jaccard: float
+
+    @property
+    def source_share(self) -> float:
+        return self.weight_source
+
+    @property
+    def target_share(self) -> float:
+        return self.weight_target
 
 
 @dataclass(frozen=True)
@@ -274,23 +286,40 @@ def sub_points(a: Point, b: Point) -> Point:
     return (a[0] - b[0], a[1] - b[1])
 
 
-def axial_to_local_xy(a: Axial, side_length: float) -> Point:
-    return (
-        side_length * sqrt(3) * (a.q + a.r / 2.0),
-        side_length * 1.5 * a.r,
-    )
+def axial_to_local_xy(a: Axial, side_length: float, orientation: Orientation = "pointy") -> Point:
+    if orientation == "pointy":
+        return (
+            side_length * sqrt(3) * (a.q + a.r / 2.0),
+            side_length * 1.5 * a.r,
+        )
+    if orientation == "flat":
+        return (
+            side_length * 1.5 * a.q,
+            side_length * sqrt(3) * (a.r + a.q / 2.0),
+        )
+    raise ValueError("orientation must be 'pointy' or 'flat'")
 
 
-def local_xy_to_axial_fractional(p: Point, side_length: float) -> tuple[float, float]:
+def local_xy_to_axial_fractional(
+    p: Point,
+    side_length: float,
+    orientation: Orientation = "pointy",
+) -> tuple[float, float]:
     if abs(side_length) <= EPS:
         raise ValueError("side_length must be non-zero")
-    q = (sqrt(3) / 3.0 * p[0] - p[1] / 3.0) / side_length
-    r = (2.0 / 3.0 * p[1]) / side_length
-    return (q, r)
+    if orientation == "pointy":
+        q = (sqrt(3) / 3.0 * p[0] - p[1] / 3.0) / side_length
+        r = (2.0 / 3.0 * p[1]) / side_length
+        return (q, r)
+    if orientation == "flat":
+        q = (2.0 / 3.0 * p[0]) / side_length
+        r = (-p[0] / 3.0 + sqrt(3) / 3.0 * p[1]) / side_length
+        return (q, r)
+    raise ValueError("orientation must be 'pointy' or 'flat'")
 
 
 def axial_to_world(a: Axial, layer: LayerSpec) -> Point:
-    local = axial_to_local_xy(a, layer.side_length)
+    local = axial_to_local_xy(a, layer.side_length, layer.orientation)
     rotated = rotate_point(local, layer.rotation_rad)
     return add_points(add_points(layer.origin, layer.translation), rotated)
 
@@ -298,7 +327,7 @@ def axial_to_world(a: Axial, layer: LayerSpec) -> Point:
 def world_to_axial_fractional(p: Point, layer: LayerSpec) -> tuple[float, float]:
     translated = sub_points(sub_points(p, layer.origin), layer.translation)
     local = rotate_point(translated, -layer.rotation_rad)
-    return local_xy_to_axial_fractional(local, layer.side_length)
+    return local_xy_to_axial_fractional(local, layer.side_length, layer.orientation)
 
 
 def world_to_axial(p: Point, layer: LayerSpec) -> Axial:
@@ -312,21 +341,37 @@ def regular_hex_area(side_length: float) -> float:
     return 3.0 * sqrt(3) / 2.0 * side_length * side_length
 
 
-def hex_polygon(center: Point, side_length: float, rotation_rad: float = 0.0) -> Polygon:
+def hex_polygon(
+    center: Point,
+    side_length: float,
+    rotation_rad: float = 0.0,
+    orientation: Orientation = "pointy",
+) -> Polygon:
     _require_point(center, "center")
     if not _is_number(side_length) or side_length <= 0:
         raise ValueError("side_length must be positive")
+    if orientation == "pointy":
+        vertex_offset = pi / 6.0
+    elif orientation == "flat":
+        vertex_offset = 0.0
+    else:
+        raise ValueError("orientation must be 'pointy' or 'flat'")
     return [
         (
-            center[0] + side_length * cos(rotation_rad + pi / 6.0 + i * pi / 3.0),
-            center[1] + side_length * sin(rotation_rad + pi / 6.0 + i * pi / 3.0),
+            center[0] + side_length * cos(rotation_rad + vertex_offset + i * pi / 3.0),
+            center[1] + side_length * sin(rotation_rad + vertex_offset + i * pi / 3.0),
         )
         for i in range(6)
     ]
 
 
 def hex_cell_polygon(a: Axial, layer: LayerSpec) -> Polygon:
-    return hex_polygon(axial_to_world(a, layer), layer.side_length, layer.rotation_rad)
+    return hex_polygon(
+        axial_to_world(a, layer),
+        layer.side_length,
+        layer.rotation_rad,
+        layer.orientation,
+    )
 
 
 def polygon_area(poly: list[Point]) -> float:
@@ -478,6 +523,7 @@ def default_layer_specs(
     beta: float = 2 ** 0.25,
     theta_deg: float = 22.5,
     origin: Point = (0.0, 0.0),
+    orientation: Orientation = "pointy",
 ) -> dict[int, LayerSpec]:
     if not isinstance(max_layer, int) or isinstance(max_layer, bool) or max_layer < 0:
         raise ValueError("max_layer must be a non-negative integer")
@@ -488,6 +534,7 @@ def default_layer_specs(
             beta=beta,
             theta_deg=theta_deg,
             origin=origin,
+            orientation=orientation,
         )
         for layer in range(max_layer + 1)
     }
@@ -553,6 +600,7 @@ __all__ = [
     "Point",
     "Polygon",
     "Denominator",
+    "Orientation",
     "CUBE_DIRECTIONS",
     "cube_add",
     "cube_scale",

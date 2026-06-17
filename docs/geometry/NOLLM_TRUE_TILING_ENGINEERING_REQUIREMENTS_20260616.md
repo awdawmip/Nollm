@@ -131,3 +131,17 @@ Only use opt if solver status is:
 ```text
 OPTIMAL
 ```
+
+---
+
+## 8. G1 Implementation Status
+
+```text
+pointy-top true tiling: implemented and tested
+flat-top true tiling: implemented and tested
+Coverage.source_share / target_share aliases: implemented
+exact containment: tested with target_share
+Model O center_spacing = side_length: guarded against in tests
+Model M mixed center/vertex convention: guarded against in tests
+A/B one-step strict Model T templates: tested
+```
