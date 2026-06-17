@@ -28,6 +28,13 @@ Nollm uses:
 * file-first source of truth;
 * deterministic audit reporting.
 
+V4 engineering gravity direction has been decided by the project owner and is
+documented in `NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md` and the
+G0 engineering/protocol drafts under `docs/` and `protocol/`. Codex must not
+reinterpret that direction, change default/secondary geometry, turn gravity
+marks into reject gates, map `drift_class` to trust/status, or implement G1-G8
+while applying G0 documentation.
+
 Core principles:
 
 ```text

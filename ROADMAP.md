@@ -24,6 +24,24 @@
 - Keep active inspection deterministic without introducing passive human review queues.
 - Preserve status transition history in the ledger.
 
+## V4 Engineering Gravity Decision
+
+The next experimental engineering direction is captured in:
+
+- `NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md`
+- `docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md`
+- `docs/engineering/NOLLM_MINIMUM_DATA_MODEL_20260616.md`
+- `docs/experiments/NOLLM_MINIMAL_ABLATION_EXPERIMENT_PLAN_20260616.md`
+- `docs/geometry/NOLLM_TRUE_TILING_ENGINEERING_REQUIREMENTS_20260616.md`
+- `protocol/GRAVITY_WELL.md`
+- `protocol/GRAVITY_MARK.md`
+- `protocol/DRIFT_REPORT.md`
+- `protocol/RETURN_VECTOR.md`
+
+G0 only adds these decided documents. G1-G8 remain separate implementation tasks.
+The V4 drafts do not expand the stable V1 recall/tool surface and do not make
+`drift_class` a trust/status mapping.
+
 ## Non-Goals
 
 - No model runtime.

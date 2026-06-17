@@ -18,6 +18,18 @@ There is no absolute leaf layer. The stable reference runtime remains filesystem
 
 P5.1 preserves and validates optional card metadata for layer, hex coordinates, anchor fields, and scale links. Core stores these fields as auditable memory metadata; Cortex may interpret them during orientation.
 
+## V4 Engineering Gravity Decision
+
+The decided V4 engineering direction is documented in `NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md`.
+Supporting engineering drafts live in `docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md`,
+`docs/engineering/NOLLM_MINIMUM_DATA_MODEL_20260616.md`,
+`docs/experiments/NOLLM_MINIMAL_ABLATION_EXPERIMENT_PLAN_20260616.md`,
+`docs/geometry/NOLLM_TRUE_TILING_ENGINEERING_REQUIREMENTS_20260616.md`, and the gravity protocol stubs under `protocol/`.
+
+These documents are decision drafts for the next experimental engineering phase.
+They do not expand the stable V1 recall/tool surface, do not enable automatic card writing,
+and do not map `drift_class` to trust or status.
+
 ## What Nollm Is
 
 - A card-based memory structure.
