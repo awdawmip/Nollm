@@ -16,7 +16,18 @@ from nollm.parameter_experiments import (
 
 class ParameterExperimentTests(unittest.TestCase):
     def test_default_regimes_are_present(self) -> None:
+        regime_ids = {regime.regime_id for regime in default_parameter_regimes()}
         descriptions = {regime.description for regime in default_parameter_regimes()}
+        self.assertEqual(
+            regime_ids,
+            {
+                "beta_2q_15",
+                "beta_2q_22_5",
+                "sqrt2_15",
+                "phi_15",
+                "sqrt3_30_benchmark",
+            },
+        )
         self.assertIn("2^(1/4) + 15 deg", descriptions)
         self.assertIn("2^(1/4) + 22.5 deg", descriptions)
         self.assertIn("sqrt(2) + 15 deg", descriptions)
