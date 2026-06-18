@@ -1,0 +1,146 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "candidate_core",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_core",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 0,
+        "r": 0
+      },
+      "rank": 1,
+      "score": 0.97,
+      "text": "Entry-column candidate with matching anchor field."
+    },
+    {
+      "candidate_id": "candidate_halo",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_halo",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 1,
+        "r": 0
+      },
+      "rank": 2,
+      "score": 0.92,
+      "text": "Neighboring halo candidate."
+    },
+    {
+      "candidate_id": "candidate_near",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_near",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 2,
+        "r": 0
+      },
+      "rank": 3,
+      "score": 0.88,
+      "text": "Near lateral drift candidate."
+    },
+    {
+      "candidate_id": "candidate_far_coherent",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_far_coherent",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 4,
+        "r": 0
+      },
+      "rank": 4,
+      "score": 0.82,
+      "text": "Far but semantically coherent lateral candidate."
+    },
+    {
+      "candidate_id": "candidate_far_weak",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0,
+          "shell": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_far_weak",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 4,
+        "r": 1
+      },
+      "rank": 5,
+      "score": 0.78,
+      "text": "Far weak candidate that stays visible instead of filtered."
+    },
+    {
+      "candidate_id": "candidate_semantic_break",
+      "gravity_mark": {
+        "anchor_vector": {
+          "unrelated": 1.0
+        },
+        "chart_id": "chart_openclaw",
+        "content_id": "candidate_semantic_break",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 0,
+        "r": 0
+      },
+      "rank": 6,
+      "score": 0.71,
+      "text": "Semantic break candidate that remains in the trace."
+    },
+    {
+      "candidate_id": "candidate_unglued",
+      "gravity_mark": {
+        "anchor_vector": {
+          "claw": 1.0
+        },
+        "chart_id": "chart_elsewhere",
+        "content_id": "candidate_unglued",
+        "geometry_profile": "default_dream",
+        "layer": 0,
+        "provenance": "experiment",
+        "q": 0,
+        "r": 0
+      },
+      "rank": 7,
+      "score": 0.69,
+      "text": "Cross-chart candidate with unavailable projection."
+    }
+  ],
+  "gravity_well": {
+    "anchor_vector": {
+      "claw": 1.0
+    },
+    "chart_id": "chart_openclaw",
+    "created_at": "2026-06-18T00:00:00Z",
+    "entry_query": "openclaw mode3 trace entry",
+    "geometry_profile": "default_dream",
+    "layer": 0,
+    "q": 0,
+    "r": 0,
+    "well_id": "gw_openclaw_mode3"
+  },
+  "schema": "nollm.mode3_trace_fixture.v1",
+  "status": "experimental_internal_only"
+}
