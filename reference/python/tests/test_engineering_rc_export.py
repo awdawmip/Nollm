@@ -142,11 +142,15 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("{}\n" if path.endswith(".json") else "# placeholder\n", encoding="utf-8")
     extra_hash_paths = [
+        "reference/python/nollm/engineering_rc_archive.py",
+        "reference/python/nollm/engineering_rc_export.py",
         "reference/python/scripts/check_engineering_rc_export.py",
+        "reference/python/scripts/build_engineering_rc_export_archive.py",
         "reference/python/scripts/run_nollm_local_gate.py",
         "reference/python/scripts/run_g_series_engineering_gate.py",
         "reference/python/scripts/run_dream_golden_regression.py",
         "reference/python/tests/test_engineering_rc_artifact_hashes.py",
+        "reference/python/tests/test_engineering_rc_archive.py",
         "reference/python/tests/test_engineering_rc_export.py",
         "reference/python/tests/test_g_series_engineering_closure.py",
         "reference/python/tests/test_minimal_ablation_experiment.py",

@@ -78,3 +78,14 @@ python scripts/check_engineering_rc_export.py --write-hashes
 ```
 
 The hash manifest verifies artifact identity, not scientific validity.
+
+## Deterministic Archive
+
+Build and verify a local zip archive from `reference/python`:
+
+```bash
+python scripts/build_engineering_rc_export_archive.py --output ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip --report ../../out/nollm_runtime/engineering_rc_archive_report.json
+python scripts/build_engineering_rc_export_archive.py --verify ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip
+```
+
+The generated archive is a local release artifact and should not be committed.

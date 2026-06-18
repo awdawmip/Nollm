@@ -35,6 +35,16 @@ def test_package_hygiene_script_detects_generated_recall(tmp_path: Path) -> None
     assert checker.find_issues(tmp_path) == ["examples/openclaw/recalls/recall_000001.json"]
 
 
+def test_package_hygiene_allows_runtime_release_archives_only(tmp_path: Path) -> None:
+    checker = load_checker()
+    runtime = tmp_path / "out" / "nollm_runtime" / "releases"
+    runtime.mkdir(parents=True)
+    (runtime / "local_rc.zip").write_bytes(b"zip")
+    (tmp_path / "leaked.zip").write_bytes(b"zip")
+
+    assert checker.find_issues(tmp_path) == ["leaked.zip"]
+
+
 def test_release_docs_exist() -> None:
     assert (ROOT / "docs" / "V1_RELEASE_CHECKLIST.md").exists()
     assert (ROOT / "docs" / "V1_RELEASE_NOTES_DRAFT.md").exists()

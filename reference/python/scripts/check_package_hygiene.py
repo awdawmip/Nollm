@@ -19,6 +19,9 @@ ALLOWED_RELATIVE_PATHS = {
     "examples/openclaw/recalls/sample_recall_digest.json",
     "examples/openclaw/recalls/sample_recall_digest.md",
 }
+ALLOWED_RELATIVE_PREFIXES = (
+    "out/nollm_runtime/releases/",
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -41,6 +44,8 @@ def find_issues(root: Path) -> list[str]:
         if ".git/" in relative or relative == ".git":
             continue
         if relative in ALLOWED_RELATIVE_PATHS:
+            continue
+        if any(relative.startswith(prefix) for prefix in ALLOWED_RELATIVE_PREFIXES):
             continue
         if path.is_dir() and path.name in BLOCKED_DIR_NAMES:
             issues.append(relative)
