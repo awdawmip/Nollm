@@ -1,0 +1,258 @@
+{
+  "artifact_count": 48,
+  "artifacts": [
+    {
+      "path": "NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md",
+      "sha256": "5635b68f9849159bb02d8e491d6289c8d38354ad509fd467c5f6cbcc404811d2",
+      "size_bytes": 14216
+    },
+    {
+      "path": "docs/engineering/NOLLM_MINIMUM_DATA_MODEL_20260616.md",
+      "sha256": "892ac97c308676e4f860a3f2f85d45b839ff547aa76b4640b7dda8c7ded992f7",
+      "size_bytes": 3957
+    },
+    {
+      "path": "docs/experiments/G_SERIES_ENGINEERING_CLOSURE.md",
+      "sha256": "8f1dcca4da1f95f558f5021712fc5fa228bbc3b1e3b7132b12f5ed3f2d5d9746",
+      "size_bytes": 989
+    },
+    {
+      "path": "docs/experiments/NOLLM_MINIMAL_ABLATION_EXPERIMENT_PLAN_20260616.md",
+      "sha256": "729e84f8f108e00fb674434e0e7c35d9565f5d8ab2f13448020d93237d0f707f",
+      "size_bytes": 3396
+    },
+    {
+      "path": "docs/geometry/G3_MULTI_STEP_COVERAGE_METRICS.md",
+      "sha256": "384d59e7282278bd4d63509d2f6943e455fc5f9ef818422577dfe37175c031d2",
+      "size_bytes": 792
+    },
+    {
+      "path": "docs/geometry/NOLLM_PARAMETER_PROFILE_REGISTRY.md",
+      "sha256": "b4046be793066868cb4f08c9b5f2d2133b89f3a63a5628de4da266bb21d27b07",
+      "size_bytes": 1228
+    },
+    {
+      "path": "docs/geometry/NOLLM_TRUE_TILING_ENGINEERING_REQUIREMENTS_20260616.md",
+      "sha256": "8d389ba2ed6a3228693f174d1595587945939495d5506ac971b53d52ecbe10e7",
+      "size_bytes": 2642
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md",
+      "sha256": "b1375553fa17ff01fa6db4d805c579ce23a7ac98e7c4c1964912d0f46af0064a",
+      "size_bytes": 2202
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md",
+      "sha256": "ff962985f03c9562a0153bb027aea5b30f6be2d35d8669634072a004288bca6d",
+      "size_bytes": 2360
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
+      "sha256": "2ede928f34401e45a7f11cafa4c3cc272f374a8ba47042ca0c5c1cf1f2e6c5b7",
+      "size_bytes": 2784
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.md",
+      "sha256": "ec5c5c66053efec91c08f623e48ad73273cd371529fe75740d6583e980525ddd",
+      "size_bytes": 2947
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md",
+      "sha256": "0638e2dd645e40ca7e0658249eaf45d9332401d54717e28a5c6bfebb894eecad",
+      "size_bytes": 2179
+    },
+    {
+      "path": "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md",
+      "sha256": "aa0601e716477f416ae093770e92e07b3da371d7b21132a069c84d065f9d7bc4",
+      "size_bytes": 5158
+    },
+    {
+      "path": "out/nollm_runtime/g_series_engineering_closure_report.json",
+      "sha256": "01a13d5a5e8040588b99ec5d13eecbddf7d07c19e2ce494ebe22869ccd25a14a",
+      "size_bytes": 2874
+    },
+    {
+      "path": "out/nollm_runtime/gravity_report_demo.json",
+      "sha256": "12a009c2270d5e01fb20c0a7d263d20abad3d36591a8eecd5076e9e0bbb980a8",
+      "size_bytes": 1977
+    },
+    {
+      "path": "out/nollm_runtime/minimal_ablation_experiment_report.json",
+      "sha256": "4ac010f475adf4b615f947e9707ff61927da6359ba30c23c8a9db6ee374a2e82",
+      "size_bytes": 98234
+    },
+    {
+      "path": "out/nollm_runtime/mode3_trace_experiment_report.json",
+      "sha256": "50e8ae2a3606b10bb7d31eb75cfad1b877439d3a765099ce913364a127b6424b",
+      "size_bytes": 5705
+    },
+    {
+      "path": "out/nollm_runtime/multi_step_coverage_report.json",
+      "sha256": "2fd6124eb9429924e0bd8071bb604518fda152824c940e20418eb656d81e486e",
+      "size_bytes": 33145477
+    },
+    {
+      "path": "out/nollm_runtime/offset_sampling_report.json",
+      "sha256": "2a28450d8b8487a5c2273412d24bad5bd51d76fc1f722ed9ce62348dde98054e",
+      "size_bytes": 333047
+    },
+    {
+      "path": "out/nollm_runtime/reverse_cover_report.json",
+      "sha256": "2f66542fb9b28c057e680072b13d4003487a879f5fa9b9f0779190da85b08a7f",
+      "size_bytes": 356289
+    },
+    {
+      "path": "protocol/DRIFT_REPORT.md",
+      "sha256": "1643b6a230d1bf56455baacf53be8f37bb38f7bdefbfddd530ca8b2646d295d3",
+      "size_bytes": 1897
+    },
+    {
+      "path": "protocol/GRAVITY_MARK.md",
+      "sha256": "140584a105261c112c438a80eef6d3476c93d1d3992010245a2e7488d0885750",
+      "size_bytes": 979
+    },
+    {
+      "path": "protocol/GRAVITY_WELL.md",
+      "sha256": "3983c83a4b57aa4b6a5f70b635dd783122a5025894b8f57470f0d7c65446f6f6",
+      "size_bytes": 1253
+    },
+    {
+      "path": "protocol/RETURN_VECTOR.md",
+      "sha256": "b7e893dc305d0dc02e5388392f1d401700d7fe00d3f1c210875fe68d3bdee92a",
+      "size_bytes": 798
+    },
+    {
+      "path": "reference/python/nollm/g_series_engineering_closure.py",
+      "sha256": "edeb8db9dc3e561eaa2ecd139bb30ac4371f4c8ac3faf77d4fde23eb0b2a6337",
+      "size_bytes": 13978
+    },
+    {
+      "path": "reference/python/nollm/geometry.py",
+      "sha256": "c13045e41e6dd82681d6aa7c18cdf92fea0458b702fc5d5f45b0445b170bddc0",
+      "size_bytes": 19591
+    },
+    {
+      "path": "reference/python/nollm/geometry_profiles.py",
+      "sha256": "9296821165b3619fcf4f2631d6f5176eb5fd078b7b6aef1e206518e314d2790d",
+      "size_bytes": 7155
+    },
+    {
+      "path": "reference/python/nollm/gravity.py",
+      "sha256": "7ffbc845b01d73a6f83c6deb6ce15629e61cf5c9d9137c8d066c91f5c321cf3a",
+      "size_bytes": 17427
+    },
+    {
+      "path": "reference/python/nollm/minimal_ablation_experiment.py",
+      "sha256": "bf29870a07d4c65428035cf4ea8e742af122092b2620e03593e22e9541556751",
+      "size_bytes": 16951
+    },
+    {
+      "path": "reference/python/nollm/mode3_trace_experiment.py",
+      "sha256": "6db2b854ec74ba84d8250b85f2761cc624d1df65dc6082ae838a58782a0b1523",
+      "size_bytes": 9358
+    },
+    {
+      "path": "reference/python/nollm/multi_step_coverage.py",
+      "sha256": "bc5b2ff0a5d7ba4d35868777e844bb8cf1116fdfd01459b6bcc4abdfed4c59ad",
+      "size_bytes": 5321
+    },
+    {
+      "path": "reference/python/nollm/offset_sampling.py",
+      "sha256": "8dec40761ee3b7055d7897e82855d4931887d5e26cd6e1822629d17398ddf157",
+      "size_bytes": 12080
+    },
+    {
+      "path": "reference/python/nollm/reverse_cover.py",
+      "sha256": "5da593c635d6060ac01e03cd45ee15825e4ad960d3c740d4efc6c20e1c9192ec",
+      "size_bytes": 22677
+    },
+    {
+      "path": "reference/python/scripts/check_engineering_rc_export.py",
+      "sha256": "200b13a72fbf026c1cdf6c772f598e3e32588c7731d9824c10e134007a96c524",
+      "size_bytes": 1323
+    },
+    {
+      "path": "reference/python/scripts/run_dream_golden_regression.py",
+      "sha256": "58a01fe21631a63a2342e0fe63353b56d66575b8b74374e32a6cc1164193f36c",
+      "size_bytes": 1315
+    },
+    {
+      "path": "reference/python/scripts/run_g_series_engineering_gate.py",
+      "sha256": "7f4f308f90329ef03a3692cfec543d19d9f14c4d6eccea76863adfaa39f0b2fe",
+      "size_bytes": 1774
+    },
+    {
+      "path": "reference/python/scripts/run_nollm_local_gate.py",
+      "sha256": "dccf76936313af2027ce69b353df1ef019958285cc5fe2c77176ea75c6eb7027",
+      "size_bytes": 1800
+    },
+    {
+      "path": "reference/python/tests/test_engineering_rc_artifact_hashes.py",
+      "sha256": "b6a62c3099d68bddebd20bc4f5e1cd370e8cb5bc64372016816174b2be724565",
+      "size_bytes": 5247
+    },
+    {
+      "path": "reference/python/tests/test_engineering_rc_export.py",
+      "sha256": "f0fe9f2ef5ffb3220a79988fabb08b016ae80703b293bf5ec3fd9f7db6e1b5b6",
+      "size_bytes": 6538
+    },
+    {
+      "path": "reference/python/tests/test_g_series_engineering_closure.py",
+      "sha256": "7cf312759996e9d88c563a91838482ee3282ab13e8f925780c71336308c87e54",
+      "size_bytes": 4695
+    },
+    {
+      "path": "reference/python/tests/test_geometry.py",
+      "sha256": "14aa996e021b058db0d5ee7e73ce638ab78a704e5a364ee734c72f7cf14a7861",
+      "size_bytes": 17375
+    },
+    {
+      "path": "reference/python/tests/test_geometry_profiles.py",
+      "sha256": "5a910b406d723d3c717d6da98d9d276a2f7ef5a355135da1886b0906758357fc",
+      "size_bytes": 5626
+    },
+    {
+      "path": "reference/python/tests/test_gravity.py",
+      "sha256": "b7553dd44f3dc9eaba66702cc8341cfe517131aced5ccb8c2b7e9985b582b5a5",
+      "size_bytes": 7051
+    },
+    {
+      "path": "reference/python/tests/test_minimal_ablation_experiment.py",
+      "sha256": "511bb1affe180deb43ce5c3a16a011dfdc543fbe194984494a2a2595ffc21691",
+      "size_bytes": 5319
+    },
+    {
+      "path": "reference/python/tests/test_mode3_trace_experiment.py",
+      "sha256": "3759c86f4e6111d6472fbdaea225f8d7a2f588af632ca6b27ede7100921ff43f",
+      "size_bytes": 6699
+    },
+    {
+      "path": "reference/python/tests/test_multi_step_coverage.py",
+      "sha256": "ea87b8c785de610ac4b7342b18f2798fa8fa8794f3f32f4354a9160e7d5a98b2",
+      "size_bytes": 5024
+    },
+    {
+      "path": "reference/python/tests/test_offset_sampling.py",
+      "sha256": "a19c57884ea454e69fc424aa143a556892a0445434cc65b256b8b12bdbecade1",
+      "size_bytes": 6689
+    },
+    {
+      "path": "reference/python/tests/test_reverse_cover.py",
+      "sha256": "e5d03ea03cf6d1919ac8f232d25fc39b42b29bcabee8ab6b1a08da877bbaa88d",
+      "size_bytes": 8939
+    }
+  ],
+  "claim": "testable_not_proven",
+  "date": "2026-06-18",
+  "excluded_local_paths": [
+    ".git/",
+    "__pycache__/",
+    ".pytest_cache/",
+    "conversation_backups/",
+    "*.pyc",
+    "*.zip"
+  ],
+  "schema": "nollm.engineering_gravity_rc_artifact_hashes.v1",
+  "source_manifest": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
+  "status": "experimental_internal_only"
+}

@@ -1,0 +1,143 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+from nollm.engineering_rc_export import (
+    HASH_MANIFEST_PATH,
+    HASH_SCHEMA,
+    build_engineering_rc_artifact_hash_manifest,
+)
+
+ROOT = Path(__file__).resolve().parents[3]
+REFERENCE_PYTHON = ROOT / "reference" / "python"
+SCRIPT = REFERENCE_PYTHON / "scripts" / "check_engineering_rc_export.py"
+
+
+def test_hash_manifest_includes_required_rc_artifact_paths() -> None:
+    manifest = _committed_hash_manifest()
+    paths = {item["path"] for item in manifest["artifacts"]}
+
+    assert manifest["schema"] == HASH_SCHEMA
+    assert "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md" in paths
+    assert "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json" in paths
+    assert "reference/python/scripts/check_engineering_rc_export.py" in paths
+    assert "reference/python/tests/test_engineering_rc_artifact_hashes.py" in paths
+    assert "out/nollm_runtime/g_series_engineering_closure_report.json" in paths
+
+
+def test_hash_manifest_entries_are_sorted_and_deterministic() -> None:
+    committed = _committed_hash_manifest()
+    rebuilt = build_engineering_rc_artifact_hash_manifest(ROOT)
+    paths = [item["path"] for item in committed["artifacts"]]
+
+    assert paths == sorted(paths)
+    assert committed == rebuilt
+    assert committed["artifact_count"] == len(committed["artifacts"])
+
+
+def test_hash_manifest_sha256_and_size_match_current_files() -> None:
+    manifest = _committed_hash_manifest()
+
+    for item in manifest["artifacts"]:
+        target = ROOT / item["path"]
+        data = target.read_bytes()
+        assert item["size_bytes"] == len(data)
+        assert item["sha256"] == __import__("hashlib").sha256(data).hexdigest()
+
+
+def test_checker_fails_on_corrupted_file_in_temp_copy(tmp_path: Path) -> None:
+    repo = _copy_hash_fixture(tmp_path)
+    audit = repo / "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md"
+    audit.write_text(audit.read_text(encoding="utf-8") + "\ncorrupted\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
+        cwd=REFERENCE_PYTHON,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    report = json.loads(result.stdout)
+
+    assert result.returncode == 1
+    assert "hash_manifest_sha256_mismatch:docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md" in report[
+        "failures"
+    ]
+    assert "hash_manifest_size_mismatch:docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md" in report[
+        "failures"
+    ]
+
+
+def test_ignored_local_paths_are_excluded_even_when_present(tmp_path: Path) -> None:
+    repo = _copy_hash_fixture(tmp_path)
+    (repo / "conversation_backups").mkdir()
+    (repo / "conversation_backups" / "local.txt").write_text("local only\n", encoding="utf-8")
+    (repo / "reference/python/nollm/__pycache__").mkdir()
+    (repo / "reference/python/nollm/__pycache__" / "local.pyc").write_bytes(b"cache")
+
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
+        cwd=REFERENCE_PYTHON,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    report = json.loads(result.stdout)
+    payload = json.dumps(report, sort_keys=True)
+
+    assert result.returncode == 0, report["failures"]
+    assert report["ok"] is True
+    assert "conversation_backups/local.txt" not in payload
+    assert "__pycache__/local.pyc" not in payload
+
+
+def test_checker_remains_clean_after_runtime_cache_artifacts_are_created_and_removed(tmp_path: Path) -> None:
+    cache_dir = ROOT / "reference/python/nollm/__pycache__"
+    cache_file = cache_dir / "h3_cache_probe.pyc"
+    before = _git_status_short()
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file.write_bytes(b"cache")
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT)],
+            cwd=REFERENCE_PYTHON,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+        cache_file.unlink()
+    finally:
+        if cache_file.exists():
+            cache_file.unlink()
+        if cache_dir.exists() and not any(cache_dir.iterdir()):
+            cache_dir.rmdir()
+    after = _git_status_short()
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert before == after
+
+
+def _committed_hash_manifest() -> dict[str, object]:
+    return json.loads((ROOT / HASH_MANIFEST_PATH).read_text(encoding="utf-8"))
+
+
+def _copy_hash_fixture(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    manifest = build_engineering_rc_artifact_hash_manifest(ROOT)
+    for item in manifest["artifacts"]:
+        source = ROOT / item["path"]
+        target = repo / item["path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    hash_target = repo / HASH_MANIFEST_PATH
+    hash_target.parent.mkdir(parents=True, exist_ok=True)
+    hash_target.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return repo
+
+
+def _git_status_short() -> str:
+    return subprocess.check_output(["git", "status", "--short"], cwd=ROOT, text=True, timeout=30)

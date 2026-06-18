@@ -60,3 +60,21 @@ new protocol surface.
 
 These reports are derived artifacts. They are not source of truth, not memory,
 and not a hidden recall index.
+
+## Hash Integrity
+
+- `docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_ARTIFACT_HASHES_20260618.json`
+
+Verify artifact identity from `reference/python`:
+
+```bash
+python scripts/check_engineering_rc_export.py
+```
+
+Refresh hashes only after an intentional release artifact change:
+
+```bash
+python scripts/check_engineering_rc_export.py --write-hashes
+```
+
+The hash manifest verifies artifact identity, not scientific validity.

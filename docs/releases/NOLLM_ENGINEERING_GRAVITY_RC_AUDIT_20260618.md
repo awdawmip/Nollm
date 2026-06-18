@@ -22,12 +22,15 @@ Run from `reference/python`:
 python scripts/run_nollm_local_gate.py --skip-pytest
 python scripts/run_dream_golden_regression.py
 python scripts/run_g_series_engineering_gate.py
+python scripts/check_engineering_rc_export.py
 python scripts/run_nollm_test_shards.py --profile collect --timeout 30
 python scripts/run_nollm_test_shards.py --profile core --timeout 60
 python scripts/run_nollm_test_shards.py --profile docs --timeout 60
 ```
 
 Expected result: all commands pass and the closure report remains `ok=true`.
+`check_engineering_rc_export.py` also validates the RC artifact hash manifest.
+The hash manifest verifies artifact identity, not scientific validity.
 
 ## Optional Targeted Tests
 

@@ -59,8 +59,12 @@ checks only and do not run heavy report regeneration.
 ```bash
 cd reference/python
 python scripts/check_engineering_rc_export.py
+python scripts/check_engineering_rc_export.py --write-hashes
 python scripts/run_nollm_local_gate.py --skip-pytest
 python scripts/run_g_series_engineering_gate.py
 python scripts/run_dream_golden_regression.py
 python -m pytest -q tests/test_engineering_rc_export.py tests/test_g_series_engineering_closure.py tests/test_minimal_ablation_experiment.py tests/test_mode3_trace_experiment.py tests/test_gravity.py
+python -m pytest -q tests/test_engineering_rc_artifact_hashes.py
 ```
+
+The hash manifest verifies artifact identity, not scientific validity.

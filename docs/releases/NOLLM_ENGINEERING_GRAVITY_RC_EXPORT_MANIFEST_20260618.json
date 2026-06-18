@@ -58,5 +58,6 @@
     "anchor_creation",
     "parent_child_geometry",
     "trust_status_mapping"
-  ]
+  ],
+  "hash_manifest": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_ARTIFACT_HASHES_20260618.json"
 }

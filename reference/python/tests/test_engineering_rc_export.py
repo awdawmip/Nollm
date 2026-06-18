@@ -10,6 +10,7 @@ from nollm.engineering_rc_export import (
     FORBIDDEN_SEMANTICS,
     REQUIRED_RELEASE_FILES,
     SCHEMA,
+    write_engineering_rc_artifact_hash_manifest,
     build_engineering_rc_export_check,
 )
 
@@ -140,6 +141,22 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
             target = repo / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text("{}\n" if path.endswith(".json") else "# placeholder\n", encoding="utf-8")
+    extra_hash_paths = [
+        "reference/python/scripts/check_engineering_rc_export.py",
+        "reference/python/scripts/run_nollm_local_gate.py",
+        "reference/python/scripts/run_g_series_engineering_gate.py",
+        "reference/python/scripts/run_dream_golden_regression.py",
+        "reference/python/tests/test_engineering_rc_artifact_hashes.py",
+        "reference/python/tests/test_engineering_rc_export.py",
+        "reference/python/tests/test_g_series_engineering_closure.py",
+        "reference/python/tests/test_minimal_ablation_experiment.py",
+        "reference/python/tests/test_mode3_trace_experiment.py",
+        "reference/python/tests/test_gravity.py",
+    ]
+    for path in extra_hash_paths:
+        target = repo / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# placeholder\n", encoding="utf-8")
     manifest = {
         "schema": "nollm.engineering_gravity_rc_export_manifest.v1",
         "status": "experimental_internal_only",
@@ -149,6 +166,7 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    write_engineering_rc_artifact_hash_manifest(repo)
     return repo
 
 
