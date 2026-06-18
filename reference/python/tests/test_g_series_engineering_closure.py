@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from nollm.g_series_engineering_closure import (
@@ -28,6 +29,13 @@ class GSeriesEngineeringClosureTests(unittest.TestCase):
         self.assertEqual(first["status"], STATUS)
         self.assertIs(first["ok"], True)
         json.dumps(first, sort_keys=True)
+
+    def test_default_build_does_not_regenerate_reports(self) -> None:
+        with patch("nollm.g_series_engineering_closure.generate_g_series_runtime_reports") as refresh:
+            report = build_g_series_engineering_closure_report(ROOT)
+
+        refresh.assert_not_called()
+        self.assertTrue(report["ok"])
 
     def test_required_artifact_paths_are_checked(self) -> None:
         report = build_g_series_engineering_closure_report(ROOT, generate_reports=False)
@@ -87,6 +95,12 @@ class GSeriesEngineeringClosureTests(unittest.TestCase):
             record = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(record["schema"], SCHEMA)
             self.assertTrue(record["ok"])
+
+    def test_refresh_reports_behavior_is_explicit_without_running_heavy_path(self) -> None:
+        with patch("nollm.g_series_engineering_closure.generate_g_series_runtime_reports") as refresh:
+            build_g_series_engineering_closure_report(ROOT, generate_reports=True)
+
+        refresh.assert_called_once()
 
     def test_write_closure_report_writes_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

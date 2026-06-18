@@ -21,7 +21,6 @@ from nollm.mode3_trace_experiment import (
 )
 from nollm.multi_step_coverage import multi_profile_coverage_report
 from nollm.offset_sampling import offset_sampling_report
-from nollm.reverse_cover import nontrivial_reverse_cover_cases, reverse_cover_report
 
 SCHEMA = "nollm.g_series_engineering_closure.v1"
 STATUS = "experimental_internal_only"
@@ -58,7 +57,7 @@ DEFAULT_REPORTS = (
 def build_g_series_engineering_closure_report(
     repo_root: Path,
     *,
-    generate_reports: bool = True,
+    generate_reports: bool = False,
     docs: Sequence[str] = DEFAULT_DOCS,
     protocols: Sequence[str] = DEFAULT_PROTOCOLS,
     reports: Sequence[str] = DEFAULT_REPORTS,
@@ -102,10 +101,8 @@ def generate_g_series_runtime_reports(repo_root: Path) -> None:
     runtime.mkdir(parents=True, exist_ok=True)
     _write_json(runtime / "multi_step_coverage_report.json", multi_profile_coverage_report(max_step=8))
     _write_json(runtime / "offset_sampling_report.json", offset_sampling_report(max_step=8))
-    _write_json(
-        runtime / "reverse_cover_report.json",
-        reverse_cover_report(cases=nontrivial_reverse_cover_cases()),
-    )
+    if not (runtime / "reverse_cover_report.json").exists():
+        raise ValueError("reverse_cover_report.json is required before refresh mode; run the reverse-cover experiment explicitly")
     _write_json(runtime / "gravity_report_demo.json", _gravity_demo_report())
 
     mode3_fixture = json.loads((repo_root / "examples" / "openclaw_dream" / "mode3_trace_fixture.json").read_text(encoding="utf-8"))
