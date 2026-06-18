@@ -16,3 +16,16 @@ as `opt`, and gap metrics are emitted only for proven optima.
 G5 does not decide recall behavior, write cards, create anchors, confirm
 placement, create parent-child geometry, change trust/status, or expand the
 stable tool surface.
+
+## G5b Nontrivial Cluster Pack
+
+The smoke cases are centered radius-1 clusters. They are useful for checking
+solver plumbing, but they are too shallow for engineering comparison.
+
+G5b adds deterministic nontrivial cases: centered radius sweeps and fixed
+boundary-offset clusters. These cases are an engineering pack, not a theorem
+about every possible cluster. They report pack summaries and A/B comparison
+metrics only from measured values.
+
+Timeout or limited MILP results remain incumbents, not optima. Benchmark ease
+or nontrivial-pack behavior is not a reason to change the default geometry.

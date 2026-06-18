@@ -8,7 +8,7 @@ import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from nollm.reverse_cover import ReverseCoverCase, reverse_cover_report  # noqa: E402
+from nollm.reverse_cover import ReverseCoverCase, reverse_cover_cases_for_pack, reverse_cover_report  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -16,6 +16,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", default="../..", help="Repository root path.")
     parser.add_argument("--profile", action="append", dest="profiles", help="Profile id to include. Repeatable.")
     parser.add_argument("--step", action="append", type=int, dest="steps", help="Step to include. Repeatable.")
+    parser.add_argument(
+        "--case-pack",
+        choices=("smoke", "nontrivial", "all"),
+        default="smoke",
+        help="Deterministic reverse-cover case pack.",
+    )
     parser.add_argument("--target-radius", type=int, default=1, help="Axial target-cluster radius.")
     parser.add_argument("--time-limit-seconds", type=float, default=5.0, help="SciPy MILP/LP time limit.")
     parser.add_argument(
@@ -31,7 +37,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.output is not None
         else repo_root / "out" / "nollm_runtime" / "reverse_cover_report.json"
     )
-    cases = None if args.steps is None else [ReverseCoverCase(step=step, target_radius=args.target_radius) for step in args.steps]
+    cases = (
+        reverse_cover_cases_for_pack(args.case_pack)
+        if args.steps is None
+        else [
+            ReverseCoverCase(
+                step=step,
+                target_radius=args.target_radius,
+                case_pack=args.case_pack,
+            )
+            for step in args.steps
+        ]
+    )
     report = reverse_cover_report(
         profile_ids=args.profiles,
         cases=cases,

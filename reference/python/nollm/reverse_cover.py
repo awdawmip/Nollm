@@ -7,6 +7,7 @@ from typing import Mapping, Sequence
 from nollm.geometry import (
     Axial,
     HexAddress,
+    axial_distance,
     axial_disk,
     axial_to_world,
     hex_overlap,
@@ -35,14 +36,24 @@ FORBIDDEN_REPORT_KEYS = {
 class ReverseCoverCase:
     step: int
     target_radius: int = DEFAULT_TARGET_RADIUS
+    center_q: int = 0
+    center_r: int = 0
+    case_pack: str = "smoke"
 
     def __post_init__(self) -> None:
         _require_positive_int(self.step, "step")
         _require_non_negative_int(self.target_radius, "target_radius")
+        _require_int(self.center_q, "center_q")
+        _require_int(self.center_r, "center_r")
+        if not isinstance(self.case_pack, str) or not self.case_pack:
+            raise ValueError("case_pack must be a non-empty string")
 
     @property
     def case_id(self) -> str:
-        return f"center_ring_{self.target_radius}_step_{self.step}"
+        return (
+            f"{self.case_pack}_step_{self.step}_radius_{self.target_radius}"
+            f"_center_{self.center_q}_{self.center_r}"
+        )
 
 
 @dataclass(frozen=True)
@@ -56,6 +67,40 @@ class IncidenceProblem:
 
 def default_reverse_cover_cases() -> tuple[ReverseCoverCase, ...]:
     return tuple(ReverseCoverCase(step=step, target_radius=DEFAULT_TARGET_RADIUS) for step in DEFAULT_CASE_STEPS)
+
+
+def smoke_reverse_cover_cases() -> tuple[ReverseCoverCase, ...]:
+    return default_reverse_cover_cases()
+
+
+def nontrivial_reverse_cover_cases() -> tuple[ReverseCoverCase, ...]:
+    radius_sweep = tuple(
+        ReverseCoverCase(step=step, target_radius=target_radius, case_pack="nontrivial")
+        for target_radius in (2, 3, 4)
+        for step in DEFAULT_CASE_STEPS
+    )
+    boundary_centers = _boundary_offset_centers()
+    boundary_offsets = tuple(
+        ReverseCoverCase(
+            step=1,
+            target_radius=2,
+            center_q=center.q,
+            center_r=center.r,
+            case_pack="nontrivial",
+        )
+        for center in boundary_centers
+    )
+    return radius_sweep + boundary_offsets
+
+
+def reverse_cover_cases_for_pack(case_pack: str) -> tuple[ReverseCoverCase, ...]:
+    if case_pack == "smoke":
+        return smoke_reverse_cover_cases()
+    if case_pack == "nontrivial":
+        return nontrivial_reverse_cover_cases()
+    if case_pack == "all":
+        return smoke_reverse_cover_cases() + nontrivial_reverse_cover_cases()
+    raise ValueError("case_pack must be smoke, nontrivial, or all")
 
 
 def reverse_cover_report(
@@ -75,6 +120,7 @@ def reverse_cover_report(
         "schema": SCHEMA,
         "status": STATUS,
         "profiles": profiles,
+        "case_pack_summary": _top_level_pack_summary(profiles),
         "comparison": _comparison(profiles),
     }
     validate_reverse_cover_report(report)
@@ -89,7 +135,10 @@ def build_incidence_problem(profile: GeometryProfile, case: ReverseCoverCase) ->
     source_layer = layer_spec_from_profile(profile, SOURCE_LAYER)
     targets = tuple(
         HexAddress(case.step, cell.q, cell.r)
-        for cell in sorted(axial_disk(Axial(0, 0), case.target_radius), key=lambda item: (item.q, item.r))
+        for cell in sorted(
+            axial_disk(Axial(case.center_q, case.center_r), case.target_radius),
+            key=lambda item: (item.q, item.r),
+        )
     )
     sources = _candidate_sources(profile, case, targets)
     rows: list[tuple[int, ...]] = []
@@ -231,12 +280,14 @@ def _profile_report(
     time_limit_seconds: float,
 ) -> dict[str, object]:
     _require_model_t(profile)
+    case_records = [_case_report(build_incidence_problem(profile, case), time_limit_seconds) for case in cases]
     return {
         "profile_id": profile.profile_id,
         "role": profile.role,
         "tiling_model": profile.tiling_model,
         "orientation": profile.orientation,
-        "cases": [_case_report(build_incidence_problem(profile, case), time_limit_seconds) for case in cases],
+        "case_pack_summary": _pack_summary_from_cases(case_records),
+        "cases": case_records,
     }
 
 
@@ -247,10 +298,13 @@ def _case_report(problem: IncidenceProblem, time_limit_seconds: float) -> dict[s
     lower_bounds = _lower_bounds(problem)
     record: dict[str, object] = {
         "case_id": problem.case.case_id,
+        "case_pack": problem.case.case_pack,
         "step": problem.case.step,
         "target_cluster": {
             "layer": problem.case.step,
             "radius": problem.case.target_radius,
+            "center_q": problem.case.center_q,
+            "center_r": problem.case.center_r,
             "cell_count": len(problem.targets),
             "cells": [_address_record(target) for target in problem.targets],
         },
@@ -299,6 +353,18 @@ def _candidate_sources(
     )
 
 
+def _boundary_offset_centers() -> tuple[Axial, ...]:
+    distance_two = sorted(
+        (cell for cell in axial_disk(Axial(0, 0), 2) if axial_distance(cell, Axial(0, 0)) == 2),
+        key=lambda item: (item.q, item.r),
+    )
+    distance_three = sorted(
+        (cell for cell in axial_disk(Axial(0, 0), 3) if axial_distance(cell, Axial(0, 0)) == 3),
+        key=lambda item: (item.q, item.r),
+    )
+    return tuple(distance_two + distance_three[:12])
+
+
 def _lower_bounds(problem: IncidenceProblem) -> dict[str, object]:
     max_cover = max((sum(1 for row in problem.rows if source_index in row) for source_index in range(len(problem.sources))), default=0)
     capacity = ceil(len(problem.targets) / max_cover) if max_cover > 0 else 0
@@ -332,8 +398,97 @@ def _comparison(profiles: Sequence[Mapping[str, object]]) -> dict[str, object]:
         "default_dream_vs_medium_practical": {
             "metric": "greedy_gap_when_milp_optimal",
             "notes": notes,
+            "nontrivial": _nontrivial_comparison(by_id["default_dream"], by_id["medium_practical"]),
         }
     }
+
+
+def _nontrivial_comparison(
+    default_profile: Mapping[str, object],
+    medium_profile: Mapping[str, object],
+) -> dict[str, object]:
+    default_summary = _profile_pack_summary(default_profile).get("nontrivial", {})
+    medium_summary = _profile_pack_summary(medium_profile).get("nontrivial", {})
+    default_mean = default_summary.get("mean_gap")
+    medium_mean = medium_summary.get("mean_gap")
+    default_max = default_summary.get("max_gap")
+    medium_max = medium_summary.get("max_gap")
+    notes: list[str] = []
+    if default_mean is None or medium_mean is None:
+        notes.append("insufficient_optimal_results")
+    elif float(medium_mean) < float(default_mean):
+        notes.append("medium_practical_lower_mean_gap")
+    elif float(default_mean) < float(medium_mean):
+        notes.append("default_dream_lower_mean_gap")
+    else:
+        notes.append("equal_mean_gap")
+    return {
+        "metric": "greedy_gap_when_milp_optimal",
+        "default_dream_mean_gap": default_mean,
+        "medium_practical_mean_gap": medium_mean,
+        "default_dream_max_gap": default_max,
+        "medium_practical_max_gap": medium_max,
+        "notes": notes,
+    }
+
+
+def _top_level_pack_summary(profiles: Sequence[Mapping[str, object]]) -> dict[str, object]:
+    all_cases: list[Mapping[str, object]] = []
+    for profile in profiles:
+        cases = profile.get("cases")
+        if isinstance(cases, list):
+            all_cases.extend(case for case in cases if isinstance(case, Mapping))
+    return _pack_summary_from_cases(all_cases)
+
+
+def _profile_pack_summary(profile: Mapping[str, object]) -> dict[str, dict[str, object]]:
+    existing = profile.get("case_pack_summary")
+    if isinstance(existing, Mapping):
+        return {
+            str(key): value
+            for key, value in existing.items()
+            if isinstance(value, dict)
+        }
+    cases = profile.get("cases")
+    if not isinstance(cases, list):
+        return {}
+    return _pack_summary_from_cases(cases)
+
+
+def _pack_summary_from_cases(cases: Sequence[object]) -> dict[str, dict[str, object]]:
+    summary: dict[str, dict[str, object]] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        pack = str(case.get("case_pack", "smoke"))
+        item = summary.setdefault(
+            pack,
+            {
+                "case_count": 0,
+                "optimal_case_count": 0,
+                "greedy_equal_opt_count": 0,
+                "greedy_nonoptimal_count": 0,
+                "_gaps": [],
+            },
+        )
+        item["case_count"] = int(item["case_count"]) + 1
+        milp = case.get("milp")
+        if not isinstance(milp, Mapping) or milp.get("status") != "OPTIMAL":
+            continue
+        item["optimal_case_count"] = int(item["optimal_case_count"]) + 1
+        gap = _case_gap(case)
+        if gap is not None:
+            item["_gaps"].append(gap)  # type: ignore[union-attr]
+            if abs(gap) <= TOLERANCE:
+                item["greedy_equal_opt_count"] = int(item["greedy_equal_opt_count"]) + 1
+            else:
+                item["greedy_nonoptimal_count"] = int(item["greedy_nonoptimal_count"]) + 1
+    for item in summary.values():
+        gaps = [float(value) for value in item["_gaps"]]  # type: ignore[index]
+        item["max_gap"] = max(gaps) if gaps else None
+        item["mean_gap"] = sum(gaps) / len(gaps) if gaps else None
+        del item["_gaps"]
+    return summary
 
 
 def _cases_by_id(profile: Mapping[str, object]) -> dict[str, Mapping[str, object]]:
@@ -384,6 +539,11 @@ def _require_non_negative_int(value: object, label: str) -> None:
         raise ValueError(f"{label} must be a non-negative integer")
 
 
+def _require_int(value: object, label: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label} must be an integer")
+
+
 def _require_positive_number(value: object, label: str) -> None:
     if not isinstance(value, (int, float)) or isinstance(value, bool) or not isfinite(value) or value <= 0:
         raise ValueError(f"{label} must be a positive finite number")
@@ -420,8 +580,10 @@ __all__ = [
     "build_incidence_problem",
     "default_reverse_cover_cases",
     "greedy_reverse_cover",
+    "nontrivial_reverse_cover_cases",
     "normalize_solver_status",
     "reverse_cover_report",
+    "reverse_cover_cases_for_pack",
     "solve_lp_lower_bound",
     "solve_milp_reverse_cover",
     "validate_reverse_cover_report",
