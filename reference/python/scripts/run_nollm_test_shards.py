@@ -22,6 +22,7 @@ PROFILE_KINDS = {
     "dream_pipeline": "pytest",
     "dream_reports": "pytest",
     "dream_gate": "pytest",
+    "shard_runner": "pytest",
     "dream": "aggregate",
     "full": "builtin",
 }
@@ -78,8 +79,11 @@ PROFILE_TESTS: dict[str, tuple[str, ...]] = {
     "dream_gate": (
         "tests/test_local_gate.py",
         "tests/test_run_tests_runner.py",
-        "tests/test_test_shards.py",
         "tests/test_package_hygiene_script.py",
+    ),
+    "shard_runner": (
+        "tests/test_test_shards.py",
+        "tests/test_nollm_test_shards.py",
     ),
 }
 

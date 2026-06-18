@@ -34,6 +34,7 @@ def test_list_profiles_returns_deterministic_json() -> None:
         "dream_pipeline",
         "dream_reports",
         "dream_gate",
+        "shard_runner",
         "dream",
         "full",
     ]
@@ -62,6 +63,23 @@ def test_dream_profile_aggregates_subprofiles() -> None:
     assert missing == []
     assert dream[:4] == [sys.executable, "-m", "pytest", "-q"]
     assert dream[4:] == pipeline[4:] + reports[4:] + gate[4:]
+
+
+def test_shard_runner_profiles_do_not_include_recursive_self_tests() -> None:
+    runner = load_runner()
+    recursive_tests = {
+        "tests/test_nollm_test_shards.py",
+        "tests/test_test_shards.py",
+    }
+
+    for profile in ("dream_gate", "dream"):
+        command, missing = runner.command_for_profile(profile, REFERENCE_PYTHON)
+        assert missing == []
+        assert not (set(command) & recursive_tests)
+
+    shard_runner, missing = runner.command_for_profile("shard_runner", REFERENCE_PYTHON)
+    assert missing == []
+    assert recursive_tests.issubset(set(shard_runner))
 
 
 def test_timeout_report_schema_with_fake_subprocess(monkeypatch) -> None:

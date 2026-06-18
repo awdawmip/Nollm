@@ -22,7 +22,8 @@ Dream diagnostics:
 
 - `dream_pipeline`: dream shard, placement, pipeline, and parameter tests.
 - `dream_reports`: dream report, golden, batch, regression, and suite tests.
-- `dream_gate`: gate/package/subprocess-facing diagnostic tests.
+- `dream_gate`: gate/package diagnostics that do not invoke shard-runner self-tests.
+- `shard_runner`: shard-runner self-tests kept separate to avoid recursive shard execution.
 - `dream`: compatibility aggregate for the three dream diagnostic profiles.
 
 Broad profile:

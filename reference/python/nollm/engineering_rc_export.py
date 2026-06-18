@@ -29,6 +29,7 @@ CANONICAL_COMMANDS = (
     "python scripts/run_nollm_test_shards.py --profile dream_pipeline --timeout 60",
     "python scripts/run_nollm_test_shards.py --profile dream_reports --timeout 60",
     "python scripts/run_nollm_test_shards.py --profile dream_gate --timeout 60",
+    "python scripts/run_nollm_test_shards.py --profile shard_runner --timeout 60",
     "python scripts/run_nollm_local_gate.py --skip-pytest",
     "python scripts/run_g_series_engineering_gate.py",
     "python scripts/run_dream_golden_regression.py",
