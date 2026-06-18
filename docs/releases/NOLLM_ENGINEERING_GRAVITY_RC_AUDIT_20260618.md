@@ -35,7 +35,7 @@ The hash manifest verifies artifact identity, not scientific validity.
 ## Optional Targeted Tests
 
 ```bash
-python -m pytest -q tests/test_geometry.py tests/test_geometry_profiles.py tests/test_multi_step_coverage.py tests/test_offset_sampling.py tests/test_reverse_cover.py tests/test_gravity.py tests/test_mode3_trace_experiment.py tests/test_minimal_ablation_experiment.py tests/test_g_series_engineering_closure.py
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_geometry.py tests/test_geometry_profiles.py tests/test_multi_step_coverage.py tests/test_offset_sampling.py tests/test_reverse_cover.py tests/test_gravity.py tests/test_mode3_trace_experiment.py tests/test_minimal_ablation_experiment.py tests/test_g_series_engineering_closure.py
 ```
 
 ## Expected Generated Reports

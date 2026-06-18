@@ -11,6 +11,9 @@ import time
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from nollm.pytest_env import isolated_pytest_env  # noqa: E402
 
 REFERENCE_PYTHON = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -137,9 +140,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def run_test_shard(profile: str, *, reference_python: Path, timeout_seconds: float) -> dict[str, object]:
     command, missing = command_for_profile(profile, reference_python)
-    env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env.setdefault("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
+    env = isolated_pytest_env()
     started = time.monotonic()
     stdout = ""
     stderr = ""

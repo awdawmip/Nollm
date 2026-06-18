@@ -41,6 +41,14 @@ def test_evaluation_guide_commands_include_current_canonical_commands() -> None:
         assert command in guide
 
 
+def test_direct_pytest_rc_commands_disable_plugin_autoload() -> None:
+    report = build_engineering_rc_export_check(ROOT)
+
+    for command in report["checked_commands"]:
+        if "python -m pytest" in command:
+            assert command.startswith("PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 "), command
+
+
 def test_forbidden_semantics_remain_absent() -> None:
     report = build_engineering_rc_export_check(ROOT)
 
@@ -138,6 +146,7 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
     extra_hash_paths = [
         "reference/python/nollm/engineering_rc_archive.py",
         "reference/python/nollm/engineering_rc_export.py",
+        "reference/python/nollm/pytest_env.py",
         "reference/python/scripts/check_engineering_rc_export.py",
         "reference/python/scripts/build_engineering_rc_export_archive.py",
         "reference/python/scripts/run_nollm_test_shards.py",

@@ -1,5 +1,5 @@
 {
-  "artifact_count": 56,
+  "artifact_count": 57,
   "artifacts": [
     {
       "path": "NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md",
@@ -38,13 +38,13 @@
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md",
-      "sha256": "b1375553fa17ff01fa6db4d805c579ce23a7ac98e7c4c1964912d0f46af0064a",
-      "size_bytes": 2202
+      "sha256": "cceda99261d85c8a74f4d0fabc8e8ee629123abde3ecc46a28e0c7b8dff3cef2",
+      "size_bytes": 2235
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md",
-      "sha256": "9937312ee2471cbb2bc855659b354f2012b835d064c47c28b929128f08e8dca9",
-      "size_bytes": 3705
+      "sha256": "0148bea17ec5ba3965996ef2dde766cef290e2851c14d3f8dc3dfdf80ed7c960",
+      "size_bytes": 3837
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
@@ -133,8 +133,8 @@
     },
     {
       "path": "reference/python/nollm/engineering_rc_export.py",
-      "sha256": "e38ebf2575bfc703bc8e68c79f5cd6e116c6ae7a628f9aab5d0ba093ab508c6f",
-      "size_bytes": 14060
+      "sha256": "36e59ac503001b7c0b1ce629b768589130f2abcf4a806b2cb66d9eae7bf5c299",
+      "size_bytes": 14240
     },
     {
       "path": "reference/python/nollm/g_series_engineering_closure.py",
@@ -177,6 +177,11 @@
       "size_bytes": 12080
     },
     {
+      "path": "reference/python/nollm/pytest_env.py",
+      "sha256": "36c8408522a3f8211c9cb453aba0c704e8ca63911b641c206630f852b5728027",
+      "size_bytes": 350
+    },
+    {
       "path": "reference/python/nollm/reverse_cover.py",
       "sha256": "5da593c635d6060ac01e03cd45ee15825e4ad960d3c740d4efc6c20e1c9192ec",
       "size_bytes": 22677
@@ -208,8 +213,8 @@
     },
     {
       "path": "reference/python/scripts/run_nollm_test_shards.py",
-      "sha256": "c5fba474e711a9c8ff418efd2e55dc3a0b1834d4d04dd12cff1362ea055b8e25",
-      "size_bytes": 11368
+      "sha256": "ae23cdb315980c1de5423ff3e1d10f4423f4775a9a408e9e3b8b2232becf688a",
+      "size_bytes": 11398
     },
     {
       "path": "reference/python/tests/test_engineering_rc_archive.py",
@@ -223,8 +228,8 @@
     },
     {
       "path": "reference/python/tests/test_engineering_rc_export.py",
-      "sha256": "783b0e4a3f3c418607e07c1fb990741380d2a3bb9b2962c5bed7ad53522a9bbb",
-      "size_bytes": 6929
+      "sha256": "963613a663109e2e8dd56bd1ae41ae9185e5bfbec802388a0d8e9f9cd7ebdd5b",
+      "size_bytes": 7276
     },
     {
       "path": "reference/python/tests/test_g_series_engineering_closure.py",
@@ -263,8 +268,8 @@
     },
     {
       "path": "reference/python/tests/test_nollm_test_shards.py",
-      "sha256": "a379e9ae0409bcaa5fd7f17fcfa9df053a454a70e5d798488bc79ac9896db07a",
-      "size_bytes": 5022
+      "sha256": "bd6c3918c5bf311712804aabff9a4e5dd3eba4c3e7515f27de6f5f43c5667469",
+      "size_bytes": 5652
     },
     {
       "path": "reference/python/tests/test_offset_sampling.py",

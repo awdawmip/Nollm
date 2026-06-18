@@ -102,6 +102,23 @@ def test_timeout_report_schema_with_fake_subprocess(monkeypatch) -> None:
     assert "partial err" in report["stderr_tail"]
 
 
+def test_shard_runner_passes_isolated_pytest_environment(monkeypatch) -> None:
+    runner = load_runner()
+    captured = {}
+
+    def fake_run_command(command, *, cwd, env, timeout):
+        captured["env"] = env
+        return subprocess.CompletedProcess(command, 0, "1 test collected\n", "")
+
+    monkeypatch.setattr(runner, "_run_command", fake_run_command)
+
+    report = runner.run_test_shard("collect", reference_python=REFERENCE_PYTHON, timeout_seconds=20)
+
+    assert report["status"] == "ok"
+    assert captured["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert captured["env"]["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] == "1"
+
+
 def test_runtime_report_path_does_not_dirty_git_status() -> None:
     output = ROOT / "out" / "nollm_runtime" / "test_shards" / "shard_smoke.json"
     output.unlink(missing_ok=True)

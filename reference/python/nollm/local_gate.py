@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -11,6 +10,7 @@ from typing import Mapping
 
 from nollm.dream_checks_manifest import build_all_dream_checks_manifest
 from nollm.dream_triage import build_dream_triage_report
+from nollm.pytest_env import isolated_pytest_env
 
 GATE_WARNINGS = (
     "E7 is an internal local gate",
@@ -205,8 +205,7 @@ def _run_component(
     detail: str,
     timeout_seconds: int = 120,
 ) -> GateComponent:
-    env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env = isolated_pytest_env()
     try:
         result = subprocess.run(
             command,

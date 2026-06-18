@@ -32,10 +32,10 @@ CANONICAL_COMMANDS = (
     "python scripts/run_nollm_local_gate.py --skip-pytest",
     "python scripts/run_g_series_engineering_gate.py",
     "python scripts/run_dream_golden_regression.py",
-    "python -m pytest -q tests/test_engineering_rc_export.py tests/test_g_series_engineering_closure.py tests/test_minimal_ablation_experiment.py tests/test_mode3_trace_experiment.py tests/test_gravity.py",
-    "python -m pytest -q tests/test_engineering_rc_artifact_hashes.py",
-    "python -m pytest -q tests/test_engineering_rc_archive.py",
-    "python -m pytest -q tests/test_nollm_test_shards.py",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_engineering_rc_export.py tests/test_g_series_engineering_closure.py tests/test_minimal_ablation_experiment.py tests/test_mode3_trace_experiment.py tests/test_gravity.py",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_engineering_rc_artifact_hashes.py",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_engineering_rc_archive.py",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q tests/test_nollm_test_shards.py",
 )
 
 FORBIDDEN_SEMANTICS = (
@@ -164,6 +164,7 @@ def _command_module_paths() -> list[str]:
     return [
         "reference/python/nollm/engineering_rc_archive.py",
         "reference/python/nollm/engineering_rc_export.py",
+        "reference/python/nollm/pytest_env.py",
     ]
 
 
