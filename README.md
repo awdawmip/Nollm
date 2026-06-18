@@ -32,6 +32,10 @@ and do not map `drift_class` to trust or status.
 
 The G-series engineering scaffold is frozen for external evaluation in
 `docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md`.
+The final RC audit, evaluator guide, and export manifest live in
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md`,
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md`, and
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.md`.
 
 ## What Nollm Is
 
