@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import subprocess
 import sys
 import zipfile
 
+from subprocess_harness import run_subprocess
 from nollm.engineering_rc_archive import (
     build_engineering_rc_export_archive,
     verify_engineering_rc_export_archive,
@@ -79,12 +79,10 @@ def test_builder_runtime_output_does_not_dirty_git_status() -> None:
     output = ROOT / "out/nollm_runtime/releases/h4_test_rc.zip"
     output.unlink(missing_ok=True)
     before = _git_status_short()
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), "--output", "../../out/nollm_runtime/releases/h4_test_rc.zip"],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     after = _git_status_short()
 
@@ -98,4 +96,6 @@ def _hash_manifest_paths() -> list[str]:
 
 
 def _git_status_short() -> str:
-    return subprocess.check_output(["git", "status", "--short"], cwd=ROOT, text=True, timeout=30)
+    result = run_subprocess(["git", "status", "--short"], cwd=ROOT, timeout_seconds=30)
+    assert result.returncode == 0
+    return result.stdout

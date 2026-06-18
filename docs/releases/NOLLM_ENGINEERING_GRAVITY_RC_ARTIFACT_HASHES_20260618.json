@@ -1,5 +1,5 @@
 {
-  "artifact_count": 52,
+  "artifact_count": 56,
   "artifacts": [
     {
       "path": "NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md",
@@ -43,23 +43,28 @@
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md",
-      "sha256": "f1fee91af2fec731192b67e112b5159acc142417cfca63c72c786b4aa2484f6f",
-      "size_bytes": 3277
+      "sha256": "10dede6b41860c3be7984f05d2809a8aaafeffd2fe119c359a5fcc4b38348492",
+      "size_bytes": 3723
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
-      "sha256": "2ede928f34401e45a7f11cafa4c3cc272f374a8ba47042ca0c5c1cf1f2e6c5b7",
-      "size_bytes": 2784
+      "sha256": "2783857dd21fdde188eddb6a61e7ee7cd402543e0160b321492851da386c80a5",
+      "size_bytes": 2858
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.md",
-      "sha256": "9d06ddcd554043b4f003d928ef18eb509da9d81ed5d34e2001e43c603f4b3f2a",
-      "size_bytes": 3455
+      "sha256": "7713cc1a30cada4445a9aec775abca293d029675145a94a8bf99cc01346b2846",
+      "size_bytes": 3526
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md",
       "sha256": "0638e2dd645e40ca7e0658249eaf45d9332401d54717e28a5c6bfebb894eecad",
       "size_bytes": 2179
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_TEST_SHARDS_20260619.md",
+      "sha256": "7875e8a3837115d84942c65780a7e3aba1fb8622491fb06a4f94c2f3e09e4787",
+      "size_bytes": 1076
     },
     {
       "path": "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md",
@@ -128,8 +133,8 @@
     },
     {
       "path": "reference/python/nollm/engineering_rc_export.py",
-      "sha256": "fd89663887a3c4c354fbb2a3d9db1433778534203e882124604dc0d4ea317416",
-      "size_bytes": 13531
+      "sha256": "45453f44e2f462962b0aae32c82cbca0f7c85e5446ca97da8176be62ef86cc0e",
+      "size_bytes": 14078
     },
     {
       "path": "reference/python/nollm/g_series_engineering_closure.py",
@@ -202,19 +207,24 @@
       "size_bytes": 1800
     },
     {
+      "path": "reference/python/scripts/run_nollm_test_shards.py",
+      "sha256": "020e51eae47568084416738209f409c58bf2a9a2157cdc1e1f62e183c421c592",
+      "size_bytes": 9964
+    },
+    {
       "path": "reference/python/tests/test_engineering_rc_archive.py",
-      "sha256": "d6f8b44e7914611a0556ada79c82294ca23ec320d4d5cacf59ace0be6e38f2aa",
-      "size_bytes": 3758
+      "sha256": "52579708e56a4b259bcad6316c73de22dceadbda1fd90c30c3874fdcd43dba7a",
+      "size_bytes": 3795
     },
     {
       "path": "reference/python/tests/test_engineering_rc_artifact_hashes.py",
-      "sha256": "b6a62c3099d68bddebd20bc4f5e1cd370e8cb5bc64372016816174b2be724565",
-      "size_bytes": 5247
+      "sha256": "04ddeed9311f483f674b37115b32ab25b2f7e80eb6bc1510d9a138708483d965",
+      "size_bytes": 5196
     },
     {
       "path": "reference/python/tests/test_engineering_rc_export.py",
-      "sha256": "d2a7bda20195f897bce0bafda6b758d5163bdc3c7a8ca954ed75e855d3b7aa78",
-      "size_bytes": 6797
+      "sha256": "783b0e4a3f3c418607e07c1fb990741380d2a3bb9b2962c5bed7ad53522a9bbb",
+      "size_bytes": 6929
     },
     {
       "path": "reference/python/tests/test_g_series_engineering_closure.py",
@@ -252,6 +262,11 @@
       "size_bytes": 5024
     },
     {
+      "path": "reference/python/tests/test_nollm_test_shards.py",
+      "sha256": "ed3b9ac568aeed8137eaad188acd287e681b9ca8900bcca3ee8b201172590278",
+      "size_bytes": 4444
+    },
+    {
       "path": "reference/python/tests/test_offset_sampling.py",
       "sha256": "a19c57884ea454e69fc424aa143a556892a0445434cc65b256b8b12bdbecade1",
       "size_bytes": 6689
@@ -260,6 +275,11 @@
       "path": "reference/python/tests/test_reverse_cover.py",
       "sha256": "e5d03ea03cf6d1919ac8f232d25fc39b42b29bcabee8ab6b1a08da877bbaa88d",
       "size_bytes": 8939
+    },
+    {
+      "path": "reference/python/tests/test_test_shards.py",
+      "sha256": "b7a31492735797ceeeb6ed12587eddda8f885f2ead04f82b63eb51f1aea9d4fd",
+      "size_bytes": 3142
     }
   ],
   "claim": "testable_not_proven",

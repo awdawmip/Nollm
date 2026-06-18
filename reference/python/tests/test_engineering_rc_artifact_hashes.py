@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 
+from subprocess_harness import run_subprocess
 from nollm.engineering_rc_export import (
     HASH_MANIFEST_PATH,
     HASH_SCHEMA,
@@ -54,12 +54,10 @@ def test_checker_fails_on_corrupted_file_in_temp_copy(tmp_path: Path) -> None:
     audit = repo / "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md"
     audit.write_text(audit.read_text(encoding="utf-8") + "\ncorrupted\n", encoding="utf-8")
 
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     report = json.loads(result.stdout)
 
@@ -79,12 +77,10 @@ def test_ignored_local_paths_are_excluded_even_when_present(tmp_path: Path) -> N
     (repo / "reference/python/nollm/__pycache__").mkdir()
     (repo / "reference/python/nollm/__pycache__" / "local.pyc").write_bytes(b"cache")
 
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     report = json.loads(result.stdout)
     payload = json.dumps(report, sort_keys=True)
@@ -102,12 +98,10 @@ def test_checker_remains_clean_after_runtime_cache_artifacts_are_created_and_rem
     try:
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file.write_bytes(b"cache")
-        result = subprocess.run(
+        result = run_subprocess(
             [sys.executable, str(SCRIPT)],
             cwd=REFERENCE_PYTHON,
-            text=True,
-            capture_output=True,
-            timeout=30,
+            timeout_seconds=30,
         )
         cache_file.unlink()
     finally:
@@ -140,4 +134,6 @@ def _copy_hash_fixture(tmp_path: Path) -> Path:
 
 
 def _git_status_short() -> str:
-    return subprocess.check_output(["git", "status", "--short"], cwd=ROOT, text=True, timeout=30)
+    result = run_subprocess(["git", "status", "--short"], cwd=ROOT, timeout_seconds=30)
+    assert result.returncode == 0
+    return result.stdout

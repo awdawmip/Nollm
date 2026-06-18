@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import subprocess
 import sys
 
+from subprocess_harness import run_subprocess
 from nollm.engineering_rc_export import (
     CANONICAL_COMMANDS,
     FORBIDDEN_SEMANTICS,
@@ -54,12 +54,10 @@ def test_checker_exits_nonzero_for_missing_required_manifest_path(tmp_path: Path
     data["read_first"].append("docs/missing.md")
     manifest.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     report = json.loads(result.stdout)
 
@@ -73,12 +71,10 @@ def test_checker_exits_nonzero_for_forbidden_phrase(tmp_path: Path) -> None:
     freeze = repo / "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md"
     freeze.write_text(freeze.read_text(encoding="utf-8") + "\nNollm is proven long-term memory.\n", encoding="utf-8")
 
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), "--repo-root", str(repo)],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     report = json.loads(result.stdout)
 
@@ -89,12 +85,10 @@ def test_checker_exits_nonzero_for_forbidden_phrase(tmp_path: Path) -> None:
 
 def test_running_checker_does_not_dirty_working_tree() -> None:
     before = _git_status_short()
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT)],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=30,
+        timeout_seconds=30,
     )
     after = _git_status_short()
 
@@ -146,12 +140,15 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
         "reference/python/nollm/engineering_rc_export.py",
         "reference/python/scripts/check_engineering_rc_export.py",
         "reference/python/scripts/build_engineering_rc_export_archive.py",
+        "reference/python/scripts/run_nollm_test_shards.py",
         "reference/python/scripts/run_nollm_local_gate.py",
         "reference/python/scripts/run_g_series_engineering_gate.py",
         "reference/python/scripts/run_dream_golden_regression.py",
         "reference/python/tests/test_engineering_rc_artifact_hashes.py",
         "reference/python/tests/test_engineering_rc_archive.py",
         "reference/python/tests/test_engineering_rc_export.py",
+        "reference/python/tests/test_nollm_test_shards.py",
+        "reference/python/tests/test_test_shards.py",
         "reference/python/tests/test_g_series_engineering_closure.py",
         "reference/python/tests/test_minimal_ablation_experiment.py",
         "reference/python/tests/test_mode3_trace_experiment.py",
@@ -175,4 +172,6 @@ def _minimal_release_repo(tmp_path: Path) -> Path:
 
 
 def _git_status_short() -> str:
-    return subprocess.check_output(["git", "status", "--short"], cwd=ROOT, text=True, timeout=30)
+    result = run_subprocess(["git", "status", "--short"], cwd=ROOT, timeout_seconds=30)
+    assert result.returncode == 0
+    return result.stdout

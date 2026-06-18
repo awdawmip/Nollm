@@ -15,15 +15,20 @@ REFERENCE_PYTHON = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TAIL_CHARS = 4000
 
-PROFILE_TESTS = {
-    "dream": (
-        "tests/test_dream_*.py",
-        "tests/test_cluster_pressure.py",
-        "tests/test_scale_scan_traversal.py",
-        "tests/test_parameter_experiments.py",
-        "tests/test_openclaw_dream_experiment.py",
-        "tests/test_local_gate.py",
-    ),
+PROFILE_KINDS = {
+    "collect": "builtin",
+    "core": "pytest",
+    "docs": "pytest",
+    "dream_pipeline": "pytest",
+    "dream_reports": "pytest",
+    "dream_gate": "pytest",
+    "dream": "aggregate",
+    "full": "builtin",
+}
+
+PROFILE_ORDER = tuple(PROFILE_KINDS)
+
+PROFILE_TESTS: dict[str, tuple[str, ...]] = {
     "core": (
         "tests/test_write_read.py",
         "tests/test_recall.py",
@@ -51,16 +56,52 @@ PROFILE_TESTS = {
         "tests/test_v1_docs_consistency.py",
         "tests/test_v1_route_lock.py",
     ),
+    "dream_pipeline": (
+        "tests/test_dream_shard.py",
+        "tests/test_dream_placement.py",
+        "tests/test_dream_pipeline_runner.py",
+        "tests/test_dream_geometry_pipeline.py",
+        "tests/test_cluster_pressure.py",
+        "tests/test_scale_scan_traversal.py",
+        "tests/test_parameter_experiments.py",
+        "tests/test_openclaw_dream_experiment.py",
+    ),
+    "dream_reports": (
+        "tests/test_dream_checks_manifest.py",
+        "tests/test_dream_corpus_dry_run.py",
+        "tests/test_dream_experiment_batch.py",
+        "tests/test_dream_golden_regression.py",
+        "tests/test_dream_regression.py",
+        "tests/test_dream_suite.py",
+        "tests/test_dream_triage.py",
+    ),
+    "dream_gate": (
+        "tests/test_local_gate.py",
+        "tests/test_run_tests_runner.py",
+        "tests/test_test_shards.py",
+        "tests/test_package_hygiene_script.py",
+    ),
+}
+
+AGGREGATE_PROFILES = {
+    "dream": ("dream_pipeline", "dream_reports", "dream_gate"),
 }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run deterministic internal Nollm pytest shards.")
-    parser.add_argument("--profile", choices=("collect", "dream", "core", "docs", "full"), required=True)
+    parser.add_argument("--profile", choices=PROFILE_ORDER, default=None)
+    parser.add_argument("--list-profiles", action="store_true", help="Print deterministic JSON profile metadata.")
     parser.add_argument("--repo-root", default=str(REPO_ROOT), help="Repository root path.")
     parser.add_argument("--timeout", type=float, default=120.0, help="Subprocess timeout in seconds.")
     parser.add_argument("--output", default=None, help="Output JSON path.")
     args = parser.parse_args(argv)
+
+    if args.list_profiles:
+        print(json.dumps(profile_manifest(), indent=2, sort_keys=True))
+        return 0
+    if args.profile is None:
+        parser.error("--profile is required unless --list-profiles is used")
 
     repo_root = Path(args.repo_root).resolve()
     reference_python = repo_root / "reference" / "python"
@@ -98,12 +139,10 @@ def run_test_shard(profile: str, *, reference_python: Path, timeout_seconds: flo
         duration = time.monotonic() - started
     else:
         try:
-            result = subprocess.run(
+            result = _run_command(
                 command,
                 cwd=reference_python,
                 env=env,
-                text=True,
-                capture_output=True,
                 timeout=timeout_seconds,
             )
             stdout = result.stdout
@@ -126,6 +165,7 @@ def run_test_shard(profile: str, *, reference_python: Path, timeout_seconds: flo
         "missing_tests": missing,
         "returncode": returncode,
         "timed_out": timed_out,
+        "timeout_seconds": timeout_seconds,
         "duration_seconds": round(duration, 3),
         "collected_count": collected_count(stdout),
         "stdout_tail": tail(stdout),
@@ -138,6 +178,16 @@ def command_for_profile(profile: str, reference_python: Path) -> tuple[list[str]
         return [sys.executable, "-m", "pytest", "--collect-only", "-q"], []
     if profile == "full":
         return [sys.executable, "run_tests.py"], []
+    if profile in AGGREGATE_PROFILES:
+        selected: list[str] = []
+        missing: list[str] = []
+        for child in AGGREGATE_PROFILES[profile]:
+            child_command, child_missing = command_for_profile(child, reference_python)
+            missing.extend(child_missing)
+            selected.extend(child_command[4:] if child_command else [])
+        if not selected:
+            return [], missing
+        return [sys.executable, "-m", "pytest", "-q", *selected], sorted(set(missing))
     selected: list[str] = []
     missing: list[str] = []
     for pattern in PROFILE_TESTS[profile]:
@@ -156,6 +206,57 @@ def command_for_profile(profile: str, reference_python: Path) -> tuple[list[str]
     if not selected:
         return [], missing
     return [sys.executable, "-m", "pytest", "-q", *selected], missing
+
+
+def profile_manifest() -> dict[str, object]:
+    return {
+        "schema": "nollm.test_shard_profiles.v1",
+        "profiles": [
+            {"name": name, "kind": PROFILE_KINDS[name]}
+            for name in PROFILE_ORDER
+        ],
+    }
+
+
+def _run_command(command: list[str], *, cwd: Path, env: dict[str, str], timeout: float) -> subprocess.CompletedProcess[str]:
+    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=(os.name != "nt"),
+        creationflags=creationflags,
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        _terminate_process_tree(process)
+        stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(command, timeout, output=stdout or exc.output, stderr=stderr or exc.stderr)
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
+def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+            text=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        import signal
+
+        os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
 
 
 def collected_count(stdout: str) -> int:

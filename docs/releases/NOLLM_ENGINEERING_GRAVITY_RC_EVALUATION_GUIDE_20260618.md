@@ -62,12 +62,17 @@ python scripts/check_engineering_rc_export.py
 python scripts/check_engineering_rc_export.py --write-hashes
 python scripts/build_engineering_rc_export_archive.py --output ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip --report ../../out/nollm_runtime/engineering_rc_archive_report.json
 python scripts/build_engineering_rc_export_archive.py --verify ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip
+python scripts/run_nollm_test_shards.py --list-profiles
+python scripts/run_nollm_test_shards.py --profile dream_pipeline --timeout 60
+python scripts/run_nollm_test_shards.py --profile dream_reports --timeout 60
+python scripts/run_nollm_test_shards.py --profile dream_gate --timeout 60
 python scripts/run_nollm_local_gate.py --skip-pytest
 python scripts/run_g_series_engineering_gate.py
 python scripts/run_dream_golden_regression.py
 python -m pytest -q tests/test_engineering_rc_export.py tests/test_g_series_engineering_closure.py tests/test_minimal_ablation_experiment.py tests/test_mode3_trace_experiment.py tests/test_gravity.py
 python -m pytest -q tests/test_engineering_rc_artifact_hashes.py
 python -m pytest -q tests/test_engineering_rc_archive.py
+python -m pytest -q tests/test_nollm_test_shards.py
 ```
 
 The hash manifest verifies artifact identity, not scientific validity.
@@ -83,3 +88,6 @@ python scripts/build_engineering_rc_export_archive.py --verify ../../out/nollm_r
 ```
 
 The generated archive is a local release artifact and should not be committed.
+
+Test shard profiles are documented in
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_TEST_SHARDS_20260619.md`.

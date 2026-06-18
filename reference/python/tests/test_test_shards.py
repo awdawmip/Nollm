@@ -64,6 +64,7 @@ def test_tiny_timeout_reports_json_without_traceback_spam(tmp_path: Path) -> Non
     assert data["status"] == "timed_out"
     assert data["returncode"] == -1
     assert data["timed_out"] is True
+    assert data["timeout_seconds"] == 0
     assert "Traceback" not in data["stdout_tail"]
     assert "Traceback" not in data["stderr_tail"]
 
