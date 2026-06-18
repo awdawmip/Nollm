@@ -43,8 +43,8 @@
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md",
-      "sha256": "2a0886bf2b8866ec51a31847d0168a7740b8f10d463420a0ae6b768cfe352caf",
-      "size_bytes": 3799
+      "sha256": "9937312ee2471cbb2bc855659b354f2012b835d064c47c28b929128f08e8dca9",
+      "size_bytes": 3705
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
@@ -63,8 +63,8 @@
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_TEST_SHARDS_20260619.md",
-      "sha256": "16ca93f08f19a26969829b93260686d3756c0a5faa4139b9a035198fc9f0d531",
-      "size_bytes": 1188
+      "sha256": "102a64b345c99d98b4ffc3b0921d44f1d0155184d4ea23bc1a9577c84988c7d7",
+      "size_bytes": 1273
     },
     {
       "path": "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md",
@@ -133,8 +133,8 @@
     },
     {
       "path": "reference/python/nollm/engineering_rc_export.py",
-      "sha256": "696bde1e954bbeebc6e414644afaaa605bb1207744da102b956d7af88015a512",
-      "size_bytes": 14161
+      "sha256": "e38ebf2575bfc703bc8e68c79f5cd6e116c6ae7a628f9aab5d0ba093ab508c6f",
+      "size_bytes": 14060
     },
     {
       "path": "reference/python/nollm/g_series_engineering_closure.py",
@@ -208,8 +208,8 @@
     },
     {
       "path": "reference/python/scripts/run_nollm_test_shards.py",
-      "sha256": "7c50f534843a00bce822e98d83ea82cc589d2205bf795afdda99855972978b73",
-      "size_bytes": 10066
+      "sha256": "c5fba474e711a9c8ff418efd2e55dc3a0b1834d4d04dd12cff1362ea055b8e25",
+      "size_bytes": 11368
     },
     {
       "path": "reference/python/tests/test_engineering_rc_archive.py",
@@ -263,8 +263,8 @@
     },
     {
       "path": "reference/python/tests/test_nollm_test_shards.py",
-      "sha256": "e05bd4c1b58564c8ee75018d5e2d5987bbdee92a96cf46426cfc51c616ec48ab",
-      "size_bytes": 5062
+      "sha256": "a379e9ae0409bcaa5fd7f17fcfa9df053a454a70e5d798488bc79ac9896db07a",
+      "size_bytes": 5022
     },
     {
       "path": "reference/python/tests/test_offset_sampling.py",

@@ -35,6 +35,7 @@ def test_list_profiles_returns_deterministic_json() -> None:
         "dream_reports",
         "dream_gate",
         "shard_runner",
+        "shard_smoke",
         "dream",
         "full",
     ]
@@ -85,23 +86,10 @@ def test_shard_runner_profiles_do_not_include_recursive_self_tests() -> None:
 def test_timeout_report_schema_with_fake_subprocess(monkeypatch) -> None:
     runner = load_runner()
 
-    class FakeProcess:
-        pid = 12345
-        returncode = None
-        calls = 0
+    def fake_run_command(command, *, cwd, env, timeout):
+        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
 
-        def communicate(self, timeout=None):
-            self.calls += 1
-            if self.calls == 1:
-                raise subprocess.TimeoutExpired(["fake"], timeout, output="partial out", stderr="partial err")
-            self.returncode = -1
-            return "partial out", "partial err"
-
-        def poll(self):
-            return None
-
-    monkeypatch.setattr(runner.subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
-    monkeypatch.setattr(runner, "_terminate_process_tree", lambda process: None)
+    monkeypatch.setattr(runner, "_run_command", fake_run_command)
 
     report = runner.run_test_shard("collect", reference_python=REFERENCE_PYTHON, timeout_seconds=0.01)
 
@@ -115,7 +103,7 @@ def test_timeout_report_schema_with_fake_subprocess(monkeypatch) -> None:
 
 
 def test_runtime_report_path_does_not_dirty_git_status() -> None:
-    output = ROOT / "out" / "nollm_runtime" / "test_shards" / "dream_gate.json"
+    output = ROOT / "out" / "nollm_runtime" / "test_shards" / "shard_smoke.json"
     output.unlink(missing_ok=True)
     before = _git_status_short()
     result = run_subprocess(
@@ -123,11 +111,11 @@ def test_runtime_report_path_does_not_dirty_git_status() -> None:
             sys.executable,
             str(SCRIPT),
             "--profile",
-            "dream_gate",
+            "shard_smoke",
             "--repo-root",
             str(ROOT),
             "--timeout",
-            "60",
+            "20",
         ],
         cwd=REFERENCE_PYTHON,
         timeout_seconds=80,
@@ -137,6 +125,13 @@ def test_runtime_report_path_does_not_dirty_git_status() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     assert output.exists()
     assert before == after
+
+
+def test_self_tests_do_not_require_heavy_shard_subprocesses() -> None:
+    text = Path(__file__).read_text(encoding="utf-8")
+    assert '--profile",\n            "dream_gate"' not in text
+    assert '--profile",\n            "dream_reports"' not in text
+    assert '--profile",\n            "shard_smoke"' in text
 
 
 def _git_status_short() -> str:

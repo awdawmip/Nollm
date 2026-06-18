@@ -17,6 +17,7 @@ Fast smoke profiles:
 - `collect`: pytest collection only.
 - `core`: stable Core/reference CLI tests.
 - `docs`: documentation and repository hygiene tests.
+- `shard_smoke`: one tiny shard-runner smoke test for review-safe subprocess checks.
 
 Dream diagnostics:
 

@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import tempfile
 import subprocess
 import sys
 import time
@@ -14,6 +15,8 @@ sys.dont_write_bytecode = True
 REFERENCE_PYTHON = Path(__file__).resolve().parents[1]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TAIL_CHARS = 4000
+POLL_INTERVAL_SECONDS = 0.1
+KILL_WAIT_SECONDS = 3.0
 
 PROFILE_KINDS = {
     "collect": "builtin",
@@ -23,6 +26,7 @@ PROFILE_KINDS = {
     "dream_reports": "pytest",
     "dream_gate": "pytest",
     "shard_runner": "pytest",
+    "shard_smoke": "pytest",
     "dream": "aggregate",
     "full": "builtin",
 }
@@ -84,6 +88,9 @@ PROFILE_TESTS: dict[str, tuple[str, ...]] = {
     "shard_runner": (
         "tests/test_test_shards.py",
         "tests/test_nollm_test_shards.py",
+    ),
+    "shard_smoke": (
+        "tests/test_init.py",
     ),
 }
 
@@ -223,44 +230,73 @@ def profile_manifest() -> dict[str, object]:
 
 
 def _run_command(command: list[str], *, cwd: Path, env: dict[str, str], timeout: float) -> subprocess.CompletedProcess[str]:
-    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        env=env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=(os.name != "nt"),
-        creationflags=creationflags,
-    )
-    try:
-        stdout, stderr = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        _terminate_process_tree(process)
-        stdout, stderr = process.communicate()
-        raise subprocess.TimeoutExpired(command, timeout, output=stdout or exc.output, stderr=stderr or exc.stderr)
-    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    with tempfile.TemporaryDirectory() as tmp:
+        stdout_path = Path(tmp) / "stdout.txt"
+        stderr_path = Path(tmp) / "stderr.txt"
+        with stdout_path.open("w", encoding="utf-8") as stdout_file, stderr_path.open("w", encoding="utf-8") as stderr_file:
+            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+            process = subprocess.Popen(
+                command,
+                cwd=cwd,
+                env=env,
+                text=True,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                start_new_session=(os.name != "nt"),
+                creationflags=creationflags,
+            )
+            timed_out = _wait_with_deadline(process, timeout)
+        stdout = _read_tail_file(stdout_path)
+        stderr = _read_tail_file(stderr_path)
+        if timed_out:
+            raise subprocess.TimeoutExpired(command, timeout, output=stdout, stderr=stderr)
+        return subprocess.CompletedProcess(command, int(process.returncode), stdout, stderr)
+
+
+def _wait_with_deadline(process: subprocess.Popen[str], timeout: float) -> bool:
+    deadline = time.monotonic() + max(0.0, timeout)
+    while process.poll() is None:
+        if time.monotonic() >= deadline:
+            _terminate_process_tree(process)
+            _wait_for_exit(process, KILL_WAIT_SECONDS)
+            return True
+        time.sleep(POLL_INTERVAL_SECONDS)
+    return False
 
 
 def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
     if process.poll() is not None:
         return
     if os.name == "nt":
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(process.pid)],
-            text=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        try:
+            subprocess.Popen(
+                ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).wait(timeout=KILL_WAIT_SECONDS)
+        except Exception:
+            process.kill()
     else:
         import signal
 
-        os.killpg(process.pid, signal.SIGTERM)
+        os.killpg(process.pid, signal.SIGKILL)
+
+
+def _wait_for_exit(process: subprocess.Popen[str], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while process.poll() is None and time.monotonic() < deadline:
+        time.sleep(POLL_INTERVAL_SECONDS)
+    if process.poll() is None:
         try:
-            process.wait(timeout=2)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
+            process.kill()
+        except Exception:
+            pass
+
+
+def _read_tail_file(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return tail(path.read_text(encoding="utf-8", errors="replace"))
 
 
 def collected_count(stdout: str) -> int:
