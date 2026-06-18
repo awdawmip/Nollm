@@ -62,7 +62,7 @@ the hypothesis is true.
 Expected false:
 
 - stable recall surface
-- hard drift rejection
+- hard_drift_rejection
 - auto writeback
 - anchor creation
 - parent-child geometry

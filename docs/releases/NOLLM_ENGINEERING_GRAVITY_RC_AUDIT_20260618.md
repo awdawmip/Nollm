@@ -40,16 +40,12 @@ python -m pytest -q tests/test_geometry.py tests/test_geometry_profiles.py tests
 ```text
 out/nollm_runtime/g_series_engineering_closure_report.json
 out/nollm_runtime/minimal_ablation_experiment_report.json
-out/nollm_runtime/mode3_trace_report.json
+out/nollm_runtime/mode3_trace_experiment_report.json
 out/nollm_runtime/gravity_report_demo.json
 out/nollm_runtime/multi_step_coverage_report.json
 out/nollm_runtime/offset_sampling_report.json
-out/nollm_runtime/reverse_cover_milp_report.json
+out/nollm_runtime/reverse_cover_report.json
 ```
-
-The current scaffold writes Mode 3 and reverse-cover reports as
-`mode3_trace_experiment_report.json` and `reverse_cover_report.json`; the
-manifest records the current implementation file names.
 
 ## Forbidden Semantics Checklist
 
