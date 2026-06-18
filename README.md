@@ -30,6 +30,9 @@ These documents are decision drafts for the next experimental engineering phase.
 They do not expand the stable V1 recall/tool surface, do not enable automatic card writing,
 and do not map `drift_class` to trust or status.
 
+The G-series engineering scaffold is frozen for external evaluation in
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md`.
+
 ## What Nollm Is
 
 - A card-based memory structure.

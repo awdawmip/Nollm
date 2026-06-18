@@ -22,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Output JSON path. Defaults to <repo-root>/out/nollm_runtime/g_series_engineering_closure_report.json.",
     )
     parser.add_argument("--refresh-reports", action="store_true", help="Refresh lightweight prerequisite reports before validation.")
+    parser.add_argument("--generate", action="store_true", help="Alias for --refresh-reports.")
     parser.add_argument("--no-generate", action="store_true", help="Deprecated alias for the default fast validation path.")
     args = parser.parse_args(argv)
 
@@ -31,7 +32,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.output is not None
         else repo_root / "out" / "nollm_runtime" / "g_series_engineering_closure_report.json"
     )
-    report = build_g_series_engineering_closure_report(repo_root, generate_reports=args.refresh_reports and not args.no_generate)
+    report = build_g_series_engineering_closure_report(
+        repo_root,
+        generate_reports=(args.refresh_reports or args.generate) and not args.no_generate,
+    )
     write_closure_report(report, output)
     print(f"wrote g-series engineering closure report path={output} ok={report['ok']}")
     return 0 if report["ok"] is True else 1
