@@ -6,6 +6,9 @@ OC0 is a design-only integration step. It does not implement an OpenClaw
 runtime plugin, call an LLM, replace OpenClaw memory, or write durable memory.
 OC1 begins the offline path by parsing the fixture into auditable candidates;
 it still does not search, enrich with gravity reports, or write durable memory.
+The target sidecar prototype extends that path with deterministic sidecar
+JSONL/JSON files, lexical search, gravity reports, and pending writes while
+remaining offline and experimental.
 
 ## Position
 

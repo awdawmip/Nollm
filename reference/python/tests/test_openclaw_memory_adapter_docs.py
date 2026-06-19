@@ -8,6 +8,7 @@ DOCS = [
     ROOT / "docs/integration/openclaw/NOLLM_OPENCLAW_MEMORY_ADAPTER_DESIGN.md",
     ROOT / "docs/integration/openclaw/NOLLM_OPENCLAW_MEMORY_TOOL_CONTRACT.md",
     ROOT / "docs/integration/openclaw/NOLLM_OPENCLAW_LLM_USAGE_GUIDE.md",
+    ROOT / "docs/integration/openclaw/NOLLM_OPENCLAW_MEMORY_LLM_PROMPT.md",
 ]
 FIXTURE = ROOT / "examples/openclaw_memory_fixture"
 
@@ -23,6 +24,8 @@ def test_openclaw_memory_adapter_docs_exist_and_set_boundaries() -> None:
     assert "not implemented in OC0" in corpus
     assert "There is no automatic durable write to `MEMORY.md`" in corpus
     assert "Do not map `drift_class` to trust/status" in corpus
+    assert "`write-candidate` writes only to the Nollm sidecar pending store" in corpus
+    assert "OpenClaw `MEMORY.md` and `memory/YYYY-MM-DD.md` remain the source of truth" in corpus
 
 
 def test_openclaw_memory_adapter_docs_avoid_forbidden_claims() -> None:
