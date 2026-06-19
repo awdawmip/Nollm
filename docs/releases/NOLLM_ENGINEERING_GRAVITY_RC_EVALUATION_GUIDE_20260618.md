@@ -58,6 +58,7 @@ checks only and do not run heavy report regeneration.
 
 ```bash
 cd reference/python
+python scripts/run_engineering_rc_final_smoke.py
 python scripts/check_engineering_rc_export.py
 python scripts/check_engineering_rc_export.py --write-hashes
 python scripts/build_engineering_rc_export_archive.py --output ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip --report ../../out/nollm_runtime/engineering_rc_archive_report.json
@@ -91,3 +92,5 @@ The generated archive is a local release artifact and should not be committed.
 
 Test shard profiles are documented in
 `docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_TEST_SHARDS_20260619.md`.
+The one-command final smoke gate is documented in
+`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FINAL_SMOKE_20260619.md`.

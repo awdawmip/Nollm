@@ -1,5 +1,5 @@
 {
-  "artifact_count": 57,
+  "artifact_count": 61,
   "artifacts": [
     {
       "path": "NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md",
@@ -43,18 +43,23 @@
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md",
-      "sha256": "0148bea17ec5ba3965996ef2dde766cef290e2851c14d3f8dc3dfdf80ed7c960",
-      "size_bytes": 3837
+      "sha256": "bdbb5d528892a83b37e46cc468b6b4b9bd5847e118153d10896351903ad6e248",
+      "size_bytes": 4006
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json",
-      "sha256": "2783857dd21fdde188eddb6a61e7ee7cd402543e0160b321492851da386c80a5",
-      "size_bytes": 2858
+      "sha256": "12a2904c6883b584f5dbeaa6bb576505b7fdc8b11c5df7f4b7912ddc2dd66f51",
+      "size_bytes": 2932
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.md",
-      "sha256": "7713cc1a30cada4445a9aec775abca293d029675145a94a8bf99cc01346b2846",
-      "size_bytes": 3526
+      "sha256": "1e5e2ffd728071e2185fd5f378887f42d2dceb479c8d7d6a7c01023fd5c2e5e1",
+      "size_bytes": 3597
+    },
+    {
+      "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FINAL_SMOKE_20260619.md",
+      "sha256": "e7dd2d74fa8bb9ad5853dd8e345d2b08a84706b07246946488f3342ad4797588",
+      "size_bytes": 1147
     },
     {
       "path": "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md",
@@ -133,8 +138,13 @@
     },
     {
       "path": "reference/python/nollm/engineering_rc_export.py",
-      "sha256": "36e59ac503001b7c0b1ce629b768589130f2abcf4a806b2cb66d9eae7bf5c299",
-      "size_bytes": 14240
+      "sha256": "cd19c9ff591dc822f6a29f80721924cb2ecc647a9da58bd675d03c29e4fc5461",
+      "size_bytes": 14499
+    },
+    {
+      "path": "reference/python/nollm/engineering_rc_final_smoke.py",
+      "sha256": "e78590e41b6b6d49f3b954b931f19e0d29137a42468eea353114d1174aefa32b",
+      "size_bytes": 7578
     },
     {
       "path": "reference/python/nollm/g_series_engineering_closure.py",
@@ -202,6 +212,11 @@
       "size_bytes": 1315
     },
     {
+      "path": "reference/python/scripts/run_engineering_rc_final_smoke.py",
+      "sha256": "fe1df970b9e75f6f32439b5304d5e85e2f9be849f37345d693aa72c812e4056c",
+      "size_bytes": 1534
+    },
+    {
       "path": "reference/python/scripts/run_g_series_engineering_gate.py",
       "sha256": "7f4f308f90329ef03a3692cfec543d19d9f14c4d6eccea76863adfaa39f0b2fe",
       "size_bytes": 1774
@@ -228,8 +243,13 @@
     },
     {
       "path": "reference/python/tests/test_engineering_rc_export.py",
-      "sha256": "963613a663109e2e8dd56bd1ae41ae9185e5bfbec802388a0d8e9f9cd7ebdd5b",
-      "size_bytes": 7276
+      "sha256": "e83299e7dc388d1c98c5da4b955f80ae52f5f12da52ef824b8f15e1ed8b8fa79",
+      "size_bytes": 7479
+    },
+    {
+      "path": "reference/python/tests/test_engineering_rc_final_smoke.py",
+      "sha256": "ee170632e5305b0a28b337bd0e1366d55db2e895192fd02e2718c63ab22a6726",
+      "size_bytes": 3441
     },
     {
       "path": "reference/python/tests/test_g_series_engineering_closure.py",

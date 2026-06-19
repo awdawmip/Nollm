@@ -22,6 +22,7 @@ REQUIRED_RELEASE_FILES = (
 
 CANONICAL_COMMANDS = (
     "python scripts/check_engineering_rc_export.py",
+    "python scripts/run_engineering_rc_final_smoke.py",
     "python scripts/check_engineering_rc_export.py --write-hashes",
     "python scripts/build_engineering_rc_export_archive.py --output ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip --report ../../out/nollm_runtime/engineering_rc_archive_report.json",
     "python scripts/build_engineering_rc_export_archive.py --verify ../../out/nollm_runtime/releases/nollm_engineering_gravity_rc.zip",
@@ -164,6 +165,7 @@ def _command_module_paths() -> list[str]:
     return [
         "reference/python/nollm/engineering_rc_archive.py",
         "reference/python/nollm/engineering_rc_export.py",
+        "reference/python/nollm/engineering_rc_final_smoke.py",
         "reference/python/nollm/pytest_env.py",
     ]
 
@@ -172,6 +174,7 @@ def _command_script_paths() -> list[str]:
     return [
         "reference/python/scripts/check_engineering_rc_export.py",
         "reference/python/scripts/build_engineering_rc_export_archive.py",
+        "reference/python/scripts/run_engineering_rc_final_smoke.py",
         "reference/python/scripts/run_nollm_test_shards.py",
         "reference/python/scripts/run_nollm_local_gate.py",
         "reference/python/scripts/run_g_series_engineering_gate.py",
@@ -184,6 +187,7 @@ def _command_test_paths() -> list[str]:
         "reference/python/tests/test_engineering_rc_artifact_hashes.py",
         "reference/python/tests/test_engineering_rc_archive.py",
         "reference/python/tests/test_engineering_rc_export.py",
+        "reference/python/tests/test_engineering_rc_final_smoke.py",
         "reference/python/tests/test_nollm_test_shards.py",
         "reference/python/tests/test_test_shards.py",
         "reference/python/tests/test_g_series_engineering_closure.py",
