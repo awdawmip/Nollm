@@ -46,3 +46,17 @@ Use the source path and line range to verify the memory. Treat the gravity
 report as orientation. Mention uncertainty when the result is lateral or weak.
 Never promote the content to durable memory unless the user explicitly approves
 or a future configured promotion policy says to do so.
+
+Concrete read/write cycle:
+
+1. Call `nollm_memory_search` with the user's query.
+2. Inspect `retrieval_score`, `gravity_report.drift_class`,
+   `R_column_ring`, `S_scale_delta`, `A_anchor_similarity`, and top-level
+   `provenance`.
+3. Remember that `drift_class` is instrumentation, not trust/status.
+   `semantic_break` means caution and source checking, not automatic rejection.
+4. Call `nollm_memory_get` using `candidate_id`, `memory_id`, or `shard_id`
+   from the search row.
+5. Use the result only after checking the returned source path and line range.
+6. Call `nollm_memory_write_candidate` only for pending review. This does not
+   write OpenClaw `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.

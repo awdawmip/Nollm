@@ -43,19 +43,21 @@ def test_openclaw_memory_source_roles_are_assigned() -> None:
 
     assert ("MEMORY.md", "durable_memory") in roles
     assert ("memory/2026-06-19.md", "daily_memory") in roles
+    assert ("DREAMS.md", "dreams") in roles
+    assert index.source_files == ("MEMORY.md", "memory/2026-06-19.md", "DREAMS.md")
 
 
 def test_openclaw_memory_parser_does_not_mutate_source_files() -> None:
     before = {
         path.relative_to(FIXTURE).as_posix(): path.read_bytes()
-        for path in [FIXTURE / "MEMORY.md", FIXTURE / "memory/2026-06-19.md"]
+        for path in [FIXTURE / "MEMORY.md", FIXTURE / "DREAMS.md", FIXTURE / "memory/2026-06-19.md"]
     }
 
     parse_openclaw_memory_workspace(FIXTURE)
 
     after = {
         path.relative_to(FIXTURE).as_posix(): path.read_bytes()
-        for path in [FIXTURE / "MEMORY.md", FIXTURE / "memory/2026-06-19.md"]
+        for path in [FIXTURE / "MEMORY.md", FIXTURE / "DREAMS.md", FIXTURE / "memory/2026-06-19.md"]
     }
     assert before == after
     assert not (FIXTURE / ".nollm-memory").exists()
@@ -68,7 +70,8 @@ def test_openclaw_memory_report_schema_and_forbidden_semantics() -> None:
     assert report["ok"] is True
     assert report["workspace"] == "examples/openclaw_memory_fixture"
     assert report["chunk_count"] == len(report["chunks"])
-    assert report["source_files"] == ["MEMORY.md", "memory/2026-06-19.md"]
+    assert report["source_files"] == ["MEMORY.md", "memory/2026-06-19.md", "DREAMS.md"]
+    assert report["source_roles_present"] == ["durable_memory", "daily_memory", "dreams"]
     assert report["forbidden_semantics"] == FORBIDDEN_SEMANTICS
     assert all(value is False for value in report["forbidden_semantics"].values())
     json.dumps(report, sort_keys=True)

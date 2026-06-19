@@ -144,6 +144,9 @@ def build_sidecar_store(repo_root: Path | str, workspace: Path | str, out_dir: P
         "workspace": _display_path(repo, workspace_path),
         "out_dir": _display_path(repo, out),
         "source_files": list(index.source_files),
+        "source_roles_present": _source_roles_present(candidates),
+        "accepted_get_id_forms": ["candidate_id", "memory_id", "shard_id"],
+        "durable_memory_mutation": False,
         "candidate_count": len(candidates),
         "shard_count": len(shards),
         "geometry_mark_count": len(marks),
@@ -178,6 +181,7 @@ def search_sidecar(
     out = Path(out_dir).resolve()
     candidates = _read_jsonl(out / "candidates.jsonl")
     marks = {str(item["content_id"]): item for item in _read_jsonl(out / "geometry_marks.jsonl")}
+    shards = {str(item["candidate_id"]): item for item in _read_jsonl(out / "shards.jsonl")}
     well = _query_well(query)
     scored = []
     for candidate in candidates:
@@ -189,6 +193,7 @@ def search_sidecar(
                 "retrieval_score": _lexical_score(query, str(candidate["text"])),
                 "gravity_report": gravity,
                 "geometry_mark": marks[str(candidate["candidate_id"])],
+                "shard": shards[str(candidate["candidate_id"])],
             }
         )
     scored.sort(
@@ -282,6 +287,7 @@ def write_candidate(
         "status": "pending_review",
         "durable_write": False,
         "target_files_mutated": False,
+        "durable_memory_mutation": False,
         "why_pending": why,
         "required_review": "explicit human approval or future configured promotion policy",
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
@@ -314,6 +320,9 @@ def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path |
         "workspace": manifest["workspace"],
         "out_dir": _display_path(repo, out),
         "manifest": manifest,
+        "accepted_get_id_forms": ["candidate_id", "memory_id", "shard_id"],
+        "source_roles_present": manifest["source_roles_present"],
+        "durable_memory_mutation": False,
         "counts": {
             "candidates": len(_read_jsonl(out / "candidates.jsonl")),
             "shards": len(_read_jsonl(out / "shards.jsonl")),
@@ -337,6 +346,7 @@ def build_openclaw_memory_fixture_report(repo_root: Path | str, workspace: Path 
         "workspace": _display_path(repo, workspace_path),
         "chunk_count": record["chunk_count"],
         "source_files": record["source_files"],
+        "source_roles_present": _source_roles_present(record["chunks"]),  # type: ignore[arg-type]
         "chunks": record["chunks"],
         "warnings": record["warnings"],
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
@@ -445,7 +455,7 @@ def _source_kind_from_role(source_role: str) -> str:
 
 
 def _shard_record(chunk: OpenClawMemoryChunk) -> dict[str, object]:
-    shard_id = f"shard_{_sha256_text(chunk.candidate_id + ':' + chunk.chunk_sha256)[:16]}"
+    shard_id = _shard_id(chunk.candidate_id, chunk.chunk_sha256)
     anchor = _anchor_vector(chunk.text)
     shard = DreamShard(
         shard_id=shard_id,
@@ -567,13 +577,20 @@ def _tokens(text: str) -> list[str]:
 
 def _search_result_record(item: Mapping[str, object]) -> dict[str, object]:
     candidate = item["candidate"]
+    shard = item["shard"]
     if not isinstance(candidate, Mapping):
         raise ValueError("candidate must be a mapping")
+    if not isinstance(shard, Mapping):
+        raise ValueError("shard must be a mapping")
     return {
+        "memory_id": candidate["memory_id"],
         "candidate_id": candidate["candidate_id"],
+        "shard_id": shard["shard_id"],
         "source_path": candidate["source_path"],
         "line_start": candidate["line_start"],
         "line_end": candidate["line_end"],
+        "line_range": candidate["line_range"],
+        "provenance": candidate["provenance"],
         "heading_path": candidate["heading_path"],
         "text": candidate["text"],
         "retrieval_score": item["retrieval_score"],
@@ -628,6 +645,9 @@ def _sidecar_manifest(
         "workspace": _display_path(repo, workspace),
         "out_dir": _display_path(repo, out),
         "source_files": list(index.source_files),
+        "source_roles_present": _source_roles_present(candidates),
+        "accepted_get_id_forms": ["candidate_id", "memory_id", "shard_id"],
+        "durable_memory_mutation": False,
         "files": {
             "candidates": "candidates.jsonl",
             "shards": "shards.jsonl",
@@ -656,6 +676,16 @@ def _provenance(source_path: str, line_range: tuple[int, int]) -> dict[str, obje
         "line_end": line_range[1],
         "source_ref": f"{source_path}:{line_range[0]}-{line_range[1]}",
     }
+
+
+def _shard_id(candidate_id: str, chunk_sha256: str) -> str:
+    return f"shard_{_sha256_text(candidate_id + ':' + chunk_sha256)[:16]}"
+
+
+def _source_roles_present(records: Sequence[Mapping[str, object]]) -> list[str]:
+    preferred = ["durable_memory", "daily_memory", "dreams", "unknown"]
+    present = {str(record.get("source_role", "")) for record in records}
+    return [role for role in preferred if role in present]
 
 
 def _record_provenance_string(value: object) -> str | None:
