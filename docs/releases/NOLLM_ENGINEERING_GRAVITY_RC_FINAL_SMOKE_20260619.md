@@ -12,8 +12,8 @@ python scripts/run_engineering_rc_final_smoke.py
 
 The gate checks local release health: local gate without pytest, golden
 regression, G-series closure, export/hash validation, package hygiene, archive
-build and verification, shard profile listing, `shard_smoke`, a selected
-plugin-isolated pytest suite, and clean git status.
+verification, shard profile listing, `shard_smoke`, per-file plugin-isolated
+pytest smoke checks, and clean git status.
 
 It intentionally does not run full pytest, heavy G-series regeneration, real
 LLM calls, memory writeback, automatic anchor creation, or new experiments.
@@ -22,9 +22,15 @@ Optional forms:
 
 ```bash
 python scripts/run_engineering_rc_final_smoke.py --report ../../out/nollm_runtime/engineering_rc_final_smoke_report.json
+python scripts/run_engineering_rc_final_smoke.py --archive-build
 python scripts/run_engineering_rc_final_smoke.py --no-archive-build
 python scripts/run_engineering_rc_final_smoke.py --verbose
 ```
+
+Archive rebuild is opt-in; the default verifies the existing deterministic RC
+archive without rewriting it. Each pytest smoke file runs as its own isolated
+subprocess with a hard timeout, so timeout failures are reported in JSON instead
+of hanging the outer audit.
 
 The generated report is a runtime artifact under `out/nollm_runtime/`.
 The RC remains an experimental scaffold, not a proven long-term memory system.

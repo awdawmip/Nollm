@@ -19,7 +19,17 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Report JSON path. Defaults to <repo-root>/out/nollm_runtime/engineering_rc_final_smoke_report.json.",
     )
-    parser.add_argument("--no-archive-build", action="store_true", help="Verify an existing archive without rebuilding it.")
+    archive_mode = parser.add_mutually_exclusive_group()
+    archive_mode.add_argument(
+        "--archive-build",
+        action="store_true",
+        help="Rebuild the deterministic RC archive before verifying it.",
+    )
+    archive_mode.add_argument(
+        "--no-archive-build",
+        action="store_true",
+        help="Verify an existing archive without rebuilding it. This is the default.",
+    )
     parser.add_argument("--verbose", action="store_true", help="Include stdout/stderr tails for successful checks.")
     args = parser.parse_args(argv)
 
@@ -29,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.report
         else repo_root / "out" / "nollm_runtime" / "engineering_rc_final_smoke_report.json"
     )
-    report = run_final_smoke(repo_root, archive_build=not args.no_archive_build, verbose=args.verbose)
+    report = run_final_smoke(repo_root, archive_build=args.archive_build, verbose=args.verbose)
     write_final_smoke_report(report, report_path)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if report["ok"] is True else 1

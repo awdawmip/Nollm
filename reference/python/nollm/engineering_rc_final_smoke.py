@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +32,9 @@ SELECTED_RC_TESTS = (
     "tests/test_nollm_test_shards.py",
     "tests/test_test_shards.py",
 )
+POLL_INTERVAL_SECONDS = 0.05
+KILL_WAIT_SECONDS = 3.0
+TAIL_CHARS = 4000
 
 
 @dataclass(frozen=True)
@@ -46,12 +50,13 @@ class CommandResult:
     returncode: int
     stdout: str = ""
     stderr: str = ""
+    timed_out: bool = False
 
 
 Runner = Callable[[SmokeCheck, Path], CommandResult]
 
 
-def final_smoke_checks(repo_root: Path, *, archive_build: bool = True) -> list[SmokeCheck]:
+def final_smoke_checks(repo_root: Path, *, archive_build: bool = False) -> list[SmokeCheck]:
     reference_python = repo_root / "reference" / "python"
     archive_path = repo_root / "out" / "nollm_runtime" / "releases" / "nollm_engineering_gravity_rc.zip"
     archive_report = repo_root / "out" / "nollm_runtime" / "engineering_rc_archive_report.json"
@@ -94,22 +99,29 @@ def final_smoke_checks(repo_root: Path, *, archive_build: bool = True) -> list[S
                 (sys.executable, "scripts/run_nollm_test_shards.py", "--profile", "shard_smoke", "--timeout", "20"),
                 timeout_seconds=40,
             ),
-            SmokeCheck(
-                "selected_rc_pytest",
-                (sys.executable, "-m", "pytest", "-q", *SELECTED_RC_TESTS),
-                timeout_seconds=120,
-                isolated_pytest=True,
-            ),
+            *_pytest_smoke_checks(),
             SmokeCheck("clean_tree_status", ("git", "status", "--short")),
         ]
     )
     return checks
 
 
+def _pytest_smoke_checks() -> list[SmokeCheck]:
+    return [
+        SmokeCheck(
+            f"pytest_{Path(test_path).stem.removeprefix('test_')}",
+            (sys.executable, "-m", "pytest", "-q", test_path),
+            timeout_seconds=35,
+            isolated_pytest=True,
+        )
+        for test_path in SELECTED_RC_TESTS
+    ]
+
+
 def run_final_smoke(
     repo_root: Path,
     *,
-    archive_build: bool = True,
+    archive_build: bool = False,
     runner: Runner | None = None,
     verbose: bool = False,
 ) -> dict[str, object]:
@@ -135,6 +147,7 @@ def run_final_smoke(
                 "ok": ok,
                 "returncode": int(result.returncode),
                 "duration_seconds": duration,
+                "timed_out": bool(result.timed_out),
                 "isolated_pytest": check.isolated_pytest,
                 "command": list(check.command),
                 "stdout_tail": stdout_tail,
@@ -160,18 +173,99 @@ def write_final_smoke_report(report: Mapping[str, object], output: Path) -> None
 
 def _run_subprocess_check(check: SmokeCheck, cwd: Path) -> CommandResult:
     env = isolated_pytest_env() if check.isolated_pytest else None
+    command = list(check.command)
+    if check.isolated_pytest:
+        return _run_command_hard_timeout(command, cwd=cwd, env=env, timeout=check.timeout_seconds)
     try:
         result = subprocess.run(
-            list(check.command),
+            command,
             cwd=cwd,
             env=env,
             text=True,
             capture_output=True,
             timeout=check.timeout_seconds,
         )
-        return CommandResult(int(result.returncode), result.stdout, result.stderr)
+        return CommandResult(int(result.returncode), result.stdout, result.stderr, False)
     except subprocess.TimeoutExpired as exc:
-        return CommandResult(-1, _string_output(exc.stdout), _string_output(exc.stderr))
+        return CommandResult(-1, _string_output(exc.stdout), _string_output(exc.stderr), True)
+
+
+def _run_command_hard_timeout(
+    command: Sequence[str],
+    *,
+    cwd: Path,
+    env: Mapping[str, str] | None,
+    timeout: float,
+) -> CommandResult:
+    with tempfile.TemporaryDirectory() as tmp:
+        stdout_path = Path(tmp) / "stdout.txt"
+        stderr_path = Path(tmp) / "stderr.txt"
+        with stdout_path.open("w", encoding="utf-8") as stdout_file, stderr_path.open(
+            "w", encoding="utf-8"
+        ) as stderr_file:
+            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+            process = subprocess.Popen(
+                list(command),
+                cwd=cwd,
+                env=dict(env) if env is not None else None,
+                text=True,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                start_new_session=(os.name != "nt"),
+                creationflags=creationflags,
+            )
+            timed_out = _wait_with_deadline(process, timeout)
+        stdout = _read_tail_file(stdout_path)
+        stderr = _read_tail_file(stderr_path)
+        if timed_out:
+            return CommandResult(-1, stdout, stderr, True)
+        return CommandResult(int(process.returncode), stdout, stderr, False)
+
+
+def _wait_with_deadline(process: subprocess.Popen[str], timeout: float) -> bool:
+    deadline = time.monotonic() + max(0.0, timeout)
+    while process.poll() is None:
+        if time.monotonic() >= deadline:
+            _terminate_process_tree(process)
+            _wait_for_exit(process, KILL_WAIT_SECONDS)
+            return True
+        time.sleep(POLL_INTERVAL_SECONDS)
+    return False
+
+
+def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        try:
+            subprocess.Popen(
+                ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).wait(timeout=KILL_WAIT_SECONDS)
+        except Exception:
+            process.kill()
+    else:
+        import signal
+
+        os.killpg(process.pid, signal.SIGKILL)
+
+
+def _wait_for_exit(process: subprocess.Popen[str], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while process.poll() is None and time.monotonic() < deadline:
+        time.sleep(POLL_INTERVAL_SECONDS)
+    if process.poll() is None:
+        try:
+            process.kill()
+        except Exception:
+            pass
+
+
+def _read_tail_file(path: Path) -> str:
+    if not path.exists():
+        return ""
+    return _tail(path.read_text(encoding="utf-8", errors="replace"), limit=TAIL_CHARS)
 
 
 def _relative_to(base: Path, target: Path) -> str:
