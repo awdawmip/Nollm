@@ -21,7 +21,7 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
             "allow": ["memory-core"],
             "deny": ["blocked-plugin"],
         },
-        "tools": {"allow": ["memory_search"], "deny": ["dangerous_tool"]},
+        "tools": {"allow": ["memory_search"], "alsoAllow": ["web_search"], "deny": ["dangerous_tool"]},
     }
 
     patch = installer.build_config_patch(
@@ -33,6 +33,7 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
 
     assert patch["plugins"]["entries"]["nollm-memory-companion"]["enabled"] is True
     assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["nollmRepoRoot"] == str(ROOT)
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["pythonCommand"] == sys.executable
     assert "memory-core" not in patch["plugins"]["entries"]
     assert "allow" not in patch["plugins"]
     assert "deny" not in patch["plugins"]
@@ -42,7 +43,14 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
         "nollm_memory_get",
         "nollm_memory_status",
     ]
+    assert patch["tools"]["alsoAllow"] == [
+        "web_search",
+        "nollm_memory_search",
+        "nollm_memory_get",
+        "nollm_memory_status",
+    ]
     assert "nollm_memory_write_candidate" not in patch["tools"]["allow"]
+    assert "nollm_memory_write_candidate" not in patch["tools"]["alsoAllow"]
 
 
 def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path) -> None:
@@ -54,6 +62,7 @@ def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path
     )
 
     assert patch["tools"]["allow"][-1] == "nollm_memory_write_candidate"
+    assert patch["tools"]["alsoAllow"][-1] == "nollm_memory_write_candidate"
 
 
 def test_redact_removes_secret_like_values() -> None:
@@ -158,6 +167,29 @@ def test_apply_config_patch_failure_has_structured_error(monkeypatch, tmp_path: 
         assert exc.code == "config_patch_failed"
     else:  # pragma: no cover
         raise AssertionError("expected InstallerError")
+
+
+def test_run_capture_timeout_returns_bounded_result(monkeypatch, tmp_path: Path) -> None:
+    killed: list[int] = []
+
+    class FakeProcess:
+        pid = 12345
+        returncode = None
+
+        def communicate(self, timeout=None):
+            if timeout == 1:
+                raise subprocess.TimeoutExpired(["fake"], timeout)
+            self.returncode = -9
+            return "", ""
+
+    monkeypatch.setattr(installer.subprocess, "Popen", lambda *_args, **_kwargs: FakeProcess())
+    monkeypatch.setattr(installer, "terminate_process_tree", lambda pid: killed.append(pid))
+
+    result = installer.run_capture(["fake"], cwd=tmp_path, check=False, timeout=1)
+
+    assert result.returncode == 124
+    assert "timed out" in result.stderr
+    assert killed == [12345]
 
 
 def test_installer_dry_run_with_fake_openclaw_does_not_mutate_config_or_memory(tmp_path: Path, monkeypatch) -> None:

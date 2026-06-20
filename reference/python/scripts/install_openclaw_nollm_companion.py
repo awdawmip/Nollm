@@ -200,7 +200,7 @@ def build_config_patch(
     plugin_config = {
         "enabled": True,
         "config": {
-            "pythonCommand": "python3",
+            "pythonCommand": sys.executable,
             "nollmRepoRoot": str(repo_root),
             "workspaceRoot": str(workspace_root),
             "sidecarOutDir": str(workspace_root / ".nollm-memory"),
@@ -209,6 +209,14 @@ def build_config_patch(
         },
     }
     patch: dict[str, Any] = {"plugins": {"entries": {PLUGIN_ID: plugin_config}}}
+    existing_tools_also_allow = get_nested(config_before, ["tools", "alsoAllow"])
+    also_allowed = union_preserve(
+        [str(item) for item in existing_tools_also_allow] if isinstance(existing_tools_also_allow, list) else [],
+        READ_TOOLS,
+    )
+    if enable_write_candidate:
+        also_allowed = union_preserve(also_allowed, [WRITE_TOOL])
+    patch.setdefault("tools", {})["alsoAllow"] = also_allowed
     existing_tools_allow = get_nested(config_before, ["tools", "allow"])
     if isinstance(existing_tools_allow, list):
         allowed = union_preserve([str(item) for item in existing_tools_allow], READ_TOOLS)
@@ -520,10 +528,47 @@ def run_checked(command: list[str], *, cwd: Path, code: str, timeout: int = 120)
 
 
 def run_capture(command: list[str], *, cwd: Path, check: bool = True, timeout: int = 30) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    timed_out = False
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        timed_out = True
+        terminate_process_tree(process.pid)
+        stdout, stderr = process.communicate(timeout=5)
+    result = subprocess.CompletedProcess(
+        command,
+        124 if timed_out else process.returncode,
+        stdout or "",
+        stderr or "",
+    )
+    if timed_out and not result.stderr:
+        result.stderr = f"command timed out after {timeout} seconds"
     if check and result.returncode != 0:
         raise InstallerError("command_failed", safe_message(result.stdout or result.stderr))
     return result
+
+
+def terminate_process_tree(pid: int) -> None:
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(pid), "/T", "/F"],
+            text=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+        return
+    try:
+        os.kill(pid, 15)
+    except OSError:
+        return
 
 
 def read_json_file(path: Path) -> dict[str, Any]:
@@ -553,7 +598,9 @@ def summarize_patch(patch: dict[str, Any]) -> dict[str, Any]:
         "plugin_enabled": plugin_entry["enabled"],
         "config_fields": sorted(plugin_entry["config"]),
         "tools_allow_updated": "tools" in patch and "allow" in patch["tools"],
-        "write_candidate_requested": WRITE_TOOL in patch.get("tools", {}).get("allow", []),
+        "tools_also_allow_updated": "tools" in patch and "alsoAllow" in patch["tools"],
+        "write_candidate_requested": WRITE_TOOL in patch.get("tools", {}).get("allow", [])
+        or WRITE_TOOL in patch.get("tools", {}).get("alsoAllow", []),
     }
 
 
