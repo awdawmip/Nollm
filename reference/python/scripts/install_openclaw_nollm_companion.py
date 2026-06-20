@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Any
+import time
 
 
 PLUGIN_ID = "nollm-memory-companion"
@@ -22,6 +24,12 @@ FORBIDDEN_SEMANTICS = {
     "drift_class_trust_mapping": False,
     "hard_drift_rejection": False,
 }
+INSTALL_TIMEOUT_SECONDS = 60
+CONFIG_TIMEOUT_SECONDS = 60
+INSPECT_TIMEOUT_SECONDS = 30
+READINESS_DEADLINE_SECONDS = 20
+READINESS_POLL_INTERVAL_SECONDS = 2
+SOURCE_MEMORY_PATTERNS = ["MEMORY.md", "DREAMS.md", "memory/**/*.md"]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -79,6 +87,21 @@ def build_initial_report(args: argparse.Namespace) -> dict[str, Any]:
         "write_candidate_visible": False,
         "memory_slot_owner": "openclaw-memory-core",
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
+        "post_link_readiness": {"attempted": False, "ok": False},
+        "post_restart_readiness": {"attempted": False, "ok": False},
+        "integration_evidence": {
+            "plugin_link_state": None,
+            "config_patch_applied": False,
+            "runtime_tool_names": [],
+            "required_read_tools_visible": False,
+            "write_candidate_default_enabled": False,
+            "source_memory_hashes_before": {},
+            "source_memory_hashes_after": {},
+            "source_memory_unchanged": None,
+            "sidecar_index_ok": False,
+            "sidecar_search_ok": False,
+            "sidecar_result_count": 0,
+        },
         "errors": [],
     }
 
@@ -106,6 +129,7 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
 
     workspace_root = Path(args.workspace).resolve() if args.workspace else discover_workspace(openclaw_bin, repo_root)
     report["workspace_root"] = str(workspace_root)
+    report["integration_evidence"]["source_memory_hashes_before"] = hash_source_memory_files(workspace_root)
 
     ensure_plugin_package_ready(openclaw_bin, plugin_root, report)
     patch = build_config_patch(
@@ -121,11 +145,13 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
         report["skill_discovery_or_manifest_check"] = check_skill_manifest(plugin_root)
         report["write_candidate_visible"] = bool(args.enable_write_candidate)
         report["read_tools_visible"] = READ_TOOLS
+        finish_source_hash_evidence(workspace_root, report)
         report["ok"] = len(report["errors"]) == 0
         return
 
-    install_plugin(openclaw_bin, plugin_root, report)
+    install_plugin(openclaw_bin, plugin_root, repo_root, report)
     apply_config_patch(openclaw_bin, repo_root, patch)
+    report["integration_evidence"]["config_patch_applied"] = True
     validate_config(openclaw_bin, repo_root, report)
     if args.no_restart:
         report["gateway_restart_or_reload"] = {"attempted": False, "ok": False, "skipped": True, "reason": "--no-restart"}
@@ -133,8 +159,11 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
         restart_gateway(openclaw_bin, repo_root, report)
     gateway_status(openclaw_bin, repo_root, report)
     inspect_runtime(openclaw_bin, repo_root, report)
+    if not args.no_restart:
+        poll_runtime_tools(openclaw_bin, repo_root, plugin_root, report, "post_restart_readiness")
     report["skill_discovery_or_manifest_check"] = check_skill_manifest(plugin_root)
     run_sidecar_probe(repo_root, workspace_root, args.probe_query, report)
+    finish_source_hash_evidence(workspace_root, report)
     report["ok"] = len(report["errors"]) == 0 and report["runtime_inspection"].get("ok") is True
 
 
@@ -198,6 +227,7 @@ def validate_patch_dry_run(openclaw_bin: str, cwd: Path, patch: dict[str, Any], 
             [openclaw_bin, "config", "patch", "--file", str(patch_path), "--dry-run"],
             cwd=cwd,
             code="config_patch_dry_run_failed",
+            timeout=CONFIG_TIMEOUT_SECONDS,
         )
         report["config_validation"] = {"attempted": True, "ok": True, "dry_run": True}
     finally:
@@ -209,20 +239,42 @@ def apply_config_patch(openclaw_bin: str, cwd: Path, patch: dict[str, Any]) -> N
         json.dump(patch, handle, indent=2, sort_keys=True)
         patch_path = Path(handle.name)
     try:
-        run_checked([openclaw_bin, "config", "patch", "--file", str(patch_path)], cwd=cwd, code="config_patch_failed")
+        run_checked(
+            [openclaw_bin, "config", "patch", "--file", str(patch_path)],
+            cwd=cwd,
+            code="config_patch_failed",
+            timeout=CONFIG_TIMEOUT_SECONDS,
+        )
     finally:
         patch_path.unlink(missing_ok=True)
 
 
-def install_plugin(openclaw_bin: str, plugin_root: Path, report: dict[str, Any]) -> None:
+def install_plugin(openclaw_bin: str, plugin_root: Path, cwd: Path, report: dict[str, Any]) -> None:
+    state = inspect_installed_plugin_state(openclaw_bin, cwd, plugin_root)
+    if state.get("source_matches") is True and state.get("enabled") is True:
+        report["plugin_installation"] = {
+            "attempted": False,
+            "ok": True,
+            "method": "already_linked",
+            "source_matches": True,
+        }
+        report["integration_evidence"]["plugin_link_state"] = "already_linked"
+        return
     report["plugin_installation"]["attempted"] = True
-    run_checked([openclaw_bin, "plugins", "install", "--link", str(plugin_root)], cwd=plugin_root, code="plugin_install_failed")
-    report["plugin_installation"].update({"ok": True, "method": "link"})
+    run_checked(
+        [openclaw_bin, "plugins", "install", "--link", str(plugin_root)],
+        cwd=plugin_root,
+        code="plugin_install_failed",
+        timeout=INSTALL_TIMEOUT_SECONDS,
+    )
+    report["plugin_installation"].update({"ok": True, "method": "link", "source_matches": state.get("source_matches")})
+    report["integration_evidence"]["plugin_link_state"] = "linked_now"
+    poll_runtime_tools(openclaw_bin, cwd, plugin_root, report, "post_link_readiness")
 
 
 def validate_config(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> None:
     report["config_validation"]["attempted"] = True
-    run_checked([openclaw_bin, "config", "validate"], cwd=cwd, code="config_validate_failed")
+    run_checked([openclaw_bin, "config", "validate"], cwd=cwd, code="config_validate_failed", timeout=CONFIG_TIMEOUT_SECONDS)
     report["config_validation"].update({"ok": True})
 
 
@@ -259,7 +311,7 @@ def inspect_runtime(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> Non
         [openclaw_bin, "plugins", "inspect", PLUGIN_ID, "--runtime", "--json"],
         cwd=cwd,
         check=False,
-        timeout=60,
+        timeout=INSPECT_TIMEOUT_SECONDS,
     )
     report["runtime_inspection"].update({"ok": result.returncode == 0, "returncode": result.returncode})
     if result.returncode != 0:
@@ -273,6 +325,9 @@ def inspect_runtime(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> Non
     report["write_candidate_visible"] = any(
         WRITE_TOOL in item.get("names", []) and item.get("optional") is False for item in details.get("tools", [])
     )
+    report["integration_evidence"]["runtime_tool_names"] = list(tools)
+    report["integration_evidence"]["required_read_tools_visible"] = all(tool in tools for tool in READ_TOOLS)
+    report["integration_evidence"]["write_candidate_default_enabled"] = bool(report["write_candidate_visible"])
 
 
 def run_sidecar_probe(repo_root: Path, workspace_root: Path, probe_query: str, report: dict[str, Any]) -> None:
@@ -321,8 +376,13 @@ def run_sidecar_probe(repo_root: Path, workspace_root: Path, probe_query: str, r
         }
     )
     if report["sidecar_probe"]["ok"]:
-        report["sidecar_probe"]["status"] = redact(json.loads(status.stdout))
-        report["sidecar_probe"]["search"] = summarize_search(json.loads(search.stdout))
+        status_report = json.loads(status.stdout)
+        search_report = json.loads(search.stdout)
+        report["sidecar_probe"]["status"] = redact(status_report)
+        report["sidecar_probe"]["search"] = summarize_search(search_report)
+        report["integration_evidence"]["sidecar_index_ok"] = index.returncode == 0
+        report["integration_evidence"]["sidecar_search_ok"] = search.returncode == 0
+        report["integration_evidence"]["sidecar_result_count"] = int(search_report.get("result_count") or 0)
     else:
         report["errors"].append({"code": "sidecar_probe_failed", "message": safe_message(index.stderr + status.stderr + search.stderr)})
 
@@ -337,6 +397,62 @@ def check_skill_manifest(plugin_root: Path) -> dict[str, Any]:
     }
 
 
+def inspect_installed_plugin_state(openclaw_bin: str, cwd: Path, plugin_root: Path) -> dict[str, Any]:
+    result = run_capture(
+        [openclaw_bin, "plugins", "inspect", PLUGIN_ID, "--runtime", "--json"],
+        cwd=cwd,
+        check=False,
+        timeout=INSPECT_TIMEOUT_SECONDS,
+    )
+    if result.returncode != 0 or not result.stdout.strip().startswith("{"):
+        return {"present": False, "source_matches": False, "enabled": False, "returncode": result.returncode}
+    details = json.loads(result.stdout)
+    plugin = details.get("plugin", {})
+    install = details.get("install", {})
+    candidates = [
+        plugin.get("rootDir"),
+        install.get("installPath"),
+        install.get("sourcePath"),
+        details.get("sourcePath"),
+    ]
+    canonical_root = canonical_path(plugin_root)
+    source_matches = any(canonical_path(Path(candidate)) == canonical_root for candidate in candidates if isinstance(candidate, str))
+    return {
+        "present": True,
+        "source_matches": source_matches,
+        "enabled": plugin.get("enabled") is True,
+        "status": plugin.get("status"),
+    }
+
+
+def poll_runtime_tools(openclaw_bin: str, cwd: Path, plugin_root: Path, report: dict[str, Any], field: str) -> None:
+    deadline = time.monotonic() + READINESS_DEADLINE_SECONDS
+    attempts = 0
+    last_state: dict[str, Any] = {}
+    report[field] = {
+        "attempted": True,
+        "ok": False,
+        "deadline_seconds": READINESS_DEADLINE_SECONDS,
+        "poll_interval_seconds": READINESS_POLL_INTERVAL_SECONDS,
+    }
+    while time.monotonic() <= deadline:
+        attempts += 1
+        last_state = inspect_installed_plugin_state(openclaw_bin, cwd, plugin_root)
+        if last_state.get("source_matches") is True and last_state.get("enabled") is True:
+            report[field].update({"ok": True, "attempts": attempts, "final_state": last_state})
+            return
+        time.sleep(READINESS_POLL_INTERVAL_SECONDS)
+    report[field].update(
+        {
+            "ok": False,
+            "attempts": attempts,
+            "final_state": last_state,
+            "timeout_reason": "plugin readiness was not reached before deadline",
+        }
+    )
+    report["errors"].append({"code": f"{field}_timeout", "message": "OpenClaw plugin readiness was not reached before deadline."})
+
+
 def discover_workspace(openclaw_bin: str, cwd: Path) -> Path:
     result = run_capture([openclaw_bin, "config", "get", "agents.defaults.workspace", "--json"], cwd=cwd, check=False)
     if result.returncode == 0 and result.stdout.strip():
@@ -345,6 +461,40 @@ def discover_workspace(openclaw_bin: str, cwd: Path) -> Path:
             return Path(value).expanduser().resolve()
     config_path = Path(run_capture([openclaw_bin, "config", "file"], cwd=cwd).stdout.strip()).resolve()
     return (config_path.parent / "workspace").resolve()
+
+
+def hash_source_memory_files(workspace_root: Path) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for path in source_memory_files(workspace_root):
+        relative = path.relative_to(workspace_root).as_posix()
+        hashes[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return dict(sorted(hashes.items()))
+
+
+def source_memory_files(workspace_root: Path) -> list[Path]:
+    files: list[Path] = []
+    for name in ["MEMORY.md", "DREAMS.md"]:
+        path = workspace_root / name
+        if path.exists() and path.is_file():
+            files.append(path)
+    memory_dir = workspace_root / "memory"
+    if memory_dir.exists():
+        files.extend(path for path in sorted(memory_dir.glob("**/*.md")) if path.is_file())
+    return files
+
+
+def finish_source_hash_evidence(workspace_root: Path, report: dict[str, Any]) -> None:
+    after = hash_source_memory_files(workspace_root)
+    evidence = report["integration_evidence"]
+    evidence["source_memory_hashes_after"] = after
+    evidence["source_memory_unchanged"] = evidence.get("source_memory_hashes_before") == after
+
+
+def canonical_path(path: Path) -> Path:
+    try:
+        return Path(os.path.realpath(path)).resolve()
+    except OSError:
+        return path.resolve()
 
 
 def git_repo_root() -> Path:
@@ -362,8 +512,8 @@ def write_report(report: dict[str, Any], args: argparse.Namespace) -> None:
     path.write_text(json.dumps(redact(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def run_checked(command: list[str], *, cwd: Path, code: str) -> subprocess.CompletedProcess[str]:
-    result = run_capture(command, cwd=cwd, check=False, timeout=120)
+def run_checked(command: list[str], *, cwd: Path, code: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:
+    result = run_capture(command, cwd=cwd, check=False, timeout=timeout)
     if result.returncode != 0:
         raise InstallerError(code, safe_message(result.stdout or result.stderr))
     return result

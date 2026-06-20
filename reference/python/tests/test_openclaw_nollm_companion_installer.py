@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 import sys
 
@@ -69,6 +70,96 @@ def test_redact_removes_secret_like_values() -> None:
     }
 
 
+def test_source_memory_hashes_ignore_sidecar_outputs(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    (workspace / "memory").mkdir(parents=True)
+    (workspace / ".nollm-memory").mkdir()
+    (workspace / "MEMORY.md").write_text("durable\n", encoding="utf-8")
+    (workspace / "DREAMS.md").write_text("dream\n", encoding="utf-8")
+    (workspace / "memory/day.md").write_text("daily\n", encoding="utf-8")
+    (workspace / ".nollm-memory/generated.json").write_text("ignore\n", encoding="utf-8")
+
+    hashes = installer.hash_source_memory_files(workspace)
+
+    assert sorted(hashes) == ["DREAMS.md", "MEMORY.md", "memory/day.md"]
+    assert all(len(value) == 64 for value in hashes.values())
+
+
+def test_installed_matching_plugin_skips_link(monkeypatch, tmp_path: Path) -> None:
+    report = installer.build_initial_report(arg_namespace(apply=True))
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        installer,
+        "inspect_installed_plugin_state",
+        lambda _openclaw, _cwd, _root: {"present": True, "source_matches": True, "enabled": True},
+    )
+    monkeypatch.setattr(installer, "run_checked", lambda command, **kwargs: calls.append(command))
+
+    installer.install_plugin("openclaw", tmp_path, tmp_path, report)
+
+    assert calls == []
+    assert report["plugin_installation"]["method"] == "already_linked"
+    assert report["plugin_installation"]["source_matches"] is True
+    assert report["integration_evidence"]["plugin_link_state"] == "already_linked"
+
+
+def test_absent_plugin_installs_once_and_polls(monkeypatch, tmp_path: Path) -> None:
+    report = installer.build_initial_report(arg_namespace(apply=True))
+    calls: list[list[str]] = []
+    poll_calls: list[str] = []
+
+    monkeypatch.setattr(
+        installer,
+        "inspect_installed_plugin_state",
+        lambda _openclaw, _cwd, _root: {"present": False, "source_matches": False, "enabled": False},
+    )
+    monkeypatch.setattr(installer, "run_checked", lambda command, **kwargs: calls.append(command))
+    monkeypatch.setattr(installer, "poll_runtime_tools", lambda *_args: poll_calls.append("poll"))
+
+    installer.install_plugin("openclaw", tmp_path, tmp_path, report)
+
+    assert calls == [["openclaw", "plugins", "install", "--link", str(tmp_path)]]
+    assert poll_calls == ["poll"]
+    assert report["plugin_installation"]["attempted"] is True
+    assert report["integration_evidence"]["plugin_link_state"] == "linked_now"
+
+
+def test_poll_runtime_tools_timeout_is_bounded(monkeypatch, tmp_path: Path) -> None:
+    report = installer.build_initial_report(arg_namespace(apply=True))
+    monotonic_values = iter([0, 1, 2, 3])
+
+    monkeypatch.setattr(installer, "READINESS_DEADLINE_SECONDS", 2)
+    monkeypatch.setattr(installer, "READINESS_POLL_INTERVAL_SECONDS", 0)
+    monkeypatch.setattr(installer.time, "monotonic", lambda: next(monotonic_values))
+    monkeypatch.setattr(installer.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(
+        installer,
+        "inspect_installed_plugin_state",
+        lambda _openclaw, _cwd, _root: {"present": False, "source_matches": False, "enabled": False},
+    )
+
+    installer.poll_runtime_tools("openclaw", tmp_path, tmp_path, report, "post_link_readiness")
+
+    assert report["post_link_readiness"]["ok"] is False
+    assert report["post_link_readiness"]["timeout_reason"]
+    assert report["errors"][0]["code"] == "post_link_readiness_timeout"
+
+
+def test_apply_config_patch_failure_has_structured_error(monkeypatch, tmp_path: Path) -> None:
+    def fake_run_checked(_command, **_kwargs):
+        raise installer.InstallerError("config_patch_failed", "patch failed safely")
+
+    monkeypatch.setattr(installer, "run_checked", fake_run_checked)
+
+    try:
+        installer.apply_config_patch("openclaw", tmp_path, {"plugins": {"entries": {}}})
+    except installer.InstallerError as exc:
+        assert exc.code == "config_patch_failed"
+    else:  # pragma: no cover
+        raise AssertionError("expected InstallerError")
+
+
 def test_installer_dry_run_with_fake_openclaw_does_not_mutate_config_or_memory(tmp_path: Path, monkeypatch) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir()
@@ -115,9 +206,28 @@ def test_installer_dry_run_with_fake_openclaw_does_not_mutate_config_or_memory(t
     assert report["mode"] == "dry_run"
     assert report["ok"] is True
     assert report["write_candidate_visible"] is False
+    assert report["integration_evidence"]["source_memory_unchanged"] is True
+    assert "MEMORY.md" in report["integration_evidence"]["source_memory_hashes_before"]
     calls = [json.loads(line)["args"] for line in log_path.read_text(encoding="utf-8").splitlines()]
     assert ["config", "patch"] in [call[:2] for call in calls]
     assert ["plugins", "install"] not in [call[:2] for call in calls]
+
+
+def test_evidence_report_redacts_secret_like_values() -> None:
+    evidence = installer.redact(
+        {
+            "integration_evidence": {"runtime_tool_names": ["nollm_memory_search"]},
+            "config": {"token": "secret", "password": "pw"},
+        }
+    )
+
+    assert evidence["integration_evidence"]["runtime_tool_names"] == ["nollm_memory_search"]
+    assert evidence["config"]["token"] == "<redacted>"
+    assert evidence["config"]["password"] == "<redacted>"
+
+
+def arg_namespace(*, apply: bool) -> object:
+    return type("Args", (), {"apply": apply})()
 
 
 def write_fake_openclaw(tmp_path: Path, config_path: Path, workspace: Path, log_path: Path) -> Path:
