@@ -1,5 +1,17 @@
 # Nollm OpenClaw LLM Usage Guide
 
+## OCP6R Direction
+
+Nollm is not an embedding-free `MEMORY.md` search adapter. Treat OpenClaw `MEMORY.md`, `DREAMS.md`, and `memory/*.md` as read-only source snapshots. The primary Nollm read path is Dream Cortex navigation:
+
+```text
+nollm_orient -> nollm_surface -> nollm_focus -> nollm_drift / return -> nollm_compose_digest
+```
+
+Use `nollm_orient` before focusing, stop at sufficient scale, label lateral findings as lateral, return to the original task, and output `NONE` when the dream field lacks useful material. Do not use `memory_search` / `memory_get` as the Nollm internal model.
+
+The older `nollm_memory_*` tools remain a legacy experimental surface for inspection and explicit candidate workflows. They are not the new primary architecture.
+
 Date: 2026-06-19
 
 Use Nollm memory tools as instrumentation over OpenClaw memory files. Recalled

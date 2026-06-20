@@ -34,7 +34,20 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
 
 export function buildSidecarArgv(
   config: NormalizedConfig,
-  command: "index" | "search" | "recall" | "get" | "write-candidate" | "commit-candidate" | "status",
+  command:
+    | "index"
+    | "search"
+    | "recall"
+    | "get"
+    | "write-candidate"
+    | "commit-candidate"
+    | "status"
+    | "orient"
+    | "surface"
+    | "focus"
+    | "drift"
+    | "read"
+    | "compose-digest",
   params: Record<string, string | number | boolean | undefined> = {}
 ): string[] {
   const argv = [
@@ -54,6 +67,28 @@ export function buildSidecarArgv(
   }
   if (command === "get") {
     argv.push("--id", String(params.id ?? ""));
+  }
+  if (command === "orient") {
+    argv.push("--query", String(params.query ?? ""));
+    argv.push("--limit", String(clampSearchLimit(Number(params.limit ?? 3), 10)));
+  }
+  if (command === "surface") {
+    argv.push("--surface-id", String(params.surface_id ?? ""));
+  }
+  if (command === "focus") {
+    argv.push("--query", String(params.query ?? ""));
+    argv.push("--surface-id", String(params.surface_id ?? ""));
+    argv.push("--sufficient-scale", String(params.sufficient_scale ?? 2));
+  }
+  if (command === "drift") {
+    argv.push("--shard-id", String(params.shard_id ?? ""));
+    argv.push("--query", String(params.query ?? ""));
+  }
+  if (command === "read") {
+    argv.push("--shard-id", String(params.shard_id ?? ""));
+  }
+  if (command === "compose-digest") {
+    argv.push("--query", String(params.query ?? ""));
   }
   if (command === "write-candidate") {
     argv.push("--text", String(params.text ?? ""));
@@ -82,7 +117,20 @@ export function clampSearchLimit(limit: number, maxSearchResults: number): numbe
 
 export async function runSidecarCommand(
   config: PluginConfig,
-  command: "index" | "search" | "recall" | "get" | "write-candidate" | "commit-candidate" | "status",
+  command:
+    | "index"
+    | "search"
+    | "recall"
+    | "get"
+    | "write-candidate"
+    | "commit-candidate"
+    | "status"
+    | "orient"
+    | "surface"
+    | "focus"
+    | "drift"
+    | "read"
+    | "compose-digest",
   params: Record<string, string | number | boolean | undefined> = {},
   signal?: AbortSignal
 ): Promise<SidecarResult> {

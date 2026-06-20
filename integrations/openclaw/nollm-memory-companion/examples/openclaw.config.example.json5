@@ -19,23 +19,30 @@
     }
   },
 
-  // 2. Tool policy: allow read companion tools and explicitly opt into pending writes.
+  // 2. OCP6R Cortex tool policy: Nollm navigation tools are the primary path.
   tools: {
     allow: [
-      "memory_search",
-      "memory_get",
-      "nollm_memory_search",
-      "nollm_memory_get",
-      "nollm_memory_status"
+      "nollm_orient",
+      "nollm_surface",
+      "nollm_focus",
+      "nollm_drift",
+      "nollm_read",
+      "nollm_compose_digest"
     ],
     optionalAllow: [
+      // Legacy explicit candidate staging; not part of Active Memory Cortex.
+      "nollm_memory_recall",
+      "nollm_memory_search",
+      "nollm_memory_get",
+      "nollm_memory_status",
       "nollm_memory_write_candidate"
     ]
   },
 
-  // 3. Optional Active Memory experiment guidance:
-  // If an operator explicitly opts into an Active Memory experiment, combine
-  // memory_search, memory_get, nollm_memory_search, and nollm_memory_get in
-  // that experiment's documented tool policy. Prompt the recall sub-agent that
-  // Nollm gravity reports annotate drift and do not replace source verification.
+  // 3. Optional Active Memory Cortex guidance:
+  // Configure Active Memory toolsAllow with nollm_orient, nollm_surface,
+  // nollm_focus, nollm_drift, nollm_read, and nollm_compose_digest.
+  // Do not make memory_search / memory_get the Nollm internal model. They may
+  // remain available outside the Cortex path for ordinary OpenClaw source
+  // verification and do not replace source verification.
 }

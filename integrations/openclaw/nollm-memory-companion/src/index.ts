@@ -1,11 +1,17 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
 import {
+  ComposeDigestInputSchema,
   ConfigSchema,
   CommitCandidateInputSchema,
+  DriftInputSchema,
+  FocusInputSchema,
   GetInputSchema,
+  OrientInputSchema,
   RecallInputSchema,
+  ReadInputSchema,
   SearchInputSchema,
   StatusInputSchema,
+  SurfaceInputSchema,
   WriteCandidateInputSchema
 } from "./schemas.js";
 import { clampSearchLimit, configurationRequiredStatus, normalizeConfig, runSidecarCommand } from "./sidecar.js";
@@ -21,6 +27,89 @@ const plugin = defineToolPlugin({
   },
   configSchema: ConfigSchema,
   tools: (tool) => [
+    tool({
+      name: "nollm_orient",
+      label: "Nollm Orient",
+      description:
+        "Begin a Cortex recall pass from bounded coarse Nollm dream-field surfaces, not aliases or raw source search.",
+      parameters: OrientInputSchema,
+      async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        return await runSidecarCommand(config, "orient", { query: input.query, limit: input.limit ?? 3 }, context.signal);
+      }
+    }),
+    tool({
+      name: "nollm_surface",
+      label: "Nollm Surface",
+      description:
+        "Inspect content-bearing coarse surface cells and bridge hints before focusing to finer Nollm dream shards.",
+      parameters: SurfaceInputSchema,
+      async execute(input: { surface_id: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(config, "surface", { surface_id: input.surface_id }, context.signal);
+      }
+    }),
+    tool({
+      name: "nollm_focus",
+      label: "Nollm Focus",
+      description:
+        "Traverse by coverage and overlap to a sufficient scale without forcing raw source span descent.",
+      parameters: FocusInputSchema,
+      async execute(input: { query: string; surface_id: string; sufficient_scale?: number }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(
+          config,
+          "focus",
+          {
+            query: input.query,
+            surface_id: input.surface_id,
+            sufficient_scale: input.sufficient_scale ?? 2
+          },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_drift",
+      label: "Nollm Drift",
+      description:
+        "Inspect lateral and return links from a dream shard; drift labels are orientation only, never rejection or trust.",
+      parameters: DriftInputSchema,
+      async execute(input: { shard_id: string; query?: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(
+          config,
+          "drift",
+          { shard_id: input.shard_id, query: input.query ?? "" },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_read",
+      label: "Nollm Read",
+      description: "Read a Nollm dream shard by id; the recall unit is the dream shard, not a raw Markdown chunk.",
+      parameters: ReadInputSchema,
+      async execute(input: { shard_id: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(config, "read", { shard_id: input.shard_id }, context.signal);
+      }
+    }),
+    tool({
+      name: "nollm_compose_digest",
+      label: "Nollm Compose Digest",
+      description:
+        "Compose a compact Nollm Recall Digest after orient/surface/focus/drift, returning NONE when the field lacks useful material.",
+      parameters: ComposeDigestInputSchema,
+      async execute(input: { query: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(config, "compose-digest", { query: input.query }, context.signal);
+      }
+    }),
     tool({
       name: "nollm_memory_recall",
       label: "Nollm Memory Recall",

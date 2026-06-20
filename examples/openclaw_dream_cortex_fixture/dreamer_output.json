@@ -1,0 +1,206 @@
+{
+  "schema": "nollm.dreamer_contract_fixture.v1",
+  "field_id": "dream_field_openclaw_cortex_v1",
+  "dreamer": {
+    "provider_call": false,
+    "contract": "fixture_only",
+    "input": "source snapshot plus bounded local Nollm surface",
+    "output": "coarse surfaces, bridge shards, fine dream shards, source links, placement proposals"
+  },
+  "charts": [
+    {
+      "chart_id": "chart_openclaw_integration",
+      "label": "OpenClaw / Nollm integration dream field"
+    }
+  ],
+  "shards": [
+    {
+      "shard_id": "surface_openclaw_nollm",
+      "scale": "coarse",
+      "text": "OpenClaw memory files are the read-only source plane; Nollm Core keeps the dream field used by Cortex navigation.",
+      "status": "source_backed",
+      "source_trace_kind": "source_backed",
+      "anchors": ["OpenClaw", "Nollm", "source plane", "dream field", "Cortex", "只读"],
+      "source_links": [
+        {
+          "source_path": "MEMORY.md",
+          "line_range": [3, 5]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.42,
+        "span": "coarse"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 0,
+        "q": 0,
+        "r": 0
+      }
+    },
+    {
+      "shard_id": "bridge_active_memory_cortex",
+      "scale": "bridge",
+      "text": "Active Memory is the Cortex entry: orient, inspect surface, focus to sufficient scale, drift if useful, then return a recall digest.",
+      "status": "derived",
+      "source_trace_kind": "derived",
+      "anchors": ["Active Memory", "Cortex", "orient", "surface", "focus", "drift", "return", "recall digest"],
+      "source_links": [
+        {
+          "source_path": "MEMORY.md",
+          "line_range": [4, 5]
+        },
+        {
+          "source_path": "memory/2026-06-20.md",
+          "line_range": [4, 4]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.72,
+        "span": "bridge"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 1,
+        "q": 1,
+        "r": 0
+      }
+    },
+    {
+      "shard_id": "fine_no_memory_file_writes",
+      "scale": "fine",
+      "text": "Nollm projection must never mutate MEMORY.md, DREAMS.md, or memory/*.md; it records source snapshots and source links only.",
+      "status": "source_backed",
+      "source_trace_kind": "source_backed",
+      "anchors": ["never mutate", "MEMORY.md", "DREAMS.md", "memory/*.md", "source snapshot"],
+      "source_links": [
+        {
+          "source_path": "memory/2026-06-20.md",
+          "line_range": [3, 3]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.91,
+        "span": "fine"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 2,
+        "q": 1,
+        "r": -1
+      }
+    },
+    {
+      "shard_id": "lateral_search_adapter_boundary",
+      "scale": "bridge",
+      "text": "Search can remain as a host compatibility layer, but it is lateral to the Nollm internal model and must not replace field navigation.",
+      "status": "tentative",
+      "source_trace_kind": "tentative",
+      "anchors": ["search adapter", "compatibility", "lateral", "field navigation", "内部模型"],
+      "source_links": [
+        {
+          "source_path": "DREAMS.md",
+          "line_range": [3, 4]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.63,
+        "span": "bridge"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 1,
+        "q": 2,
+        "r": -1
+      }
+    },
+    {
+      "shard_id": "surface_unrelated_lab",
+      "scale": "coarse",
+      "text": "The lab operations branch contains appliance maintenance and is unrelated to Nollm Cortex recall.",
+      "status": "source_backed",
+      "source_trace_kind": "source_backed",
+      "anchors": ["lab", "coffee", "appliance", "unrelated"],
+      "source_links": [
+        {
+          "source_path": "memory/2026-06-20.md",
+          "line_range": [5, 5]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.31,
+        "span": "coarse"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 0,
+        "q": -3,
+        "r": 2
+      }
+    },
+    {
+      "shard_id": "fine_chinese_return_instruction",
+      "scale": "fine",
+      "text": "中文路径：先看粗表面，再聚焦到足够尺度；漂移发现必须标为 lateral，然后回到原任务。",
+      "status": "derived",
+      "source_trace_kind": "derived",
+      "anchors": ["中文", "粗表面", "足够尺度", "漂移", "lateral", "返回", "原任务"],
+      "source_links": [
+        {
+          "source_path": "DREAMS.md",
+          "line_range": [4, 4]
+        },
+        {
+          "source_path": "memory/2026-06-20.md",
+          "line_range": [4, 4]
+        }
+      ],
+      "coverage": {
+        "specificity": 0.88,
+        "span": "fine"
+      },
+      "placement": {
+        "chart_id": "chart_openclaw_integration",
+        "layer": 2,
+        "q": 0,
+        "r": 1
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "surface_openclaw_nollm",
+      "to": "bridge_active_memory_cortex",
+      "kind": "contains"
+    },
+    {
+      "from": "surface_openclaw_nollm",
+      "to": "fine_no_memory_file_writes",
+      "kind": "contains"
+    },
+    {
+      "from": "surface_openclaw_nollm",
+      "to": "lateral_search_adapter_boundary",
+      "kind": "lateral_to",
+      "drift": "far_coherent"
+    },
+    {
+      "from": "bridge_active_memory_cortex",
+      "to": "lateral_search_adapter_boundary",
+      "kind": "lateral_to",
+      "drift": "far_coherent"
+    },
+    {
+      "from": "bridge_active_memory_cortex",
+      "to": "fine_chinese_return_instruction",
+      "kind": "contains"
+    },
+    {
+      "from": "bridge_active_memory_cortex",
+      "to": "surface_openclaw_nollm",
+      "kind": "returns_to",
+      "drift": "return"
+    }
+  ]
+}
+

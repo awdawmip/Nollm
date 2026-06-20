@@ -1,5 +1,20 @@
 # Nollm OpenClaw Memory Tool Contract
 
+## OCP6R Primary Tool Surface
+
+OCP6R repositions Nollm as a Dream Cortex recall spine, not as an embedding-free source-file search adapter. OpenClaw source files are read-only snapshots. The primary Cortex tools are:
+
+- `nollm_orient`
+- `nollm_surface`
+- `nollm_focus`
+- `nollm_drift`
+- `nollm_read`
+- `nollm_compose_digest`
+
+These tools navigate a deterministic Nollm dream field and compose a Nollm Recall Digest. They do not call embeddings, vector databases, SQLite recall internals, external rerankers, or live LLM providers in Core. They do not write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.
+
+The `nollm_memory_*` tools are retained as a legacy experimental surface and explicit candidate workflow only. They are not the Nollm internal model for OCP6R.
+
 Date: 2026-06-19
 
 These contracts describe the OCP4 companion tool surface. OpenClaw memory-core

@@ -15,6 +15,12 @@ import {
 
 const packageRoot = path.resolve(import.meta.dirname, "..");
 const toolNames = [
+  "nollm_orient",
+  "nollm_surface",
+  "nollm_focus",
+  "nollm_drift",
+  "nollm_read",
+  "nollm_compose_digest",
   "nollm_memory_recall",
   "nollm_memory_search",
   "nollm_memory_get",
@@ -93,6 +99,28 @@ test("builds recall and commit argv", () => {
   assert.equal(commit.includes("commit-candidate"), true);
   assert.equal(commit.includes("--explicit-confirmation"), true);
   assert.equal(commit.includes("candidate_123"), true);
+});
+
+test("builds dream cortex navigation argv", () => {
+  const fixture = makeFixture();
+  const config = normalizeConfig(fixture.config);
+  const orient = buildSidecarArgv(config, "orient", { query: "OpenClaw Cortex", limit: 2 });
+  const surface = buildSidecarArgv(config, "surface", { surface_id: "surface_openclaw_nollm" });
+  const focus = buildSidecarArgv(config, "focus", {
+    query: "Active Memory",
+    surface_id: "surface_openclaw_nollm",
+    sufficient_scale: 2
+  });
+  const drift = buildSidecarArgv(config, "drift", { shard_id: "bridge_active_memory_cortex", query: "Cortex" });
+  const read = buildSidecarArgv(config, "read", { shard_id: "bridge_active_memory_cortex" });
+  const digest = buildSidecarArgv(config, "compose-digest", { query: "Nollm boundary" });
+
+  assert.equal(orient.includes("orient"), true);
+  assert.equal(surface.includes("--surface-id"), true);
+  assert.equal(focus.includes("--sufficient-scale"), true);
+  assert.equal(drift.includes("--shard-id"), true);
+  assert.equal(read.includes("read"), true);
+  assert.equal(digest.includes("compose-digest"), true);
 });
 
 test("unconfigured tools fail closed without spawning sidecar", async () => {

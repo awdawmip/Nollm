@@ -69,3 +69,49 @@ export const CommitCandidateInputSchema = Type.Object(
 );
 
 export const StatusInputSchema = Type.Object({}, { additionalProperties: false });
+
+export const OrientInputSchema = Type.Object(
+  {
+    query: Type.String({ minLength: 1 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10 }))
+  },
+  { additionalProperties: false }
+);
+
+export const SurfaceInputSchema = Type.Object(
+  {
+    surface_id: Type.String({ minLength: 1 })
+  },
+  { additionalProperties: false }
+);
+
+export const FocusInputSchema = Type.Object(
+  {
+    query: Type.String({ minLength: 1 }),
+    surface_id: Type.String({ minLength: 1 }),
+    sufficient_scale: Type.Optional(Type.Integer({ minimum: 1, maximum: 3 }))
+  },
+  { additionalProperties: false }
+);
+
+export const DriftInputSchema = Type.Object(
+  {
+    shard_id: Type.String({ minLength: 1 }),
+    query: Type.Optional(Type.String())
+  },
+  { additionalProperties: false }
+);
+
+export const ReadInputSchema = Type.Object(
+  {
+    shard_id: Type.String({ minLength: 1 })
+  },
+  { additionalProperties: false }
+);
+
+export const ComposeDigestInputSchema = Type.Object(
+  {
+    query: Type.String({ minLength: 1 })
+  },
+  { additionalProperties: false }
+);

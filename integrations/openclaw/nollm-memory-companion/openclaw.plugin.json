@@ -49,6 +49,12 @@
   },
   "contracts": {
     "tools": [
+      "nollm_orient",
+      "nollm_surface",
+      "nollm_focus",
+      "nollm_drift",
+      "nollm_read",
+      "nollm_compose_digest",
       "nollm_memory_recall",
       "nollm_memory_search",
       "nollm_memory_get",
