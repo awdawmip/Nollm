@@ -22,7 +22,7 @@ def test_openclaw_plugin_readiness_docs_exist_and_cover_commands() -> None:
         assert schema_name in corpus
 
 
-def test_openclaw_plugin_readiness_docs_define_future_tool_mapping() -> None:
+def test_openclaw_plugin_readiness_docs_define_tool_mapping() -> None:
     corpus = "\n".join(path.read_text(encoding="utf-8") for path in DOCS)
 
     for tool in [
@@ -37,23 +37,26 @@ def test_openclaw_plugin_readiness_docs_define_future_tool_mapping() -> None:
     assert "shard_id" in corpus
     assert "source_path" in corpus
     assert "line_range" in corpus
+    assert "integrations/openclaw/nollm-memory-companion/" in corpus
+    assert "npm run plugin:build" in corpus
+    assert "npm run plugin:check" in corpus
+    assert "npm test" in corpus
+    assert "plugins.entries" in corpus
 
 
 def test_openclaw_plugin_readiness_docs_preserve_boundaries() -> None:
     corpus = "\n".join(path.read_text(encoding="utf-8") for path in DOCS)
     lower = corpus.lower()
 
-    assert '"real_openclaw_plugin": false' in corpus
     assert '"real_llm_call": false' in corpus
     assert '"memory_slot_replacement": false' in corpus
     assert '"auto_memory_write": false' in corpus
     assert '"drift_class_trust_mapping": false' in corpus
     assert '"hard_drift_rejection": false' in corpus
-    assert "must not replace `memory-core`" in corpus
+    assert "must not\nreplace `memory-core`" in corpus or "must not replace `memory-core`" in corpus
     assert "does not mutate `MEMORY.md`" in corpus
     assert "does not hard-filter by `drift_class`" in corpus
     forbidden_claims = [
-        "implements a runtime plugin",
         "replaces memory-core",
         "calls a real llm",
         "maps drift_class to trust",

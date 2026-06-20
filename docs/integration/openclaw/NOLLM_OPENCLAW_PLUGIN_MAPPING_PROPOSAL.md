@@ -2,12 +2,19 @@
 
 Date: 2026-06-20
 
-This proposal maps the offline sidecar to possible future OpenClaw companion
-plugin tools. It is not a plugin implementation.
+This proposal maps the offline sidecar to the current OpenClaw companion
+tool-plugin package:
+
+```text
+integrations/openclaw/nollm-memory-companion/
+```
+
+The package is a native OpenClaw tool plugin that delegates to the Python
+sidecar. It is not a memory-slot implementation.
 
 ## Tool Mapping
 
-| Future OpenClaw tool | Current sidecar command | Role |
+| OpenClaw tool | Current sidecar command | Role |
 | --- | --- | --- |
 | `nollm_memory_search` | `search` | Return source-backed results with gravity reports. |
 | `nollm_memory_get` | `get` | Resolve `candidate_id`, `memory_id`, or `shard_id` to exact text. |
@@ -16,9 +23,20 @@ plugin tools. It is not a plugin implementation.
 
 ## Companion Mode First
 
-The plugin should start as a companion tool provider. It may call sidecar logic,
-but it must not claim the OpenClaw memory slot or replace `memory-core`.
-A future companion plugin must not replace `memory-core`.
+The plugin is a companion tool provider. It may call sidecar logic, but it must
+not claim the OpenClaw memory slot or replace `memory-core`.
+
+Native package checks:
+
+```bash
+cd integrations/openclaw/nollm-memory-companion
+npm run plugin:build
+npm run plugin:check
+npm test
+```
+
+Runtime entry configuration uses `plugins.entries.nollm-memory-companion.config`
+with absolute `nollmRepoRoot` and `workspaceRoot` paths.
 
 ## Required Runtime Guardrails
 

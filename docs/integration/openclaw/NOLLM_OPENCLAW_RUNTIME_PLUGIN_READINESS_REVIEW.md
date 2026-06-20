@@ -2,10 +2,16 @@
 
 Date: 2026-06-20
 
-This review explains how the current offline OpenClaw-Nollm memory sidecar could
-later become an OpenClaw companion plugin. It is a readiness review only. It
-does not implement a runtime plugin, replace OpenClaw `memory-core`, call an
-LLM, or write durable OpenClaw memory files.
+This review records the current OpenClaw-Nollm companion tool plugin package
+and the sidecar boundary it wraps. The package exists at:
+
+```text
+integrations/openclaw/nollm-memory-companion/
+```
+
+It is a native OpenClaw tool-plugin package that delegates to the Python
+sidecar. It does not replace OpenClaw `memory-core`, claim the memory slot, call
+an LLM, or write durable OpenClaw memory files.
 
 ## Current Sidecar Commands
 
@@ -38,10 +44,49 @@ The sidecar currently writes inspectable JSON/JSONL records:
 - `pending_write`: pending id, text, source, pending review status,
   `durable_write=false`, and `target_files_mutated=false`.
 
-## Plugin Boundary
+## Plugin Package
 
-A future companion plugin may call the sidecar logic and expose tool-shaped
-responses. It must not claim the exclusive OpenClaw memory slot yet. It must not
+The companion package exposes four fixed tools:
+
+- `nollm_memory_search`
+- `nollm_memory_get`
+- `nollm_memory_write_candidate`
+- `nollm_memory_status`
+
+Build and validation commands:
+
+```bash
+cd integrations/openclaw/nollm-memory-companion
+npm install
+npm run plugin:build
+npm run plugin:check
+npm test
+```
+
+The OpenClaw CLI generator writes native metadata into
+`openclaw.plugin.json`, including `configSchema`, `contracts.tools`, optional
+metadata for `nollm_memory_write_candidate`, and `skills: ["skill"]`.
+
+Configuration uses the current OpenClaw entry convention:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "nollm-memory-companion": {
+        "enabled": true,
+        "config": {
+          "pythonCommand": "python3",
+          "nollmRepoRoot": "/absolute/path/to/nollm",
+          "workspaceRoot": "/absolute/path/to/openclaw-workspace"
+        }
+      }
+    }
+  }
+}
+```
+
+The plugin must not claim the exclusive OpenClaw memory slot. It must not
 replace `memory-core`, auto-write `MEMORY.md`, call a real LLM, map
 `drift_class` to trust/status, or hard-filter by `drift_class`.
 
@@ -49,9 +94,8 @@ Forbidden semantics remain explicitly false:
 
 ```json
 {
-  "real_openclaw_plugin": false,
-  "real_llm_call": false,
   "memory_slot_replacement": false,
+  "real_llm_call": false,
   "auto_memory_write": false,
   "drift_class_trust_mapping": false,
   "hard_drift_rejection": false,
