@@ -22,9 +22,6 @@ READ_TOOLS = [
     "nollm_drift",
     "nollm_read",
     "nollm_recall_trace",
-    "nollm_memory_recall",
-    "nollm_memory_search",
-    "nollm_memory_get",
     "nollm_memory_status",
 ]
 WRITE_TOOLS: list[str] = []

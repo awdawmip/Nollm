@@ -64,9 +64,6 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
-        "nollm_memory_recall",
-        "nollm_memory_search",
-        "nollm_memory_get",
         "nollm_memory_status",
     ]
     assert "toolMetadata" not in manifest
@@ -82,14 +79,13 @@ def test_typescript_declares_exact_static_tool_names_and_optional_write() -> Non
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
-        "nollm_memory_recall",
-        "nollm_memory_search",
-        "nollm_memory_get",
         "nollm_memory_status",
     ]
 
     for tool in expected:
         assert source.count(f'name: "{tool}"') == 1
+    for tool in ["nollm_memory_recall", "nollm_memory_search", "nollm_memory_get"]:
+        assert f'name: "{tool}"' not in source
     assert 'name: "nollm_memory_write_candidate"' not in source
     assert 'name: "nollm_memory_commit_candidate"' not in source
     assert "tools: (tool) =>" in source
@@ -145,15 +141,13 @@ def test_config_example_does_not_set_memory_slot_and_marks_active_memory_experim
     assert "entries: {" in example
     assert '"nollm-memory-companion"' in example
     assert "activeMemoryExperiment" not in example
-    assert "memory_search" in example
-    assert "memory_get" in example
     assert "nollm_field_overview" in example
     assert "nollm_open_well" in example
     assert "nollm_recall_trace" in example
     assert "nollm_memory_write_candidate" not in example
     assert "nollm_memory_commit_candidate" not in example
-    assert "nollm_memory_search" in example
-    assert "nollm_memory_get" in example
+    assert "nollm_memory_search" not in example
+    assert "nollm_memory_get" not in example
     assert "do not replace source verification" in example
 
 

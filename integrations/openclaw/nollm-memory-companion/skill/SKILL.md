@@ -10,7 +10,7 @@ Primary Cortex workflow:
 3. Use `nollm_surface` around the selected center to inspect true honeycomb neighbors and cross-scale coverage.
 4. Use `nollm_focus` after choosing a target yourself, for gravity and coverage facts.
 5. Use `nollm_drift` only for useful lateral movement. Label lateral findings as lateral.
-6. Use `nollm_read` for exact dream-shard reads.
+6. Use `nollm_read` with the current `well_id` for exact dream-shard reads.
 7. Use `nollm_recall_trace` to log the explicit selected path. You, the Cortex, write the compact Recall Digest or `NONE`.
 
 Do not use `memory_search` / `memory_get` as the Nollm internal model.

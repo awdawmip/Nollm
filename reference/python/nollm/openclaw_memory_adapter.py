@@ -362,27 +362,46 @@ def recall_sidecar(
 
 
 def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path | str) -> dict[str, object]:
-    build_sidecar_store(repo_root, workspace, out_dir)
     repo = Path(repo_root).resolve()
     out = Path(out_dir).resolve()
-    manifest = _read_json(out / "sidecar_manifest.json")
+    workspace_path = Path(workspace).resolve()
+    current_path = out / "current_field.json"
+    manifest_path = out / "sidecar_manifest.json"
+    manifest = _read_json(manifest_path) if manifest_path.exists() else {}
+    current_field = None
+    current_pointer = _read_json(current_path) if current_path.exists() else None
+    if isinstance(current_pointer, Mapping):
+        field_path = out / str(current_pointer.get("path", "")) / "dream_field.json"
+        if field_path.exists():
+            current_field = _read_json(field_path)
+    snapshot_hash = _source_snapshot_hash_for_status(workspace_path)
+    field_hash = str(current_field.get("source_snapshot_hash")) if isinstance(current_field, Mapping) else None
+    dreamer_ref = current_field.get("dreamer_run_ref") if isinstance(current_field, Mapping) else None
     report = {
         "schema": STATUS_SCHEMA,
         "ok": True,
         "status": STATUS,
-        "workspace": manifest["workspace"],
+        "workspace": _display_path(repo, workspace_path),
         "out_dir": _display_path(repo, out),
         "manifest": manifest,
-        "accepted_get_id_forms": ["candidate_id", "memory_id", "shard_id"],
-        "source_roles_present": manifest["source_roles_present"],
+        "field_available": current_field is not None,
+        "field_id": current_field.get("field_id") if isinstance(current_field, Mapping) else None,
+        "current_revision_id": current_field.get("revision_id") if isinstance(current_field, Mapping) else None,
+        "field_stale": bool(field_hash and snapshot_hash and field_hash != snapshot_hash),
+        "source_snapshot_hash": field_hash,
+        "current_source_snapshot_hash": snapshot_hash,
+        "dreamer_last_status": _dreamer_last_status(dreamer_ref),
         "durable_memory_mutation": False,
+        "accepted_get_id_forms": ["candidate_id", "memory_id", "shard_id"],
+        "source_roles_present": manifest.get("source_roles_present", []),
         "counts": {
-            "candidates": len(_read_jsonl(out / "candidates.jsonl")),
-            "shards": len(_read_jsonl(out / "shards.jsonl")),
-            "geometry_marks": len(_read_jsonl(out / "geometry_marks.jsonl")),
-            "pending_writes": len(_read_jsonl(out / "pending_writes.jsonl")),
-            "commit_ledger": len(_read_jsonl(out / "commit_ledger.jsonl")),
+            "candidates": len(_read_jsonl(out / "candidates.jsonl")) if (out / "candidates.jsonl").exists() else 0,
+            "shards": len(_read_jsonl(out / "shards.jsonl")) if (out / "shards.jsonl").exists() else 0,
+            "geometry_marks": len(_read_jsonl(out / "geometry_marks.jsonl")) if (out / "geometry_marks.jsonl").exists() else 0,
+            "pending_writes": len(_read_jsonl(out / "pending_writes.jsonl")) if (out / "pending_writes.jsonl").exists() else 0,
+            "commit_ledger": len(_read_jsonl(out / "commit_ledger.jsonl")) if (out / "commit_ledger.jsonl").exists() else 0,
         },
+        "legacy_search_tools_registered": False,
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
     _write_json(out / "last_status_report.json", report)
@@ -425,6 +444,33 @@ def _memory_source_files(root: Path) -> list[Path]:
     if dreams.exists():
         files.append(dreams)
     return files
+
+
+def _source_snapshot_hash_for_status(root: Path) -> str:
+    stable = []
+    for path in _memory_source_files(root):
+        data = path.read_bytes()
+        stable.append(
+            {
+                "source_path": path.relative_to(root).as_posix(),
+                "sha256": _sha256_bytes(data),
+                "byte_count": len(data),
+                "line_count": len(data.decode("utf-8", errors="replace").splitlines()),
+            }
+        )
+    stable.sort(key=lambda item: str(item["source_path"]))
+    return _sha256_text(json.dumps(stable, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+
+
+def _dreamer_last_status(dreamer_ref: object) -> str:
+    if not isinstance(dreamer_ref, Mapping):
+        return "blocked"
+    kind = str(dreamer_ref.get("kind", ""))
+    if kind == "live_openclaw_agent":
+        return "published"
+    if kind in {"mock_openclaw_dreamer", "explicit_fixture", "mock_or_operator_supplied"}:
+        return "published"
+    return "blocked"
 
 
 def _parse_markdown_file(path: Path, *, source_path: str, source_role: str) -> list[OpenClawMemoryChunk]:

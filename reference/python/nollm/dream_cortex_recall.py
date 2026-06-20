@@ -23,6 +23,7 @@ from nollm.gravity import (
 
 FIELD_SCHEMA = "nollm.dream_cortex_field.v3"
 SNAPSHOT_SCHEMA = "nollm.source_snapshot.v1"
+DREAM_PACKET_SCHEMA = "nollm.dream_packet.v1"
 DREAMER_CONTRACT_SCHEMA = "nollm.dreamer_delta.v1"
 OVERVIEW_SCHEMA = "nollm.cortex.field_overview.v2"
 OPEN_WELL_SCHEMA = "nollm.cortex.open_well.v2"
@@ -34,6 +35,8 @@ TRACE_SCHEMA = "nollm.cortex.recall_trace.v2"
 DEMO_SCHEMA = "nollm.dream_cortex_demo_report.v3"
 
 SOURCE_GLOBS = ("MEMORY.md", "DREAMS.md", "memory/*.md")
+PRIMARY_DREAM_SOURCES = ("MEMORY.md",)
+MAX_DREAM_PACKET_CHARS = 12000
 SHARD_STATUSES = {"source_backed", "derived", "tentative", "superseded"}
 SHARD_SCALES = {"coarse", "bridge", "fine"}
 SCALE_LAYERS = {"coarse": 0, "bridge": 1, "fine": 2}
@@ -86,6 +89,50 @@ def source_snapshot(workspace: Path | str) -> dict[str, object]:
     return record
 
 
+def build_dream_packet(
+    workspace: Path | str,
+    *,
+    field_id: str = "openclaw-dream-field",
+    current_field: Mapping[str, object] | None = None,
+    max_chars: int = MAX_DREAM_PACKET_CHARS,
+) -> dict[str, object]:
+    root = Path(workspace).resolve()
+    snapshot = source_snapshot(root)
+    source_by_path = {str(item["source_path"]): item for item in snapshot.get("source_files", []) if isinstance(item, Mapping)}
+    material: list[dict[str, object]] = []
+    remaining = max_chars
+    for source_path in PRIMARY_DREAM_SOURCES:
+        record = source_by_path.get(source_path)
+        if record is None:
+            continue
+        text = (root / source_path).read_text(encoding="utf-8")
+        sections = _section_source_text(text, max_chars=max(1, remaining))
+        for start_line, end_line, section_text in sections:
+            if remaining <= 0:
+                raise ValueError("dream packet source material exceeds configured bound")
+            remaining -= len(section_text)
+            material.append(
+                {
+                    "source_path": source_path,
+                    "source_sha256": record["sha256"],
+                    "line_range": [start_line, end_line],
+                    "text": section_text,
+                    "material_id": _sha256_text(_stable_json({"path": source_path, "sha": record["sha256"], "line_range": [start_line, end_line], "text": section_text}))[:16],
+                }
+            )
+    packet = {
+        "schema": DREAM_PACKET_SCHEMA,
+        "source_snapshot_hash": snapshot["source_snapshot_hash"],
+        "field_id": field_id,
+        "source_material": material,
+        "prior_field_summary": _prior_field_summary(current_field),
+        "source_diff": {},
+    }
+    if not material:
+        raise ValueError("dream packet requires at least one source material section")
+    return packet
+
+
 def ingest_dreamer_fixture(
     workspace: Path | str,
     dreamer_output: Path | str,
@@ -101,12 +148,13 @@ def publish_dreamer_delta(
     delta: Mapping[str, object],
     *,
     dreamer_run_ref: Mapping[str, object] | None = None,
+    dream_packet: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     root = Path(workspace).resolve()
     out = Path(out_dir).resolve()
     snapshot = source_snapshot(root)
     current = _load_current_field(out)
-    _validate_dreamer_delta(delta, snapshot)
+    _validate_dreamer_delta(delta, snapshot, dream_packet=dream_packet)
     field_id = str(delta["field_id"])
     parent_revision_id = str(current["revision_id"]) if current and current.get("field_id") == field_id else None
     placed = _place_delta(delta, current)
@@ -123,6 +171,7 @@ def publish_dreamer_delta(
         "chart_id": "chart_openclaw_integration",
         "source_snapshot": snapshot,
         "dreamer_run_ref": dict(dreamer_run_ref or {"kind": "mock_or_operator_supplied"}),
+        "dream_packet_ref": _dream_packet_ref(dream_packet),
         "charts": [{"chart_id": "chart_openclaw_integration", "label": field_id}],
         "shards": placed,
         "gravity_marks": [_mark_record(shard) for shard in placed],
@@ -462,7 +511,48 @@ def _snapshot_files(root: Path) -> list[SourceFileSnapshot]:
     return records
 
 
-def _validate_dreamer_delta(delta: Mapping[str, object], snapshot: Mapping[str, object]) -> None:
+def _section_source_text(text: str, *, max_chars: int) -> list[tuple[int, int, str]]:
+    lines = text.splitlines()
+    if not lines:
+        return [(1, 1, "")]
+    sections: list[tuple[int, int, str]] = []
+    start = 1
+    current: list[str] = []
+    current_len = 0
+    for index, line in enumerate(lines, start=1):
+        addition = len(line) + (1 if current else 0)
+        if current and current_len + addition > max_chars:
+            sections.append((start, index - 1, "\n".join(current)))
+            start = index
+            current = [line]
+            current_len = len(line)
+        elif not current and addition > max_chars:
+            raise ValueError("single source line exceeds dream packet bound")
+        else:
+            current.append(line)
+            current_len += addition
+    if current:
+        sections.append((start, start + len(current) - 1, "\n".join(current)))
+    return sections
+
+
+def _prior_field_summary(current_field: Mapping[str, object] | None) -> list[dict[str, object]]:
+    summary: list[dict[str, object]] = []
+    for shard in _shards(current_field or {}):
+        summary.append(
+            {
+                "semantic_key": shard.get("semantic_key"),
+                "text": shard.get("text"),
+                "status": shard.get("status"),
+                "preferred_scale": shard.get("scale"),
+            }
+        )
+        if len(summary) >= 20:
+            break
+    return summary
+
+
+def _validate_dreamer_delta(delta: Mapping[str, object], snapshot: Mapping[str, object], *, dream_packet: Mapping[str, object] | None = None) -> None:
     _assert_no_forbidden_dreamer_fields(delta)
     if delta.get("schema") != DREAMER_CONTRACT_SCHEMA:
         raise ValueError("dreamer delta schema mismatch")
@@ -475,6 +565,7 @@ def _validate_dreamer_delta(delta: Mapping[str, object], snapshot: Mapping[str, 
     seen: set[str] = set()
     file_records = {str(item["source_path"]): item for item in snapshot.get("source_files", []) if isinstance(item, Mapping)}
     hashes = {path: str(item["sha256"]) for path, item in file_records.items()}
+    packet_material = _packet_material_index(dream_packet)
     for shard in shards:
         if not isinstance(shard, Mapping):
             raise ValueError("dreamer shard must be a mapping")
@@ -505,6 +596,8 @@ def _validate_dreamer_delta(delta: Mapping[str, object], snapshot: Mapping[str, 
             line_count = int(file_records[path].get("line_count", 0))
             if line_range[1] > line_count:
                 raise ValueError(f"source link line_range exceeds source length for {path}")
+            if packet_material is not None and not _line_range_in_packet(packet_material, path, str(link.get("source_sha256")), line_range):
+                raise ValueError(f"source link is outside dream packet material for {path}")
     for cluster in delta.get("cluster_intents", []):
         if not isinstance(cluster, Mapping):
             raise ValueError("cluster intent must be a mapping")
@@ -522,6 +615,39 @@ def _assert_no_forbidden_dreamer_fields(value: object) -> None:
     elif isinstance(value, list):
         for item in value:
             _assert_no_forbidden_dreamer_fields(item)
+
+
+def _packet_material_index(packet: Mapping[str, object] | None) -> dict[str, list[dict[str, object]]] | None:
+    if packet is None:
+        return None
+    if packet.get("schema") != DREAM_PACKET_SCHEMA:
+        raise ValueError("dream packet schema mismatch")
+    material = packet.get("source_material")
+    if not isinstance(material, list) or not material:
+        raise ValueError("dream packet requires source_material")
+    result: dict[str, list[dict[str, object]]] = {}
+    for item in material:
+        if not isinstance(item, Mapping):
+            raise ValueError("dream packet material must be mappings")
+        source_path = _required_str(item, "source_path")
+        _required_str(item, "source_sha256")
+        line_range = item.get("line_range")
+        if not isinstance(line_range, list) or len(line_range) != 2 or not all(isinstance(value, int) and value >= 1 for value in line_range) or line_range[0] > line_range[1]:
+            raise ValueError("dream packet material line_range invalid")
+        if not isinstance(item.get("text"), str) or not str(item.get("text")).strip():
+            raise ValueError("dream packet material text required")
+        result.setdefault(source_path, []).append(dict(item))
+    return result
+
+
+def _line_range_in_packet(packet_index: Mapping[str, Sequence[Mapping[str, object]]], source_path: str, source_sha256: str, line_range: Sequence[int]) -> bool:
+    for item in packet_index.get(source_path, []):
+        material_range = item.get("line_range")
+        if not isinstance(material_range, list) or len(material_range) != 2:
+            continue
+        if item.get("source_sha256") == source_sha256 and int(material_range[0]) <= int(line_range[0]) and int(line_range[1]) <= int(material_range[1]):
+            return True
+    return False
 
 
 def _place_delta(delta: Mapping[str, object], previous: Mapping[str, object] | None) -> list[dict[str, object]]:
@@ -877,6 +1003,19 @@ def _created_at_from_snapshot(snapshot: Mapping[str, object]) -> str:
     return max(stamps) if stamps else "1970-01-01T00:00:00Z"
 
 
+def _dream_packet_ref(packet: Mapping[str, object] | None) -> dict[str, object] | None:
+    if packet is None:
+        return None
+    material = packet.get("source_material", [])
+    return {
+        "schema": packet.get("schema"),
+        "source_snapshot_hash": packet.get("source_snapshot_hash"),
+        "field_id": packet.get("field_id"),
+        "material_count": len(material) if isinstance(material, list) else 0,
+        "material_ids": [item.get("material_id") for item in material if isinstance(item, Mapping)],
+    }
+
+
 def _semantic_key(record: Mapping[str, object]) -> str:
     key = _required_str(record, "semantic_key")
     return re.sub(r"[^a-zA-Z0-9_.-]+", "-", key.strip()).strip("-").lower()
@@ -924,6 +1063,7 @@ def _add_seconds(value: str, seconds: int) -> str:
 
 __all__ = [
     "DEMO_SCHEMA",
+    "DREAM_PACKET_SCHEMA",
     "DREAMER_CONTRACT_SCHEMA",
     "DRIFT_SCHEMA",
     "FIELD_SCHEMA",
@@ -946,6 +1086,7 @@ __all__ = [
     "nollm_recall_trace",
     "nollm_surface",
     "publish_dreamer_delta",
+    "build_dream_packet",
     "run_demo_report",
     "source_snapshot",
 ]

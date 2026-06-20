@@ -22,9 +22,6 @@ const toolNames = [
   "nollm_drift",
   "nollm_read",
   "nollm_recall_trace",
-  "nollm_memory_recall",
-  "nollm_memory_search",
-  "nollm_memory_get",
   "nollm_memory_status"
 ];
 
@@ -76,15 +73,6 @@ test("builds argv and clamps search limit", () => {
   assert.equal(clampSearchLimit(0, 5), 1);
   assert.equal(clampSearchLimit(9, 5), 5);
   assert.equal(clampSearchLimit(99, 20), 20);
-});
-
-test("builds legacy recall argv without write argv", () => {
-  const fixture = makeFixture();
-  const config = normalizeConfig(fixture.config);
-  const recall = buildSidecarArgv(config, "recall", { query: "Atlas owner", limit: 3 });
-
-  assert.equal(recall.includes("recall"), true);
-  assert.equal(recall.includes("--query"), true);
 });
 
 test("builds dream cortex navigation argv", () => {

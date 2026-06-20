@@ -213,7 +213,6 @@ def build_ocp7_dreamer_agent_patch(
             "bootstrapMaxChars": 1,
             "bootstrapTotalMaxChars": 1,
             "memorySearch": {"provider": "none", "fallback": "none"},
-            "promptAppend": OCP7_DREAMER_PROMPT_APPEND,
             "tools": {
                 "profile": "minimal",
                 "alsoAllow": [],

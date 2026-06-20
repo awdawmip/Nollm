@@ -25,29 +25,6 @@ export const ConfigSchema = Type.Object(
   { additionalProperties: false }
 );
 
-export const SearchInputSchema = Type.Object(
-  {
-    query: Type.String({ minLength: 1 }),
-    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 }))
-  },
-  { additionalProperties: false }
-);
-
-export const RecallInputSchema = Type.Object(
-  {
-    query: Type.String({ minLength: 1 }),
-    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 }))
-  },
-  { additionalProperties: false }
-);
-
-export const GetInputSchema = Type.Object(
-  {
-    id: Type.String({ minLength: 1 })
-  },
-  { additionalProperties: false }
-);
-
 export const StatusInputSchema = Type.Object({}, { additionalProperties: false });
 
 export const FieldOverviewInputSchema = Type.Object(

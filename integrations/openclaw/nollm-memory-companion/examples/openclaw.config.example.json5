@@ -19,7 +19,7 @@
     }
   },
 
-  // 2. OCP6R Cortex tool policy: Nollm navigation tools are the primary path.
+  // 2. OCP8 Cortex tool policy: Nollm navigation tools are the primary path.
   tools: {
     allow: [
       "nollm_field_overview",
@@ -28,13 +28,7 @@
       "nollm_focus",
       "nollm_drift",
       "nollm_read",
-      "nollm_recall_trace"
-    ],
-    optionalAllow: [
-      // Legacy read-only sidecar tools; not the Nollm internal model.
-      "nollm_memory_recall",
-      "nollm_memory_search",
-      "nollm_memory_get",
+      "nollm_recall_trace",
       "nollm_memory_status"
     ]
   },
@@ -43,7 +37,7 @@
   // Configure Active Memory toolsAllow with nollm_field_overview,
   // nollm_open_well, nollm_surface, nollm_focus, nollm_drift,
   // nollm_read, and nollm_recall_trace.
-  // Do not make memory_search / memory_get the Nollm internal model. They may
-  // remain available outside the Cortex path for ordinary OpenClaw source
-  // verification and do not replace source verification.
+  // Do not make memory_search / memory_get the Nollm internal model. Nollm's
+  // Cortex path reads dream shards through a revision-bound well, not source
+  // chunks; dream shards do not replace source verification.
 }

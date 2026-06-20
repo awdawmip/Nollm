@@ -46,9 +46,6 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
-        "nollm_memory_recall",
-        "nollm_memory_search",
-        "nollm_memory_get",
         "nollm_memory_status",
     ]
     assert patch["tools"]["alsoAllow"] == [
@@ -60,9 +57,6 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
-        "nollm_memory_recall",
-        "nollm_memory_search",
-        "nollm_memory_get",
         "nollm_memory_status",
     ]
     assert "nollm_memory_write_candidate" not in patch["tools"]["allow"]
@@ -268,12 +262,12 @@ def test_installer_dry_run_with_fake_openclaw_does_not_mutate_config_or_memory(t
 def test_evidence_report_redacts_secret_like_values() -> None:
     evidence = installer.redact(
         {
-            "integration_evidence": {"runtime_tool_names": ["nollm_memory_search"]},
+            "integration_evidence": {"runtime_tool_names": ["nollm_memory_status"]},
             "config": {"token": "secret", "password": "pw"},
         }
     )
 
-    assert evidence["integration_evidence"]["runtime_tool_names"] == ["nollm_memory_search"]
+    assert evidence["integration_evidence"]["runtime_tool_names"] == ["nollm_memory_status"]
     assert evidence["config"]["token"] == "<redacted>"
     assert evidence["config"]["password"] == "<redacted>"
 
@@ -314,7 +308,7 @@ elif args == ["config", "validate"]:
 elif args[:2] == ["plugins", "install"]:
     sys.exit(0)
 elif args[:3] == ["plugins", "inspect", "nollm-memory-companion"]:
-    print(json.dumps({{"plugin": {{"toolNames": ["nollm_field_overview", "nollm_open_well", "nollm_surface", "nollm_focus", "nollm_drift", "nollm_read", "nollm_recall_trace", "nollm_memory_search", "nollm_memory_get", "nollm_memory_status"]}}, "tools": []}}))
+    print(json.dumps({{"plugin": {{"toolNames": ["nollm_field_overview", "nollm_open_well", "nollm_surface", "nollm_focus", "nollm_drift", "nollm_read", "nollm_recall_trace", "nollm_memory_status"]}}, "tools": []}}))
 else:
     print("unexpected args", args, file=sys.stderr)
     sys.exit(2)

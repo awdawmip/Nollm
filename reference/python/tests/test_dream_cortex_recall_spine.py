@@ -12,6 +12,7 @@ import pytest
 from nollm.dream_cortex_recall import (
     FORBIDDEN_RECALL_SEMANTICS,
     cleanup_expired_wells,
+    build_dream_packet,
     ingest_dreamer_fixture,
     nollm_drift,
     nollm_field_overview,
@@ -80,14 +81,29 @@ def test_dreamer_contract_rejects_forbidden_fields_and_bad_source_links(tmp_path
     with pytest.raises(ValueError, match="exceeds source length"):
         publish_dreamer_delta(FIXTURE, tmp_path / "bad-lines", delta)
 
+    packet = build_dream_packet(FIXTURE, field_id="openclaw-dream-field")
+    delta = make_memory_only_delta(FIXTURE)
+    delta["shards"][0]["source_links"][0]["line_range"] = [1, 6]
+    packet["source_material"][0]["line_range"] = [3, 5]
+    with pytest.raises(ValueError, match="outside dream packet material"):
+        publish_dreamer_delta(FIXTURE, tmp_path / "bad-packet-span", delta, dream_packet=packet)
+    assert not (tmp_path / "bad-packet-span" / "current_field.json").exists()
 
-def test_dreamer_prompt_has_no_user_query_and_forbids_coordinates() -> None:
-    prompt = build_dreamer_prompt(source_snapshot(FIXTURE), None, field_id="openclaw-dream-field")
 
+def test_dream_packet_prompt_has_source_meaning_no_user_query_and_forbids_coordinates() -> None:
+    packet = build_dream_packet(FIXTURE, field_id="openclaw-dream-field")
+    prompt = build_dreamer_prompt(packet)
+
+    assert "Nollm must treat OpenClaw" in prompt
+    assert packet["source_snapshot_hash"] in prompt
+    assert packet["source_material"][0]["source_path"] == "MEMORY.md"
+    assert packet["source_material"][0]["source_sha256"]
+    assert packet["source_material"][0]["line_range"] == [1, 6]
     assert "what did I ask" not in prompt.lower()
     assert "current user question" not in prompt.lower()
+    assert "memory_search" not in prompt
+    assert "memory_get" not in prompt
     assert "q" in prompt and "HexAddress" in prompt
-    assert "source_snapshot_hash" in prompt
 
 
 def test_core_placement_is_deterministic_and_semantic_intent_changes_geometry(tmp_path: Path) -> None:
@@ -117,7 +133,7 @@ def test_revision_evolution_and_no_change_runner(tmp_path: Path) -> None:
     shutil.copytree(FIXTURE, workspace)
     out = tmp_path / "out"
     mock_one = tmp_path / "dreamer_one.json"
-    mock_one.write_text(json.dumps(make_delta(workspace), ensure_ascii=False), encoding="utf-8")
+    mock_one.write_text(json.dumps(make_memory_only_delta(workspace), ensure_ascii=False), encoding="utf-8")
     script = REPO_ROOT / "reference/python/scripts/run_openclaw_nollm_dreamer.py"
 
     first = run_subprocess([sys.executable, str(script), "refresh", "--workspace", str(workspace), "--out", str(out), "--mock-dreamer-output", str(mock_one)], cwd=REPO_ROOT, timeout_seconds=30)
@@ -133,7 +149,7 @@ def test_revision_evolution_and_no_change_runner(tmp_path: Path) -> None:
     before_source = source_snapshot(workspace)["source_files"]
     (workspace / "DREAMS.md").write_text((workspace / "DREAMS.md").read_text(encoding="utf-8") + "\n- 新梦句：field refresh keeps old wells stable.\n", encoding="utf-8")
     mock_two = tmp_path / "dreamer_two.json"
-    delta_two = make_delta(workspace)
+    delta_two = make_memory_only_delta(workspace)
     delta_two["shards"][0]["text"] = "OpenClaw memory files stay read-only while Nollm publishes a refreshed immutable dream field revision."
     mock_two.write_text(json.dumps(delta_two, ensure_ascii=False), encoding="utf-8")
     third = run_subprocess([sys.executable, str(script), "refresh", "--workspace", str(workspace), "--out", str(out), "--mock-dreamer-output", str(mock_two)], cwd=REPO_ROOT, timeout_seconds=30)
@@ -250,7 +266,33 @@ def test_ocp7_dreamer_agent_config_is_restricted() -> None:
     assert agent["tools"]["alsoAllow"] == []
     assert "memory_search" in agent["tools"]["deny"]
     assert "write" in agent["tools"]["deny"]
-    assert "q/r/layer/HexAddress" in agent["promptAppend"]
+
+
+def test_dreamer_configure_dry_run_and_apply_are_idempotent(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    config_path = tmp_path / "openclaw.json"
+    config_before = {"agents": {"list": [{"id": "main", "model": "ollama/qwen2.5:7b"}], "defaults": {"model": {"primary": "ollama/qwen2.5:7b"}}}}
+    config_path.write_text(json.dumps(config_before), encoding="utf-8")
+    fake = write_fake_openclaw_for_dreamer(tmp_path, config_path)
+    script = REPO_ROOT / "reference/python/scripts/run_openclaw_nollm_dreamer.py"
+
+    dry = run_subprocess([sys.executable, str(script), "configure", "--openclaw-bin", str(fake), "--workspace", str(workspace), "--config-path", str(config_path), "--dry-run"], cwd=REPO_ROOT, timeout_seconds=30)
+    assert dry.returncode == 0, dry.stderr
+    assert json.loads(config_path.read_text(encoding="utf-8")) == config_before
+
+    first = run_subprocess([sys.executable, str(script), "configure", "--openclaw-bin", str(fake), "--workspace", str(workspace), "--config-path", str(config_path), "--apply"], cwd=REPO_ROOT, timeout_seconds=30)
+    second = run_subprocess([sys.executable, str(script), "configure", "--openclaw-bin", str(fake), "--workspace", str(workspace), "--config-path", str(config_path), "--apply"], cwd=REPO_ROOT, timeout_seconds=30)
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    report = json.loads(second.stdout)
+    assert report["agent_visible"] is True
+    config_after = json.loads(config_path.read_text(encoding="utf-8"))
+    assert [agent["id"] for agent in config_after["agents"]["list"]].count("nollm-dreamer") == 1
+    dreamer = config_after["agents"]["list"][-1]
+    assert dreamer["contextInjection"] == "never"
+    assert dreamer["tools"]["alsoAllow"] == []
+    assert "promptAppend" not in dreamer
 
 
 def test_demo_script_outputs_json(tmp_path: Path) -> None:
@@ -292,6 +334,41 @@ def make_delta(workspace: Path) -> dict[str, object]:
     return delta
 
 
+def make_memory_only_delta(workspace: Path) -> dict[str, object]:
+    snapshot = source_snapshot(workspace)
+    memory = next(item for item in snapshot["source_files"] if item["source_path"] == "MEMORY.md")
+    return {
+        "schema": "nollm.dreamer_delta.v1",
+        "source_snapshot_hash": snapshot["source_snapshot_hash"],
+        "field_id": "openclaw-dream-field",
+        "shards": [
+            {
+                "semantic_key": "memory-source-plane",
+                "text": "OpenClaw memory files are the read-only source plane for Nollm dream-field distillation.",
+                "status": "source_backed",
+                "preferred_scale": "coarse",
+                "anchors": ["OpenClaw", "Nollm", "read-only"],
+                "source_links": [{"source_path": "MEMORY.md", "line_range": [3, 5], "source_sha256": memory["sha256"]}],
+                "continuity": {"prior_semantic_key": None},
+                "near_intents": [],
+                "bridge_intents": ["memory-cortex-entry"],
+            },
+            {
+                "semantic_key": "memory-cortex-entry",
+                "text": "Active Memory can act as Cortex while Nollm Core owns dream shards and geometry.",
+                "status": "derived",
+                "preferred_scale": "bridge",
+                "anchors": ["Active Memory", "Cortex", "geometry"],
+                "source_links": [{"source_path": "MEMORY.md", "line_range": [4, 5], "source_sha256": memory["sha256"]}],
+                "continuity": {"prior_semantic_key": None},
+                "near_intents": ["memory-source-plane"],
+                "bridge_intents": [],
+            },
+        ],
+        "cluster_intents": [{"label": "Memory source plane", "members": ["memory-source-plane", "memory-cortex-entry"]}],
+    }
+
+
 def read_field(out: Path, report: Mapping[str, object]) -> dict[str, object]:
     return json.loads((out / "fields" / str(report["field_id"]) / str(report["revision_id"]) / "dream_field.json").read_text(encoding="utf-8"))
 
@@ -323,3 +400,47 @@ def assert_no_lexical_scores(value: object) -> None:
     elif isinstance(value, list):
         for item in value:
             assert_no_lexical_scores(item)
+
+
+def write_fake_openclaw_for_dreamer(tmp_path: Path, config_path: Path) -> Path:
+    script = tmp_path / "openclaw_dreamer_fake.py"
+    script.write_text(
+        f"""
+from __future__ import annotations
+import json
+from pathlib import Path
+import sys
+
+CONFIG = Path({str(config_path)!r})
+args = sys.argv[1:]
+if args == ["config", "file"]:
+    print(CONFIG)
+elif args == ["config", "schema"]:
+    print(json.dumps({{"type": "object"}}))
+elif args == ["agents", "list", "--json"]:
+    config = json.loads(CONFIG.read_text(encoding="utf-8"))
+    agents = config.get("agents", {{}}).get("list", [])
+    print(json.dumps([dict(agent, isDefault=(agent.get("id") == "main")) for agent in agents]))
+elif args[:3] == ["config", "patch", "--file"]:
+    patch = json.loads(Path(args[3]).read_text(encoding="utf-8"))
+    dry = "--dry-run" in args
+    if not dry:
+        config = json.loads(CONFIG.read_text(encoding="utf-8"))
+        config.setdefault("agents", {{}})["list"] = patch["agents"]["list"]
+        CONFIG.write_text(json.dumps(config), encoding="utf-8")
+    print(json.dumps({{"ok": True, "dry_run": dry}}))
+elif args == ["config", "validate"]:
+    print("Config valid")
+else:
+    print("unexpected args", args, file=sys.stderr)
+    sys.exit(2)
+""",
+        encoding="utf-8",
+    )
+    cmd = tmp_path / ("openclaw_dreamer_fake.cmd" if sys.platform.startswith("win") else "openclaw_dreamer_fake")
+    if sys.platform.startswith("win"):
+        cmd.write_text(f"@echo off\n\"{sys.executable}\" \"{script}\" %*\n", encoding="utf-8")
+    else:
+        cmd.write_text(f"#!/bin/sh\nexec {sys.executable!r} {str(script)!r} \"$@\"\n", encoding="utf-8")
+        cmd.chmod(0o755)
+    return cmd

@@ -4,16 +4,13 @@ import {
   DriftInputSchema,
   FieldOverviewInputSchema,
   FocusInputSchema,
-  GetInputSchema,
   OpenWellInputSchema,
-  RecallInputSchema,
   ReadInputSchema,
   RecallTraceInputSchema,
-  SearchInputSchema,
   StatusInputSchema,
   SurfaceInputSchema
 } from "./schemas.js";
-import { clampSearchLimit, configurationRequiredStatus, normalizeConfig, runSidecarCommand } from "./sidecar.js";
+import { configurationRequiredStatus, runSidecarCommand } from "./sidecar.js";
 import type { PluginConfig } from "./types.js";
 
 const plugin = defineToolPlugin({
@@ -173,69 +170,10 @@ const plugin = defineToolPlugin({
       }
     }),
     tool({
-      name: "nollm_memory_recall",
-      label: "Nollm Memory Recall",
-      description:
-        "Return an LLM-usable memory digest with direct evidence, lateral context, cautions, source provenance, and gravity orientation.",
-      parameters: RecallInputSchema,
-      async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
-        context.signal?.throwIfAborted();
-        const configRequired = configurationRequiredStatus(config);
-        if (configRequired.ok === false) {
-          return configRequired;
-        }
-        const normalized = normalizeConfig(config);
-        return await runSidecarCommand(
-          config,
-          "recall",
-          {
-            query: input.query,
-            limit: clampSearchLimit(input.limit ?? normalized.maxSearchResults, normalized.maxSearchResults)
-          },
-          context.signal
-        );
-      }
-    }),
-    tool({
-      name: "nollm_memory_search",
-      label: "Nollm Memory Search",
-      description:
-        "Search Nollm companion memory sidecar results with source, provenance, geometry, gravity, and drift orientation.",
-      parameters: SearchInputSchema,
-      async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
-        context.signal?.throwIfAborted();
-        const configRequired = configurationRequiredStatus(config);
-        if (configRequired.ok === false) {
-          return configRequired;
-        }
-        const normalized = normalizeConfig(config);
-        return await runSidecarCommand(
-          config,
-          "search",
-          {
-            query: input.query,
-            limit: clampSearchLimit(input.limit ?? normalized.maxSearchResults, normalized.maxSearchResults)
-          },
-          context.signal
-        );
-      }
-    }),
-    tool({
-      name: "nollm_memory_get",
-      label: "Nollm Memory Get",
-      description:
-        "Retrieve exact source-backed Nollm sidecar content by candidate_id, memory_id, or shard_id before factual use.",
-      parameters: GetInputSchema,
-      async execute(input: { id: string }, config: PluginConfig, context) {
-        context.signal?.throwIfAborted();
-        return await runSidecarCommand(config, "get", { id: input.id }, context.signal);
-      }
-    }),
-    tool({
       name: "nollm_memory_status",
       label: "Nollm Memory Status",
       description:
-        "Return Nollm sidecar counts, source roles, accepted ID forms, and forbidden-semantics flags without host secrets.",
+        "Return Nollm field availability, current revision, stale state, and Dreamer status without exposing source text.",
       parameters: StatusInputSchema,
       async execute(_input: object, config: PluginConfig, context) {
         context.signal?.throwIfAborted();

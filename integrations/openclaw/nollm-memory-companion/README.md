@@ -46,39 +46,15 @@ No secrets are accepted or needed.
 
 ## Tools
 
-### `nollm_memory_search`
-
-Searches the Nollm sidecar and returns candidate relevance plus source,
-provenance, geometry, gravity, drift, and LLM-use hints. `drift_class` is
-preserved as orientation only and never converted into trust, status, ranking
-permission, or a hard rejection rule.
-
-### `nollm_memory_get`
-
-Gets exact source-backed content by accepted `candidate_id`, `memory_id`, or
-`shard_id`. Use this before making factual user-facing claims from recalled
-memory.
-
-### `nollm_memory_write_candidate`
-
-Creates a pending-review record only. It does not write durable OpenClaw memory.
-
-Example output shape:
-
-```json
-{
-  "ok": true,
-  "pending_review": true,
-  "durable_write": false,
-  "target_files_mutated": false
-}
-```
+The normal plugin surface exposes the seven geometry navigation tools:
+`nollm_field_overview`, `nollm_open_well`, `nollm_surface`, `nollm_focus`,
+`nollm_drift`, `nollm_read`, and `nollm_recall_trace`.
 
 ### `nollm_memory_status`
 
-Returns sidecar counts, source roles, accepted ID forms, and forbidden-semantics
-flags. It does not expose environment variables, filesystem listings, or
-secrets.
+Returns field availability, current revision, stale state, source snapshot hash,
+and last Dreamer status. It does not expose source text, environment variables,
+filesystem listings, or secrets.
 
 ## Local Development
 
@@ -116,8 +92,7 @@ python scripts/install_openclaw_nollm_companion.py --apply
 
 The installer builds and validates this package, links it into the local
 OpenClaw installation, patches only `plugins.entries.nollm-memory-companion`,
-keeps `nollm_memory_write_candidate` disabled unless
-`--enable-write-candidate` is passed, validates config, restarts the Gateway
+keeps source-memory write tools disabled, validates config, restarts the Gateway
 unless `--no-restart` is used, and writes a machine-readable report to:
 
 ```text
@@ -137,10 +112,9 @@ companion tools so the LLM can laterally inspect Nollm geometry/gravity
 instrumentation while ordinary file memory lifecycle remains owned by
 `memory-core`.
 
-An optional Active Memory experiment can combine `memory_search`, `memory_get`,
-`nollm_memory_search`, and `nollm_memory_get` only after explicit operator
-opt-in. Nollm gravity reports annotate drift and do not replace source
-verification.
+The active Nollm path should use only the geometry navigation tools plus
+`nollm_memory_status`. Legacy Python search/get helpers are compatibility code
+only and are not registered by this plugin.
 
 ## Verification Matrix
 
