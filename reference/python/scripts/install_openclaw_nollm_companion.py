@@ -14,9 +14,21 @@ import time
 
 
 PLUGIN_ID = "nollm-memory-companion"
-READ_TOOLS = ["nollm_memory_recall", "nollm_memory_search", "nollm_memory_get", "nollm_memory_status"]
-WRITE_TOOLS = ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
-WRITE_TOOL = WRITE_TOOLS[0]
+READ_TOOLS = [
+    "nollm_field_overview",
+    "nollm_open_well",
+    "nollm_surface",
+    "nollm_focus",
+    "nollm_drift",
+    "nollm_read",
+    "nollm_recall_trace",
+    "nollm_memory_recall",
+    "nollm_memory_search",
+    "nollm_memory_get",
+    "nollm_memory_status",
+]
+WRITE_TOOLS: list[str] = []
+WRITE_TOOL = ""
 FORBIDDEN_SEMANTICS = {
     "memory_slot_replacement": False,
     "kind_memory": False,
@@ -61,7 +73,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--plugin-root", default=None)
     parser.add_argument("--repo-root", default=None)
     parser.add_argument("--no-restart", action="store_true")
-    parser.add_argument("--enable-write-candidate", action="store_true")
+    parser.add_argument("--enable-write-candidate", action="store_true", help="Deprecated no-op; source-memory write tools are disabled.")
     parser.add_argument("--probe-query", default="Nollm companion integration status")
     parser.add_argument("--report-path", default=None)
     return parser.parse_args(argv)
@@ -144,7 +156,7 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
     if args.dry_run:
         validate_patch_dry_run(openclaw_bin, repo_root, patch, report)
         report["skill_discovery_or_manifest_check"] = check_skill_manifest(plugin_root)
-        report["write_candidate_visible"] = bool(args.enable_write_candidate)
+        report["write_candidate_visible"] = False
         report["read_tools_visible"] = READ_TOOLS
         finish_source_hash_evidence(workspace_root, report)
         report["ok"] = len(report["errors"]) == 0
@@ -215,14 +227,10 @@ def build_config_patch(
         [str(item) for item in existing_tools_also_allow] if isinstance(existing_tools_also_allow, list) else [],
         READ_TOOLS,
     )
-    if enable_write_candidate:
-        also_allowed = union_preserve(also_allowed, WRITE_TOOLS)
     patch.setdefault("tools", {})["alsoAllow"] = also_allowed
     existing_tools_allow = get_nested(config_before, ["tools", "allow"])
     if isinstance(existing_tools_allow, list):
         allowed = union_preserve([str(item) for item in existing_tools_allow], READ_TOOLS)
-        if enable_write_candidate:
-            allowed = union_preserve(allowed, WRITE_TOOLS)
         patch.setdefault("tools", {})["allow"] = allowed
     return patch
 
@@ -331,11 +339,7 @@ def inspect_runtime(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> Non
     report["runtime_inspection"]["details"] = redact(details)
     tools = details.get("plugin", {}).get("toolNames", [])
     report["read_tools_visible"] = [tool for tool in READ_TOOLS if tool in tools]
-    report["write_candidate_visible"] = any(
-        tool in item.get("names", []) and item.get("optional") is False
-        for item in details.get("tools", [])
-        for tool in WRITE_TOOLS
-    )
+    report["write_candidate_visible"] = False
     report["integration_evidence"]["runtime_tool_names"] = list(tools)
     report["integration_evidence"]["required_read_tools_visible"] = all(tool in tools for tool in READ_TOOLS)
     report["integration_evidence"]["write_candidate_default_enabled"] = bool(report["write_candidate_visible"])
@@ -602,10 +606,7 @@ def summarize_patch(patch: dict[str, Any]) -> dict[str, Any]:
         "config_fields": sorted(plugin_entry["config"]),
         "tools_allow_updated": "tools" in patch and "allow" in patch["tools"],
         "tools_also_allow_updated": "tools" in patch and "alsoAllow" in patch["tools"],
-        "write_candidate_requested": any(
-            tool in patch.get("tools", {}).get("allow", []) or tool in patch.get("tools", {}).get("alsoAllow", [])
-            for tool in WRITE_TOOLS
-        ),
+        "write_candidate_requested": False,
     }
 
 

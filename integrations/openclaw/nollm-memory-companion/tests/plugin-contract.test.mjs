@@ -15,17 +15,16 @@ import {
 
 const packageRoot = path.resolve(import.meta.dirname, "..");
 const toolNames = [
-  "nollm_orient",
+  "nollm_field_overview",
+  "nollm_open_well",
   "nollm_surface",
   "nollm_focus",
   "nollm_drift",
   "nollm_read",
-  "nollm_compose_digest",
+  "nollm_recall_trace",
   "nollm_memory_recall",
   "nollm_memory_search",
   "nollm_memory_get",
-  "nollm_memory_write_candidate",
-  "nollm_memory_commit_candidate",
   "nollm_memory_status"
 ];
 
@@ -35,8 +34,6 @@ test("default export exposes real defineToolPlugin metadata", () => {
   assert.ok(metadata);
   assert.equal(metadata.id, "nollm-memory-companion");
   assert.deepEqual(metadata.tools.map((tool) => tool.name), toolNames);
-  assert.equal(metadata.tools.find((tool) => tool.name === "nollm_memory_write_candidate")?.optional, true);
-  assert.equal(metadata.tools.find((tool) => tool.name === "nollm_memory_commit_candidate")?.optional, true);
   assert.equal(metadata.configSchema.type, "object");
   assert.equal(metadata.configSchema.additionalProperties, false);
   assert.equal(metadata.configSchema.required, undefined);
@@ -47,8 +44,7 @@ test("generated manifest matches native OpenClaw metadata shape", () => {
 
   assert.equal(manifest.id, "nollm-memory-companion");
   assert.deepEqual(manifest.contracts.tools, toolNames);
-  assert.equal(manifest.toolMetadata.nollm_memory_write_candidate.optional, true);
-  assert.equal(manifest.toolMetadata.nollm_memory_commit_candidate.optional, true);
+  assert.equal(Object.hasOwn(manifest, "toolMetadata"), false);
   assert.equal(manifest.configSchema.type, "object");
   assert.equal(manifest.configSchema.required, undefined);
   assert.ok(manifest.activation);
@@ -82,45 +78,53 @@ test("builds argv and clamps search limit", () => {
   assert.equal(clampSearchLimit(99, 20), 20);
 });
 
-test("builds recall and commit argv", () => {
+test("builds legacy recall argv without write argv", () => {
   const fixture = makeFixture();
   const config = normalizeConfig(fixture.config);
   const recall = buildSidecarArgv(config, "recall", { query: "Atlas owner", limit: 3 });
-  const commit = buildSidecarArgv(config, "commit-candidate", {
-    candidate_id: "candidate_123",
-    explicit_confirmation: true,
-    target: "durable",
-    reason: "user confirmed",
-    source: "live demo"
-  });
 
   assert.equal(recall.includes("recall"), true);
   assert.equal(recall.includes("--query"), true);
-  assert.equal(commit.includes("commit-candidate"), true);
-  assert.equal(commit.includes("--explicit-confirmation"), true);
-  assert.equal(commit.includes("candidate_123"), true);
 });
 
 test("builds dream cortex navigation argv", () => {
   const fixture = makeFixture();
   const config = normalizeConfig(fixture.config);
-  const orient = buildSidecarArgv(config, "orient", { query: "OpenClaw Cortex", limit: 2 });
-  const surface = buildSidecarArgv(config, "surface", { surface_id: "surface_openclaw_nollm" });
-  const focus = buildSidecarArgv(config, "focus", {
-    query: "Active Memory",
-    surface_id: "surface_openclaw_nollm",
-    sufficient_scale: 2
+  const overview = buildSidecarArgv(config, "field-overview", { field_id: "field_a", limit: 2 });
+  const well = buildSidecarArgv(config, "open-well", {
+    entry_shard_id: "surface_openclaw_nollm",
+    entry_task: "task",
+    anchor_vector: "{\"openclaw\":1}"
   });
-  const drift = buildSidecarArgv(config, "drift", { shard_id: "bridge_active_memory_cortex", query: "Cortex" });
+  const surface = buildSidecarArgv(config, "surface", {
+    well_id: "well_1",
+    center_shard_id: "surface_openclaw_nollm",
+    radius: 2,
+    target_scale: "bridge"
+  });
+  const focus = buildSidecarArgv(config, "focus", {
+    well_id: "well_1",
+    target_shard_id: "bridge_active_memory_cortex",
+    target_scale: "fine"
+  });
+  const drift = buildSidecarArgv(config, "drift", {
+    well_id: "well_1",
+    current_shard_id: "bridge_active_memory_cortex",
+    chosen_shard_id: "lateral_search_adapter_boundary"
+  });
   const read = buildSidecarArgv(config, "read", { shard_id: "bridge_active_memory_cortex" });
-  const digest = buildSidecarArgv(config, "compose-digest", { query: "Nollm boundary" });
+  const trace = buildSidecarArgv(config, "recall-trace", {
+    well_id: "well_1",
+    path: "[\"surface_openclaw_nollm\"]"
+  });
 
-  assert.equal(orient.includes("orient"), true);
-  assert.equal(surface.includes("--surface-id"), true);
-  assert.equal(focus.includes("--sufficient-scale"), true);
-  assert.equal(drift.includes("--shard-id"), true);
+  assert.equal(overview.includes("field-overview"), true);
+  assert.equal(well.includes("--anchor-vector"), true);
+  assert.equal(surface.includes("--center-shard-id"), true);
+  assert.equal(focus.includes("--target-shard-id"), true);
+  assert.equal(drift.includes("--current-shard-id"), true);
   assert.equal(read.includes("read"), true);
-  assert.equal(digest.includes("compose-digest"), true);
+  assert.equal(trace.includes("recall-trace"), true);
 });
 
 test("unconfigured tools fail closed without spawning sidecar", async () => {

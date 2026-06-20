@@ -22,21 +22,21 @@ OCP4_ACTIVE_MEMORY_PROMPT_APPEND = (
 DIRECT_TOOL_DENY = ["read", "exec", "process", "edit", "write", "apply_patch", "web_search", "web_fetch"]
 OCP6R_AGENT_ID = "ocp6r-nollm-cortex"
 OCP6R_CORTEX_TOOLS = [
-    "nollm_orient",
+    "nollm_field_overview",
+    "nollm_open_well",
     "nollm_surface",
     "nollm_focus",
     "nollm_drift",
     "nollm_read",
-    "nollm_compose_digest",
+    "nollm_recall_trace",
 ]
 OCP6R_CORTEX_PROMPT_APPEND = (
     "Act as Nollm Cortex, not as a raw memory searcher. "
-    "For memory-relevant direct chat: 1. Use nollm_orient first and inspect coarse surface. "
-    "2. Use nollm_surface before nollm_focus. "
-    "3. Stop at sufficient scale; do not descend to raw source unless the user asks for source inspection. "
-    "4. Use nollm_drift only for useful lateral context and label it lateral. "
-    "5. Return to the entry task and call nollm_compose_digest. "
-    "6. Return NONE when the dream field lacks useful material. "
+    "Use nollm_field_overview -> choose entry shard -> nollm_open_well with your explicit non-negative anchor_vector -> "
+    "nollm_surface -> choose focus -> nollm_focus -> optional nollm_drift -> explicit return toward the entry task -> "
+    "nollm_read for exact shard reads -> nollm_recall_trace for logging. "
+    "You, the Cortex, write the compact Recall Digest or NONE; Core does not compose prose. "
+    "No tool output alone is source truth. Drift labels are orientation only. "
     "Do not use memory_search or memory_get as the Nollm internal model."
 )
 
@@ -69,8 +69,6 @@ def build_ocp4_active_memory_patch(
                 + [
                     "nollm_memory_search",
                     "nollm_memory_status",
-                    "nollm_memory_write_candidate",
-                    "nollm_memory_commit_candidate",
                 ],
                 "deny": DIRECT_TOOL_DENY,
             },

@@ -272,44 +272,17 @@ def write_candidate(
     source: str,
     why: str = "pending explicit review before durable promotion",
 ) -> dict[str, object]:
-    if not text.strip():
-        raise ValueError("text must be non-empty")
-    if not source.strip():
-        raise ValueError("source must be non-empty")
-    build_sidecar_store(repo_root, workspace, out_dir)
-    out = Path(out_dir).resolve()
-    pending_path = out / "pending_writes.jsonl"
-    existing = _read_jsonl(pending_path)
-    normalized = " ".join(text.strip().split())
-    pending_id = f"pending_{_sha256_text(source + ':' + normalized)[:16]}"
-    candidate_id = f"candidate_{_sha256_text('candidate:' + source + ':' + normalized)[:16]}"
-    record = {
-        "pending_id": pending_id,
-        "candidate_id": candidate_id,
-        "text": normalized,
-        "source": source,
-        "status": "pending_review",
+    return {
+        "schema": WRITE_SCHEMA,
+        "ok": False,
+        "status": STATUS,
+        "error": "source_memory_write_disabled",
+        "message": "Nollm does not write or stage writes for OpenClaw source memory files in OCP6S.",
         "durable_write": False,
         "target_files_mutated": False,
         "durable_memory_mutation": False,
-        "why_pending": why,
-        "required_review": "explicit human approval or future configured promotion policy",
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
-    records = [item for item in existing if item.get("pending_id") != pending_id]
-    records.append(record)
-    records.sort(key=lambda item: str(item["pending_id"]))
-    _write_jsonl(pending_path, records)
-    report = {
-        "schema": WRITE_SCHEMA,
-        "ok": True,
-        "status": STATUS,
-        "candidate": record,
-        "pending_count": len(records),
-        "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
-    }
-    _write_json(out / "last_write_candidate_report.json", report)
-    return report
 
 
 def commit_candidate(
@@ -323,86 +296,18 @@ def commit_candidate(
     reason: str,
     source: str,
 ) -> dict[str, object]:
-    if not candidate_id.strip():
-        raise ValueError("candidate_id must be non-empty")
-    if explicit_confirmation is not True:
-        return _commit_rejection(candidate_id, "explicit_confirmation_required")
-    if target not in {"durable", "daily"}:
-        return _commit_rejection(candidate_id, "unsupported_target")
-    if not reason.strip() or not source.strip():
-        return _commit_rejection(candidate_id, "reason_and_source_required")
-    build_sidecar_store(repo_root, workspace, out_dir)
-    repo = Path(repo_root).resolve()
-    root = Path(workspace).resolve()
-    out = Path(out_dir).resolve()
-    pending_path = out / "pending_writes.jsonl"
-    pending = _read_jsonl(pending_path)
-    candidate = next(
-        (
-            item
-            for item in pending
-            if item.get("candidate_id") == candidate_id or item.get("pending_id") == candidate_id
-        ),
-        None,
-    )
-    if candidate is None:
-        return _commit_rejection(candidate_id, "candidate_not_found")
-
-    target_path = root / ("MEMORY.md" if target == "durable" else f"memory/{_today_utc()}.md")
-    _require_path_under(root, target_path)
-    target_path.parent.mkdir(parents=True, exist_ok=True)
-    before_bytes = target_path.read_bytes() if target_path.exists() else b""
-    old_hash = _sha256_bytes(before_bytes)
-    original_text = before_bytes.decode("utf-8", errors="replace") if before_bytes else ""
-    entry_text = _managed_entry_text(str(candidate["text"]), source=source, reason=reason)
-    if original_text and not original_text.endswith("\n"):
-        original_text += "\n"
-    if "## Nollm Managed Memory" not in original_text:
-        original_text += "\n## Nollm Managed Memory\n\n"
-        line_start = len(original_text.splitlines()) + 1
-    else:
-        line_start = len(original_text.splitlines()) + 1
-    new_text = original_text + entry_text
-    target_path.write_text(new_text, encoding="utf-8", newline="\n")
-    new_hash = _sha256_bytes(target_path.read_bytes())
-    line_end = line_start + len(entry_text.splitlines()) - 1
-
-    ledger_path = out / "commit_ledger.jsonl"
-    ledger = _read_jsonl(ledger_path)
-    record = {
+    return {
         "schema": COMMIT_SCHEMA,
-        "candidate_id": candidate.get("candidate_id"),
-        "pending_id": candidate.get("pending_id"),
-        "target": target,
-        "path": _relative_posix(root, target_path),
-        "line_range": [line_start, line_end],
-        "content_sha256": _sha256_text(entry_text),
-        "old_sha256": old_hash,
-        "new_sha256": new_hash,
-        "reason": reason,
-        "source": source,
-        "memory_core_reindex_required": True,
-    }
-    ledger.append(record)
-    _write_jsonl(ledger_path, ledger)
-    remaining = [item for item in pending if item is not candidate]
-    _write_jsonl(pending_path, remaining)
-    report = {
-        "schema": COMMIT_SCHEMA,
-        "ok": True,
+        "ok": False,
         "status": STATUS,
-        "commit": record,
-        "file_path": record["path"],
-        "line_range": record["line_range"],
-        "content_sha256": record["content_sha256"],
-        "old_sha256": old_hash,
-        "new_sha256": new_hash,
-        "memory_core_reindex_required": True,
-        "memory_core_reindex_command": "openclaw memory index --agent <agent-id> --force --verbose",
+        "candidate_id": candidate_id,
+        "error": "source_memory_write_disabled",
+        "message": "Nollm does not commit to OpenClaw source memory files in OCP6S.",
+        "durable_write": False,
+        "target_files_mutated": False,
+        "memory_core_reindex_required": False,
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
-    _write_json(out / "last_commit_candidate_report.json", report)
-    return report
 
 
 def recall_sidecar(

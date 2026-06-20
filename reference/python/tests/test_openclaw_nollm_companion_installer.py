@@ -39,6 +39,13 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
     assert "deny" not in patch["plugins"]
     assert patch["tools"]["allow"] == [
         "memory_search",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_drift",
+        "nollm_read",
+        "nollm_recall_trace",
         "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
@@ -46,6 +53,13 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
     ]
     assert patch["tools"]["alsoAllow"] == [
         "web_search",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_drift",
+        "nollm_read",
+        "nollm_recall_trace",
         "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
@@ -57,7 +71,7 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
     assert "nollm_memory_commit_candidate" not in patch["tools"]["alsoAllow"]
 
 
-def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path) -> None:
+def test_build_config_patch_write_candidate_flag_is_noop(tmp_path: Path) -> None:
     patch = installer.build_config_patch(
         config_before={"tools": {"allow": []}},
         repo_root=ROOT,
@@ -65,8 +79,10 @@ def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path
         enable_write_candidate=True,
     )
 
-    assert patch["tools"]["allow"][-2:] == ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
-    assert patch["tools"]["alsoAllow"][-2:] == ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
+    assert "nollm_memory_write_candidate" not in patch["tools"]["allow"]
+    assert "nollm_memory_commit_candidate" not in patch["tools"]["allow"]
+    assert "nollm_memory_write_candidate" not in patch["tools"]["alsoAllow"]
+    assert "nollm_memory_commit_candidate" not in patch["tools"]["alsoAllow"]
 
 
 def test_redact_removes_secret_like_values() -> None:
@@ -298,7 +314,7 @@ elif args == ["config", "validate"]:
 elif args[:2] == ["plugins", "install"]:
     sys.exit(0)
 elif args[:3] == ["plugins", "inspect", "nollm-memory-companion"]:
-    print(json.dumps({{"plugin": {{"toolNames": ["nollm_memory_search", "nollm_memory_get", "nollm_memory_status", "nollm_memory_write_candidate"]}}, "tools": [{{"names": ["nollm_memory_write_candidate"], "optional": True}}]}}))
+    print(json.dumps({{"plugin": {{"toolNames": ["nollm_field_overview", "nollm_open_well", "nollm_surface", "nollm_focus", "nollm_drift", "nollm_read", "nollm_recall_trace", "nollm_memory_search", "nollm_memory_get", "nollm_memory_status"]}}, "tools": []}}))
 else:
     print("unexpected args", args, file=sys.stderr)
     sys.exit(2)

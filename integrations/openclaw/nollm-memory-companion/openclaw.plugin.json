@@ -49,26 +49,17 @@
   },
   "contracts": {
     "tools": [
-      "nollm_orient",
+      "nollm_field_overview",
+      "nollm_open_well",
       "nollm_surface",
       "nollm_focus",
       "nollm_drift",
       "nollm_read",
-      "nollm_compose_digest",
+      "nollm_recall_trace",
       "nollm_memory_recall",
       "nollm_memory_search",
       "nollm_memory_get",
-      "nollm_memory_write_candidate",
-      "nollm_memory_commit_candidate",
       "nollm_memory_status"
     ]
-  },
-  "toolMetadata": {
-    "nollm_memory_write_candidate": {
-      "optional": true
-    },
-    "nollm_memory_commit_candidate": {
-      "optional": true
-    }
   }
 }

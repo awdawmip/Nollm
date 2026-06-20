@@ -10,20 +10,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from nollm.openclaw_memory_adapter import (  # noqa: E402
     build_sidecar_store,
-    commit_candidate,
     get_sidecar_item,
     recall_sidecar,
     search_sidecar,
     sidecar_status,
-    write_candidate,
 )
 from nollm.dream_cortex_recall import (  # noqa: E402
     ingest_dreamer_fixture,
     nollm_compose_digest,
     nollm_drift,
+    nollm_field_overview,
     nollm_focus,
-    nollm_orient,
+    nollm_open_well,
     nollm_read,
+    nollm_recall_trace,
     nollm_surface,
     run_demo_report,
     source_snapshot,
@@ -40,17 +40,16 @@ def main(argv: list[str] | None = None) -> int:
         "search",
         "recall",
         "get",
-        "write-candidate",
-        "commit-candidate",
         "status",
         "snapshot",
         "dream-ingest",
-        "orient",
+        "field-overview",
+        "open-well",
         "surface",
         "focus",
         "drift",
         "read",
-        "compose-digest",
+        "recall-trace",
         "dream-demo",
     ):
         sub = subparsers.add_parser(name)
@@ -61,28 +60,34 @@ def main(argv: list[str] | None = None) -> int:
         if name in {"search", "recall"}:
             sub.add_argument("--query", required=True)
             sub.add_argument("--limit", type=int, default=5)
-        if name in {"orient", "focus", "drift", "compose-digest"}:
-            sub.add_argument("--query", required=True)
-        if name == "orient":
-            sub.add_argument("--limit", type=int, default=3)
-        if name in {"surface", "focus"}:
-            sub.add_argument("--surface-id", required=True)
-        if name in {"drift", "read"}:
-            sub.add_argument("--shard-id", required=True)
+        if name == "field-overview":
+            sub.add_argument("--field-id", default=None)
+            sub.add_argument("--limit", type=int, default=20)
+        if name == "open-well":
+            sub.add_argument("--entry-shard-id", required=True)
+            sub.add_argument("--entry-task", required=True)
+            sub.add_argument("--anchor-vector", required=True, help="JSON object of non-negative Cortex-proposed anchor weights.")
+        if name == "surface":
+            sub.add_argument("--well-id", required=True)
+            sub.add_argument("--center-shard-id", required=True)
+            sub.add_argument("--radius", type=int, default=1)
+            sub.add_argument("--target-scale", default=None)
         if name == "focus":
-            sub.add_argument("--sufficient-scale", type=int, default=2)
+            sub.add_argument("--well-id", required=True)
+            sub.add_argument("--target-shard-id", required=True)
+            sub.add_argument("--target-scale", default=None)
+        if name == "drift":
+            sub.add_argument("--well-id", required=True)
+            sub.add_argument("--current-shard-id", required=True)
+            sub.add_argument("--chosen-shard-id", default=None)
+            sub.add_argument("--radius", type=int, default=1)
+        if name == "read":
+            sub.add_argument("--shard-id", required=True)
+        if name == "recall-trace":
+            sub.add_argument("--well-id", required=True)
+            sub.add_argument("--path", required=True, help="JSON array of Cortex-selected shard ids.")
         if name == "get":
             sub.add_argument("--id", required=True)
-        if name == "write-candidate":
-            sub.add_argument("--text", required=True)
-            sub.add_argument("--source", required=True)
-            sub.add_argument("--why", default="pending explicit review before durable promotion")
-        if name == "commit-candidate":
-            sub.add_argument("--candidate-id", required=True)
-            sub.add_argument("--explicit-confirmation", action="store_true")
-            sub.add_argument("--target", choices=["durable", "daily"], required=True)
-            sub.add_argument("--reason", required=True)
-            sub.add_argument("--source", required=True)
 
     args = parser.parse_args(argv)
     repo_root = Path(args.repo_root).resolve()
@@ -97,43 +102,52 @@ def main(argv: list[str] | None = None) -> int:
         report = recall_sidecar(repo_root, workspace, out_dir, query=args.query, limit=args.limit)
     elif args.command == "get":
         report = get_sidecar_item(repo_root, workspace, out_dir, args.id)
-    elif args.command == "write-candidate":
-        report = write_candidate(repo_root, workspace, out_dir, text=args.text, source=args.source, why=args.why)
-    elif args.command == "commit-candidate":
-        report = commit_candidate(
-            repo_root,
-            workspace,
-            out_dir,
-            candidate_id=args.candidate_id,
-            explicit_confirmation=args.explicit_confirmation,
-            target=args.target,
-            reason=args.reason,
-            source=args.source,
-        )
     elif args.command == "status":
         report = sidecar_status(repo_root, workspace, out_dir)
     elif args.command == "snapshot":
         report = source_snapshot(workspace)
     elif args.command == "dream-ingest":
         report = ingest_dreamer_fixture(workspace, _resolve_repo_path(repo_root, args.dreamer_output), out_dir)
-    elif args.command == "orient":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_orient(out_dir, query=args.query, limit=args.limit)
+    elif args.command == "field-overview":
+        report = nollm_field_overview(out_dir, field_id=args.field_id, limit=args.limit)
+    elif args.command == "open-well":
+        report = _run_geometry_command(
+            nollm_open_well,
+            out_dir,
+            entry_shard_id=args.entry_shard_id,
+            entry_task=args.entry_task,
+            anchor_vector=json.loads(args.anchor_vector),
+        )
     elif args.command == "surface":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_surface(out_dir, surface_id=args.surface_id)
+        report = _run_geometry_command(
+            nollm_surface,
+            out_dir,
+            well_id=args.well_id,
+            center_shard_id=args.center_shard_id,
+            radius=args.radius,
+            target_scale=args.target_scale,
+        )
     elif args.command == "focus":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_focus(out_dir, query=args.query, surface_id=args.surface_id, sufficient_scale=args.sufficient_scale)
+        report = _run_geometry_command(
+            nollm_focus,
+            out_dir,
+            well_id=args.well_id,
+            target_shard_id=args.target_shard_id,
+            target_scale=args.target_scale,
+        )
     elif args.command == "drift":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_drift(out_dir, shard_id=args.shard_id, query=args.query)
+        report = _run_geometry_command(
+            nollm_drift,
+            out_dir,
+            well_id=args.well_id,
+            current_shard_id=args.current_shard_id,
+            chosen_shard_id=args.chosen_shard_id,
+            radius=args.radius,
+        )
     elif args.command == "read":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_read(out_dir, shard_id=args.shard_id)
-    elif args.command == "compose-digest":
-        _ensure_dream_field(workspace, out_dir, repo_root)
-        report = nollm_compose_digest(out_dir, query=args.query)
+        report = _run_geometry_command(nollm_read, out_dir, shard_id=args.shard_id)
+    elif args.command == "recall-trace":
+        report = _run_geometry_command(nollm_recall_trace, out_dir, well_id=args.well_id, path=json.loads(args.path))
     elif args.command == "dream-demo":
         report = run_demo_report(workspace, _resolve_repo_path(repo_root, args.dreamer_output), out_dir)
     else:
@@ -153,12 +167,21 @@ def _resolve_repo_path(repo_root: Path, value: str) -> Path:
     return (repo_root / path).resolve()
 
 
-def _ensure_dream_field(workspace: Path, out_dir: Path, repo_root: Path) -> None:
-    field = out_dir / "dream_field.json"
-    if field.exists():
-        return
-    fixture = repo_root / "examples/openclaw_dream_cortex_fixture/dreamer_output.json"
-    ingest_dreamer_fixture(workspace, fixture, out_dir)
+def _run_geometry_command(fn, *args, **kwargs) -> dict[str, object]:
+    try:
+        return fn(*args, **kwargs)
+    except FileNotFoundError as exc:
+        return {
+            "ok": False,
+            "error": "field_unavailable",
+            "message": str(exc),
+        }
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "error": "invalid_geometry_request",
+            "message": str(exc),
+        }
 
 
 if __name__ == "__main__":

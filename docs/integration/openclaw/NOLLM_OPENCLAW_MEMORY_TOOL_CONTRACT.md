@@ -1,246 +1,63 @@
-# Nollm OpenClaw Memory Tool Contract
+# Nollm OpenClaw Tool Contract
 
-## OCP6R Primary Tool Surface
+Status: OCP6S.
 
-OCP6R repositions Nollm as a Dream Cortex recall spine, not as an embedding-free source-file search adapter. OpenClaw source files are read-only snapshots. The primary Cortex tools are:
+Nollm is a geometry-executed dream-field companion. It does not own OpenClaw's memory slot and does not write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.
 
-- `nollm_orient`
-- `nollm_surface`
-- `nollm_focus`
-- `nollm_drift`
-- `nollm_read`
-- `nollm_compose_digest`
+## Primary Geometry Tools
 
-These tools navigate a deterministic Nollm dream field and compose a Nollm Recall Digest. They do not call embeddings, vector databases, SQLite recall internals, external rerankers, or live LLM providers in Core. They do not write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.
+### `nollm_field_overview`
 
-The `nollm_memory_*` tools are retained as a legacy experimental surface and explicit candidate workflow only. They are not the Nollm internal model for OCP6R.
+Input: optional `field_id`, optional `limit`.
 
-Date: 2026-06-19
+Output: bounded coarse field map, chart id, geometry profile, scale availability, and cell descriptors. It has no query score and does not choose a semantic entry.
 
-These contracts describe the OCP4 companion tool surface. OpenClaw memory-core
-remains the memory-slot owner; Nollm remains a companion plugin.
-
-## `nollm_memory_recall`
+### `nollm_open_well`
 
 Input:
 
 ```json
 {
-  "query": "string",
-  "limit": 6
+  "entry_shard_id": "surface_openclaw_nollm",
+  "entry_task": "current user task",
+  "anchor_vector": {"openclaw": 1.0, "nollm": 1.0}
 }
 ```
 
-Output:
+Output: an ephemeral Gravity Well derived from the Cortex-selected entry shard and Cortex-proposed non-negative anchor vector. Core does not extract anchors from query text.
 
-```json
-{
-  "query": "Atlas owner",
-  "candidate_source": "nollm_local",
-  "direct_evidence": [
-    {
-      "candidate_id": "cand_...",
-      "source_path": "MEMORY.md",
-      "line_range": [3, 5],
-      "text_excerpt": "source excerpt",
-      "retrieval_score": 0.85,
-      "gravity_report": {
-        "R_column_ring": 0,
-        "S_scale_delta": 0,
-        "A_anchor_similarity": 0.44,
-        "drift_class": "core",
-        "anchor_overlap": 0.75,
-        "layout_method": "semantic_local_v1"
-      }
-    }
-  ],
-  "lateral_context": [],
-  "cautions": [],
-  "return_vector": null,
-  "use_instruction": "Use direct evidence for factual claims; inspect cited sources before relying on lateral context."
-}
-```
+### `nollm_surface`
 
-Rules:
+Input: `well_id`, `center_shard_id`, `radius`, optional `target_scale`.
 
-- Retrieval relevance determines inclusion before drift interpretation.
-- Direct evidence and lateral context are separated.
-- DREAMS/speculative chunks are labelled as lateral/speculative context.
-- `semantic_break` remains a caution, not a hard removal.
-- Every usable item includes source path and line range.
+Output: true same-layer honeycomb neighbors and cross-scale coverage candidates. Relationship methods include `same_layer_neighbor` and `coverage_template`.
 
-## `nollm_memory_search`
+### `nollm_focus`
 
-Input:
+Input: `well_id`, explicit `target_shard_id`, optional `target_scale`.
 
-```json
-{
-  "query": "string",
-  "limit": 8,
-  "mode": "free_drift",
-  "profile": "default_dream",
-  "include_raw_candidates": true
-}
-```
+Output: exact target shard, coverage facts when crossing scale, and a Gravity Report. Core does not choose the target.
 
-Output:
+### `nollm_drift`
 
-```json
-{
-  "status": "ok",
-  "query": "user phrasing",
-  "results": [
-    {
-      "memory_id": "mem_001",
-      "source_path": "memory/2026-06-19.md",
-      "line_range": [12, 18],
-      "text": "source excerpt",
-      "retrieval_score": 0.82,
-      "geometry_mark": {
-        "layer": 3,
-        "q": 4,
-        "r": -2,
-        "profile": "default_dream"
-      },
-      "gravity_report": {
-        "R_column_ring": 3,
-        "S_scale_delta": 3,
-        "A_anchor_similarity": 0.77,
-        "drift_class": "near_drift",
-        "projection_method": "query_conditioned_anchor_overlap",
-        "anchor_overlap": 0.42,
-        "layout_method": "semantic_local_v1",
-        "source_role": "daily"
-      },
-      "llm_use_hint": "near drift; usable with provenance check"
-    }
-  ],
-  "warnings": [
-    "drift_class is annotation, not trust, status, or permission"
-  ]
-}
-```
+Input: `well_id`, explicit `current_shard_id`, optional explicit `chosen_shard_id`, optional `radius`.
 
-Rules:
+Output: actual neighboring cells and/or selected drift target with `R_column_ring`, `S_scale_delta`, `A_anchor_similarity`, `drift_class`, `projection_method`, and return vector. Drift is orientation only.
 
-- Search returns gravity reports and source references.
-- Do not filter candidates only because drift is far.
-- Do not map `drift_class` to trust/status.
-- Treat recalled text as untrusted context until checked against source.
+### `nollm_read`
 
-## `nollm_memory_get`
+Input: explicit `shard_id`.
 
-Input:
+Output: exact dream shard, source trace, and Gravity Mark. It is not raw Markdown chunk retrieval.
 
-```json
-{
-  "memory_id": "mem_001",
-  "source_path": "memory/2026-06-19.md",
-  "line_range": [12, 18]
-}
-```
+### `nollm_recall_trace`
 
-Output:
+Input: `well_id` and a Cortex-selected shard path.
 
-```json
-{
-  "source_text": "exact markdown text",
-  "source_path": "memory/2026-06-19.md",
-  "line_range": [12, 18],
-  "geometry_mark": {},
-  "provenance": {},
-  "warnings": []
-}
-```
+Output: deterministic trace and drift facts for logging. It returns no prose digest; the Cortex writes the Recall Digest or `NONE`.
 
-`nollm_memory_get` reads exact OpenClaw source text and sidecar metadata. When
-called after search/recall with an id from that result set, it preserves the
-same geometry mark and gravity report.
+## Legacy Inspection Tools
 
-## `nollm_memory_write_candidate`
+`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` are retained as legacy experimental inspection surfaces. They are not the OCP6S internal model.
 
-Input:
-
-```json
-{
-  "text": "User prefers TypeScript for OpenClaw plugin work.",
-  "source_context": "chat:2026-06-19",
-  "memory_kind": "preference",
-  "why_remember": "stable future preference",
-  "authority": "user_explicit",
-  "expiry": null
-}
-```
-
-Output:
-
-```json
-{
-  "status": "candidate_written",
-  "candidate_id": "cand_001",
-  "shard_id": "shard_001",
-  "version_status": "candidate",
-  "durable_write": false,
-  "next_action": "review_or_promote"
-}
-```
-
-Rules:
-
-- Write is candidate-only by default.
-- There is no automatic durable write to `MEMORY.md`.
-- Promotion requires explicit approval or a configured future policy.
-
-## `nollm_memory_commit_candidate`
-
-Input:
-
-```json
-{
-  "candidate_id": "candidate_001",
-  "explicit_confirmation": true,
-  "target": "durable",
-  "reason": "user explicitly confirmed",
-  "source": "chat:2026-06-20"
-}
-```
-
-Output:
-
-```json
-{
-  "ok": true,
-  "file_path": "MEMORY.md",
-  "line_range": [8, 11],
-  "content_sha256": "...",
-  "old_sha256": "...",
-  "new_sha256": "...",
-  "memory_core_reindex_required": true
-}
-```
-
-Rules:
-
-- Reject missing confirmation, missing candidate, unsupported target, or
-  workspace escape.
-- Append only inside a Nollm-managed section.
-- Return hashes and a documented memory-core reindex command.
-- Do not mutate memory-core SQLite directly.
-
-## `nollm_memory_status`
-
-Output:
-
-```json
-{
-  "status": "ok",
-  "workspace": "/path/to/openclaw/workspace",
-  "sidecar": ".nollm-memory",
-  "indexed_files": 2,
-  "last_gravity_report": null,
-  "warnings": []
-}
-```
-
-The status tool reports paths, indexed file counts, sidecar health, and the last
-report generation summary.
+Source-memory write tools are not exposed by the OpenClaw plugin. Compatibility Python functions fail closed with `source_memory_write_disabled`.

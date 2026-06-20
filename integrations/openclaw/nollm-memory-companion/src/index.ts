@@ -1,18 +1,17 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
 import {
-  ComposeDigestInputSchema,
   ConfigSchema,
-  CommitCandidateInputSchema,
   DriftInputSchema,
+  FieldOverviewInputSchema,
   FocusInputSchema,
   GetInputSchema,
-  OrientInputSchema,
+  OpenWellInputSchema,
   RecallInputSchema,
   ReadInputSchema,
+  RecallTraceInputSchema,
   SearchInputSchema,
   StatusInputSchema,
-  SurfaceInputSchema,
-  WriteCandidateInputSchema
+  SurfaceInputSchema
 } from "./schemas.js";
 import { clampSearchLimit, configurationRequiredStatus, normalizeConfig, runSidecarCommand } from "./sidecar.js";
 import type { PluginConfig } from "./types.js";
@@ -28,18 +27,47 @@ const plugin = defineToolPlugin({
   configSchema: ConfigSchema,
   tools: (tool) => [
     tool({
-      name: "nollm_orient",
-      label: "Nollm Orient",
+      name: "nollm_field_overview",
+      label: "Nollm Field Overview",
       description:
-        "Begin a Cortex recall pass from bounded coarse Nollm dream-field surfaces, not aliases or raw source search.",
-      parameters: OrientInputSchema,
-      async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
+        "Return a bounded coarse dream-field map. Core does not choose a semantic entry or compute query scores.",
+      parameters: FieldOverviewInputSchema,
+      async execute(input: { field_id?: string; limit?: number }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
         const configRequired = configurationRequiredStatus(config);
         if (configRequired.ok === false) {
           return configRequired;
         }
-        return await runSidecarCommand(config, "orient", { query: input.query, limit: input.limit ?? 3 }, context.signal);
+        return await runSidecarCommand(
+          config,
+          "field-overview",
+          { field_id: input.field_id, limit: input.limit ?? 20 },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_open_well",
+      label: "Nollm Open Well",
+      description:
+        "Open an ephemeral Gravity Well from a Cortex-selected entry shard and explicit non-negative anchor vector.",
+      parameters: OpenWellInputSchema,
+      async execute(
+        input: { entry_shard_id: string; entry_task: string; anchor_vector: Record<string, number> },
+        config: PluginConfig,
+        context
+      ) {
+        context.signal?.throwIfAborted();
+        return await runSidecarCommand(
+          config,
+          "open-well",
+          {
+            entry_shard_id: input.entry_shard_id,
+            entry_task: input.entry_task,
+            anchor_vector: JSON.stringify(input.anchor_vector)
+          },
+          context.signal
+        );
       }
     }),
     tool({
@@ -48,9 +76,23 @@ const plugin = defineToolPlugin({
       description:
         "Inspect content-bearing coarse surface cells and bridge hints before focusing to finer Nollm dream shards.",
       parameters: SurfaceInputSchema,
-      async execute(input: { surface_id: string }, config: PluginConfig, context) {
+      async execute(
+        input: { well_id: string; center_shard_id: string; radius?: number; target_scale?: string | number },
+        config: PluginConfig,
+        context
+      ) {
         context.signal?.throwIfAborted();
-        return await runSidecarCommand(config, "surface", { surface_id: input.surface_id }, context.signal);
+        return await runSidecarCommand(
+          config,
+          "surface",
+          {
+            well_id: input.well_id,
+            center_shard_id: input.center_shard_id,
+            radius: input.radius ?? 1,
+            target_scale: input.target_scale
+          },
+          context.signal
+        );
       }
     }),
     tool({
@@ -59,15 +101,19 @@ const plugin = defineToolPlugin({
       description:
         "Traverse by coverage and overlap to a sufficient scale without forcing raw source span descent.",
       parameters: FocusInputSchema,
-      async execute(input: { query: string; surface_id: string; sufficient_scale?: number }, config: PluginConfig, context) {
+      async execute(
+        input: { well_id: string; target_shard_id: string; target_scale?: string | number },
+        config: PluginConfig,
+        context
+      ) {
         context.signal?.throwIfAborted();
         return await runSidecarCommand(
           config,
           "focus",
           {
-            query: input.query,
-            surface_id: input.surface_id,
-            sufficient_scale: input.sufficient_scale ?? 2
+            well_id: input.well_id,
+            target_shard_id: input.target_shard_id,
+            target_scale: input.target_scale
           },
           context.signal
         );
@@ -79,12 +125,21 @@ const plugin = defineToolPlugin({
       description:
         "Inspect lateral and return links from a dream shard; drift labels are orientation only, never rejection or trust.",
       parameters: DriftInputSchema,
-      async execute(input: { shard_id: string; query?: string }, config: PluginConfig, context) {
+      async execute(
+        input: { well_id: string; current_shard_id: string; chosen_shard_id?: string; radius?: number },
+        config: PluginConfig,
+        context
+      ) {
         context.signal?.throwIfAborted();
         return await runSidecarCommand(
           config,
           "drift",
-          { shard_id: input.shard_id, query: input.query ?? "" },
+          {
+            well_id: input.well_id,
+            current_shard_id: input.current_shard_id,
+            chosen_shard_id: input.chosen_shard_id,
+            radius: input.radius ?? 1
+          },
           context.signal
         );
       }
@@ -100,14 +155,19 @@ const plugin = defineToolPlugin({
       }
     }),
     tool({
-      name: "nollm_compose_digest",
-      label: "Nollm Compose Digest",
+      name: "nollm_recall_trace",
+      label: "Nollm Recall Trace",
       description:
-        "Compose a compact Nollm Recall Digest after orient/surface/focus/drift, returning NONE when the field lacks useful material.",
-      parameters: ComposeDigestInputSchema,
-      async execute(input: { query: string }, config: PluginConfig, context) {
+        "Finalize a deterministic structural trace for a Cortex-selected shard path. It returns no prose recall digest.",
+      parameters: RecallTraceInputSchema,
+      async execute(input: { well_id: string; path: string[] }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
-        return await runSidecarCommand(config, "compose-digest", { query: input.query }, context.signal);
+        return await runSidecarCommand(
+          config,
+          "recall-trace",
+          { well_id: input.well_id, path: JSON.stringify(input.path) },
+          context.signal
+        );
       }
     }),
     tool({
@@ -167,80 +227,6 @@ const plugin = defineToolPlugin({
       async execute(input: { id: string }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
         return await runSidecarCommand(config, "get", { id: input.id }, context.signal);
-      }
-    }),
-    tool({
-      name: "nollm_memory_write_candidate",
-      label: "Nollm Memory Write Candidate",
-      optional: true,
-      description:
-        "Create a pending-review candidate only; this does not write durable OpenClaw memory or mutate MEMORY.md.",
-      parameters: WriteCandidateInputSchema,
-      async execute(input: { text: string; source: string; why?: string }, config: PluginConfig, context) {
-        context.signal?.throwIfAborted();
-        const result = await runSidecarCommand(
-          config,
-          "write-candidate",
-          {
-            text: input.text,
-            source: input.source,
-            why: input.why
-          },
-          context.signal
-        );
-        if (result.ok === false) {
-          return result;
-        }
-        return {
-          ...result,
-          pending_review: true,
-          durable_write: false,
-          target_files_mutated: false,
-          notice: "Pending candidate only; no durable OpenClaw memory file was written."
-        };
-      }
-    }),
-    tool({
-      name: "nollm_memory_commit_candidate",
-      label: "Nollm Memory Commit Candidate",
-      optional: true,
-      description:
-        "Commit a staged Nollm pending candidate to a managed durable/daily memory section only after explicit user confirmation.",
-      parameters: CommitCandidateInputSchema,
-      async execute(
-        input: {
-          candidate_id: string;
-          explicit_confirmation: boolean;
-          target: "durable" | "daily";
-          reason: string;
-          source: string;
-        },
-        config: PluginConfig,
-        context
-      ) {
-        context.signal?.throwIfAborted();
-        if (input.explicit_confirmation !== true) {
-          return {
-            ok: false,
-            error: {
-              code: "commit_rejected",
-              message: "nollm_memory_commit_candidate requires explicit_confirmation=true.",
-              retryable: false
-            }
-          };
-        }
-        return await runSidecarCommand(
-          config,
-          "commit-candidate",
-          {
-            candidate_id: input.candidate_id,
-            explicit_confirmation: input.explicit_confirmation,
-            target: input.target,
-            reason: input.reason,
-            source: input.source
-          },
-          context.signal
-        );
       }
     }),
     tool({

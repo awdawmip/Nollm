@@ -57,45 +57,41 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
     assert manifest["configSchema"]["type"] == "object"
     assert manifest["configSchema"]["additionalProperties"] is False
     assert manifest["contracts"]["tools"] == [
-        "nollm_orient",
+        "nollm_field_overview",
+        "nollm_open_well",
         "nollm_surface",
         "nollm_focus",
         "nollm_drift",
         "nollm_read",
-        "nollm_compose_digest",
+        "nollm_recall_trace",
         "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
-        "nollm_memory_write_candidate",
-        "nollm_memory_commit_candidate",
         "nollm_memory_status",
     ]
-    assert manifest["toolMetadata"]["nollm_memory_write_candidate"]["optional"] is True
-    assert manifest["toolMetadata"]["nollm_memory_commit_candidate"]["optional"] is True
+    assert "toolMetadata" not in manifest
 
 
 def test_typescript_declares_exact_static_tool_names_and_optional_write() -> None:
     source = (PACKAGE / "src/index.ts").read_text(encoding="utf-8")
     expected = [
-        "nollm_orient",
+        "nollm_field_overview",
+        "nollm_open_well",
         "nollm_surface",
         "nollm_focus",
         "nollm_drift",
         "nollm_read",
-        "nollm_compose_digest",
+        "nollm_recall_trace",
         "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
-        "nollm_memory_write_candidate",
-        "nollm_memory_commit_candidate",
         "nollm_memory_status",
     ]
 
     for tool in expected:
         assert source.count(f'name: "{tool}"') == 1
-    assert 'name: "nollm_memory_write_candidate"' in source
-    assert 'name: "nollm_memory_commit_candidate"' in source
-    assert "optional: true" in source
+    assert 'name: "nollm_memory_write_candidate"' not in source
+    assert 'name: "nollm_memory_commit_candidate"' not in source
     assert "tools: (tool) =>" in source
     assert "parameters:" in source
     assert "inputSchema" not in source
@@ -125,21 +121,16 @@ def test_skill_teaches_required_workflow_and_gravity_trust_distinction() -> None
     skill = (PACKAGE / "skill/SKILL.md").read_text(encoding="utf-8")
 
     for phrase in [
-        "Use `nollm_orient`",
+        "Use `nollm_field_overview`",
+        "Use `nollm_open_well`",
         "Use `nollm_surface`",
         "Use `nollm_focus`",
         "Use `nollm_drift`",
-        "Use `nollm_compose_digest`",
-        "coarse surface",
-        "sufficient scale",
+        "Use `nollm_recall_trace`",
+        "true honeycomb neighbors",
+        "Cortex, write the compact Recall Digest",
         "lateral",
-        "Return to the original user task",
-        "Return `NONE`",
         "Do not use `memory_search` / `memory_get` as the Nollm internal model",
-        "Use `nollm_memory_write_candidate`",
-        "Use `nollm_memory_commit_candidate`",
-        "explicit_confirmation=true",
-        "Never claim that a pending candidate has been written to `MEMORY.md`",
         "Gravity report = instrumentation, not permission.",
         "Drift class = orientation, not trust.",
     ]:
@@ -156,8 +147,11 @@ def test_config_example_does_not_set_memory_slot_and_marks_active_memory_experim
     assert "activeMemoryExperiment" not in example
     assert "memory_search" in example
     assert "memory_get" in example
-    assert "nollm_orient" in example
-    assert "nollm_compose_digest" in example
+    assert "nollm_field_overview" in example
+    assert "nollm_open_well" in example
+    assert "nollm_recall_trace" in example
+    assert "nollm_memory_write_candidate" not in example
+    assert "nollm_memory_commit_candidate" not in example
     assert "nollm_memory_search" in example
     assert "nollm_memory_get" in example
     assert "do not replace source verification" in example

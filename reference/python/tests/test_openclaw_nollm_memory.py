@@ -148,68 +148,56 @@ def test_unrelated_recall_returns_no_direct_evidence(tmp_path: Path) -> None:
     assert "No relevant Nollm local memory evidence found." in report["cautions"]
 
 
-def test_write_candidate_uses_pending_store_and_does_not_modify_memory_files(tmp_path: Path) -> None:
+def test_write_candidate_fails_closed_and_does_not_modify_memory_files(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
     before = _source_hashes(workspace)
 
     report = write_candidate(ROOT, workspace, tmp_path / "sidecar", text="Remember this only as pending.", source="user")
 
-    assert report["ok"] is True
-    assert report["candidate"]["durable_write"] is False
-    assert report["candidate"]["target_files_mutated"] is False
-    assert report["candidate"]["durable_memory_mutation"] is False
-    assert (tmp_path / "sidecar/pending_writes.jsonl").exists()
+    assert report["ok"] is False
+    assert report["error"] == "source_memory_write_disabled"
+    assert report["durable_write"] is False
+    assert report["target_files_mutated"] is False
+    assert report["durable_memory_mutation"] is False
+    assert not (tmp_path / "sidecar/pending_writes.jsonl").exists()
     assert _source_hashes(workspace) == before
 
 
-def test_commit_candidate_requires_confirmation_and_preserves_unrelated_content(tmp_path: Path) -> None:
+def test_commit_candidate_fails_closed_and_preserves_source_files(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     shutil.copytree(FUNCTIONAL_FIXTURE, workspace)
     out = tmp_path / "sidecar"
     before = _source_hashes(workspace)
-    staged = write_candidate(
-        ROOT,
-        workspace,
-        out,
-        text="Atlas support rotation owner is Rowan Ives.",
-        source="user_request",
-    )
-    candidate_id = staged["candidate"]["candidate_id"]
 
     rejected = commit_candidate(
         ROOT,
         workspace,
         out,
-        candidate_id=candidate_id,
+        candidate_id="candidate_disabled",
         explicit_confirmation=False,
         target="durable",
         reason="missing confirmation",
         source="test",
     )
     assert rejected["ok"] is False
+    assert rejected["error"] == "source_memory_write_disabled"
     assert _source_hashes(workspace) == before
 
     committed = commit_candidate(
         ROOT,
         workspace,
         out,
-        candidate_id=candidate_id,
+        candidate_id="candidate_disabled",
         explicit_confirmation=True,
         target="durable",
         reason="user explicitly confirmed durable memory",
         source="test",
     )
-    assert committed["ok"] is True
-    assert committed["file_path"] == "MEMORY.md"
-    assert committed["memory_core_reindex_required"] is True
-    text = (workspace / "MEMORY.md").read_text(encoding="utf-8")
-    assert "## Nollm Managed Memory" in text
-    assert "Atlas support rotation owner is Rowan Ives." in text
-    after = _source_hashes(workspace)
-    assert after["DREAMS.md"] == before["DREAMS.md"]
-    assert after["memory/2026-06-20.md"] == before["memory/2026-06-20.md"]
-    assert after["MEMORY.md"] != before["MEMORY.md"]
+    assert committed["ok"] is False
+    assert committed["error"] == "source_memory_write_disabled"
+    assert committed["memory_core_reindex_required"] is False
+    assert _source_hashes(workspace) == before
 
 
 def test_cli_commands_work_offline(tmp_path: Path) -> None:
@@ -221,43 +209,14 @@ def test_cli_commands_work_offline(tmp_path: Path) -> None:
     recall = _run_cli("recall", "--workspace", str(workspace), "--query", "Atlas owner", "--limit", "5", "--out", str(out))
     item_id = search["results"][0]["shard_id"]
     get = _run_cli("get", "--workspace", str(workspace), "--id", item_id, "--out", str(out))
-    write = _run_cli(
-        "write-candidate",
-        "--workspace",
-        str(workspace),
-        "--text",
-        "Candidate only.",
-        "--source",
-        "user",
-        "--out",
-        str(out),
-    )
-    commit = _run_cli(
-        "commit-candidate",
-        "--workspace",
-        str(workspace),
-        "--candidate-id",
-        write["candidate"]["candidate_id"],
-        "--explicit-confirmation",
-        "--target",
-        "durable",
-        "--reason",
-        "user confirmed",
-        "--source",
-        "test",
-        "--out",
-        str(out),
-    )
     status = _run_cli("status", "--workspace", str(workspace), "--out", str(out))
 
     assert index["ok"] is True
     assert search["ok"] is True
     assert recall["direct_evidence"]
     assert get["ok"] is True
-    assert write["ok"] is True
-    assert commit["ok"] is True
     assert status["counts"]["pending_writes"] == 0
-    assert status["counts"]["commit_ledger"] == 1
+    assert status["counts"]["commit_ledger"] == 0
 
 
 def test_parser_remains_deterministic() -> None:

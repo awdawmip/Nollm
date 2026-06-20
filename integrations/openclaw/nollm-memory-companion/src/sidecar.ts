@@ -39,15 +39,14 @@ export function buildSidecarArgv(
     | "search"
     | "recall"
     | "get"
-    | "write-candidate"
-    | "commit-candidate"
     | "status"
-    | "orient"
+    | "field-overview"
+    | "open-well"
     | "surface"
     | "focus"
     | "drift"
     | "read"
-    | "compose-digest",
+    | "recall-trace",
   params: Record<string, string | number | boolean | undefined> = {}
 ): string[] {
   const argv = [
@@ -68,41 +67,46 @@ export function buildSidecarArgv(
   if (command === "get") {
     argv.push("--id", String(params.id ?? ""));
   }
-  if (command === "orient") {
-    argv.push("--query", String(params.query ?? ""));
-    argv.push("--limit", String(clampSearchLimit(Number(params.limit ?? 3), 10)));
+  if (command === "field-overview") {
+    if (typeof params.field_id === "string" && params.field_id.length > 0) {
+      argv.push("--field-id", params.field_id);
+    }
+    argv.push("--limit", String(Math.max(1, Math.min(100, Math.trunc(Number(params.limit ?? 20))))));
+  }
+  if (command === "open-well") {
+    argv.push("--entry-shard-id", String(params.entry_shard_id ?? ""));
+    argv.push("--entry-task", String(params.entry_task ?? ""));
+    argv.push("--anchor-vector", String(params.anchor_vector ?? "{}"));
   }
   if (command === "surface") {
-    argv.push("--surface-id", String(params.surface_id ?? ""));
+    argv.push("--well-id", String(params.well_id ?? ""));
+    argv.push("--center-shard-id", String(params.center_shard_id ?? ""));
+    argv.push("--radius", String(params.radius ?? 1));
+    if (params.target_scale !== undefined) {
+      argv.push("--target-scale", String(params.target_scale));
+    }
   }
   if (command === "focus") {
-    argv.push("--query", String(params.query ?? ""));
-    argv.push("--surface-id", String(params.surface_id ?? ""));
-    argv.push("--sufficient-scale", String(params.sufficient_scale ?? 2));
+    argv.push("--well-id", String(params.well_id ?? ""));
+    argv.push("--target-shard-id", String(params.target_shard_id ?? ""));
+    if (params.target_scale !== undefined) {
+      argv.push("--target-scale", String(params.target_scale));
+    }
   }
   if (command === "drift") {
-    argv.push("--shard-id", String(params.shard_id ?? ""));
-    argv.push("--query", String(params.query ?? ""));
+    argv.push("--well-id", String(params.well_id ?? ""));
+    argv.push("--current-shard-id", String(params.current_shard_id ?? ""));
+    if (params.chosen_shard_id !== undefined) {
+      argv.push("--chosen-shard-id", String(params.chosen_shard_id));
+    }
+    argv.push("--radius", String(params.radius ?? 1));
   }
   if (command === "read") {
     argv.push("--shard-id", String(params.shard_id ?? ""));
   }
-  if (command === "compose-digest") {
-    argv.push("--query", String(params.query ?? ""));
-  }
-  if (command === "write-candidate") {
-    argv.push("--text", String(params.text ?? ""));
-    argv.push("--source", String(params.source ?? ""));
-    argv.push("--why", String(params.why ?? "pending explicit review before durable promotion"));
-  }
-  if (command === "commit-candidate") {
-    argv.push("--candidate-id", String(params.candidate_id ?? ""));
-    if (params.explicit_confirmation === true) {
-      argv.push("--explicit-confirmation");
-    }
-    argv.push("--target", String(params.target ?? ""));
-    argv.push("--reason", String(params.reason ?? ""));
-    argv.push("--source", String(params.source ?? ""));
+  if (command === "recall-trace") {
+    argv.push("--well-id", String(params.well_id ?? ""));
+    argv.push("--path", String(params.path ?? "[]"));
   }
 
   return argv;
@@ -122,15 +126,14 @@ export async function runSidecarCommand(
     | "search"
     | "recall"
     | "get"
-    | "write-candidate"
-    | "commit-candidate"
     | "status"
-    | "orient"
+    | "field-overview"
+    | "open-well"
     | "surface"
     | "focus"
     | "drift"
     | "read"
-    | "compose-digest",
+    | "recall-trace",
   params: Record<string, string | number | boolean | undefined> = {},
   signal?: AbortSignal
 ): Promise<SidecarResult> {

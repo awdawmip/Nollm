@@ -48,56 +48,50 @@ export const GetInputSchema = Type.Object(
   { additionalProperties: false }
 );
 
-export const WriteCandidateInputSchema = Type.Object(
-  {
-    text: Type.String({ minLength: 1 }),
-    source: Type.String({ minLength: 1 }),
-    why: Type.Optional(Type.String({ maxLength: 240 }))
-  },
-  { additionalProperties: false }
-);
-
-export const CommitCandidateInputSchema = Type.Object(
-  {
-    candidate_id: Type.String({ minLength: 1 }),
-    explicit_confirmation: Type.Boolean(),
-    target: Type.Union([Type.Literal("durable"), Type.Literal("daily")]),
-    reason: Type.String({ minLength: 1, maxLength: 500 }),
-    source: Type.String({ minLength: 1, maxLength: 240 })
-  },
-  { additionalProperties: false }
-);
-
 export const StatusInputSchema = Type.Object({}, { additionalProperties: false });
 
-export const OrientInputSchema = Type.Object(
+export const FieldOverviewInputSchema = Type.Object(
   {
-    query: Type.String({ minLength: 1 }),
-    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10 }))
+    field_id: Type.Optional(Type.String({ minLength: 1 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }))
+  },
+  { additionalProperties: false }
+);
+
+export const OpenWellInputSchema = Type.Object(
+  {
+    entry_shard_id: Type.String({ minLength: 1 }),
+    entry_task: Type.String({ minLength: 1 }),
+    anchor_vector: Type.Record(Type.String({ minLength: 1 }), Type.Number({ minimum: 0 }))
   },
   { additionalProperties: false }
 );
 
 export const SurfaceInputSchema = Type.Object(
   {
-    surface_id: Type.String({ minLength: 1 })
+    well_id: Type.String({ minLength: 1 }),
+    center_shard_id: Type.String({ minLength: 1 }),
+    radius: Type.Optional(Type.Integer({ minimum: 0, maximum: 12 })),
+    target_scale: Type.Optional(Type.Union([Type.Literal("coarse"), Type.Literal("bridge"), Type.Literal("fine"), Type.Integer({ minimum: 0, maximum: 12 })]))
   },
   { additionalProperties: false }
 );
 
 export const FocusInputSchema = Type.Object(
   {
-    query: Type.String({ minLength: 1 }),
-    surface_id: Type.String({ minLength: 1 }),
-    sufficient_scale: Type.Optional(Type.Integer({ minimum: 1, maximum: 3 }))
+    well_id: Type.String({ minLength: 1 }),
+    target_shard_id: Type.String({ minLength: 1 }),
+    target_scale: Type.Optional(Type.Union([Type.Literal("coarse"), Type.Literal("bridge"), Type.Literal("fine"), Type.Integer({ minimum: 0, maximum: 12 })]))
   },
   { additionalProperties: false }
 );
 
 export const DriftInputSchema = Type.Object(
   {
-    shard_id: Type.String({ minLength: 1 }),
-    query: Type.Optional(Type.String())
+    well_id: Type.String({ minLength: 1 }),
+    current_shard_id: Type.String({ minLength: 1 }),
+    chosen_shard_id: Type.Optional(Type.String({ minLength: 1 })),
+    radius: Type.Optional(Type.Integer({ minimum: 0, maximum: 12 }))
   },
   { additionalProperties: false }
 );
@@ -109,9 +103,10 @@ export const ReadInputSchema = Type.Object(
   { additionalProperties: false }
 );
 
-export const ComposeDigestInputSchema = Type.Object(
+export const RecallTraceInputSchema = Type.Object(
   {
-    query: Type.String({ minLength: 1 })
+    well_id: Type.String({ minLength: 1 }),
+    path: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 })
   },
   { additionalProperties: false }
 );

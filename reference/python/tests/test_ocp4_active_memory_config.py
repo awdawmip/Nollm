@@ -23,8 +23,8 @@ def test_ocp4_active_memory_patch_is_controlled_and_read_only(tmp_path: Path) ->
     controlled = agents[-1]
     assert controlled["contextInjection"] == "never"
     assert "read" in controlled["tools"]["deny"]
-    assert "nollm_memory_write_candidate" in controlled["tools"]["alsoAllow"]
-    assert "nollm_memory_commit_candidate" in controlled["tools"]["alsoAllow"]
+    assert "nollm_memory_write_candidate" not in controlled["tools"]["alsoAllow"]
+    assert "nollm_memory_commit_candidate" not in controlled["tools"]["alsoAllow"]
 
     active = patch["plugins"]["entries"]["active-memory"]["config"]
     assert active["agents"] == [OCP4_AGENT_ID]

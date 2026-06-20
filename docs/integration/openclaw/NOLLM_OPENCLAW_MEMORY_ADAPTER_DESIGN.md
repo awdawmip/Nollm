@@ -4,6 +4,7 @@ Date: 2026-06-19
 
 OC0 is a design-only integration step. It does not implement an OpenClaw
 runtime plugin, call an LLM, replace OpenClaw memory, or write durable memory.
+There is no automatic durable write to `MEMORY.md`.
 OC1 begins the offline path by parsing the fixture into auditable candidates;
 it still does not search, enrich with gravity reports, or write durable memory.
 The target sidecar prototype extends that path with deterministic sidecar
@@ -44,6 +45,7 @@ OpenClaw memory chunk
 
 `drift_class` is an annotation in the gravity report. It is not permission,
 trust, status, or an automatic reject gate.
+Do not map `drift_class` to trust/status.
 
 ## Modes
 
