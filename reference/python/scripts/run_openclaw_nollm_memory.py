@@ -67,6 +67,8 @@ def main(argv: list[str] | None = None) -> int:
             sub.add_argument("--entry-shard-id", required=True)
             sub.add_argument("--entry-task", required=True)
             sub.add_argument("--anchor-vector", required=True, help="JSON object of non-negative Cortex-proposed anchor weights.")
+            sub.add_argument("--revision-id", default=None)
+            sub.add_argument("--ttl-seconds", type=int, default=3600)
         if name == "surface":
             sub.add_argument("--well-id", required=True)
             sub.add_argument("--center-shard-id", required=True)
@@ -82,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
             sub.add_argument("--chosen-shard-id", default=None)
             sub.add_argument("--radius", type=int, default=1)
         if name == "read":
+            sub.add_argument("--well-id", required=True)
             sub.add_argument("--shard-id", required=True)
         if name == "recall-trace":
             sub.add_argument("--well-id", required=True)
@@ -109,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "dream-ingest":
         report = ingest_dreamer_fixture(workspace, _resolve_repo_path(repo_root, args.dreamer_output), out_dir)
     elif args.command == "field-overview":
-        report = nollm_field_overview(out_dir, field_id=args.field_id, limit=args.limit)
+        report = nollm_field_overview(out_dir, field_id=args.field_id, limit=args.limit, workspace=workspace)
     elif args.command == "open-well":
         report = _run_geometry_command(
             nollm_open_well,
@@ -117,6 +120,8 @@ def main(argv: list[str] | None = None) -> int:
             entry_shard_id=args.entry_shard_id,
             entry_task=args.entry_task,
             anchor_vector=json.loads(args.anchor_vector),
+            revision_id=args.revision_id,
+            ttl_seconds=args.ttl_seconds,
         )
     elif args.command == "surface":
         report = _run_geometry_command(
@@ -145,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
             radius=args.radius,
         )
     elif args.command == "read":
-        report = _run_geometry_command(nollm_read, out_dir, shard_id=args.shard_id)
+        report = _run_geometry_command(nollm_read, out_dir, well_id=args.well_id, shard_id=args.shard_id)
     elif args.command == "recall-trace":
         report = _run_geometry_command(nollm_recall_trace, out_dir, well_id=args.well_id, path=json.loads(args.path))
     elif args.command == "dream-demo":

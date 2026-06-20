@@ -77,6 +77,12 @@ export function buildSidecarArgv(
     argv.push("--entry-shard-id", String(params.entry_shard_id ?? ""));
     argv.push("--entry-task", String(params.entry_task ?? ""));
     argv.push("--anchor-vector", String(params.anchor_vector ?? "{}"));
+    if (params.revision_id !== undefined) {
+      argv.push("--revision-id", String(params.revision_id));
+    }
+    if (params.ttl_seconds !== undefined) {
+      argv.push("--ttl-seconds", String(params.ttl_seconds));
+    }
   }
   if (command === "surface") {
     argv.push("--well-id", String(params.well_id ?? ""));
@@ -102,6 +108,7 @@ export function buildSidecarArgv(
     argv.push("--radius", String(params.radius ?? 1));
   }
   if (command === "read") {
+    argv.push("--well-id", String(params.well_id ?? ""));
     argv.push("--shard-id", String(params.shard_id ?? ""));
   }
   if (command === "recall-trace") {

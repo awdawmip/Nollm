@@ -1,6 +1,6 @@
 # Nollm OpenClaw Tool Contract
 
-Status: OCP6S.
+Status: OCP7.
 
 Nollm is a geometry-executed dream-field companion. It does not own OpenClaw's memory slot and does not write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.
 
@@ -18,13 +18,15 @@ Input:
 
 ```json
 {
-  "entry_shard_id": "surface_openclaw_nollm",
+  "entry_shard_id": "surface-openclaw-nollm",
   "entry_task": "current user task",
-  "anchor_vector": {"openclaw": 1.0, "nollm": 1.0}
+  "anchor_vector": {"openclaw": 1.0, "nollm": 1.0},
+  "revision_id": "optional immutable revision id",
+  "ttl_seconds": 3600
 }
 ```
 
-Output: an ephemeral Gravity Well derived from the Cortex-selected entry shard and Cortex-proposed non-negative anchor vector. Core does not extract anchors from query text.
+Output: a persisted Gravity Well in `wells/<well_id>.json`, bound to exactly one immutable field revision. Core does not extract anchors from query text.
 
 ### `nollm_surface`
 
@@ -46,9 +48,9 @@ Output: actual neighboring cells and/or selected drift target with `R_column_rin
 
 ### `nollm_read`
 
-Input: explicit `shard_id`.
+Input: explicit `well_id` and `shard_id`.
 
-Output: exact dream shard, source trace, and Gravity Mark. It is not raw Markdown chunk retrieval.
+Output: exact dream shard from the well's immutable revision, source trace, and Gravity Mark. It is not raw Markdown chunk retrieval.
 
 ### `nollm_recall_trace`
 
@@ -58,6 +60,6 @@ Output: deterministic trace and drift facts for logging. It returns no prose dig
 
 ## Legacy Inspection Tools
 
-`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` are retained as legacy experimental inspection surfaces. They are not the OCP6S internal model.
+`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` are retained as legacy experimental inspection surfaces. They are not the OCP7 internal model.
 
 Source-memory write tools are not exposed by the OpenClaw plugin. Compatibility Python functions fail closed with `source_memory_write_disabled`.

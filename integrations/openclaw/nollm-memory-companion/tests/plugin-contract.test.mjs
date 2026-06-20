@@ -94,7 +94,9 @@ test("builds dream cortex navigation argv", () => {
   const well = buildSidecarArgv(config, "open-well", {
     entry_shard_id: "surface_openclaw_nollm",
     entry_task: "task",
-    anchor_vector: "{\"openclaw\":1}"
+    anchor_vector: "{\"openclaw\":1}",
+    revision_id: "rev_1",
+    ttl_seconds: 120
   });
   const surface = buildSidecarArgv(config, "surface", {
     well_id: "well_1",
@@ -112,7 +114,7 @@ test("builds dream cortex navigation argv", () => {
     current_shard_id: "bridge_active_memory_cortex",
     chosen_shard_id: "lateral_search_adapter_boundary"
   });
-  const read = buildSidecarArgv(config, "read", { shard_id: "bridge_active_memory_cortex" });
+  const read = buildSidecarArgv(config, "read", { well_id: "well_1", shard_id: "bridge_active_memory_cortex" });
   const trace = buildSidecarArgv(config, "recall-trace", {
     well_id: "well_1",
     path: "[\"surface_openclaw_nollm\"]"
@@ -120,10 +122,13 @@ test("builds dream cortex navigation argv", () => {
 
   assert.equal(overview.includes("field-overview"), true);
   assert.equal(well.includes("--anchor-vector"), true);
+  assert.equal(well.includes("--revision-id"), true);
+  assert.equal(well.includes("--ttl-seconds"), true);
   assert.equal(surface.includes("--center-shard-id"), true);
   assert.equal(focus.includes("--target-shard-id"), true);
   assert.equal(drift.includes("--current-shard-id"), true);
   assert.equal(read.includes("read"), true);
+  assert.equal(read.includes("--well-id"), true);
   assert.equal(trace.includes("recall-trace"), true);
 });
 

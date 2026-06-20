@@ -62,7 +62,9 @@ export const OpenWellInputSchema = Type.Object(
   {
     entry_shard_id: Type.String({ minLength: 1 }),
     entry_task: Type.String({ minLength: 1 }),
-    anchor_vector: Type.Record(Type.String({ minLength: 1 }), Type.Number({ minimum: 0 }))
+    anchor_vector: Type.Record(Type.String({ minLength: 1 }), Type.Number({ minimum: 0 })),
+    revision_id: Type.Optional(Type.String({ minLength: 1 })),
+    ttl_seconds: Type.Optional(Type.Integer({ minimum: 1, maximum: 86400 }))
   },
   { additionalProperties: false }
 );
@@ -98,6 +100,7 @@ export const DriftInputSchema = Type.Object(
 
 export const ReadInputSchema = Type.Object(
   {
+    well_id: Type.String({ minLength: 1 }),
     shard_id: Type.String({ minLength: 1 })
   },
   { additionalProperties: false }

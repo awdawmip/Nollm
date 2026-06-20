@@ -53,7 +53,7 @@ const plugin = defineToolPlugin({
         "Open an ephemeral Gravity Well from a Cortex-selected entry shard and explicit non-negative anchor vector.",
       parameters: OpenWellInputSchema,
       async execute(
-        input: { entry_shard_id: string; entry_task: string; anchor_vector: Record<string, number> },
+        input: { entry_shard_id: string; entry_task: string; anchor_vector: Record<string, number>; revision_id?: string; ttl_seconds?: number },
         config: PluginConfig,
         context
       ) {
@@ -64,7 +64,9 @@ const plugin = defineToolPlugin({
           {
             entry_shard_id: input.entry_shard_id,
             entry_task: input.entry_task,
-            anchor_vector: JSON.stringify(input.anchor_vector)
+            anchor_vector: JSON.stringify(input.anchor_vector),
+            revision_id: input.revision_id,
+            ttl_seconds: input.ttl_seconds
           },
           context.signal
         );
@@ -147,11 +149,11 @@ const plugin = defineToolPlugin({
     tool({
       name: "nollm_read",
       label: "Nollm Read",
-      description: "Read a Nollm dream shard by id; the recall unit is the dream shard, not a raw Markdown chunk.",
+      description: "Read a Nollm dream shard by id through an open well; the recall unit is the dream shard, not a raw Markdown chunk.",
       parameters: ReadInputSchema,
-      async execute(input: { shard_id: string }, config: PluginConfig, context) {
+      async execute(input: { well_id: string; shard_id: string }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
-        return await runSidecarCommand(config, "read", { shard_id: input.shard_id }, context.signal);
+        return await runSidecarCommand(config, "read", { well_id: input.well_id, shard_id: input.shard_id }, context.signal);
       }
     }),
     tool({

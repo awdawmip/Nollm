@@ -1,6 +1,6 @@
 # Nollm OpenClaw LLM Usage Guide
 
-Status: OCP6S.
+Status: OCP7.
 
 Nollm is not an embedding-free `MEMORY.md` search adapter. Treat OpenClaw `MEMORY.md`, `DREAMS.md`, and `memory/*.md` as read-only source snapshots.
 
@@ -9,12 +9,12 @@ Primary Cortex path:
 ```text
 nollm_field_overview
 -> Cortex chooses entry shard
--> nollm_open_well
+-> nollm_open_well, yielding a well_id bound to one field revision
 -> nollm_surface
 -> Cortex chooses focus
 -> nollm_focus
 -> optional nollm_drift
--> nollm_read
+-> nollm_read with well_id
 -> nollm_recall_trace
 -> Cortex writes Recall Digest or NONE
 ```
@@ -28,7 +28,7 @@ Core only executes geometry and returns deterministic facts: true honeycomb neig
 - Call `nollm_open_well` with an explicit non-negative `anchor_vector`.
 - Use `nollm_surface` before focusing.
 - Choose focus and drift targets yourself.
-- Use `nollm_read` for exact dream-shard reads.
+- Use `nollm_read` with the current `well_id` for exact dream-shard reads.
 - Use `nollm_recall_trace` only as structural logging.
 - Write the compact Recall Digest yourself, or return `NONE`.
 
@@ -36,6 +36,6 @@ No tool output alone is source truth. Drift labels are orientation only; never m
 
 ## Legacy Tools
 
-`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` remain legacy experimental inspection tools. They are not the Nollm internal model for OCP6S.
+`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` remain legacy experimental inspection tools. They are not the Nollm internal model for OCP7.
 
 `nollm_memory_write_candidate` and `nollm_memory_commit_candidate` are not exposed by the plugin. Python compatibility functions fail closed with `source_memory_write_disabled`.
