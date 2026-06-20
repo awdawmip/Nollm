@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import type { NormalizedConfig, PluginConfig, SidecarFailure, SidecarResult } from "./types.js";
 
@@ -16,8 +17,8 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   const commandTimeoutMs = boundedInteger(config.commandTimeoutMs ?? 15000, 1000, 60000, "commandTimeoutMs");
   const maxSearchResults = boundedInteger(config.maxSearchResults ?? 5, 1, 20, "maxSearchResults");
 
-  requirePathUnder(sidecarScript, nollmRepoRoot, "sidecarScript", "nollmRepoRoot");
-  requirePathUnder(sidecarOutDir, workspaceRoot, "sidecarOutDir", "workspaceRoot");
+  requirePathUnder(sidecarScript, nollmRepoRoot, "sidecarScript", "nollmRepoRoot", true);
+  requirePathUnder(sidecarOutDir, workspaceRoot, "sidecarOutDir", "workspaceRoot", false);
 
   return {
     pythonCommand: config.pythonCommand || "python3",
@@ -72,7 +73,8 @@ export function clampSearchLimit(limit: number, maxSearchResults: number): numbe
 export async function runSidecarCommand(
   config: PluginConfig,
   command: "index" | "search" | "get" | "write-candidate" | "status",
-  params: Record<string, string | number | undefined> = {}
+  params: Record<string, string | number | undefined> = {},
+  signal?: AbortSignal
 ): Promise<SidecarResult> {
   let normalized: NormalizedConfig;
   try {
@@ -82,11 +84,15 @@ export async function runSidecarCommand(
   }
 
   const argv = buildSidecarArgv(normalized, command, params);
-  return await spawnJson(normalized.pythonCommand, argv, normalized.commandTimeoutMs);
+  return await spawnJson(normalized.pythonCommand, argv, normalized.commandTimeoutMs, signal);
 }
 
-async function spawnJson(command: string, argv: string[], timeoutMs: number): Promise<SidecarResult> {
+async function spawnJson(command: string, argv: string[], timeoutMs: number, signal?: AbortSignal): Promise<SidecarResult> {
   return await new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve(sidecarFailure("sidecar_timeout", "Nollm sidecar command was aborted before start.", true));
+      return;
+    }
     const child = spawn(command, argv, {
       shell: false,
       windowsHide: true,
@@ -99,6 +105,11 @@ async function spawnJson(command: string, argv: string[], timeoutMs: number): Pr
       timedOut = true;
       child.kill("SIGKILL");
     }, timeoutMs);
+    const abort = () => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    };
+    signal?.addEventListener("abort", abort, { once: true });
 
     child.stdout.on("data", (chunk: Buffer) => {
       stdout = appendBounded(stdout, chunk);
@@ -108,10 +119,12 @@ async function spawnJson(command: string, argv: string[], timeoutMs: number): Pr
     });
     child.on("error", (error) => {
       clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
       resolve(sidecarFailure("sidecar_failed", safeErrorMessage(error), true));
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
       if (timedOut) {
         resolve(sidecarFailure("sidecar_timeout", "Nollm sidecar command timed out.", true));
         return;
@@ -136,12 +149,43 @@ function requireAbsolutePath(value: string | undefined, field: string): string {
   return path.resolve(value);
 }
 
-function requirePathUnder(value: string, root: string, valueName: string, rootName: string): void {
-  const relative = path.relative(root, value);
+function requirePathUnder(value: string, root: string, valueName: string, rootName: string, mustExist: boolean): void {
+  const canonicalRoot = canonicalExistingPath(root, rootName);
+  const canonicalValue = mustExist ? canonicalExistingPath(value, valueName) : canonicalCandidatePath(value);
+  const relative = path.relative(canonicalRoot, canonicalValue);
   if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
     return;
   }
   throw new Error(`${valueName} must resolve under ${rootName}.`);
+}
+
+function canonicalExistingPath(value: string, field: string): string {
+  try {
+    return fs.realpathSync.native(value);
+  } catch {
+    throw new Error(`${field} must exist for canonical path validation.`);
+  }
+}
+
+function canonicalCandidatePath(value: string): string {
+  if (fs.existsSync(value)) {
+    return fs.realpathSync.native(value);
+  }
+  const existingParent = nearestExistingParent(value);
+  const canonicalParent = fs.realpathSync.native(existingParent);
+  return path.resolve(canonicalParent, path.relative(existingParent, value));
+}
+
+function nearestExistingParent(value: string): string {
+  let current = path.dirname(value);
+  while (!fs.existsSync(current)) {
+    const next = path.dirname(current);
+    if (next === current) {
+      throw new Error(`No existing parent found for ${value}.`);
+    }
+    current = next;
+  }
+  return current;
 }
 
 function boundedInteger(value: number, minimum: number, maximum: number, field: string): number {
@@ -181,4 +225,3 @@ function safeErrorMessage(error: unknown): string {
   }
   return "Nollm sidecar adapter error.";
 }
-

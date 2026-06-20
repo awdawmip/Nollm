@@ -1,10 +1,8 @@
 {
   // 1. Install/enable this package as a companion tool plugin.
   plugins: {
-    toolPlugins: [
-      {
-        id: "nollm-memory-companion",
-        package: "@nollm/openclaw-memory-companion",
+    entries: {
+      "nollm-memory-companion": {
         enabled: true,
         config: {
           pythonCommand: "python3",
@@ -18,7 +16,7 @@
           maxSearchResults: 5
         }
       }
-    ]
+    }
   },
 
   // 2. Tool policy: allow read companion tools and explicitly opt into pending writes.
@@ -35,17 +33,9 @@
     ]
   },
 
-  // 3. Optional, non-default Active Memory experiment.
-  activeMemoryExperiment: {
-    enabled: false,
-    tools: [
-      "memory_search",
-      "memory_get",
-      "nollm_memory_search",
-      "nollm_memory_get"
-    ],
-    promptAppend:
-      "Nollm gravity reports annotate drift and orientation. They do not replace source verification; use get before user-facing factual claims."
-  }
+  // 3. Optional Active Memory experiment guidance:
+  // If an operator explicitly opts into an Active Memory experiment, combine
+  // memory_search, memory_get, nollm_memory_search, and nollm_memory_get in
+  // that experiment's documented tool policy. Prompt the recall sub-agent that
+  // Nollm gravity reports annotate drift and do not replace source verification.
 }
-

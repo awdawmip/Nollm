@@ -87,26 +87,29 @@ From this package directory:
 ```bash
 npm install
 npm run plugin:build
+npm run plugin:check
 npm test
-npm run plugin:validate
 ```
 
-`plugin:validate` performs package-local static checks. A real OpenClaw gateway
-load test is separate:
+`plugin:build` compiles TypeScript and asks the OpenClaw CLI to generate native
+metadata in `openclaw.plugin.json` and `package.json`. `plugin:check` compiles,
+checks generated metadata freshness, and runs OpenClaw validation.
+
+A real OpenClaw gateway link/inspect smoke is separate:
 
 ```bash
 openclaw plugins install --link .
-openclaw plugins list
+openclaw plugins inspect nollm-memory-companion --runtime --json
 ```
 
-Only treat the gateway load as verified after it runs in an actual OpenClaw
-environment.
+Only treat those two commands as verified after they run in an actual OpenClaw
+CLI/Gateway environment.
 
 ## Manual Skill Installation
 
-Copy or link `skill/SKILL.md` into the target OpenClaw workspace skill location
-according to that workspace's normal procedure. The skill is not auto-installed
-and is not a system prompt.
+The plugin manifest declares `skill` as a skill root so `skill/SKILL.md` is
+discoverable when the plugin is enabled. Operators can also copy or link that
+file manually into a workspace skill location. The skill is not a system prompt.
 
 ## With memory-core
 
@@ -129,4 +132,3 @@ verification.
 | Non-shell bounded sidecar bridge | verified by Python static tests and package test |
 | Config path and timeout constraints | verified by Python static tests and package test |
 | Real OpenClaw gateway installation | skipped until an OpenClaw environment is provided |
-

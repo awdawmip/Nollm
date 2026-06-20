@@ -1,15 +1,67 @@
 {
   "id": "nollm-memory-companion",
   "name": "Nollm Memory Companion",
-  "version": "0.1.0",
-  "kind": "tool-plugin",
-  "entry": "./dist/index.js",
   "description": "Companion tools that delegate to the Nollm Python sidecar while OpenClaw memory-core remains the active owner.",
-  "tools": [
-    "nollm_memory_search",
-    "nollm_memory_get",
-    "nollm_memory_write_candidate",
-    "nollm_memory_status"
-  ]
+  "version": "0.1.0",
+  "skills": [
+    "skill"
+  ],
+  "configSchema": {
+    "type": "object",
+    "required": [
+      "nollmRepoRoot",
+      "workspaceRoot"
+    ],
+    "properties": {
+      "pythonCommand": {
+        "type": "string",
+        "default": "python3"
+      },
+      "nollmRepoRoot": {
+        "type": "string",
+        "description": "Required absolute path to the Nollm repository."
+      },
+      "workspaceRoot": {
+        "type": "string",
+        "description": "Required absolute path to the OpenClaw workspace."
+      },
+      "sidecarScript": {
+        "type": "string",
+        "description": "Optional absolute path under nollmRepoRoot."
+      },
+      "sidecarOutDir": {
+        "type": "string",
+        "description": "Optional absolute path under workspaceRoot."
+      },
+      "commandTimeoutMs": {
+        "type": "integer",
+        "default": 15000,
+        "minimum": 1000,
+        "maximum": 60000
+      },
+      "maxSearchResults": {
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 20
+      }
+    },
+    "additionalProperties": false
+  },
+  "activation": {
+    "onStartup": false
+  },
+  "contracts": {
+    "tools": [
+      "nollm_memory_search",
+      "nollm_memory_get",
+      "nollm_memory_write_candidate",
+      "nollm_memory_status"
+    ]
+  },
+  "toolMetadata": {
+    "nollm_memory_write_candidate": {
+      "optional": true
+    }
+  }
 }
-

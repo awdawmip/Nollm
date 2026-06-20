@@ -20,7 +20,8 @@ def test_companion_plugin_package_files_exist() -> None:
         "src/types.ts",
         "skill/SKILL.md",
         "examples/openclaw.config.example.json5",
-        "tests/plugin-contract.test.ts",
+        "tests/plugin-contract.test.mjs",
+        "package-lock.json",
     ]:
         assert (PACKAGE / relative).exists(), relative
 
@@ -31,26 +32,37 @@ def test_package_json_declares_openclaw_extension_and_runtime_entry() -> None:
     assert package["type"] == "module"
     assert package["main"] == "./dist/index.js"
     assert package["exports"]["."] == "./dist/index.js"
-    extension = package["openclaw"]["extensions"]["toolPlugins"][0]
-    assert extension["id"] == "nollm-memory-companion"
-    assert extension["entry"] == "./dist/index.js"
-    assert extension["manifest"] == "./openclaw.plugin.json"
+    assert package["openclaw"]["extensions"] == ["./dist/index.js"]
+    assert package["scripts"]["plugin:build"] == "npm run build && openclaw plugins build --entry ./dist/index.js"
+    assert package["scripts"]["plugin:check"] == (
+        "npm run build && openclaw plugins build --entry ./dist/index.js --check && "
+        "openclaw plugins validate --entry ./dist/index.js"
+    )
+    assert package["scripts"]["test"] == "npm run build && node --test tests/*.test.mjs"
+    assert package["dependencies"]["typebox"]
+    assert package["devDependencies"]["openclaw"]
 
 
 def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
     manifest_text = (PACKAGE / "openclaw.plugin.json").read_text(encoding="utf-8")
     manifest = json.loads(manifest_text)
 
-    assert manifest["kind"] == "tool-plugin"
-    assert manifest["kind"] != "memory"
+    assert "kind" not in manifest
+    assert "entry" not in manifest
+    assert "tools" not in manifest
     assert "plugins.slots.memory" not in manifest_text
     assert "memory slot" not in manifest_text.lower()
-    assert manifest["tools"] == [
+    assert manifest["activation"]["onStartup"] is False
+    assert manifest["skills"] == ["skill"]
+    assert manifest["configSchema"]["type"] == "object"
+    assert manifest["configSchema"]["additionalProperties"] is False
+    assert manifest["contracts"]["tools"] == [
         "nollm_memory_search",
         "nollm_memory_get",
         "nollm_memory_write_candidate",
         "nollm_memory_status",
     ]
+    assert manifest["toolMetadata"]["nollm_memory_write_candidate"]["optional"] is True
 
 
 def test_typescript_declares_exact_static_tool_names_and_optional_write() -> None:
@@ -66,6 +78,10 @@ def test_typescript_declares_exact_static_tool_names_and_optional_write() -> Non
         assert source.count(f'name: "{tool}"') == 1
     assert 'name: "nollm_memory_write_candidate"' in source
     assert "optional: true" in source
+    assert "tools: (tool) =>" in source
+    assert "parameters:" in source
+    assert "inputSchema" not in source
+    assert "context.signal?.throwIfAborted()" in source
 
 
 def test_config_docs_contain_absolute_path_and_timeout_boundaries() -> None:
@@ -111,8 +127,10 @@ def test_config_example_does_not_set_memory_slot_and_marks_active_memory_experim
     example = (PACKAGE / "examples/openclaw.config.example.json5").read_text(encoding="utf-8")
 
     assert "plugins.slots.memory" not in example
-    assert "activeMemoryExperiment" in example
-    assert "enabled: false" in example
+    assert "plugins: {" in example
+    assert "entries: {" in example
+    assert '"nollm-memory-companion"' in example
+    assert "activeMemoryExperiment" not in example
     assert "memory_search" in example
     assert "memory_get" in example
     assert "nollm_memory_search" in example
@@ -154,6 +172,8 @@ def test_sidecar_bridge_uses_safe_process_boundaries() -> None:
     assert "spawn(command, argv" in sidecar
     assert "shell: false" in sidecar
     assert "setTimeout" in sidecar
+    assert "fs.realpathSync.native" in sidecar
+    assert "signal?.addEventListener" in sidecar
     assert "MAX_CAPTURE_BYTES" in sidecar
     assert "JSON.parse" in sidecar
     assert "sidecar_timeout" in sidecar

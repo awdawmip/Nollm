@@ -15,20 +15,16 @@
     "README.md"
   ],
   "openclaw": {
-    "extensions": {
-      "toolPlugins": [
-        {
-          "id": "nollm-memory-companion",
-          "manifest": "./openclaw.plugin.json",
-          "entry": "./dist/index.js"
-        }
-      ]
-    }
+    "extensions": [
+      "./dist/index.js"
+    ]
   },
   "scripts": {
-    "plugin:build": "tsc -p tsconfig.json",
-    "plugin:validate": "node --test tests/plugin-contract.test.ts",
-    "test": "npm run plugin:validate"
+    "build": "tsc -p tsconfig.json",
+    "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
+    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check && openclaw plugins validate --entry ./dist/index.js",
+    "plugin:validate": "npm run plugin:check",
+    "test": "npm run build && node --test tests/*.test.mjs"
   },
   "peerDependencies": {
     "openclaw": ">=2026.5.17"
@@ -39,11 +35,12 @@
     }
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.41"
+    "typebox": "^1.1.38"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.5.0"
+    "openclaw": "latest",
+    "typescript": "^5.9.0"
   },
   "engines": {
     "node": ">=22"

@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 export const ConfigSchema = Type.Object(
   {
@@ -50,4 +50,3 @@ export const WriteCandidateInputSchema = Type.Object(
 );
 
 export const StatusInputSchema = Type.Object({}, { additionalProperties: false });
-
