@@ -1,6 +1,6 @@
 # Nollm OpenClaw Tool Contract
 
-Status: OCP7.
+Status: OCP9.
 
 Nollm is a geometry-executed dream-field companion. It does not own OpenClaw's memory slot and does not write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`.
 
@@ -58,8 +58,14 @@ Input: `well_id` and a Cortex-selected shard path.
 
 Output: deterministic trace and drift facts for logging. It returns no prose digest; the Cortex writes the Recall Digest or `NONE`.
 
+### `nollm_memory_status`
+
+Input: none.
+
+Output: field availability, current revision, source snapshot hash, stale state, and Dreamer status. It is a status check, not recall, ranking, search, or raw source access.
+
 ## Legacy Inspection Tools
 
-`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` are retained as legacy experimental inspection surfaces. They are not the OCP7 internal model.
+`nollm_memory_recall`, `nollm_memory_search`, and `nollm_memory_get` are not part of the OCP9 Active Memory surface and are not the Nollm internal model.
 
 Source-memory write tools are not exposed by the OpenClaw plugin. Compatibility Python functions fail closed with `source_memory_write_disabled`.

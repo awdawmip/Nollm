@@ -1,0 +1,168 @@
+{
+  "schema": "nollm.openclaw.ocp9_live_cortex_reply_loop_evidence.v1",
+  "captured_at_local": "2026-06-21T01:36:00+08:00",
+  "branch": "feature/openclaw-nollm-memory",
+  "status": "completed_with_residual_primary_over_answering",
+  "openclaw": {
+    "binary": "C:\\Users\\Administrator\\AppData\\Local\\Programs\\nodejs\\openclaw.cmd",
+    "active_memory_version": "2026.6.8",
+    "gateway_restarted_after_config": true
+  },
+  "configuration_safety": {
+    "primary_agent": "ocp9-nollm-primary-blind",
+    "primary_workspace": "out/nollm_runtime/ocp9_blind_primary",
+    "primary_context_injection_never": true,
+    "primary_bootstrap_max_chars": 1,
+    "primary_memory_search_disabled": true,
+    "active_memory_tools_exact": [
+      "nollm_field_overview",
+      "nollm_open_well",
+      "nollm_surface",
+      "nollm_focus",
+      "nollm_drift",
+      "nollm_read",
+      "nollm_recall_trace",
+      "nollm_memory_status"
+    ],
+    "legacy_nollm_tools_excluded": true,
+    "raw_source_tools_excluded": true,
+    "source_files_mutated_by_nollm": false
+  },
+  "source_fixture": {
+    "workspace": "out/nollm_runtime/ocp9_live_workspace",
+    "initial_source_snapshot_hash": "50facdc81473131e32389bf738a71167e615ea76facc491dd70bbc16126f1eac",
+    "mutated_source_snapshot_hash": "0d09b603369b7017229122a3a61471ddd0ef6153e0464162c1e785be8613e974",
+    "material_is_non_sensitive_fixture": true
+  },
+  "dreamer_revisions": [
+    {
+      "revision_id": "rev_4d7911e511727c82",
+      "parent_revision_id": null,
+      "source_snapshot_hash": "50facdc81473131e32389bf738a71167e615ea76facc491dd70bbc16126f1eac",
+      "shard_count": 6,
+      "source_files_mutated": false
+    },
+    {
+      "revision_id": "rev_ea65eb9d080b82fd",
+      "parent_revision_id": "rev_4d7911e511727c82",
+      "source_snapshot_hash": "0d09b603369b7017229122a3a61471ddd0ef6153e0464162c1e785be8613e974",
+      "shard_count": 6,
+      "source_files_mutated": false
+    }
+  ],
+  "live_turns": [
+    {
+      "case": "c1_multi_fact",
+      "active_memory_transcript": "active-memory-mqmlb9k5-a9d7f2df.jsonl",
+      "transcript_sha256": "752974e060853e906cad671ce42c99b8d1801aeacb8fb7081625a676fb36d783",
+      "tool_sequence": [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_focus",
+        "nollm_focus",
+        "nollm_read",
+        "nollm_read",
+        "nollm_read",
+        "nollm_recall_trace"
+      ],
+      "timeout": false,
+      "digest": "Mira Chen coordinates Project Atlas. Blue Whale is Atlas's topology experiment. Lighthouse is Atlas's OpenClaw integration branch. Both Blue Whale and Lighthouse are subordinate initiatives under Project Atlas.",
+      "legacy_or_raw_tool_calls": []
+    },
+    {
+      "case": "c2_update_style",
+      "active_memory_transcript": "active-memory-mqmmtsah-66594984.jsonl",
+      "transcript_sha256": "180dfee52b87059fb0efa44a9764007db9f0cb6292b39e58a60d142d108235a5",
+      "tool_sequence": [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_read",
+        "nollm_focus",
+        "nollm_read",
+        "nollm_recall_trace"
+      ],
+      "timeout": false,
+      "digest": "用户偏好中文回复，技术术语可保留英文。Atlas 项目由 Mira Chen 协调。关于 Atlas 的当前状态或进展，未找到更多记录。",
+      "final_primary_residual_defect": "Primary reply still added that Atlas is advancing, beyond the digest.",
+      "legacy_or_raw_tool_calls": []
+    },
+    {
+      "case": "c3_coffee_location",
+      "active_memory_transcript": "active-memory-mqmml2y6-c1823ef7.jsonl",
+      "transcript_sha256": "6667e54a6bf84a8f54aed4b4a85c991b1fde894507068895e8bc3e7906017571",
+      "tool_sequence": [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_open_well",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_read",
+        "nollm_recall_trace"
+      ],
+      "timeout": false,
+      "digest": "咖啡机在二楼（second floor）。该信息来自 MEMORY.md 第 7 行的记忆记录。",
+      "final_answer_summary": "咖啡机在二楼。",
+      "legacy_or_raw_tool_calls": []
+    },
+    {
+      "case": "stale_gate_before_refresh",
+      "active_memory_transcript": "active-memory-mqmmwqvi-b920cc85.jsonl",
+      "transcript_sha256": "6e01eaf2c0be9acf21e44630fa99a32059f9b7d5130fbccfab3b423e6ac0852a",
+      "tool_sequence": [
+        "nollm_memory_status"
+      ],
+      "timeout": false,
+      "digest": "field stale - refresh required",
+      "stale_fact_presented_as_current": false,
+      "legacy_or_raw_tool_calls": []
+    },
+    {
+      "case": "post_refresh_blue_whale",
+      "active_memory_transcript": "active-memory-mqmn2fjd-f5ef865c.jsonl",
+      "transcript_sha256": "bed2774d3e985f4fc4c498dfefbf29b368e348935d71dca2c9e8fd59cd72cefd",
+      "tool_sequence": [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_read",
+        "nollm_recall_trace"
+      ],
+      "timeout": false,
+      "digest": "Blue Whale is Atlas's geometry execution experiment.",
+      "final_answer_summary": "Blue Whale is Atlas's geometry execution experiment.",
+      "legacy_or_raw_tool_calls": []
+    }
+  ],
+  "revision_binding": {
+    "old_well_id": "well_4c1838ef6cf5285d",
+    "old_well_revision": "rev_4d7911e511727c82",
+    "old_well_read_after_refresh": "Blue Whale is Atlas's topology experiment.",
+    "new_well_id": "well_2b17d4960120bc52",
+    "new_well_revision": "rev_ea65eb9d080b82fd",
+    "new_well_read_after_refresh": "Blue Whale is Atlas's geometry execution experiment."
+  },
+  "negative_assertions": {
+    "no_vector_db": true,
+    "no_graph_db": true,
+    "no_embedding_path": true,
+    "no_source_chunk_search_path": true,
+    "no_memory_file_write": true,
+    "no_drift_class_trust_or_status_mapping": true
+  }
+}

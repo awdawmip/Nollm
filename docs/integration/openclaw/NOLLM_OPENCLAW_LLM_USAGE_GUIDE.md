@@ -1,6 +1,6 @@
 # Nollm OpenClaw LLM Usage Guide
 
-Status: OCP7.
+Status: OCP9.
 
 Nollm is not an embedding-free `MEMORY.md` search adapter. Treat OpenClaw `MEMORY.md`, `DREAMS.md`, and `memory/*.md` as read-only source snapshots.
 
@@ -8,6 +8,7 @@ Primary Cortex path:
 
 ```text
 nollm_field_overview
+-> field_stale check; return NONE/refresh-required when stale
 -> Cortex chooses entry shard
 -> nollm_open_well, yielding a well_id bound to one field revision
 -> nollm_surface
@@ -24,6 +25,8 @@ Core only executes geometry and returns deterministic facts: true honeycomb neig
 ## Cortex Rules
 
 - Inspect `nollm_field_overview` first.
+- Use `nollm_memory_status` only for field availability/stale status; it is not recall.
+- If `field_stale` is true, return `NONE` or a compact refresh-required digest instead of presenting stale facts as current.
 - Choose the entry shard yourself.
 - Call `nollm_open_well` with an explicit non-negative `anchor_vector`.
 - Use `nollm_surface` before focusing.
@@ -36,6 +39,6 @@ No tool output alone is source truth. Drift labels are orientation only; never m
 
 ## Legacy Tools
 
-`nollm_memory_recall`, `nollm_memory_search`, `nollm_memory_get`, and `nollm_memory_status` remain legacy experimental inspection tools. They are not the Nollm internal model for OCP7.
+`nollm_memory_recall`, `nollm_memory_search`, and `nollm_memory_get` are not part of the OCP9 Active Memory surface. They are not the Nollm internal model.
 
 `nollm_memory_write_candidate` and `nollm_memory_commit_candidate` are not exposed by the plugin. Python compatibility functions fail closed with `source_memory_write_disabled`.
