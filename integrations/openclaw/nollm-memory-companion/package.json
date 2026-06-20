@@ -1,0 +1,51 @@
+{
+  "name": "@nollm/openclaw-memory-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenClaw companion tool plugin for the Nollm Python memory sidecar.",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "skill",
+    "README.md"
+  ],
+  "openclaw": {
+    "extensions": {
+      "toolPlugins": [
+        {
+          "id": "nollm-memory-companion",
+          "manifest": "./openclaw.plugin.json",
+          "entry": "./dist/index.js"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "plugin:build": "tsc -p tsconfig.json",
+    "plugin:validate": "node --test tests/plugin-contract.test.ts",
+    "test": "npm run plugin:validate"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.5.17"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.41"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

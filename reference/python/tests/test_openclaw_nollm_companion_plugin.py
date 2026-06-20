@@ -1,0 +1,164 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+PACKAGE = ROOT / "integrations/openclaw/nollm-memory-companion"
+
+
+def test_companion_plugin_package_files_exist() -> None:
+    for relative in [
+        "README.md",
+        "package.json",
+        "tsconfig.json",
+        "openclaw.plugin.json",
+        "src/index.ts",
+        "src/sidecar.ts",
+        "src/schemas.ts",
+        "src/types.ts",
+        "skill/SKILL.md",
+        "examples/openclaw.config.example.json5",
+        "tests/plugin-contract.test.ts",
+    ]:
+        assert (PACKAGE / relative).exists(), relative
+
+
+def test_package_json_declares_openclaw_extension_and_runtime_entry() -> None:
+    package = json.loads((PACKAGE / "package.json").read_text(encoding="utf-8"))
+
+    assert package["type"] == "module"
+    assert package["main"] == "./dist/index.js"
+    assert package["exports"]["."] == "./dist/index.js"
+    extension = package["openclaw"]["extensions"]["toolPlugins"][0]
+    assert extension["id"] == "nollm-memory-companion"
+    assert extension["entry"] == "./dist/index.js"
+    assert extension["manifest"] == "./openclaw.plugin.json"
+
+
+def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
+    manifest_text = (PACKAGE / "openclaw.plugin.json").read_text(encoding="utf-8")
+    manifest = json.loads(manifest_text)
+
+    assert manifest["kind"] == "tool-plugin"
+    assert manifest["kind"] != "memory"
+    assert "plugins.slots.memory" not in manifest_text
+    assert "memory slot" not in manifest_text.lower()
+    assert manifest["tools"] == [
+        "nollm_memory_search",
+        "nollm_memory_get",
+        "nollm_memory_write_candidate",
+        "nollm_memory_status",
+    ]
+
+
+def test_typescript_declares_exact_static_tool_names_and_optional_write() -> None:
+    source = (PACKAGE / "src/index.ts").read_text(encoding="utf-8")
+    expected = [
+        "nollm_memory_search",
+        "nollm_memory_get",
+        "nollm_memory_write_candidate",
+        "nollm_memory_status",
+    ]
+
+    for tool in expected:
+        assert source.count(f'name: "{tool}"') == 1
+    assert 'name: "nollm_memory_write_candidate"' in source
+    assert "optional: true" in source
+
+
+def test_config_docs_contain_absolute_path_and_timeout_boundaries() -> None:
+    corpus = "\n".join(
+        [
+            (PACKAGE / "README.md").read_text(encoding="utf-8"),
+            (PACKAGE / "src/schemas.ts").read_text(encoding="utf-8"),
+            (PACKAGE / "src/sidecar.ts").read_text(encoding="utf-8"),
+        ]
+    )
+
+    assert "absolute path" in corpus
+    assert "1000" in corpus
+    assert "60000" in corpus
+    assert "1..20" in corpus
+    assert "sidecarScript" in corpus
+    assert "nollmRepoRoot" in corpus
+    assert "sidecarOutDir" in corpus
+    assert "workspaceRoot" in corpus
+
+
+def test_skill_teaches_required_workflow_and_gravity_trust_distinction() -> None:
+    skill = (PACKAGE / "skill/SKILL.md").read_text(encoding="utf-8")
+
+    for phrase in [
+        "Use `nollm_memory_search`",
+        "retrieval_score",
+        "Use `nollm_memory_get`",
+        "source path / provenance",
+        "core` / `halo",
+        "near_drift",
+        "far_coherent",
+        "far_weak",
+        "Use `nollm_memory_write_candidate`",
+        "Never claim that a pending candidate has been written to `MEMORY.md`",
+        "Gravity report = instrumentation, not permission.",
+        "Drift class = orientation, not trust.",
+    ]:
+        assert phrase in skill
+
+
+def test_config_example_does_not_set_memory_slot_and_marks_active_memory_experiment_optional() -> None:
+    example = (PACKAGE / "examples/openclaw.config.example.json5").read_text(encoding="utf-8")
+
+    assert "plugins.slots.memory" not in example
+    assert "activeMemoryExperiment" in example
+    assert "enabled: false" in example
+    assert "memory_search" in example
+    assert "memory_get" in example
+    assert "nollm_memory_search" in example
+    assert "nollm_memory_get" in example
+    assert "do not replace source verification" in example
+
+
+def test_forbidden_implementation_claims_are_absent() -> None:
+    corpus = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in [
+            PACKAGE / "README.md",
+            PACKAGE / "openclaw.plugin.json",
+            PACKAGE / "skill/SKILL.md",
+            PACKAGE / "examples/openclaw.config.example.json5",
+        ]
+    ).lower()
+
+    forbidden = [
+        "kind: \"memory\"",
+        "plugins.slots.memory",
+        "replaces memory-core",
+        "calls a real llm",
+        "writes durable openclaw memory",
+        "maps drift_class to trust",
+        "maps drift_class to status",
+        "provides a stable public recall api",
+        "implements a stable public recall api",
+        "gateway load test verified",
+    ]
+    for phrase in forbidden:
+        assert phrase not in corpus
+
+
+def test_sidecar_bridge_uses_safe_process_boundaries() -> None:
+    sidecar = (PACKAGE / "src/sidecar.ts").read_text(encoding="utf-8")
+
+    assert 'from "node:child_process"' in sidecar
+    assert "spawn(command, argv" in sidecar
+    assert "shell: false" in sidecar
+    assert "setTimeout" in sidecar
+    assert "MAX_CAPTURE_BYTES" in sidecar
+    assert "JSON.parse" in sidecar
+    assert "sidecar_timeout" in sidecar
+    assert "sidecar_failed" in sidecar
+    assert "sidecar_invalid_json" in sidecar
+    assert "configuration_error" in sidecar
+    assert "exec(" not in sidecar
+    assert "execFile(" not in sidecar

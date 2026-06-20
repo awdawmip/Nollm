@@ -1,0 +1,15 @@
+{
+  "id": "nollm-memory-companion",
+  "name": "Nollm Memory Companion",
+  "version": "0.1.0",
+  "kind": "tool-plugin",
+  "entry": "./dist/index.js",
+  "description": "Companion tools that delegate to the Nollm Python sidecar while OpenClaw memory-core remains the active owner.",
+  "tools": [
+    "nollm_memory_search",
+    "nollm_memory_get",
+    "nollm_memory_write_candidate",
+    "nollm_memory_status"
+  ]
+}
+
