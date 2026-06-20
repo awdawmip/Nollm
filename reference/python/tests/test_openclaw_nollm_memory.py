@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
 import sys
 from pathlib import Path
+
+from subprocess_harness import run_subprocess, subprocess_failure_message
 
 from nollm.openclaw_memory_adapter import (
     FORBIDDEN_SEMANTICS,
@@ -148,14 +149,12 @@ def test_forbidden_semantics_are_false() -> None:
 
 
 def _run_cli(*args: str) -> dict[str, object]:
-    result = subprocess.run(
+    result = run_subprocess(
         [sys.executable, str(SCRIPT), *args],
         cwd=REFERENCE_PYTHON,
-        text=True,
-        capture_output=True,
-        timeout=60,
+        timeout_seconds=60,
     )
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.returncode == 0, subprocess_failure_message(result, REFERENCE_PYTHON)
     return json.loads(result.stdout)
 
 

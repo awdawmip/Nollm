@@ -1,0 +1,27 @@
+{
+  "memory_core": {
+    "id": "memory-core",
+    "version": "2026.6.8",
+    "kind": "memory",
+    "memorySlotSelected": true,
+    "status": "loaded",
+    "toolNames": [
+      "memory_search",
+      "memory_get"
+    ]
+  },
+  "nollm_memory_companion": {
+    "id": "nollm-memory-companion",
+    "version": "0.1.0",
+    "kind": null,
+    "memorySlotSelected": false,
+    "status": "loaded",
+    "toolNames": [
+      "nollm_memory_search",
+      "nollm_memory_get",
+      "nollm_memory_write_candidate",
+      "nollm_memory_status"
+    ],
+    "source": "${NOLLM_REPO}\\integrations\\openclaw\\nollm-memory-companion\\dist\\index.js"
+  }
+}

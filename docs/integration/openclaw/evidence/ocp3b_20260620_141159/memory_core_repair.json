@@ -1,0 +1,22 @@
+{
+  "repairs": [
+    {
+      "issue": "memory-core embedding/vector path unavailable or unsuitable for controlled local evaluation",
+      "action": "isolated agents set memorySearch.provider and fallback to none; memory-core still executed memory_search/memory_get against controlled corpus",
+      "scope": "ocp3b-baseline, ocp3b-nollm, ocp3b-nollm-write only"
+    },
+    {
+      "issue": "Nollm companion initially failed with spawn EINVAL because pythonCommand resolved to a command shim",
+      "action": "reran installer to pin pythonCommand to Python 3.14 executable and restarted Gateway; failed N5 preserved in ignored raw out/",
+      "scope": "nollm-memory-companion local OpenClaw config"
+    }
+  ],
+  "before_after_evidence": [
+    "baseline_B3.agent.stderr.txt contains transient network failure before retry",
+    "nollm_N5.agent.json records spawn EINVAL before repair",
+    "repair_nollm_python_apply.json records pythonCommand repair",
+    "nollm_N5_strict_pythonfix.agent.json records successful Nollm search/get after repair"
+  ],
+  "fts_only_provider": "none",
+  "durable_memory_owner": "memory-core"
+}

@@ -4,6 +4,7 @@ import os
 import sys
 
 sys.dont_write_bytecode = True
+os.environ.setdefault("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
 
 from nollm.pytest_env import isolated_pytest_env  # noqa: E402
 

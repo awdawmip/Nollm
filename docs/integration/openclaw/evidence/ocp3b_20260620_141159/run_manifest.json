@@ -1,0 +1,37 @@
+{
+  "schema": "nollm.openclaw.ocp3b.strict_live_e2e_evidence.v1",
+  "run_id": "ocp3b_20260620_141159",
+  "branch": "feature/openclaw-nollm-memory",
+  "baseline_agent": "ocp3b-baseline",
+  "nollm_agent": "ocp3b-nollm",
+  "write_agent": "ocp3b-nollm-write",
+  "controlled_corpus": {
+    "MEMORY.md": [
+      "Atlas service owner is Tessa Lin",
+      "Atlas rollback credential is TESSA-17",
+      "MEMORY.md authoritative when DREAMS.md speculative"
+    ],
+    "memory/2026-06-20.md": [
+      "Atlas rollback drill completed with TESSA-17",
+      "Reviewed by Tessa Lin",
+      "Mira Chen has no recorded birthday"
+    ],
+    "DREAMS.md": [
+      "Speculative Mira Chen Atlas outage note",
+      "Not evidence that Mira owns Atlas"
+    ]
+  },
+  "scored_tasks": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "N1",
+    "N2",
+    "N3",
+    "N4",
+    "N5",
+    "N6",
+    "N7"
+  ]
+}
