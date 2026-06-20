@@ -49,14 +49,14 @@
   },
   "contracts": {
     "tools": [
+      "nollm_memory_status",
       "nollm_field_overview",
       "nollm_open_well",
       "nollm_surface",
       "nollm_focus",
       "nollm_drift",
       "nollm_read",
-      "nollm_recall_trace",
-      "nollm_memory_status"
+      "nollm_recall_trace"
     ]
   }
 }

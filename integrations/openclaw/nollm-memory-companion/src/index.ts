@@ -24,6 +24,21 @@ const plugin = defineToolPlugin({
   configSchema: ConfigSchema,
   tools: (tool) => [
     tool({
+      name: "nollm_memory_status",
+      label: "Nollm Memory Status",
+      description:
+        "Return Nollm field availability, current revision, stale state, and Dreamer status without exposing source text.",
+      parameters: StatusInputSchema,
+      async execute(_input: object, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        return await runSidecarCommand(config, "status", {}, context.signal);
+      }
+    }),
+    tool({
       name: "nollm_field_overview",
       label: "Nollm Field Overview",
       description:
@@ -167,21 +182,6 @@ const plugin = defineToolPlugin({
           { well_id: input.well_id, path: JSON.stringify(input.path) },
           context.signal
         );
-      }
-    }),
-    tool({
-      name: "nollm_memory_status",
-      label: "Nollm Memory Status",
-      description:
-        "Return Nollm field availability, current revision, stale state, and Dreamer status without exposing source text.",
-      parameters: StatusInputSchema,
-      async execute(_input: object, config: PluginConfig, context) {
-        context.signal?.throwIfAborted();
-        const configRequired = configurationRequiredStatus(config);
-        if (configRequired.ok === false) {
-          return configRequired;
-        }
-        return await runSidecarCommand(config, "status", {}, context.signal);
       }
     })
   ]

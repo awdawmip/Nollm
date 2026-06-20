@@ -15,14 +15,14 @@ import {
 
 const packageRoot = path.resolve(import.meta.dirname, "..");
 const toolNames = [
+  "nollm_memory_status",
   "nollm_field_overview",
   "nollm_open_well",
   "nollm_surface",
   "nollm_focus",
   "nollm_drift",
   "nollm_read",
-  "nollm_recall_trace",
-  "nollm_memory_status"
+  "nollm_recall_trace"
 ];
 
 test("default export exposes real defineToolPlugin metadata", () => {

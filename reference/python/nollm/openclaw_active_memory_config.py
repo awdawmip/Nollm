@@ -49,7 +49,7 @@ OCP7_DREAMER_PROMPT_APPEND = (
 )
 OCP9_PRIMARY_AGENT_ID = "ocp9-nollm-primary-blind"
 OCP9_CORTEX_AGENT_ID = "ocp9-nollm-cortex"
-OCP9_CORTEX_TOOLS = OCP6R_CORTEX_TOOLS + ["nollm_memory_status"]
+OCP9_CORTEX_TOOLS = ["nollm_memory_status"] + OCP6R_CORTEX_TOOLS
 OCP9_LEGACY_NOLLM_TOOLS = [
     "nollm_memory_recall",
     "nollm_memory_search",
@@ -61,21 +61,52 @@ OCP9_PROHIBITED_TOOLS = DIRECT_TOOL_DENY + [
     "memory_search",
     "memory_get",
 ] + OCP9_LEGACY_NOLLM_TOOLS
+OCP10_RECALL_DIGEST_ENVELOPE = (
+    "NOLLM_RECALL_DIGEST\n"
+    "field_state: available | stale | unavailable\n"
+    "facts:\n"
+    "- ...\n"
+    "explicit_absences:\n"
+    "- ...\n"
+    "lateral_context:\n"
+    "- ...\n"
+    "scope_note: ...\n"
+    "END_NOLLM_RECALL_DIGEST"
+)
+OCP10_PRIMARY_GROUNDING_DESCRIPTION = (
+    "OCP10 blind primary grounding contract. When an injected NOLLM_RECALL_DIGEST is present, treat it as the complete memory context for this turn. "
+    "State memory-dependent claims only from digest facts. Preserve explicit_absences as response boundaries. "
+    "Do not infer progress, status, roadmap, blockers, schedules, delays, or next steps from a relationship, role, ownership, preference, or historical fact. "
+    "For absent facts, say no current memory record was recalled; do not guess, deny, or extrapolate. "
+    "Never claim you read source files or performed your own memory retrieval. Never offer or imply that you can write Nollm memory or source memory. "
+    "Answer in the user's requested language and style while preserving the factual boundary."
+)
+OCP10_PRIMARY_GROUNDING_FILE = (
+    "# OCP10 Primary Recall-Digest Grounding\n\n"
+    "When a `NOLLM_RECALL_DIGEST` is injected for the current turn, treat it as the complete memory context for memory-dependent claims.\n"
+    "State memory facts only from the digest `facts` section.\n"
+    "Preserve `explicit_absences` as hard response boundaries.\n"
+    "Do not infer progress, status, roadmap, blockers, schedules, delays, or next steps from a relationship, role, ownership, preference, or historical fact.\n"
+    "For absent facts, say no current memory record was recalled; do not guess, deny, or extrapolate.\n"
+    "Do not call Nollm tools, search tools, raw file tools, or source-reading tools to answer user-facing memory questions; Active Memory supplies the digest before you reply.\n"
+    "Never claim you read source files or performed your own memory retrieval.\n"
+    "Never offer or imply that you can write Nollm memory or source memory.\n"
+    "Answer in the user's requested language and style while preserving the factual boundary.\n"
+)
 OCP9_CORTEX_PROMPT_APPEND = (
-    "Act as the Nollm Cortex for Active Memory before the primary reply. "
-    "Use nollm_memory_status or nollm_field_overview first to detect field availability and field_stale; status is only a stale gate, never recall evidence. "
-    "If field_stale is true, write NONE or a compact 'field stale - refresh required' Recall Digest; do not present stale facts as current. "
-    "Required path: nollm_field_overview -> you explicitly choose the entry shard -> nollm_open_well with your explicit non-negative anchor_vector -> "
-    "nollm_surface -> you choose the focus target -> nollm_focus -> optional nollm_drift for lateral/return orientation -> "
-    "nollm_read with the current well_id for exact dream-shard reads -> nollm_recall_trace. "
-    "For bridge/project questions or messages naming multiple entities, inspect both target_scale bridge and target_scale fine with nollm_surface before deciding a shard is missing. "
-    "For every named entity visible in bridge/fine surface, focus and read the exact shard, then include every read shard in nollm_recall_trace. "
-    "When the user asks for an update, status, blockers, roadmap, relationship, or preference, include only facts read from shards; if a requested fact is not read, state that no current recall for that fact was found. "
-    "After nollm_recall_trace, immediately write one compact Recall Digest under 600 characters or NONE; do not keep exploring. "
-    "You, the Cortex, write the compact Recall Digest or NONE for injection into the primary reply. "
-    "Core only executes deterministic geometry and never composes prose, selects the semantic entry, ranks by query text, or reads raw source chunks. "
-    "Do not call read, exec, process, edit, write, memory_search, memory_get, or legacy nollm_memory_recall/search/get tools. "
-    "No tool output alone is source truth; drift_class is orientation only and never maps to trust, status, permission, or rejection."
+    "You are the Nollm Cortex for Active Memory. Return only NONE or one NOLLM_RECALL_DIGEST envelope; do not answer the user directly. "
+    "Use nollm_memory_status first. If the field is stale or unavailable, emit field_state stale/unavailable, no facts, and an explicit 'refresh required' or unavailable boundary. "
+    "If available: nollm_field_overview -> choose the entry shard yourself -> nollm_open_well with a semantic non-negative anchor_vector -> "
+    "nollm_surface only as needed -> nollm_focus -> nollm_read exact shards -> nollm_recall_trace. "
+    "Read only user-named entities and minimal bridge/entry shards needed for the asked relationship; do not read every visible surface entity. "
+    "facts may contain only text actually read through nollm_read in the recorded well/revision path. "
+    "explicit_absences must include requested-but-unread update, status, blockers, roadmap, progress, next steps, relationship, or preference categories; no current recall is not false. "
+    "Use this exact envelope form: "
+    f"{OCP10_RECALL_DIGEST_ENVELOPE}. "
+    "Keep digest content under 600 characters excluding markers; use '- none' for empty sections; scope_note says this digest is the bounded memory authority for this turn. "
+    "Core only executes deterministic geometry and never composes prose, chooses semantic entry, ranks by query text, or reads raw source chunks. "
+    "Never call read, exec, process, edit, write, memory_search, memory_get, or legacy nollm_memory_recall/search/get. "
+    "drift_class is orientation only and never maps to trust, status, permission, or rejection."
 )
 
 
@@ -279,10 +310,12 @@ def build_ocp9_live_cortex_reply_loop_patch(
         "queryMode": "message",
         "promptStyle": "precision-heavy",
         "toolsAllow": list(OCP9_CORTEX_TOOLS),
-        "promptAppend": OCP9_CORTEX_PROMPT_APPEND,
+        "promptOverride": OCP9_CORTEX_PROMPT_APPEND,
         "logging": True,
         "persistTranscripts": True,
         "timeoutMs": 120000,
+        "circuitBreakerMaxTimeouts": 20,
+        "circuitBreakerCooldownMs": 5000,
         "maxSummaryChars": 900,
         "recentUserTurns": 1,
         "recentAssistantTurns": 0,
@@ -326,12 +359,13 @@ def _build_ocp9_primary_agent(agent_id: str, workspace_root: Path, model: str) -
     return {
         "id": agent_id,
         "name": agent_id,
+        "description": OCP10_PRIMARY_GROUNDING_DESCRIPTION,
         "workspace": str(workspace_root),
         "agentDir": str(Path.home() / ".openclaw" / "agents" / agent_id / "agent"),
         "model": model,
         "contextInjection": "never",
-        "bootstrapMaxChars": 1,
-        "bootstrapTotalMaxChars": 1,
+        "bootstrapMaxChars": 2000,
+        "bootstrapTotalMaxChars": 2000,
         "memorySearch": {"provider": "none", "fallback": "none"},
         "tools": {
             "profile": "minimal",
@@ -403,6 +437,9 @@ __all__ = [
     "OCP9_LEGACY_NOLLM_TOOLS",
     "OCP9_PRIMARY_AGENT_ID",
     "OCP9_PROHIBITED_TOOLS",
+    "OCP10_PRIMARY_GROUNDING_DESCRIPTION",
+    "OCP10_PRIMARY_GROUNDING_FILE",
+    "OCP10_RECALL_DIGEST_ENVELOPE",
     "build_ocp4_active_memory_patch",
     "build_ocp6r_cortex_active_memory_patch",
     "build_ocp7_dreamer_agent_patch",

@@ -57,6 +57,7 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
     assert manifest["configSchema"]["type"] == "object"
     assert manifest["configSchema"]["additionalProperties"] is False
     assert manifest["contracts"]["tools"] == [
+        "nollm_memory_status",
         "nollm_field_overview",
         "nollm_open_well",
         "nollm_surface",
@@ -64,7 +65,6 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
-        "nollm_memory_status",
     ]
     assert "toolMetadata" not in manifest
 
@@ -124,7 +124,7 @@ def test_skill_teaches_required_workflow_and_gravity_trust_distinction() -> None
         "Use `nollm_drift`",
         "Use `nollm_recall_trace`",
         "true honeycomb neighbors",
-        "Cortex, write the compact Recall Digest",
+        "Cortex, write the compact `NOLLM_RECALL_DIGEST` envelope",
         "lateral",
         "Do not use `memory_search` / `memory_get` as the Nollm internal model",
         "Gravity report = instrumentation, not permission.",

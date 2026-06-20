@@ -11,7 +11,9 @@ Primary Cortex workflow:
 4. Use `nollm_focus` after choosing a target yourself, for gravity and coverage facts.
 5. Use `nollm_drift` only for useful lateral movement. Label lateral findings as lateral.
 6. Use `nollm_read` with the current `well_id` for exact dream-shard reads.
-7. Use `nollm_recall_trace` to log the explicit selected path. You, the Cortex, write the compact Recall Digest or `NONE`.
+7. Use `nollm_recall_trace` to log the explicit selected path. You, the Cortex, write the compact `NOLLM_RECALL_DIGEST` envelope or `NONE`.
+
+In `NOLLM_RECALL_DIGEST`, put only exact shard reads under `facts`, put requested-but-unread categories under `explicit_absences`, and keep stale fields as refresh-required boundaries with no facts.
 
 If `field_stale` is true, return `NONE` or a compact refresh-required digest. Do not present stale field contents as current knowledge.
 

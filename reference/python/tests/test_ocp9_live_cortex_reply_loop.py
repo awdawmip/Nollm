@@ -13,6 +13,9 @@ from nollm.openclaw_active_memory_config import (
     OCP9_LEGACY_NOLLM_TOOLS,
     OCP9_PRIMARY_AGENT_ID,
     OCP9_PROHIBITED_TOOLS,
+    OCP10_PRIMARY_GROUNDING_DESCRIPTION,
+    OCP10_PRIMARY_GROUNDING_FILE,
+    OCP10_RECALL_DIGEST_ENVELOPE,
     build_ocp9_live_cortex_reply_loop_patch,
 )
 from subprocess_harness import run_subprocess
@@ -48,9 +51,10 @@ def test_ocp9_patch_configures_blind_primary_and_bounded_cortex(tmp_path: Path) 
 
     assert primary["workspace"] == str(blind_workspace)
     assert primary["contextInjection"] == "never"
-    assert primary["bootstrapMaxChars"] == 1
-    assert primary["bootstrapTotalMaxChars"] == 1
+    assert primary["bootstrapMaxChars"] == 2000
+    assert primary["bootstrapTotalMaxChars"] == 2000
     assert primary["memorySearch"] == {"provider": "none", "fallback": "none"}
+    assert primary["description"] == OCP10_PRIMARY_GROUNDING_DESCRIPTION
     assert primary["tools"]["alsoAllow"] == OCP9_CORTEX_TOOLS
     assert set(OCP9_PROHIBITED_TOOLS).issubset(set(primary["tools"]["deny"]))
     assert not (set(OCP9_CORTEX_TOOLS) & set(primary["tools"]["deny"]))
@@ -60,6 +64,8 @@ def test_ocp9_patch_configures_blind_primary_and_bounded_cortex(tmp_path: Path) 
     assert not (set(global_tools["alsoAllow"]) & set(OCP9_LEGACY_NOLLM_TOOLS))
     assert active["agents"] == [OCP9_PRIMARY_AGENT_ID]
     assert active["toolsAllow"] == OCP9_CORTEX_TOOLS
+    assert active["promptOverride"] == OCP9_CORTEX_PROMPT_APPEND
+    assert "promptAppend" not in active
     assert active["transcriptDir"] == str(sidecar_out / "transcripts")
     assert companion["workspaceRoot"] == str(source_workspace)
     assert companion["sidecarOutDir"] == str(sidecar_out)
@@ -70,6 +76,16 @@ def test_ocp9_patch_configures_blind_primary_and_bounded_cortex(tmp_path: Path) 
 def test_ocp9_active_tool_surface_excludes_legacy_search_and_raw_tools() -> None:
     forbidden = set(OCP9_LEGACY_NOLLM_TOOLS) | {"memory_search", "memory_get", "read", "exec", "write", "edit"}
 
+    assert OCP9_CORTEX_TOOLS == [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_drift",
+        "nollm_read",
+        "nollm_recall_trace",
+    ]
     assert not (set(OCP9_CORTEX_TOOLS) & forbidden)
     assert "nollm_memory_status" in OCP9_CORTEX_TOOLS
     assert "nollm_read" in OCP9_CORTEX_TOOLS
@@ -81,20 +97,54 @@ def test_ocp9_active_tool_surface_excludes_legacy_search_and_raw_tools() -> None
 def test_ocp9_prompt_requires_entry_decision_digest_owner_and_stale_handling() -> None:
     prompt = OCP9_CORTEX_PROMPT_APPEND
 
-    assert "explicitly choose the entry" in prompt
-    assert "You, the Cortex, write the compact Recall Digest or NONE" in prompt
+    assert OCP10_RECALL_DIGEST_ENVELOPE in prompt
+    assert "NOLLM_RECALL_DIGEST" in prompt
+    assert "field_state: available | stale | unavailable" in prompt
+    assert "facts:" in prompt
+    assert "explicit_absences:" in prompt
+    assert "lateral_context:" in prompt
+    assert "scope_note:" in prompt
+    assert "choose the entry shard yourself" in prompt
+    assert "Return only NONE or one NOLLM_RECALL_DIGEST envelope" in prompt
     assert "Core only executes deterministic geometry" in prompt
-    assert "field_stale" in prompt
+    assert "stale" in prompt
     assert "refresh required" in prompt
-    assert "status is only a stale gate" in prompt
-    assert "target_scale bridge and target_scale fine" in prompt
-    assert "every named entity" in prompt
+    assert "Use nollm_memory_status first" in prompt
+    assert "Read only user-named entities" in prompt
+    assert "do not read every visible surface entity" in prompt
     assert "update, status, blockers, roadmap" in prompt
-    assert "no current recall for that fact" in prompt
-    assert "After nollm_recall_trace" in prompt
+    assert "no current recall is not false" in prompt
     assert "under 600 characters" in prompt
-    assert "memory_search" in prompt and "Do not call" in prompt
+    assert "memory_search" in prompt and "Never call" in prompt
     assert "drift_class is orientation only" in prompt
+
+
+def test_ocp10_primary_grounding_instruction_is_generic_and_source_free() -> None:
+    instruction = OCP10_PRIMARY_GROUNDING_DESCRIPTION
+
+    assert "NOLLM_RECALL_DIGEST" in instruction
+    assert "complete memory context" in instruction
+    assert "State memory-dependent claims only from digest facts" in instruction
+    assert "explicit_absences as response boundaries" in instruction
+    assert "Do not infer progress, status, roadmap, blockers" in instruction
+    assert "no current memory record was recalled" in instruction
+    assert "Never claim you read source files" in instruction
+    assert "Never offer or imply that you can write Nollm memory or source memory" in instruction
+    forbidden = [
+        "MEMORY.md",
+        "DREAMS.md",
+        "memory/",
+        "Mira",
+        "Atlas",
+        "Blue Whale",
+        "Lighthouse",
+        "coffee",
+        "source workspace path",
+    ]
+    assert not any(item.lower() in instruction.lower() for item in forbidden)
+    assert not any(item.lower() in OCP10_PRIMARY_GROUNDING_FILE.lower() for item in forbidden)
+    assert "Do not call Nollm tools" in OCP10_PRIMARY_GROUNDING_FILE
+    assert "Never offer or imply that you can write Nollm memory or source memory" in OCP10_PRIMARY_GROUNDING_FILE
 
 
 def test_ocp9_configure_dry_run_apply_and_idempotency(tmp_path: Path) -> None:
@@ -138,6 +188,10 @@ def test_ocp9_configure_dry_run_apply_and_idempotency(tmp_path: Path) -> None:
     assert dry_report["schema_observed"] is True
     assert dry_report["active_memory_observed"] is True
     assert dry_report["nollm_companion_tools"] == OCP9_CORTEX_TOOLS
+    assert dry_report["primary_grounding_instruction_present"] is True
+    assert dry_report["primary_grounding_file"]["status"] == "dry_run_not_written"
+    assert dry_report["primary_grounding_file"]["contains_source_facts"] is False
+    assert dry_report["cortex_prompt_requires_structured_envelope"] is True
 
     first = run_subprocess(
         [
@@ -180,6 +234,7 @@ def test_ocp9_configure_dry_run_apply_and_idempotency(tmp_path: Path) -> None:
     report = json.loads(second.stdout)
     assert report["status"] == "configured"
     assert all(report["safety"].values())
+    assert report["primary_grounding_file"]["status"] == "written"
 
     config_after = json.loads(config_path.read_text(encoding="utf-8"))
     ids = [agent["id"] for agent in config_after["agents"]["list"]]
@@ -188,9 +243,15 @@ def test_ocp9_configure_dry_run_apply_and_idempotency(tmp_path: Path) -> None:
     active = config_after["plugins"]["entries"]["active-memory"]["config"]
     primary = next(agent for agent in config_after["agents"]["list"] if agent["id"] == "ocp9-nollm-primary-blind")
     assert active["toolsAllow"] == OCP9_CORTEX_TOOLS
+    assert active["promptOverride"] == OCP9_CORTEX_PROMPT_APPEND
+    assert "NOLLM_RECALL_DIGEST" in active["promptOverride"]
+    assert "explicit_absences" in active["promptOverride"]
     assert not (set(active["toolsAllow"]) & {"memory_search", "memory_get", "nollm_memory_search", "nollm_memory_get"})
     assert primary["workspace"] == str(blind_workspace)
+    assert primary["description"] == OCP10_PRIMARY_GROUNDING_DESCRIPTION
+    assert "MEMORY.md" not in primary["description"]
     assert primary["tools"]["alsoAllow"] == OCP9_CORTEX_TOOLS
+    assert (blind_workspace / "AGENTS.md").read_text(encoding="utf-8") == OCP10_PRIMARY_GROUNDING_FILE
     assert not (set(config_after["tools"]["alsoAllow"]) & {"nollm_memory_search", "nollm_memory_get", "nollm_memory_recall"})
 
 

@@ -18,6 +18,9 @@ from nollm.openclaw_active_memory_config import (  # noqa: E402
     OCP9_LEGACY_NOLLM_TOOLS,
     OCP9_PRIMARY_AGENT_ID,
     OCP9_PROHIBITED_TOOLS,
+    OCP10_PRIMARY_GROUNDING_DESCRIPTION,
+    OCP10_PRIMARY_GROUNDING_FILE,
+    OCP10_RECALL_DIGEST_ENVELOPE,
     build_ocp9_live_cortex_reply_loop_patch,
 )
 
@@ -76,6 +79,8 @@ def configure_cortex(args: argparse.Namespace) -> dict[str, object]:
         model=model,
         transcript_dir=transcript_dir,
     )
+    primary_patch = _agent_by_id(patch, args.primary_agent)
+    primary_description = str(primary_patch.get("description") or "")
     safety = _patch_safety(patch, primary_agent_id=args.primary_agent, cortex_agent_id=args.cortex_agent)
     if not all(safety.values()):
         return {
@@ -84,6 +89,8 @@ def configure_cortex(args: argparse.Namespace) -> dict[str, object]:
             "safety": safety,
         }
 
+    grounding_file = blind_workspace / "AGENTS.md"
+    grounding_file_result = _ensure_primary_grounding_file(grounding_file, dry_run=dry_run)
     patch_result = _apply_patch(openclaw, patch, dry_run=dry_run)
     validate = "dry_run_not_applied"
     agents_after = agents_before
@@ -111,7 +118,11 @@ def configure_cortex(args: argparse.Namespace) -> dict[str, object]:
         "transcript_dir": transcript_dir,
         "allowed_cortex_tools": list(OCP9_CORTEX_TOOLS),
         "prohibited_tools": list(OCP9_PROHIBITED_TOOLS),
-        "cortex_prompt_requires_digest_owner": "You, the Cortex" in OCP9_CORTEX_PROMPT_APPEND,
+        "cortex_prompt_requires_digest_owner": "Nollm Cortex" in OCP9_CORTEX_PROMPT_APPEND,
+        "cortex_prompt_requires_structured_envelope": "NOLLM_RECALL_DIGEST" in OCP9_CORTEX_PROMPT_APPEND,
+        "recall_digest_envelope": OCP10_RECALL_DIGEST_ENVELOPE,
+        "primary_grounding_instruction_present": primary_description == OCP10_PRIMARY_GROUNDING_DESCRIPTION,
+        "primary_grounding_file": grounding_file_result,
         "safety": safety,
         "patch_result": _redact(patch_result),
         "validate": validate,
@@ -127,8 +138,10 @@ def _patch_safety(patch: Mapping[str, Any], *, primary_agent_id: str, cortex_age
     companion = (((patch.get("plugins") or {}).get("entries") or {}).get("nollm-memory-companion") or {}).get("config") or {}
     global_tools = patch.get("tools") or {}
     active_tools = list(active.get("toolsAllow") or [])
+    active_prompt = str(active.get("promptOverride") or active.get("promptAppend") or "")
     primary_tools = primary.get("tools") or {}
     cortex_tools = cortex.get("tools") or {}
+    primary_description = str(primary.get("description") or "")
     primary_deny = set(primary_tools.get("deny") or [])
     cortex_deny = set(cortex_tools.get("deny") or [])
     global_also_allow = set(global_tools.get("alsoAllow") or [])
@@ -136,10 +149,13 @@ def _patch_safety(patch: Mapping[str, Any], *, primary_agent_id: str, cortex_age
     legacy = set(OCP9_LEGACY_NOLLM_TOOLS)
     return {
         "primary_context_injection_never": primary.get("contextInjection") == "never",
-        "primary_bootstrap_bounded": primary.get("bootstrapMaxChars") == 1 and primary.get("bootstrapTotalMaxChars") == 1,
+        "primary_bootstrap_bounded_to_generic_grounding": primary.get("bootstrapMaxChars") == 2000
+        and primary.get("bootstrapTotalMaxChars") == 2000,
         "primary_memory_search_disabled": primary.get("memorySearch") == {"provider": "none", "fallback": "none"},
-        "primary_allows_only_ocp9_for_active_memory": primary_tools.get("alsoAllow") == OCP9_CORTEX_TOOLS,
+        "primary_allows_ocp9_tools_for_active_memory_inheritance": primary_tools.get("alsoAllow") == OCP9_CORTEX_TOOLS,
         "primary_denies_prohibited_tools": prohibited.issubset(primary_deny),
+        "primary_grounding_description_generic": primary_description == OCP10_PRIMARY_GROUNDING_DESCRIPTION
+        and not _contains_source_specific_text(primary_description),
         "cortex_allows_only_ocp9_tools": cortex_tools.get("alsoAllow") == OCP9_CORTEX_TOOLS,
         "cortex_denies_prohibited_tools": prohibited.issubset(cortex_deny),
         "global_tools_allow_ocp9_surface": set(OCP9_CORTEX_TOOLS).issubset(global_also_allow),
@@ -147,12 +163,51 @@ def _patch_safety(patch: Mapping[str, Any], *, primary_agent_id: str, cortex_age
         "active_memory_targets_primary": active.get("agents") == [primary_agent_id],
         "active_memory_tools_exact": active_tools == OCP9_CORTEX_TOOLS,
         "active_memory_excludes_legacy_and_search": not (set(active_tools) & (legacy | {"memory_search", "memory_get", "read"})),
-        "prompt_requires_entry_choice": "explicitly choose the entry" in str(active.get("promptAppend")),
-        "prompt_requires_digest_owner": "You, the Cortex" in str(active.get("promptAppend")),
-        "prompt_surfaces_stale": "field_stale" in str(active.get("promptAppend")),
+        "prompt_uses_override": active.get("promptOverride") == OCP9_CORTEX_PROMPT_APPEND,
+        "prompt_requires_entry_choice": "choose the entry shard yourself" in active_prompt,
+        "prompt_requires_digest_owner": "Nollm Cortex" in active_prompt,
+        "prompt_requires_structured_digest_envelope": "NOLLM_RECALL_DIGEST" in active_prompt and "explicit_absences" in active_prompt,
+        "prompt_surfaces_stale": "stale" in active_prompt,
         "companion_has_source_workspace": bool(companion.get("workspaceRoot")),
         "companion_has_sidecar_out": bool(companion.get("sidecarOutDir")),
     }
+
+
+def _agent_by_id(patch: Mapping[str, Any], agent_id: str) -> Mapping[str, Any]:
+    agents = [item for item in ((patch.get("agents") or {}).get("list") or []) if isinstance(item, Mapping)]
+    return next((item for item in agents if item.get("id") == agent_id), {})
+
+
+def _ensure_primary_grounding_file(path: Path, *, dry_run: bool) -> dict[str, object]:
+    result: dict[str, object] = {
+        "path": str(path),
+        "content": "generic_ocp10_primary_grounding_only",
+        "contains_source_facts": _contains_source_specific_text(OCP10_PRIMARY_GROUNDING_FILE),
+    }
+    if dry_run:
+        result["status"] = "dry_run_not_written"
+        return result
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(OCP10_PRIMARY_GROUNDING_FILE, encoding="utf-8")
+    result["status"] = "written"
+    result["bytes"] = len(OCP10_PRIMARY_GROUNDING_FILE.encode("utf-8"))
+    return result
+
+
+def _contains_source_specific_text(text: str) -> bool:
+    forbidden = [
+        "MEMORY.md",
+        "DREAMS.md",
+        "memory/",
+        "Mira",
+        "Atlas",
+        "Blue Whale",
+        "Lighthouse",
+        "coffee",
+        "source workspace path",
+    ]
+    lowered = text.lower()
+    return any(item.lower() in lowered for item in forbidden)
 
 
 def _inspect_schema(openclaw: str) -> dict[str, object]:

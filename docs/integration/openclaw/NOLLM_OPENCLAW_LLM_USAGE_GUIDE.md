@@ -1,6 +1,6 @@
 # Nollm OpenClaw LLM Usage Guide
 
-Status: OCP9.
+Status: OCP10.
 
 Nollm is not an embedding-free `MEMORY.md` search adapter. Treat OpenClaw `MEMORY.md`, `DREAMS.md`, and `memory/*.md` as read-only source snapshots.
 
@@ -17,7 +17,7 @@ nollm_field_overview
 -> optional nollm_drift
 -> nollm_read with well_id
 -> nollm_recall_trace
--> Cortex writes Recall Digest or NONE
+-> Cortex writes NOLLM_RECALL_DIGEST or NONE
 ```
 
 Core only executes geometry and returns deterministic facts: true honeycomb neighborhoods, cross-scale coverage, Gravity Well/Mark/Report data, drift class, and return vectors. Core does not rank by query text and does not compose prose recall digests.
@@ -33,12 +33,18 @@ Core only executes geometry and returns deterministic facts: true honeycomb neig
 - Choose focus and drift targets yourself.
 - Use `nollm_read` with the current `well_id` for exact dream-shard reads.
 - Use `nollm_recall_trace` only as structural logging.
-- Write the compact Recall Digest yourself, or return `NONE`.
+- Write the compact `NOLLM_RECALL_DIGEST` envelope yourself, or return `NONE`.
+- Put read facts under `facts` and requested-but-unread categories under `explicit_absences`.
+- Treat `explicit_absences` as response boundaries for the primary.
 
 No tool output alone is source truth. Drift labels are orientation only; never map them to trust, status, permission, or rejection.
 
+## OCP10 Grounding Status
+
+The structured digest contract is implemented. Live OpenClaw primary grounding remains not reliable because Active Memory inherits the target agent tool policy: hiding Nollm tools from the primary also prevents the Active Memory sub-agent from using them.
+
 ## Legacy Tools
 
-`nollm_memory_recall`, `nollm_memory_search`, and `nollm_memory_get` are not part of the OCP9 Active Memory surface. They are not the Nollm internal model.
+`nollm_memory_recall`, `nollm_memory_search`, and `nollm_memory_get` are not part of the OCP10 Active Memory surface. They are not the Nollm internal model.
 
 `nollm_memory_write_candidate` and `nollm_memory_commit_candidate` are not exposed by the plugin. Python compatibility functions fail closed with `source_memory_write_disabled`.
