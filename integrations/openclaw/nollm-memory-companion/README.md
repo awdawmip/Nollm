@@ -105,6 +105,25 @@ openclaw plugins inspect nollm-memory-companion --runtime --json
 Only treat those two commands as verified after they run in an actual OpenClaw
 CLI/Gateway environment.
 
+## Local OpenClaw Integration
+
+From `reference/python` in the Nollm repository:
+
+```bash
+python scripts/install_openclaw_nollm_companion.py --dry-run
+python scripts/install_openclaw_nollm_companion.py --apply
+```
+
+The installer builds and validates this package, links it into the local
+OpenClaw installation, patches only `plugins.entries.nollm-memory-companion`,
+keeps `nollm_memory_write_candidate` disabled unless
+`--enable-write-candidate` is passed, validates config, restarts the Gateway
+unless `--no-restart` is used, and writes a machine-readable report to:
+
+```text
+<OpenClaw workspace>/.nollm-memory/integration/openclaw_integration_report.json
+```
+
 ## Manual Skill Installation
 
 The plugin manifest declares `skill` as a skill root so `skill/SKILL.md` is

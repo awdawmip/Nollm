@@ -6,7 +6,7 @@ import {
   StatusInputSchema,
   WriteCandidateInputSchema
 } from "./schemas.js";
-import { clampSearchLimit, normalizeConfig, runSidecarCommand } from "./sidecar.js";
+import { clampSearchLimit, configurationRequiredStatus, normalizeConfig, runSidecarCommand } from "./sidecar.js";
 import type { PluginConfig } from "./types.js";
 
 const plugin = defineToolPlugin({
@@ -27,6 +27,10 @@ const plugin = defineToolPlugin({
       parameters: SearchInputSchema,
       async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
         const normalized = normalizeConfig(config);
         return await runSidecarCommand(
           config,
@@ -89,6 +93,10 @@ const plugin = defineToolPlugin({
       parameters: StatusInputSchema,
       async execute(_input: object, config: PluginConfig, context) {
         context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
         return await runSidecarCommand(config, "status", {}, context.signal);
       }
     })

@@ -8,10 +8,6 @@
   ],
   "configSchema": {
     "type": "object",
-    "required": [
-      "nollmRepoRoot",
-      "workspaceRoot"
-    ],
     "properties": {
       "pythonCommand": {
         "type": "string",
@@ -19,11 +15,11 @@
       },
       "nollmRepoRoot": {
         "type": "string",
-        "description": "Required absolute path to the Nollm repository."
+        "description": "Optional at install time; required absolute path to the Nollm repository before tool use."
       },
       "workspaceRoot": {
         "type": "string",
-        "description": "Required absolute path to the OpenClaw workspace."
+        "description": "Optional at install time; required absolute path to the OpenClaw workspace before tool use."
       },
       "sidecarScript": {
         "type": "string",

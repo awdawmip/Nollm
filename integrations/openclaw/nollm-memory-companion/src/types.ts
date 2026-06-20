@@ -1,7 +1,7 @@
 export type PluginConfig = {
   pythonCommand?: string;
-  nollmRepoRoot: string;
-  workspaceRoot: string;
+  nollmRepoRoot?: string;
+  workspaceRoot?: string;
   sidecarScript?: string;
   sidecarOutDir?: string;
   commandTimeoutMs?: number;
@@ -39,4 +39,3 @@ export type SidecarSuccess = {
 };
 
 export type SidecarResult = SidecarSuccess | SidecarFailure;
-

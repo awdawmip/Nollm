@@ -3,12 +3,12 @@ import { Type } from "typebox";
 export const ConfigSchema = Type.Object(
   {
     pythonCommand: Type.Optional(Type.String({ default: "python3" })),
-    nollmRepoRoot: Type.String({
-      description: "Required absolute path to the Nollm repository."
-    }),
-    workspaceRoot: Type.String({
-      description: "Required absolute path to the OpenClaw workspace."
-    }),
+    nollmRepoRoot: Type.Optional(Type.String({
+      description: "Optional at install time; required absolute path to the Nollm repository before tool use."
+    })),
+    workspaceRoot: Type.Optional(Type.String({
+      description: "Optional at install time; required absolute path to the OpenClaw workspace before tool use."
+    })),
     sidecarScript: Type.Optional(
       Type.String({
         description: "Optional absolute path under nollmRepoRoot."

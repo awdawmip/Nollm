@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import sys
+
+from scripts import install_openclaw_nollm_companion as installer
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_build_config_patch_preserves_existing_maps_and_disables_write_by_default(tmp_path: Path) -> None:
+    config = {
+        "plugins": {
+            "entries": {
+                "memory-core": {"enabled": True},
+                "other": {"config": {"keep": True}},
+            },
+            "allow": ["memory-core"],
+            "deny": ["blocked-plugin"],
+        },
+        "tools": {"allow": ["memory_search"], "deny": ["dangerous_tool"]},
+    }
+
+    patch = installer.build_config_patch(
+        config_before=config,
+        repo_root=ROOT,
+        workspace_root=tmp_path,
+        enable_write_candidate=False,
+    )
+
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["enabled"] is True
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["nollmRepoRoot"] == str(ROOT)
+    assert "memory-core" not in patch["plugins"]["entries"]
+    assert "allow" not in patch["plugins"]
+    assert "deny" not in patch["plugins"]
+    assert patch["tools"]["allow"] == [
+        "memory_search",
+        "nollm_memory_search",
+        "nollm_memory_get",
+        "nollm_memory_status",
+    ]
+    assert "nollm_memory_write_candidate" not in patch["tools"]["allow"]
+
+
+def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path) -> None:
+    patch = installer.build_config_patch(
+        config_before={"tools": {"allow": []}},
+        repo_root=ROOT,
+        workspace_root=tmp_path,
+        enable_write_candidate=True,
+    )
+
+    assert patch["tools"]["allow"][-1] == "nollm_memory_write_candidate"
+
+
+def test_redact_removes_secret_like_values() -> None:
+    report = {
+        "token": "abc",
+        "nested": {"api_key": "secret", "safe": "value"},
+        "items": [{"password": "pw"}],
+    }
+
+    assert installer.redact(report) == {
+        "token": "<redacted>",
+        "nested": {"api_key": "<redacted>", "safe": "value"},
+        "items": [{"password": "<redacted>"}],
+    }
+
+
+def test_installer_dry_run_with_fake_openclaw_does_not_mutate_config_or_memory(tmp_path: Path, monkeypatch) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    memory_file = workspace / "MEMORY.md"
+    memory_file.write_text("# Memory\n\nDo not mutate.\n", encoding="utf-8")
+    config_path = tmp_path / "openclaw.json"
+    config_before = {
+        "agents": {"defaults": {"workspace": str(workspace)}},
+        "plugins": {"entries": {"memory-core": {"enabled": True}}},
+        "tools": {"allow": ["memory_search"]},
+    }
+    config_path.write_text(json.dumps(config_before), encoding="utf-8")
+    log_path = tmp_path / "openclaw_calls.jsonl"
+    openclaw = write_fake_openclaw(tmp_path, config_path, workspace, log_path)
+    report_path = tmp_path / "report.json"
+    monkeypatch.setattr(
+        installer,
+        "ensure_plugin_package_ready",
+        lambda _openclaw_bin, _plugin_root, report: report.update({"plugin_build_validation": {"attempted": True, "ok": True}}),
+    )
+
+    rc = installer.main(
+        [
+            "--dry-run",
+            "--openclaw-bin",
+            str(openclaw),
+            "--workspace",
+            str(workspace),
+            "--config-path",
+            str(config_path),
+            "--repo-root",
+            str(ROOT),
+            "--plugin-root",
+            str(ROOT / "integrations/openclaw/nollm-memory-companion"),
+            "--report-path",
+            str(report_path),
+        ]
+    )
+
+    assert rc == 0
+    assert json.loads(config_path.read_text(encoding="utf-8")) == config_before
+    assert memory_file.read_text(encoding="utf-8") == "# Memory\n\nDo not mutate.\n"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["mode"] == "dry_run"
+    assert report["ok"] is True
+    assert report["write_candidate_visible"] is False
+    calls = [json.loads(line)["args"] for line in log_path.read_text(encoding="utf-8").splitlines()]
+    assert ["config", "patch"] in [call[:2] for call in calls]
+    assert ["plugins", "install"] not in [call[:2] for call in calls]
+
+
+def write_fake_openclaw(tmp_path: Path, config_path: Path, workspace: Path, log_path: Path) -> Path:
+    script = tmp_path / ("openclaw_fake.py")
+    script.write_text(
+        f"""
+from __future__ import annotations
+import json
+from pathlib import Path
+import sys
+
+CONFIG = Path({str(config_path)!r})
+WORKSPACE = Path({str(workspace)!r})
+LOG = Path({str(log_path)!r})
+args = sys.argv[1:]
+with LOG.open("a", encoding="utf-8") as handle:
+    handle.write(json.dumps({{"args": args}}) + "\\n")
+if args == ["--version"]:
+    print("OpenClaw 2026.6.8 fake")
+elif args == ["config", "file"]:
+    print(CONFIG)
+elif args == ["config", "get", "agents.defaults.workspace", "--json"]:
+    print(json.dumps(str(WORKSPACE)))
+elif args[:3] == ["config", "patch", "--file"]:
+    sys.exit(0)
+elif args == ["plugins", "build", "--entry", "./dist/index.js", "--check"]:
+    sys.exit(0)
+elif args == ["plugins", "validate", "--entry", "./dist/index.js"]:
+    sys.exit(0)
+elif args == ["config", "validate"]:
+    sys.exit(0)
+elif args[:2] == ["plugins", "install"]:
+    sys.exit(0)
+elif args[:3] == ["plugins", "inspect", "nollm-memory-companion"]:
+    print(json.dumps({{"plugin": {{"toolNames": ["nollm_memory_search", "nollm_memory_get", "nollm_memory_status", "nollm_memory_write_candidate"]}}, "tools": [{{"names": ["nollm_memory_write_candidate"], "optional": True}}]}}))
+else:
+    print("unexpected args", args, file=sys.stderr)
+    sys.exit(2)
+""",
+        encoding="utf-8",
+    )
+    cmd = tmp_path / ("openclaw_fake.cmd" if sys.platform.startswith("win") else "openclaw_fake")
+    if sys.platform.startswith("win"):
+        cmd.write_text(f"@echo off\n\"{sys.executable}\" \"{script}\" %*\n", encoding="utf-8")
+    else:
+        cmd.write_text(f"#!/bin/sh\nexec {sys.executable!r} {str(script)!r} \"$@\"\n", encoding="utf-8")
+        cmd.chmod(0o755)
+    return cmd

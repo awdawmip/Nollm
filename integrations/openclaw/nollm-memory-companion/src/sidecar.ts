@@ -4,6 +4,7 @@ import path from "node:path";
 import type { NormalizedConfig, PluginConfig, SidecarFailure, SidecarResult } from "./types.js";
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
+const REQUIRED_CONFIG_FIELDS = ["nollmRepoRoot", "workspaceRoot"] as const;
 
 export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   const nollmRepoRoot = requireAbsolutePath(config.nollmRepoRoot, "nollmRepoRoot");
@@ -76,6 +77,14 @@ export async function runSidecarCommand(
   params: Record<string, string | number | undefined> = {},
   signal?: AbortSignal
 ): Promise<SidecarResult> {
+  const missing = missingRequiredConfig(config);
+  if (missing.length > 0) {
+    return sidecarFailure(
+      "configuration_error",
+      `Nollm companion configuration is required before running ${command}: ${missing.join(", ")}.`,
+      false
+    );
+  }
   let normalized: NormalizedConfig;
   try {
     normalized = normalizeConfig(config);
@@ -85,6 +94,35 @@ export async function runSidecarCommand(
 
   const argv = buildSidecarArgv(normalized, command, params);
   return await spawnJson(normalized.pythonCommand, argv, normalized.commandTimeoutMs, signal);
+}
+
+export function missingRequiredConfig(config: PluginConfig): string[] {
+  return REQUIRED_CONFIG_FIELDS.filter((field) => {
+    const value = config[field];
+    return typeof value !== "string" || value.trim() === "";
+  });
+}
+
+export function configurationRequiredStatus(config: PluginConfig): SidecarResult & {
+  status?: "configuration_required";
+  required_fields?: string[];
+  message?: string;
+} {
+  const missing = missingRequiredConfig(config);
+  if (missing.length === 0) {
+    return { ok: true };
+  }
+  return {
+    ok: false,
+    status: "configuration_required",
+    required_fields: [...REQUIRED_CONFIG_FIELDS],
+    message: "Configure nollmRepoRoot and workspaceRoot before using Nollm companion tools.",
+    error: {
+      code: "configuration_error",
+      message: `Missing required Nollm companion config: ${missing.join(", ")}.`,
+      retryable: false
+    }
+  };
 }
 
 async function spawnJson(command: string, argv: string[], timeoutMs: number, signal?: AbortSignal): Promise<SidecarResult> {

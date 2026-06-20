@@ -8,6 +8,7 @@ import entry from "../dist/index.js";
 import {
   buildSidecarArgv,
   clampSearchLimit,
+  configurationRequiredStatus,
   normalizeConfig,
   runSidecarCommand
 } from "../dist/sidecar.js";
@@ -29,6 +30,7 @@ test("default export exposes real defineToolPlugin metadata", () => {
   assert.equal(metadata.tools.find((tool) => tool.name === "nollm_memory_write_candidate")?.optional, true);
   assert.equal(metadata.configSchema.type, "object");
   assert.equal(metadata.configSchema.additionalProperties, false);
+  assert.equal(metadata.configSchema.required, undefined);
 });
 
 test("generated manifest matches native OpenClaw metadata shape", () => {
@@ -38,6 +40,7 @@ test("generated manifest matches native OpenClaw metadata shape", () => {
   assert.deepEqual(manifest.contracts.tools, toolNames);
   assert.equal(manifest.toolMetadata.nollm_memory_write_candidate.optional, true);
   assert.equal(manifest.configSchema.type, "object");
+  assert.equal(manifest.configSchema.required, undefined);
   assert.ok(manifest.activation);
   assert.equal(manifest.activation.onStartup, false);
   assert.deepEqual(manifest.skills, ["skill"]);
@@ -67,6 +70,18 @@ test("builds argv and clamps search limit", () => {
   assert.equal(clampSearchLimit(0, 5), 1);
   assert.equal(clampSearchLimit(9, 5), 5);
   assert.equal(clampSearchLimit(99, 20), 20);
+});
+
+test("unconfigured tools fail closed without spawning sidecar", async () => {
+  const status = configurationRequiredStatus({});
+  assert.equal(status.ok, false);
+  assert.equal(status.status, "configuration_required");
+  assert.deepEqual(status.required_fields, ["nollmRepoRoot", "workspaceRoot"]);
+
+  const failed = await runSidecarCommand({ pythonCommand: "__should_not_spawn__" }, "search", { query: "x" });
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.code, "configuration_error");
+  assert.match(failed.error.message, /nollmRepoRoot/);
 });
 
 test("validates configured paths and output containment", () => {
