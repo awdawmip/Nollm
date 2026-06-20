@@ -10,8 +10,10 @@ from subprocess_harness import run_subprocess, subprocess_failure_message
 from nollm.openclaw_memory_adapter import (
     FORBIDDEN_SEMANTICS,
     build_sidecar_store,
+    commit_candidate,
     get_sidecar_item,
     parse_openclaw_memory_workspace,
+    recall_sidecar,
     search_sidecar,
     sidecar_status,
     write_candidate,
@@ -21,6 +23,7 @@ from nollm.openclaw_memory_adapter import (
 ROOT = Path(__file__).resolve().parents[3]
 REFERENCE_PYTHON = ROOT / "reference/python"
 FIXTURE = ROOT / "examples/openclaw_memory_fixture"
+FUNCTIONAL_FIXTURE = ROOT / "examples/openclaw_functional_memory_fixture"
 SCRIPT = REFERENCE_PYTHON / "scripts/run_openclaw_nollm_memory.py"
 
 
@@ -81,6 +84,7 @@ def test_sidecar_search_get_status_and_gravity_reports(tmp_path: Path) -> None:
     assert get_by_memory["ok"] is True
     assert get_by_shard["ok"] is True
     assert get_by_candidate["candidate"]["candidate_id"] == first["candidate_id"]
+    assert get_by_candidate["gravity_report"] == first["gravity_report"]
     assert get_by_memory["candidate"]["candidate_id"] == first["candidate_id"]
     assert get_by_shard["candidate"]["candidate_id"] == first["candidate_id"]
     assert status["counts"]["candidates"] == len(_read_jsonl(tmp_path / "candidates.jsonl"))
@@ -99,6 +103,51 @@ def test_sidecar_search_does_not_hard_filter_by_drift_class(tmp_path: Path) -> N
     assert report["warnings"] == ["drift_class is instrumentation, not trust/status or a hard filter"]
 
 
+def test_semantic_geometry_calibrates_atlas_fixture(tmp_path: Path) -> None:
+    report = search_sidecar(ROOT, FUNCTIONAL_FIXTURE, tmp_path, query="Atlas service owner credential", limit=10)
+    results = report["results"]
+
+    assert results[0]["source_path"] == "MEMORY.md"
+    assert results[0]["gravity_report"]["drift_class"] in {"core", "halo"}
+    daily = next(item for item in results if item["source_path"].startswith("memory/"))
+    dream = next(item for item in results if item["source_path"] == "DREAMS.md")
+
+    assert daily["gravity_report"]["drift_class"] in {"core", "halo", "near_drift"}
+    assert dream["gravity_report"]["drift_class"] in {"far_weak", "semantic_break", "unglued"}
+    assert dream["retrieval_score"] <= results[0]["retrieval_score"]
+    assert results[0]["gravity_report"]["layout_method"] == "semantic_local_v1"
+    assert "anchor_overlap" in results[0]["gravity_report"]
+
+
+def test_semantic_layout_is_deterministic_for_functional_fixture(tmp_path: Path) -> None:
+    first = search_sidecar(ROOT, FUNCTIONAL_FIXTURE, tmp_path / "first", query="Atlas service owner credential", limit=10)
+    second = search_sidecar(ROOT, FUNCTIONAL_FIXTURE, tmp_path / "second", query="Atlas service owner credential", limit=10)
+
+    assert first["results"] == second["results"]
+    assert first["gravity_well"] == second["gravity_well"]
+
+
+def test_recall_contract_separates_direct_and_lateral_context(tmp_path: Path) -> None:
+    report = recall_sidecar(ROOT, FUNCTIONAL_FIXTURE, tmp_path, query="Who owns Atlas?", limit=10)
+
+    assert report["ok"] is True
+    assert report["candidate_source"] == "nollm_local"
+    assert report["direct_evidence"]
+    assert report["direct_evidence"][0]["source_path"] == "MEMORY.md"
+    assert report["direct_evidence"][0]["line_range"]
+    assert all("gravity_report" in item for item in report["direct_evidence"])
+    assert any(item["source_role"] == "dream" for item in report["lateral_context"])
+    assert any("DREAMS" in caution for caution in report["cautions"])
+
+
+def test_unrelated_recall_returns_no_direct_evidence(tmp_path: Path) -> None:
+    report = recall_sidecar(ROOT, FUNCTIONAL_FIXTURE, tmp_path, query="ceramic teapot glaze kiln schedule", limit=10)
+
+    assert report["direct_evidence"] == []
+    assert report["lateral_context"] == []
+    assert "No relevant Nollm local memory evidence found." in report["cautions"]
+
+
 def test_write_candidate_uses_pending_store_and_does_not_modify_memory_files(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
@@ -114,16 +163,68 @@ def test_write_candidate_uses_pending_store_and_does_not_modify_memory_files(tmp
     assert _source_hashes(workspace) == before
 
 
+def test_commit_candidate_requires_confirmation_and_preserves_unrelated_content(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    shutil.copytree(FUNCTIONAL_FIXTURE, workspace)
+    out = tmp_path / "sidecar"
+    before = _source_hashes(workspace)
+    staged = write_candidate(
+        ROOT,
+        workspace,
+        out,
+        text="Atlas support rotation owner is Rowan Ives.",
+        source="user_request",
+    )
+    candidate_id = staged["candidate"]["candidate_id"]
+
+    rejected = commit_candidate(
+        ROOT,
+        workspace,
+        out,
+        candidate_id=candidate_id,
+        explicit_confirmation=False,
+        target="durable",
+        reason="missing confirmation",
+        source="test",
+    )
+    assert rejected["ok"] is False
+    assert _source_hashes(workspace) == before
+
+    committed = commit_candidate(
+        ROOT,
+        workspace,
+        out,
+        candidate_id=candidate_id,
+        explicit_confirmation=True,
+        target="durable",
+        reason="user explicitly confirmed durable memory",
+        source="test",
+    )
+    assert committed["ok"] is True
+    assert committed["file_path"] == "MEMORY.md"
+    assert committed["memory_core_reindex_required"] is True
+    text = (workspace / "MEMORY.md").read_text(encoding="utf-8")
+    assert "## Nollm Managed Memory" in text
+    assert "Atlas support rotation owner is Rowan Ives." in text
+    after = _source_hashes(workspace)
+    assert after["DREAMS.md"] == before["DREAMS.md"]
+    assert after["memory/2026-06-20.md"] == before["memory/2026-06-20.md"]
+    assert after["MEMORY.md"] != before["MEMORY.md"]
+
+
 def test_cli_commands_work_offline(tmp_path: Path) -> None:
     out = tmp_path / "sidecar"
-    index = _run_cli("index", "--workspace", str(FIXTURE), "--out", str(out))
-    search = _run_cli("search", "--workspace", str(FIXTURE), "--query", "gravity report", "--limit", "5", "--out", str(out))
+    workspace = tmp_path / "workspace"
+    shutil.copytree(FUNCTIONAL_FIXTURE, workspace)
+    index = _run_cli("index", "--workspace", str(workspace), "--out", str(out))
+    search = _run_cli("search", "--workspace", str(workspace), "--query", "Atlas owner", "--limit", "5", "--out", str(out))
+    recall = _run_cli("recall", "--workspace", str(workspace), "--query", "Atlas owner", "--limit", "5", "--out", str(out))
     item_id = search["results"][0]["shard_id"]
-    get = _run_cli("get", "--workspace", str(FIXTURE), "--id", item_id, "--out", str(out))
+    get = _run_cli("get", "--workspace", str(workspace), "--id", item_id, "--out", str(out))
     write = _run_cli(
         "write-candidate",
         "--workspace",
-        str(FIXTURE),
+        str(workspace),
         "--text",
         "Candidate only.",
         "--source",
@@ -131,13 +232,32 @@ def test_cli_commands_work_offline(tmp_path: Path) -> None:
         "--out",
         str(out),
     )
-    status = _run_cli("status", "--workspace", str(FIXTURE), "--out", str(out))
+    commit = _run_cli(
+        "commit-candidate",
+        "--workspace",
+        str(workspace),
+        "--candidate-id",
+        write["candidate"]["candidate_id"],
+        "--explicit-confirmation",
+        "--target",
+        "durable",
+        "--reason",
+        "user confirmed",
+        "--source",
+        "test",
+        "--out",
+        str(out),
+    )
+    status = _run_cli("status", "--workspace", str(workspace), "--out", str(out))
 
     assert index["ok"] is True
     assert search["ok"] is True
+    assert recall["direct_evidence"]
     assert get["ok"] is True
     assert write["ok"] is True
-    assert status["counts"]["pending_writes"] == 1
+    assert commit["ok"] is True
+    assert status["counts"]["pending_writes"] == 0
+    assert status["counts"]["commit_ledger"] == 1
 
 
 def test_parser_remains_deterministic() -> None:

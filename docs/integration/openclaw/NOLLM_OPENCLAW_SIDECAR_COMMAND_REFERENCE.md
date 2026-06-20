@@ -17,6 +17,7 @@ Parses `MEMORY.md`, optional `DREAMS.md`, and `memory/*.md`, then writes:
 - `shards.jsonl`
 - `geometry_marks.jsonl`
 - `pending_writes.jsonl`
+- `commit_ledger.jsonl`
 - `sidecar_manifest.json`
 - `openclaw_memory_sidecar_report.json`
 
@@ -48,6 +49,17 @@ Returns deterministic lexical matches with top-level follow-up identifiers:
 
 The command does not hard-filter by `drift_class`.
 
+## `recall`
+
+```bash
+python scripts/run_openclaw_nollm_memory.py --repo-root ../.. recall --query "Atlas owner" --limit 6
+```
+
+Returns a model-facing digest with separated `direct_evidence`,
+`lateral_context`, `cautions`, source path, line range, retrieval score, and
+gravity report. The sidecar uses deterministic local lexical retrieval and
+reports `candidate_source: "nollm_local"`.
+
 ## `get`
 
 ```bash
@@ -61,6 +73,8 @@ Accepted id forms:
 - `shard_id`
 
 The result returns source metadata, full text, geometry mark, and provenance.
+When called after search or recall with an id from that result, it preserves the
+same gravity report.
 
 ## `write-candidate`
 
@@ -71,6 +85,17 @@ python scripts/run_openclaw_nollm_memory.py --repo-root ../.. write-candidate --
 Writes only to `pending_writes.jsonl`. It does not mutate `MEMORY.md`,
 `DREAMS.md`, or `memory/*.md`. Returned records include `durable_write=false`
 and `target_files_mutated=false`.
+
+## `commit-candidate`
+
+```bash
+python scripts/run_openclaw_nollm_memory.py --repo-root ../.. commit-candidate --candidate-id candidate_... --explicit-confirmation --target durable --reason "user confirmed" --source chat
+```
+
+Commits a staged pending candidate only with explicit confirmation. It appends a
+deterministic Markdown entry to a Nollm-managed section of `MEMORY.md` or
+`memory/YYYY-MM-DD.md`, records before/after hashes, appends `commit_ledger.jsonl`,
+and returns `memory_core_reindex_required=true`.
 
 ## `status`
 

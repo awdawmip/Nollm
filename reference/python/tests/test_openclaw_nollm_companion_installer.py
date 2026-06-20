@@ -39,18 +39,22 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
     assert "deny" not in patch["plugins"]
     assert patch["tools"]["allow"] == [
         "memory_search",
+        "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
         "nollm_memory_status",
     ]
     assert patch["tools"]["alsoAllow"] == [
         "web_search",
+        "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
         "nollm_memory_status",
     ]
     assert "nollm_memory_write_candidate" not in patch["tools"]["allow"]
+    assert "nollm_memory_commit_candidate" not in patch["tools"]["allow"]
     assert "nollm_memory_write_candidate" not in patch["tools"]["alsoAllow"]
+    assert "nollm_memory_commit_candidate" not in patch["tools"]["alsoAllow"]
 
 
 def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path) -> None:
@@ -61,8 +65,8 @@ def test_build_config_patch_can_explicitly_enable_write_candidate(tmp_path: Path
         enable_write_candidate=True,
     )
 
-    assert patch["tools"]["allow"][-1] == "nollm_memory_write_candidate"
-    assert patch["tools"]["alsoAllow"][-1] == "nollm_memory_write_candidate"
+    assert patch["tools"]["allow"][-2:] == ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
+    assert patch["tools"]["alsoAllow"][-2:] == ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
 
 
 def test_redact_removes_secret_like_values() -> None:

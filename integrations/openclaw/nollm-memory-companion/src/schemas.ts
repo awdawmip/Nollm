@@ -33,6 +33,14 @@ export const SearchInputSchema = Type.Object(
   { additionalProperties: false }
 );
 
+export const RecallInputSchema = Type.Object(
+  {
+    query: Type.String({ minLength: 1 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 }))
+  },
+  { additionalProperties: false }
+);
+
 export const GetInputSchema = Type.Object(
   {
     id: Type.String({ minLength: 1 })
@@ -45,6 +53,17 @@ export const WriteCandidateInputSchema = Type.Object(
     text: Type.String({ minLength: 1 }),
     source: Type.String({ minLength: 1 }),
     why: Type.Optional(Type.String({ maxLength: 240 }))
+  },
+  { additionalProperties: false }
+);
+
+export const CommitCandidateInputSchema = Type.Object(
+  {
+    candidate_id: Type.String({ minLength: 1 }),
+    explicit_confirmation: Type.Boolean(),
+    target: Type.Union([Type.Literal("durable"), Type.Literal("daily")]),
+    reason: Type.String({ minLength: 1, maxLength: 500 }),
+    source: Type.String({ minLength: 1, maxLength: 240 })
   },
   { additionalProperties: false }
 );

@@ -11,11 +11,7 @@ from nollm.dream_shard import DreamShard, shard_to_record
 from nollm.geometry_profiles import default_geometry_profile
 from nollm.gravity import (
     GravityMark,
-    GravityWell,
-    create_gravity_report,
     gravity_mark_to_record,
-    gravity_report_to_record,
-    gravity_well_to_record,
 )
 
 
@@ -25,9 +21,12 @@ SEARCH_SCHEMA = "nollm.openclaw_memory_sidecar_search.v1"
 GET_SCHEMA = "nollm.openclaw_memory_sidecar_get.v1"
 STATUS_SCHEMA = "nollm.openclaw_memory_sidecar_status.v1"
 WRITE_SCHEMA = "nollm.openclaw_memory_sidecar_write_candidate.v1"
+COMMIT_SCHEMA = "nollm.openclaw_memory_sidecar_commit_candidate.v1"
+RECALL_SCHEMA = "nollm.openclaw_memory_sidecar_recall.v1"
 DEFAULT_PROFILE = "default_dream"
 DEFAULT_CHART = "openclaw_memory_fixture"
 STATUS = "experimental_internal_sidecar"
+LAYOUT_METHOD = "semantic_local_v1"
 FORBIDDEN_SEMANTICS = {
     "real_openclaw_plugin": False,
     "real_llm_call": False,
@@ -160,6 +159,8 @@ def build_sidecar_store(repo_root: Path | str, workspace: Path | str, out_dir: P
     _write_jsonl(out / "geometry_marks.jsonl", marks)
     if not (out / "pending_writes.jsonl").exists():
         _write_jsonl(out / "pending_writes.jsonl", [])
+    if not (out / "commit_ledger.jsonl").exists():
+        _write_jsonl(out / "commit_ledger.jsonl", [])
     _write_json(out / "sidecar_manifest.json", manifest)
     _write_json(out / "openclaw_memory_sidecar_report.json", sidecar_report)
     return sidecar_report
@@ -182,16 +183,12 @@ def search_sidecar(
     candidates = _read_jsonl(out / "candidates.jsonl")
     marks = {str(item["content_id"]): item for item in _read_jsonl(out / "geometry_marks.jsonl")}
     shards = {str(item["candidate_id"]): item for item in _read_jsonl(out / "shards.jsonl")}
-    well = _query_well(query)
-    scored = []
+    scored: list[dict[str, object]] = []
     for candidate in candidates:
-        mark = _mark_from_record(marks[str(candidate["candidate_id"])])
-        gravity = gravity_report_to_record(create_gravity_report(well, mark))
         scored.append(
             {
                 "candidate": candidate,
                 "retrieval_score": _lexical_score(query, str(candidate["text"])),
-                "gravity_report": gravity,
                 "geometry_mark": marks[str(candidate["candidate_id"])],
                 "shard": shards[str(candidate["candidate_id"])],
             }
@@ -204,6 +201,9 @@ def search_sidecar(
             str(item["candidate"]["candidate_id"]),
         )
     )
+    well = _query_well(query, scored)
+    for item in scored:
+        item["gravity_report"] = _gravity_report(query, well, item)
     results = [_search_result_record(item) for item in scored[:limit]]
     report = {
         "schema": SEARCH_SCHEMA,
@@ -211,7 +211,7 @@ def search_sidecar(
         "status": STATUS,
         "query": query,
         "limit": limit,
-        "gravity_well": gravity_well_to_record(well),
+        "gravity_well": well,
         "result_count": len(results),
         "results": results,
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
@@ -239,6 +239,7 @@ def get_sidecar_item(repo_root: Path | str, workspace: Path | str, out_dir: Path
             "error": "not_found",
             "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
         }
+    cached_search = _last_search_item(out, str(candidate["candidate_id"]))
     report = {
         "schema": GET_SCHEMA,
         "ok": True,
@@ -254,6 +255,7 @@ def get_sidecar_item(repo_root: Path | str, workspace: Path | str, out_dir: Path
         },
         "text": candidate["text"],
         "geometry_mark": marks[str(candidate["candidate_id"])],
+        "gravity_report": cached_search.get("gravity_report") if cached_search else None,
         "provenance": candidate["provenance"],
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
@@ -280,8 +282,10 @@ def write_candidate(
     existing = _read_jsonl(pending_path)
     normalized = " ".join(text.strip().split())
     pending_id = f"pending_{_sha256_text(source + ':' + normalized)[:16]}"
+    candidate_id = f"candidate_{_sha256_text('candidate:' + source + ':' + normalized)[:16]}"
     record = {
         "pending_id": pending_id,
+        "candidate_id": candidate_id,
         "text": normalized,
         "source": source,
         "status": "pending_review",
@@ -308,6 +312,150 @@ def write_candidate(
     return report
 
 
+def commit_candidate(
+    repo_root: Path | str,
+    workspace: Path | str,
+    out_dir: Path | str,
+    *,
+    candidate_id: str,
+    explicit_confirmation: bool,
+    target: str,
+    reason: str,
+    source: str,
+) -> dict[str, object]:
+    if not candidate_id.strip():
+        raise ValueError("candidate_id must be non-empty")
+    if explicit_confirmation is not True:
+        return _commit_rejection(candidate_id, "explicit_confirmation_required")
+    if target not in {"durable", "daily"}:
+        return _commit_rejection(candidate_id, "unsupported_target")
+    if not reason.strip() or not source.strip():
+        return _commit_rejection(candidate_id, "reason_and_source_required")
+    build_sidecar_store(repo_root, workspace, out_dir)
+    repo = Path(repo_root).resolve()
+    root = Path(workspace).resolve()
+    out = Path(out_dir).resolve()
+    pending_path = out / "pending_writes.jsonl"
+    pending = _read_jsonl(pending_path)
+    candidate = next(
+        (
+            item
+            for item in pending
+            if item.get("candidate_id") == candidate_id or item.get("pending_id") == candidate_id
+        ),
+        None,
+    )
+    if candidate is None:
+        return _commit_rejection(candidate_id, "candidate_not_found")
+
+    target_path = root / ("MEMORY.md" if target == "durable" else f"memory/{_today_utc()}.md")
+    _require_path_under(root, target_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    before_bytes = target_path.read_bytes() if target_path.exists() else b""
+    old_hash = _sha256_bytes(before_bytes)
+    original_text = before_bytes.decode("utf-8", errors="replace") if before_bytes else ""
+    entry_text = _managed_entry_text(str(candidate["text"]), source=source, reason=reason)
+    if original_text and not original_text.endswith("\n"):
+        original_text += "\n"
+    if "## Nollm Managed Memory" not in original_text:
+        original_text += "\n## Nollm Managed Memory\n\n"
+        line_start = len(original_text.splitlines()) + 1
+    else:
+        line_start = len(original_text.splitlines()) + 1
+    new_text = original_text + entry_text
+    target_path.write_text(new_text, encoding="utf-8", newline="\n")
+    new_hash = _sha256_bytes(target_path.read_bytes())
+    line_end = line_start + len(entry_text.splitlines()) - 1
+
+    ledger_path = out / "commit_ledger.jsonl"
+    ledger = _read_jsonl(ledger_path)
+    record = {
+        "schema": COMMIT_SCHEMA,
+        "candidate_id": candidate.get("candidate_id"),
+        "pending_id": candidate.get("pending_id"),
+        "target": target,
+        "path": _relative_posix(root, target_path),
+        "line_range": [line_start, line_end],
+        "content_sha256": _sha256_text(entry_text),
+        "old_sha256": old_hash,
+        "new_sha256": new_hash,
+        "reason": reason,
+        "source": source,
+        "memory_core_reindex_required": True,
+    }
+    ledger.append(record)
+    _write_jsonl(ledger_path, ledger)
+    remaining = [item for item in pending if item is not candidate]
+    _write_jsonl(pending_path, remaining)
+    report = {
+        "schema": COMMIT_SCHEMA,
+        "ok": True,
+        "status": STATUS,
+        "commit": record,
+        "file_path": record["path"],
+        "line_range": record["line_range"],
+        "content_sha256": record["content_sha256"],
+        "old_sha256": old_hash,
+        "new_sha256": new_hash,
+        "memory_core_reindex_required": True,
+        "memory_core_reindex_command": "openclaw memory index --agent <agent-id> --force --verbose",
+        "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
+    }
+    _write_json(out / "last_commit_candidate_report.json", report)
+    return report
+
+
+def recall_sidecar(
+    repo_root: Path | str,
+    workspace: Path | str,
+    out_dir: Path | str,
+    *,
+    query: str,
+    limit: int = 6,
+) -> dict[str, object]:
+    search = search_sidecar(repo_root, workspace, out_dir, query=query, limit=limit)
+    direct: list[dict[str, object]] = []
+    lateral: list[dict[str, object]] = []
+    cautions: list[str] = []
+    for result in search["results"]:  # type: ignore[index]
+        if not isinstance(result, Mapping):
+            continue
+        score = float(result.get("retrieval_score") or 0.0)
+        if score <= 0.0:
+            continue
+        record = _recall_item(result)
+        role = str(result.get("source_role") or "")
+        drift = str((result.get("gravity_report") or {}).get("drift_class")) if isinstance(result.get("gravity_report"), Mapping) else ""
+        if role == "dreams" or drift in {"far_weak", "semantic_break", "unglued", "chart_jump"}:
+            lateral.append(record)
+            if role == "dreams":
+                cautions.append("DREAMS source is speculative/lateral and must not override durable evidence.")
+            if drift == "semantic_break":
+                cautions.append("semantic_break is a caution, not a rejection rule.")
+        else:
+            direct.append(record)
+    if not direct and not lateral:
+        cautions.append("No relevant Nollm local memory evidence found.")
+    report = {
+        "schema": RECALL_SCHEMA,
+        "ok": True,
+        "status": STATUS,
+        "candidate_source": "nollm_local",
+        "query": query,
+        "direct_evidence": direct,
+        "lateral_context": lateral,
+        "cautions": sorted(set(cautions)),
+        "return_vector": None,
+        "use_instruction": (
+            "Use direct evidence for factual claims; inspect cited sources before relying on lateral context. "
+            "Treat drift labels as orientation only."
+        ),
+        "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
+    }
+    _write_json(Path(out_dir).resolve() / "last_recall_report.json", report)
+    return report
+
+
 def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path | str) -> dict[str, object]:
     build_sidecar_store(repo_root, workspace, out_dir)
     repo = Path(repo_root).resolve()
@@ -328,6 +476,7 @@ def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path |
             "shards": len(_read_jsonl(out / "shards.jsonl")),
             "geometry_marks": len(_read_jsonl(out / "geometry_marks.jsonl")),
             "pending_writes": len(_read_jsonl(out / "pending_writes.jsonl")),
+            "commit_ledger": len(_read_jsonl(out / "commit_ledger.jsonl")),
         },
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
@@ -490,11 +639,14 @@ def _shard_record(chunk: OpenClawMemoryChunk) -> dict[str, object]:
 def _geometry_mark_record(chunk: OpenClawMemoryChunk) -> dict[str, object]:
     mark = _geometry_mark(chunk)
     record = gravity_mark_to_record(mark)
+    anchor = _chunk_anchor_vector(chunk)
     record.update(
         {
             "profile": DEFAULT_PROFILE,
             "geometry_profile": DEFAULT_PROFILE,
-            "anchor_vector": _anchor_vector(chunk.text),
+            "anchor_vector": anchor,
+            "layout_method": LAYOUT_METHOD,
+            "source_role": _public_source_role(chunk.source_role),
             "provenance": _provenance(chunk.source_path, chunk.line_range),
             "status": STATUS,
             "placement_status": "experimental_unconfirmed",
@@ -504,10 +656,13 @@ def _geometry_mark_record(chunk: OpenClawMemoryChunk) -> dict[str, object]:
 
 
 def _geometry_mark(chunk: OpenClawMemoryChunk) -> GravityMark:
-    digest = _sha256_text(chunk.candidate_id + ":" + chunk.text)
-    layer = int(digest[:2], 16) % 5
-    q = int(digest[2:4], 16) % 9 - 4
-    r = int(digest[4:6], 16) % 9 - 4
+    anchor = _chunk_anchor_vector(chunk)
+    terms = sorted(anchor.items(), key=lambda item: (-item[1], item[0]))
+    primary = terms[0][0] if terms else "empty"
+    secondary = terms[1][0] if len(terms) > 1 else primary
+    q = _stable_bucket(primary, 9) - 4
+    r = _stable_bucket(secondary, 9) - 4
+    layer = {"durable_memory": 0, "daily_memory": 1, "dreams": 3}.get(chunk.source_role, 2)
     return GravityMark(
         content_id=chunk.candidate_id,
         geometry_profile=DEFAULT_PROFILE,
@@ -515,7 +670,7 @@ def _geometry_mark(chunk: OpenClawMemoryChunk) -> GravityMark:
         layer=layer,
         q=q,
         r=r,
-        anchor_vector=_anchor_vector(chunk.text),
+        anchor_vector=anchor,
         provenance=str(_provenance(chunk.source_path, chunk.line_range)["source_ref"]),
     )
 
@@ -536,18 +691,40 @@ def _mark_from_record(record: Mapping[str, object]) -> GravityMark:
     )
 
 
-def _query_well(query: str) -> GravityWell:
-    digest = _sha256_text("query:" + query)
-    return GravityWell(
-        well_id=f"well_{digest[:16]}",
-        entry_query=query,
-        geometry_profile=DEFAULT_PROFILE,
-        chart_id=DEFAULT_CHART,
-        layer=int(digest[:2], 16) % 3,
-        q=int(digest[2:4], 16) % 5 - 2,
-        r=int(digest[4:6], 16) % 5 - 2,
-        anchor_vector=_anchor_vector(query),
-    )
+def _query_well(query: str, scored: Sequence[Mapping[str, object]]) -> dict[str, object]:
+    anchor = _anchor_vector(query)
+    seed = None
+    if scored:
+        seed = max(
+            scored,
+            key=lambda item: (
+                float(item.get("retrieval_score") or 0.0),
+                _anchor_overlap(anchor, _candidate_anchor(item)),
+            ),
+        )
+    seed_candidate = seed.get("candidate") if isinstance(seed, Mapping) else None
+    seed_mark = seed.get("geometry_mark") if isinstance(seed, Mapping) else None
+    if not isinstance(seed_mark, Mapping):
+        q = 0
+        r = 0
+        layer = 0
+    else:
+        q = int(seed_mark.get("q") or 0)
+        r = int(seed_mark.get("r") or 0)
+        layer = int(seed_mark.get("layer") or 0)
+    digest = _sha256_text("query:" + " ".join(sorted(anchor)))
+    return {
+        "well_id": f"well_{digest[:16]}",
+        "entry_query": query,
+        "geometry_profile": DEFAULT_PROFILE,
+        "chart_id": DEFAULT_CHART,
+        "layer": layer,
+        "q": q,
+        "r": r,
+        "anchor_vector": anchor,
+        "layout_method": LAYOUT_METHOD,
+        "query_seed_candidate_id": seed_candidate.get("candidate_id") if isinstance(seed_candidate, Mapping) else None,
+    }
 
 
 def _anchor_vector(text: str) -> dict[str, float]:
@@ -562,17 +739,171 @@ def _anchor_vector(text: str) -> dict[str, float]:
     return {token: round(count / total, 6) for token, count in ranked}
 
 
+def _chunk_anchor_vector(chunk: OpenClawMemoryChunk) -> dict[str, float]:
+    weights: dict[str, float] = {}
+    for token in _tokens(chunk.text):
+        weights[token] = weights.get(token, 0.0) + 1.0
+    for heading in chunk.heading_path:
+        for token in _tokens(heading):
+            weights[token] = weights.get(token, 0.0) + 0.35
+    role_token = _public_source_role(chunk.source_role)
+    weights[role_token] = weights.get(role_token, 0.0) + 0.25
+    if not weights:
+        return {"empty": 1.0}
+    total = sum(weights.values())
+    ranked = sorted(weights.items(), key=lambda item: (-item[1], item[0]))[:12]
+    return {token: round(weight / total, 6) for token, weight in ranked}
+
+
 def _lexical_score(query: str, text: str) -> float:
     query_tokens = set(_tokens(query))
     text_tokens = set(_tokens(text))
     if not query_tokens or not text_tokens:
         return 0.0
     overlap = len(query_tokens & text_tokens)
-    return round(overlap / len(query_tokens), 6)
+    coverage = overlap / len(query_tokens)
+    precision = overlap / len(text_tokens)
+    return round((coverage * 0.8) + (precision * 0.2), 6)
 
 
 def _tokens(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9_]+", text.lower())
+    return [
+        token
+        for token in re.findall(r"[a-z0-9_]+", text.lower())
+        if token not in _STOPWORDS and len(token) > 1
+    ]
+
+
+_STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "be",
+    "by",
+    "for",
+    "from",
+    "has",
+    "in",
+    "is",
+    "it",
+    "md",
+    "not",
+    "of",
+    "or",
+    "source",
+    "that",
+    "the",
+    "this",
+    "to",
+    "with",
+}
+
+
+def _gravity_report(query: str, well: Mapping[str, object], item: Mapping[str, object]) -> dict[str, object]:
+    candidate = item["candidate"]
+    mark = item["geometry_mark"]
+    if not isinstance(candidate, Mapping) or not isinstance(mark, Mapping):
+        raise ValueError("candidate and geometry_mark must be mappings")
+    query_anchor = well.get("anchor_vector")
+    if not isinstance(query_anchor, Mapping):
+        query_anchor = {}
+    mark_anchor = mark.get("anchor_vector")
+    if not isinstance(mark_anchor, Mapping):
+        mark_anchor = {}
+    q_anchor = {str(key): float(value) for key, value in query_anchor.items()}
+    c_anchor = {str(key): float(value) for key, value in mark_anchor.items()}
+    overlap = _anchor_overlap(q_anchor, c_anchor)
+    similarity = _cosine(q_anchor, c_anchor)
+    r_column = abs(int(mark.get("q") or 0) - int(well.get("q") or 0)) + abs(int(mark.get("r") or 0) - int(well.get("r") or 0))
+    scale_delta = abs(int(mark.get("layer") or 0) - int(well.get("layer") or 0))
+    retrieval = float(item.get("retrieval_score") or 0.0)
+    source_role = _public_source_role(str(candidate.get("source_role") or "unknown"))
+    drift = _classify_semantic_drift(
+        retrieval_score=retrieval,
+        anchor_overlap=overlap,
+        source_role=source_role,
+        query=query,
+        candidate_text=str(candidate.get("text") or ""),
+        scale_delta=scale_delta,
+    )
+    return {
+        "R_column_ring": r_column,
+        "S_scale_delta": scale_delta,
+        "A_anchor_similarity": round(similarity, 12),
+        "drift_class": drift,
+        "projection_method": "query_conditioned_anchor_overlap",
+        "layout_method": LAYOUT_METHOD,
+        "anchor_overlap": round(overlap, 12),
+        "query_seed_candidate_id": well.get("query_seed_candidate_id"),
+        "source_role": source_role,
+        "status": "experimental_internal_only",
+        "well_id": well.get("well_id"),
+        "content_id": candidate.get("candidate_id"),
+    }
+
+
+def _classify_semantic_drift(
+    *,
+    retrieval_score: float,
+    anchor_overlap: float,
+    source_role: str,
+    query: str,
+    candidate_text: str,
+    scale_delta: int,
+) -> str:
+    conflict = _has_owner_conflict(query, candidate_text)
+    if retrieval_score <= 0.0 or anchor_overlap <= 0.0:
+        return "semantic_break"
+    if source_role == "dream" and (conflict or retrieval_score < 0.55):
+        return "far_weak"
+    if retrieval_score >= 0.72 and anchor_overlap >= 0.45 and scale_delta <= 1:
+        return "core"
+    if retrieval_score >= 0.55 and anchor_overlap >= 0.25:
+        return "halo"
+    if retrieval_score >= 0.35 and anchor_overlap >= 0.15:
+        return "near_drift"
+    if retrieval_score >= 0.15:
+        return "far_coherent"
+    return "far_weak"
+
+
+def _has_owner_conflict(query: str, text: str) -> bool:
+    q = " ".join(_tokens(query))
+    t = " ".join(_tokens(text))
+    ownership_query = "owner" in q or "owns" in q or "ownership" in q
+    speculative_text = "not evidence" in t or "speculative" in t or "exploratory" in t
+    return ownership_query and speculative_text
+
+
+def _anchor_overlap(left: Mapping[str, float], right: Mapping[str, float]) -> float:
+    left_keys = set(left)
+    if not left_keys:
+        return 0.0
+    return len(left_keys & set(right)) / len(left_keys)
+
+
+def _candidate_anchor(item: Mapping[str, object]) -> Mapping[str, float]:
+    mark = item.get("geometry_mark")
+    if isinstance(mark, Mapping) and isinstance(mark.get("anchor_vector"), Mapping):
+        return {str(key): float(value) for key, value in mark["anchor_vector"].items()}  # type: ignore[index]
+    return {}
+
+
+def _cosine(left: Mapping[str, float], right: Mapping[str, float]) -> float:
+    if not left or not right:
+        return 0.0
+    dot = sum(left.get(key, 0.0) * right.get(key, 0.0) for key in set(left) | set(right))
+    left_norm = sum(value * value for value in left.values()) ** 0.5
+    right_norm = sum(value * value for value in right.values()) ** 0.5
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return dot / (left_norm * right_norm)
+
+
+def _stable_bucket(value: str, modulo: int) -> int:
+    return int(_sha256_text(value)[:8], 16) % modulo
 
 
 def _search_result_record(item: Mapping[str, object]) -> dict[str, object]:
@@ -593,12 +924,29 @@ def _search_result_record(item: Mapping[str, object]) -> dict[str, object]:
         "provenance": candidate["provenance"],
         "heading_path": candidate["heading_path"],
         "text": candidate["text"],
+        "source_role": candidate["source_role"],
+        "source_kind": candidate["source_kind"],
         "retrieval_score": item["retrieval_score"],
         "geometry_mark": item["geometry_mark"],
         "gravity_report": item["gravity_report"],
         "llm_use_hint": _llm_use_hint(str(item["gravity_report"]["drift_class"])),  # type: ignore[index]
         "trust_level": candidate["trust_level"],
         "version_status": candidate["version_status"],
+    }
+
+
+def _recall_item(result: Mapping[str, object]) -> dict[str, object]:
+    return {
+        "candidate_id": result["candidate_id"],
+        "memory_id": result["memory_id"],
+        "shard_id": result["shard_id"],
+        "source_path": result["source_path"],
+        "source_role": _public_source_role(str(result.get("source_role") or "unknown")),
+        "line_range": result["line_range"],
+        "text_excerpt": result["text"],
+        "retrieval_score": result["retrieval_score"],
+        "gravity_report": result["gravity_report"],
+        "provenance": result["provenance"],
     }
 
 
@@ -627,6 +975,66 @@ def _find_candidate(
         if candidate.get("candidate_id") == candidate_id or candidate.get("memory_id") == candidate_id:
             return candidate
     return None
+
+
+def _last_search_item(out: Path, candidate_id: str) -> Mapping[str, object] | None:
+    last = out / "last_search_report.json"
+    if not last.exists():
+        return None
+    report = _read_json(last)
+    results = report.get("results", [])
+    if not isinstance(results, Sequence):
+        return None
+    for item in results:
+        if isinstance(item, Mapping) and item.get("candidate_id") == candidate_id:
+            return item
+    return None
+
+
+def _commit_rejection(candidate_id: str, reason: str) -> dict[str, object]:
+    return {
+        "schema": COMMIT_SCHEMA,
+        "ok": False,
+        "status": STATUS,
+        "candidate_id": candidate_id,
+        "error": reason,
+        "durable_write": False,
+        "target_files_mutated": False,
+        "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
+    }
+
+
+def _managed_entry_text(text: str, *, source: str, reason: str) -> str:
+    normalized = " ".join(text.strip().split())
+    return (
+        f"- {normalized}\n"
+        f"  - nollm_source: {source.strip()}\n"
+        f"  - nollm_reason: {reason.strip()}\n"
+        f"  - nollm_commit: explicit_confirmation\n"
+    )
+
+
+def _today_utc() -> str:
+    from datetime import datetime, timezone
+
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _require_path_under(root: Path, target: Path) -> None:
+    root_resolved = root.resolve()
+    target_resolved = target.resolve()
+    try:
+        target_resolved.relative_to(root_resolved)
+    except ValueError as exc:
+        raise ValueError("target path escapes workspace") from exc
+
+
+def _public_source_role(source_role: str) -> str:
+    return {
+        "durable_memory": "durable",
+        "daily_memory": "daily",
+        "dreams": "dream",
+    }.get(source_role, source_role)
 
 
 def _sidecar_manifest(
@@ -765,6 +1173,8 @@ def _assert_json_primitive(value: object) -> None:
 __all__ = [
     "FORBIDDEN_SEMANTICS",
     "GET_SCHEMA",
+    "COMMIT_SCHEMA",
+    "RECALL_SCHEMA",
     "SCHEMA",
     "SEARCH_SCHEMA",
     "SIDECAR_SCHEMA",
@@ -774,8 +1184,10 @@ __all__ = [
     "OpenClawMemoryIndex",
     "build_openclaw_memory_fixture_report",
     "build_sidecar_store",
+    "commit_candidate",
     "get_sidecar_item",
     "parse_openclaw_memory_workspace",
+    "recall_sidecar",
     "search_sidecar",
     "sidecar_status",
     "write_candidate",

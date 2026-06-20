@@ -15,9 +15,11 @@ import {
 
 const packageRoot = path.resolve(import.meta.dirname, "..");
 const toolNames = [
+  "nollm_memory_recall",
   "nollm_memory_search",
   "nollm_memory_get",
   "nollm_memory_write_candidate",
+  "nollm_memory_commit_candidate",
   "nollm_memory_status"
 ];
 
@@ -28,6 +30,7 @@ test("default export exposes real defineToolPlugin metadata", () => {
   assert.equal(metadata.id, "nollm-memory-companion");
   assert.deepEqual(metadata.tools.map((tool) => tool.name), toolNames);
   assert.equal(metadata.tools.find((tool) => tool.name === "nollm_memory_write_candidate")?.optional, true);
+  assert.equal(metadata.tools.find((tool) => tool.name === "nollm_memory_commit_candidate")?.optional, true);
   assert.equal(metadata.configSchema.type, "object");
   assert.equal(metadata.configSchema.additionalProperties, false);
   assert.equal(metadata.configSchema.required, undefined);
@@ -39,6 +42,7 @@ test("generated manifest matches native OpenClaw metadata shape", () => {
   assert.equal(manifest.id, "nollm-memory-companion");
   assert.deepEqual(manifest.contracts.tools, toolNames);
   assert.equal(manifest.toolMetadata.nollm_memory_write_candidate.optional, true);
+  assert.equal(manifest.toolMetadata.nollm_memory_commit_candidate.optional, true);
   assert.equal(manifest.configSchema.type, "object");
   assert.equal(manifest.configSchema.required, undefined);
   assert.ok(manifest.activation);
@@ -70,6 +74,25 @@ test("builds argv and clamps search limit", () => {
   assert.equal(clampSearchLimit(0, 5), 1);
   assert.equal(clampSearchLimit(9, 5), 5);
   assert.equal(clampSearchLimit(99, 20), 20);
+});
+
+test("builds recall and commit argv", () => {
+  const fixture = makeFixture();
+  const config = normalizeConfig(fixture.config);
+  const recall = buildSidecarArgv(config, "recall", { query: "Atlas owner", limit: 3 });
+  const commit = buildSidecarArgv(config, "commit-candidate", {
+    candidate_id: "candidate_123",
+    explicit_confirmation: true,
+    target: "durable",
+    reason: "user confirmed",
+    source: "live demo"
+  });
+
+  assert.equal(recall.includes("recall"), true);
+  assert.equal(recall.includes("--query"), true);
+  assert.equal(commit.includes("commit-candidate"), true);
+  assert.equal(commit.includes("--explicit-confirmation"), true);
+  assert.equal(commit.includes("candidate_123"), true);
 });
 
 test("unconfigured tools fail closed without spawning sidecar", async () => {

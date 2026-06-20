@@ -49,14 +49,19 @@
   },
   "contracts": {
     "tools": [
+      "nollm_memory_recall",
       "nollm_memory_search",
       "nollm_memory_get",
       "nollm_memory_write_candidate",
+      "nollm_memory_commit_candidate",
       "nollm_memory_status"
     ]
   },
   "toolMetadata": {
     "nollm_memory_write_candidate": {
+      "optional": true
+    },
+    "nollm_memory_commit_candidate": {
       "optional": true
     }
   }

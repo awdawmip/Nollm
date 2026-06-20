@@ -14,8 +14,9 @@ import time
 
 
 PLUGIN_ID = "nollm-memory-companion"
-READ_TOOLS = ["nollm_memory_search", "nollm_memory_get", "nollm_memory_status"]
-WRITE_TOOL = "nollm_memory_write_candidate"
+READ_TOOLS = ["nollm_memory_recall", "nollm_memory_search", "nollm_memory_get", "nollm_memory_status"]
+WRITE_TOOLS = ["nollm_memory_write_candidate", "nollm_memory_commit_candidate"]
+WRITE_TOOL = WRITE_TOOLS[0]
 FORBIDDEN_SEMANTICS = {
     "memory_slot_replacement": False,
     "kind_memory": False,
@@ -215,13 +216,13 @@ def build_config_patch(
         READ_TOOLS,
     )
     if enable_write_candidate:
-        also_allowed = union_preserve(also_allowed, [WRITE_TOOL])
+        also_allowed = union_preserve(also_allowed, WRITE_TOOLS)
     patch.setdefault("tools", {})["alsoAllow"] = also_allowed
     existing_tools_allow = get_nested(config_before, ["tools", "allow"])
     if isinstance(existing_tools_allow, list):
         allowed = union_preserve([str(item) for item in existing_tools_allow], READ_TOOLS)
         if enable_write_candidate:
-            allowed = union_preserve(allowed, [WRITE_TOOL])
+            allowed = union_preserve(allowed, WRITE_TOOLS)
         patch.setdefault("tools", {})["allow"] = allowed
     return patch
 
@@ -331,7 +332,9 @@ def inspect_runtime(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> Non
     tools = details.get("plugin", {}).get("toolNames", [])
     report["read_tools_visible"] = [tool for tool in READ_TOOLS if tool in tools]
     report["write_candidate_visible"] = any(
-        WRITE_TOOL in item.get("names", []) and item.get("optional") is False for item in details.get("tools", [])
+        tool in item.get("names", []) and item.get("optional") is False
+        for item in details.get("tools", [])
+        for tool in WRITE_TOOLS
     )
     report["integration_evidence"]["runtime_tool_names"] = list(tools)
     report["integration_evidence"]["required_read_tools_visible"] = all(tool in tools for tool in READ_TOOLS)
@@ -599,8 +602,10 @@ def summarize_patch(patch: dict[str, Any]) -> dict[str, Any]:
         "config_fields": sorted(plugin_entry["config"]),
         "tools_allow_updated": "tools" in patch and "allow" in patch["tools"],
         "tools_also_allow_updated": "tools" in patch and "alsoAllow" in patch["tools"],
-        "write_candidate_requested": WRITE_TOOL in patch.get("tools", {}).get("allow", [])
-        or WRITE_TOOL in patch.get("tools", {}).get("alsoAllow", []),
+        "write_candidate_requested": any(
+            tool in patch.get("tools", {}).get("allow", []) or tool in patch.get("tools", {}).get("alsoAllow", [])
+            for tool in WRITE_TOOLS
+        ),
     }
 
 

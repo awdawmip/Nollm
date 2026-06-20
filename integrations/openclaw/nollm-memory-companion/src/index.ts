@@ -1,7 +1,9 @@
 import { defineToolPlugin } from "openclaw/plugin-sdk/tool-plugin";
 import {
   ConfigSchema,
+  CommitCandidateInputSchema,
   GetInputSchema,
+  RecallInputSchema,
   SearchInputSchema,
   StatusInputSchema,
   WriteCandidateInputSchema
@@ -19,6 +21,30 @@ const plugin = defineToolPlugin({
   },
   configSchema: ConfigSchema,
   tools: (tool) => [
+    tool({
+      name: "nollm_memory_recall",
+      label: "Nollm Memory Recall",
+      description:
+        "Return an LLM-usable memory digest with direct evidence, lateral context, cautions, source provenance, and gravity orientation.",
+      parameters: RecallInputSchema,
+      async execute(input: { query: string; limit?: number }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        const normalized = normalizeConfig(config);
+        return await runSidecarCommand(
+          config,
+          "recall",
+          {
+            query: input.query,
+            limit: clampSearchLimit(input.limit ?? normalized.maxSearchResults, normalized.maxSearchResults)
+          },
+          context.signal
+        );
+      }
+    }),
     tool({
       name: "nollm_memory_search",
       label: "Nollm Memory Search",
@@ -83,6 +109,49 @@ const plugin = defineToolPlugin({
           target_files_mutated: false,
           notice: "Pending candidate only; no durable OpenClaw memory file was written."
         };
+      }
+    }),
+    tool({
+      name: "nollm_memory_commit_candidate",
+      label: "Nollm Memory Commit Candidate",
+      optional: true,
+      description:
+        "Commit a staged Nollm pending candidate to a managed durable/daily memory section only after explicit user confirmation.",
+      parameters: CommitCandidateInputSchema,
+      async execute(
+        input: {
+          candidate_id: string;
+          explicit_confirmation: boolean;
+          target: "durable" | "daily";
+          reason: string;
+          source: string;
+        },
+        config: PluginConfig,
+        context
+      ) {
+        context.signal?.throwIfAborted();
+        if (input.explicit_confirmation !== true) {
+          return {
+            ok: false,
+            error: {
+              code: "commit_rejected",
+              message: "nollm_memory_commit_candidate requires explicit_confirmation=true.",
+              retryable: false
+            }
+          };
+        }
+        return await runSidecarCommand(
+          config,
+          "commit-candidate",
+          {
+            candidate_id: input.candidate_id,
+            explicit_confirmation: input.explicit_confirmation,
+            target: input.target,
+            reason: input.reason,
+            source: input.source
+          },
+          context.signal
+        );
       }
     }),
     tool({

@@ -57,26 +57,32 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
     assert manifest["configSchema"]["type"] == "object"
     assert manifest["configSchema"]["additionalProperties"] is False
     assert manifest["contracts"]["tools"] == [
+        "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
         "nollm_memory_write_candidate",
+        "nollm_memory_commit_candidate",
         "nollm_memory_status",
     ]
     assert manifest["toolMetadata"]["nollm_memory_write_candidate"]["optional"] is True
+    assert manifest["toolMetadata"]["nollm_memory_commit_candidate"]["optional"] is True
 
 
 def test_typescript_declares_exact_static_tool_names_and_optional_write() -> None:
     source = (PACKAGE / "src/index.ts").read_text(encoding="utf-8")
     expected = [
+        "nollm_memory_recall",
         "nollm_memory_search",
         "nollm_memory_get",
         "nollm_memory_write_candidate",
+        "nollm_memory_commit_candidate",
         "nollm_memory_status",
     ]
 
     for tool in expected:
         assert source.count(f'name: "{tool}"') == 1
     assert 'name: "nollm_memory_write_candidate"' in source
+    assert 'name: "nollm_memory_commit_candidate"' in source
     assert "optional: true" in source
     assert "tools: (tool) =>" in source
     assert "parameters:" in source
@@ -107,15 +113,18 @@ def test_skill_teaches_required_workflow_and_gravity_trust_distinction() -> None
     skill = (PACKAGE / "skill/SKILL.md").read_text(encoding="utf-8")
 
     for phrase in [
-        "Use `nollm_memory_search`",
-        "retrieval_score",
-        "Use `nollm_memory_get`",
+        "Use `nollm_memory_recall`",
+        "direct_evidence",
+        "lateral_context",
+        "Use `memory_get` or `nollm_memory_get`",
         "source path / provenance",
         "core` / `halo",
         "near_drift",
         "far_coherent",
         "far_weak",
         "Use `nollm_memory_write_candidate`",
+        "Use `nollm_memory_commit_candidate`",
+        "explicit_confirmation=true",
         "Never claim that a pending candidate has been written to `MEMORY.md`",
         "Gravity report = instrumentation, not permission.",
         "Drift class = orientation, not trust.",

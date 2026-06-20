@@ -34,8 +34,8 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
 
 export function buildSidecarArgv(
   config: NormalizedConfig,
-  command: "index" | "search" | "get" | "write-candidate" | "status",
-  params: Record<string, string | number | undefined> = {}
+  command: "index" | "search" | "recall" | "get" | "write-candidate" | "commit-candidate" | "status",
+  params: Record<string, string | number | boolean | undefined> = {}
 ): string[] {
   const argv = [
     config.sidecarScript,
@@ -48,7 +48,7 @@ export function buildSidecarArgv(
     config.sidecarOutDir
   ];
 
-  if (command === "search") {
+  if (command === "search" || command === "recall") {
     argv.push("--query", String(params.query ?? ""));
     argv.push("--limit", String(clampSearchLimit(Number(params.limit ?? config.maxSearchResults), config.maxSearchResults)));
   }
@@ -59,6 +59,15 @@ export function buildSidecarArgv(
     argv.push("--text", String(params.text ?? ""));
     argv.push("--source", String(params.source ?? ""));
     argv.push("--why", String(params.why ?? "pending explicit review before durable promotion"));
+  }
+  if (command === "commit-candidate") {
+    argv.push("--candidate-id", String(params.candidate_id ?? ""));
+    if (params.explicit_confirmation === true) {
+      argv.push("--explicit-confirmation");
+    }
+    argv.push("--target", String(params.target ?? ""));
+    argv.push("--reason", String(params.reason ?? ""));
+    argv.push("--source", String(params.source ?? ""));
   }
 
   return argv;
@@ -73,8 +82,8 @@ export function clampSearchLimit(limit: number, maxSearchResults: number): numbe
 
 export async function runSidecarCommand(
   config: PluginConfig,
-  command: "index" | "search" | "get" | "write-candidate" | "status",
-  params: Record<string, string | number | undefined> = {},
+  command: "index" | "search" | "recall" | "get" | "write-candidate" | "commit-candidate" | "status",
+  params: Record<string, string | number | boolean | undefined> = {},
   signal?: AbortSignal
 ): Promise<SidecarResult> {
   const missing = missingRequiredConfig(config);

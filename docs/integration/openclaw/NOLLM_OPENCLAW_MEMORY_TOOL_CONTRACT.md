@@ -2,8 +2,57 @@
 
 Date: 2026-06-19
 
-These contracts describe OC0 design targets only. No OpenClaw runtime plugin is
-implemented here.
+These contracts describe the OCP4 companion tool surface. OpenClaw memory-core
+remains the memory-slot owner; Nollm remains a companion plugin.
+
+## `nollm_memory_recall`
+
+Input:
+
+```json
+{
+  "query": "string",
+  "limit": 6
+}
+```
+
+Output:
+
+```json
+{
+  "query": "Atlas owner",
+  "candidate_source": "nollm_local",
+  "direct_evidence": [
+    {
+      "candidate_id": "cand_...",
+      "source_path": "MEMORY.md",
+      "line_range": [3, 5],
+      "text_excerpt": "source excerpt",
+      "retrieval_score": 0.85,
+      "gravity_report": {
+        "R_column_ring": 0,
+        "S_scale_delta": 0,
+        "A_anchor_similarity": 0.44,
+        "drift_class": "core",
+        "anchor_overlap": 0.75,
+        "layout_method": "semantic_local_v1"
+      }
+    }
+  ],
+  "lateral_context": [],
+  "cautions": [],
+  "return_vector": null,
+  "use_instruction": "Use direct evidence for factual claims; inspect cited sources before relying on lateral context."
+}
+```
+
+Rules:
+
+- Retrieval relevance determines inclusion before drift interpretation.
+- Direct evidence and lateral context are separated.
+- DREAMS/speculative chunks are labelled as lateral/speculative context.
+- `semantic_break` remains a caution, not a hard removal.
+- Every usable item includes source path and line range.
 
 ## `nollm_memory_search`
 
@@ -43,7 +92,10 @@ Output:
         "S_scale_delta": 3,
         "A_anchor_similarity": 0.77,
         "drift_class": "near_drift",
-        "projection_method": "coverage_template"
+        "projection_method": "query_conditioned_anchor_overlap",
+        "anchor_overlap": 0.42,
+        "layout_method": "semantic_local_v1",
+        "source_role": "daily"
       },
       "llm_use_hint": "near drift; usable with provenance check"
     }
@@ -86,8 +138,9 @@ Output:
 }
 ```
 
-`nollm_memory_get` reads exact OpenClaw source text and any available Nollm
-sidecar metadata.
+`nollm_memory_get` reads exact OpenClaw source text and sidecar metadata. When
+called after search/recall with an id from that result set, it preserves the
+same geometry mark and gravity report.
 
 ## `nollm_memory_write_candidate`
 
@@ -122,6 +175,42 @@ Rules:
 - Write is candidate-only by default.
 - There is no automatic durable write to `MEMORY.md`.
 - Promotion requires explicit approval or a configured future policy.
+
+## `nollm_memory_commit_candidate`
+
+Input:
+
+```json
+{
+  "candidate_id": "candidate_001",
+  "explicit_confirmation": true,
+  "target": "durable",
+  "reason": "user explicitly confirmed",
+  "source": "chat:2026-06-20"
+}
+```
+
+Output:
+
+```json
+{
+  "ok": true,
+  "file_path": "MEMORY.md",
+  "line_range": [8, 11],
+  "content_sha256": "...",
+  "old_sha256": "...",
+  "new_sha256": "...",
+  "memory_core_reindex_required": true
+}
+```
+
+Rules:
+
+- Reject missing confirmation, missing candidate, unsupported target, or
+  workspace escape.
+- Append only inside a Nollm-managed section.
+- Return hashes and a documented memory-core reindex command.
+- Do not mutate memory-core SQLite directly.
 
 ## `nollm_memory_status`
 

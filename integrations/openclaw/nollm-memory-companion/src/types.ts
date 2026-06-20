@@ -22,7 +22,8 @@ export type SidecarErrorCode =
   | "sidecar_timeout"
   | "sidecar_failed"
   | "sidecar_invalid_json"
-  | "configuration_error";
+  | "configuration_error"
+  | "commit_rejected";
 
 export type SidecarFailure = {
   ok: false;

@@ -24,19 +24,42 @@ status, permission, or durable memory state.
 
 ## Tool Use
 
+Call `nollm_memory_recall` first for ordinary memory-relevant messages. It
+returns `direct_evidence`, `lateral_context`, `cautions`, source paths, line
+ranges, and gravity orientation in one digest.
+
 Call `nollm_memory_search` when the user asks for remembered context, when a
-task needs prior OpenClaw notes, or when orientation would benefit from topology
-and gravity reports.
+task needs prior OpenClaw notes, or when debugging recall internals would
+benefit from topology and gravity reports.
 
 Call `nollm_memory_get` when a search result looks useful but needs exact source
 text, line range, or provenance.
 
 Call `nollm_memory_write_candidate` only when the user asks to remember
-something, or when there is a durable, source-backed item worth review. The
-write path is candidate-only and must not update `MEMORY.md` automatically.
+something. The stage path is candidate-only and must not update `MEMORY.md`
+automatically.
+
+Call `nollm_memory_commit_candidate` only after explicit user confirmation. It
+requires `candidate_id`, `explicit_confirmation: true`, `target`, `reason`, and
+`source`. A successful commit writes only a Nollm-managed section and returns
+file path, line range, old/new hashes, and `memory_core_reindex_required`.
 
 Call `nollm_memory_status` to inspect configured paths, sidecar health, and last
 report state.
+
+## Active Memory Sub-Agent Policy
+
+For a controlled OCP4 agent, Active Memory should use this sequence:
+
+1. Call `nollm_memory_recall` once.
+2. If direct evidence is present, verify the cited source with `memory_get` or
+   `nollm_memory_get`.
+3. Return `NONE` when no relevant memory exists.
+4. Treat drift labels as orientation only; never reject a result solely because
+   of drift.
+
+The Active Memory tool allowlist must exclude `nollm_memory_write_candidate` and
+`nollm_memory_commit_candidate`.
 
 ## Response Policy
 
