@@ -8,7 +8,7 @@ from .archive import load_manifest, memory_root_path, verify_archive_snapshot
 from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
 from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
-from .native_field import current_publication, load_field_head
+from .native_field import current_publication, load_field_head, validate_publication_manifest_closure, validate_publication_semantics
 from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
 
 
@@ -223,20 +223,14 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         errors.append(f"publication_manifest_revision_mismatch:{field_revision_id}")
     if manifest.get("snapshot_id") != snapshot_id:
         errors.append(f"publication_manifest_snapshot_mismatch:{field_revision_id}")
+    errors.extend(validate_publication_manifest_closure(publication))
+    errors.extend(validate_publication_semantics(publication, expected_revision_id=field_revision_id))
     artifact_hashes = manifest.get("artifact_hashes", {})
-    if not isinstance(artifact_hashes, dict):
-        errors.append(f"publication_manifest_artifact_hashes_invalid:{field_revision_id}")
-        artifact_hashes = {}
-    expected_paths = {"revision.json", "receipt.json", "source-span-links.jsonl", "source-span-projection.jsonl"}
-    for path in sorted(publication.rglob("*")):
-        if path.is_file() and path.name != "publication-manifest.json":
-            rel = path.relative_to(publication).as_posix()
-            expected_paths.add(rel)
-            actual = "sha256:" + sha256_bytes(path.read_bytes())
-            if artifact_hashes.get(rel) != actual:
-                errors.append(f"publication_artifact_hash_mismatch:{rel}")
-    missing = expected_paths - set(artifact_hashes)
-    errors.extend(f"publication_artifact_hash_missing:{path}" for path in sorted(missing))
+    required_paths = {"revision.json", "receipt.json", "source-span-links.jsonl", "source-span-projection.jsonl"}
+    if isinstance(artifact_hashes, dict):
+        for required in sorted(required_paths):
+            if required not in artifact_hashes:
+                errors.append(f"publication_artifact_hash_missing:{required}")
     errors.extend(_validate_inventory_and_projection(root, snapshot_id, publication))
     return errors
 

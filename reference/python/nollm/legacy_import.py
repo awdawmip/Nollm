@@ -107,13 +107,19 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     extracted = _read_jsonl(batch_dir / "extraction.jsonl")
     existing = existing_shards_by_key(root)
     shards = []
+    publication_shards_by_id: dict[str, dict[str, Any]] = {}
     duplicate_count = 0
     for record in extracted:
         key = idempotence_key(record, source_policy_id)
         if key in existing:
             duplicate_count += 1
+            existing_shard = dict(existing[key])
+            publication_shards_by_id[str(existing_shard["shard_id"])] = existing_shard
             continue
-        shards.append(build_shard(record, batch_id=batch_id, source_policy_id=source_policy_id, idempotence_key=key))
+        shard = build_shard(record, batch_id=batch_id, source_policy_id=source_policy_id, idempotence_key=key)
+        shards.append(shard)
+        publication_shards_by_id[str(shard["shard_id"])] = shard
+    publication_shards = [publication_shards_by_id[shard_id] for shard_id in sorted(publication_shards_by_id)]
     if dry_run:
         report = _migration_report(root, batch_id, request, dry_run=True, candidate_shards=shards, duplicate_count=duplicate_count)
         write_json(batch_dir / "dry-run-report.json", report)
@@ -128,13 +134,15 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         "created_shard_count": len(shards),
         "duplicate_count": duplicate_count,
     }
+    head_written = False
+    prior_head = load_field_head(root)
     try:
         _write_state(batch_dir, "staged")
         stage_shards(root, batch_id, shards)
-        revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in shards])
+        revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in publication_shards])
         receipt["field_revision_id"] = revision["field_revision_id"]
-        links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=shards)
-        staging = _write_staging_package(root, batch_id, revision, shards, links, str(request["snapshot_id"]), receipt)
+        links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=publication_shards)
+        staging = _write_staging_package(root, batch_id, revision, publication_shards, links, str(request["snapshot_id"]), receipt)
         if os.environ.get("NOLLM_MT1_CORRUPT_STAGING_TEXT") == "1":
             shard_path = next((staging / "shards").glob("*.json"))
             shard = read_json(shard_path)
@@ -153,17 +161,30 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         publication = _publish_package(root, batch_id, str(revision["field_revision_id"]))
         write_json(batch_dir / "import-receipt.json", receipt)
         manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
+        _write_publish_handoff(batch_dir, batch_id, str(revision["field_revision_id"]), manifest_hash, prior_head)
         _write_head_atomic(root, {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"], "publication_manifest_hash": manifest_hash})
+        head_written = True
         if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
             return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": revision["field_revision_id"], "state": "publishing"}
-        _write_state(batch_dir, "committed")
+        if os.environ.get("NOLLM_MT1_FORCE_STATE_OSERROR_AFTER_HEAD") == "1":
+            raise OSError("forced_state_oserror_after_head")
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(revision["field_revision_id"]))
         if not provenance.get("ok"):
-            raise ValueError("published_provenance_failed:" + ",".join(provenance.get("errors", [])))
+            _quarantine_and_restore_head(root, batch_dir, prior_head, "published_provenance_failed:" + ",".join(provenance.get("errors", [])))
+            return {"ok": False, "batch_id": batch_id, "errors": provenance.get("errors", []), "state": "quarantined"}
+        _write_state(batch_dir, "committed")
         write_json(batch_dir / "migration-report.json", _migration_report(root, batch_id, request, receipt=receipt, duplicate_count=duplicate_count))
         append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_commit", "batch_id": batch_id, "timestamp": utc_now(), "receipt": receipt, "publication": str(publication)})
         return {"ok": True, "batch_id": batch_id, "committed": True, "created_shard_count": len(shards), "duplicate_count": duplicate_count, "field_revision_id": revision["field_revision_id"], "state": "committed"}
     except Exception as exc:
+        if head_written:
+            head = load_field_head(root)
+            if head and head.get("field_revision_id") == receipt.get("field_revision_id"):
+                provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
+                if provenance.get("ok"):
+                    return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": receipt.get("field_revision_id"), "state": _load_state(batch_dir)["state"]}
+                _quarantine_and_restore_head(root, batch_dir, prior_head, str(exc))
+                return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "quarantined"}
         if _load_state(batch_dir)["state"] != "committed":
             _write_state(batch_dir, "failed")
         failure = {"schema": "nollm.legacy_import_failure.v1", "batch_id": batch_id, "timestamp": utc_now(), "error": str(exc), "state": "failed"}
@@ -188,6 +209,11 @@ def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str,
     if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
         _write_state(batch_dir, "quarantined")
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["head_not_at_receipt_revision"]}
+    provenance = validate_deep_provenance(root, str(receipt.get("snapshot_id")), str(receipt.get("field_revision_id")))
+    if not provenance.get("ok"):
+        prior_head = read_json(batch_dir / "publish-handoff.json").get("prior_head") if (batch_dir / "publish-handoff.json").exists() else None
+        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:" + ",".join(provenance.get("errors", [])))
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": provenance.get("errors", [])}
     _write_state(batch_dir, "committed")
     append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_reconcile", "batch_id": batch_id, "timestamp": utc_now(), "state": "committed"})
     return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": True, "field_revision_id": receipt.get("field_revision_id")}
@@ -299,14 +325,7 @@ def _migration_report(
 
 
 def _revision_candidate(root: Path, *, batch_id: str, target_field_id: str, shard_ids: list[str]) -> dict[str, Any]:
-    current = load_field_head(root)
-    existing_ids: list[str] = []
-    if current and current.get("field_id") == target_field_id:
-        publication = current_publication(root)
-        revision_path = publication / "revision.json" if publication else root / "field" / "missing-publication"
-        if revision_path.exists():
-            existing_ids = [str(item) for item in read_json(revision_path).get("shard_ids", [])]
-    merged_ids = sorted(set(existing_ids).union(shard_ids))
+    merged_ids = sorted(set(shard_ids))
     revision_seed = canonical_json({"batch_id": batch_id, "field_id": target_field_id, "shard_ids": merged_ids})
     revision_id = "fieldrev_" + sha256_bytes(revision_seed)[:20]
     return {
@@ -355,6 +374,36 @@ def _write_head_atomic(root: Path, head: dict[str, Any]) -> None:
     tmp = root / "field" / "HEAD.json.tmp"
     write_json(tmp, head)
     os.replace(tmp, target)
+
+
+def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, manifest_hash: str, prior_head: dict[str, Any] | None) -> None:
+    write_json(
+        batch_dir / "publish-handoff.json",
+        {
+            "schema": "nollm.legacy_import_publish_handoff.v1",
+            "batch_id": batch_id,
+            "candidate_revision_id": revision_id,
+            "candidate_manifest_hash": manifest_hash,
+            "prior_head": prior_head,
+            "publish_started_at": utc_now(),
+        },
+    )
+
+
+def _restore_head(root: Path, prior_head: dict[str, Any] | None) -> None:
+    target = root / "field" / "HEAD.json"
+    if prior_head:
+        _write_head_atomic(root, prior_head)
+    elif target.exists():
+        target.unlink()
+
+
+def _quarantine_and_restore_head(root: Path, batch_dir: Path, prior_head: dict[str, Any] | None, reason: str) -> None:
+    _restore_head(root, prior_head)
+    _write_state(batch_dir, "quarantined")
+    record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": reason, "state": "quarantined"}
+    write_json(batch_dir / "quarantine.json", record)
+    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_quarantine", **record})
 
 
 def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) -> list[dict[str, Any]]:
