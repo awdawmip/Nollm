@@ -59,6 +59,9 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     batch_dir.mkdir(parents=True, exist_ok=True)
     request_path = batch_dir / "import-request.json"
     receipt_path = batch_dir / "import-receipt.json"
+    if batch_dir.exists() and not request_path.exists() and any(batch_dir.iterdir()):
+        state, state_errors = _load_state_safe(batch_dir)
+        return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + ["missing_import_request"]}
     if request_path.exists():
         request, request_errors = _read_json_safe(request_path, "import_request")
         state, state_errors = _load_state_safe(batch_dir)
@@ -67,6 +70,14 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
         receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
         if receipt_errors:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
+        if state["state"] in {"committed", "publishing"} and not receipt_path.exists():
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": ["missing_import_receipt"]}
+        if receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": [f"invalid_receipted_state:{state['state']}"]}
+        if receipt_path.exists():
+            handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+            if handoff_errors or not isinstance(handoff, dict):
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": handoff_errors or ["invalid_publish_handoff"]}
         return {
             "ok": True,
             "batch_id": batch_id,
@@ -117,6 +128,8 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     if request_errors or not isinstance(request, dict):
         return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
     receipt_path = batch_dir / "import-receipt.json"
+    if commit and receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
+        return _untrusted_ingress_result(root, batch_dir, batch_id, [f"invalid_receipted_state:{state['state']}"])
     if commit and state["state"] == "committed" and receipt_path.exists():
         receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
         if receipt_errors or not isinstance(receipt, dict):
@@ -512,8 +525,10 @@ def _validate_handoff_contract(
 ) -> list[str]:
     errors: list[str] = []
     revision_id = str(package_receipt.get("field_revision_id"))
-    manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
-    activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
+    manifest_hash = _required_file_hash(publication / "publication-manifest.json", "publication_manifest", errors)
+    activation_hash = _required_file_hash(publication / "activation.json", "publication_activation", errors)
+    if manifest_hash is None or activation_hash is None:
+        return errors
     expected = {
         "schema": "nollm.legacy_import_publish_handoff.v1",
         "batch_id": request.get("batch_id"),
@@ -535,6 +550,12 @@ def _validate_handoff_contract(
             errors.append("publish_handoff_head_manifest_hash_mismatch")
         if head.get("activation_hash") != activation_hash:
             errors.append("publish_handoff_head_activation_hash_mismatch")
+    receipt_hash = _required_file_hash(publication / "receipt.json", "publication_receipt", errors)
+    revision_hash = _required_file_hash(publication / "revision.json", "publication_revision", errors)
+    links_hash = _required_file_hash(publication / "source-span-links.jsonl", "source_span_links", errors)
+    projection_hash = _required_file_hash(publication / "source-span-projection.jsonl", "source_span_projection", errors)
+    if None in {receipt_hash, revision_hash, links_hash, projection_hash}:
+        return errors
     activation_expected = {
         "schema": ACTIVATION_SCHEMA,
         "field_id": request.get("target_field_id"),
@@ -542,10 +563,10 @@ def _validate_handoff_contract(
         "batch_id": request.get("batch_id"),
         "snapshot_id": request.get("snapshot_id"),
         "source_policy_id": request.get("source_policy_id"),
-        "receipt_hash": "sha256:" + sha256_bytes((publication / "receipt.json").read_bytes()),
-        "revision_hash": "sha256:" + sha256_bytes((publication / "revision.json").read_bytes()),
-        "source_span_links_hash": "sha256:" + sha256_bytes((publication / "source-span-links.jsonl").read_bytes()),
-        "source_span_projection_hash": "sha256:" + sha256_bytes((publication / "source-span-projection.jsonl").read_bytes()),
+        "receipt_hash": receipt_hash,
+        "revision_hash": revision_hash,
+        "source_span_links_hash": links_hash,
+        "source_span_projection_hash": projection_hash,
         "legacy_import_profile": LEGACY_IMPORT_PROFILE,
     }
     for key, value in activation_expected.items():
@@ -554,6 +575,14 @@ def _validate_handoff_contract(
     if manifest.get("field_revision_id") != revision_id:
         errors.append("publication_manifest_revision_mismatch")
     return errors
+
+
+def _required_file_hash(path: Path, label: str, errors: list[str]) -> str | None:
+    try:
+        return "sha256:" + sha256_bytes(path.read_bytes())
+    except OSError as exc:
+        errors.append(f"unreadable_file:{label}:{exc.__class__.__name__}")
+    return None
 
 
 def _is_utc_timestamp(value: str) -> bool:
