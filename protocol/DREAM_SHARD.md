@@ -112,3 +112,5 @@ R3 requires the published source-span projection to be checked against canonical
 R4 requires active DreamShard enumeration to follow only the verified publication revision roster. A shard file is active only when it is in the exact HEAD-bound manifest closure, listed in `revision.json.shard_ids`, and its payload `shard_id` matches the filename and revision entry. Extra shard files and stale physical directories are inert.
 
 R5 requires the active roster to be admitted through a contained, regular HEAD trust root and exact source-span relation closure. A DreamShard cannot become active through a symlinked HEAD/publication path, a mismatched HEAD field identity, malformed active artifacts, an orphan link, or a destructive cross-snapshot replacement.
+
+R6 binds imported DreamShard identity to provenance. For `origin_kind: legacy_import`, `source_refs`, `continuity_refs`, `source_policy_id`, `batch_id`, `idempotence_key`, and `shard_id` must match the archived source span and receipt exactly. A forged dedupe key or dangling continuity lineage is inactive and blocks further writes behind the existing HEAD.

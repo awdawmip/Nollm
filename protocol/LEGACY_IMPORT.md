@@ -148,6 +148,12 @@ MT1-R5 makes finalization durable before terminal state. After HEAD activation, 
 
 The single-snapshot publication schema is non-destructive. If a verified active field already exists, importing a different `snapshot_id` into the same target field is rejected with `cross_snapshot_replacement_not_supported`; targeting a different field under the single `field/HEAD.json` root is rejected with `single_head_field_switch_not_supported`. A future multi-snapshot composition protocol must be explicit before active memory can be replaced or merged across snapshots.
 
+MT1-R6 makes retry behavior state-driven. A `commit` request for a `publishing` batch must delegate to reconciliation only; it must not restage, copy a new publication, replace HEAD, create a second revision, or mark the batch failed merely because the retry was made. A `committed` duplicate request is successful only after the committed receipt, HEAD package, provenance, and finalization ledger are still trusted.
+
+If `field/HEAD.json` exists but the active publication cannot be admitted or deep-validated, all new plan, commit, duplicate, and replacement writes are blocked with `active_field_integrity_unresolved` until an explicit repair or quarantine workflow establishes the field outcome. A corrupt active field is not equivalent to an absent field.
+
+Malformed ingress state, request, receipt, or handoff records fail closed with structured errors. When a `publishing` batch has a trusted handoff, recovery may restore the recorded prior HEAD and quarantine the batch; if the handoff itself is untrusted, callers receive a recovery-required result and no replacement publication may be activated.
+
 Failed and quarantined batches are terminal. Recovery creates a replacement batch with `recovery_of` unless the original batch is in `publishing` and HEAD already points to a valid package, in which case reconcile commits the journal without reimporting.
 
 ## Default State

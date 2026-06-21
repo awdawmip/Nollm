@@ -101,6 +101,8 @@ Active shard reads are revision-limited. Readers may only enumerate `revision.js
 
 Source-span links are exact publication relations. Every active shard source ref must have exactly one matching link, and every published link must point back to a canonical importable span, the active shard roster, and the projected `sharded` relation. Extra, duplicate, orphan, non-memory, or unprojected links are invalid.
 
+For MT1 `legacy_import` shards, identity is derived from the archive source range. Validation recomputes normalized text, `source_range_hash`, `text_hash`, `idempotence_key`, `shard_id`, and exact `continuity_refs` from the canonical source ref plus source policy. Any mismatch makes the active field untrusted and prevents dedupe or replacement writes.
+
 ## Boundaries
 
 Archive snapshot may read legacy files. Archive verify, span inventory, extraction, import, validation, and report must not read source workspace live files.
