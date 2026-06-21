@@ -21,6 +21,7 @@ def memory_root_path(memory_root: Path | str) -> Path:
 def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, policy_id: str = POLICY_ID) -> dict[str, Any]:
     workspace_path = Path(workspace).resolve()
     root = memory_root_path(memory_root)
+    assert_memory_root_outside_workspace(workspace_path, root)
     objects: list[dict[str, Any]] = []
     for source in enumerate_legacy_sources(workspace_path, policy_id):
         path = resolve_source_path(workspace_path, source.relative_path)
@@ -65,6 +66,17 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
     return {"ok": True, "snapshot_id": pre_manifest["snapshot_id"], "manifest_path": str(path), "object_count": len(objects), "manifest_hash": pre_manifest["manifest_hash"]}
 
 
+def assert_memory_root_outside_workspace(workspace: Path | str, memory_root: Path | str) -> None:
+    workspace_path = Path(workspace).resolve()
+    root = Path(memory_root).resolve()
+    if workspace_path == root:
+        raise ValueError("memory root must not equal workspace")
+    if _is_relative_to(root, workspace_path):
+        raise ValueError("memory root must not be inside workspace")
+    if _is_relative_to(workspace_path, root):
+        raise ValueError("workspace must not be inside memory root")
+
+
 def load_manifest(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
     path = memory_root_path(memory_root) / "archive" / "manifests" / f"{snapshot_id}.json"
     return read_json(path)
@@ -100,3 +112,11 @@ def inspect_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[
         "objects": manifest.get("objects", []),
         "manifest_hash": manifest.get("manifest_hash"),
     }
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+        return True
+    except ValueError:
+        return False

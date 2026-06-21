@@ -8,7 +8,8 @@ from .archive import load_manifest, memory_root_path
 from .archive_manifest import sha256_bytes
 
 SPAN_SCHEMA = "nollm.source_span_inventory.v1"
-ALLOWED_DISPOSITIONS = {"sharded", "non_memory", "manual_review", "unsupported"}
+ALLOWED_DISPOSITIONS = {"classified_pending", "sharded", "non_memory", "manual_review", "unsupported"}
+NON_MEMORY_REASONS = {"blank", "structural_heading"}
 
 
 def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
@@ -20,7 +21,7 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
         data = (root / "archive" / "objects" / "sha256" / digest).read_bytes()
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
-            disposition = "non_memory" if not chunk.strip() else ("unsupported" if obj.get("encoding") == "binary" else "sharded")
+            disposition, reason = _classify_span(chunk, obj.get("encoding"))
             records.append(
                 {
                     "schema": SPAN_SCHEMA,
@@ -34,7 +35,8 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
                     "text_hash": "sha256:" + sha256_bytes(chunk),
                     "disposition": disposition,
                     "related_shard_ids": [],
-                    "reason": "deterministic paragraph coverage",
+                    "reason": reason,
+                    "lifecycle": "classified",
                 }
             )
     path = root / "archive" / "source-spans" / f"{snapshot_id}.jsonl"
@@ -46,6 +48,27 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
 def load_source_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[str, Any]]:
     path = memory_root_path(memory_root) / "archive" / "source-spans" / f"{snapshot_id}.jsonl"
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def write_source_spans(memory_root: Path | str, snapshot_id: str, spans: list[dict[str, Any]]) -> None:
+    path = memory_root_path(memory_root) / "archive" / "source-spans" / f"{snapshot_id}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(span, ensure_ascii=False, sort_keys=True) + "\n" for span in spans), encoding="utf-8")
+
+
+def mark_spans_linked(memory_root: Path | str, snapshot_id: str, links: list[dict[str, Any]]) -> None:
+    by_span: dict[str, list[str]] = {}
+    for link in links:
+        by_span.setdefault(str(link["span_id"]), []).append(str(link["shard_id"]))
+    spans = load_source_spans(memory_root, snapshot_id)
+    for span in spans:
+        related = sorted(set(by_span.get(str(span["span_id"]), [])))
+        if related:
+            span["disposition"] = "sharded"
+            span["related_shard_ids"] = related
+            span["lifecycle"] = "linked"
+            span["reason"] = "linked_to_committed_shard"
+    write_source_spans(memory_root, snapshot_id, spans)
 
 
 def _paragraph_ranges(data: bytes) -> list[tuple[int, int]]:
@@ -68,6 +91,22 @@ def _paragraph_ranges(data: bytes) -> list[tuple[int, int]]:
     if start < len(data):
         ranges.append((start, len(data)))
     return ranges or [(0, len(data))]
+
+
+def _classify_span(chunk: bytes, encoding: object) -> tuple[str, str]:
+    if encoding == "binary":
+        return "unsupported", "binary_encoding"
+    text = chunk.decode("utf-8")
+    if not chunk.strip():
+        return "non_memory", "blank"
+    if _is_markdown_heading_only(text):
+        return "non_memory", "structural_heading"
+    return "classified_pending", "legacy_import_candidate"
+
+
+def _is_markdown_heading_only(text: str) -> bool:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return len(lines) == 1 and lines[0].startswith("#")
 
 
 def _line_locator(data: bytes, start: int, end: int) -> dict[str, int | str]:

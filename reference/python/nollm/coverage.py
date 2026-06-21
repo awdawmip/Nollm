@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from .archive import load_manifest, memory_root_path
-from .source_spans import ALLOWED_DISPOSITIONS, load_source_spans
+from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_spans
 
 
-def validate_source_coverage(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
+def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, require_linked: bool = False) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     manifest = load_manifest(root, snapshot_id)
     spans = load_source_spans(root, snapshot_id)
@@ -19,6 +19,8 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str) -> dict[
     covered = 0
     unsupported = 0
     manual_review = 0
+    pending = 0
+    sharded_without_links = 0
     for obj in manifest.get("objects", []):
         key = (str(obj["archive_object_id"]), str(obj["original_relative_path"]))
         current = 0
@@ -41,6 +43,21 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str) -> dict[
                 unsupported += 1
             elif disposition == "manual_review":
                 manual_review += 1
+            elif disposition == "classified_pending":
+                pending += 1
+                if require_linked:
+                    errors.append(f"pending_span_not_linked:{span.get('span_id')}")
+                else:
+                    covered += 1
+            elif disposition == "non_memory":
+                if span.get("reason") not in NON_MEMORY_REASONS:
+                    errors.append(f"invalid_non_memory_reason:{span.get('span_id')}:{span.get('reason')}")
+                covered += 1
+            elif disposition == "sharded":
+                if not span.get("related_shard_ids"):
+                    sharded_without_links += 1
+                    errors.append(f"sharded_span_without_related_shards:{span.get('span_id')}")
+                covered += 1
             else:
                 covered += 1
         if current != int(obj.get("byte_length", 0)):
@@ -55,5 +72,7 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str) -> dict[
         "uncovered_source_spans": len([error for error in errors if "coverage" in error or "missing" in error]),
         "unsupported": unsupported,
         "manual_review": manual_review,
+        "classified_pending": pending,
+        "sharded_without_links": sharded_without_links,
         "errors": errors,
     }

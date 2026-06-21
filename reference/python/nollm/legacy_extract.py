@@ -17,7 +17,7 @@ def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict
     by_object = {obj["archive_object_id"]: obj for obj in manifest.get("objects", [])}
     extracted: list[dict[str, Any]] = []
     for span in load_source_spans(root, snapshot_id):
-        if span.get("disposition") != "sharded":
+        if span.get("disposition") not in {"classified_pending", "sharded"}:
             continue
         obj = by_object[str(span["archive_object_id"])]
         digest = str(obj["content_hash"]).removeprefix("sha256:")

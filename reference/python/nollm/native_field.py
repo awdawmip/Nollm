@@ -42,8 +42,13 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
 def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]:
     root = memory_root_path(memory_root)
     shards: dict[str, dict[str, Any]] = {}
+    active_ids = set(_current_head_shards(root))
+    if not active_ids:
+        return shards
     for path in sorted((root / "field" / "shards").glob("*.json")):
         data = read_json(path)
+        if active_ids and data.get("shard_id") not in active_ids:
+            continue
         key = data.get("idempotence_key")
         if isinstance(key, str):
             shards[key] = data
@@ -116,6 +121,11 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
         handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records), encoding="utf-8")
+
+
 def _current_field_shards(root: Path, target_field_id: str) -> list[str]:
     head = root / "field" / "HEAD.json"
     if not head.exists():
@@ -123,6 +133,17 @@ def _current_field_shards(root: Path, target_field_id: str) -> list[str]:
     current = read_json(head)
     if current.get("field_id") != target_field_id:
         return []
+    revision_path = root / "field" / "revisions" / f"{current['field_revision_id']}.json"
+    if not revision_path.exists():
+        return []
+    return [str(item) for item in read_json(revision_path).get("shard_ids", [])]
+
+
+def _current_head_shards(root: Path) -> list[str]:
+    head = root / "field" / "HEAD.json"
+    if not head.exists():
+        return []
+    current = read_json(head)
     revision_path = root / "field" / "revisions" / f"{current['field_revision_id']}.json"
     if not revision_path.exists():
         return []

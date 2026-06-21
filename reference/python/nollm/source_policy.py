@@ -53,7 +53,10 @@ def validate_relative_source_path(relative_path: str) -> None:
 def resolve_source_path(workspace: Path, relative_path: str) -> Path:
     validate_relative_source_path(relative_path)
     root = workspace.resolve()
-    target = (root / relative_path).resolve()
+    raw_target = root / relative_path
+    if raw_target.is_symlink():
+        raise ValueError(f"source path is a symlink: {relative_path}")
+    target = raw_target.resolve()
     if not _is_relative_to(target, root):
         raise ValueError(f"source path escapes workspace: {relative_path}")
     if target.is_symlink():
