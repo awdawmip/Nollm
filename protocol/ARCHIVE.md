@@ -70,6 +70,8 @@ MT1 fixture imports must reach `coverage_ratio == 1.0` with no uncovered, unsupp
 
 Published coverage is HEAD-only. A physical revision file, staged relation file, or failed batch projection is not active memory and cannot satisfy `require_linked` coverage unless `field/HEAD.json` points to a complete publication package for that revision.
 
+MT1-R4 makes "complete publication package" a fail-closed admission rule. The HEAD-bound `publication-manifest.json` must be an exact inventory closure of every regular file below the publication directory, excluding the manifest itself. Unmanifested files, missing files, symlinks, absolute paths, parent-directory escapes, backslash paths, or hash mismatches make the publication inactive. Active coverage then sees no published spans.
+
 ## Canonical Inventory
 
 R3 treats archive source spans as deterministic facts. Validation must either rebuild canonical source spans from archive object bytes or compare the persisted inventory to an immutable hash bound by the request, receipt, and publication manifest.
@@ -92,6 +94,8 @@ Published projections are constrained transforms of this canonical inventory:
 - canonical `classified_pending` may only become `sharded` with exact links and published shards.
 - canonical `classified_pending` must not become `non_memory`.
 - no projection may change byte ranges, object ids, paths, span ids, or raw text hashes.
+
+Active shard reads are revision-limited. Readers may only enumerate `revision.json.shard_ids`; they must not glob every shard file in the package. Every listed shard must have a matching `shards/<shard_id>.json` payload, and every shard payload in the package must be listed by the revision.
 
 ## Boundaries
 

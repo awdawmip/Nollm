@@ -108,3 +108,5 @@ Validation is fail-closed. Prefix-similar archive URIs, nonexistent digests, byt
 Published validation is HEAD-only. A DreamShard stored in staging, a generic shard directory, or an unpublished revision package is not active memory and cannot prove migration completion.
 
 R3 requires the published source-span projection to be checked against canonical archive spans. A shard may prove only a canonical `classified_pending` span. It cannot make a real text span disappear by relabeling it as `non_memory`, and it cannot override canonical blank or heading-only spans.
+
+R4 requires active DreamShard enumeration to follow only the verified publication revision roster. A shard file is active only when it is in the exact HEAD-bound manifest closure, listed in `revision.json.shard_ids`, and its payload `shard_id` matches the filename and revision entry. Extra shard files and stale physical directories are inert.

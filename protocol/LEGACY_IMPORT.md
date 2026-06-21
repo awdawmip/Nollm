@@ -130,6 +130,8 @@ publication_manifest_hash
 
 Validation first checks the HEAD manifest hash, then every payload artifact hash, then semantic consistency.
 
+MT1-R4 treats the manifest as an exact closure, not a partial hash list. The set of manifest artifact paths must exactly equal the publication payload files, excluding `publication-manifest.json`. Symlinks, path escapes, absolute paths, backslash paths, extra files, missing files, and mismatched hashes make the publication inactive. Revision and receipt metadata must agree with the package: shard counts must match their lists, created shards must be in the revision, and every active shard file must match a `revision.json.shard_ids` entry.
+
 Staged validation is a separate entrypoint. It validates `field/.staging/<batch_id>/publication/` with the same canonical inventory, source ref, text binding, relation, projection, and manifest rules, but without requiring HEAD.
 
 Failures are recorded in `failure.json` and the ledger with a structured code. Pre-HEAD artifacts are not completion proof. Validators must reject unpublished physical revisions with `unpublished_revision:<revision_id>`.
@@ -137,6 +139,10 @@ Failures are recorded in `failure.json` and the ledger with a structured code. P
 Legacy v1 shard/revision files outside a publication package are compatibility artifacts only; they are not MT1 completion proof.
 
 After atomic HEAD replace succeeds, the publication is truth. Later ledger or journal write failure must not return import failure; it returns published success with `reconciliation_pending`. Reconcile may repair the audit journal to match the verified HEAD package.
+
+The post-HEAD handoff records the candidate revision, candidate manifest hash, prior HEAD, batch id, and publish start time before HEAD is replaced. If a finalization error happens after HEAD and the package is still verified, the batch remains `publishing` and the result is `published: true` with `reconciliation_pending: true`. If package verification fails after HEAD or during reconcile, the batch is quarantined and HEAD is restored to the prior verified value or removed when no prior HEAD existed.
+
+Reconcile is a validator, not a pointer check. It must verify HEAD manifest binding, exact publication closure, revision-limited shard semantics, source-span projection, archive provenance, and coverage before it records `committed`.
 
 Failed and quarantined batches are terminal. Recovery creates a replacement batch with `recovery_of` unless the original batch is in `publishing` and HEAD already points to a valid package, in which case reconcile commits the journal without reimporting.
 
