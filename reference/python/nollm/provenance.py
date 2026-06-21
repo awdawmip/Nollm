@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -8,7 +9,7 @@ from .archive import load_manifest, memory_root_path, verify_archive_snapshot
 from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
 from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
-from .native_field import current_publication, load_field_head, validate_publication_manifest_closure, validate_publication_semantics
+from .native_field import admit_current_publication, current_publication, load_field_head, validate_publication_manifest_closure, validate_publication_semantics
 from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
 
 
@@ -86,12 +87,17 @@ def validate_staged_publication(memory_root: Path | str, batch_id: str, snapshot
 def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     errors: list[str] = []
-    head = load_field_head(root)
+    admission = admit_current_publication(root)
+    head = admission.get("head")
     if not head or head.get("field_revision_id") != field_revision_id:
-        return _result(snapshot_id, field_revision_id, [f"unpublished_revision:{field_revision_id}"])
-    publication = current_publication(root)
+        admission_errors = [str(error) for error in admission.get("errors", [])]
+        if admission_errors == ["active_path_missing:field_head"]:
+            admission_errors = []
+        return _result(snapshot_id, field_revision_id, admission_errors + [f"unpublished_revision:{field_revision_id}"])
+    publication = admission.get("publication")
     if not publication or publication.name != field_revision_id:
-        return _result(snapshot_id, field_revision_id, [f"unpublished_revision:{field_revision_id}"])
+        admission_errors = [str(error) for error in admission.get("errors", [])]
+        return _result(snapshot_id, field_revision_id, admission_errors + [f"unpublished_revision:{field_revision_id}"])
     errors.extend(_validate_publication_package(root, snapshot_id, field_revision_id, publication, require_head=True))
     if errors:
         return _result(snapshot_id, field_revision_id, errors)
@@ -197,6 +203,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
                     errors.append(f"span_related_shard_not_in_revision:{span.get('span_id')}:{shard_id}")
                 if not links_by_span.get(str(span.get("span_id"))):
                     errors.append(f"sharded_span_without_link_record:{span.get('span_id')}")
+    errors.extend(_validate_exact_relation_closure(root, snapshot_id, publication, field_revision_id, receipt, objects_by_digest, revision_shards, spans, links))
     coverage = validate_source_coverage(root, snapshot_id, require_linked=True)
     errors.extend(coverage.get("errors", []))
     return _result(snapshot_id, field_revision_id, errors, coverage=coverage)
@@ -211,12 +218,17 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         return [f"missing_publication_manifest:{field_revision_id}"]
     if require_head:
         head = load_field_head(root)
-        actual_manifest_hash = "sha256:" + sha256_bytes(manifest_path.read_bytes())
+        try:
+            actual_manifest_hash = "sha256:" + sha256_bytes(manifest_path.read_bytes())
+        except OSError as exc:
+            return [f"unreadable_publication_manifest:{exc.__class__.__name__}"]
         if not head or head.get("field_revision_id") != field_revision_id:
             errors.append(f"unpublished_revision:{field_revision_id}")
         elif head.get("publication_manifest_hash") != actual_manifest_hash:
             errors.append(f"publication_manifest_hash_mismatch:{field_revision_id}")
-    manifest = read_json(manifest_path)
+    manifest = _safe_read_json(manifest_path, f"publication_manifest:{field_revision_id}", errors)
+    if not isinstance(manifest, dict):
+        return errors
     if manifest.get("schema") != "nollm.publication_manifest.v1":
         errors.append(f"invalid_publication_manifest_schema:{field_revision_id}")
     if manifest.get("field_revision_id") != field_revision_id:
@@ -225,6 +237,8 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         errors.append(f"publication_manifest_snapshot_mismatch:{field_revision_id}")
     errors.extend(validate_publication_manifest_closure(publication))
     errors.extend(validate_publication_semantics(publication, expected_revision_id=field_revision_id))
+    if errors:
+        return errors
     artifact_hashes = manifest.get("artifact_hashes", {})
     required_paths = {"revision.json", "receipt.json", "source-span-links.jsonl", "source-span-projection.jsonl"}
     if isinstance(artifact_hashes, dict):
@@ -241,6 +255,13 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
     persisted = load_source_spans(root, snapshot_id)
     projection = _load_publication_jsonl(publication / "source-span-projection.jsonl")
     canonical_by_id = {str(span["span_id"]): span for span in canonical}
+    projection_ids = [str(span.get("span_id")) for span in projection]
+    duplicate_projection_ids = sorted({span_id for span_id in projection_ids if projection_ids.count(span_id) > 1})
+    errors.extend(f"duplicate_projection_span:{span_id}" for span_id in duplicate_projection_ids)
+    missing_projection_ids = sorted(set(canonical_by_id) - set(projection_ids))
+    extra_projection_ids = sorted(set(projection_ids) - set(canonical_by_id))
+    errors.extend(f"projection_missing_span:{span_id}" for span_id in missing_projection_ids)
+    errors.extend(f"projection_unknown_span:{span_id}" for span_id in extra_projection_ids)
     persisted_core = [_span_core(span) for span in persisted]
     canonical_core = [_span_core(span) for span in canonical]
     if persisted_core != canonical_core:
@@ -266,10 +287,14 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
         if expected_disposition == "non_memory":
             if span.get("disposition") != "non_memory" or span.get("reason") != expected.get("reason") or span.get("related_shard_ids"):
                 errors.append(f"projection_non_memory_changed:{span_id}")
+            if links_by_span.get(span_id):
+                errors.append(f"projection_non_memory_has_link:{span_id}")
         elif expected_disposition == "classified_pending":
             if span.get("disposition") != "sharded":
                 errors.append(f"projection_candidate_not_sharded:{span_id}")
             related = [str(item) for item in span.get("related_shard_ids", [])]
+            if len(related) != len(set(related)):
+                errors.append(f"projection_duplicate_related_shard:{span_id}")
             if not related:
                 errors.append(f"projection_sharded_without_related:{span_id}")
             for shard_id in related:
@@ -277,9 +302,90 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
                     errors.append(f"projection_related_shard_not_in_revision:{span_id}:{shard_id}")
             if not links_by_span.get(span_id):
                 errors.append(f"projection_missing_link:{span_id}")
+            linked = sorted(str(link.get("shard_id")) for link in links_by_span.get(span_id, []))
+            if sorted(related) != linked:
+                errors.append(f"projection_link_relation_mismatch:{span_id}")
         else:
             if span.get("disposition") != expected_disposition:
                 errors.append(f"projection_disposition_mismatch:{span_id}")
+    return errors
+
+
+def _validate_exact_relation_closure(
+    root: Path,
+    snapshot_id: str,
+    publication: Path,
+    field_revision_id: str,
+    receipt: dict[str, Any],
+    objects_by_digest: dict[str, dict[str, Any]],
+    revision_shards: set[str],
+    projection: list[dict[str, Any]],
+    links: list[dict[str, Any]],
+) -> list[str]:
+    errors: list[str] = []
+    canonical = canonical_source_spans(root, snapshot_id)
+    canonical_by_id = {str(span["span_id"]): span for span in canonical}
+    canonical_by_ref = {str(_span_source_ref(objects_by_digest, span)): span for span in canonical if _span_source_ref(objects_by_digest, span)}
+    projection_by_id = {str(span.get("span_id")): span for span in projection}
+    shards: dict[str, dict[str, Any]] = {}
+    for shard_id in revision_shards:
+        path = publication / "shards" / f"{shard_id}.json"
+        if path.exists():
+            shards[shard_id] = read_json(path)
+
+    expected_counts: dict[tuple[str, str, str], int] = {}
+    for shard_id, shard in shards.items():
+        for source_ref in [str(item) for item in shard.get("source_refs", [])]:
+            span = canonical_by_ref.get(source_ref)
+            if not span:
+                continue
+            span_id = str(span["span_id"])
+            if span_id not in [str(item) for item in shard.get("continuity_refs", [])]:
+                errors.append(f"relation_continuity_missing:{shard_id}:{span_id}")
+            key = (shard_id, source_ref, span_id)
+            expected_counts[key] = expected_counts.get(key, 0) + 1
+
+    actual_counts: dict[tuple[str, str, str], int] = {}
+    for link in links:
+        key = (str(link.get("shard_id")), str(link.get("source_ref")), str(link.get("span_id")))
+        actual_counts[key] = actual_counts.get(key, 0) + 1
+    for key, count in actual_counts.items():
+        if count != 1:
+            errors.append(f"duplicate_source_span_link:{key[0]}:{key[2]}")
+
+    for key in sorted(set(expected_counts) - set(actual_counts)):
+        errors.append(f"missing_relation_link:{key[0]}:{key[2]}")
+    for key in sorted(set(actual_counts) - set(expected_counts)):
+        errors.append(f"extra_relation_link:{key[0]}:{key[2]}")
+
+    for link in links:
+        shard_id = str(link.get("shard_id"))
+        source_ref = str(link.get("source_ref"))
+        span_id = str(link.get("span_id"))
+        shard = shards.get(shard_id)
+        span = canonical_by_id.get(span_id)
+        projected = projection_by_id.get(span_id)
+        if shard_id not in revision_shards or not shard:
+            errors.append(f"link_unknown_shard:{shard_id}")
+            continue
+        if source_ref not in [str(item) for item in shard.get("source_refs", [])]:
+            errors.append(f"link_source_ref_not_in_shard:{shard_id}:{span_id}")
+        if span_id not in [str(item) for item in shard.get("continuity_refs", [])]:
+            errors.append(f"link_span_not_in_shard_continuity:{shard_id}:{span_id}")
+        if not span:
+            errors.append(f"link_unknown_span:{span_id}")
+            continue
+        if span.get("disposition") != "classified_pending":
+            errors.append(f"link_non_importable_span:{span_id}")
+        if not projected:
+            errors.append(f"link_span_absent_from_projection:{span_id}")
+            continue
+        if projected.get("disposition") != "sharded":
+            errors.append(f"link_span_not_projected_sharded:{span_id}")
+        related = [str(item) for item in projected.get("related_shard_ids", [])]
+        if related.count(shard_id) != 1:
+            errors.append(f"link_projection_related_count_mismatch:{shard_id}:{span_id}")
+        _validate_link_record(errors, link, snapshot_id, str(receipt.get("batch_id")), field_revision_id, shard, projected, source_ref)
     return errors
 
 
@@ -319,6 +425,18 @@ def _load_publication_jsonl(path: Path) -> list[dict[str, Any]]:
     import json
 
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
+    try:
+        return read_json(path)
+    except JSONDecodeError:
+        errors.append(f"malformed_json:{label}")
+    except OSError as exc:
+        errors.append(f"unreadable_json:{label}:{exc.__class__.__name__}")
+    except Exception as exc:
+        errors.append(f"invalid_json:{label}:{exc.__class__.__name__}")
+    return None
 
 
 def _validate_link_record(
