@@ -90,3 +90,14 @@ MT1 native DreamShards add conservative provenance fields:
 - `anchor_field_weights`
 
 Legacy import defaults to `origin_kind: legacy_import`, `operational_state: loose`, and policy-defined `epistemic_state`. Imported legacy text is not automatically confirmed.
+
+## MT1-R1 Source Provenance
+
+Each MT1-R1 imported shard must include exactly matching archive provenance:
+
+- `source_refs` uses `archive://object/sha256:<digest>#B<start>-B<end>`.
+- `continuity_refs` includes the exact SourceSpan `span_id`.
+- `text_hash` matches the raw archived byte range used for the shard.
+- A published `SourceSpanLink` points from the span to the shard and from the shard back to the published field revision.
+
+Validation is fail-closed. Prefix-similar archive URIs, nonexistent digests, byte ranges outside the ArchiveObject, mismatched hashes, missing reverse links, duplicate idempotence keys with nonidentical content, or shards absent from the published revision are invalid.
