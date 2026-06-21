@@ -100,7 +100,8 @@ field/publications/<field_revision_id>/
   source-span-links.jsonl
   source-span-projection.jsonl
   receipt.json
-  artifact-hashes.json
+  activation.json
+  publication-manifest.json
 ```
 
 `field/HEAD.json` is the only active visibility pointer and must be written last. Active readers, dedupe, coverage, provenance, and reports read from the HEAD publication package, not from staged files or generic physical directories.
@@ -126,9 +127,10 @@ The manifest records:
 field_id
 field_revision_id
 publication_manifest_hash
+activation_hash
 ```
 
-Validation first checks the HEAD manifest hash, then every payload artifact hash, then semantic consistency.
+Validation first checks the HEAD manifest hash and activation hash, then every payload artifact hash, then semantic consistency.
 
 MT1-R4 treats the manifest as an exact closure, not a partial hash list. The set of manifest artifact paths must exactly equal the publication payload files, excluding `publication-manifest.json`. Symlinks, path escapes, absolute paths, backslash paths, extra files, missing files, and mismatched hashes make the publication inactive. Revision and receipt metadata must agree with the package: shard counts must match their lists, created shards must be in the revision, and every active shard file must match a `revision.json.shard_ids` entry.
 
@@ -156,12 +158,18 @@ Malformed ingress state, request, receipt, or handoff records fail closed with s
 
 Failed and quarantined batches are terminal. Recovery creates a replacement batch with `recovery_of` unless the original batch is in `publishing` and HEAD already points to a valid package, in which case reconcile commits the journal without reimporting.
 
+MT1-R7 separates active publication truth from ingress workflow state. A field becomes active only when `field/HEAD.json` points at a publication package whose `activation.json` is included in the manifest closure and binds the field, revision, batch, snapshot, source policy, receipt hash, revision hash, source-span link hash, source-span projection hash, and the `nollm.legacy_import_shard_profile.v1` profile. `HEAD.json` is written last and is the only active pointer.
+
+Ingress state, import receipts, migration reports, handoffs, and ledger entries are audit/recovery material. They may be required to finalize a batch journal, but they do not authorize active admission, rollback, or replacement. A forged or inconsistent handoff returns structured recovery-required errors and must not redirect HEAD or finalize a batch. The ingress receipt must be canonical-equal to the package receipt for a legacy import validation to succeed.
+
+The R7 legacy-import shard profile is immutable for every shard related to a source span in an MT1 publication. Validation enforces `origin_kind: legacy_import`, `operational_state: loose`, `epistemic_state: legacy_recorded`, exact source refs, exact continuity refs, canonical raw/text hashes, current normalization, recomputed idempotence key and shard id, archive-ingest seed geometry intent, empty anchor weights, and the listed schema fields regardless of the shard's mutable `origin_kind` value. Unknown shard fields are rejected except `created_at`, which is informational and must be a valid UTC timestamp.
+
 ## Default State
 
 Legacy shards use:
 
 - `origin_kind: legacy_import`
 - `operational_state: loose`
-- `epistemic_state`: from source policy, usually `legacy_recorded` or `tentative`
+- `epistemic_state`: `legacy_recorded` for MT1 active publication profile
 
 Legacy text is not automatically confirmed.
