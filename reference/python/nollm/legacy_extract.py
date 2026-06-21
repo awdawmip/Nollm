@@ -5,6 +5,7 @@ from typing import Any
 
 from .archive import load_manifest, memory_root_path
 from .archive_manifest import sha256_bytes
+from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
 from .source_spans import load_source_spans
 
 
@@ -25,7 +26,7 @@ def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict
         start = int(span["start_byte"])
         end = int(span["end_byte_exclusive"])
         chunk = data[start:end]
-        text = chunk.decode("utf-8").strip()
+        text = normalize_legacy_text(chunk)
         if not text or _is_markdown_heading_only(text):
             continue
         source_ref = f"archive://object/sha256:{digest}#B{start}-B{end}"
@@ -38,7 +39,9 @@ def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict
                 "original_relative_path": span["original_relative_path"],
                 "source_ref": source_ref,
                 "text": text,
-                "text_hash": "sha256:" + sha256_bytes(chunk),
+                "source_range_hash": source_range_hash(chunk),
+                "text_hash": text_hash(text),
+                "normalization_id": NORMALIZATION_ID,
                 "origin_kind": obj.get("origin_kind", "legacy_import"),
                 "epistemic_state": obj.get("epistemic_state", "legacy_recorded"),
                 "operational_state": obj.get("operational_state", "loose"),

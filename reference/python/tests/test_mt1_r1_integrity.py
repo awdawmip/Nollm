@@ -34,7 +34,7 @@ def test_t1_heading_only_source_is_non_memory_not_zero_shard_sharded(tmp_path: P
 
 def test_t2_t3_committed_sharded_spans_have_bidirectional_exact_links(tmp_path: Path) -> None:
     memory_root, batch_id, snapshot_id, field_revision_id = commit_fixture(tmp_path)
-    spans = load_source_spans(memory_root, snapshot_id)
+    spans = publication_spans(memory_root, field_revision_id)
     sharded = [span for span in spans if span["disposition"] == "sharded"]
 
     assert sharded
@@ -45,7 +45,7 @@ def test_t2_t3_committed_sharded_spans_have_bidirectional_exact_links(tmp_path: 
 
 def test_t4_nonexistent_digest_provenance_fails_closed(tmp_path: Path) -> None:
     memory_root, batch_id, snapshot_id, field_revision_id = commit_fixture(tmp_path)
-    shard_path = next((memory_root / "field" / "shards").glob("*.json"))
+    shard_path = next((memory_root / "field" / "publications" / field_revision_id / "shards").glob("*.json"))
     shard = read_json(shard_path)
     shard["source_refs"] = ["archive://object/sha256:" + "0" * 64 + "#B0-B1"]
     write_json(shard_path, shard)
@@ -58,7 +58,7 @@ def test_t4_nonexistent_digest_provenance_fails_closed(tmp_path: Path) -> None:
 
 def test_t5_t6_out_of_range_and_wrong_hash_fail_closed(tmp_path: Path) -> None:
     memory_root, batch_id, _snapshot_id, _field_revision_id = commit_fixture(tmp_path)
-    shard_path = next((memory_root / "field" / "shards").glob("*.json"))
+    shard_path = next((memory_root / "field" / "publications" / _field_revision_id / "shards").glob("*.json"))
     shard = read_json(shard_path)
     ref = shard["source_refs"][0]
     digest = ref.split("sha256:", 1)[1].split("#", 1)[0]
@@ -67,7 +67,7 @@ def test_t5_t6_out_of_range_and_wrong_hash_fail_closed(tmp_path: Path) -> None:
     assert validate_legacy_import(memory_root, batch_id)["ok"] is False
 
     memory_root, batch_id, _snapshot_id, _field_revision_id = commit_fixture(tmp_path / "wrong_hash")
-    shard_path = next((memory_root / "field" / "shards").glob("*.json"))
+    shard_path = next((memory_root / "field" / "publications" / _field_revision_id / "shards").glob("*.json"))
     shard = read_json(shard_path)
     shard["text_hash"] = "sha256:" + "1" * 64
     write_json(shard_path, shard)
@@ -76,7 +76,7 @@ def test_t5_t6_out_of_range_and_wrong_hash_fail_closed(tmp_path: Path) -> None:
 
 def test_t7_missing_continuity_or_reverse_link_fails_closed(tmp_path: Path) -> None:
     memory_root, batch_id, _snapshot_id, _field_revision_id = commit_fixture(tmp_path)
-    shard_path = next((memory_root / "field" / "shards").glob("*.json"))
+    shard_path = next((memory_root / "field" / "publications" / _field_revision_id / "shards").glob("*.json"))
     shard = read_json(shard_path)
     shard["continuity_refs"] = []
     write_json(shard_path, shard)
@@ -99,7 +99,7 @@ def test_t8_forced_failure_before_head_leaves_no_dedupe_visible_orphan(tmp_path:
     assert existing_shards_by_key(memory_root) == {}
 
 
-def test_t9_recovery_after_interrupted_staging_is_deterministic_and_ledgers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_t9_failed_batch_is_terminal_and_ledgers_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     workspace = tmp_path / "workspace"
     copy_fixture(FIXTURE, workspace)
     memory_root = tmp_path / "memory-root"
@@ -112,9 +112,9 @@ def test_t9_recovery_after_interrupted_staging_is_deterministic_and_ledgers(tmp_
     recovered = run_legacy_import(memory_root, str(plan["batch_id"]), commit=True)
     ledger = (memory_root / "ledger" / "events.jsonl").read_text(encoding="utf-8")
 
-    assert recovered["ok"] is True
+    assert recovered["ok"] is False
     assert "legacy_import_failure" in ledger
-    assert "legacy_import_commit" in ledger
+    assert "invalid batch state transition" in recovered["errors"][0]
 
 
 def test_t10_repeat_plan_and_commit_preserve_request_and_receipt_bytes(tmp_path: Path) -> None:
@@ -197,3 +197,7 @@ def file_hashes(root: Path) -> dict[str, str]:
     import hashlib
 
     return {path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(root.rglob("*.md"))}
+
+
+def publication_spans(memory_root: Path, field_revision_id: str) -> list[dict[str, object]]:
+    return [json.loads(line) for line in (memory_root / "field" / "publications" / field_revision_id / "source-span-projection.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]

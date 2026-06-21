@@ -26,4 +26,4 @@ def test_stage_move_and_publish_field_revision(tmp_path: Path) -> None:
     assert moved == [shard["shard_id"]]
     assert revision["shard_count"] == 1
     assert (memory_root / "field" / "HEAD.json").exists()
-    assert existing_shards_by_key(memory_root)[shard["idempotence_key"]]["shard_id"] == shard["shard_id"]
+    assert existing_shards_by_key(memory_root) == {}

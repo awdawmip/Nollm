@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +15,7 @@ from .native_field import (
     build_shard,
     existing_shards_by_key,
     load_field_head,
+    current_publication,
     shard_id_for,
     stage_shards,
     write_jsonl,
@@ -115,22 +117,6 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         report = _migration_report(root, batch_id, request, dry_run=True, candidate_shards=shards, duplicate_count=duplicate_count)
         write_json(batch_dir / "dry-run-report.json", report)
         return {"ok": True, "batch_id": batch_id, "dry_run": True, "candidate_shard_count": len(shards), "duplicate_count": duplicate_count}
-    _write_state(batch_dir, "validated")
-    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_validate_staging", "batch_id": batch_id, "timestamp": utc_now(), "state": "validated"})
-    stage_shards(root, batch_id, shards)
-    revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in shards])
-    links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=shards)
-    _publish_pre_head(root, batch_id, revision, shards, links, str(request["snapshot_id"]))
-    if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_HEAD") == "1":
-        _write_state(batch_dir, "failed")
-        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_failure", "batch_id": batch_id, "timestamp": utc_now(), "state": "failed", "reason": "forced_before_head"})
-        return {"ok": False, "batch_id": batch_id, "errors": ["forced_failure_before_head"], "state": "failed"}
-    provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(revision["field_revision_id"]))
-    if not provenance.get("ok"):
-        _write_state(batch_dir, "failed")
-        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_failure", "batch_id": batch_id, "timestamp": utc_now(), "state": "failed", "errors": provenance.get("errors", [])})
-        return {"ok": False, "batch_id": batch_id, "errors": provenance.get("errors", []), "state": "failed"}
-    write_json(root / "field" / "HEAD.json", {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"]})
     receipt = {
         "schema": RECEIPT_SCHEMA,
         "batch_id": batch_id,
@@ -140,13 +126,38 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         "created_shard_ids": [str(shard["shard_id"]) for shard in shards],
         "created_shard_count": len(shards),
         "duplicate_count": duplicate_count,
-        "field_revision_id": revision["field_revision_id"],
     }
-    write_json(batch_dir / "import-receipt.json", receipt)
-    _write_state(batch_dir, "committed")
-    write_json(batch_dir / "migration-report.json", _migration_report(root, batch_id, request, receipt=receipt, duplicate_count=duplicate_count))
-    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_commit", "batch_id": batch_id, "timestamp": utc_now(), "receipt": receipt})
-    return {"ok": True, "batch_id": batch_id, "committed": True, "created_shard_count": len(shards), "duplicate_count": duplicate_count, "field_revision_id": revision["field_revision_id"], "state": "committed"}
+    try:
+        _write_state(batch_dir, "staged")
+        stage_shards(root, batch_id, shards)
+        revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in shards])
+        receipt["field_revision_id"] = revision["field_revision_id"]
+        links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=shards)
+        _write_staging_package(root, batch_id, revision, shards, links, str(request["snapshot_id"]), receipt)
+        _write_state(batch_dir, "validated")
+        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_validate_staging", "batch_id": batch_id, "timestamp": utc_now(), "state": "validated"})
+        if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_HEAD") == "1":
+            raise RuntimeError("forced_failure_before_head")
+        if os.environ.get("NOLLM_MT1_FORCE_OSERROR_DURING_PUBLISH") == "1":
+            raise OSError("forced_oserror_during_publish")
+        _write_state(batch_dir, "publishing")
+        publication = _publish_package(root, batch_id, str(revision["field_revision_id"]))
+        write_json(batch_dir / "import-receipt.json", receipt)
+        _write_head_atomic(root, {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"]})
+        _write_state(batch_dir, "committed")
+        provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(revision["field_revision_id"]))
+        if not provenance.get("ok"):
+            raise ValueError("published_provenance_failed:" + ",".join(provenance.get("errors", [])))
+        write_json(batch_dir / "migration-report.json", _migration_report(root, batch_id, request, receipt=receipt, duplicate_count=duplicate_count))
+        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_commit", "batch_id": batch_id, "timestamp": utc_now(), "receipt": receipt, "publication": str(publication)})
+        return {"ok": True, "batch_id": batch_id, "committed": True, "created_shard_count": len(shards), "duplicate_count": duplicate_count, "field_revision_id": revision["field_revision_id"], "state": "committed"}
+    except Exception as exc:
+        if _load_state(batch_dir)["state"] != "committed":
+            _write_state(batch_dir, "failed")
+        failure = {"schema": "nollm.legacy_import_failure.v1", "batch_id": batch_id, "timestamp": utc_now(), "error": str(exc), "state": "failed"}
+        write_json(batch_dir / "failure.json", failure)
+        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_failure", **failure})
+        return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "failed"}
 
 
 def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
@@ -163,8 +174,9 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
         receipt = read_json(receipt_path)
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
         errors.extend(provenance.get("errors", []))
+        publication = current_publication(root)
         for shard_id in receipt.get("created_shard_ids", []):
-            shard_path = root / "field" / "shards" / f"{shard_id}.json"
+            shard_path = (publication / "shards" / f"{shard_id}.json") if publication else root / "field" / "missing-publication"
             if not shard_path.exists():
                 errors.append(f"missing_shard:{shard_id}")
                 continue
@@ -229,7 +241,8 @@ def _revision_candidate(root: Path, *, batch_id: str, target_field_id: str, shar
     current = load_field_head(root)
     existing_ids: list[str] = []
     if current and current.get("field_id") == target_field_id:
-        revision_path = root / "field" / "revisions" / f"{current['field_revision_id']}.json"
+        publication = current_publication(root)
+        revision_path = publication / "revision.json" if publication else root / "field" / "missing-publication"
         if revision_path.exists():
             existing_ids = [str(item) for item in read_json(revision_path).get("shard_ids", [])]
     merged_ids = sorted(set(existing_ids).union(shard_ids))
@@ -247,14 +260,65 @@ def _revision_candidate(root: Path, *, batch_id: str, target_field_id: str, shar
 
 
 def _publish_pre_head(root: Path, batch_id: str, revision: dict[str, Any], shards: list[dict[str, Any]], links: list[dict[str, Any]], snapshot_id: str) -> None:
-    field_shards = root / "field" / "shards"
-    field_shards.mkdir(parents=True, exist_ok=True)
+    raise RuntimeError("_publish_pre_head is obsolete; use publication packages")
+
+
+def _write_staging_package(root: Path, batch_id: str, revision: dict[str, Any], shards: list[dict[str, Any]], links: list[dict[str, Any]], snapshot_id: str, receipt: dict[str, Any]) -> Path:
+    staging = root / "field" / ".staging" / batch_id / "publication"
+    if staging.exists():
+        shutil.rmtree(staging)
+    (staging / "shards").mkdir(parents=True, exist_ok=True)
     for shard in shards:
-        write_json(field_shards / f"{shard['shard_id']}.json", shard)
-    write_json(root / "field" / "revisions" / f"{revision['field_revision_id']}.json", revision)
-    write_jsonl(root / "archive" / "source-span-links" / snapshot_id / f"{revision['field_revision_id']}.jsonl", links)
-    mark_spans_linked(root, snapshot_id, links)
-    write_json(root / "field" / ".staging" / batch_id / "receipt-candidate.json", {"field_revision_id": revision["field_revision_id"], "shard_count": len(shards)})
+        write_json(staging / "shards" / f"{shard['shard_id']}.json", shard)
+    write_json(staging / "revision.json", revision)
+    write_jsonl(staging / "source-span-links.jsonl", links)
+    spans = _project_spans(root, snapshot_id, links)
+    write_jsonl(staging / "source-span-projection.jsonl", spans)
+    write_json(staging / "receipt.json", receipt)
+    write_json(staging / "artifact-hashes.json", _artifact_hashes(staging))
+    return staging
+
+
+def _publish_package(root: Path, batch_id: str, field_revision_id: str) -> Path:
+    staging = root / "field" / ".staging" / batch_id / "publication"
+    publication = root / "field" / "publications" / field_revision_id
+    if publication.exists():
+        shutil.rmtree(publication)
+    publication.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(staging, publication)
+    return publication
+
+
+def _write_head_atomic(root: Path, head: dict[str, Any]) -> None:
+    target = root / "field" / "HEAD.json"
+    tmp = root / "field" / "HEAD.json.tmp"
+    write_json(tmp, head)
+    os.replace(tmp, target)
+
+
+def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    from .source_spans import load_source_spans
+
+    spans = load_source_spans(root, snapshot_id)
+    by_span: dict[str, list[str]] = {}
+    for link in links:
+        by_span.setdefault(str(link["span_id"]), []).append(str(link["shard_id"]))
+    for span in spans:
+        related = sorted(set(by_span.get(str(span["span_id"]), [])))
+        if related:
+            span["disposition"] = "sharded"
+            span["related_shard_ids"] = related
+            span["lifecycle"] = "linked"
+            span["reason"] = "linked_to_committed_shard"
+    return spans
+
+
+def _artifact_hashes(root: Path) -> dict[str, Any]:
+    hashes: dict[str, str] = {}
+    for path in sorted(root.rglob("*")):
+        if path.is_file() and path.name != "artifact-hashes.json":
+            hashes[path.relative_to(root).as_posix()] = "sha256:" + sha256_bytes(path.read_bytes())
+    return {"schema": "nollm.publication_artifact_hashes.v1", "artifacts": hashes}
 
 
 def _load_state(batch_dir: Path) -> dict[str, Any]:
@@ -267,10 +331,12 @@ def _load_state(batch_dir: Path) -> dict[str, Any]:
 def _write_state(batch_dir: Path, state: str) -> None:
     current = _load_state(batch_dir)["state"]
     allowed = {
-        "planned": {"planned", "validated", "failed", "quarantined"},
-        "validated": {"validated", "committed", "failed", "quarantined"},
+        "planned": {"planned", "staged", "failed", "quarantined"},
+        "staged": {"staged", "validated", "failed", "quarantined"},
+        "validated": {"validated", "publishing", "failed", "quarantined"},
+        "publishing": {"publishing", "committed", "failed", "quarantined"},
         "committed": {"committed"},
-        "failed": {"failed", "validated"},
+        "failed": {"failed"},
         "quarantined": {"quarantined"},
     }
     if state not in allowed.get(current, {current}):

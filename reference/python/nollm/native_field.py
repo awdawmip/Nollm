@@ -6,6 +6,7 @@ from typing import Any
 
 from .archive import memory_root_path, utc_now
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
+from .legacy_text import NORMALIZATION_ID
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
@@ -26,6 +27,7 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
         "epistemic_state": record.get("epistemic_state", "legacy_recorded"),
         "source_policy_id": source_policy_id,
         "source_refs": [record["source_ref"]],
+        "source_range_hash": record.get("source_range_hash", record["text_hash"]),
         "continuity_refs": [record["span_id"]],
         "geometry_intent": {
             "mode": "archive_ingest_seed",
@@ -34,6 +36,7 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
         "anchor_field_weights": {},
         "text": record["text"],
         "text_hash": record["text_hash"],
+        "normalization_id": record.get("normalization_id", NORMALIZATION_ID),
         "idempotence_key": idempotence_key,
         "created_at": utc_now(),
     }
@@ -42,13 +45,11 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
 def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]:
     root = memory_root_path(memory_root)
     shards: dict[str, dict[str, Any]] = {}
-    active_ids = set(_current_head_shards(root))
-    if not active_ids:
+    publication = current_publication(root)
+    if not publication:
         return shards
-    for path in sorted((root / "field" / "shards").glob("*.json")):
+    for path in sorted((publication / "shards").glob("*.json")):
         data = read_json(path)
-        if active_ids and data.get("shard_id") not in active_ids:
-            continue
         key = data.get("idempotence_key")
         if isinstance(key, str):
             shards[key] = data
@@ -107,6 +108,15 @@ def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
     if not path.exists():
         return None
     return read_json(path)
+
+
+def current_publication(memory_root: Path | str) -> Path | None:
+    root = memory_root_path(memory_root)
+    head = load_field_head(root)
+    if not head:
+        return None
+    publication = root / "field" / "publications" / str(head["field_revision_id"])
+    return publication if publication.exists() else None
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

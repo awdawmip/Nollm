@@ -4,13 +4,15 @@ from pathlib import Path
 from typing import Any
 
 from .archive import load_manifest, memory_root_path
+from .archive_manifest import read_json
+from .native_field import current_publication
 from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_spans
 
 
 def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, require_linked: bool = False) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     manifest = load_manifest(root, snapshot_id)
-    spans = load_source_spans(root, snapshot_id)
+    spans = _published_spans(root, snapshot_id) if require_linked else load_source_spans(root, snapshot_id)
     by_object: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for span in spans:
         by_object.setdefault((str(span["archive_object_id"]), str(span["original_relative_path"])), []).append(span)
@@ -76,3 +78,19 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, requi
         "sharded_without_links": sharded_without_links,
         "errors": errors,
     }
+
+
+def _published_spans(root: Path, snapshot_id: str) -> list[dict[str, Any]]:
+    publication = current_publication(root)
+    if not publication:
+        return []
+    receipt_path = publication / "receipt.json"
+    projection_path = publication / "source-span-projection.jsonl"
+    if not receipt_path.exists() or not projection_path.exists():
+        return []
+    receipt = read_json(receipt_path)
+    if receipt.get("snapshot_id") != snapshot_id:
+        return []
+    import json
+
+    return [json.loads(line) for line in projection_path.read_text(encoding="utf-8").splitlines() if line.strip()]
