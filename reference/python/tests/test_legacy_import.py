@@ -22,6 +22,7 @@ def test_plan_dry_run_commit_validate_and_idempotence(tmp_path: Path) -> None:
     source_hashes_after = file_hashes(workspace)
     validate = validate_legacy_import(memory_root, str(plan["batch_id"]))
     duplicate = run_legacy_import(memory_root, str(plan["batch_id"]), commit=True)
+    receipt = (memory_root / "ingress" / "legacy-import" / str(plan["batch_id"]) / "import-receipt.json").read_text(encoding="utf-8")
 
     assert plan["ok"] is True
     assert dry_run["ok"] is True
@@ -31,6 +32,7 @@ def test_plan_dry_run_commit_validate_and_idempotence(tmp_path: Path) -> None:
     assert duplicate["duplicate_count"] == 3
     assert validate["ok"] is True
     assert source_hashes_before == source_hashes_after
+    assert '"created_shard_count": 3' in receipt
 
 
 def test_validate_and_report_do_not_need_source_workspace_after_snapshot(tmp_path: Path) -> None:

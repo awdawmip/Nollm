@@ -83,6 +83,29 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         report = _migration_report(root, batch_id, request, dry_run=True, candidate_shards=shards, duplicate_count=duplicate_count)
         write_json(batch_dir / "dry-run-report.json", report)
         return {"ok": True, "batch_id": batch_id, "dry_run": True, "candidate_shard_count": len(shards), "duplicate_count": duplicate_count}
+    existing_receipt_path = batch_dir / "import-receipt.json"
+    if not shards and existing_receipt_path.exists():
+        receipt = read_json(existing_receipt_path)
+        write_json(
+            batch_dir / "duplicate-run-report.json",
+            {
+                "schema": "nollm.legacy_import_duplicate_run_report.v1",
+                "batch_id": batch_id,
+                "timestamp": utc_now(),
+                "duplicate_count": duplicate_count,
+                "created_shard_count": 0,
+                "preserved_receipt": receipt,
+            },
+        )
+        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_duplicate_commit", "batch_id": batch_id, "timestamp": utc_now(), "duplicate_count": duplicate_count})
+        return {
+            "ok": True,
+            "batch_id": batch_id,
+            "committed": True,
+            "created_shard_count": 0,
+            "duplicate_count": duplicate_count,
+            "field_revision_id": receipt.get("field_revision_id"),
+        }
     stage_shards(root, batch_id, shards)
     shard_ids = move_staged_shards(root, batch_id)
     revision = publish_field_revision(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=shard_ids)
