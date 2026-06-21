@@ -139,6 +139,7 @@ def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, An
     report_path = _batch_dir(root, batch_id) / "migration-report.json"
     report = read_json(report_path) if report_path.exists() else _migration_report(root, batch_id, request)
     report["validation"] = validate_legacy_import(root, batch_id) if (_batch_dir(root, batch_id) / "import-receipt.json").exists() else {"ok": False, "errors": ["not_committed"]}
+    report["ok"] = bool(report["validation"].get("ok"))
     return report
 
 

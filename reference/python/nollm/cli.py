@@ -30,6 +30,7 @@ from .review import build_review_queue
 from .tool_api import dispatch_tool_request, error_response, load_tool_manifest
 from .validation import validate_notebook
 from .archive import create_archive_snapshot, inspect_archive_snapshot, verify_archive_snapshot
+from .legacy_import import legacy_import_report, plan_legacy_import, run_legacy_import, validate_legacy_import
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -183,6 +184,29 @@ def build_parser() -> argparse.ArgumentParser:
     archive_inspect.add_argument("snapshot_id")
     archive_inspect.add_argument("--memory-root", required=True)
     archive_inspect.set_defaults(func=cmd_archive_inspect)
+
+    legacy_import = sub.add_parser("legacy-import")
+    legacy_import_sub = legacy_import.add_subparsers(dest="legacy_import_command", required=True)
+    legacy_import_plan = legacy_import_sub.add_parser("plan")
+    legacy_import_plan.add_argument("snapshot_id")
+    legacy_import_plan.add_argument("--memory-root", required=True)
+    legacy_import_plan.add_argument("--target-field-id", required=True)
+    legacy_import_plan.set_defaults(func=cmd_legacy_import_plan)
+    legacy_import_run = legacy_import_sub.add_parser("run")
+    legacy_import_run.add_argument("batch_id")
+    legacy_import_run.add_argument("--memory-root", required=True)
+    mode = legacy_import_run.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--dry-run", action="store_true")
+    mode.add_argument("--commit", action="store_true")
+    legacy_import_run.set_defaults(func=cmd_legacy_import_run)
+    legacy_import_validate = legacy_import_sub.add_parser("validate")
+    legacy_import_validate.add_argument("batch_id")
+    legacy_import_validate.add_argument("--memory-root", required=True)
+    legacy_import_validate.set_defaults(func=cmd_legacy_import_validate)
+    legacy_import_report_parser = legacy_import_sub.add_parser("report")
+    legacy_import_report_parser.add_argument("batch_id")
+    legacy_import_report_parser.add_argument("--memory-root", required=True)
+    legacy_import_report_parser.set_defaults(func=cmd_legacy_import_report)
 
     return parser
 
@@ -549,6 +573,38 @@ def cmd_archive_verify(args: argparse.Namespace) -> int:
 def cmd_archive_inspect(args: argparse.Namespace) -> int:
     try:
         return _print_json_result(inspect_archive_snapshot(Path(args.memory_root), args.snapshot_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_plan(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(plan_legacy_import(Path(args.memory_root), args.snapshot_id, target_field_id=args.target_field_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_run(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(run_legacy_import(Path(args.memory_root), args.batch_id, dry_run=args.dry_run, commit=args.commit))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_validate(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(validate_legacy_import(Path(args.memory_root), args.batch_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_report(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(legacy_import_report(Path(args.memory_root), args.batch_id))
     except Exception as exc:
         print(str(exc), file=sys.stderr)
         return 2
