@@ -1,18 +1,48 @@
 from __future__ import annotations
 
 import json
+import re
+from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
 
-from .archive import memory_root_path, utc_now
+from .archive import load_manifest, memory_root_path, utc_now
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
+from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID
+from .legacy_text import normalize_legacy_text, source_range_hash, text_hash
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
 SHARD_SCHEMA = "nollm.native_dream_shard.v1"
+ACTIVATION_SCHEMA = "nollm.field_activation.v1"
+LEGACY_IMPORT_PROFILE = "nollm.legacy_import_shard_profile.v1"
+SOURCE_REF_RE = re.compile(r"^archive://object/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
+LEGACY_IMPORT_GEOMETRY_INTENT = {
+    "mode": "archive_ingest_seed",
+    "placement": "pending_cortex_orientation",
+}
+LEGACY_IMPORT_ALLOWED_SHARD_FIELDS = {
+    "anchor_field_weights",
+    "batch_id",
+    "continuity_refs",
+    "created_at",
+    "epistemic_state",
+    "geometry_intent",
+    "idempotence_key",
+    "normalization_id",
+    "operational_state",
+    "origin_kind",
+    "schema",
+    "shard_id",
+    "source_policy_id",
+    "source_range_hash",
+    "source_refs",
+    "text",
+    "text_hash",
+}
 
 
 def shard_id_for(idempotence_key: str) -> str:
@@ -24,9 +54,9 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
         "schema": SHARD_SCHEMA,
         "shard_id": shard_id_for(idempotence_key),
         "batch_id": batch_id,
-        "origin_kind": record.get("origin_kind", "legacy_import"),
-        "operational_state": record.get("operational_state", "loose"),
-        "epistemic_state": record.get("epistemic_state", "legacy_recorded"),
+        "origin_kind": "legacy_import",
+        "operational_state": "loose",
+        "epistemic_state": "legacy_recorded",
         "source_policy_id": source_policy_id,
         "source_refs": [record["source_ref"]],
         "source_range_hash": record.get("source_range_hash", record["text_hash"]),
@@ -155,12 +185,15 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     field_id = head.get("field_id")
     revision_id = head.get("field_revision_id")
     expected = head.get("publication_manifest_hash")
+    expected_activation = head.get("activation_hash")
     if not isinstance(field_id, str) or not field_id:
         errors.append("invalid_head_field_id")
     if not isinstance(revision_id, str) or not revision_id:
         errors.append("invalid_head_field_revision_id")
     if not isinstance(expected, str) or not expected.startswith("sha256:"):
         errors.append("invalid_head_publication_manifest_hash")
+    if not isinstance(expected_activation, str) or not expected_activation.startswith("sha256:"):
+        errors.append("invalid_head_activation_hash")
     if errors:
         return {"publication": None, "head": head, "errors": errors}
     publications_dir = field_dir / "publications"
@@ -170,6 +203,16 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     _validate_contained_regular_path(root, publication, "publication_dir", errors, require_file=False)
     _validate_contained_regular_path(root, manifest_path, "publication_manifest", errors)
     if errors:
+        return {"publication": None, "head": head, "errors": errors}
+    activation_path = publication / "activation.json"
+    _validate_contained_regular_path(root, activation_path, "publication_activation", errors)
+    if errors:
+        return {"publication": None, "head": head, "errors": errors}
+    activation_digest = _safe_sha256_file(activation_path, "publication_activation", errors)
+    if activation_digest is None:
+        return {"publication": None, "head": head, "errors": errors}
+    if "sha256:" + activation_digest != expected_activation:
+        errors.append(f"activation_hash_mismatch:{revision_id}")
         return {"publication": None, "head": head, "errors": errors}
     manifest_digest = _safe_sha256_file(manifest_path, "publication_manifest", errors)
     if manifest_digest is None:
@@ -189,7 +232,225 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
         return {"publication": None, "head": head, "errors": errors}
     errors.extend(validate_publication_manifest_closure(publication))
     errors.extend(validate_publication_semantics(publication, expected_revision_id=revision_id, expected_field_id=field_id))
+    errors.extend(validate_publication_activation(publication, head=head, manifest=manifest))
+    activation = _safe_read_json(activation_path, "publication_activation", errors) if not errors else None
+    if isinstance(activation, dict):
+        errors.extend(validate_legacy_import_shard_profile(root, publication, activation))
     return {"publication": publication if not errors else None, "head": head, "errors": errors}
+
+
+def validate_publication_activation(publication: Path, *, head: dict[str, Any] | None = None, manifest: dict[str, Any] | None = None) -> list[str]:
+    errors: list[str] = []
+    revision_id = publication.name
+    activation_path = publication / "activation.json"
+    if not activation_path.exists() or activation_path.is_symlink():
+        return [f"missing_publication_activation:{revision_id}"]
+    activation = _safe_read_json(activation_path, "publication_activation", errors)
+    revision = _safe_read_json(publication / "revision.json", "publication_revision", errors)
+    receipt = _safe_read_json(publication / "receipt.json", "publication_receipt", errors)
+    if manifest is None:
+        manifest = _safe_read_json(publication / "publication-manifest.json", "publication_manifest", errors)
+    if not isinstance(activation, dict) or not isinstance(revision, dict) or not isinstance(receipt, dict) or not isinstance(manifest, dict):
+        return errors or [f"invalid_publication_activation:{revision_id}"]
+    if activation.get("schema") != ACTIVATION_SCHEMA:
+        errors.append(f"invalid_activation_schema:{revision_id}")
+    expected_pairs = {
+        "field_id": manifest.get("field_id"),
+        "field_revision_id": revision.get("field_revision_id"),
+        "batch_id": receipt.get("batch_id"),
+        "snapshot_id": receipt.get("snapshot_id"),
+        "source_policy_id": receipt.get("source_policy_id"),
+    }
+    for key, expected in expected_pairs.items():
+        if activation.get(key) != expected:
+            errors.append(f"activation_{key}_mismatch:{revision_id}")
+    if head is not None:
+        if head.get("field_id") != activation.get("field_id"):
+            errors.append(f"activation_head_field_mismatch:{revision_id}")
+        if head.get("field_revision_id") != activation.get("field_revision_id"):
+            errors.append(f"activation_head_revision_mismatch:{revision_id}")
+        activation_digest = _safe_sha256_file(activation_path, "publication_activation", errors)
+        if activation_digest is not None and head.get("activation_hash") != "sha256:" + activation_digest:
+            errors.append(f"activation_head_hash_mismatch:{revision_id}")
+    if activation.get("legacy_import_profile") != LEGACY_IMPORT_PROFILE:
+        errors.append(f"invalid_legacy_import_profile:{revision_id}")
+    hash_paths = {
+        "receipt_hash": publication / "receipt.json",
+        "revision_hash": publication / "revision.json",
+        "source_span_links_hash": publication / "source-span-links.jsonl",
+        "source_span_projection_hash": publication / "source-span-projection.jsonl",
+    }
+    for field, path in hash_paths.items():
+        digest = _safe_sha256_file(path, field, errors)
+        if digest is not None and activation.get(field) != "sha256:" + digest:
+            errors.append(f"activation_{field}_mismatch:{revision_id}")
+    artifact_hashes = manifest.get("artifact_hashes")
+    if isinstance(artifact_hashes, dict):
+        activation_digest = _safe_sha256_file(activation_path, "publication_activation", errors)
+        if activation_digest is not None and artifact_hashes.get("activation.json") != "sha256:" + activation_digest:
+            errors.append(f"activation_manifest_hash_mismatch:{revision_id}")
+    else:
+        errors.append(f"invalid_publication_artifact_hashes:{revision_id}")
+    return errors
+
+
+def validate_legacy_import_shard_profile(root: Path, publication: Path, activation: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    snapshot_id = activation.get("snapshot_id")
+    source_policy_id = activation.get("source_policy_id")
+    revision_id = activation.get("field_revision_id")
+    batch_id = activation.get("batch_id")
+    if not all(isinstance(item, str) and item for item in (snapshot_id, source_policy_id, revision_id, batch_id)):
+        return [f"invalid_activation_legacy_profile_identity:{publication.name}"]
+    try:
+        manifest = load_manifest(root, str(snapshot_id))
+    except JSONDecodeError:
+        return [f"malformed_json:archive_manifest:{snapshot_id}"]
+    except OSError as exc:
+        return [f"unreadable_json:archive_manifest:{exc.__class__.__name__}"]
+    except Exception as exc:
+        return [f"invalid_json:archive_manifest:{exc.__class__.__name__}"]
+    if manifest.get("source_policy_id") != source_policy_id:
+        errors.append(f"activation_source_policy_mismatch:{revision_id}")
+    objects_by_digest = {str(obj.get("content_hash", "")).removeprefix("sha256:"): obj for obj in manifest.get("objects", [])}
+    revision = _safe_read_json(publication / "revision.json", "publication_revision", errors)
+    links = _safe_read_jsonl(publication / "source-span-links.jsonl", "source_span_links", errors)
+    if not isinstance(revision, dict) or links is None:
+        return errors
+    links_by_shard: dict[str, list[dict[str, Any]]] = {}
+    for link in links:
+        links_by_shard.setdefault(str(link.get("shard_id")), []).append(link)
+    for shard_id in [str(item) for item in revision.get("shard_ids", [])]:
+        shard_path = publication / "shards" / f"{shard_id}.json"
+        shard = _safe_read_json(shard_path, f"publication_shard:{shard_id}", errors)
+        if not isinstance(shard, dict):
+            continue
+        shard_links = links_by_shard.get(shard_id, [])
+        if not shard_links:
+            errors.append(f"legacy_profile_missing_source_span_link:{shard_id}")
+            continue
+        for link in shard_links:
+            _validate_legacy_import_shard_profile(
+                errors,
+                root,
+                shard,
+                link,
+                objects_by_digest,
+                snapshot_id=str(snapshot_id),
+                source_policy_id=str(source_policy_id),
+                batch_id=str(batch_id),
+                field_revision_id=str(revision_id),
+            )
+    return errors
+
+
+def _validate_legacy_import_shard_profile(
+    errors: list[str],
+    root: Path,
+    shard: dict[str, Any],
+    link: dict[str, Any],
+    objects_by_digest: dict[str, dict[str, Any]],
+    *,
+    snapshot_id: str,
+    source_policy_id: str,
+    batch_id: str,
+    field_revision_id: str,
+) -> None:
+    shard_id = str(shard.get("shard_id"))
+    source_ref = str(link.get("source_ref"))
+    span_id = str(link.get("span_id"))
+    unknown = sorted(set(shard) - LEGACY_IMPORT_ALLOWED_SHARD_FIELDS)
+    for key in unknown:
+        errors.append(f"legacy_shard_unknown_field:{shard_id}:{key}")
+    expected_static = {
+        "schema": SHARD_SCHEMA,
+        "origin_kind": "legacy_import",
+        "operational_state": "loose",
+        "epistemic_state": "legacy_recorded",
+        "source_policy_id": source_policy_id,
+        "batch_id": batch_id,
+        "normalization_id": NORMALIZATION_ID,
+    }
+    for key, expected in expected_static.items():
+        if shard.get(key) != expected:
+            errors.append(f"legacy_shard_{key}_mismatch:{shard_id}")
+    if shard.get("geometry_intent") != LEGACY_IMPORT_GEOMETRY_INTENT:
+        errors.append(f"legacy_shard_geometry_intent_mismatch:{shard_id}")
+    if shard.get("anchor_field_weights") != {}:
+        errors.append(f"legacy_shard_anchor_field_weights_mismatch:{shard_id}")
+    created_at = shard.get("created_at")
+    if not isinstance(created_at, str) or not _is_utc_timestamp(created_at):
+        errors.append(f"legacy_shard_created_at_invalid:{shard_id}")
+    match = SOURCE_REF_RE.match(source_ref)
+    if not match:
+        errors.append(f"legacy_shard_invalid_source_ref:{shard_id}")
+        return
+    digest, start_text, end_text = match.groups()
+    obj = objects_by_digest.get(digest)
+    if not obj:
+        errors.append(f"legacy_shard_source_ref_digest_not_in_manifest:{shard_id}")
+        return
+    start = int(start_text)
+    end = int(end_text)
+    if not (0 <= start < end <= int(obj.get("byte_length", 0))):
+        errors.append(f"legacy_shard_source_ref_range_out_of_bounds:{shard_id}")
+        return
+    object_path = root / "archive" / "objects" / "sha256" / digest
+    try:
+        data = object_path.read_bytes()
+    except OSError as exc:
+        errors.append(f"legacy_shard_archive_unreadable:{shard_id}:{exc.__class__.__name__}")
+        return
+    if sha256_bytes(data) != digest:
+        errors.append(f"legacy_shard_archive_object_hash_mismatch:{shard_id}")
+        return
+    chunk = data[start:end]
+    canonical_text = normalize_legacy_text(chunk)
+    canonical_text_hash = text_hash(canonical_text)
+    canonical_range_hash = source_range_hash(chunk)
+    recomputed_key = idempotence_key({"text": canonical_text, "source_ref": source_ref}, source_policy_id)
+    expected_shard_id = shard_id_for(recomputed_key)
+    exact_lists = {
+        "source_refs": [source_ref],
+        "continuity_refs": [span_id],
+    }
+    for key, expected in exact_lists.items():
+        if [str(item) for item in shard.get(key, [])] != expected:
+            errors.append(f"legacy_shard_{key}_mismatch:{shard_id}")
+    expected_dynamic = {
+        "source_range_hash": canonical_range_hash,
+        "text": canonical_text,
+        "text_hash": canonical_text_hash,
+        "idempotence_key": recomputed_key,
+        "shard_id": expected_shard_id,
+    }
+    for key, expected in expected_dynamic.items():
+        if shard.get(key) != expected:
+            errors.append(f"legacy_shard_{key}_mismatch:{shard_id}")
+    expected_link = {
+        "schema": "nollm.source_span_link.v1",
+        "snapshot_id": snapshot_id,
+        "batch_id": batch_id,
+        "field_revision_id": field_revision_id,
+        "span_id": span_id,
+        "shard_id": expected_shard_id,
+        "source_ref": source_ref,
+        "source_range_hash": canonical_range_hash,
+        "text_hash": canonical_text_hash,
+    }
+    for key, expected in expected_link.items():
+        if link.get(key) != expected:
+            errors.append(f"legacy_link_{key}_mismatch:{shard_id}")
+
+
+def _is_utc_timestamp(value: str) -> bool:
+    if not value.endswith("Z"):
+        return False
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError:
+        return False
+    return True
 
 
 def _validate_contained_regular_path(
@@ -273,8 +534,12 @@ def validate_publication_manifest_closure(publication: Path) -> list[str]:
         return ["missing_publication_manifest"]
     try:
         manifest = read_json(manifest_path)
+    except JSONDecodeError:
+        return ["malformed_json:publication_manifest"]
+    except OSError as exc:
+        return [f"unreadable_publication_manifest:{exc.__class__.__name__}"]
     except Exception as exc:
-        return [f"unreadable_publication_manifest:{exc}"]
+        return [f"invalid_publication_manifest:{exc.__class__.__name__}"]
     artifact_hashes = manifest.get("artifact_hashes")
     if not isinstance(artifact_hashes, dict):
         return ["invalid_publication_artifact_hashes"]
@@ -320,32 +585,47 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
     manifest_path = publication / "publication-manifest.json"
     revision_path = publication / "revision.json"
     receipt_path = publication / "receipt.json"
+    activation_path = publication / "activation.json"
     if not manifest_path.exists():
         errors.append(f"missing_publication_manifest:{revision_id}")
     if not revision_path.exists():
         errors.append(f"missing_publication_revision:{revision_id}")
     if not receipt_path.exists():
         errors.append(f"missing_publication_receipt:{revision_id}")
+    if not activation_path.exists():
+        errors.append(f"missing_publication_activation:{revision_id}")
     if errors:
         return errors
     manifest = _safe_read_json(manifest_path, "publication_manifest", errors)
     revision = _safe_read_json(revision_path, "publication_revision", errors)
     receipt = _safe_read_json(receipt_path, "publication_receipt", errors)
+    activation = _safe_read_json(activation_path, "publication_activation", errors)
     _safe_read_jsonl(publication / "source-span-links.jsonl", "source_span_links", errors)
     _safe_read_jsonl(publication / "source-span-projection.jsonl", "source_span_projection", errors)
     if errors:
         return errors
-    assert isinstance(manifest, dict)
-    assert isinstance(revision, dict)
-    assert isinstance(receipt, dict)
+    if not isinstance(manifest, dict):
+        errors.append("invalid_publication_manifest")
+    if not isinstance(revision, dict):
+        errors.append(f"invalid_publication_revision:{revision_id}")
+    if not isinstance(receipt, dict):
+        errors.append(f"invalid_publication_receipt:{revision_id}")
+    if not isinstance(activation, dict):
+        errors.append(f"invalid_publication_activation:{revision_id}")
+    if errors:
+        return errors
     if manifest.get("schema") != "nollm.publication_manifest.v1":
         errors.append("invalid_publication_manifest_schema")
+    if activation.get("schema") != ACTIVATION_SCHEMA:
+        errors.append(f"invalid_activation_schema:{revision_id}")
     if manifest.get("field_revision_id") != revision_id:
         errors.append(f"publication_manifest_revision_mismatch:{revision_id}")
     if revision.get("field_revision_id") != revision_id:
         errors.append(f"revision_id_mismatch:{revision_id}")
     if receipt.get("field_revision_id") != revision_id:
         errors.append(f"receipt_revision_mismatch:{revision_id}")
+    if activation.get("field_revision_id") != revision_id:
+        errors.append(f"activation_revision_mismatch:{revision_id}")
     if manifest.get("field_id") != revision.get("field_id"):
         errors.append(f"publication_manifest_field_mismatch:{revision_id}")
     if expected_field_id is not None and manifest.get("field_id") != expected_field_id:

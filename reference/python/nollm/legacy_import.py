@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,10 @@ from .native_field import (
     current_publication,
     shard_id_for,
     stage_shards,
+    validate_legacy_import_shard_profile,
+    validate_publication_activation,
+    validate_publication_manifest_closure,
+    validate_publication_semantics,
     write_jsonl,
 )
 from .provenance import build_source_span_links, validate_deep_provenance
@@ -29,6 +34,8 @@ from .source_spans import build_source_span_inventory, mark_spans_linked
 
 IMPORT_SCHEMA = "nollm.legacy_import_request.v1"
 RECEIPT_SCHEMA = "nollm.legacy_import_receipt.v1"
+ACTIVATION_SCHEMA = "nollm.field_activation.v1"
+LEGACY_IMPORT_PROFILE = "nollm.legacy_import_shard_profile.v1"
 
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
@@ -53,8 +60,13 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     request_path = batch_dir / "import-request.json"
     receipt_path = batch_dir / "import-receipt.json"
     if request_path.exists():
-        request = read_json(request_path)
-        state = _load_state(batch_dir)
+        request, request_errors = _read_json_safe(request_path, "import_request")
+        state, state_errors = _load_state_safe(batch_dir)
+        if request_errors or not isinstance(request, dict) or state_errors:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
+        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
+        if receipt_errors:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
         return {
             "ok": True,
             "batch_id": batch_id,
@@ -62,7 +74,8 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
             "extraction_count": request.get("extraction_count", len(extracted)),
             "batch_dir": str(batch_dir),
             "state": state["state"],
-            "field_revision_id": read_json(receipt_path).get("field_revision_id") if receipt_path.exists() else None,
+            "field_revision_id": receipt.get("field_revision_id") if isinstance(receipt, dict) and not receipt_errors else None,
+            "errors": receipt_errors,
         }
     request = {
         "schema": IMPORT_SCHEMA,
@@ -155,6 +168,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         "batch_id": batch_id,
         "snapshot_id": request["snapshot_id"],
         "target_field_id": request["target_field_id"],
+        "source_policy_id": source_policy_id,
         "committed_at": utc_now(),
         "created_shard_ids": [str(shard["shard_id"]) for shard in shards],
         "created_shard_count": len(shards),
@@ -168,7 +182,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in publication_shards])
         receipt["field_revision_id"] = revision["field_revision_id"]
         links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=publication_shards)
-        staging = _write_staging_package(root, batch_id, revision, publication_shards, links, str(request["snapshot_id"]), receipt)
+        staging = _write_staging_package(root, batch_id, revision, publication_shards, links, str(request["snapshot_id"]), source_policy_id, receipt)
         if os.environ.get("NOLLM_MT1_CORRUPT_STAGING_TEXT") == "1":
             shard_path = next((staging / "shards").glob("*.json"))
             shard = read_json(shard_path)
@@ -187,15 +201,27 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         publication = _publish_package(root, batch_id, str(revision["field_revision_id"]))
         write_json(batch_dir / "import-receipt.json", receipt)
         manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
-        _write_publish_handoff(batch_dir, batch_id, str(revision["field_revision_id"]), manifest_hash, prior_head)
-        _write_head_atomic(root, {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"], "publication_manifest_hash": manifest_hash})
+        activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
+        pre_head_errors = _pre_head_publication_errors(root, publication, str(revision["field_revision_id"]), str(request["target_field_id"]))
+        if pre_head_errors:
+            raise ValueError("pre_head_publication_validation_failed:" + ",".join(pre_head_errors))
+        _write_publish_handoff(batch_dir, batch_id, str(revision["field_revision_id"]), manifest_hash, activation_hash, prior_head)
+        _write_head_atomic(
+            root,
+            {
+                "field_id": request["target_field_id"],
+                "field_revision_id": revision["field_revision_id"],
+                "publication_manifest_hash": manifest_hash,
+                "activation_hash": activation_hash,
+            },
+        )
         head_written = True
         if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
             return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": revision["field_revision_id"], "state": "publishing"}
         finalized = _finalize_verified_publication(root, batch_dir, request, receipt, publication, duplicate_count=duplicate_count)
         if not finalized.get("ok"):
             _quarantine_and_restore_head(root, batch_dir, prior_head, "published_provenance_failed:" + ",".join(finalized.get("errors", [])))
-            return {"ok": False, "batch_id": batch_id, "errors": finalized.get("errors", []), "state": "quarantined"}
+            return {"ok": False, "batch_id": batch_id, "errors": finalized.get("errors", []), "state": "quarantined", "recovery_required": True}
         return {"ok": True, "batch_id": batch_id, "committed": True, "created_shard_count": len(shards), "duplicate_count": duplicate_count, "field_revision_id": revision["field_revision_id"], "state": "committed"}
     except Exception as exc:
         if head_written:
@@ -205,7 +231,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
                 if provenance.get("ok"):
                     return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": receipt.get("field_revision_id"), "state": _load_state(batch_dir)["state"]}
                 _quarantine_and_restore_head(root, batch_dir, prior_head, str(exc))
-                return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "quarantined"}
+                return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "quarantined", "recovery_required": True}
         if _load_state(batch_dir)["state"] != "committed":
             _write_state(batch_dir, "failed")
         failure = {"schema": "nollm.legacy_import_failure.v1", "batch_id": batch_id, "timestamp": utc_now(), "error": str(exc), "state": "failed"}
@@ -240,25 +266,24 @@ def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str,
     head = load_field_head(root)
     if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
         _write_state(batch_dir, "quarantined")
-        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["head_not_at_receipt_revision"]}
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "recovery_required": True, "errors": ["head_not_at_receipt_revision"]}
     publication = current_publication(root)
     if not publication:
-        handoff, _handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
-        prior_head = handoff.get("prior_head") if isinstance(handoff, dict) else None
-        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:inactive_publication")
-        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["inactive_publication"]}
+        _quarantine_and_restore_head(root, batch_dir, None, "reconcile_validation_failed:inactive_publication")
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "recovery_required": True, "errors": ["inactive_publication"]}
     try:
         request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
         if request_errors or not isinstance(request, dict):
             return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
+        contract_errors = _validate_receipt_and_handoff_contract(root, batch_dir, request, receipt, handoff)
+        if contract_errors:
+            return {"ok": False, "batch_id": batch_id, "state": state, "recovery_required": True, "errors": contract_errors}
         finalized = _finalize_verified_publication(root, batch_dir, request, receipt, publication, duplicate_count=int(receipt.get("duplicate_count", 0)), reconcile=True)
     except Exception as exc:
         return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": receipt.get("field_revision_id"), "state": _load_state(batch_dir)["state"], "errors": [str(exc)]}
     if not finalized.get("ok"):
-        handoff, _handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
-        prior_head = handoff.get("prior_head") if isinstance(handoff, dict) else None
-        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:" + ",".join(finalized.get("errors", [])))
-        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": finalized.get("errors", [])}
+        _quarantine_and_restore_head(root, batch_dir, None, "reconcile_validation_failed:" + ",".join(finalized.get("errors", [])))
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "recovery_required": True, "errors": finalized.get("errors", [])}
     return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": True, "field_revision_id": receipt.get("field_revision_id")}
 
 
@@ -316,15 +341,27 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
         errors.extend(receipt_errors)
         if not isinstance(receipt, dict):
             return {"ok": False, "batch_id": batch_id, "state": state["state"], "errors": errors or ["invalid_import_receipt"]}
+        if state["state"] not in {"committed", "publishing"}:
+            errors.append(f"batch_state_not_finalized:{state['state']}")
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
         errors.extend(provenance.get("errors", []))
         publication = current_publication(root)
+        handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        errors.extend(handoff_errors)
+        if isinstance(handoff, dict):
+            errors.extend(_validate_receipt_and_handoff_contract(root, batch_dir, request, receipt, handoff))
+        else:
+            errors.append("invalid_publish_handoff")
         for shard_id in receipt.get("created_shard_ids", []):
             shard_path = (publication / "shards" / f"{shard_id}.json") if publication else root / "field" / "missing-publication"
             if not shard_path.exists():
                 errors.append(f"missing_shard:{shard_id}")
                 continue
-            shard = read_json(shard_path)
+            shard, shard_errors = _read_json_safe(shard_path, f"publication_shard:{shard_id}")
+            errors.extend(shard_errors)
+            if not isinstance(shard, dict):
+                errors.append(f"invalid_shard:{shard_id}")
+                continue
             if not shard.get("source_refs") or not all(str(ref).startswith("archive://object/sha256:") for ref in shard.get("source_refs", [])):
                 errors.append(f"invalid_source_refs:{shard_id}")
         head = load_field_head(root)
@@ -339,12 +376,22 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
 
 def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
-    request = read_json(_batch_dir(root, batch_id) / "import-request.json")
-    report_path = _batch_dir(root, batch_id) / "migration-report.json"
-    report = read_json(report_path) if report_path.exists() else _migration_report(root, batch_id, request)
-    report["validation"] = validate_legacy_import(root, batch_id) if (_batch_dir(root, batch_id) / "import-receipt.json").exists() else {"ok": False, "errors": ["not_committed"]}
+    batch_dir = _batch_dir(root, batch_id)
+    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    if request_errors or not isinstance(request, dict):
+        state, state_errors = _load_state_safe(batch_dir)
+        return {"ok": False, "batch_id": batch_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
+    report_path = batch_dir / "migration-report.json"
+    report, report_errors = _read_json_safe(report_path, "migration_report") if report_path.exists() else (_migration_report(root, batch_id, request), [])
+    if report_errors or not isinstance(report, dict):
+        return {"ok": False, "batch_id": batch_id, "state": _load_state_safe(batch_dir)[0]["state"], "recovery_required": True, "errors": report_errors or ["invalid_migration_report"]}
+    report["validation"] = validate_legacy_import(root, batch_id) if (batch_dir / "import-receipt.json").exists() else {"ok": False, "errors": ["not_committed"]}
     report["ok"] = bool(report["validation"].get("ok"))
-    report["state"] = _load_state(_batch_dir(root, batch_id))["state"]
+    state, state_errors = _load_state_safe(batch_dir)
+    report["state"] = state["state"]
+    if state_errors:
+        report["ok"] = False
+        report.setdefault("errors", []).extend(state_errors)
     return report
 
 
@@ -391,6 +438,134 @@ def _active_field_policy_errors(root: Path, *, snapshot_id: str, target_field_id
     return errors
 
 
+def _validate_receipt_and_handoff_contract(root: Path, batch_dir: Path, request: dict[str, Any], receipt: dict[str, Any], handoff: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    errors.extend(_validate_receipt_contract(request, receipt, "ingress_receipt"))
+    admission = admit_current_publication(root)
+    publication = admission.get("publication")
+    head = admission.get("head")
+    if not publication:
+        errors.append("inactive_publication")
+        errors.extend(str(error) for error in admission.get("errors", []))
+        return errors
+    package_receipt, package_receipt_errors = _read_json_safe(publication / "receipt.json", "publication_receipt")
+    activation, activation_errors = _read_json_safe(publication / "activation.json", "publication_activation")
+    manifest_path = publication / "publication-manifest.json"
+    manifest, manifest_errors = _read_json_safe(manifest_path, "publication_manifest")
+    errors.extend(package_receipt_errors + activation_errors + manifest_errors)
+    if isinstance(package_receipt, dict):
+        errors.extend(_validate_receipt_contract(request, package_receipt, "publication_receipt"))
+        if canonical_json(package_receipt) != canonical_json(receipt):
+            errors.append("ingress_receipt_publication_receipt_mismatch")
+    else:
+        errors.append("invalid_publication_receipt")
+    if not isinstance(activation, dict):
+        errors.append("invalid_publication_activation")
+    if not isinstance(manifest, dict):
+        errors.append("invalid_publication_manifest")
+    if isinstance(package_receipt, dict) and isinstance(activation, dict) and isinstance(manifest, dict):
+        errors.extend(_validate_handoff_contract(root, publication, request, package_receipt, activation, manifest, head, handoff))
+    return errors
+
+
+def _validate_receipt_contract(request: dict[str, Any], receipt: dict[str, Any], label: str) -> list[str]:
+    errors: list[str] = []
+    expected = {
+        "schema": RECEIPT_SCHEMA,
+        "batch_id": request.get("batch_id"),
+        "snapshot_id": request.get("snapshot_id"),
+        "target_field_id": request.get("target_field_id"),
+        "source_policy_id": request.get("source_policy_id"),
+    }
+    for key, value in expected.items():
+        if receipt.get(key) != value:
+            errors.append(f"{label}_{key}_mismatch")
+    revision_id = receipt.get("field_revision_id")
+    if not isinstance(revision_id, str) or not revision_id:
+        errors.append(f"{label}_field_revision_id_invalid")
+    created_ids = receipt.get("created_shard_ids")
+    if not isinstance(created_ids, list) or not all(isinstance(item, str) and item for item in created_ids):
+        errors.append(f"{label}_created_shard_ids_invalid")
+        created_ids = []
+    if len(created_ids) != len(set(created_ids)):
+        errors.append(f"{label}_created_shard_ids_duplicate")
+    if receipt.get("created_shard_count") != len(created_ids):
+        errors.append(f"{label}_created_shard_count_mismatch")
+    duplicate_count = receipt.get("duplicate_count")
+    if not isinstance(duplicate_count, int) or duplicate_count < 0:
+        errors.append(f"{label}_duplicate_count_invalid")
+    committed_at = receipt.get("committed_at")
+    if not isinstance(committed_at, str) or not _is_utc_timestamp(committed_at):
+        errors.append(f"{label}_committed_at_invalid")
+    return errors
+
+
+def _validate_handoff_contract(
+    root: Path,
+    publication: Path,
+    request: dict[str, Any],
+    package_receipt: dict[str, Any],
+    activation: dict[str, Any],
+    manifest: dict[str, Any],
+    head: dict[str, Any] | None,
+    handoff: dict[str, Any],
+) -> list[str]:
+    errors: list[str] = []
+    revision_id = str(package_receipt.get("field_revision_id"))
+    manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
+    activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
+    expected = {
+        "schema": "nollm.legacy_import_publish_handoff.v1",
+        "batch_id": request.get("batch_id"),
+        "candidate_revision_id": revision_id,
+        "candidate_manifest_hash": manifest_hash,
+        "candidate_activation_hash": activation_hash,
+    }
+    for key, value in expected.items():
+        if handoff.get(key) != value:
+            errors.append(f"publish_handoff_{key}_mismatch")
+    if not isinstance(handoff.get("publish_started_at"), str) or not _is_utc_timestamp(str(handoff.get("publish_started_at"))):
+        errors.append("publish_handoff_started_at_invalid")
+    if not head:
+        errors.append("missing_field_head")
+    else:
+        if head.get("field_revision_id") != revision_id:
+            errors.append("publish_handoff_head_revision_mismatch")
+        if head.get("publication_manifest_hash") != manifest_hash:
+            errors.append("publish_handoff_head_manifest_hash_mismatch")
+        if head.get("activation_hash") != activation_hash:
+            errors.append("publish_handoff_head_activation_hash_mismatch")
+    activation_expected = {
+        "schema": ACTIVATION_SCHEMA,
+        "field_id": request.get("target_field_id"),
+        "field_revision_id": revision_id,
+        "batch_id": request.get("batch_id"),
+        "snapshot_id": request.get("snapshot_id"),
+        "source_policy_id": request.get("source_policy_id"),
+        "receipt_hash": "sha256:" + sha256_bytes((publication / "receipt.json").read_bytes()),
+        "revision_hash": "sha256:" + sha256_bytes((publication / "revision.json").read_bytes()),
+        "source_span_links_hash": "sha256:" + sha256_bytes((publication / "source-span-links.jsonl").read_bytes()),
+        "source_span_projection_hash": "sha256:" + sha256_bytes((publication / "source-span-projection.jsonl").read_bytes()),
+        "legacy_import_profile": LEGACY_IMPORT_PROFILE,
+    }
+    for key, value in activation_expected.items():
+        if activation.get(key) != value:
+            errors.append(f"activation_{key}_mismatch")
+    if manifest.get("field_revision_id") != revision_id:
+        errors.append("publication_manifest_revision_mismatch")
+    return errors
+
+
+def _is_utc_timestamp(value: str) -> bool:
+    if not value.endswith("Z"):
+        return False
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError:
+        return False
+    return True
+
+
 def _migration_report(
     root: Path,
     batch_id: str,
@@ -402,6 +577,7 @@ def _migration_report(
     duplicate_count: int = 0,
 ) -> dict[str, Any]:
     candidate_shards = candidate_shards or []
+    state, _state_errors = _load_state_safe(root / "ingress" / "legacy-import" / batch_id)
     return {
         "schema": "nollm.legacy_import_migration_report.v1",
         "batch_id": batch_id,
@@ -413,7 +589,7 @@ def _migration_report(
         "duplicate_count": duplicate_count,
         "receipt": receipt,
         "field_head": load_field_head(root),
-        "state": _load_state(root / "ingress" / "legacy-import" / batch_id)["state"] if (root / "ingress" / "legacy-import" / batch_id / "state.json").exists() else "planned",
+        "state": state["state"],
     }
 
 
@@ -436,7 +612,16 @@ def _publish_pre_head(root: Path, batch_id: str, revision: dict[str, Any], shard
     raise RuntimeError("_publish_pre_head is obsolete; use publication packages")
 
 
-def _write_staging_package(root: Path, batch_id: str, revision: dict[str, Any], shards: list[dict[str, Any]], links: list[dict[str, Any]], snapshot_id: str, receipt: dict[str, Any]) -> Path:
+def _write_staging_package(
+    root: Path,
+    batch_id: str,
+    revision: dict[str, Any],
+    shards: list[dict[str, Any]],
+    links: list[dict[str, Any]],
+    snapshot_id: str,
+    source_policy_id: str,
+    receipt: dict[str, Any],
+) -> Path:
     staging = root / "field" / ".staging" / batch_id / "publication"
     if staging.exists():
         shutil.rmtree(staging)
@@ -448,8 +633,27 @@ def _write_staging_package(root: Path, batch_id: str, revision: dict[str, Any], 
     spans = _project_spans(root, snapshot_id, links)
     write_jsonl(staging / "source-span-projection.jsonl", spans)
     write_json(staging / "receipt.json", receipt)
+    if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_ACTIVATION_RECORD") == "1":
+        raise RuntimeError("forced_failure_before_activation_record")
+    write_json(staging / "activation.json", _activation_record(staging, revision, receipt, snapshot_id, source_policy_id))
     write_json(staging / "publication-manifest.json", _publication_manifest(staging, revision, receipt, snapshot_id))
     return staging
+
+
+def _activation_record(staging: Path, revision: dict[str, Any], receipt: dict[str, Any], snapshot_id: str, source_policy_id: str) -> dict[str, Any]:
+    return {
+        "schema": ACTIVATION_SCHEMA,
+        "field_id": revision["field_id"],
+        "field_revision_id": revision["field_revision_id"],
+        "batch_id": receipt["batch_id"],
+        "snapshot_id": snapshot_id,
+        "source_policy_id": source_policy_id,
+        "receipt_hash": "sha256:" + sha256_bytes((staging / "receipt.json").read_bytes()),
+        "revision_hash": "sha256:" + sha256_bytes((staging / "revision.json").read_bytes()),
+        "source_span_links_hash": "sha256:" + sha256_bytes((staging / "source-span-links.jsonl").read_bytes()),
+        "source_span_projection_hash": "sha256:" + sha256_bytes((staging / "source-span-projection.jsonl").read_bytes()),
+        "legacy_import_profile": LEGACY_IMPORT_PROFILE,
+    }
 
 
 def _publish_package(root: Path, batch_id: str, field_revision_id: str) -> Path:
@@ -462,14 +666,35 @@ def _publish_package(root: Path, batch_id: str, field_revision_id: str) -> Path:
     return publication
 
 
+def _pre_head_publication_errors(root: Path, publication: Path, revision_id: str, field_id: str) -> list[str]:
+    errors: list[str] = []
+    manifest, manifest_errors = _read_json_safe(publication / "publication-manifest.json", "publication_manifest")
+    errors.extend(manifest_errors)
+    activation, activation_errors = _read_json_safe(publication / "activation.json", "publication_activation")
+    errors.extend(activation_errors)
+    errors.extend(validate_publication_manifest_closure(publication))
+    errors.extend(validate_publication_semantics(publication, expected_revision_id=revision_id, expected_field_id=field_id))
+    if isinstance(manifest, dict):
+        errors.extend(validate_publication_activation(publication, manifest=manifest))
+    else:
+        errors.append("invalid_publication_manifest")
+    if isinstance(activation, dict):
+        errors.extend(validate_legacy_import_shard_profile(root, publication, activation))
+    else:
+        errors.append("invalid_publication_activation")
+    return errors
+
+
 def _write_head_atomic(root: Path, head: dict[str, Any]) -> None:
     target = root / "field" / "HEAD.json"
     tmp = root / "field" / "HEAD.json.tmp"
+    if os.environ.get("NOLLM_MT1_FORCE_FAIL_DURING_HEAD_PREPARATION") == "1":
+        raise OSError("forced_failure_during_head_preparation")
     write_json(tmp, head)
     os.replace(tmp, target)
 
 
-def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, manifest_hash: str, prior_head: dict[str, Any] | None) -> None:
+def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, manifest_hash: str, activation_hash: str, prior_head: dict[str, Any] | None) -> None:
     write_json(
         batch_dir / "publish-handoff.json",
         {
@@ -477,6 +702,7 @@ def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, man
             "batch_id": batch_id,
             "candidate_revision_id": revision_id,
             "candidate_manifest_hash": manifest_hash,
+            "candidate_activation_hash": activation_hash,
             "prior_head": prior_head,
             "publish_started_at": utc_now(),
         },
@@ -492,7 +718,6 @@ def _restore_head(root: Path, prior_head: dict[str, Any] | None) -> None:
 
 
 def _quarantine_and_restore_head(root: Path, batch_dir: Path, prior_head: dict[str, Any] | None, reason: str) -> None:
-    _restore_head(root, prior_head)
     _write_state(batch_dir, "quarantined")
     record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": reason, "state": "quarantined"}
     write_json(batch_dir / "quarantine.json", record)
@@ -630,8 +855,6 @@ def _force_write_state(batch_dir: Path, state: str) -> None:
 def _untrusted_ingress_result(root: Path, batch_dir: Path, batch_id: str, errors: list[str]) -> dict[str, Any]:
     handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
     if isinstance(handoff, dict) and not handoff_errors:
-        prior_head = handoff.get("prior_head")
-        _restore_head(root, prior_head if isinstance(prior_head, dict) else None)
         _force_write_state(batch_dir, "quarantined")
         record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_id, "timestamp": utc_now(), "reason": "untrusted_ingress:" + ",".join(errors), "state": "quarantined"}
         write_json(batch_dir / "quarantine.json", record)

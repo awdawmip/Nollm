@@ -10,7 +10,16 @@ from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
 from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
-from .native_field import admit_current_publication, current_publication, load_field_head, shard_id_for, validate_publication_manifest_closure, validate_publication_semantics
+from .native_field import (
+    admit_current_publication,
+    current_publication,
+    load_field_head,
+    shard_id_for,
+    validate_legacy_import_shard_profile,
+    validate_publication_activation,
+    validate_publication_manifest_closure,
+    validate_publication_semantics,
+)
 from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
 
 
@@ -114,10 +123,6 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
     receipt = read_json(receipt_path)
     if receipt.get("snapshot_id") != snapshot_id:
         errors.append(f"receipt_snapshot_mismatch:{field_revision_id}")
-    state_path = root / "ingress" / "legacy-import" / str(receipt.get("batch_id")) / "state.json"
-    state = read_json(state_path).get("state") if state_path.exists() else None
-    if state not in {"committed", "publishing"}:
-        errors.append(f"batch_not_committed:{receipt.get('batch_id')}")
     spans = _load_publication_jsonl(publication / "source-span-projection.jsonl")
     spans_by_id = {str(span["span_id"]): span for span in spans}
     spans_by_ref = {_span_source_ref(objects_by_digest, span): span for span in spans if _span_source_ref(objects_by_digest, span)}
@@ -229,6 +234,12 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
             errors.append(f"unpublished_revision:{field_revision_id}")
         elif head.get("publication_manifest_hash") != actual_manifest_hash:
             errors.append(f"publication_manifest_hash_mismatch:{field_revision_id}")
+        try:
+            actual_activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
+        except OSError as exc:
+            return [f"unreadable_publication_activation:{exc.__class__.__name__}"]
+        if head and head.get("field_revision_id") == field_revision_id and head.get("activation_hash") != actual_activation_hash:
+            errors.append(f"activation_hash_mismatch:{field_revision_id}")
     manifest = _safe_read_json(manifest_path, f"publication_manifest:{field_revision_id}", errors)
     if not isinstance(manifest, dict):
         return errors
@@ -240,15 +251,21 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         errors.append(f"publication_manifest_snapshot_mismatch:{field_revision_id}")
     errors.extend(validate_publication_manifest_closure(publication))
     errors.extend(validate_publication_semantics(publication, expected_revision_id=field_revision_id))
+    manifest = _safe_read_json(manifest_path, f"publication_manifest:{field_revision_id}", errors)
+    if isinstance(manifest, dict):
+        errors.extend(validate_publication_activation(publication, head=load_field_head(root) if require_head else None, manifest=manifest))
     if errors:
         return errors
     artifact_hashes = manifest.get("artifact_hashes", {})
-    required_paths = {"revision.json", "receipt.json", "source-span-links.jsonl", "source-span-projection.jsonl"}
+    required_paths = {"activation.json", "revision.json", "receipt.json", "source-span-links.jsonl", "source-span-projection.jsonl"}
     if isinstance(artifact_hashes, dict):
         for required in sorted(required_paths):
             if required not in artifact_hashes:
                 errors.append(f"publication_artifact_hash_missing:{required}")
     errors.extend(_validate_inventory_and_projection(root, snapshot_id, publication))
+    activation = _safe_read_json(publication / "activation.json", f"publication_activation:{field_revision_id}", errors)
+    if isinstance(activation, dict):
+        errors.extend(validate_legacy_import_shard_profile(root, publication, activation))
     return errors
 
 
@@ -455,10 +472,14 @@ def _validate_legacy_shard_identity(
 ) -> None:
     shard_id = str(shard.get("shard_id"))
     span_id = str(span.get("span_id"))
-    if shard.get("origin_kind") != "legacy_import":
-        return
     if shard.get("schema") != "nollm.native_dream_shard.v1":
         errors.append(f"legacy_shard_schema_mismatch:{shard_id}")
+    if shard.get("origin_kind") != "legacy_import":
+        errors.append(f"legacy_shard_origin_kind_mismatch:{shard_id}")
+    if shard.get("operational_state") != "loose":
+        errors.append(f"legacy_shard_operational_state_mismatch:{shard_id}")
+    if shard.get("epistemic_state") != "legacy_recorded":
+        errors.append(f"legacy_shard_epistemic_state_mismatch:{shard_id}")
     if shard.get("batch_id") != receipt.get("batch_id"):
         errors.append(f"legacy_shard_batch_mismatch:{shard_id}")
     if shard.get("source_policy_id") != source_policy_id:
@@ -479,6 +500,10 @@ def _validate_legacy_shard_identity(
     expected_shard_id = shard_id_for(recomputed_key)
     if shard_id != expected_shard_id:
         errors.append(f"legacy_shard_id_mismatch:{shard_id}")
+    if shard.get("geometry_intent") != {"mode": "archive_ingest_seed", "placement": "pending_cortex_orientation"}:
+        errors.append(f"legacy_shard_geometry_intent_mismatch:{shard_id}")
+    if shard.get("anchor_field_weights") != {}:
+        errors.append(f"legacy_shard_anchor_field_weights_mismatch:{shard_id}")
 
 
 def _validate_link_record(
