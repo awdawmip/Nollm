@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -11,11 +13,16 @@ from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_
 
 def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, require_linked: bool = False) -> dict[str, Any]:
     root = memory_root_path(memory_root)
-    manifest = load_manifest(root, snapshot_id)
-    spans = _published_spans(root, snapshot_id) if require_linked else load_source_spans(root, snapshot_id)
+    try:
+        manifest = load_manifest(root, snapshot_id)
+        spans = _published_spans(root, snapshot_id) if require_linked else load_source_spans(root, snapshot_id)
+    except JSONDecodeError:
+        return _coverage_error(snapshot_id, "malformed_json:source_span_inventory" if not require_linked else "malformed_json:published_source_span_projection")
+    except Exception as exc:
+        return _coverage_error(snapshot_id, f"invalid_source_coverage_input:{exc.__class__.__name__}")
     by_object: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for span in spans:
-        by_object.setdefault((str(span["archive_object_id"]), str(span["original_relative_path"])), []).append(span)
+        by_object.setdefault((str(span.get("source_object_id", span.get("archive_object_id"))), str(span["original_relative_path"])), []).append(span)
     errors: list[str] = []
     total = 0
     covered = 0
@@ -24,7 +31,7 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, requi
     pending = 0
     sharded_without_links = 0
     for obj in manifest.get("objects", []):
-        key = (str(obj["archive_object_id"]), str(obj["original_relative_path"]))
+        key = (str(obj.get("source_object_id", obj.get("archive_object_id"))), str(obj["original_relative_path"]))
         current = 0
         object_spans = sorted(by_object.get(key, []), key=lambda item: int(item["start_byte"]))
         if not object_spans and obj.get("byte_length", 0) != 0:
@@ -91,6 +98,20 @@ def _published_spans(root: Path, snapshot_id: str) -> list[dict[str, Any]]:
     receipt = read_json(receipt_path)
     if receipt.get("snapshot_id") != snapshot_id:
         return []
-    import json
-
     return [json.loads(line) for line in projection_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _coverage_error(snapshot_id: str, error: str) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "snapshot_id": snapshot_id,
+        "coverage_ratio": 0.0,
+        "total_source_spans": 0,
+        "covered_source_spans": 0,
+        "uncovered_source_spans": 0,
+        "unsupported": 0,
+        "manual_review": 0,
+        "classified_pending": 0,
+        "sharded_without_links": 0,
+        "errors": [error],
+    }

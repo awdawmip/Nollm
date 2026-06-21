@@ -22,19 +22,20 @@ from .native_field import (
     validate_publication_manifest_closure,
     validate_publication_semantics,
 )
+from .path_safety import validate_batch_id, validate_field_revision_id, validate_snapshot_id
 from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
 
 
-SOURCE_REF_RE = re.compile(r"^archive://object/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
+SOURCE_REF_RE = re.compile(r"^archive://snapshot/(snap_[0-9]{8}_[0-9]{6}_[0-9a-f]{12})/source/(src_[0-9a-f]{24})/blob/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
 LINK_SCHEMA = "nollm.source_span_link.v1"
 
 
-def parse_source_ref(source_ref: str) -> tuple[str, int, int]:
+def parse_source_ref(source_ref: str) -> tuple[str, str, str, int, int]:
     match = SOURCE_REF_RE.match(source_ref)
     if not match:
         raise ValueError(f"invalid_source_ref:{source_ref}")
-    digest, start, end = match.groups()
-    return digest, int(start), int(end)
+    snapshot_id, source_object_id, digest, start, end = match.groups()
+    return snapshot_id, source_object_id, digest, int(start), int(end)
 
 
 def build_source_span_links(
@@ -70,18 +71,24 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
     for obj in manifest.get("objects", []):
         digest = str(obj["content_hash"]).removeprefix("sha256:")
         data = (root / "archive" / "objects" / "sha256" / digest).read_bytes()
+        source_object_id = str(obj.get("source_object_id", obj.get("archive_object_id")))
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
             disposition, reason = _classify_span(chunk, obj.get("encoding"))
             records.append(
                 {
                     "snapshot_id": snapshot_id,
-                    "archive_object_id": obj["archive_object_id"],
+                    "source_object_id": source_object_id,
+                    "archive_object_id": source_object_id,
                     "original_relative_path": obj["original_relative_path"],
-                    "span_id": f"span_{obj['archive_object_id'].removeprefix('arc_')}_{index:04d}",
+                    "content_hash": obj["content_hash"],
+                    "span_id": f"span_{source_object_id.removeprefix('src_')}_{index:04d}",
                     "start_byte": start,
                     "end_byte_exclusive": end,
                     "text_hash": "sha256:" + sha256_bytes(chunk),
+                    "origin_kind": obj.get("origin_kind"),
+                    "epistemic_state": obj.get("epistemic_state"),
+                    "operational_state": obj.get("operational_state"),
                     "disposition": disposition,
                     "reason": reason,
                 }
@@ -91,14 +98,44 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
 
 def validate_staged_publication(memory_root: Path | str, batch_id: str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
+    id_errors = validate_batch_id(batch_id) + validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
+    if id_errors:
+        return _result(snapshot_id, field_revision_id, id_errors)
     publication = root / "field" / ".staging" / batch_id / "publication"
     errors = _validate_publication_package(root, snapshot_id, field_revision_id, publication, require_head=False)
     return _result(snapshot_id, field_revision_id, errors)
 
 
+def validate_active_publication_package(
+    memory_root: Path | str,
+    publication: Path,
+    *,
+    head: dict[str, Any] | None = None,
+    expected_revision_id: str | None = None,
+    expected_field_id: str | None = None,
+    require_head: bool = True,
+) -> dict[str, Any]:
+    root = memory_root_path(memory_root)
+    revision_id = expected_revision_id or publication.name
+    activation = _safe_read_json(publication / "activation.json", f"publication_activation:{revision_id}", [])
+    snapshot_id = str(activation.get("snapshot_id")) if isinstance(activation, dict) else ""
+    id_errors = validate_field_revision_id(revision_id) + validate_snapshot_id(snapshot_id)
+    if id_errors:
+        return _result(snapshot_id, revision_id, id_errors)
+    errors = _validate_publication_package(root, snapshot_id, revision_id, publication, require_head=require_head)
+    if expected_field_id is not None:
+        revision = _safe_read_json(publication / "revision.json", f"publication_revision:{revision_id}", errors)
+        if isinstance(revision, dict) and revision.get("field_id") != expected_field_id:
+            errors.append(f"head_revision_field_id_mismatch:{revision_id}")
+    return _result(snapshot_id, revision_id, errors)
+
+
 def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     errors: list[str] = []
+    id_errors = validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
+    if id_errors:
+        return _result(snapshot_id, field_revision_id, id_errors)
     admission = admit_current_publication(root)
     head = admission.get("head")
     if not head or head.get("field_revision_id") != field_revision_id:
@@ -117,7 +154,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
     errors.extend(archive.get("errors", []))
     manifest = load_manifest(root, snapshot_id)
     source_policy_id = str(manifest.get("source_policy_id"))
-    objects_by_digest = {str(obj["content_hash"]).removeprefix("sha256:"): obj for obj in manifest.get("objects", [])}
+    objects_by_source_id = {str(obj.get("source_object_id", obj.get("archive_object_id"))): obj for obj in manifest.get("objects", [])}
     receipt_path = publication / "receipt.json"
     if not receipt_path.exists():
         errors.append(f"missing_publication_receipt:{field_revision_id}")
@@ -127,7 +164,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
         errors.append(f"receipt_snapshot_mismatch:{field_revision_id}")
     spans = _load_publication_jsonl(publication / "source-span-projection.jsonl")
     spans_by_id = {str(span["span_id"]): span for span in spans}
-    spans_by_ref = {_span_source_ref(objects_by_digest, span): span for span in spans if _span_source_ref(objects_by_digest, span)}
+    spans_by_ref = {_span_source_ref(objects_by_source_id, span): span for span in spans if _span_source_ref(objects_by_source_id, span)}
     revision_path = publication / "revision.json"
     if not revision_path.exists():
         errors.append(f"missing_field_revision:{field_revision_id}")
@@ -156,14 +193,18 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
             errors.append(f"missing_source_span_link:{shard_id}")
         for source_ref in shard.get("source_refs", []):
             try:
-                digest, start, end = parse_source_ref(str(source_ref))
+                ref_snapshot_id, source_object_id, digest, start, end = parse_source_ref(str(source_ref))
             except ValueError as exc:
                 errors.append(str(exc))
                 continue
-            obj = objects_by_digest.get(digest)
+            obj = objects_by_source_id.get(source_object_id)
             if not obj:
-                errors.append(f"source_ref_digest_not_in_manifest:{shard_id}")
+                errors.append(f"source_ref_source_not_in_manifest:{shard_id}")
                 continue
+            if ref_snapshot_id != snapshot_id:
+                errors.append(f"source_ref_snapshot_mismatch:{shard_id}")
+            if str(obj.get("content_hash", "")).removeprefix("sha256:") != digest:
+                errors.append(f"source_ref_digest_mismatch:{shard_id}")
             object_path = root / "archive" / "objects" / "sha256" / digest
             if not object_path.exists():
                 errors.append(f"missing_archive_object:{digest}")
@@ -193,7 +234,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
                 errors.append(f"shard_text_mismatch:{shard_id}")
             if shard.get("text_hash") != canonical_hash:
                 errors.append(f"shard_text_hash_mismatch:{shard_id}")
-            _validate_legacy_shard_identity(errors, shard, receipt, source_policy_id, source_ref, span, canonical, canonical_hash, raw_hash)
+            _validate_legacy_shard_identity(errors, shard, receipt, source_policy_id, source_ref, span, obj, canonical, canonical_hash, raw_hash)
             if span.get("span_id") not in shard.get("continuity_refs", []):
                 errors.append(f"missing_continuity_ref:{shard_id}:{span.get('span_id')}")
             if shard_id not in span.get("related_shard_ids", []):
@@ -213,7 +254,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
                     errors.append(f"span_related_shard_not_in_revision:{span.get('span_id')}:{shard_id}")
                 if not links_by_span.get(str(span.get("span_id"))):
                     errors.append(f"sharded_span_without_link_record:{span.get('span_id')}")
-    errors.extend(_validate_exact_relation_closure(root, snapshot_id, publication, field_revision_id, receipt, objects_by_digest, revision_shards, spans, links))
+    errors.extend(_validate_exact_relation_closure(root, snapshot_id, publication, field_revision_id, receipt, objects_by_source_id, revision_shards, spans, links))
     coverage = validate_source_coverage(root, snapshot_id, require_linked=True)
     errors.extend(coverage.get("errors", []))
     return _result(snapshot_id, field_revision_id, errors, coverage=coverage)
@@ -273,9 +314,14 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
 
 def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication: Path) -> list[str]:
     errors: list[str] = []
-    canonical = canonical_source_spans(root, snapshot_id)
-    persisted = load_source_spans(root, snapshot_id)
-    projection = _load_publication_jsonl(publication / "source-span-projection.jsonl")
+    try:
+        canonical = canonical_source_spans(root, snapshot_id)
+        persisted = load_source_spans(root, snapshot_id)
+        projection = _load_publication_jsonl(publication / "source-span-projection.jsonl")
+    except JSONDecodeError:
+        return ["malformed_json:source_span_inventory_or_projection"]
+    except Exception as exc:
+        return [f"invalid_source_span_inventory_or_projection:{exc.__class__.__name__}"]
     canonical_by_id = {str(span["span_id"]): span for span in canonical}
     projection_ids = [str(span.get("span_id")) for span in projection]
     duplicate_projection_ids = sorted({span_id for span_id in projection_ids if projection_ids.count(span_id) > 1})
@@ -293,6 +339,13 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
     revision = read_json(publication / "revision.json") if (publication / "revision.json").exists() else {"shard_ids": []}
     revision_shards = set(str(item) for item in revision.get("shard_ids", []))
     links = _load_publication_jsonl(publication / "source-span-links.jsonl")
+    link_counts: dict[tuple[str, str, str], int] = {}
+    for link in links:
+        key = (str(link.get("shard_id")), str(link.get("source_ref")), str(link.get("span_id")))
+        link_counts[key] = link_counts.get(key, 0) + 1
+    for key, count in link_counts.items():
+        if count != 1:
+            errors.append(f"duplicate_source_span_link:{key[0]}:{key[2]}")
     links_by_span: dict[str, list[dict[str, Any]]] = {}
     for link in links:
         links_by_span.setdefault(str(link.get("span_id")), []).append(link)
@@ -302,7 +355,7 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
         if not expected:
             errors.append(f"projection_unknown_span:{span_id}")
             continue
-        for key in ["snapshot_id", "archive_object_id", "original_relative_path", "span_id", "start_byte", "end_byte_exclusive", "text_hash"]:
+        for key in ["snapshot_id", "source_object_id", "archive_object_id", "original_relative_path", "span_id", "start_byte", "end_byte_exclusive", "text_hash"]:
             if span.get(key) != expected.get(key):
                 errors.append(f"projection_{key}_mismatch:{span_id}")
         expected_disposition = expected.get("disposition")
@@ -339,7 +392,7 @@ def _validate_exact_relation_closure(
     publication: Path,
     field_revision_id: str,
     receipt: dict[str, Any],
-    objects_by_digest: dict[str, dict[str, Any]],
+    objects_by_source_id: dict[str, dict[str, Any]],
     revision_shards: set[str],
     projection: list[dict[str, Any]],
     links: list[dict[str, Any]],
@@ -347,7 +400,7 @@ def _validate_exact_relation_closure(
     errors: list[str] = []
     canonical = canonical_source_spans(root, snapshot_id)
     canonical_by_id = {str(span["span_id"]): span for span in canonical}
-    canonical_by_ref = {str(_span_source_ref(objects_by_digest, span)): span for span in canonical if _span_source_ref(objects_by_digest, span)}
+    canonical_by_ref = {str(_span_source_ref(objects_by_source_id, span)): span for span in canonical if _span_source_ref(objects_by_source_id, span)}
     projection_by_id = {str(span.get("span_id")): span for span in projection}
     shards: dict[str, dict[str, Any]] = {}
     for shard_id in revision_shards:
@@ -414,6 +467,7 @@ def _validate_exact_relation_closure(
 def _span_core(span: dict[str, Any]) -> dict[str, Any]:
     return {
         "snapshot_id": span.get("snapshot_id"),
+        "source_object_id": span.get("source_object_id"),
         "archive_object_id": span.get("archive_object_id"),
         "original_relative_path": span.get("original_relative_path"),
         "span_id": span.get("span_id"),
@@ -425,10 +479,12 @@ def _span_core(span: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _span_source_ref(objects_by_digest: dict[str, dict[str, Any]], span: dict[str, Any]) -> str | None:
-    for digest, obj in objects_by_digest.items():
-        if obj.get("archive_object_id") == span.get("archive_object_id"):
-            return f"archive://object/sha256:{digest}#B{span['start_byte']}-B{span['end_byte_exclusive']}"
+def _span_source_ref(objects_by_source_id: dict[str, dict[str, Any]], span: dict[str, Any]) -> str | None:
+    source_object_id = str(span.get("source_object_id", span.get("archive_object_id")))
+    obj = objects_by_source_id.get(source_object_id)
+    if obj:
+        digest = str(obj.get("content_hash", "")).removeprefix("sha256:")
+        return f"archive://snapshot/{span['snapshot_id']}/source/{source_object_id}/blob/sha256:{digest}#B{span['start_byte']}-B{span['end_byte_exclusive']}"
     return None
 
 
@@ -468,6 +524,7 @@ def _validate_legacy_shard_identity(
     source_policy_id: str,
     source_ref: str,
     span: dict[str, Any],
+    source_object: dict[str, Any],
     canonical_text: str,
     canonical_hash: str,
     raw_hash: str,
@@ -478,11 +535,11 @@ def _validate_legacy_shard_identity(
         errors.append(f"legacy_shard_unknown_field:{shard_id}:{key}")
     if shard.get("schema") != "nollm.native_dream_shard.v1":
         errors.append(f"legacy_shard_schema_mismatch:{shard_id}")
-    if shard.get("origin_kind") != "legacy_import":
+    if shard.get("origin_kind") != source_object.get("origin_kind"):
         errors.append(f"legacy_shard_origin_kind_mismatch:{shard_id}")
-    if shard.get("operational_state") != "loose":
+    if shard.get("operational_state") != source_object.get("operational_state"):
         errors.append(f"legacy_shard_operational_state_mismatch:{shard_id}")
-    if shard.get("epistemic_state") != "legacy_recorded":
+    if shard.get("epistemic_state") != source_object.get("epistemic_state"):
         errors.append(f"legacy_shard_epistemic_state_mismatch:{shard_id}")
     if shard.get("batch_id") != receipt.get("batch_id"):
         errors.append(f"legacy_shard_batch_mismatch:{shard_id}")

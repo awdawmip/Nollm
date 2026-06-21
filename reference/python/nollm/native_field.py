@@ -9,17 +9,19 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from .archive import load_manifest, memory_root_path, utc_now
+from .archive import verify_archive_snapshot
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
 from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID
 from .legacy_text import normalize_legacy_text, source_range_hash, text_hash
+from .path_safety import validate_field_revision_id
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
 SHARD_SCHEMA = "nollm.native_dream_shard.v1"
 ACTIVATION_SCHEMA = "nollm.field_activation.v1"
 LEGACY_IMPORT_PROFILE = "nollm.legacy_import_shard_profile.v1"
-SOURCE_REF_RE = re.compile(r"^archive://object/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
+SOURCE_REF_RE = re.compile(r"^archive://snapshot/(snap_[0-9]{8}_[0-9]{6}_[0-9a-f]{12})/source/(src_[0-9a-f]{24})/blob/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
 LEGACY_IMPORT_GEOMETRY_INTENT = {
     "mode": "archive_ingest_seed",
     "placement": "pending_cortex_orientation",
@@ -54,9 +56,9 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
         "schema": SHARD_SCHEMA,
         "shard_id": shard_id_for(idempotence_key),
         "batch_id": batch_id,
-        "origin_kind": "legacy_import",
-        "operational_state": "loose",
-        "epistemic_state": "legacy_recorded",
+        "origin_kind": record.get("origin_kind", "legacy_import"),
+        "operational_state": record.get("operational_state", "loose"),
+        "epistemic_state": record.get("epistemic_state", "legacy_recorded"),
         "source_policy_id": source_policy_id,
         "source_refs": [record["source_ref"]],
         "source_range_hash": record.get("source_range_hash", record["text_hash"]),
@@ -121,23 +123,13 @@ def stage_shards(memory_root: Path | str, batch_id: str, shards: list[dict[str, 
 
 
 def publish_field_revision(memory_root: Path | str, *, batch_id: str, target_field_id: str, shard_ids: list[str]) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
-    existing_ids = _current_field_shards(root, target_field_id)
-    merged_ids = sorted(set(existing_ids).union(shard_ids))
-    revision_seed = canonical_json({"batch_id": batch_id, "field_id": target_field_id, "shard_ids": merged_ids})
-    revision_id = "fieldrev_" + sha256_bytes(revision_seed)[:20]
-    revision = {
-        "schema": FIELD_REVISION_SCHEMA,
-        "field_revision_id": revision_id,
-        "field_id": target_field_id,
+    return {
+        "ok": False,
+        "errors": ["unsupported_flat_field_publisher"],
         "batch_id": batch_id,
-        "created_at": utc_now(),
-        "shard_ids": merged_ids,
-        "shard_count": len(merged_ids),
+        "target_field_id": target_field_id,
+        "shard_ids": shard_ids,
     }
-    write_json(root / "field" / "revisions" / f"{revision_id}.json", revision)
-    write_json(root / "field" / "HEAD.json", {"field_id": target_field_id, "field_revision_id": revision_id})
-    return revision
 
 
 def move_staged_shards(memory_root: Path | str, batch_id: str) -> list[str]:
@@ -188,8 +180,9 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     expected_activation = head.get("activation_hash")
     if not isinstance(field_id, str) or not field_id:
         errors.append("invalid_head_field_id")
-    if not isinstance(revision_id, str) or not revision_id:
-        errors.append("invalid_head_field_revision_id")
+    revision_errors = validate_field_revision_id(revision_id)
+    if revision_errors:
+        errors.extend("invalid_head_" + error.removeprefix("invalid_") for error in revision_errors)
     if not isinstance(expected, str) or not expected.startswith("sha256:"):
         errors.append("invalid_head_publication_manifest_hash")
     if not isinstance(expected_activation, str) or not expected_activation.startswith("sha256:"):
@@ -236,6 +229,11 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     activation = _safe_read_json(activation_path, "publication_activation", errors) if not errors else None
     if isinstance(activation, dict):
         errors.extend(validate_legacy_import_shard_profile(root, publication, activation))
+    if not errors:
+        from .provenance import validate_active_publication_package
+
+        package = validate_active_publication_package(root, publication, head=head, expected_revision_id=revision_id, expected_field_id=field_id, require_head=True)
+        errors.extend(str(error) for error in package.get("errors", []))
     return {"publication": publication if not errors else None, "head": head, "errors": errors}
 
 
@@ -274,6 +272,21 @@ def validate_publication_activation(publication: Path, *, head: dict[str, Any] |
             errors.append(f"activation_head_hash_mismatch:{revision_id}")
     if activation.get("legacy_import_profile") != LEGACY_IMPORT_PROFILE:
         errors.append(f"invalid_legacy_import_profile:{revision_id}")
+    snapshot_id = activation.get("snapshot_id")
+    if isinstance(snapshot_id, str):
+        memory_root = _memory_root_for_publication(publication)
+        archive = verify_archive_snapshot(memory_root, snapshot_id)
+        errors.extend(str(error) for error in archive.get("errors", []))
+        try:
+            archive_manifest = load_manifest(memory_root, snapshot_id)
+        except Exception as exc:
+            archive_manifest = {}
+            errors.append(f"invalid_archive_manifest:{exc.__class__.__name__}")
+        if archive_manifest:
+            if activation.get("archive_manifest_schema") != archive_manifest.get("schema"):
+                errors.append(f"activation_archive_manifest_schema_mismatch:{revision_id}")
+            if activation.get("archive_manifest_hash") != archive_manifest.get("archive_manifest_hash", archive_manifest.get("manifest_hash")):
+                errors.append(f"activation_archive_manifest_hash_mismatch:{revision_id}")
     hash_paths = {
         "receipt_hash": publication / "receipt.json",
         "revision_hash": publication / "revision.json",
@@ -294,6 +307,13 @@ def validate_publication_activation(publication: Path, *, head: dict[str, Any] |
     return errors
 
 
+def _memory_root_for_publication(publication: Path) -> Path:
+    for parent in publication.parents:
+        if (parent / "archive").exists() and (parent / "field").exists():
+            return parent
+    return publication.parents[2]
+
+
 def validate_legacy_import_shard_profile(root: Path, publication: Path, activation: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     snapshot_id = activation.get("snapshot_id")
@@ -312,7 +332,9 @@ def validate_legacy_import_shard_profile(root: Path, publication: Path, activati
         return [f"invalid_json:archive_manifest:{exc.__class__.__name__}"]
     if manifest.get("source_policy_id") != source_policy_id:
         errors.append(f"activation_source_policy_mismatch:{revision_id}")
-    objects_by_digest = {str(obj.get("content_hash", "")).removeprefix("sha256:"): obj for obj in manifest.get("objects", [])}
+    if manifest.get("schema") != "nollm.archive_manifest.v2":
+        errors.append(f"legacy_mt1_package_requires_reimport:{revision_id}")
+    objects_by_source_id = {str(obj.get("source_object_id", obj.get("archive_object_id"))): obj for obj in manifest.get("objects", [])}
     revision = _safe_read_json(publication / "revision.json", "publication_revision", errors)
     links = _safe_read_jsonl(publication / "source-span-links.jsonl", "source_span_links", errors)
     if not isinstance(revision, dict) or links is None:
@@ -335,7 +357,7 @@ def validate_legacy_import_shard_profile(root: Path, publication: Path, activati
                 root,
                 shard,
                 link,
-                objects_by_digest,
+                objects_by_source_id,
                 snapshot_id=str(snapshot_id),
                 source_policy_id=str(source_policy_id),
                 batch_id=str(batch_id),
@@ -349,7 +371,7 @@ def _validate_legacy_import_shard_profile(
     root: Path,
     shard: dict[str, Any],
     link: dict[str, Any],
-    objects_by_digest: dict[str, dict[str, Any]],
+    objects_by_source_id: dict[str, dict[str, Any]],
     *,
     snapshot_id: str,
     source_policy_id: str,
@@ -362,11 +384,24 @@ def _validate_legacy_import_shard_profile(
     unknown = sorted(set(shard) - LEGACY_IMPORT_ALLOWED_SHARD_FIELDS)
     for key in unknown:
         errors.append(f"legacy_shard_unknown_field:{shard_id}:{key}")
+    match = SOURCE_REF_RE.match(source_ref)
+    if not match:
+        errors.append(f"legacy_shard_invalid_source_ref:{shard_id}")
+        return
+    ref_snapshot_id, source_object_id, digest, start_text, end_text = match.groups()
+    obj = objects_by_source_id.get(source_object_id)
+    if not obj:
+        errors.append(f"legacy_shard_source_ref_source_not_in_manifest:{shard_id}")
+        return
+    if ref_snapshot_id != snapshot_id:
+        errors.append(f"legacy_shard_source_ref_snapshot_mismatch:{shard_id}")
+    if str(obj.get("content_hash", "")).removeprefix("sha256:") != digest:
+        errors.append(f"legacy_shard_source_ref_digest_mismatch:{shard_id}")
     expected_static = {
         "schema": SHARD_SCHEMA,
-        "origin_kind": "legacy_import",
-        "operational_state": "loose",
-        "epistemic_state": "legacy_recorded",
+        "origin_kind": obj.get("origin_kind"),
+        "operational_state": obj.get("operational_state"),
+        "epistemic_state": obj.get("epistemic_state"),
         "source_policy_id": source_policy_id,
         "batch_id": batch_id,
         "normalization_id": NORMALIZATION_ID,
@@ -381,15 +416,6 @@ def _validate_legacy_import_shard_profile(
     created_at = shard.get("created_at")
     if not isinstance(created_at, str) or not _is_utc_timestamp(created_at):
         errors.append(f"legacy_shard_created_at_invalid:{shard_id}")
-    match = SOURCE_REF_RE.match(source_ref)
-    if not match:
-        errors.append(f"legacy_shard_invalid_source_ref:{shard_id}")
-        return
-    digest, start_text, end_text = match.groups()
-    obj = objects_by_digest.get(digest)
-    if not obj:
-        errors.append(f"legacy_shard_source_ref_digest_not_in_manifest:{shard_id}")
-        return
     start = int(start_text)
     end = int(end_text)
     if not (0 <= start < end <= int(obj.get("byte_length", 0))):
