@@ -69,8 +69,22 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     if request_path.exists():
         request, request_errors = _read_json_safe(request_path, "import_request")
         state, state_errors = _load_state_safe(batch_dir)
+        request_contract_errors = (
+            _validate_planned_request_contract(
+                request,
+                batch_id=batch_id,
+                snapshot_id=snapshot_id,
+                target_field_id=target_field_id,
+                source_policy_id=str(manifest.get("source_policy_id")),
+                extraction_count=len(extracted),
+            )
+            if isinstance(request, dict)
+            else []
+        )
         if request_errors or not isinstance(request, dict) or state_errors:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
+        if request_contract_errors:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": request_contract_errors}
         receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
         if receipt_errors:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
@@ -134,6 +148,9 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
     if request_errors or not isinstance(request, dict):
         return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
+    request_identity_errors = _validate_request_identity(request, batch_id=batch_id)
+    if request_identity_errors:
+        return _untrusted_ingress_result(root, batch_dir, batch_id, request_identity_errors)
     receipt_path = batch_dir / "import-receipt.json"
     if commit and receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
         return _untrusted_ingress_result(root, batch_dir, batch_id, [f"invalid_receipted_state:{state['state']}"])
@@ -457,6 +474,50 @@ def _batch_id(snapshot_id: str, target_field_id: str, extracted: list[dict[str, 
 
 def _batch_dir(root: Path, batch_id: str) -> Path:
     return root / "ingress" / "legacy-import" / batch_id
+
+
+def _validate_request_identity(request: dict[str, Any], *, batch_id: str) -> list[str]:
+    errors: list[str] = []
+    if request.get("schema") != IMPORT_SCHEMA:
+        errors.append("import_request_schema_mismatch")
+    if request.get("batch_id") != batch_id:
+        errors.append("import_request_batch_id_mismatch")
+    for key in ("snapshot_id", "target_field_id", "source_policy_id"):
+        if not isinstance(request.get(key), str) or not request.get(key):
+            errors.append(f"import_request_{key}_invalid")
+    extraction_count = request.get("extraction_count")
+    if not isinstance(extraction_count, int) or extraction_count < 0:
+        errors.append("import_request_extraction_count_invalid")
+    return errors
+
+
+def _validate_planned_request_contract(
+    request: dict[str, Any],
+    *,
+    batch_id: str,
+    snapshot_id: str,
+    target_field_id: str,
+    source_policy_id: str,
+    extraction_count: int,
+) -> list[str]:
+    errors = _validate_request_identity(request, batch_id=batch_id)
+    expected = {
+        "snapshot_id": snapshot_id,
+        "target_field_id": target_field_id,
+        "source_policy_id": source_policy_id,
+        "extraction_count": extraction_count,
+    }
+    for key, value in expected.items():
+        if request.get(key) != value:
+            errors.append(f"import_request_{key}_mismatch")
+    if request.get("dedupe_policy") != "idempotence_key_active_head_only":
+        errors.append("import_request_dedupe_policy_mismatch")
+    if request.get("geometry_policy") != "none_mt1_archive_ingest":
+        errors.append("import_request_geometry_policy_mismatch")
+    created_at = request.get("created_at")
+    if not isinstance(created_at, str) or not _is_utc_timestamp(created_at):
+        errors.append("import_request_created_at_invalid")
+    return errors
 
 
 def _replacement_batch_id(batch_id: str) -> str:
