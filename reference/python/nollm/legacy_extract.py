@@ -29,14 +29,17 @@ def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict
         text = normalize_legacy_text(chunk)
         if not text or _is_markdown_heading_only(text):
             continue
-        source_ref = f"archive://object/sha256:{digest}#B{start}-B{end}"
+        source_object_id = str(obj.get("source_object_id", obj.get("archive_object_id")))
+        source_ref = f"archive://snapshot/{snapshot_id}/source/{source_object_id}/blob/sha256:{digest}#B{start}-B{end}"
         extracted.append(
             {
                 "schema": EXTRACTION_SCHEMA,
                 "snapshot_id": snapshot_id,
                 "span_id": span["span_id"],
-                "archive_object_id": span["archive_object_id"],
+                "source_object_id": source_object_id,
+                "archive_object_id": source_object_id,
                 "original_relative_path": span["original_relative_path"],
+                "content_hash": obj["content_hash"],
                 "source_ref": source_ref,
                 "text": text,
                 "source_range_hash": source_range_hash(chunk),
