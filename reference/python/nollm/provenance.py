@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_h
 from .native_field import (
     admit_current_publication,
     current_publication,
+    LEGACY_IMPORT_ALLOWED_SHARD_FIELDS,
     load_field_head,
     shard_id_for,
     validate_legacy_import_shard_profile,
@@ -472,6 +474,8 @@ def _validate_legacy_shard_identity(
 ) -> None:
     shard_id = str(shard.get("shard_id"))
     span_id = str(span.get("span_id"))
+    for key in sorted(set(shard) - LEGACY_IMPORT_ALLOWED_SHARD_FIELDS):
+        errors.append(f"legacy_shard_unknown_field:{shard_id}:{key}")
     if shard.get("schema") != "nollm.native_dream_shard.v1":
         errors.append(f"legacy_shard_schema_mismatch:{shard_id}")
     if shard.get("origin_kind") != "legacy_import":
@@ -504,6 +508,9 @@ def _validate_legacy_shard_identity(
         errors.append(f"legacy_shard_geometry_intent_mismatch:{shard_id}")
     if shard.get("anchor_field_weights") != {}:
         errors.append(f"legacy_shard_anchor_field_weights_mismatch:{shard_id}")
+    created_at = shard.get("created_at")
+    if not isinstance(created_at, str) or not _is_utc_timestamp(created_at):
+        errors.append(f"legacy_shard_created_at_invalid:{shard_id}")
 
 
 def _validate_link_record(
@@ -530,6 +537,16 @@ def _validate_link_record(
     for key, value in expected.items():
         if link.get(key) != value:
             errors.append(f"link_{key}_mismatch:{shard.get('shard_id')}")
+
+
+def _is_utc_timestamp(value: str) -> bool:
+    if not value.endswith("Z"):
+        return False
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError:
+        return False
+    return True
 
 
 def _result(snapshot_id: str, field_revision_id: str, errors: list[str], *, coverage: dict[str, Any] | None = None) -> dict[str, Any]:
