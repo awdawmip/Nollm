@@ -16,7 +16,10 @@ def canonical_json(data: Mapping[str, Any]) -> bytes:
 
 def manifest_hash(manifest: Mapping[str, Any]) -> str:
     clone = dict(manifest)
-    clone["manifest_hash"] = None
+    if "manifest_hash" in clone:
+        clone["manifest_hash"] = None
+    if "archive_manifest_hash" in clone:
+        clone["archive_manifest_hash"] = None
     return "sha256:" + sha256_bytes(canonical_json(clone))
 
 
