@@ -175,7 +175,7 @@ def test_t4_relation_closure_rejects_extra_duplicate_and_orphan_links(tmp_path: 
     write_jsonl(projection_path, projection)
     rehash_publication_head(memory_root, revision_id)
 
-    assert current_publication(memory_root) is not None
+    assert current_publication(memory_root) is None
     assert validate_deep_provenance(memory_root, snapshot_id, revision_id)["ok"] is False
     assert validate_legacy_import(memory_root, batch_id)["ok"] is False
 

@@ -164,13 +164,13 @@ def test_t5_malformed_pending_ingress_metadata_is_structured_and_safe(tmp_path: 
     assert reconcile["ok"] is False
     assert validate["ok"] is False
     assert all("Traceback" not in error and "JSONDecodeError" not in error for error in reconcile.get("errors", []) + validate.get("errors", []))
+    assert reconcile["recovery_required"] is True
+    assert (memory_root / "field" / "HEAD.json").read_bytes() == head_before
+    assert current_publication(memory_root) is not None
     if artifact != "publish-handoff.json":
         assert reconcile["state"] == "quarantined"
-        assert current_publication(memory_root) is None
     else:
-        assert reconcile["recovery_required"] is True
-        assert (memory_root / "field" / "HEAD.json").read_bytes() == head_before
-        assert current_publication(memory_root) is not None
+        assert reconcile["state"] == "recovery_required"
     assert pending["field_revision_id"]
 
 
