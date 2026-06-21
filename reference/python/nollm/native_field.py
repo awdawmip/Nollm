@@ -71,6 +71,8 @@ def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]
         if data.get("shard_id") != shard_id or path.stem != shard_id:
             return {}
         key = data.get("idempotence_key")
+        if isinstance(key, str) and shard_id_for(key) != shard_id:
+            return {}
         if isinstance(key, str):
             shards[key] = data
     return shards

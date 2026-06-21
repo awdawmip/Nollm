@@ -8,8 +8,9 @@ from typing import Any
 from .archive import load_manifest, memory_root_path, verify_archive_snapshot
 from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
+from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
-from .native_field import admit_current_publication, current_publication, load_field_head, validate_publication_manifest_closure, validate_publication_semantics
+from .native_field import admit_current_publication, current_publication, load_field_head, shard_id_for, validate_publication_manifest_closure, validate_publication_semantics
 from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
 
 
@@ -104,6 +105,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
     archive = verify_archive_snapshot(root, snapshot_id)
     errors.extend(archive.get("errors", []))
     manifest = load_manifest(root, snapshot_id)
+    source_policy_id = str(manifest.get("source_policy_id"))
     objects_by_digest = {str(obj["content_hash"]).removeprefix("sha256:"): obj for obj in manifest.get("objects", [])}
     receipt_path = publication / "receipt.json"
     if not receipt_path.exists():
@@ -184,6 +186,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
                 errors.append(f"shard_text_mismatch:{shard_id}")
             if shard.get("text_hash") != canonical_hash:
                 errors.append(f"shard_text_hash_mismatch:{shard_id}")
+            _validate_legacy_shard_identity(errors, shard, receipt, source_policy_id, source_ref, span, canonical, canonical_hash, raw_hash)
             if span.get("span_id") not in shard.get("continuity_refs", []):
                 errors.append(f"missing_continuity_ref:{shard_id}:{span.get('span_id')}")
             if shard_id not in span.get("related_shard_ids", []):
@@ -437,6 +440,45 @@ def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
     except Exception as exc:
         errors.append(f"invalid_json:{label}:{exc.__class__.__name__}")
     return None
+
+
+def _validate_legacy_shard_identity(
+    errors: list[str],
+    shard: dict[str, Any],
+    receipt: dict[str, Any],
+    source_policy_id: str,
+    source_ref: str,
+    span: dict[str, Any],
+    canonical_text: str,
+    canonical_hash: str,
+    raw_hash: str,
+) -> None:
+    shard_id = str(shard.get("shard_id"))
+    span_id = str(span.get("span_id"))
+    if shard.get("origin_kind") != "legacy_import":
+        return
+    if shard.get("schema") != "nollm.native_dream_shard.v1":
+        errors.append(f"legacy_shard_schema_mismatch:{shard_id}")
+    if shard.get("batch_id") != receipt.get("batch_id"):
+        errors.append(f"legacy_shard_batch_mismatch:{shard_id}")
+    if shard.get("source_policy_id") != source_policy_id:
+        errors.append(f"legacy_shard_source_policy_mismatch:{shard_id}")
+    if [str(item) for item in shard.get("source_refs", [])] != [source_ref]:
+        errors.append(f"legacy_shard_source_refs_not_exact:{shard_id}")
+    if [str(item) for item in shard.get("continuity_refs", [])] != [span_id]:
+        errors.append(f"legacy_shard_continuity_not_exact:{shard_id}")
+    if shard.get("source_range_hash") != raw_hash:
+        errors.append(f"legacy_shard_source_range_hash_mismatch:{shard_id}")
+    if shard.get("text") != canonical_text:
+        errors.append(f"legacy_shard_text_mismatch:{shard_id}")
+    if shard.get("text_hash") != canonical_hash:
+        errors.append(f"legacy_shard_text_hash_mismatch:{shard_id}")
+    recomputed_key = idempotence_key({"text": canonical_text, "source_ref": source_ref}, source_policy_id)
+    if shard.get("idempotence_key") != recomputed_key:
+        errors.append(f"legacy_shard_idempotence_key_mismatch:{shard_id}")
+    expected_shard_id = shard_id_for(recomputed_key)
+    if shard_id != expected_shard_id:
+        errors.append(f"legacy_shard_id_mismatch:{shard_id}")
 
 
 def _validate_link_record(
