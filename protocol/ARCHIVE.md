@@ -72,6 +72,8 @@ Published coverage is HEAD-only. A physical revision file, staged relation file,
 
 MT1-R4 makes "complete publication package" a fail-closed admission rule. The HEAD-bound `publication-manifest.json` must be an exact inventory closure of every regular file below the publication directory, excluding the manifest itself. Unmanifested files, missing files, symlinks, absolute paths, parent-directory escapes, backslash paths, or hash mismatches make the publication inactive. Active coverage then sees no published spans.
 
+MT1-R5 extends fail-closed admission to the active trust root. `field/`, `field/HEAD.json`, `field/publications/`, the selected publication directory, and its manifest must be contained beneath the memory root and must not be symlinks. `HEAD.field_id`, `HEAD.field_revision_id`, and `HEAD.publication_manifest_hash` must bind exactly to the publication manifest and revision. Malformed active JSON or JSONL artifacts produce structured validation errors rather than raw parser exceptions.
+
 ## Canonical Inventory
 
 R3 treats archive source spans as deterministic facts. Validation must either rebuild canonical source spans from archive object bytes or compare the persisted inventory to an immutable hash bound by the request, receipt, and publication manifest.
@@ -96,6 +98,8 @@ Published projections are constrained transforms of this canonical inventory:
 - no projection may change byte ranges, object ids, paths, span ids, or raw text hashes.
 
 Active shard reads are revision-limited. Readers may only enumerate `revision.json.shard_ids`; they must not glob every shard file in the package. Every listed shard must have a matching `shards/<shard_id>.json` payload, and every shard payload in the package must be listed by the revision.
+
+Source-span links are exact publication relations. Every active shard source ref must have exactly one matching link, and every published link must point back to a canonical importable span, the active shard roster, and the projected `sharded` relation. Extra, duplicate, orphan, non-memory, or unprojected links are invalid.
 
 ## Boundaries
 

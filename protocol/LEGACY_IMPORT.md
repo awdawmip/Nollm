@@ -144,6 +144,10 @@ The post-HEAD handoff records the candidate revision, candidate manifest hash, p
 
 Reconcile is a validator, not a pointer check. It must verify HEAD manifest binding, exact publication closure, revision-limited shard semantics, source-span projection, archive provenance, and coverage before it records `committed`.
 
+MT1-R5 makes finalization durable before terminal state. After HEAD activation, commit or reconcile must verify the active package, write or verify the migration report, write or verify exactly one finalization ledger event, and write `committed` last. If report, ledger, or final state persistence fails first, the batch remains `publishing` and the caller receives `published: true` with `reconciliation_pending: true`. Reconcile is idempotent and repairs missing finalization artifacts before it can mark the batch committed.
+
+The single-snapshot publication schema is non-destructive. If a verified active field already exists, importing a different `snapshot_id` into the same target field is rejected with `cross_snapshot_replacement_not_supported`; targeting a different field under the single `field/HEAD.json` root is rejected with `single_head_field_switch_not_supported`. A future multi-snapshot composition protocol must be explicit before active memory can be replaced or merged across snapshots.
+
 Failed and quarantined batches are terminal. Recovery creates a replacement batch with `recovery_of` unless the original batch is in `publishing` and HEAD already points to a valid package, in which case reconcile commits the journal without reimporting.
 
 ## Default State
