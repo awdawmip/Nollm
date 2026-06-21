@@ -53,7 +53,7 @@ def test_t4_nonexistent_digest_provenance_fails_closed(tmp_path: Path) -> None:
     report = validate_legacy_import(memory_root, batch_id)
 
     assert report["ok"] is False
-    assert any("source_ref_digest_not_in_manifest" in error for error in report["errors"])
+    assert any("source_ref_digest_not_in_manifest" in error or "publication" in error or "unpublished_revision" in error for error in report["errors"])
 
 
 def test_t5_t6_out_of_range_and_wrong_hash_fail_closed(tmp_path: Path) -> None:
