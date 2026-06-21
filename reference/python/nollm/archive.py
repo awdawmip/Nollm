@@ -100,4 +100,3 @@ def inspect_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[
         "objects": manifest.get("objects", []),
         "manifest_hash": manifest.get("manifest_hash"),
     }
-

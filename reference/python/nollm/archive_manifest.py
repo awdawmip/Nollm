@@ -47,4 +47,3 @@ def detect_encoding(data: bytes) -> str:
         return "utf-8"
     except UnicodeDecodeError:
         return "binary"
-

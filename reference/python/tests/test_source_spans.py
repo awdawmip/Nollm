@@ -33,4 +33,3 @@ def test_source_spans_mark_binary_unsupported(tmp_path: Path) -> None:
 
     assert coverage["ok"] is False
     assert coverage["unsupported"] == 1
-

@@ -57,4 +57,3 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str) -> dict[
         "manual_review": manual_review,
         "errors": errors,
     }
-

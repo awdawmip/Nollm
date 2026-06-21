@@ -23,4 +23,3 @@ def test_coverage_fails_on_gap(tmp_path: Path) -> None:
 
     assert report["ok"] is False
     assert report["uncovered_source_spans"] > 0
-

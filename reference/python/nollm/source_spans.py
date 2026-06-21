@@ -74,4 +74,3 @@ def _line_locator(data: bytes, start: int, end: int) -> dict[str, int | str]:
     start_line = data[:start].count(b"\n") + 1
     end_line = data[:end].count(b"\n") + (0 if end > start and data[end - 1 : end] == b"\n" else 1)
     return {"method": "byte_range_with_line_hint", "start_line": start_line, "end_line": max(start_line, end_line)}
-
