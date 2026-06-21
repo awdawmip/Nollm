@@ -27,6 +27,7 @@ from .native_field import (
     validate_publication_semantics,
     write_jsonl,
 )
+from .path_safety import validate_batch_id
 from .provenance import build_source_span_links, validate_deep_provenance
 from .provenance import validate_staged_publication
 from .source_spans import build_source_span_inventory, mark_spans_linked
@@ -36,6 +37,7 @@ IMPORT_SCHEMA = "nollm.legacy_import_request.v1"
 RECEIPT_SCHEMA = "nollm.legacy_import_receipt.v1"
 ACTIVATION_SCHEMA = "nollm.field_activation.v1"
 LEGACY_IMPORT_PROFILE = "nollm.legacy_import_shard_profile.v1"
+_NO_HEAD_EXPECTATION = object()
 
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
@@ -54,6 +56,8 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
         return {"ok": False, "snapshot_id": snapshot_id, "errors": active_errors}
     manifest = load_manifest(root, snapshot_id)
     extracted = extract_legacy_spans(root, snapshot_id)
+    if not extracted:
+        return {"ok": True, "snapshot_id": snapshot_id, "archive_only": True, "state": "archive_only", "extraction_count": 0, "errors": []}
     batch_id = _batch_id(snapshot_id, target_field_id, extracted)
     batch_dir = root / "ingress" / "legacy-import" / batch_id
     batch_dir.mkdir(parents=True, exist_ok=True)
@@ -110,6 +114,9 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
 def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool = False, commit: bool = False) -> dict[str, Any]:
     if dry_run == commit:
         return {"ok": False, "batch_id": batch_id, "errors": ["choose exactly one of dry_run or commit"]}
+    id_errors = validate_batch_id(batch_id)
+    if id_errors:
+        return {"ok": False, "batch_id": batch_id, "errors": id_errors}
     root = memory_root_path(memory_root)
     batch_dir = _batch_dir(root, batch_id)
     state, state_errors = _load_state_safe(batch_dir)
@@ -147,6 +154,28 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
             "field_revision_id": receipt.get("field_revision_id"),
             "state": "committed",
         }
+    if commit:
+        lock_dir, lock_error = _acquire_writer_lock(root, batch_id)
+        if lock_error is not None:
+            return lock_error
+        expected_head_bytes = _read_head_bytes(root)
+        try:
+            return _run_legacy_import_after_request(root, batch_id, batch_dir, state, request, dry_run=dry_run, expected_head_bytes=expected_head_bytes)
+        finally:
+            _release_writer_lock(lock_dir)
+    return _run_legacy_import_after_request(root, batch_id, batch_dir, state, request, dry_run=dry_run)
+
+
+def _run_legacy_import_after_request(
+    root: Path,
+    batch_id: str,
+    batch_dir: Path,
+    state: dict[str, Any],
+    request: dict[str, Any],
+    *,
+    dry_run: bool,
+    expected_head_bytes: bytes | None | object = _NO_HEAD_EXPECTATION,
+) -> dict[str, Any]:
     archive = verify_archive_snapshot(root, str(request["snapshot_id"]))
     coverage = validate_source_coverage(root, str(request["snapshot_id"]), require_linked=False)
     if not archive.get("ok") or not coverage.get("ok"):
@@ -227,6 +256,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
                 "publication_manifest_hash": manifest_hash,
                 "activation_hash": activation_hash,
             },
+            expected_prior_head_bytes=expected_head_bytes,
         )
         head_written = True
         if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
@@ -255,6 +285,9 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
 
 def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
+    id_errors = validate_batch_id(batch_id)
+    if id_errors:
+        return {"ok": False, "batch_id": batch_id, "errors": id_errors, "recovery_required": True}
     batch_dir = _batch_dir(root, batch_id)
     state_record, state_errors = _load_state_safe(batch_dir)
     if state_errors:
@@ -302,6 +335,9 @@ def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str,
 
 def recover_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
+    id_errors = validate_batch_id(batch_id)
+    if id_errors:
+        return {"ok": False, "batch_id": batch_id, "errors": id_errors, "recovery_required": True}
     old_dir = _batch_dir(root, batch_id)
     state_record, state_errors = _load_state_safe(old_dir)
     if state_errors:
@@ -331,6 +367,9 @@ def recover_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, A
 
 def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
+    id_errors = validate_batch_id(batch_id)
+    if id_errors:
+        return {"ok": False, "batch_id": batch_id, "state": "invalid", "errors": id_errors}
     errors: list[str] = []
     batch_dir = _batch_dir(root, batch_id)
     state, state_errors = _load_state_safe(batch_dir)
@@ -375,7 +414,7 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
             if not isinstance(shard, dict):
                 errors.append(f"invalid_shard:{shard_id}")
                 continue
-            if not shard.get("source_refs") or not all(str(ref).startswith("archive://object/sha256:") for ref in shard.get("source_refs", [])):
+            if not shard.get("source_refs") or not all(str(ref).startswith("archive://snapshot/") for ref in shard.get("source_refs", [])):
                 errors.append(f"invalid_source_refs:{shard_id}")
         head = load_field_head(root)
         if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
@@ -389,6 +428,9 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
 
 def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
+    id_errors = validate_batch_id(batch_id)
+    if id_errors:
+        return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": id_errors}
     batch_dir = _batch_dir(root, batch_id)
     request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
     if request_errors or not isinstance(request, dict):
@@ -556,6 +598,11 @@ def _validate_handoff_contract(
     projection_hash = _required_file_hash(publication / "source-span-projection.jsonl", "source_span_projection", errors)
     if None in {receipt_hash, revision_hash, links_hash, projection_hash}:
         return errors
+    archive_manifest, archive_manifest_errors = _read_json_safe(root / "archive" / "manifests" / f"{request.get('snapshot_id')}.json", "archive_manifest")
+    errors.extend(archive_manifest_errors)
+    if not isinstance(archive_manifest, dict):
+        errors.append("invalid_archive_manifest")
+        archive_manifest = {}
     activation_expected = {
         "schema": ACTIVATION_SCHEMA,
         "field_id": request.get("target_field_id"),
@@ -563,6 +610,8 @@ def _validate_handoff_contract(
         "batch_id": request.get("batch_id"),
         "snapshot_id": request.get("snapshot_id"),
         "source_policy_id": request.get("source_policy_id"),
+        "archive_manifest_schema": archive_manifest.get("schema"),
+        "archive_manifest_hash": archive_manifest.get("archive_manifest_hash", archive_manifest.get("manifest_hash")),
         "receipt_hash": receipt_hash,
         "revision_hash": revision_hash,
         "source_span_links_hash": links_hash,
@@ -664,12 +713,13 @@ def _write_staging_package(
     write_json(staging / "receipt.json", receipt)
     if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_ACTIVATION_RECORD") == "1":
         raise RuntimeError("forced_failure_before_activation_record")
-    write_json(staging / "activation.json", _activation_record(staging, revision, receipt, snapshot_id, source_policy_id))
+    write_json(staging / "activation.json", _activation_record(root, staging, revision, receipt, snapshot_id, source_policy_id))
     write_json(staging / "publication-manifest.json", _publication_manifest(staging, revision, receipt, snapshot_id))
     return staging
 
 
-def _activation_record(staging: Path, revision: dict[str, Any], receipt: dict[str, Any], snapshot_id: str, source_policy_id: str) -> dict[str, Any]:
+def _activation_record(root: Path, staging: Path, revision: dict[str, Any], receipt: dict[str, Any], snapshot_id: str, source_policy_id: str) -> dict[str, Any]:
+    archive_manifest = load_manifest(root, snapshot_id)
     return {
         "schema": ACTIVATION_SCHEMA,
         "field_id": revision["field_id"],
@@ -677,6 +727,8 @@ def _activation_record(staging: Path, revision: dict[str, Any], receipt: dict[st
         "batch_id": receipt["batch_id"],
         "snapshot_id": snapshot_id,
         "source_policy_id": source_policy_id,
+        "archive_manifest_schema": archive_manifest.get("schema"),
+        "archive_manifest_hash": archive_manifest.get("archive_manifest_hash", archive_manifest.get("manifest_hash")),
         "receipt_hash": "sha256:" + sha256_bytes((staging / "receipt.json").read_bytes()),
         "revision_hash": "sha256:" + sha256_bytes((staging / "revision.json").read_bytes()),
         "source_span_links_hash": "sha256:" + sha256_bytes((staging / "source-span-links.jsonl").read_bytes()),
@@ -693,6 +745,43 @@ def _publish_package(root: Path, batch_id: str, field_revision_id: str) -> Path:
     publication.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(staging, publication)
     return publication
+
+
+def _acquire_writer_lock(root: Path, batch_id: str) -> tuple[Path | None, dict[str, Any] | None]:
+    lock_dir = root / "locks" / "legacy-import-writer.lock"
+    lock_dir.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        lock_dir.mkdir()
+    except FileExistsError:
+        return None, {
+            "ok": False,
+            "batch_id": batch_id,
+            "state": "retry_required",
+            "retry_required": True,
+            "errors": ["writer_busy"],
+        }
+    try:
+        write_json(lock_dir / "owner.json", {"schema": "nollm.legacy_import_writer_lock.v1", "batch_id": batch_id, "acquired_at": utc_now()})
+    except Exception:
+        try:
+            lock_dir.rmdir()
+        except OSError:
+            pass
+        raise
+    return lock_dir, None
+
+
+def _release_writer_lock(lock_dir: Path | None) -> None:
+    if lock_dir is None:
+        return
+    owner = lock_dir / "owner.json"
+    try:
+        if owner.exists() and not owner.is_symlink():
+            owner.unlink()
+        lock_dir.rmdir()
+    except OSError:
+        # A retained lock directory is safer than blind deletion of unexpected contents.
+        return
 
 
 def _pre_head_publication_errors(root: Path, publication: Path, revision_id: str, field_id: str) -> list[str]:
@@ -714,11 +803,24 @@ def _pre_head_publication_errors(root: Path, publication: Path, revision_id: str
     return errors
 
 
-def _write_head_atomic(root: Path, head: dict[str, Any]) -> None:
+def _read_head_bytes(root: Path) -> bytes | None:
+    target = root / "field" / "HEAD.json"
+    if not target.exists():
+        return None
+    return target.read_bytes()
+
+
+def _write_head_atomic(root: Path, head: dict[str, Any], *, expected_prior_head_bytes: bytes | None | object = _NO_HEAD_EXPECTATION) -> None:
     target = root / "field" / "HEAD.json"
     tmp = root / "field" / "HEAD.json.tmp"
     if os.environ.get("NOLLM_MT1_FORCE_FAIL_DURING_HEAD_PREPARATION") == "1":
         raise OSError("forced_failure_during_head_preparation")
+    if expected_prior_head_bytes is not _NO_HEAD_EXPECTATION:
+        if os.environ.get("NOLLM_MT1_FORCE_HEAD_CHANGED_BEFORE_WRITE") == "1":
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text('{"forced":"head_changed"}\n', encoding="utf-8")
+        if _read_head_bytes(root) != expected_prior_head_bytes:
+            raise RuntimeError("head_changed")
     write_json(tmp, head)
     os.replace(tmp, target)
 
