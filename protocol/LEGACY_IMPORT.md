@@ -47,25 +47,67 @@ shard_id
 source_ref
 text_hash
 field_revision_id
+source_range_hash
+text_hash
 ```
 
-The relation is bidirectional: the SourceSpan lists `related_shard_ids`, and the DreamShard lists the same `span_id` in `continuity_refs`. Validation rejects either side if the other side is missing or if the archive URI does not exactly match the span byte range.
+The relation is bidirectional: the published SourceSpan projection lists `related_shard_ids`, and the DreamShard lists the same `span_id` in `continuity_refs`. Validation rejects either side if the other side is missing, if the archive URI does not exactly match the span byte range, or if any link field disagrees with the shard, receipt, publication package, snapshot, or revision.
+
+## Text Normalization
+
+Legacy import uses one canonical function:
+
+```text
+nollm.legacy_text_normalization.v1
+```
+
+Rules:
+
+1. Decode the archive byte range as strict UTF-8.
+2. Treat every Unicode whitespace run as one ASCII space.
+3. Strip leading and trailing whitespace.
+
+DreamShards store:
+
+- `source_range_hash`: SHA-256 of the raw archive bytes selected by `source_ref`.
+- `text`: canonical normalized text.
+- `text_hash`: SHA-256 of UTF-8 bytes of `text`.
+- `normalization_id`: `nollm.legacy_text_normalization.v1`.
+
+The extractor, idempotence key, shard construction, and provenance validator must use this same function.
 
 ## Batch State
 
 The batch state machine is monotonic:
 
 ```text
-planned -> validated -> committed
-planned -> failed | quarantined
-validated -> failed | quarantined
+planned -> staged -> validated -> publishing -> committed
+planned | staged | validated | publishing -> failed | quarantined
 ```
 
-Repeating plan after commit returns the committed state and preserves existing request and receipt bytes. Duplicate commit returns the existing receipt and revision without semantic change.
+`failed`, `quarantined`, and `committed` are terminal for that batch. Repeating plan after commit returns the committed state and preserves existing request, receipt, and publication manifest bytes. Duplicate commit returns the existing receipt and revision without semantic change. Recovery that cannot finish a safe `publishing -> committed` transition must create a replacement batch rather than move `failed -> validated`.
 
 ## Atomic Publish
 
-Commit prepares shards, span links, a revision candidate, and a receipt candidate under staging. Staging validation must pass before any active field path is updated. `field/HEAD.json` is the final visibility point. Active shard indexes only consider shards listed by the published revision referenced by HEAD.
+Commit prepares shards, span links, source-span projection, a revision candidate, receipt candidate, and artifact hash manifest under staging. Staged validation must pass before any active path is updated.
+
+Publication is revision-scoped:
+
+```text
+field/publications/<field_revision_id>/
+  revision.json
+  shards/
+  source-span-links.jsonl
+  source-span-projection.jsonl
+  receipt.json
+  artifact-hashes.json
+```
+
+`field/HEAD.json` is the only active visibility pointer and must be written last. Active readers, dedupe, coverage, provenance, and reports read from the HEAD publication package, not from staged files or generic physical directories.
+
+Failures are recorded in `failure.json` and the ledger with a structured code. Pre-HEAD artifacts are not completion proof. Validators must reject unpublished physical revisions with `unpublished_revision:<revision_id>`.
+
+Legacy v1 shard/revision files outside a publication package are compatibility artifacts only; they are not MT1 completion proof.
 
 ## Default State
 

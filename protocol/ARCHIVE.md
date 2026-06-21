@@ -64,7 +64,11 @@ The canonical archive source ref grammar is:
 archive://object/sha256:<64 lowercase hex digest>#B<start>-B<end>
 ```
 
+`source_range_hash` is `sha256:<digest>` over the raw archived bytes selected by that exact source ref. It is distinct from a DreamShard `text_hash`.
+
 MT1 fixture imports must reach `coverage_ratio == 1.0` with no uncovered, unsupported, or manual-review spans. That ratio means every source span is either deterministic `non_memory` or deeply validated `sharded`.
+
+Published coverage is HEAD-only. A physical revision file, staged relation file, or failed batch projection is not active memory and cannot satisfy `require_linked` coverage unless `field/HEAD.json` points to a complete publication package for that revision.
 
 ## Boundaries
 

@@ -96,8 +96,13 @@ Legacy import defaults to `origin_kind: legacy_import`, `operational_state: loos
 Each MT1-R1 imported shard must include exactly matching archive provenance:
 
 - `source_refs` uses `archive://object/sha256:<digest>#B<start>-B<end>`.
+- `source_range_hash` is SHA-256 over the raw bytes selected by the source ref.
 - `continuity_refs` includes the exact SourceSpan `span_id`.
-- `text_hash` matches the raw archived byte range used for the shard.
+- `normalization_id` is `nollm.legacy_text_normalization.v1`.
+- `text` is the canonical normalized text derived from the archived byte range.
+- `text_hash` is SHA-256 over the UTF-8 bytes of `text`.
 - A published `SourceSpanLink` points from the span to the shard and from the shard back to the published field revision.
 
 Validation is fail-closed. Prefix-similar archive URIs, nonexistent digests, byte ranges outside the ArchiveObject, mismatched hashes, missing reverse links, duplicate idempotence keys with nonidentical content, or shards absent from the published revision are invalid.
+
+Published validation is HEAD-only. A DreamShard stored in staging, a generic shard directory, or an unpublished revision package is not active memory and cannot prove migration completion.
