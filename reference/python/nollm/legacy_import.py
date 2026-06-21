@@ -40,6 +40,9 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     coverage = validate_source_coverage(root, snapshot_id)
     if not coverage.get("ok"):
         return {"ok": False, "snapshot_id": snapshot_id, "errors": coverage.get("errors", [])}
+    active_errors = _active_field_policy_errors(root, snapshot_id=snapshot_id, target_field_id=target_field_id)
+    if active_errors:
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": active_errors}
     manifest = load_manifest(root, snapshot_id)
     extracted = extract_legacy_spans(root, snapshot_id)
     batch_id = _batch_id(snapshot_id, target_field_id, extracted)
@@ -102,6 +105,9 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     coverage = validate_source_coverage(root, str(request["snapshot_id"]), require_linked=False)
     if not archive.get("ok") or not coverage.get("ok"):
         return {"ok": False, "batch_id": batch_id, "errors": archive.get("errors", []) + coverage.get("errors", [])}
+    active_errors = _active_field_policy_errors(root, snapshot_id=str(request["snapshot_id"]), target_field_id=str(request["target_field_id"]))
+    if active_errors:
+        return {"ok": False, "batch_id": batch_id, "errors": active_errors, "state": state["state"]}
     manifest = load_manifest(root, str(request["snapshot_id"]))
     source_policy_id = str(manifest["source_policy_id"])
     extracted = _read_jsonl(batch_dir / "extraction.jsonl")
@@ -166,15 +172,10 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         head_written = True
         if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
             return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": revision["field_revision_id"], "state": "publishing"}
-        if os.environ.get("NOLLM_MT1_FORCE_STATE_OSERROR_AFTER_HEAD") == "1":
-            raise OSError("forced_state_oserror_after_head")
-        provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(revision["field_revision_id"]))
-        if not provenance.get("ok"):
-            _quarantine_and_restore_head(root, batch_dir, prior_head, "published_provenance_failed:" + ",".join(provenance.get("errors", [])))
-            return {"ok": False, "batch_id": batch_id, "errors": provenance.get("errors", []), "state": "quarantined"}
-        _write_state(batch_dir, "committed")
-        write_json(batch_dir / "migration-report.json", _migration_report(root, batch_id, request, receipt=receipt, duplicate_count=duplicate_count))
-        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_commit", "batch_id": batch_id, "timestamp": utc_now(), "receipt": receipt, "publication": str(publication)})
+        finalized = _finalize_verified_publication(root, batch_dir, request, receipt, publication, duplicate_count=duplicate_count)
+        if not finalized.get("ok"):
+            _quarantine_and_restore_head(root, batch_dir, prior_head, "published_provenance_failed:" + ",".join(finalized.get("errors", [])))
+            return {"ok": False, "batch_id": batch_id, "errors": finalized.get("errors", []), "state": "quarantined"}
         return {"ok": True, "batch_id": batch_id, "committed": True, "created_shard_count": len(shards), "duplicate_count": duplicate_count, "field_revision_id": revision["field_revision_id"], "state": "committed"}
     except Exception as exc:
         if head_written:
@@ -209,13 +210,19 @@ def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str,
     if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
         _write_state(batch_dir, "quarantined")
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["head_not_at_receipt_revision"]}
-    provenance = validate_deep_provenance(root, str(receipt.get("snapshot_id")), str(receipt.get("field_revision_id")))
-    if not provenance.get("ok"):
+    publication = current_publication(root)
+    if not publication:
         prior_head = read_json(batch_dir / "publish-handoff.json").get("prior_head") if (batch_dir / "publish-handoff.json").exists() else None
-        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:" + ",".join(provenance.get("errors", [])))
-        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": provenance.get("errors", [])}
-    _write_state(batch_dir, "committed")
-    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_reconcile", "batch_id": batch_id, "timestamp": utc_now(), "state": "committed"})
+        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:inactive_publication")
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["inactive_publication"]}
+    try:
+        finalized = _finalize_verified_publication(root, batch_dir, read_json(batch_dir / "import-request.json"), receipt, publication, duplicate_count=int(receipt.get("duplicate_count", 0)), reconcile=True)
+    except Exception as exc:
+        return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": receipt.get("field_revision_id"), "state": _load_state(batch_dir)["state"], "errors": [str(exc)]}
+    if not finalized.get("ok"):
+        prior_head = read_json(batch_dir / "publish-handoff.json").get("prior_head") if (batch_dir / "publish-handoff.json").exists() else None
+        _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:" + ",".join(finalized.get("errors", [])))
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": finalized.get("errors", [])}
     return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": True, "field_revision_id": receipt.get("field_revision_id")}
 
 
@@ -269,6 +276,8 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
         head = load_field_head(root)
         if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
             errors.append("field_head_does_not_match_receipt")
+        if _load_state(batch_dir)["state"] == "committed" and not _has_finalization_ledger_event(root, receipt):
+            errors.append("missing_finalization_ledger_event")
     else:
         errors.append("missing_import_receipt")
     return {"ok": not errors, "batch_id": batch_id, "state": _load_state(batch_dir)["state"], "errors": errors}
@@ -296,6 +305,25 @@ def _batch_dir(root: Path, batch_id: str) -> Path:
 
 def _replacement_batch_id(batch_id: str) -> str:
     return f"{batch_id}_recovery"
+
+
+def _active_field_policy_errors(root: Path, *, snapshot_id: str, target_field_id: str) -> list[str]:
+    errors: list[str] = []
+    head = load_field_head(root)
+    if head and head.get("field_id") != target_field_id:
+        errors.append("single_head_field_switch_not_supported")
+        return errors
+    publication = current_publication(root)
+    if not publication:
+        return errors
+    receipt_path = publication / "receipt.json"
+    try:
+        receipt = read_json(receipt_path)
+    except Exception:
+        return errors
+    if receipt.get("snapshot_id") != snapshot_id:
+        errors.append("cross_snapshot_replacement_not_supported")
+    return errors
 
 
 def _migration_report(
@@ -404,6 +432,66 @@ def _quarantine_and_restore_head(root: Path, batch_dir: Path, prior_head: dict[s
     record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": reason, "state": "quarantined"}
     write_json(batch_dir / "quarantine.json", record)
     append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_quarantine", **record})
+
+
+def _finalize_verified_publication(
+    root: Path,
+    batch_dir: Path,
+    request: dict[str, Any],
+    receipt: dict[str, Any],
+    publication: Path,
+    *,
+    duplicate_count: int,
+    reconcile: bool = False,
+) -> dict[str, Any]:
+    state = _load_state(batch_dir)["state"]
+    if state != "publishing":
+        return {"ok": False, "errors": [f"cannot_finalize_state:{state}"]}
+    provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
+    if not provenance.get("ok"):
+        return {"ok": False, "errors": provenance.get("errors", [])}
+    report = _migration_report(root, str(receipt["batch_id"]), request, receipt=receipt, duplicate_count=duplicate_count)
+    if os.environ.get("NOLLM_MT1_FORCE_REPORT_OSERROR_AFTER_HEAD") == "1":
+        raise OSError("forced_report_oserror_after_head")
+    write_json(batch_dir / "migration-report.json", report)
+    if os.environ.get("NOLLM_MT1_FORCE_COMMIT_LEDGER_OSERROR_AFTER_HEAD") == "1":
+        raise OSError("forced_commit_ledger_oserror_after_head")
+    event = {
+        "op": "legacy_import_commit",
+        "event_id": _finalization_event_id(receipt),
+        "batch_id": receipt["batch_id"],
+        "timestamp": utc_now(),
+        "state": "committed",
+        "reconciled": reconcile,
+        "receipt": receipt,
+        "publication": str(publication),
+    }
+    _ensure_ledger_event(root / "ledger" / "events.jsonl", event)
+    if os.environ.get("NOLLM_MT1_FORCE_STATE_OSERROR_AFTER_HEAD") == "1":
+        raise OSError("forced_state_oserror_after_head")
+    _write_state(batch_dir, "committed")
+    return {"ok": True}
+
+
+def _finalization_event_id(receipt: dict[str, Any]) -> str:
+    return f"legacy_import_commit:{receipt.get('batch_id')}:{receipt.get('field_revision_id')}"
+
+
+def _ensure_ledger_event(path: Path, event: dict[str, Any]) -> None:
+    event_id = event.get("event_id")
+    if path.exists():
+        for record in _read_jsonl(path):
+            if record.get("event_id") == event_id:
+                return
+    append_jsonl(path, event)
+
+
+def _has_finalization_ledger_event(root: Path, receipt: dict[str, Any]) -> bool:
+    path = root / "ledger" / "events.jsonl"
+    event_id = _finalization_event_id(receipt)
+    if not path.exists():
+        return False
+    return any(record.get("event_id") == event_id for record in _read_jsonl(path))
 
 
 def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) -> list[dict[str, Any]]:
