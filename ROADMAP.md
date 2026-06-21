@@ -42,6 +42,10 @@ G0 only adds these decided documents. G1-G8 remain separate implementation tasks
 The V4 drafts do not expand the stable V1 recall/tool surface and do not make
 `drift_class` a trust/status mapping.
 
+## MT1-R8 Integrity Correction
+
+MT1-R8 is a breaking archive/publication integrity correction for the reference Python ingest path. It introduces archive manifest v2, source-entry identity, strict id/path safety, archive-only no-op snapshots, a complete active package predicate, and single-writer HEAD publication. R1-R7 MT1 active artifacts require reimport and are not a stable migration foundation.
+
 ## Non-Goals
 
 - No model runtime.

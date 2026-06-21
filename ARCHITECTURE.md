@@ -63,6 +63,12 @@ P6.0 does not introduce SQLite. SQLite, if ever added, remains optional audit pr
 
 Nollm v0.1 excludes embeddings, vector stores, graph backends, automatic ontology generation, autonomous memory mutation, and external LLM extraction pipelines.
 
+## MT1 Archive Publication Boundary
+
+MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; source-entry identity preserves original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by single-writer and compare-and-swap rules.
+
+Ingress, handoff, ledger, and migration reports are audit workflow records. They cannot authorize active memory, rollback, or replacement.
+
 ## Nollm V1 Route Lock
 
 Nollm V1 Core exposes explicit filesystem-backed objects, deterministic validation, audit projections, and tool surfaces.

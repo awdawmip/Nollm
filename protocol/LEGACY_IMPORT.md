@@ -164,6 +164,12 @@ Ingress state, import receipts, migration reports, handoffs, and ledger entries 
 
 The R7 legacy-import shard profile is immutable for every shard related to a source span in an MT1 publication. Validation enforces `origin_kind: legacy_import`, `operational_state: loose`, `epistemic_state: legacy_recorded`, exact source refs, exact continuity refs, canonical raw/text hashes, current normalization, recomputed idempotence key and shard id, archive-ingest seed geometry intent, empty anchor weights, and the listed schema fields regardless of the shard's mutable `origin_kind` value. Unknown shard fields are rejected except `created_at`, which is informational and must be a valid UTC timestamp.
 
+MT1-R8 replaces the hardcoded legacy state profile with exact source-state preservation from ArchiveManifest v2. A `DREAMS.md` source marked `tentative` remains `tentative`; no import step may promote it to `legacy_recorded` or `confirmed`. Shard identity is derived from canonical text plus the exact v2 source ref and source policy, so byte-identical source entries remain distinct shards.
+
+The complete active predicate is package-local and archive-bound: HEAD, publication manifest, activation, receipt, revision, shard roster, source-span links, projection, archive manifest, archive blobs, canonical source inventory, coverage, and immutable source-derived shard profile must all validate together. Ingress request, handoff, state, report, and ledger files are audit workflow only.
+
+Publication uses one package writer guarded by a memory-root single-writer lock and HEAD compare-and-swap. Obsolete flat revision/shard publishers cannot mutate active `HEAD.json`.
+
 ## Default State
 
 Legacy shards use:

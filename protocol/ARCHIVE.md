@@ -108,3 +108,19 @@ For MT1 `legacy_import` shards, identity is derived from the archive source rang
 Archive snapshot may read legacy files. Archive verify, span inventory, extraction, import, validation, and report must not read source workspace live files.
 
 `NOLLM_MEMORY_ROOT` must be physically outside the source workspace: neither path may contain the other. Source paths are checked with `lstat` before resolution, and any source symlink is rejected.
+
+## MT1-R8 Archive v2
+
+R8 corrects source identity. Blob identity is the SHA-256 content hash and may be shared by byte-identical files. Source-entry identity is a snapshot-local record and remains distinct for different original paths even when bytes are equal.
+
+`ArchiveManifest` v2 uses `schema: nollm.archive_manifest.v2`, a self-bound `archive_manifest_hash`, and `objects[]` entries with `source_object_id`, `original_relative_path`, `content_hash`, byte metadata, and source trust-state fields.
+
+Canonical source refs bind snapshot, source entry, blob hash, and byte range:
+
+```text
+archive://snapshot/<snapshot_id>/source/<source_object_id>/blob/sha256:<digest>#B<start>-B<end>
+```
+
+Manifest files, blob files, source-span inventories, and every traversed ancestor must stay under `memory_root` and must not be symlinks. Snapshot ids and artifact ids are grammar-checked before path construction.
+
+An archive-only snapshot with no importable spans is successful archive evidence, but it does not create an active field revision and does not block the later first substantive import. R1-R7 archive/source-ref artifacts are not active-compatible after R8 and require reimport.
