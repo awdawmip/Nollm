@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
@@ -52,7 +53,10 @@ def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]
     revision_path = publication / "revision.json"
     if not revision_path.exists():
         return {}
-    revision = read_json(revision_path)
+    try:
+        revision = read_json(revision_path)
+    except Exception:
+        return {}
     shard_ids = [str(item) for item in revision.get("shard_ids", [])]
     if len(shard_ids) != len(set(shard_ids)):
         return {}
@@ -60,7 +64,10 @@ def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]
         path = publication / "shards" / f"{shard_id}.json"
         if not path.exists():
             return {}
-        data = read_json(path)
+        try:
+            data = read_json(path)
+        except Exception:
+            return {}
         if data.get("shard_id") != shard_id or path.stem != shard_id:
             return {}
         key = data.get("idempotence_key")
@@ -118,29 +125,143 @@ def move_staged_shards(memory_root: Path | str, batch_id: str) -> list[str]:
 
 def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
     path = memory_root_path(memory_root) / "field" / "HEAD.json"
-    if not path.exists():
+    if not path.exists() or path.is_symlink():
         return None
-    return read_json(path)
+    try:
+        return read_json(path)
+    except Exception:
+        return None
 
 
 def current_publication(memory_root: Path | str) -> Path | None:
+    return admit_current_publication(memory_root)["publication"]
+
+
+def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
-    head = load_field_head(root)
-    if not head:
-        return None
-    publication = root / "field" / "publications" / str(head["field_revision_id"])
-    if not publication.exists():
-        return None
-    manifest_path = publication / "publication-manifest.json"
+    errors: list[str] = []
+    field_dir = root / "field"
+    head_path = field_dir / "HEAD.json"
+    _validate_contained_regular_path(root, field_dir, "field_dir", errors, must_exist=False, require_file=False)
+    _validate_contained_regular_path(root, head_path, "field_head", errors)
+    if errors:
+        return {"publication": None, "head": None, "errors": errors}
+    head = _safe_read_json(head_path, "field_head", errors)
+    if not isinstance(head, dict):
+        errors.append("invalid_field_head")
+        return {"publication": None, "head": None, "errors": errors}
+    field_id = head.get("field_id")
+    revision_id = head.get("field_revision_id")
     expected = head.get("publication_manifest_hash")
-    if not manifest_path.exists() or not expected:
-        return None
-    actual = "sha256:" + sha256_bytes(manifest_path.read_bytes())
-    if actual != expected:
-        return None
-    errors = validate_publication_manifest_closure(publication)
-    errors.extend(validate_publication_semantics(publication, expected_revision_id=str(head["field_revision_id"])))
-    return publication if not errors else None
+    if not isinstance(field_id, str) or not field_id:
+        errors.append("invalid_head_field_id")
+    if not isinstance(revision_id, str) or not revision_id:
+        errors.append("invalid_head_field_revision_id")
+    if not isinstance(expected, str) or not expected.startswith("sha256:"):
+        errors.append("invalid_head_publication_manifest_hash")
+    if errors:
+        return {"publication": None, "head": head, "errors": errors}
+    publications_dir = field_dir / "publications"
+    publication = publications_dir / revision_id
+    manifest_path = publication / "publication-manifest.json"
+    _validate_contained_regular_path(root, publications_dir, "publications_dir", errors, require_file=False)
+    _validate_contained_regular_path(root, publication, "publication_dir", errors, require_file=False)
+    _validate_contained_regular_path(root, manifest_path, "publication_manifest", errors)
+    if errors:
+        return {"publication": None, "head": head, "errors": errors}
+    manifest_digest = _safe_sha256_file(manifest_path, "publication_manifest", errors)
+    if manifest_digest is None:
+        return {"publication": None, "head": head, "errors": errors}
+    if "sha256:" + manifest_digest != expected:
+        errors.append(f"publication_manifest_hash_mismatch:{revision_id}")
+        return {"publication": None, "head": head, "errors": errors}
+    manifest = _safe_read_json(manifest_path, "publication_manifest", errors)
+    if not isinstance(manifest, dict):
+        errors.append(f"invalid_publication_manifest:{revision_id}")
+        return {"publication": None, "head": head, "errors": errors}
+    if manifest.get("field_id") != field_id:
+        errors.append(f"head_field_id_mismatch:{revision_id}")
+    if manifest.get("field_revision_id") != revision_id:
+        errors.append(f"head_revision_id_mismatch:{revision_id}")
+    if errors:
+        return {"publication": None, "head": head, "errors": errors}
+    errors.extend(validate_publication_manifest_closure(publication))
+    errors.extend(validate_publication_semantics(publication, expected_revision_id=revision_id, expected_field_id=field_id))
+    return {"publication": publication if not errors else None, "head": head, "errors": errors}
+
+
+def _validate_contained_regular_path(
+    root: Path,
+    path: Path,
+    label: str,
+    errors: list[str],
+    *,
+    must_exist: bool = True,
+    require_file: bool = True,
+) -> None:
+    root_abs = root.absolute()
+    path_abs = path.absolute()
+    try:
+        rel = path_abs.relative_to(root_abs)
+    except ValueError:
+        errors.append(f"active_path_escape:{label}")
+        return
+    current = root_abs
+    for part in rel.parts:
+        current = current / part
+        try:
+            if current.is_symlink():
+                errors.append(f"active_path_symlink:{label}:{current.relative_to(root_abs).as_posix()}")
+                return
+        except OSError as exc:
+            errors.append(f"active_path_unreadable:{label}:{exc.__class__.__name__}")
+            return
+    if must_exist and not path.exists():
+        errors.append(f"active_path_missing:{label}")
+        return
+    if must_exist and require_file and not path.is_file():
+        errors.append(f"active_path_not_file:{label}")
+    if must_exist and not require_file and not path.is_dir():
+        errors.append(f"active_path_not_directory:{label}")
+
+
+def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
+    try:
+        return read_json(path)
+    except JSONDecodeError:
+        errors.append(f"malformed_json:{label}")
+    except OSError as exc:
+        errors.append(f"unreadable_json:{label}:{exc.__class__.__name__}")
+    except Exception as exc:
+        errors.append(f"invalid_json:{label}:{exc.__class__.__name__}")
+    return None
+
+
+def _safe_read_jsonl(path: Path, label: str, errors: list[str]) -> list[dict[str, Any]] | None:
+    records: list[dict[str, Any]] = []
+    try:
+        for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            item = json.loads(line)
+            if not isinstance(item, dict):
+                errors.append(f"invalid_jsonl_record:{label}:{index}")
+                return None
+            records.append(item)
+        return records
+    except JSONDecodeError:
+        errors.append(f"malformed_jsonl:{label}")
+    except OSError as exc:
+        errors.append(f"unreadable_jsonl:{label}:{exc.__class__.__name__}")
+    return None
+
+
+def _safe_sha256_file(path: Path, label: str, errors: list[str]) -> str | None:
+    try:
+        return sha256_bytes(path.read_bytes())
+    except OSError as exc:
+        errors.append(f"unreadable_file:{label}:{exc.__class__.__name__}")
+    return None
 
 
 def validate_publication_manifest_closure(publication: Path) -> list[str]:
@@ -178,8 +299,10 @@ def validate_publication_manifest_closure(publication: Path) -> list[str]:
         if not path.exists() or not path.is_file() or path.is_symlink():
             errors.append(f"manifest_path_not_regular:{rel_text}")
             continue
-        actual = "sha256:" + sha256_bytes(path.read_bytes())
-        if actual != digest:
+        actual_digest = _safe_sha256_file(path, f"publication_artifact:{rel_text}", errors)
+        if actual_digest is None:
+            continue
+        if "sha256:" + actual_digest != digest:
             errors.append(f"publication_artifact_hash_mismatch:{rel_text}")
         listed_files.add(rel_text)
     for rel in sorted(actual_files - listed_files):
@@ -189,7 +312,7 @@ def validate_publication_manifest_closure(publication: Path) -> list[str]:
     return errors
 
 
-def validate_publication_semantics(publication: Path, *, expected_revision_id: str | None = None) -> list[str]:
+def validate_publication_semantics(publication: Path, *, expected_revision_id: str | None = None, expected_field_id: str | None = None) -> list[str]:
     errors: list[str] = []
     revision_id = expected_revision_id or publication.name
     manifest_path = publication / "publication-manifest.json"
@@ -203,9 +326,16 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         errors.append(f"missing_publication_receipt:{revision_id}")
     if errors:
         return errors
-    manifest = read_json(manifest_path)
-    revision = read_json(revision_path)
-    receipt = read_json(receipt_path)
+    manifest = _safe_read_json(manifest_path, "publication_manifest", errors)
+    revision = _safe_read_json(revision_path, "publication_revision", errors)
+    receipt = _safe_read_json(receipt_path, "publication_receipt", errors)
+    _safe_read_jsonl(publication / "source-span-links.jsonl", "source_span_links", errors)
+    _safe_read_jsonl(publication / "source-span-projection.jsonl", "source_span_projection", errors)
+    if errors:
+        return errors
+    assert isinstance(manifest, dict)
+    assert isinstance(revision, dict)
+    assert isinstance(receipt, dict)
     if manifest.get("schema") != "nollm.publication_manifest.v1":
         errors.append("invalid_publication_manifest_schema")
     if manifest.get("field_revision_id") != revision_id:
@@ -216,6 +346,10 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         errors.append(f"receipt_revision_mismatch:{revision_id}")
     if manifest.get("field_id") != revision.get("field_id"):
         errors.append(f"publication_manifest_field_mismatch:{revision_id}")
+    if expected_field_id is not None and manifest.get("field_id") != expected_field_id:
+        errors.append(f"head_field_id_mismatch:{revision_id}")
+    if expected_field_id is not None and revision.get("field_id") != expected_field_id:
+        errors.append(f"head_revision_field_id_mismatch:{revision_id}")
     if manifest.get("batch_id") != revision.get("batch_id") or manifest.get("batch_id") != receipt.get("batch_id"):
         errors.append(f"publication_batch_mismatch:{revision_id}")
     shard_ids = [str(item) for item in revision.get("shard_ids", [])]
@@ -240,7 +374,9 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         if not path.exists() or not path.is_file() or path.is_symlink():
             errors.append(f"missing_revision_shard:{shard_id}")
             continue
-        shard = read_json(path)
+        shard = _safe_read_json(path, f"publication_shard:{shard_id}", errors)
+        if not isinstance(shard, dict):
+            continue
         if shard.get("shard_id") != shard_id:
             errors.append(f"shard_payload_id_mismatch:{shard_id}")
         if not isinstance(shard.get("idempotence_key"), str):
