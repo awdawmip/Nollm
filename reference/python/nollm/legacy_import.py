@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from .coverage import validate_source_coverage
 from .legacy_extract import extract_legacy_spans, idempotence_key
 from .native_field import (
     append_jsonl,
+    admit_current_publication,
     build_shard,
     existing_shards_by_key,
     load_field_head,
@@ -86,11 +88,29 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         return {"ok": False, "batch_id": batch_id, "errors": ["choose exactly one of dry_run or commit"]}
     root = memory_root_path(memory_root)
     batch_dir = _batch_dir(root, batch_id)
-    request = read_json(batch_dir / "import-request.json")
-    state = _load_state(batch_dir)
+    state, state_errors = _load_state_safe(batch_dir)
+    if state_errors:
+        return _untrusted_ingress_result(root, batch_dir, batch_id, state_errors)
+    if commit and state["state"] == "publishing":
+        return reconcile_legacy_import(root, batch_id)
+    if commit and state["state"] in {"failed", "quarantined"}:
+        return {
+            "ok": False,
+            "batch_id": batch_id,
+            "state": state["state"],
+            "errors": [f"invalid batch state transition: {state['state']} -> staged", f"cannot_commit_state:{state['state']}"],
+        }
+    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    if request_errors or not isinstance(request, dict):
+        return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
     receipt_path = batch_dir / "import-receipt.json"
     if commit and state["state"] == "committed" and receipt_path.exists():
-        receipt = read_json(receipt_path)
+        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+        if receipt_errors or not isinstance(receipt, dict):
+            return {"ok": False, "batch_id": batch_id, "state": "committed", "errors": receipt_errors or ["invalid_import_receipt"]}
+        validation = validate_legacy_import(root, batch_id)
+        if not validation.get("ok"):
+            return {"ok": False, "batch_id": batch_id, "state": "committed", "errors": validation.get("errors", [])}
         append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_duplicate_commit", "batch_id": batch_id, "timestamp": utc_now(), "duplicate_count": len(_read_jsonl(batch_dir / "extraction.jsonl"))})
         return {
             "ok": True,
@@ -197,30 +217,46 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
 def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     batch_dir = _batch_dir(root, batch_id)
-    state = _load_state(batch_dir)["state"]
+    state_record, state_errors = _load_state_safe(batch_dir)
+    if state_errors:
+        return _untrusted_ingress_result(root, batch_dir, batch_id, state_errors)
+    state = state_record["state"]
     if state == "committed":
+        validation = validate_legacy_import(root, batch_id)
+        if not validation.get("ok"):
+            return {"ok": False, "batch_id": batch_id, "state": "committed", "changed": False, "errors": validation.get("errors", [])}
         return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": False}
     if state != "publishing":
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_reconcile_state:{state}"]}
     receipt_path = batch_dir / "import-receipt.json"
     if not receipt_path.exists():
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": ["missing_import_receipt"]}
-    receipt = read_json(receipt_path)
+    receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+    if receipt_errors or not isinstance(receipt, dict):
+        return _untrusted_ingress_result(root, batch_dir, batch_id, receipt_errors or ["invalid_import_receipt"])
+    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    if handoff_errors or not isinstance(handoff, dict):
+        return _untrusted_ingress_result(root, batch_dir, batch_id, handoff_errors or ["invalid_publish_handoff"])
     head = load_field_head(root)
     if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
         _write_state(batch_dir, "quarantined")
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["head_not_at_receipt_revision"]}
     publication = current_publication(root)
     if not publication:
-        prior_head = read_json(batch_dir / "publish-handoff.json").get("prior_head") if (batch_dir / "publish-handoff.json").exists() else None
+        handoff, _handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        prior_head = handoff.get("prior_head") if isinstance(handoff, dict) else None
         _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:inactive_publication")
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["inactive_publication"]}
     try:
-        finalized = _finalize_verified_publication(root, batch_dir, read_json(batch_dir / "import-request.json"), receipt, publication, duplicate_count=int(receipt.get("duplicate_count", 0)), reconcile=True)
+        request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+        if request_errors or not isinstance(request, dict):
+            return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
+        finalized = _finalize_verified_publication(root, batch_dir, request, receipt, publication, duplicate_count=int(receipt.get("duplicate_count", 0)), reconcile=True)
     except Exception as exc:
         return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": receipt.get("field_revision_id"), "state": _load_state(batch_dir)["state"], "errors": [str(exc)]}
     if not finalized.get("ok"):
-        prior_head = read_json(batch_dir / "publish-handoff.json").get("prior_head") if (batch_dir / "publish-handoff.json").exists() else None
+        handoff, _handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        prior_head = handoff.get("prior_head") if isinstance(handoff, dict) else None
         _quarantine_and_restore_head(root, batch_dir, prior_head, "reconcile_validation_failed:" + ",".join(finalized.get("errors", [])))
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": finalized.get("errors", [])}
     return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": True, "field_revision_id": receipt.get("field_revision_id")}
@@ -229,12 +265,17 @@ def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str,
 def recover_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     root = memory_root_path(memory_root)
     old_dir = _batch_dir(root, batch_id)
-    state = _load_state(old_dir)["state"]
+    state_record, state_errors = _load_state_safe(old_dir)
+    if state_errors:
+        return _untrusted_ingress_result(root, old_dir, batch_id, state_errors)
+    state = state_record["state"]
     if state == "publishing":
         return reconcile_legacy_import(root, batch_id)
     if state not in {"failed", "quarantined"}:
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_recover_state:{state}"]}
-    old_request = read_json(old_dir / "import-request.json")
+    old_request, request_errors = _read_json_safe(old_dir / "import-request.json", "import_request")
+    if request_errors or not isinstance(old_request, dict):
+        return {"ok": False, "batch_id": batch_id, "state": state, "errors": request_errors or ["invalid_import_request"]}
     replacement_id = _replacement_batch_id(batch_id)
     replacement_dir = _batch_dir(root, replacement_id)
     if replacement_dir.exists():
@@ -254,14 +295,27 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
     root = memory_root_path(memory_root)
     errors: list[str] = []
     batch_dir = _batch_dir(root, batch_id)
-    request = read_json(batch_dir / "import-request.json")
+    state, state_errors = _load_state_safe(batch_dir)
+    errors.extend(state_errors)
+    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    errors.extend(request_errors)
+    if not isinstance(request, dict):
+        return {"ok": False, "batch_id": batch_id, "state": state["state"], "errors": errors or ["invalid_import_request"]}
+    if state["state"] == "publishing":
+        handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        errors.extend(handoff_errors)
+        if not isinstance(handoff, dict):
+            errors.append("invalid_publish_handoff")
     archive = verify_archive_snapshot(root, str(request["snapshot_id"]))
     coverage = validate_source_coverage(root, str(request["snapshot_id"]), require_linked=True)
     errors.extend(archive.get("errors", []))
     errors.extend(coverage.get("errors", []))
     receipt_path = batch_dir / "import-receipt.json"
     if receipt_path.exists():
-        receipt = read_json(receipt_path)
+        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+        errors.extend(receipt_errors)
+        if not isinstance(receipt, dict):
+            return {"ok": False, "batch_id": batch_id, "state": state["state"], "errors": errors or ["invalid_import_receipt"]}
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
         errors.extend(provenance.get("errors", []))
         publication = current_publication(root)
@@ -276,11 +330,11 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
         head = load_field_head(root)
         if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
             errors.append("field_head_does_not_match_receipt")
-        if _load_state(batch_dir)["state"] == "committed" and not _has_finalization_ledger_event(root, receipt):
+        if state["state"] == "committed" and not _has_finalization_ledger_event(root, receipt):
             errors.append("missing_finalization_ledger_event")
     else:
         errors.append("missing_import_receipt")
-    return {"ok": not errors, "batch_id": batch_id, "state": _load_state(batch_dir)["state"], "errors": errors}
+    return {"ok": not errors, "batch_id": batch_id, "state": state["state"], "errors": errors}
 
 
 def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
@@ -309,20 +363,31 @@ def _replacement_batch_id(batch_id: str) -> str:
 
 def _active_field_policy_errors(root: Path, *, snapshot_id: str, target_field_id: str) -> list[str]:
     errors: list[str] = []
-    head = load_field_head(root)
+    head_path = root / "field" / "HEAD.json"
+    if not head_path.exists() and not head_path.is_symlink():
+        return errors
+    admission = admit_current_publication(root)
+    if admission.get("publication") is None:
+        errors.append("active_field_integrity_unresolved")
+        errors.extend(str(error) for error in admission.get("errors", []))
+        return errors
+    head = admission.get("head")
     if head and head.get("field_id") != target_field_id:
         errors.append("single_head_field_switch_not_supported")
         return errors
-    publication = current_publication(root)
-    if not publication:
-        return errors
+    publication = admission["publication"]
     receipt_path = publication / "receipt.json"
     try:
         receipt = read_json(receipt_path)
     except Exception:
-        return errors
+        return ["active_field_integrity_unresolved", "unreadable_active_receipt"]
     if receipt.get("snapshot_id") != snapshot_id:
         errors.append("cross_snapshot_replacement_not_supported")
+        return errors
+    provenance = validate_deep_provenance(root, snapshot_id, str(receipt.get("field_revision_id")))
+    if not provenance.get("ok"):
+        errors.append("active_field_integrity_unresolved")
+        errors.extend(str(error) for error in provenance.get("errors", []))
     return errors
 
 
@@ -531,6 +596,48 @@ def _load_state(batch_dir: Path) -> dict[str, Any]:
     if not path.exists():
         return {"state": "planned"}
     return read_json(path)
+
+
+def _load_state_safe(batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
+    path = batch_dir / "state.json"
+    if not path.exists():
+        return {"state": "planned"}, []
+    data, errors = _read_json_safe(path, "state")
+    if errors:
+        return {"state": "unknown"}, errors
+    if not isinstance(data, dict) or not isinstance(data.get("state"), str):
+        return {"state": "unknown"}, ["invalid_state"]
+    return data, []
+
+
+def _read_json_safe(path: Path, label: str) -> tuple[Any | None, list[str]]:
+    if not path.exists():
+        return None, [f"missing_{label}"]
+    try:
+        return read_json(path), []
+    except JSONDecodeError:
+        return None, [f"malformed_json:{label}"]
+    except OSError as exc:
+        return None, [f"unreadable_json:{label}:{exc.__class__.__name__}"]
+    except Exception as exc:
+        return None, [f"invalid_json:{label}:{exc.__class__.__name__}"]
+
+
+def _force_write_state(batch_dir: Path, state: str) -> None:
+    write_json(batch_dir / "state.json", {"state": state, "updated_at": utc_now()})
+
+
+def _untrusted_ingress_result(root: Path, batch_dir: Path, batch_id: str, errors: list[str]) -> dict[str, Any]:
+    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    if isinstance(handoff, dict) and not handoff_errors:
+        prior_head = handoff.get("prior_head")
+        _restore_head(root, prior_head if isinstance(prior_head, dict) else None)
+        _force_write_state(batch_dir, "quarantined")
+        record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_id, "timestamp": utc_now(), "reason": "untrusted_ingress:" + ",".join(errors), "state": "quarantined"}
+        write_json(batch_dir / "quarantine.json", record)
+        append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_quarantine", **record})
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "recovery_required": True, "errors": errors}
+    return {"ok": False, "batch_id": batch_id, "state": "recovery_required", "recovery_required": True, "errors": errors + handoff_errors}
 
 
 def _write_state(batch_dir: Path, state: str) -> None:
