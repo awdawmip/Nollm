@@ -116,7 +116,24 @@ def current_publication(memory_root: Path | str) -> Path | None:
     if not head:
         return None
     publication = root / "field" / "publications" / str(head["field_revision_id"])
-    return publication if publication.exists() else None
+    if not publication.exists():
+        return None
+    manifest_path = publication / "publication-manifest.json"
+    expected = head.get("publication_manifest_hash")
+    if not manifest_path.exists() or not expected:
+        return None
+    actual = "sha256:" + sha256_bytes(manifest_path.read_bytes())
+    if actual != expected:
+        return None
+    manifest = read_json(manifest_path)
+    artifact_hashes = manifest.get("artifact_hashes")
+    if not isinstance(artifact_hashes, dict):
+        return None
+    for rel, digest in artifact_hashes.items():
+        path = publication / str(rel)
+        if not path.exists() or "sha256:" + sha256_bytes(path.read_bytes()) != digest:
+            return None
+    return publication
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

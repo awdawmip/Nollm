@@ -30,7 +30,7 @@ from .review import build_review_queue
 from .tool_api import dispatch_tool_request, error_response, load_tool_manifest
 from .validation import validate_notebook
 from .archive import create_archive_snapshot, inspect_archive_snapshot, verify_archive_snapshot
-from .legacy_import import legacy_import_report, plan_legacy_import, run_legacy_import, validate_legacy_import
+from .legacy_import import legacy_import_report, plan_legacy_import, reconcile_legacy_import, recover_legacy_import, run_legacy_import, validate_legacy_import
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -207,6 +207,14 @@ def build_parser() -> argparse.ArgumentParser:
     legacy_import_report_parser.add_argument("batch_id")
     legacy_import_report_parser.add_argument("--memory-root", required=True)
     legacy_import_report_parser.set_defaults(func=cmd_legacy_import_report)
+    legacy_import_recover = legacy_import_sub.add_parser("recover")
+    legacy_import_recover.add_argument("batch_id")
+    legacy_import_recover.add_argument("--memory-root", required=True)
+    legacy_import_recover.set_defaults(func=cmd_legacy_import_recover)
+    legacy_import_reconcile = legacy_import_sub.add_parser("reconcile")
+    legacy_import_reconcile.add_argument("batch_id")
+    legacy_import_reconcile.add_argument("--memory-root", required=True)
+    legacy_import_reconcile.set_defaults(func=cmd_legacy_import_reconcile)
 
     return parser
 
@@ -605,6 +613,22 @@ def cmd_legacy_import_validate(args: argparse.Namespace) -> int:
 def cmd_legacy_import_report(args: argparse.Namespace) -> int:
     try:
         return _print_json_result(legacy_import_report(Path(args.memory_root), args.batch_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_recover(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(recover_legacy_import(Path(args.memory_root), args.batch_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_legacy_import_reconcile(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(reconcile_legacy_import(Path(args.memory_root), args.batch_id))
     except Exception as exc:
         print(str(exc), file=sys.stderr)
         return 2

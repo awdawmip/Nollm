@@ -21,6 +21,7 @@ from .native_field import (
     write_jsonl,
 )
 from .provenance import build_source_span_links, validate_deep_provenance
+from .provenance import validate_staged_publication
 from .source_spans import build_source_span_inventory, mark_spans_linked
 
 
@@ -133,7 +134,15 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         revision = _revision_candidate(root, batch_id=batch_id, target_field_id=str(request["target_field_id"]), shard_ids=[str(shard["shard_id"]) for shard in shards])
         receipt["field_revision_id"] = revision["field_revision_id"]
         links = build_source_span_links(snapshot_id=str(request["snapshot_id"]), batch_id=batch_id, field_revision_id=str(revision["field_revision_id"]), shards=shards)
-        _write_staging_package(root, batch_id, revision, shards, links, str(request["snapshot_id"]), receipt)
+        staging = _write_staging_package(root, batch_id, revision, shards, links, str(request["snapshot_id"]), receipt)
+        if os.environ.get("NOLLM_MT1_CORRUPT_STAGING_TEXT") == "1":
+            shard_path = next((staging / "shards").glob("*.json"))
+            shard = read_json(shard_path)
+            shard["text"] = "TAMPERED STAGING CONTENT"
+            write_json(shard_path, shard)
+        staged_validation = validate_staged_publication(root, batch_id, str(request["snapshot_id"]), str(revision["field_revision_id"]))
+        if not staged_validation.get("ok"):
+            raise ValueError("staged_validation_failed:" + ",".join(staged_validation.get("errors", [])))
         _write_state(batch_dir, "validated")
         append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_validate_staging", "batch_id": batch_id, "timestamp": utc_now(), "state": "validated"})
         if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_HEAD") == "1":
@@ -143,7 +152,10 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         _write_state(batch_dir, "publishing")
         publication = _publish_package(root, batch_id, str(revision["field_revision_id"]))
         write_json(batch_dir / "import-receipt.json", receipt)
-        _write_head_atomic(root, {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"]})
+        manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
+        _write_head_atomic(root, {"field_id": request["target_field_id"], "field_revision_id": revision["field_revision_id"], "publication_manifest_hash": manifest_hash})
+        if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
+            return {"ok": True, "batch_id": batch_id, "published": True, "reconciliation_pending": True, "field_revision_id": revision["field_revision_id"], "state": "publishing"}
         _write_state(batch_dir, "committed")
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(revision["field_revision_id"]))
         if not provenance.get("ok"):
@@ -158,6 +170,51 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
         write_json(batch_dir / "failure.json", failure)
         append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_failure", **failure})
         return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "failed"}
+
+
+def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
+    root = memory_root_path(memory_root)
+    batch_dir = _batch_dir(root, batch_id)
+    state = _load_state(batch_dir)["state"]
+    if state == "committed":
+        return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": False}
+    if state != "publishing":
+        return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_reconcile_state:{state}"]}
+    receipt_path = batch_dir / "import-receipt.json"
+    if not receipt_path.exists():
+        return {"ok": False, "batch_id": batch_id, "state": state, "errors": ["missing_import_receipt"]}
+    receipt = read_json(receipt_path)
+    head = load_field_head(root)
+    if not head or head.get("field_revision_id") != receipt.get("field_revision_id"):
+        _write_state(batch_dir, "quarantined")
+        return {"ok": False, "batch_id": batch_id, "state": "quarantined", "errors": ["head_not_at_receipt_revision"]}
+    _write_state(batch_dir, "committed")
+    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_reconcile", "batch_id": batch_id, "timestamp": utc_now(), "state": "committed"})
+    return {"ok": True, "batch_id": batch_id, "state": "committed", "changed": True, "field_revision_id": receipt.get("field_revision_id")}
+
+
+def recover_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
+    root = memory_root_path(memory_root)
+    old_dir = _batch_dir(root, batch_id)
+    state = _load_state(old_dir)["state"]
+    if state == "publishing":
+        return reconcile_legacy_import(root, batch_id)
+    if state not in {"failed", "quarantined"}:
+        return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_recover_state:{state}"]}
+    old_request = read_json(old_dir / "import-request.json")
+    replacement_id = _replacement_batch_id(batch_id)
+    replacement_dir = _batch_dir(root, replacement_id)
+    if replacement_dir.exists():
+        return {"ok": True, "batch_id": batch_id, "replacement_batch_id": replacement_id, "reused": True}
+    replacement_request = dict(old_request)
+    replacement_request["batch_id"] = replacement_id
+    replacement_request["recovery_of"] = batch_id
+    replacement_dir.mkdir(parents=True, exist_ok=True)
+    write_json(replacement_dir / "import-request.json", replacement_request)
+    (replacement_dir / "extraction.jsonl").write_text((old_dir / "extraction.jsonl").read_text(encoding="utf-8"), encoding="utf-8")
+    _write_state(replacement_dir, "planned")
+    append_jsonl(root / "ledger" / "events.jsonl", {"op": "legacy_import_recovery_batch", "batch_id": replacement_id, "recovery_of": batch_id, "timestamp": utc_now(), "state": "planned"})
+    return {"ok": True, "batch_id": batch_id, "replacement_batch_id": replacement_id, "reused": False}
 
 
 def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
@@ -209,6 +266,10 @@ def _batch_id(snapshot_id: str, target_field_id: str, extracted: list[dict[str, 
 
 def _batch_dir(root: Path, batch_id: str) -> Path:
     return root / "ingress" / "legacy-import" / batch_id
+
+
+def _replacement_batch_id(batch_id: str) -> str:
+    return f"{batch_id}_recovery"
 
 
 def _migration_report(
@@ -275,7 +336,7 @@ def _write_staging_package(root: Path, batch_id: str, revision: dict[str, Any], 
     spans = _project_spans(root, snapshot_id, links)
     write_jsonl(staging / "source-span-projection.jsonl", spans)
     write_json(staging / "receipt.json", receipt)
-    write_json(staging / "artifact-hashes.json", _artifact_hashes(staging))
+    write_json(staging / "publication-manifest.json", _publication_manifest(staging, revision, receipt, snapshot_id))
     return staging
 
 
@@ -313,12 +374,19 @@ def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) ->
     return spans
 
 
-def _artifact_hashes(root: Path) -> dict[str, Any]:
+def _publication_manifest(root: Path, revision: dict[str, Any], receipt: dict[str, Any], snapshot_id: str) -> dict[str, Any]:
     hashes: dict[str, str] = {}
     for path in sorted(root.rglob("*")):
-        if path.is_file() and path.name != "artifact-hashes.json":
+        if path.is_file() and path.name != "publication-manifest.json":
             hashes[path.relative_to(root).as_posix()] = "sha256:" + sha256_bytes(path.read_bytes())
-    return {"schema": "nollm.publication_artifact_hashes.v1", "artifacts": hashes}
+    return {
+        "schema": "nollm.publication_manifest.v1",
+        "field_revision_id": revision["field_revision_id"],
+        "field_id": revision["field_id"],
+        "batch_id": receipt["batch_id"],
+        "snapshot_id": snapshot_id,
+        "artifact_hashes": hashes,
+    }
 
 
 def _load_state(batch_dir: Path) -> dict[str, Any]:
