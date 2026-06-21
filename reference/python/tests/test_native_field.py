@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from nollm.native_field import build_shard, existing_shards_by_key, move_staged_shards, publish_field_revision, stage_shards
+from nollm.native_field import build_shard, load_field_head, move_staged_shards, publish_field_revision, stage_shards
 
 
-def test_stage_move_and_publish_field_revision(tmp_path: Path) -> None:
+def test_stage_move_and_flat_publish_is_retired(tmp_path: Path) -> None:
     memory_root = tmp_path / "memory-root"
     shard = build_shard(
         {
@@ -24,6 +24,6 @@ def test_stage_move_and_publish_field_revision(tmp_path: Path) -> None:
     revision = publish_field_revision(memory_root, batch_id="batch_a", target_field_id="field_fixture", shard_ids=moved)
 
     assert moved == [shard["shard_id"]]
-    assert revision["shard_count"] == 1
-    assert (memory_root / "field" / "HEAD.json").exists()
-    assert existing_shards_by_key(memory_root) == {}
+    assert revision["ok"] is False
+    assert revision["errors"] == ["unsupported_flat_field_publisher"]
+    assert load_field_head(memory_root) is None

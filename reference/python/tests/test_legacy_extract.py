@@ -21,7 +21,9 @@ def test_extract_reads_archive_objects_not_workspace(tmp_path: Path) -> None:
     records = extract_legacy_spans(memory_root, str(snapshot))
 
     assert len(records) == 3
-    assert all(record["source_ref"].startswith("archive://object/sha256:") for record in records)
+    assert all(record["source_ref"].startswith(f"archive://snapshot/{snapshot}/source/src_") for record in records)
+    assert all("/blob/sha256:" in record["source_ref"] for record in records)
+    assert all(record["source_object_id"].startswith("src_") for record in records)
     assert any("Mira coordinates Atlas" in record["text"] for record in records)
 
 
