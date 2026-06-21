@@ -106,3 +106,5 @@ Each MT1-R1 imported shard must include exactly matching archive provenance:
 Validation is fail-closed. Prefix-similar archive URIs, nonexistent digests, byte ranges outside the ArchiveObject, mismatched hashes, missing reverse links, duplicate idempotence keys with nonidentical content, or shards absent from the published revision are invalid.
 
 Published validation is HEAD-only. A DreamShard stored in staging, a generic shard directory, or an unpublished revision package is not active memory and cannot prove migration completion.
+
+R3 requires the published source-span projection to be checked against canonical archive spans. A shard may prove only a canonical `classified_pending` span. It cannot make a real text span disappear by relabeling it as `non_memory`, and it cannot override canonical blank or heading-only spans.

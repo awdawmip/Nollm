@@ -105,9 +105,40 @@ field/publications/<field_revision_id>/
 
 `field/HEAD.json` is the only active visibility pointer and must be written last. Active readers, dedupe, coverage, provenance, and reports read from the HEAD publication package, not from staged files or generic physical directories.
 
+R3 replaces `artifact-hashes.json` with a HEAD-bound publication manifest:
+
+```text
+field/publications/<field_revision_id>/publication-manifest.json
+```
+
+The manifest records:
+
+- `schema`
+- `field_revision_id`
+- `field_id`
+- `batch_id`
+- `snapshot_id`
+- `artifact_hashes` for `revision.json`, `receipt.json`, `source-span-links.jsonl`, `source-span-projection.jsonl`, and every `shards/<id>.json`.
+
+`field/HEAD.json` includes:
+
+```text
+field_id
+field_revision_id
+publication_manifest_hash
+```
+
+Validation first checks the HEAD manifest hash, then every payload artifact hash, then semantic consistency.
+
+Staged validation is a separate entrypoint. It validates `field/.staging/<batch_id>/publication/` with the same canonical inventory, source ref, text binding, relation, projection, and manifest rules, but without requiring HEAD.
+
 Failures are recorded in `failure.json` and the ledger with a structured code. Pre-HEAD artifacts are not completion proof. Validators must reject unpublished physical revisions with `unpublished_revision:<revision_id>`.
 
 Legacy v1 shard/revision files outside a publication package are compatibility artifacts only; they are not MT1 completion proof.
+
+After atomic HEAD replace succeeds, the publication is truth. Later ledger or journal write failure must not return import failure; it returns published success with `reconciliation_pending`. Reconcile may repair the audit journal to match the verified HEAD package.
+
+Failed and quarantined batches are terminal. Recovery creates a replacement batch with `recovery_of` unless the original batch is in `publishing` and HEAD already points to a valid package, in which case reconcile commits the journal without reimporting.
 
 ## Default State
 

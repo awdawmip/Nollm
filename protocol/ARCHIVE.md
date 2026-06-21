@@ -70,6 +70,29 @@ MT1 fixture imports must reach `coverage_ratio == 1.0` with no uncovered, unsupp
 
 Published coverage is HEAD-only. A physical revision file, staged relation file, or failed batch projection is not active memory and cannot satisfy `require_linked` coverage unless `field/HEAD.json` points to a complete publication package for that revision.
 
+## Canonical Inventory
+
+R3 treats archive source spans as deterministic facts. Validation must either rebuild canonical source spans from archive object bytes or compare the persisted inventory to an immutable hash bound by the request, receipt, and publication manifest.
+
+The canonical span fields are:
+
+- `snapshot_id`
+- `archive_object_id`
+- `original_relative_path`
+- `span_id`
+- `start_byte`
+- `end_byte_exclusive`
+- `text_hash`
+- initial `disposition`
+- initial `reason`
+
+Published projections are constrained transforms of this canonical inventory:
+
+- canonical `non_memory(blank | structural_heading)` must remain unchanged.
+- canonical `classified_pending` may only become `sharded` with exact links and published shards.
+- canonical `classified_pending` must not become `non_memory`.
+- no projection may change byte ranges, object ids, paths, span ids, or raw text hashes.
+
 ## Boundaries
 
 Archive snapshot may read legacy files. Archive verify, span inventory, extraction, import, validation, and report must not read source workspace live files.
