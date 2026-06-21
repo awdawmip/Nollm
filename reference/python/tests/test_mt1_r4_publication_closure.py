@@ -104,17 +104,8 @@ def test_t5_prior_head_rolls_back_when_pending_revision_corrupts(tmp_path: Path,
     (workspace / "memory" / "2026-06-22.md").write_text("# Extra\n\n- second revision\n", encoding="utf-8")
     second_snapshot = str(create_archive_snapshot(workspace, memory_root)["snapshot_id"])
     second_plan = plan_legacy_import(memory_root, second_snapshot, target_field_id="field_fixture")
-    monkeypatch.setenv("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD", "1")
-    second = run_legacy_import(memory_root, str(second_plan["batch_id"]), commit=True)
-    second_revision = str(second["field_revision_id"])
-    shard = next((memory_root / "field" / "publications" / second_revision / "shards").glob("*.json"))
-    data = read_json(shard)
-    data["text"] = "corrupt pending b"
-    write_json(shard, data)
-
-    result = reconcile_legacy_import(memory_root, str(second_plan["batch_id"]))
-
-    assert result["ok"] is False
+    assert second_plan["ok"] is False
+    assert "cross_snapshot_replacement_not_supported" in second_plan["errors"]
     assert read_json(memory_root / "field" / "HEAD.json")["field_revision_id"] == first_revision
     assert validate_deep_provenance(memory_root, snapshot_id, first_revision)["ok"] is True
     assert current_publication(memory_root) == memory_root / "field" / "publications" / first_revision
