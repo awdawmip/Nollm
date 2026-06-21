@@ -29,6 +29,7 @@ from .recall import deterministic_recall
 from .review import build_review_queue
 from .tool_api import dispatch_tool_request, error_response, load_tool_manifest
 from .validation import validate_notebook
+from .archive import create_archive_snapshot, inspect_archive_snapshot, verify_archive_snapshot
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -166,6 +167,22 @@ def build_parser() -> argparse.ArgumentParser:
     tool = sub.add_parser("tool")
     tool.add_argument("request_json_file")
     tool.set_defaults(func=cmd_tool)
+
+    archive = sub.add_parser("archive")
+    archive_sub = archive.add_subparsers(dest="archive_command", required=True)
+    archive_snapshot = archive_sub.add_parser("snapshot")
+    archive_snapshot.add_argument("workspace")
+    archive_snapshot.add_argument("--memory-root", required=True)
+    archive_snapshot.add_argument("--policy", default="openclaw_legacy_v1")
+    archive_snapshot.set_defaults(func=cmd_archive_snapshot)
+    archive_verify = archive_sub.add_parser("verify")
+    archive_verify.add_argument("snapshot_id")
+    archive_verify.add_argument("--memory-root", required=True)
+    archive_verify.set_defaults(func=cmd_archive_verify)
+    archive_inspect = archive_sub.add_parser("inspect")
+    archive_inspect.add_argument("snapshot_id")
+    archive_inspect.add_argument("--memory-root", required=True)
+    archive_inspect.set_defaults(func=cmd_archive_inspect)
 
     return parser
 
@@ -506,6 +523,35 @@ def cmd_tool(args: argparse.Namespace) -> int:
     response = dispatch_tool_request(request)
     print(json.dumps(response, indent=2, ensure_ascii=False))
     return 0 if response.get("ok") else 1
+
+
+def _print_json_result(result: dict[str, Any]) -> int:
+    print(json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True))
+    return 0 if result.get("ok") else 1
+
+
+def cmd_archive_snapshot(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(create_archive_snapshot(Path(args.workspace), Path(args.memory_root), policy_id=args.policy))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_archive_verify(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(verify_archive_snapshot(Path(args.memory_root), args.snapshot_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+
+def cmd_archive_inspect(args: argparse.Namespace) -> int:
+    try:
+        return _print_json_result(inspect_archive_snapshot(Path(args.memory_root), args.snapshot_id))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
 
 
 def anchor_ids(path: Path) -> set[str]:
