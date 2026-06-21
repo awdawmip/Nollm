@@ -78,3 +78,6 @@ External LLMs must treat recall digests as reading packets, not canonical memory
 ## Status
 
 A recall digest is not canonical memory by itself. If it contains new durable knowledge, Cortex should propose a card and Core should ledger it.
+# MT1 No-Legacy-Fallback Boundary
+
+RecallDigest is the bounded active memory context for a turn. MT1 does not implement runtime recall, but it reserves the rule that failed Nollm recall must not fall back to `MEMORY.md`, `memory_search`, `memory_get`, or raw archive scanning.

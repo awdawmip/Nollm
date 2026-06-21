@@ -32,3 +32,6 @@ Core accepts only structured, auditable writes. It does not perform autonomous m
 Cortex read actions must not create anchors, confirm cards, or rewrite memory.
 
 Cortex must not use anchors as folders, search a tree, or look for a leaf node.
+# MT1 Read / Write Boundary
+
+MT1 archive and legacy import never write `MEMORY.md`, `DREAMS.md`, or `memory/*.md`. Archive is provenance, not active recall fallback. Imported shards are conservative native records with source refs and loose operational state.

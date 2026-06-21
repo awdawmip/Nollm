@@ -77,3 +77,16 @@ A dream shard may carry anchor hints, but anchor hints do not create ownership.
 D3 does not perform recall, semantic scoring, clustering, vector search, graph
 search, MCP behavior, audit expansion, history expansion, or automatic card
 writing.
+# MT1 Provenance Extension
+
+MT1 native DreamShards add conservative provenance fields:
+
+- `origin_kind`
+- `operational_state`
+- `epistemic_state`
+- `source_refs`
+- `continuity_refs`
+- `geometry_intent`
+- `anchor_field_weights`
+
+Legacy import defaults to `origin_kind: legacy_import`, `operational_state: loose`, and policy-defined `epistemic_state`. Imported legacy text is not automatically confirmed.
