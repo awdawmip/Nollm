@@ -265,10 +265,11 @@ def test_stale_lock_has_controlled_reclaim(tmp_path: Path) -> None:
     old = (datetime.now(timezone.utc) - timedelta(hours=2)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     write_json(lock / "owner.json", {"schema": "nollm.legacy_import_writer_lock.v1", "batch_id": "batch_" + "f" * 20, "acquired_at": old})
 
-    committed = run_legacy_import(memory_root, batch_id, commit=True)
+    blocked = run_legacy_import(memory_root, batch_id, commit=True)
 
-    assert committed["ok"] is True
-    assert load_field_head(memory_root) is not None
+    assert blocked["ok"] is False
+    assert "writer_busy" in blocked["errors"]
+    assert load_field_head(memory_root) is None
 
 
 def test_manifest_top_level_schema_and_source_order_are_canonical(tmp_path: Path) -> None:
