@@ -37,6 +37,7 @@ from .safe_storage import (
     SafeStorageError,
     read_jsonl_bytes,
     safe_append_jsonl,
+    safe_read_file,
     safe_atomic_json,
     safe_atomic_jsonl,
     safe_atomic_write,
@@ -620,7 +621,7 @@ def _build_import_plan(root: Path, *, snapshot_id: str, target_field_id: str, ba
     if span_errors:
         return {}, span_errors
     try:
-        span_inventory_hash = "sha256:" + sha256_bytes(span_path.read_bytes())
+        span_inventory_hash = "sha256:" + sha256_bytes(safe_read_regular(_infer_root_for_path(span_path), *span_path.relative_to(_infer_root_for_path(span_path)).parts, label="source_span_inventory"))
     except OSError as exc:
         return {}, [f"unreadable_jsonl:source_span_inventory:{exc.__class__.__name__}"]
     archive_manifest_hash = str(manifest.get("archive_manifest_hash", manifest.get("manifest_hash")))
@@ -1351,7 +1352,7 @@ def _write_head_atomic(root: Path, head: dict[str, Any], *, expected_prior_head_
         if _read_head_bytes(root) != expected_prior_head_bytes:
             raise RuntimeError("head_changed")
     _safe_write_json_path(root, tmp, head, "field_head_tmp")
-    os.replace(tmp, target)
+    safe_atomic_write(root, ("field", "HEAD.json"), _head_json_bytes(head), label="field_head", replace=True)
     if fencing_token:
         _assert_current_fencing_token(root, fencing_token)
 
@@ -1734,7 +1735,13 @@ def _write_state(batch_dir: Path, state: str) -> None:
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return read_jsonl_bytes(path.read_bytes(), path.name)
+    from .safe_storage import safe_read_file
+    return read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
+
+
+def _read_jsonl_strict(path: Path, label: str) -> list[dict[str, Any]]:
+    from .safe_storage import safe_read_file
+    return read_jsonl_bytes(safe_read_file(path, label=label, require_private=False), label)
 
 
 def _read_jsonl_safe(path: Path, label: str) -> tuple[list[dict[str, Any]], list[str]]:
@@ -1742,16 +1749,13 @@ def _read_jsonl_safe(path: Path, label: str) -> tuple[list[dict[str, Any]], list
         return [], [f"missing_{label}"]
     records: list[dict[str, Any]] = []
     try:
-        for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            if not isinstance(item, dict):
-                return [], [f"invalid_jsonl_record:{label}:{index}"]
-            records.append(item)
-    except JSONDecodeError:
-        return [], [f"malformed_jsonl:{label}"]
-    except OSError as exc:
+        from .safe_storage import safe_read_file, read_jsonl_bytes
+        raw = safe_read_file(path, label=label, require_private=False)
+        records = read_jsonl_bytes(raw, label)
+    except Exception as exc:
+        msg = str(exc)
+        if "malformed_json" in msg:
+            return [], [f"malformed_jsonl:{label}"]
         return [], [f"unreadable_jsonl:{label}:{exc.__class__.__name__}"]
     return records, []
 
