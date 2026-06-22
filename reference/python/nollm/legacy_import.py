@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import json
+import base64
+import ctypes
 import os
 import re
 import shutil
+import time
+import uuid
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import load_manifest, memory_root_path, utc_now, verify_archive_snapshot
+from .archive import existing_memory_root_path, load_manifest, memory_root_path, utc_now, verify_archive_snapshot
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
 from .coverage import validate_source_coverage
 from .legacy_extract import extract_legacy_spans, idempotence_key
@@ -29,6 +33,16 @@ from .native_field import (
 from .path_safety import contained_path, ensure_contained_parent, validate_batch_id, validate_field_id
 from .provenance import build_source_span_links, validate_deep_provenance
 from .provenance import validate_staged_publication
+from .safe_storage import (
+    SafeStorageError,
+    read_jsonl_bytes,
+    safe_append_jsonl,
+    safe_atomic_json,
+    safe_atomic_jsonl,
+    safe_atomic_write,
+    safe_mkdirs,
+    safe_read_regular,
+)
 from .source_spans import build_source_span_inventory
 
 
@@ -57,9 +71,12 @@ STATE_FIELDS = {"state", "updated_at"}
 PUBLISH_HANDOFF_FIELDS = {
     "batch_id",
     "candidate_activation_hash",
+    "candidate_head_bytes_sha256",
     "candidate_manifest_hash",
     "candidate_revision_id",
+    "fencing_token",
     "prior_head",
+    "prior_head_bytes_sha256",
     "publish_started_at",
     "publish_transaction_id",
     "schema",
@@ -67,11 +84,14 @@ PUBLISH_HANDOFF_FIELDS = {
 PUBLISH_JOURNAL_FIELDS = {
     "batch_id",
     "candidate_activation_hash",
+    "candidate_head_bytes_sha256",
     "candidate_manifest_hash",
     "candidate_revision_id",
     "created_at",
+    "fencing_token",
     "prior_head",
     "prior_head_absent",
+    "prior_head_bytes_b64",
     "prior_head_bytes_sha256",
     "publish_transaction_id",
     "schema",
@@ -80,7 +100,7 @@ PUBLISH_JOURNAL_FIELDS = {
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
     field_errors = validate_field_id(target_field_id)
@@ -114,9 +134,17 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id, must_exist=False)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "errors": batch_errors}
-    batch_dir.mkdir(parents=True, exist_ok=True)
     request_path = batch_dir / "import-request.json"
     receipt_path = batch_dir / "import-receipt.json"
+    created_batch = False
+    if not batch_dir.exists():
+        try:
+            batch_dir.mkdir(parents=True)
+            created_batch = True
+        except FileExistsError:
+            _wait_for_path(request_path)
+    elif not request_path.exists():
+        _wait_for_path(request_path)
     if batch_dir.exists() and not request_path.exists() and any(batch_dir.iterdir()):
         state, state_errors = _load_state_safe(batch_dir)
         return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + ["missing_import_request"]}
@@ -156,12 +184,15 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
             "state": state["state"],
             "field_revision_id": receipt.get("field_revision_id") if isinstance(receipt, dict) and not receipt_errors else None,
             "errors": receipt_errors,
+            "reused": True,
         }
-    write_json(request_path, request)
+    if not created_batch:
+        return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": "recovery_required", "recovery_required": True, "errors": ["missing_import_request"]}
+    _safe_write_json_path(root, request_path, request, "import_request")
     _write_state(batch_dir, "planned")
     _write_jsonl(batch_dir / "extraction.jsonl", extracted)
-    write_json(batch_dir / "migration-report.json", _migration_report(root, batch_id, request, dry_run=True))
-    _append_ledger_event(root, {"op": "legacy_import_plan", "batch_id": batch_id, "timestamp": utc_now(), "state": "planned"})
+    _safe_write_json_path(root, batch_dir / "migration-report.json", _migration_report(root, batch_id, request, dry_run=True), "migration_report")
+    _ensure_ledger_event(root / "ledger" / "events.jsonl", {"op": "legacy_import_plan", "event_id": f"legacy_import_plan:{batch_id}", "batch_id": batch_id, "timestamp": utc_now(), "state": "planned"})
     return {"ok": True, "batch_id": batch_id, "snapshot_id": snapshot_id, "extraction_count": len(extracted), "batch_dir": str(batch_dir), "state": "planned"}
 
 
@@ -172,7 +203,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     if id_errors:
         return {"ok": False, "batch_id": batch_id, "errors": id_errors}
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "batch_id": batch_id, "errors": [str(exc)]}
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
@@ -274,7 +305,7 @@ def _run_legacy_import_after_request(
     publication_shards = [publication_shards_by_id[shard_id] for shard_id in sorted(publication_shards_by_id)]
     if dry_run:
         report = _migration_report(root, batch_id, request, dry_run=True, candidate_shards=shards, duplicate_count=duplicate_count)
-        write_json(batch_dir / "dry-run-report.json", report)
+        _safe_write_json_path(root, batch_dir / "dry-run-report.json", report, "dry_run_report")
         return {"ok": True, "batch_id": batch_id, "dry_run": True, "candidate_shard_count": len(shards), "duplicate_count": duplicate_count}
     receipt = {
         "schema": RECEIPT_SCHEMA,
@@ -311,23 +342,26 @@ def _run_legacy_import_after_request(
             raise OSError("forced_oserror_during_publish")
         _write_state(batch_dir, "publishing")
         publication = _publish_package(root, batch_id, str(revision["field_revision_id"]))
-        write_json(batch_dir / "import-receipt.json", receipt)
-        manifest_hash = "sha256:" + sha256_bytes((publication / "publication-manifest.json").read_bytes())
-        activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
+        _safe_write_json_path(root, batch_dir / "import-receipt.json", receipt, "import_receipt")
+        manifest_hash = _safe_hash_under_root(root, publication / "publication-manifest.json", "publication_manifest")
+        activation_hash = _safe_hash_under_root(root, publication / "activation.json", "publication_activation")
         pre_head_errors = _pre_head_publication_errors(root, publication, str(revision["field_revision_id"]), str(request["target_field_id"]))
         if pre_head_errors:
             raise ValueError("pre_head_publication_validation_failed:" + ",".join(pre_head_errors))
-        publish_transaction_id = _write_publish_journal(root, batch_id, str(revision["field_revision_id"]), manifest_hash, activation_hash, prior_head, expected_head_bytes)
-        _write_publish_handoff(batch_dir, batch_id, str(revision["field_revision_id"]), manifest_hash, activation_hash, prior_head, publish_transaction_id)
+        candidate_head = {
+            "field_id": request["target_field_id"],
+            "field_revision_id": revision["field_revision_id"],
+            "publication_manifest_hash": manifest_hash,
+            "activation_hash": activation_hash,
+        }
+        fencing_token = _current_fencing_token(root) if expected_head_bytes is not _NO_HEAD_EXPECTATION else ""
+        publish_transaction_id = _write_publish_journal(root, batch_id, str(revision["field_revision_id"]), manifest_hash, activation_hash, prior_head, expected_head_bytes, candidate_head, fencing_token)
+        _write_publish_handoff(batch_dir, batch_id, str(revision["field_revision_id"]), manifest_hash, activation_hash, prior_head, publish_transaction_id, candidate_head, expected_head_bytes, fencing_token)
         _write_head_atomic(
             root,
-            {
-                "field_id": request["target_field_id"],
-                "field_revision_id": revision["field_revision_id"],
-                "publication_manifest_hash": manifest_hash,
-                "activation_hash": activation_hash,
-            },
+            candidate_head,
             expected_prior_head_bytes=expected_head_bytes,
+            fencing_token=fencing_token,
         )
         head_written = True
         if os.environ.get("NOLLM_MT1_FORCE_JOURNAL_OSERROR_AFTER_HEAD") == "1":
@@ -349,14 +383,14 @@ def _run_legacy_import_after_request(
         if _load_state(batch_dir)["state"] != "committed":
             _write_state(batch_dir, "failed")
         failure = {"schema": "nollm.legacy_import_failure.v1", "batch_id": batch_id, "timestamp": utc_now(), "error": str(exc), "state": "failed"}
-        write_json(batch_dir / "failure.json", failure)
+        _safe_write_json_path(root, batch_dir / "failure.json", failure, "failure")
         _append_ledger_event(root, {"op": "legacy_import_failure", **failure})
         return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "state": "failed"}
 
 
 def reconcile_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "recovery_required": True}
     lock_dir, lock_error = _acquire_writer_lock(root, batch_id, reclaim_stale=True)
@@ -421,7 +455,7 @@ def _reconcile_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]
 
 def recover_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "batch_id": batch_id, "errors": [str(exc)], "recovery_required": True}
     lock_dir, lock_error = _acquire_writer_lock(root, batch_id, reclaim_stale=True)
@@ -445,7 +479,7 @@ def _recover_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]:
         return _untrusted_ingress_result(root, old_dir, batch_id, state_errors)
     state = state_record["state"]
     if state == "publishing":
-        return reconcile_legacy_import(root, batch_id)
+        return _reconcile_legacy_import_locked(root, batch_id)
     if state not in {"failed", "quarantined"}:
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_recover_state:{state}"]}
     old_request, request_errors = _read_json_safe(old_dir / "import-request.json", "import_request")
@@ -469,7 +503,7 @@ def _recover_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]:
     replacement_request = dict(old_request)
     replacement_request["batch_id"] = replacement_id
     replacement_dir.mkdir(parents=True, exist_ok=True)
-    write_json(replacement_dir / "import-request.json", replacement_request)
+    _safe_write_json_path(root, replacement_dir / "import-request.json", replacement_request, "import_request")
     _write_jsonl(replacement_dir / "extraction.jsonl", plan_data["extracted"])
     _write_state(replacement_dir, "planned")
     _append_ledger_event(root, {"op": "legacy_import_recovery_batch", "batch_id": replacement_id, "recovery_of": batch_id, "timestamp": utc_now(), "state": "planned"})
@@ -478,7 +512,7 @@ def _recover_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]:
 
 def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "batch_id": batch_id, "state": "invalid", "errors": [str(exc)]}
     id_errors = validate_batch_id(batch_id)
@@ -547,13 +581,13 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
 
 
 def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
-    try:
-        root = memory_root_path(memory_root)
-    except ValueError as exc:
-        return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": [str(exc)]}
     id_errors = validate_batch_id(batch_id)
     if id_errors:
         return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": id_errors}
+    try:
+        root = existing_memory_root_path(memory_root)
+    except ValueError as exc:
+        return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": [str(exc)]}
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": batch_errors}
@@ -628,6 +662,13 @@ def _base_batch_id(batch_id: str) -> str:
     return match.group(1) if match else batch_id
 
 
+def _wait_for_path(path: Path, *, attempts: int = 50, delay: float = 0.02) -> None:
+    for _ in range(attempts):
+        if path.exists():
+            return
+        time.sleep(delay)
+
+
 def _jsonl_bytes(records: list[dict[str, Any]]) -> bytes:
     return "".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records).encode("utf-8")
 
@@ -681,6 +722,25 @@ def _batch_dir_checked(root: Path, batch_id: str, *, must_exist: bool = True) ->
         if not path.is_dir():
             return path, ["path_not_directory:ingress_batch"]
     return path, []
+
+
+def _safe_write_json_path(root: Path, path: Path, data: dict[str, Any], label: str, *, replace: bool = True) -> None:
+    try:
+        parts = path.resolve(strict=False).relative_to(root.resolve()).parts
+    except ValueError as exc:
+        raise ValueError(f"path_escape:{label}") from exc
+    safe_atomic_json(root, parts, data, label=label, replace=replace)
+
+
+def _root_from_batch_dir(batch_dir: Path) -> Path:
+    return batch_dir.parents[2]
+
+
+def _infer_root_for_path(path: Path) -> Path:
+    for parent in [path.parent, *path.parents]:
+        if (parent / "archive").exists() or (parent / "ingress").exists() or (parent / "field").exists():
+            return parent
+    raise ValueError("memory_root_missing")
 
 
 def _validate_request_identity(request: dict[str, Any], *, batch_id: str) -> list[str]:
@@ -859,6 +919,10 @@ def _validate_handoff_contract(
             errors.append(f"publish_handoff_{key}_mismatch")
     if not isinstance(handoff.get("publish_started_at"), str) or not _is_utc_timestamp(str(handoff.get("publish_started_at"))):
         errors.append("publish_handoff_started_at_invalid")
+    if not isinstance(handoff.get("fencing_token"), str) or not str(handoff.get("fencing_token")).startswith("fence_"):
+        errors.append("publish_handoff_fencing_token_invalid")
+    if not isinstance(handoff.get("candidate_head_bytes_sha256"), str) or not str(handoff.get("candidate_head_bytes_sha256")).startswith("sha256:"):
+        errors.append("publish_handoff_candidate_head_hash_invalid")
     journal = _load_publish_journal(root, handoff.get("publish_transaction_id"), errors)
     if isinstance(journal, dict):
         journal_expected = {
@@ -866,6 +930,9 @@ def _validate_handoff_contract(
             "candidate_revision_id": revision_id,
             "candidate_manifest_hash": manifest_hash,
             "candidate_activation_hash": activation_hash,
+            "candidate_head_bytes_sha256": handoff.get("candidate_head_bytes_sha256"),
+            "prior_head_bytes_sha256": handoff.get("prior_head_bytes_sha256"),
+            "fencing_token": handoff.get("fencing_token"),
         }
         for key, value in journal_expected.items():
             if journal.get(key) != value:
@@ -937,6 +1004,8 @@ def _load_publish_journal(root: Path, transaction_id: object, errors: list[str])
         str(journal.get("candidate_manifest_hash")),
         str(journal.get("candidate_activation_hash")),
         journal.get("prior_head_bytes_sha256"),
+        journal.get("candidate_head_bytes_sha256"),
+        journal.get("fencing_token"),
     )
     if journal.get("publish_transaction_id") != expected_id:
         errors.append("publish_journal_transaction_id_mismatch")
@@ -945,9 +1014,14 @@ def _load_publish_journal(root: Path, transaction_id: object, errors: list[str])
 
 def _required_file_hash(path: Path, label: str, errors: list[str]) -> str | None:
     try:
-        return "sha256:" + sha256_bytes(path.read_bytes())
+        root = _infer_root_for_path(path)
+        return "sha256:" + sha256_bytes(safe_read_regular(root, *path.relative_to(root).parts, label=label))
+    except SafeStorageError as exc:
+        errors.append(str(exc))
     except OSError as exc:
         errors.append(f"unreadable_file:{label}:{exc.__class__.__name__}")
+    except ValueError as exc:
+        errors.append(str(exc))
     return None
 
 
@@ -1024,21 +1098,21 @@ def _write_staging_package(
         raise ValueError("path_symlink:field_staging")
     if staging.exists():
         raise ValueError("path_exists:field_staging")
-    (staging / "shards").mkdir(parents=True, exist_ok=True)
+    safe_mkdirs(root, ("field", ".staging", batch_id, "publication", "shards"), label="field_staging")
     for shard in shards:
-        write_json(staging / "shards" / f"{shard['shard_id']}.json", shard)
-    write_json(staging / "revision.json", revision)
-    write_jsonl(staging / "source-span-links.jsonl", links)
+        _safe_write_json_path(root, staging / "shards" / f"{shard['shard_id']}.json", shard, "publication_shard")
+    _safe_write_json_path(root, staging / "revision.json", revision, "publication_revision")
+    _write_jsonl(staging / "source-span-links.jsonl", links)
     spans = _project_spans(root, snapshot_id, links)
-    write_jsonl(staging / "source-span-projection.jsonl", spans)
-    write_json(staging / "receipt.json", receipt)
+    _write_jsonl(staging / "source-span-projection.jsonl", spans)
+    _safe_write_json_path(root, staging / "receipt.json", receipt, "publication_receipt")
     if os.environ.get("NOLLM_MT1_FORCE_FAIL_BEFORE_ACTIVATION_RECORD") == "1":
         raise RuntimeError("forced_failure_before_activation_record")
-    write_json(staging / "activation.json", _activation_record(root, staging, revision, receipt, snapshot_id, source_policy_id))
+    _safe_write_json_path(root, staging / "activation.json", _activation_record(root, staging, revision, receipt, snapshot_id, source_policy_id), "publication_activation")
     tree_errors = _tree_regular_errors(staging, "field_staging")
     if tree_errors:
         raise ValueError(",".join(tree_errors))
-    write_json(staging / "publication-manifest.json", _publication_manifest(staging, revision, receipt, snapshot_id))
+    _safe_write_json_path(root, staging / "publication-manifest.json", _publication_manifest(staging, revision, receipt, snapshot_id), "publication_manifest")
     return staging
 
 
@@ -1053,10 +1127,10 @@ def _activation_record(root: Path, staging: Path, revision: dict[str, Any], rece
         "source_policy_id": source_policy_id,
         "archive_manifest_schema": archive_manifest.get("schema"),
         "archive_manifest_hash": archive_manifest.get("archive_manifest_hash", archive_manifest.get("manifest_hash")),
-        "receipt_hash": "sha256:" + sha256_bytes((staging / "receipt.json").read_bytes()),
-        "revision_hash": "sha256:" + sha256_bytes((staging / "revision.json").read_bytes()),
-        "source_span_links_hash": "sha256:" + sha256_bytes((staging / "source-span-links.jsonl").read_bytes()),
-        "source_span_projection_hash": "sha256:" + sha256_bytes((staging / "source-span-projection.jsonl").read_bytes()),
+        "receipt_hash": _safe_hash_under_root(root, staging / "receipt.json", "publication_receipt"),
+        "revision_hash": _safe_hash_under_root(root, staging / "revision.json", "publication_revision"),
+        "source_span_links_hash": _safe_hash_under_root(root, staging / "source-span-links.jsonl", "source_span_links"),
+        "source_span_projection_hash": _safe_hash_under_root(root, staging / "source-span-projection.jsonl", "source_span_projection"),
         "legacy_import_profile": LEGACY_IMPORT_PROFILE,
     }
 
@@ -1075,12 +1149,28 @@ def _publish_package(root: Path, batch_id: str, field_revision_id: str) -> Path:
     tree_errors = _tree_regular_errors(staging, "field_staging")
     if tree_errors:
         raise ValueError(",".join(tree_errors))
-    publication.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(staging, publication, symlinks=True)
+    _safe_copy_tree(root, staging, publication, label="field_publication")
     copied_errors = _tree_regular_errors(publication, "field_publication")
     if copied_errors:
         raise ValueError(",".join(copied_errors))
     return publication
+
+
+def _safe_copy_tree(root: Path, staging: Path, publication: Path, *, label: str) -> None:
+    safe_mkdirs(root, tuple(publication.relative_to(root).parts), label=label)
+    for path in sorted(staging.rglob("*")):
+        rel = path.relative_to(staging)
+        target_parts = tuple((publication / rel).relative_to(root).parts)
+        if path.is_symlink():
+            raise ValueError(f"path_symlink:{label}:{rel.as_posix()}")
+        if path.is_dir():
+            safe_mkdirs(root, target_parts, label=label)
+            continue
+        if not path.is_file():
+            raise ValueError(f"path_not_regular:{label}:{rel.as_posix()}")
+        source_parts = tuple(path.relative_to(root).parts)
+        data = safe_read_regular(root, *source_parts, label=f"{label}_source")
+        safe_atomic_write(root, target_parts, data, label=f"{label}_artifact", replace=False)
 
 
 def _acquire_writer_lock(root: Path, batch_id: str, *, reclaim_stale: bool = True) -> tuple[Path | None, dict[str, Any] | None]:
@@ -1097,7 +1187,7 @@ def _acquire_writer_lock(root: Path, batch_id: str, *, reclaim_stale: bool = Tru
             except FileExistsError:
                 pass
             else:
-                write_json(lock_dir / "owner.json", {"schema": "nollm.legacy_import_writer_lock.v1", "batch_id": batch_id, "acquired_at": utc_now()})
+                _write_lock_owner(root, lock_dir, batch_id)
                 return lock_dir, None
         return None, {
             "ok": False,
@@ -1107,7 +1197,7 @@ def _acquire_writer_lock(root: Path, batch_id: str, *, reclaim_stale: bool = Tru
             "errors": ["writer_busy"],
         }
     try:
-        write_json(lock_dir / "owner.json", {"schema": "nollm.legacy_import_writer_lock.v1", "batch_id": batch_id, "acquired_at": utc_now()})
+        _write_lock_owner(root, lock_dir, batch_id)
     except Exception:
         try:
             lock_dir.rmdir()
@@ -1128,6 +1218,9 @@ def _reclaim_stale_lock(lock_dir: Path) -> bool:
         acquired_at = data.get("acquired_at") if isinstance(data, dict) else None
         if not isinstance(acquired_at, str) or not _is_utc_timestamp(acquired_at):
             return False
+        owner_pid = data.get("owner_pid")
+        if not isinstance(owner_pid, int) or _pid_is_alive(owner_pid):
+            return False
         acquired = datetime.fromisoformat(acquired_at[:-1] + "+00:00")
         age_seconds = (datetime.now(acquired.tzinfo) - acquired).total_seconds()
         if age_seconds < 3600:
@@ -1137,6 +1230,58 @@ def _reclaim_stale_lock(lock_dir: Path) -> bool:
         return True
     except Exception:
         return False
+
+
+def _write_lock_owner(root: Path, lock_dir: Path, batch_id: str) -> str:
+    token = "fence_" + uuid.uuid4().hex
+    _safe_write_json_path(
+        root,
+        lock_dir / "owner.json",
+        {
+            "schema": "nollm.legacy_import_writer_lock.v2",
+            "batch_id": batch_id,
+            "acquired_at": utc_now(),
+            "owner_pid": os.getpid(),
+            "owner_identity": _owner_identity(),
+            "fencing_token": token,
+        },
+        "writer_lock_owner",
+    )
+    return token
+
+
+def _current_fencing_token(root: Path) -> str:
+    owner, errors = _read_json_safe(root / "locks" / "legacy-import-writer.lock" / "owner.json", "writer_lock_owner")
+    if errors or not isinstance(owner, dict) or not isinstance(owner.get("fencing_token"), str):
+        raise RuntimeError("writer_fencing_token_missing")
+    return str(owner["fencing_token"])
+
+
+def _owner_identity() -> str:
+    return f"pid:{os.getpid()}"
+
+
+def _pid_is_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        process_query_limited_information = 0x1000
+        still_active = 259
+        handle = ctypes.windll.kernel32.OpenProcess(process_query_limited_information, False, pid)
+        if not handle:
+            return False
+        try:
+            exit_code = ctypes.c_ulong()
+            if not ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                return False
+            return exit_code.value == still_active
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
 
 
 def _release_writer_lock(lock_dir: Path | None) -> None:
@@ -1171,16 +1316,24 @@ def _pre_head_publication_errors(root: Path, publication: Path, revision_id: str
     return errors
 
 
+def _safe_hash_under_root(root: Path, path: Path, label: str) -> str:
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError as exc:
+        raise ValueError(f"path_escape:{label}") from exc
+    return "sha256:" + sha256_bytes(safe_read_regular(root, *parts, label=label))
+
+
 def _read_head_bytes(root: Path) -> bytes | None:
     target, errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=False, require_file=True)
     if errors:
         raise ValueError(",".join(errors))
     if not target.exists():
         return None
-    return target.read_bytes()
+    return safe_read_regular(root, "field", "HEAD.json", label="field_head")
 
 
-def _write_head_atomic(root: Path, head: dict[str, Any], *, expected_prior_head_bytes: bytes | None | object = _NO_HEAD_EXPECTATION) -> None:
+def _write_head_atomic(root: Path, head: dict[str, Any], *, expected_prior_head_bytes: bytes | None | object = _NO_HEAD_EXPECTATION, fencing_token: str = "") -> None:
     target, target_errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=False, require_file=True)
     tmp, tmp_errors = contained_path(root, "field", "HEAD.json.tmp", label="field_head_tmp", must_exist=False, require_file=True)
     errors = target_errors + tmp_errors
@@ -1191,13 +1344,16 @@ def _write_head_atomic(root: Path, head: dict[str, Any], *, expected_prior_head_
     if os.environ.get("NOLLM_MT1_FORCE_FAIL_DURING_HEAD_PREPARATION") == "1":
         raise OSError("forced_failure_during_head_preparation")
     if expected_prior_head_bytes is not _NO_HEAD_EXPECTATION:
+        _assert_current_fencing_token(root, fencing_token)
         if os.environ.get("NOLLM_MT1_FORCE_HEAD_CHANGED_BEFORE_WRITE") == "1":
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text('{"forced":"head_changed"}\n', encoding="utf-8")
         if _read_head_bytes(root) != expected_prior_head_bytes:
             raise RuntimeError("head_changed")
-    write_json(tmp, head)
+    _safe_write_json_path(root, tmp, head, "field_head_tmp")
     os.replace(tmp, target)
+    if fencing_token:
+        _assert_current_fencing_token(root, fencing_token)
 
 
 def _write_publish_journal(
@@ -1208,14 +1364,19 @@ def _write_publish_journal(
     activation_hash: str,
     prior_head: dict[str, Any] | None,
     prior_head_bytes: bytes | None | object,
+    candidate_head: dict[str, Any],
+    fencing_token: str,
 ) -> str:
     prior_bytes = None if prior_head_bytes is _NO_HEAD_EXPECTATION else prior_head_bytes
     prior_hash = "sha256:" + sha256_bytes(prior_bytes) if prior_bytes is not None else None
-    transaction_id = _publish_transaction_id(batch_id, revision_id, manifest_hash, activation_hash, prior_hash)
+    candidate_bytes = _head_json_bytes(candidate_head)
+    candidate_hash = "sha256:" + sha256_bytes(candidate_bytes)
+    transaction_id = _publish_transaction_id(batch_id, revision_id, manifest_hash, activation_hash, prior_hash, candidate_hash, fencing_token)
     journal, journal_errors = contained_path(root, "field", "publish-journal", f"{transaction_id}.json", label="publish_journal", must_exist=False, require_file=True)
     if journal_errors:
         raise ValueError(",".join(journal_errors))
-    write_json(
+    _safe_write_json_path(
+        root,
         journal,
         {
             "schema": "nollm.publish_journal.v1",
@@ -1224,30 +1385,38 @@ def _write_publish_journal(
             "candidate_revision_id": revision_id,
             "candidate_manifest_hash": manifest_hash,
             "candidate_activation_hash": activation_hash,
+            "candidate_head_bytes_sha256": candidate_hash,
             "prior_head": prior_head,
             "prior_head_bytes_sha256": prior_hash,
+            "prior_head_bytes_b64": base64.b64encode(prior_bytes).decode("ascii") if prior_bytes is not None else None,
             "prior_head_absent": prior_bytes is None,
+            "fencing_token": fencing_token,
             "created_at": utc_now(),
         },
+        "publish_journal",
     )
     return transaction_id
 
 
-def _publish_transaction_id(batch_id: str, revision_id: str, manifest_hash: str, activation_hash: str, prior_hash: object) -> str:
+def _publish_transaction_id(batch_id: str, revision_id: str, manifest_hash: str, activation_hash: str, prior_hash: object, candidate_hash: object = None, fencing_token: object = None) -> str:
     transaction_seed = canonical_json(
         {
             "batch_id": batch_id,
             "candidate_activation_hash": activation_hash,
+            "candidate_head_bytes_sha256": candidate_hash,
             "candidate_manifest_hash": manifest_hash,
             "candidate_revision_id": revision_id,
+            "fencing_token": fencing_token,
             "prior_head_bytes_sha256": prior_hash,
         }
     )
     return "pubtx_" + sha256_bytes(transaction_seed)[:24]
 
 
-def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, manifest_hash: str, activation_hash: str, prior_head: dict[str, Any] | None, publish_transaction_id: str) -> None:
-    write_json(
+def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, manifest_hash: str, activation_hash: str, prior_head: dict[str, Any] | None, publish_transaction_id: str, candidate_head: dict[str, Any], prior_head_bytes: bytes | None | object, fencing_token: str) -> None:
+    prior_bytes = None if prior_head_bytes is _NO_HEAD_EXPECTATION else prior_head_bytes
+    _safe_write_json_path(
+        _root_from_batch_dir(batch_dir),
         batch_dir / "publish-handoff.json",
         {
             "schema": "nollm.legacy_import_publish_handoff.v1",
@@ -1255,11 +1424,26 @@ def _write_publish_handoff(batch_dir: Path, batch_id: str, revision_id: str, man
             "candidate_revision_id": revision_id,
             "candidate_manifest_hash": manifest_hash,
             "candidate_activation_hash": activation_hash,
+            "candidate_head_bytes_sha256": "sha256:" + sha256_bytes(_head_json_bytes(candidate_head)),
             "publish_transaction_id": publish_transaction_id,
             "prior_head": prior_head,
+            "prior_head_bytes_sha256": "sha256:" + sha256_bytes(prior_bytes) if prior_bytes is not None else None,
+            "fencing_token": fencing_token,
             "publish_started_at": utc_now(),
         },
+        "publish_handoff",
     )
+
+
+def _head_json_bytes(head: dict[str, Any]) -> bytes:
+    return json.dumps(head, indent=2, ensure_ascii=False, sort_keys=True, allow_nan=False).encode("utf-8") + b"\n"
+
+
+def _assert_current_fencing_token(root: Path, fencing_token: str) -> None:
+    if not fencing_token:
+        raise RuntimeError("writer_fencing_token_missing")
+    if _current_fencing_token(root) != fencing_token:
+        raise RuntimeError("writer_fencing_token_mismatch")
 
 
 def _restore_head(root: Path, prior_head: dict[str, Any] | None) -> None:
@@ -1273,14 +1457,40 @@ def _restore_head(root: Path, prior_head: dict[str, Any] | None) -> None:
 
 
 def _quarantine_and_restore_head(root: Path, batch_dir: Path, prior_head: dict[str, Any] | None, reason: str) -> None:
-    _restore_head(root, prior_head)
+    restored = _restore_head_cas(root, batch_dir, prior_head)
     _write_state(batch_dir, "quarantined")
-    record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": reason, "state": "quarantined"}
-    write_json(batch_dir / "quarantine.json", record)
+    record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": reason, "state": "quarantined", "head_restored": restored}
+    _safe_write_json_path(root, batch_dir / "quarantine.json", record, "quarantine")
+    if not restored:
+        _safe_write_json_path(root, batch_dir / "recovery-conflict.json", {"schema": "nollm.legacy_import_recovery_conflict.v1", "batch_id": batch_dir.name, "timestamp": utc_now(), "reason": "head_conflict", "state": "recovery_required"}, "recovery_conflict")
     try:
         _append_ledger_event(root, {"op": "legacy_import_quarantine", **record})
     except ValueError:
         pass
+
+
+def _restore_head_cas(root: Path, batch_dir: Path, prior_head: dict[str, Any] | None) -> bool:
+    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    if handoff_errors or not isinstance(handoff, dict):
+        return False
+    fencing_token = str(handoff.get("fencing_token", ""))
+    try:
+        _assert_current_fencing_token(root, fencing_token)
+    except Exception:
+        return False
+    expected_candidate_hash = handoff.get("candidate_head_bytes_sha256")
+    current = _read_head_bytes(root)
+    current_hash = "sha256:" + sha256_bytes(current) if current is not None else None
+    if current_hash != expected_candidate_hash:
+        return False
+    target, errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=False, require_file=True)
+    if errors:
+        return False
+    if prior_head:
+        _write_head_atomic(root, prior_head, expected_prior_head_bytes=current, fencing_token=fencing_token)
+    elif target.exists():
+        target.unlink()
+    return True
 
 
 def _finalize_verified_publication(
@@ -1302,7 +1512,7 @@ def _finalize_verified_publication(
     report = _migration_report(root, str(receipt["batch_id"]), request, receipt=receipt, duplicate_count=duplicate_count)
     if os.environ.get("NOLLM_MT1_FORCE_REPORT_OSERROR_AFTER_HEAD") == "1":
         raise OSError("forced_report_oserror_after_head")
-    write_json(batch_dir / "migration-report.json", report)
+    _safe_write_json_path(root, batch_dir / "migration-report.json", report, "migration_report")
     if os.environ.get("NOLLM_MT1_FORCE_COMMIT_LEDGER_OSERROR_AFTER_HEAD") == "1":
         raise OSError("forced_commit_ledger_oserror_after_head")
     event = {
@@ -1361,9 +1571,15 @@ def _ledger_errors(root: Path) -> list[str]:
     if not path.exists():
         return []
     try:
-        _read_jsonl(path)
+        if path.exists():
+            read_jsonl_bytes(safe_read_regular(root, "ledger", "events.jsonl", label="ledger_events"), "ledger")
     except JSONDecodeError:
         return ["malformed_jsonl:ledger"]
+    except SafeStorageError as exc:
+        message = str(exc)
+        if message.startswith("malformed_json:"):
+            return ["malformed_jsonl:ledger"]
+        return [message]
     except OSError as exc:
         return [f"unreadable_jsonl:ledger:{exc.__class__.__name__}"]
     except Exception as exc:
@@ -1378,9 +1594,7 @@ def _append_ledger_event(root: Path, event: dict[str, Any]) -> None:
     existing_errors = _ledger_errors(root)
     if existing_errors:
         raise ValueError(",".join(existing_errors))
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+    safe_append_jsonl(root, ("ledger", "events.jsonl"), event, label="ledger_events")
 
 
 def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1402,11 +1616,13 @@ def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) ->
 
 def _publication_manifest(root: Path, revision: dict[str, Any], receipt: dict[str, Any], snapshot_id: str) -> dict[str, Any]:
     hashes: dict[str, str] = {}
+    memory_root = _infer_root_for_path(root)
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
             raise ValueError(f"publication_symlink:{path.relative_to(root).as_posix()}")
         if path.is_file() and path.name != "publication-manifest.json":
-            hashes[path.relative_to(root).as_posix()] = "sha256:" + sha256_bytes(path.read_bytes())
+            parts = path.relative_to(memory_root).parts
+            hashes[path.relative_to(root).as_posix()] = "sha256:" + sha256_bytes(safe_read_regular(memory_root, *parts, label="publication_artifact"))
     return {
         "schema": "nollm.publication_manifest.v1",
         "field_revision_id": revision["field_revision_id"],
@@ -1484,7 +1700,7 @@ def _unknown_fields(record: dict[str, Any], allowed: set[str], label: str) -> li
 
 
 def _force_write_state(batch_dir: Path, state: str) -> None:
-    write_json(batch_dir / "state.json", {"state": state, "updated_at": utc_now()})
+    _safe_write_json_path(_root_from_batch_dir(batch_dir), batch_dir / "state.json", {"state": state, "updated_at": utc_now()}, "state")
 
 
 def _untrusted_ingress_result(root: Path, batch_dir: Path, batch_id: str, errors: list[str]) -> dict[str, Any]:
@@ -1492,7 +1708,7 @@ def _untrusted_ingress_result(root: Path, batch_dir: Path, batch_id: str, errors
     if isinstance(handoff, dict) and not handoff_errors:
         _force_write_state(batch_dir, "quarantined")
         record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_id, "timestamp": utc_now(), "reason": "untrusted_ingress:" + ",".join(errors), "state": "quarantined"}
-        write_json(batch_dir / "quarantine.json", record)
+        _safe_write_json_path(root, batch_dir / "quarantine.json", record, "quarantine")
         try:
             _append_ledger_event(root, {"op": "legacy_import_quarantine", **record})
         except ValueError:
@@ -1514,11 +1730,11 @@ def _write_state(batch_dir: Path, state: str) -> None:
     }
     if state not in allowed.get(current, {current}):
         raise ValueError(f"invalid batch state transition: {current} -> {state}")
-    write_json(batch_dir / "state.json", {"state": state, "updated_at": utc_now()})
+    _safe_write_json_path(_root_from_batch_dir(batch_dir), batch_dir / "state.json", {"state": state, "updated_at": utc_now()}, "state")
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return read_jsonl_bytes(path.read_bytes(), path.name)
 
 
 def _read_jsonl_safe(path: Path, label: str) -> tuple[list[dict[str, Any]], list[str]]:
@@ -1541,5 +1757,9 @@ def _read_jsonl_safe(path: Path, label: str) -> tuple[list[dict[str, Any]], list
 
 
 def _write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(_jsonl_bytes(records))
+    root = _root_from_batch_dir(path.parent) if "ingress" in path.parts else _infer_root_for_path(path)
+    try:
+        parts = path.resolve(strict=False).relative_to(root.resolve()).parts
+    except ValueError as exc:
+        raise ValueError("path_escape:jsonl") from exc
+    safe_atomic_jsonl(root, parts, records, label=path.stem)
