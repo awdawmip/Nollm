@@ -33,7 +33,7 @@ def test_archive_tamper_blocks_commit_without_field_publish(tmp_path: Path) -> N
     plan = plan_legacy_import(memory_root, snapshot_id, target_field_id="field_fixture")
     manifest_path = next((memory_root / "archive" / "manifests").glob("*.json"))
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    digest = manifest["objects"][0]["content_hash"].removeprefix("sha256:")
+    digest = manifest["sources"][0]["content_hash"].removeprefix("sha256:")
     (memory_root / "archive" / "objects" / "sha256" / digest).write_text("tampered", encoding="utf-8")
 
     commit = run_legacy_import(memory_root, str(plan["batch_id"]), commit=True)

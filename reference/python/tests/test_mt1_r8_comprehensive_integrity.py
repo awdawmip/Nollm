@@ -166,7 +166,7 @@ def test_t08_archive_object_symlink_to_byte_identical_external_file_rejects(tmp_
     memory_root = tmp_path / "memory-root"
     snapshot_id = snapshot_with_inventory(workspace, memory_root)
     manifest = read_json(memory_root / "archive" / "manifests" / f"{snapshot_id}.json")
-    digest = str(manifest["objects"][0]["content_hash"]).removeprefix("sha256:")
+    digest = str(manifest["sources"][0]["content_hash"]).removeprefix("sha256:")
     object_path = memory_root / "archive" / "objects" / "sha256" / digest
     external = tmp_path / "external-object"
     external.write_bytes(object_path.read_bytes())
@@ -215,7 +215,7 @@ def test_t10_malformed_manifest_and_wrong_objects_type_are_structured(tmp_path: 
     assert malformed["ok"] is False
     assert malformed["errors"] == ["malformed_json:archive_manifest"]
     assert wrong_type["ok"] is False
-    assert "invalid_archive_objects" in wrong_type["errors"]
+    assert "legacy_objects_field_forbidden" in wrong_type["errors"]
 
 
 def test_t11_preexisting_wrong_blob_refuses_snapshot_and_manifest(tmp_path: Path) -> None:
@@ -273,11 +273,11 @@ def test_t14_equal_memory_and_dreams_bytes_keep_distinct_source_entries_spans_an
     publication = publication_dir(memory_root, revision_id)
     revision = read_json(publication / "revision.json")
 
-    source_ids = [obj["source_object_id"] for obj in manifest["objects"]]
+    source_ids = [obj["source_object_id"] for obj in manifest["sources"]]
     source_refs = [link["source_ref"] for link in read_jsonl(publication / "source-span-links.jsonl")]
 
-    assert len(manifest["objects"]) == 2
-    assert len({obj["content_hash"] for obj in manifest["objects"]}) == 1
+    assert len(manifest["sources"]) == 2
+    assert len({obj["content_hash"] for obj in manifest["sources"]}) == 1
     assert len(set(source_ids)) == 2
     assert len({span["span_id"] for span in spans}) == 2
     assert len(set(source_refs)) == 2
@@ -289,8 +289,8 @@ def test_t15_dreams_remains_tentative_and_memory_remains_legacy_recorded(tmp_pat
     workspace = workspace_with(tmp_path, {"MEMORY.md": "Mira remembers Atlas.\n", "DREAMS.md": "Atlas dreams of Mira.\n"})
     memory_root, _batch_id, snapshot_id, revision_id = commit_workspace(workspace, tmp_path / "memory-root")
     manifest = read_json(memory_root / "archive" / "manifests" / f"{snapshot_id}.json")
-    states_by_source = {obj["source_object_id"]: obj["epistemic_state"] for obj in manifest["objects"]}
-    source_by_path = {obj["original_relative_path"]: obj["source_object_id"] for obj in manifest["objects"]}
+    states_by_source = {obj["source_object_id"]: obj["epistemic_state"] for obj in manifest["sources"]}
+    source_by_path = {obj["original_relative_path"]: obj["source_object_id"] for obj in manifest["sources"]}
     publication = publication_dir(memory_root, revision_id)
     shard_states: dict[str, str] = {}
     for shard_path in (publication / "shards").glob("*.json"):
@@ -310,8 +310,7 @@ def test_t16_duplicate_source_entry_id_or_original_path_rejects_manifest(tmp_pat
     snapshot_id = snapshot_with_inventory(workspace, memory_root)
     manifest_path = memory_root / "archive" / "manifests" / f"{snapshot_id}.json"
     manifest = read_json(manifest_path)
-    manifest["objects"][1]["source_object_id"] = manifest["objects"][0]["source_object_id"]
-    manifest["objects"][1]["archive_object_id"] = manifest["objects"][0]["source_object_id"]
+    manifest["sources"][1]["source_object_id"] = manifest["sources"][0]["source_object_id"]
     manifest["archive_manifest_hash"] = manifest_hash(manifest)
     manifest["manifest_hash"] = manifest["archive_manifest_hash"]
     write_json(manifest_path, manifest)
@@ -321,7 +320,7 @@ def test_t16_duplicate_source_entry_id_or_original_path_rejects_manifest(tmp_pat
     memory_root_2 = tmp_path / "memory-root-2"
     manifest_path_2 = memory_root_2 / "archive" / "manifests" / f"{snapshot_id}.json"
     manifest_2 = read_json(manifest_path_2)
-    manifest_2["objects"][1]["original_relative_path"] = manifest_2["objects"][0]["original_relative_path"]
+    manifest_2["sources"][1]["original_relative_path"] = manifest_2["sources"][0]["original_relative_path"]
     manifest_2["archive_manifest_hash"] = manifest_hash(manifest_2)
     manifest_2["manifest_hash"] = manifest_2["archive_manifest_hash"]
     write_json(manifest_path_2, manifest_2)
@@ -337,7 +336,7 @@ def test_t17_source_ref_with_correct_blob_but_wrong_source_object_rejects(tmp_pa
     memory_root, _batch_id, snapshot_id, revision_id = commit_workspace(workspace, tmp_path / "memory-root")
     publication = publication_dir(memory_root, revision_id)
     manifest = read_json(memory_root / "archive" / "manifests" / f"{snapshot_id}.json")
-    source_ids = [obj["source_object_id"] for obj in manifest["objects"]]
+    source_ids = [obj["source_object_id"] for obj in manifest["sources"]]
     shard_path = next((publication / "shards").glob("*.json"))
     shard = read_json(shard_path)
     old_ref = shard["source_refs"][0]

@@ -256,10 +256,10 @@ def rehash_publication_head(memory_root: Path, revision_id: str) -> None:
 
 def source_ref_for_span(memory_root: Path, snapshot_id: str, span: dict) -> str:
     manifest = load_manifest(memory_root, snapshot_id)
-    by_object = {obj["archive_object_id"]: obj for obj in manifest["objects"]}
-    obj = by_object[span["archive_object_id"]]
+    by_object = {obj["source_object_id"]: obj for obj in manifest["sources"]}
+    obj = by_object[span["source_object_id"]]
     digest = str(obj["content_hash"]).removeprefix("sha256:")
-    return f"archive://object/sha256:{digest}#B{span['start_byte']}-B{span['end_byte_exclusive']}"
+    return f"archive://snapshot/{snapshot_id}/source/{span['source_object_id']}/blob/sha256:{digest}#B{span['start_byte']}-B{span['end_byte_exclusive']}"
 
 
 def finalization_event_count(memory_root: Path, batch_id: str, revision_id: str) -> int:

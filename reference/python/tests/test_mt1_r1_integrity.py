@@ -136,10 +136,13 @@ def test_t11_memory_root_inside_workspace_and_workspace_inside_memory_root_fail(
     workspace = tmp_path / "workspace"
     copy_fixture(FIXTURE, workspace)
 
-    with pytest.raises(ValueError, match="memory root"):
-        create_archive_snapshot(workspace, workspace / ".nollm")
-    with pytest.raises(ValueError, match="workspace"):
-        create_archive_snapshot(workspace, tmp_path)
+    inside = create_archive_snapshot(workspace, workspace / ".nollm")
+    contains_workspace = create_archive_snapshot(workspace, tmp_path)
+
+    assert inside["ok"] is False
+    assert any("memory root" in error for error in inside["errors"])
+    assert contains_workspace["ok"] is False
+    assert any("workspace" in error for error in contains_workspace["errors"])
 
 
 def test_t13_internal_and_external_source_symlinks_fail(tmp_path: Path) -> None:
@@ -153,12 +156,14 @@ def test_t13_internal_and_external_source_symlinks_fail(tmp_path: Path) -> None:
     except OSError:
         pytest.skip("symlink creation unavailable")
 
-    with pytest.raises(ValueError, match="symlink"):
-        create_archive_snapshot(workspace, tmp_path / "memory-root")
+    internal_result = create_archive_snapshot(workspace, tmp_path / "memory-root")
+    assert internal_result["ok"] is False
+    assert any("symlink" in error for error in internal_result["errors"])
     internal.unlink()
     (workspace / "memory" / "external.md").symlink_to(external_target)
-    with pytest.raises(ValueError, match="symlink"):
-        create_archive_snapshot(workspace, tmp_path / "memory-root")
+    external_result = create_archive_snapshot(workspace, tmp_path / "memory-root")
+    assert external_result["ok"] is False
+    assert any("symlink" in error for error in external_result["errors"])
 
 
 def test_t16_source_hash_unchanged_after_negative_tests(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

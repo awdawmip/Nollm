@@ -31,7 +31,7 @@ def test_archive_verify_fails_on_tamper(tmp_path: Path) -> None:
     report = create_archive_snapshot(workspace, tmp_path / "memory-root")
     manifest = tmp_path / "memory-root" / "archive" / "manifests" / f"{report['snapshot_id']}.json"
     data = json.loads(manifest.read_text(encoding="utf-8"))
-    digest = data["objects"][0]["content_hash"].removeprefix("sha256:")
+    digest = data["sources"][0]["content_hash"].removeprefix("sha256:")
     (tmp_path / "memory-root" / "archive" / "objects" / "sha256" / digest).write_text("tampered", encoding="utf-8")
 
     verify = verify_archive_snapshot(tmp_path / "memory-root", str(report["snapshot_id"]))
@@ -51,8 +51,10 @@ def test_archive_rejects_symlink_escape(tmp_path: Path) -> None:
     except OSError:
         pytest.skip("symlink creation unavailable")
 
-    with pytest.raises(ValueError, match="symlink"):
-        create_archive_snapshot(workspace, tmp_path / "memory-root")
+    result = create_archive_snapshot(workspace, tmp_path / "memory-root")
+
+    assert result["ok"] is False
+    assert any("symlink" in error for error in result["errors"])
 
 
 def file_hashes(root: Path) -> dict[str, str]:

@@ -19,11 +19,15 @@ def test_stage_move_and_flat_publish_is_retired(tmp_path: Path) -> None:
         idempotence_key="sha256:" + "b" * 64,
     )
 
-    stage_shards(memory_root, "batch_a", [shard])
+    staged = stage_shards(memory_root, "batch_a", [shard])
     moved = move_staged_shards(memory_root, "batch_a")
-    revision = publish_field_revision(memory_root, batch_id="batch_a", target_field_id="field_fixture", shard_ids=moved)
+    revision = publish_field_revision(memory_root, batch_id="batch_a", target_field_id="field_fixture", shard_ids=[])
 
-    assert moved == [shard["shard_id"]]
+    assert staged["ok"] is False
+    assert moved["ok"] is False
+    assert staged["errors"] == ["unsupported_legacy_flat_writer"]
+    assert moved["errors"] == ["unsupported_legacy_flat_writer"]
     assert revision["ok"] is False
-    assert revision["errors"] == ["unsupported_flat_field_publisher"]
+    assert revision["errors"] == ["unsupported_legacy_flat_writer"]
     assert load_field_head(memory_root) is None
+    assert not (memory_root / "field").exists()
