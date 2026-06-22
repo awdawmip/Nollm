@@ -56,6 +56,8 @@ def resolve_source_path(workspace: Path, relative_path: str) -> Path:
     raw_target = root / relative_path
     if raw_target.is_symlink():
         raise ValueError(f"source path is a symlink: {relative_path}")
+    if raw_target.exists() and not raw_target.is_file():
+        raise ValueError(f"source_not_regular:{relative_path}")
     target = raw_target.resolve()
     if not _is_relative_to(target, root):
         raise ValueError(f"source path escapes workspace: {relative_path}")
@@ -80,6 +82,8 @@ def state_for_path(relative_path: str) -> dict[str, str]:
 def _entry(root: Path, path: Path) -> SourcePolicyEntry:
     if path.is_symlink():
         raise ValueError(f"source path is a symlink: {path}")
+    if not path.is_file():
+        raise ValueError(f"source_not_regular:{path.relative_to(root).as_posix()}")
     resolved = path.resolve()
     if not _is_relative_to(resolved, root):
         raise ValueError(f"source path escapes workspace: {path}")
