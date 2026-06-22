@@ -7,11 +7,20 @@ from typing import Any
 
 from .archive_manifest import canonical_json, detect_encoding, manifest_hash, newline_profile, read_json, sha256_bytes, write_json
 from .path_safety import contained_path, ensure_contained_parent, validate_sha256_hex, validate_snapshot_id, validate_source_object_id
+from .safe_storage import (
+    SafeStorageError,
+    initialize_memory_root,
+    open_existing_memory_root,
+    safe_atomic_json,
+    safe_atomic_write,
+    safe_read_regular,
+)
 from .source_policy import POLICY_ID, enumerate_legacy_sources, read_stable_source_bytes, state_for_path, validate_relative_source_path
 
 
-ARCHIVE_SCHEMA = "nollm.archive_manifest.v3"
+ARCHIVE_SCHEMA = "nollm.archive_manifest.v4"
 LEGACY_ARCHIVE_V2_ERROR = "legacy_mt1_archive_v2_requires_rearchive"
+LEGACY_ARCHIVE_V3_ERROR = "legacy_mt1_archive_v3_requires_rearchive"
 SOURCE_FIELDS = {
     "archived_path",
     "byte_length",
@@ -35,6 +44,7 @@ MANIFEST_FIELDS = {
     "source_policy_id",
     "sources",
     "workspace_identity",
+    "workspace_identity_scheme",
 }
 
 
@@ -43,19 +53,18 @@ def utc_now() -> str:
 
 
 def memory_root_path(memory_root: Path | str) -> Path:
-    raw = Path(memory_root)
-    if raw.exists() and raw.is_symlink():
-        raise ValueError("unsafe_storage_root")
-    root = raw.resolve()
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+    return initialize_memory_root(memory_root)
+
+
+def existing_memory_root_path(memory_root: Path | str) -> Path:
+    return open_existing_memory_root(memory_root)
 
 
 def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, policy_id: str = POLICY_ID) -> dict[str, Any]:
     try:
         workspace_path = Path(workspace).resolve()
+        assert_memory_root_outside_workspace(workspace_path, Path(memory_root))
         root = memory_root_path(memory_root)
-        assert_memory_root_outside_workspace(workspace_path, root)
         if policy_id != POLICY_ID:
             return {"ok": False, "errors": [f"unsupported_source_policy:{policy_id}"]}
         archive_errors = ensure_contained_parent(root, root / "archive" / "objects" / "sha256" / "placeholder", "archive_objects")
@@ -74,8 +83,10 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
             digest = sha256_bytes(before)
             source_bytes[source.relative_path] = before
             content_digests[source.relative_path] = digest
-        seed_digest = snapshot_seed_digest(policy_id, content_digests)
+        workspace_identity_scheme, workspace_identity = workspace_identity_for(workspace_path)
+        seed_digest = snapshot_seed_digest(policy_id, content_digests, workspace_identity=workspace_identity, workspace_identity_scheme=workspace_identity_scheme)
         snapshot_id = f"snap_{created_at.replace('-', '').replace(':', '').replace('T', '_').replace('Z', '')}_{seed_digest[:12]}"
+        manifest_path = root / "archive" / "manifests" / f"{snapshot_id}.json"
         source_records: list[dict[str, Any]] = []
         for source in sources:
             before = source_bytes[source.relative_path]
@@ -85,21 +96,32 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
             if object_errors:
                 return {"ok": False, "snapshot_id": snapshot_id, "errors": object_errors}
             object_path = root / "archive" / "objects" / "sha256" / digest
-            object_path.parent.mkdir(parents=True, exist_ok=True)
             if object_path.exists():
-                if object_path.is_symlink() or not object_path.is_file():
-                    return {"ok": False, "snapshot_id": snapshot_id, "errors": [f"archive_object_not_regular:{digest}"]}
-                existing = object_path.read_bytes()
+                try:
+                    existing = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
+                except SafeStorageError as exc:
+                    return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
                 if sha256_bytes(existing) != digest:
                     return {"ok": False, "snapshot_id": snapshot_id, "errors": [f"archive_object_hash_mismatch_existing:{digest}"]}
             else:
-                object_path.write_bytes(before)
-            source_records.append(canonical_source_entry(snapshot_id, policy_id, source.relative_path, before))
+                try:
+                    safe_atomic_write(
+                        root,
+                        ("archive", "objects", "sha256", digest),
+                        before,
+                        label="archive_object",
+                        replace=False,
+                        allow_idempotent=True,
+                    )
+                except SafeStorageError as exc:
+                    return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
+            source_records.append(canonical_source_entry(snapshot_id, policy_id, source.relative_path, before, workspace_identity=workspace_identity, workspace_identity_scheme=workspace_identity_scheme))
         pre_manifest = {
             "schema": ARCHIVE_SCHEMA,
             "snapshot_id": snapshot_id,
             "created_at": created_at,
-            "workspace_identity": workspace_path.name,
+            "workspace_identity": workspace_identity,
+            "workspace_identity_scheme": workspace_identity_scheme,
             "source_policy_id": policy_id,
             "sources": source_records,
             "snapshot_seed_hash": "sha256:" + seed_digest,
@@ -108,23 +130,41 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
         }
         pre_manifest["archive_manifest_hash"] = manifest_hash(pre_manifest)
         pre_manifest["manifest_hash"] = pre_manifest["archive_manifest_hash"]
-        path = root / "archive" / "manifests" / f"{pre_manifest['snapshot_id']}.json"
+        path = manifest_path
         manifest_errors = ensure_contained_parent(root, path, "archive_manifest")
         if manifest_errors:
             return {"ok": False, "snapshot_id": snapshot_id, "errors": manifest_errors}
-        write_json(path, pre_manifest)
+        try:
+            manifest_status = safe_atomic_json(
+                root,
+                ("archive", "manifests", f"{pre_manifest['snapshot_id']}.json"),
+                pre_manifest,
+                label="archive_manifest",
+                replace=False,
+                allow_idempotent=True,
+            )
+        except SafeStorageError as exc:
+            if path.exists():
+                try:
+                    existing = safe_read_regular(root, "archive", "manifests", f"{pre_manifest['snapshot_id']}.json", label="archive_manifest")
+                except SafeStorageError:
+                    existing = b""
+                if existing and existing != canonical_manifest_bytes(pre_manifest):
+                    return {"ok": False, "snapshot_id": snapshot_id, "errors": ["snapshot_id_collision"]}
+            return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
         return {
             "ok": True,
             "snapshot_id": pre_manifest["snapshot_id"],
             "manifest_path": str(path),
+            "reused": manifest_status == "reused",
             "source_count": len(source_records),
             "unique_blob_count": len(set(content_digests.values())),
             "object_count": len(set(content_digests.values())),
             "manifest_hash": pre_manifest["manifest_hash"],
             "archive_manifest_hash": pre_manifest["archive_manifest_hash"],
         }
-    except ValueError as exc:
-        return {"ok": False, "errors": [str(exc)]}
+    except (ValueError, OSError) as exc:
+        return {"ok": False, "errors": [_structured_archive_error(exc)]}
 
 
 def assert_memory_root_outside_workspace(workspace: Path | str, memory_root: Path | str) -> None:
@@ -142,7 +182,7 @@ def load_manifest(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
     errors = validate_snapshot_id(snapshot_id)
     if errors:
         raise ValueError(errors[0])
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     path, path_errors = contained_path(root, "archive", "manifests", f"{snapshot_id}.json", label="archive_manifest", must_exist=True, require_file=True)
     if path_errors:
         raise ValueError(path_errors[0])
@@ -154,11 +194,22 @@ def archive_sources(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     return sources if isinstance(sources, list) else []
 
 
-def canonical_source_entry(snapshot_id: str, policy_id: str, relative_path: str, data: bytes) -> dict[str, Any]:
+def canonical_source_entry(
+    snapshot_id: str,
+    policy_id: str,
+    relative_path: str,
+    data: bytes,
+    *,
+    workspace_identity: str = "",
+    workspace_identity_scheme: str = "",
+) -> dict[str, Any]:
     digest = sha256_bytes(data)
     content_hash = "sha256:" + digest
     states = state_for_path(relative_path)
-    source_object_id = canonical_source_object_id(snapshot_id, policy_id, relative_path, content_hash)
+    if workspace_identity and workspace_identity_scheme:
+        source_object_id = canonical_source_object_id_v4(snapshot_id, policy_id, relative_path, content_hash, workspace_identity, workspace_identity_scheme)
+    else:
+        source_object_id = canonical_source_object_id(snapshot_id, policy_id, relative_path, content_hash)
     return {
         "source_object_id": source_object_id,
         "original_relative_path": relative_path,
@@ -179,31 +230,38 @@ def canonical_source_object_id(snapshot_id: str, policy_id: str, relative_path: 
     return "src_" + sha256_bytes(payload)[:24]
 
 
+def canonical_source_object_id_v4(snapshot_id: str, policy_id: str, relative_path: str, content_hash: str, workspace_identity: str, workspace_identity_scheme: str) -> str:
+    payload = f"{snapshot_id}\0{policy_id}\0{workspace_identity_scheme}\0{workspace_identity}\0{relative_path}\0{content_hash}".encode("utf-8")
+    return "src_" + sha256_bytes(payload)[:24]
+
+
 def canonical_archived_path(snapshot_id: str, source_object_id: str, digest: str) -> str:
     return f"archive://snapshot/{snapshot_id}/source/{source_object_id}/blob/sha256:{digest}"
 
 
-def snapshot_seed_digest(policy_id: str, content_digests: dict[str, str]) -> str:
+def snapshot_seed_digest(policy_id: str, content_digests: dict[str, str], *, workspace_identity: str | None = None, workspace_identity_scheme: str | None = None) -> str:
+    payload: dict[str, Any] = {
+        "schema": ARCHIVE_SCHEMA,
+        "source_policy_id": policy_id,
+        "sources": [(path, "sha256:" + content_digests[path]) for path in sorted(content_digests)],
+    }
+    if workspace_identity is not None or workspace_identity_scheme is not None:
+        payload["workspace_identity"] = workspace_identity
+        payload["workspace_identity_scheme"] = workspace_identity_scheme
     return sha256_bytes(
-        canonical_json(
-            {
-                "schema": ARCHIVE_SCHEMA,
-                "source_policy_id": policy_id,
-                "sources": [(path, "sha256:" + content_digests[path]) for path in sorted(content_digests)],
-            }
-        )
+        canonical_json(payload)
     )
 
 
 def verify_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
-    try:
-        root = memory_root_path(memory_root)
-    except ValueError as exc:
-        return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": [str(exc)], "source_count": 0, "object_count": 0}
     errors: list[str] = []
     errors.extend(validate_snapshot_id(snapshot_id))
     if errors:
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": errors, "source_count": 0, "object_count": 0}
+    try:
+        root = existing_memory_root_path(memory_root)
+    except ValueError as exc:
+        return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": [str(exc)], "source_count": 0, "object_count": 0}
     manifest_path, path_errors = contained_path(root, "archive", "manifests", f"{snapshot_id}.json", label="archive_manifest", must_exist=True, require_file=True)
     errors.extend(path_errors)
     if errors:
@@ -214,6 +272,11 @@ def verify_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[s
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": ["malformed_json:archive_manifest"], "source_count": 0, "object_count": 0}
     except OSError as exc:
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": [f"unreadable_json:archive_manifest:{exc.__class__.__name__}"], "source_count": 0, "object_count": 0}
+    except ValueError as exc:
+        message = str(exc)
+        if message.startswith("malformed_json:"):
+            message = "malformed_json:archive_manifest"
+        return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": [message], "source_count": 0, "object_count": 0}
     if not isinstance(manifest, dict):
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": ["invalid_archive_manifest"], "source_count": 0, "object_count": 0}
     errors.extend(validate_archive_manifest_schema(manifest, expected_snapshot_id=snapshot_id, memory_root=root))
@@ -255,6 +318,8 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
         errors.append(f"unknown_archive_manifest_field:{field}")
     if schema == "nollm.archive_manifest.v2":
         return [LEGACY_ARCHIVE_V2_ERROR]
+    if schema == "nollm.archive_manifest.v3":
+        return [LEGACY_ARCHIVE_V3_ERROR]
     if schema != ARCHIVE_SCHEMA:
         errors.append("invalid_archive_manifest_schema")
     if "objects" in manifest:
@@ -272,6 +337,8 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
         errors.append("invalid_archive_created_at")
     if not isinstance(manifest.get("workspace_identity"), str) or not manifest.get("workspace_identity"):
         errors.append("invalid_workspace_identity")
+    if not isinstance(manifest.get("workspace_identity_scheme"), str) or not manifest.get("workspace_identity_scheme"):
+        errors.append("invalid_workspace_identity_scheme")
     sources = manifest.get("sources")
     if not isinstance(sources, list):
         return errors + ["invalid_archive_sources"]
@@ -319,15 +386,24 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
                 errors.extend(object_errors)
                 if not object_errors:
                     try:
-                        data = object_path.read_bytes()
+                        data = safe_read_regular(memory_root, "archive", "objects", "sha256", digest, label="archive_object")
                     except OSError as exc:
                         errors.append(f"unreadable_archive_object:{rel}:{exc.__class__.__name__}")
+                    except SafeStorageError as exc:
+                        errors.append(str(exc))
                     else:
                         if sha256_bytes(data) != digest:
                             errors.append(f"archive_object_hash_mismatch:{rel}")
             seed_items[rel] = digest
         if rel_valid and rel and snapshot_for_id and not validate_sha256_hex(digest):
-            expected = canonical_source_entry(snapshot_for_id, POLICY_ID, rel, data)
+            expected = canonical_source_entry(
+                snapshot_for_id,
+                POLICY_ID,
+                rel,
+                data,
+                workspace_identity=str(manifest.get("workspace_identity", "")),
+                workspace_identity_scheme=str(manifest.get("workspace_identity_scheme", "")),
+            )
             for key, expected_value in expected.items():
                 if source.get(key) != expected_value:
                     errors.append(f"archive_source_{key}_mismatch:{rel}")
@@ -338,10 +414,17 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
             errors.append(f"duplicate_source_object_id:{source_object_id}")
         else:
             seen_ids.add(str(source_object_id))
-        if not isinstance(source.get("byte_length"), int) or int(source.get("byte_length")) < 0:
+        if type(source.get("byte_length")) is not int or int(source.get("byte_length")) < 0:
             errors.append(f"invalid_byte_length:{rel}")
+        if type(source.get("line_count")) is not int or int(source.get("line_count")) < 0:
+            errors.append(f"invalid_line_count:{rel}")
     if snapshot_for_id:
-        seed_digest = snapshot_seed_digest(str(manifest.get("source_policy_id")), seed_items)
+        seed_digest = snapshot_seed_digest(
+            str(manifest.get("source_policy_id")),
+            seed_items,
+            workspace_identity=str(manifest.get("workspace_identity", "")),
+            workspace_identity_scheme=str(manifest.get("workspace_identity_scheme", "")),
+        )
         if manifest.get("snapshot_seed_hash") != "sha256:" + seed_digest:
             errors.append("snapshot_seed_hash_mismatch")
         if not snapshot_for_id.endswith(seed_digest[:12]):
@@ -365,3 +448,23 @@ def _is_utc_timestamp(value: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+def workspace_identity_for(workspace: Path) -> tuple[str, str]:
+    scheme = "sha256:absolute_workspace_root:v1"
+    canonical_root = str(workspace.resolve()).replace("\\", "/")
+    return scheme, "sha256:" + sha256_bytes(canonical_root.encode("utf-8"))
+
+
+def canonical_manifest_bytes(manifest: dict[str, Any]) -> bytes:
+    from .safe_storage import json_dumps
+
+    return json_dumps(manifest).encode("utf-8")
+
+
+def _structured_archive_error(exc: Exception) -> str:
+    if isinstance(exc, SafeStorageError):
+        return str(exc)
+    if isinstance(exc, OSError):
+        return "io_error:archive"
+    return str(exc)

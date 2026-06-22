@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from stat import S_ISREG
 
+from .safe_storage import open_existing_source_root, safe_list_regular_files, safe_read_regular
+
 
 POLICY_ID = "openclaw_legacy_v1"
 ALLOWED_LEGACY_FILES = ("MEMORY.md", "DREAMS.md")
@@ -21,9 +23,7 @@ class SourcePolicyEntry:
 def enumerate_legacy_sources(workspace: Path, policy_id: str = POLICY_ID) -> list[SourcePolicyEntry]:
     if policy_id != POLICY_ID:
         raise ValueError(f"unsupported source policy: {policy_id}")
-    root = workspace.resolve()
-    if not root.exists() or not root.is_dir():
-        raise ValueError(f"workspace is not a directory: {workspace}")
+    root = open_existing_source_root(workspace)
     entries: list[SourcePolicyEntry] = []
     for name in ALLOWED_LEGACY_FILES:
         path = root / name
@@ -31,7 +31,7 @@ def enumerate_legacy_sources(workspace: Path, policy_id: str = POLICY_ID) -> lis
             entries.append(_entry(root, path))
     memory_dir = root / "memory"
     if memory_dir.exists():
-        for path in sorted(memory_dir.rglob("*.md")):
+        for path in safe_list_regular_files(root, "memory", suffix=".md"):
             if _is_excluded(path.relative_to(root)):
                 continue
             entries.append(_entry(root, path))
@@ -68,25 +68,19 @@ def resolve_source_path(workspace: Path, relative_path: str) -> Path:
 
 
 def read_stable_source_bytes(workspace: Path, relative_path: str) -> bytes:
-    target = resolve_source_path(workspace, relative_path)
     try:
-        before = target.lstat()
-    except OSError as exc:
-        raise ValueError(f"source_unreadable:{relative_path}:{exc.__class__.__name__}") from exc
-    if not S_ISREG(before.st_mode) or target.is_symlink():
-        raise ValueError(f"source_not_regular:{relative_path}")
-    try:
-        data = target.read_bytes()
-        after = target.lstat()
-    except OSError as exc:
-        raise ValueError(f"source_unreadable:{relative_path}:{exc.__class__.__name__}") from exc
-    if target.is_symlink() or not S_ISREG(after.st_mode):
-        raise ValueError(f"source_not_regular:{relative_path}")
-    before_identity = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
-    after_identity = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
-    if before_identity != after_identity:
-        raise ValueError(f"source_changed_during_snapshot:{relative_path}")
-    return data
+        validate_relative_source_path(relative_path)
+        root = open_existing_source_root(workspace)
+        return safe_read_regular(root, *Path(relative_path).parts, label=f"source:{relative_path}", require_private_inode=False)
+    except ValueError as exc:
+        message = str(exc)
+        if message.startswith("path_symlink"):
+            raise ValueError(f"source path is a symlink: {relative_path}") from exc
+        if message.startswith("path_not_file"):
+            raise ValueError(f"source_not_regular:{relative_path}") from exc
+        if message.startswith("file_changed"):
+            raise ValueError(f"source_changed_during_snapshot:{relative_path}") from exc
+        raise ValueError(f"source_unreadable:{relative_path}:{message}") from exc
 
 
 def state_for_path(relative_path: str) -> dict[str, str]:

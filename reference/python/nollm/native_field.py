@@ -8,13 +8,14 @@ from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
 
-from .archive import ARCHIVE_SCHEMA, LEGACY_ARCHIVE_V2_ERROR, archive_sources, load_manifest, memory_root_path, utc_now
+from .archive import ARCHIVE_SCHEMA, LEGACY_ARCHIVE_V2_ERROR, archive_sources, existing_memory_root_path, load_manifest, memory_root_path, utc_now
 from .archive import verify_archive_snapshot
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
 from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID
 from .legacy_text import normalize_legacy_text, source_range_hash, text_hash
 from .path_safety import contained_path, validate_batch_id, validate_field_id, validate_field_revision_id
+from .safe_storage import SafeStorageError, safe_read_regular
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
@@ -107,7 +108,7 @@ def build_shard(record: dict[str, Any], *, batch_id: str, source_policy_id: str,
 
 
 def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]:
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     shards: dict[str, dict[str, Any]] = {}
     publication = current_publication(root)
     if not publication:
@@ -164,12 +165,17 @@ def move_staged_shards(memory_root: Path | str, batch_id: str) -> dict[str, Any]
 
 
 def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
-    root = memory_root_path(memory_root)
+    try:
+        root = existing_memory_root_path(memory_root)
+    except ValueError:
+        return None
     path, errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=True, require_file=True)
     if errors:
         return None
     try:
-        return read_json(path)
+        data = safe_read_regular(root, "field", "HEAD.json", label="field_head")
+        loaded = json.loads(data.decode("utf-8"))
+        return loaded if isinstance(loaded, dict) else None
     except Exception:
         return None
 
@@ -180,7 +186,7 @@ def current_publication(memory_root: Path | str) -> Path | None:
 
 def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"publication": None, "head": None, "errors": [str(exc)]}
     errors: list[str] = []

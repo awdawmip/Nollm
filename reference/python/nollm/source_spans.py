@@ -5,18 +5,38 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import archive_sources, load_manifest, memory_root_path, verify_archive_snapshot
+from .archive import archive_sources, existing_memory_root_path, load_manifest, verify_archive_snapshot
 from .archive_manifest import sha256_bytes
 from .path_safety import contained_path, validate_snapshot_id
+from .safe_storage import SafeStorageError, read_jsonl_bytes, safe_atomic_jsonl, safe_read_regular
 
 SPAN_SCHEMA = "nollm.source_span_inventory.v1"
 ALLOWED_DISPOSITIONS = {"classified_pending", "sharded", "non_memory", "manual_review", "unsupported"}
 NON_MEMORY_REASONS = {"blank", "structural_heading"}
+SPAN_FIELDS = {
+    "content_hash",
+    "disposition",
+    "end_byte_exclusive",
+    "epistemic_state",
+    "lifecycle",
+    "locator",
+    "operational_state",
+    "origin_kind",
+    "original_relative_path",
+    "reason",
+    "related_shard_ids",
+    "schema",
+    "snapshot_id",
+    "source_object_id",
+    "span_id",
+    "start_byte",
+    "text_hash",
+}
 
 
 def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
     id_errors = validate_snapshot_id(snapshot_id)
@@ -38,7 +58,10 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
         object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
         if object_errors:
             return {"ok": False, "snapshot_id": snapshot_id, "errors": object_errors}
-        data = object_path.read_bytes()
+        try:
+            data = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
+        except SafeStorageError as exc:
+            return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
             disposition, reason = _classify_span(chunk, source.get("encoding"))
@@ -66,42 +89,46 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
     path, path_errors = contained_path(root, "archive", "source-spans", f"{snapshot_id}.jsonl", label="source_span_inventory", must_exist=False)
     if path_errors:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": path_errors}
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records), encoding="utf-8")
+    try:
+        safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), records, label="source_span_inventory")
+    except SafeStorageError as exc:
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
     return {"ok": True, "snapshot_id": snapshot_id, "span_count": len(records), "inventory_path": str(path)}
 
 
 def load_source_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[str, Any]]:
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     errors = validate_snapshot_id(snapshot_id)
     if errors:
         raise ValueError(errors[0])
     path, path_errors = contained_path(root, "archive", "source-spans", f"{snapshot_id}.jsonl", label="source_span_inventory", must_exist=True, require_file=True)
     if path_errors:
         raise ValueError(path_errors[0])
-    records: list[dict[str, Any]] = []
-    for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        if not line.strip():
-            continue
-        item = json.loads(line)
-        if not isinstance(item, dict):
-            raise ValueError(f"invalid_source_span_record:{index}")
-        if "archive_object_id" in item:
-            raise ValueError(f"legacy_archive_object_id_forbidden:{index}")
-        records.append(item)
+    try:
+        records = read_jsonl_bytes(safe_read_regular(root, "archive", "source-spans", f"{snapshot_id}.jsonl", label="source_span_inventory"), "source_span_inventory")
+    except SafeStorageError as exc:
+        raise ValueError(str(exc)) from exc
+    errors: list[str] = []
+    for index, item in enumerate(records, start=1):
+        errors.extend(validate_source_span_record(item, index=index))
+    if errors:
+        raise ValueError(",".join(errors))
     return records
 
 
 def write_source_spans(memory_root: Path | str, snapshot_id: str, spans: list[dict[str, Any]]) -> None:
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     errors = validate_snapshot_id(snapshot_id)
     if errors:
         raise ValueError(errors[0])
     path, path_errors = contained_path(root, "archive", "source-spans", f"{snapshot_id}.jsonl", label="source_span_inventory", must_exist=False)
     if path_errors:
         raise ValueError(path_errors[0])
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(span, ensure_ascii=False, sort_keys=True) + "\n" for span in spans), encoding="utf-8")
+    for index, span in enumerate(spans, start=1):
+        errors = validate_source_span_record(span, index=index)
+        if errors:
+            raise ValueError(",".join(errors))
+    safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), spans, label="source_span_inventory")
 
 
 def mark_spans_linked(memory_root: Path | str, snapshot_id: str, links: list[dict[str, Any]]) -> None:
@@ -161,3 +188,41 @@ def _line_locator(data: bytes, start: int, end: int) -> dict[str, int | str]:
     start_line = data[:start].count(b"\n") + 1
     end_line = data[:end].count(b"\n") + (0 if end > start and data[end - 1 : end] == b"\n" else 1)
     return {"method": "byte_range_with_line_hint", "start_line": start_line, "end_line": max(start_line, end_line)}
+
+
+def validate_source_span_record(item: dict[str, Any], *, index: int | None = None) -> list[str]:
+    label = str(index) if index is not None else str(item.get("span_id", "unknown"))
+    errors: list[str] = []
+    unknown = sorted(set(item) - SPAN_FIELDS)
+    for field in unknown:
+        errors.append(f"unknown_source_span_field:{label}:{field}")
+    if "archive_object_id" in item:
+        errors.append(f"legacy_archive_object_id_forbidden:{label}")
+    if item.get("schema") != SPAN_SCHEMA:
+        errors.append(f"invalid_source_span_schema:{label}")
+    for key in ("snapshot_id", "source_object_id", "original_relative_path", "content_hash", "span_id", "text_hash", "origin_kind", "epistemic_state", "operational_state", "disposition", "reason", "lifecycle"):
+        if not isinstance(item.get(key), str):
+            errors.append(f"invalid_source_span_{key}:{label}")
+    for key in ("start_byte", "end_byte_exclusive"):
+        if type(item.get(key)) is not int or int(item.get(key)) < 0:
+            errors.append(f"invalid_source_span_{key}:{label}")
+    if type(item.get("start_byte")) is int and type(item.get("end_byte_exclusive")) is int and item["end_byte_exclusive"] < item["start_byte"]:
+        errors.append(f"invalid_source_span_range:{label}")
+    locator = item.get("locator")
+    if not isinstance(locator, dict):
+        errors.append(f"invalid_source_span_locator:{label}")
+    else:
+        if locator.get("method") != "byte_range_with_line_hint":
+            errors.append(f"invalid_source_span_locator_method:{label}")
+        for key in ("start_line", "end_line"):
+            if type(locator.get(key)) is not int or int(locator.get(key)) < 1:
+                errors.append(f"invalid_source_span_locator_{key}:{label}")
+    related = item.get("related_shard_ids")
+    if not isinstance(related, list) or any(not isinstance(value, str) for value in related):
+        errors.append(f"invalid_source_span_related_shard_ids:{label}")
+    disposition = item.get("disposition")
+    if disposition not in ALLOWED_DISPOSITIONS:
+        errors.append(f"invalid_source_span_disposition:{label}")
+    if disposition == "non_memory" and item.get("reason") not in NON_MEMORY_REASONS:
+        errors.append(f"invalid_source_span_non_memory_reason:{label}")
+    return errors

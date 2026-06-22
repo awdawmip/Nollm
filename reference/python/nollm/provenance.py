@@ -6,7 +6,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import archive_sources, load_manifest, memory_root_path, verify_archive_snapshot
+from .archive import archive_sources, existing_memory_root_path, load_manifest, verify_archive_snapshot
 from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
 from .legacy_extract import idempotence_key
@@ -23,7 +23,8 @@ from .native_field import (
     validate_publication_semantics,
 )
 from .path_safety import contained_path, no_symlink_segments, validate_batch_id, validate_field_revision_id, validate_snapshot_id
-from .source_spans import SPAN_SCHEMA, _classify_span, _line_locator, _paragraph_ranges, load_source_spans
+from .safe_storage import SafeStorageError, read_jsonl_bytes, safe_read_regular
+from .source_spans import SPAN_SCHEMA, _classify_span, _line_locator, _paragraph_ranges, load_source_spans, validate_source_span_record
 
 
 SOURCE_REF_RE = re.compile(r"^archive://snapshot/(snap_[0-9]{8}_[0-9]{6}_[0-9a-f]{12})/source/(src_[0-9a-f]{24})/blob/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
@@ -95,7 +96,7 @@ def build_source_span_links(
 
 
 def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[str, Any]]:
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     archive = verify_archive_snapshot(root, snapshot_id)
     if not archive.get("ok"):
         raise ValueError(",".join(str(error) for error in archive.get("errors", [])))
@@ -106,7 +107,7 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
         object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
         if object_errors:
             raise ValueError(",".join(object_errors))
-        data = object_path.read_bytes()
+        data = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
         source_object_id = str(obj["source_object_id"])
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
@@ -137,7 +138,7 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
 
 def validate_staged_publication(memory_root: Path | str, batch_id: str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return _result(snapshot_id, field_revision_id, [str(exc)])
     id_errors = validate_batch_id(batch_id) + validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
@@ -160,7 +161,7 @@ def validate_active_publication_package(
     require_head: bool = True,
 ) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return _result("", expected_revision_id or publication.name, [str(exc)])
     revision_id = expected_revision_id or publication.name
@@ -179,7 +180,7 @@ def validate_active_publication_package(
 
 def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return _result(snapshot_id, field_revision_id, [str(exc)])
     errors: list[str] = []
@@ -539,18 +540,23 @@ def _validate_exact_relation_closure(
 
 def _span_core(span: dict[str, Any]) -> dict[str, Any]:
     return {
+        "schema": span.get("schema"),
         "snapshot_id": span.get("snapshot_id"),
         "source_object_id": span.get("source_object_id"),
         "original_relative_path": span.get("original_relative_path"),
+        "content_hash": span.get("content_hash"),
         "span_id": span.get("span_id"),
         "start_byte": span.get("start_byte"),
         "end_byte_exclusive": span.get("end_byte_exclusive"),
+        "locator": span.get("locator"),
         "text_hash": span.get("text_hash"),
         "origin_kind": span.get("origin_kind"),
         "epistemic_state": span.get("epistemic_state"),
         "operational_state": span.get("operational_state"),
         "disposition": span.get("disposition"),
+        "related_shard_ids": span.get("related_shard_ids"),
         "reason": span.get("reason"),
+        "lifecycle": span.get("lifecycle"),
     }
 
 
@@ -575,9 +581,16 @@ def _load_links(root: Path, snapshot_id: str, field_revision_id: str) -> list[di
 def _load_publication_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
-    import json
-
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    try:
+        records = read_jsonl_bytes(path.read_bytes(), path.name)
+    except SafeStorageError as exc:
+        raise ValueError(str(exc)) from exc
+    for index, record in enumerate(records, start=1):
+        if path.name == "source-span-projection.jsonl":
+            errors = validate_source_span_record(record, index=index)
+            if errors:
+                raise ValueError(",".join(errors))
+    return records
 
 
 def _unknown_fields(record: dict[str, Any], allowed: set[str], label: str) -> list[str]:

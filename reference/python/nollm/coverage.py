@@ -5,7 +5,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import archive_sources, load_manifest, memory_root_path
+from .archive import archive_sources, existing_memory_root_path, load_manifest
 from .archive_manifest import read_json
 from .native_field import current_publication
 from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_spans
@@ -13,7 +13,7 @@ from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_
 
 def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, require_linked: bool = False) -> dict[str, Any]:
     try:
-        root = memory_root_path(memory_root)
+        root = existing_memory_root_path(memory_root)
     except ValueError as exc:
         return _coverage_error(snapshot_id, str(exc))
     try:
@@ -41,6 +41,9 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, requi
             errors.append(f"missing_spans:{key[1]}")
         for span in object_spans:
             total += 1
+            if type(span.get("start_byte")) is not int or type(span.get("end_byte_exclusive")) is not int:
+                errors.append(f"invalid_span_integer:{key[1]}:{span.get('span_id')}")
+                continue
             start = int(span["start_byte"])
             end = int(span["end_byte_exclusive"])
             if start != current:
