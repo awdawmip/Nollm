@@ -85,12 +85,14 @@ P5.4 validates scale links but does not introduce parent/children or leaf semant
 
 Validation must not infer ontology, generate anchors automatically, call external LLMs, build embeddings, place cards automatically, calculate polygon overlap, or mutate memory autonomously.
 
-## MT1-R9 Active Publication Validation
+## MT1-R11 Active Publication Validation
 
 Active MT1 validation uses one complete archive-bound predicate. A publication is active only when HEAD binding, manifest closure, activation binding, package semantics, archive manifest validity, contained regular paths, canonical source inventory, exact projection/link closure, full importable coverage, and source-derived shard profile all pass.
 
-Malformed archive, source-span, ingress, ledger, or publication files must produce structured validation errors, not parser/type exceptions. R9 requires ArchiveManifest v3 `sources[]`; v2 artifacts report `legacy_mt1_archive_v2_requires_rearchive`, and earlier active packages require rearchive/reimport.
+Malformed archive, source-span, ingress, ledger, or publication files must produce structured validation errors, not parser/type exceptions. MT1-R11 requires ArchiveManifest v4 `sources[]`; v2/v3 artifacts require rearchive/reimport.
 
 R10 validates exact authoritative schemas for HEAD, receipt, revision, activation, publication manifest, source-span projection, source-span links, publish journal, handoff, state, and import request. Unknown authoritative fields deactivate the package or mark ingress untrusted. Receipt target field, revision field, activation field, manifest field, and HEAD field must all match. Batch ids are grammar-checked everywhere they appear.
 
-Source-span projection may alter only controlled lifecycle fields: `disposition`, `related_shard_ids`, `lifecycle`, and the linked reason. Snapshot, source object, original path, content hash, byte range, locator, text hash, origin kind, epistemic state, and operational state remain canonical.
+Source-span inventory is full-record canonical provenance. Validation rebuilds it from verified archive blobs and compares schema, source object, original path, content hash, byte range, locator, text hash, lifecycle, disposition, reason, related shard ids, origin kind, epistemic state, and operational state. Source-span projection may alter only controlled linked lifecycle fields under exact relation closure.
+
+Strict JSON applies to authoritative MT1 files: duplicate keys, non-finite numbers, booleans in integer fields, unknown fields, and unexpected arrays/scalars fail closed. Read/validate/report/admit APIs must not create a missing memory root. SafeStorage rejects symlink/reparse traversal and hard-linked authoritative files.

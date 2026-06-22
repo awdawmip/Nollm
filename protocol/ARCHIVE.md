@@ -8,17 +8,18 @@ The Archive plane preserves raw legacy records before any interpretation. Archiv
 
 `ArchiveManifest` records one snapshot:
 
-- `schema`: `nollm.archive_manifest.v1`
+- `schema`: `nollm.archive_manifest.v4`
 - `snapshot_id`
 - `created_at`
 - `workspace_identity`
+- `workspace_identity_scheme`
 - `source_policy_id`
 - `sources`
 - `snapshot_seed_hash`
 - `manifest_hash`
 - `archive_manifest_hash`
 
-`manifest_hash` is computed from canonical JSON with `manifest_hash` set to `null`.
+`manifest_hash` is computed from canonical JSON with `manifest_hash` and `archive_manifest_hash` set to `null`.
 
 ## Archive Source
 
@@ -120,6 +121,8 @@ Archive snapshot may read legacy files. Archive verify, span inventory, extracti
 
 `NOLLM_MEMORY_ROOT` must be physically outside the source workspace: neither path may contain the other. Source paths are checked with `lstat` before resolution, and any source symlink is rejected.
 
+MT1-R11 distinguishes opening an existing memory root from initializing one. Read, validate, inspect, admit, and report operations must not create a missing memory root. Archive creation validates the source/workspace boundary before creating storage directories.
+
 ## MT1-R9 Archive v3
 
 R9 makes source identity and source state policy-derived. Blob identity is the SHA-256 content hash and may be shared by byte-identical files. Source-entry identity is a snapshot-local record and remains distinct for different original paths even when bytes are equal.
@@ -147,8 +150,32 @@ An archive-only snapshot with no importable spans is successful archive evidence
 
 ## MT1-R10 Archive Trust Boundary
 
-A self-hash is not a signature. MT1-R10 treats self-hashes as corruption checks only; trust-bearing source identity is rederived from source policy and archived bytes. Unknown ArchiveManifest top-level fields and unknown source-entry fields are invalid. `created_at` and `workspace_identity` are display/audit metadata, not active trust inputs.
+A self-hash is not a signature. MT1-R10 treats self-hashes as corruption checks only; trust-bearing source identity is rederived from source policy and archived bytes. Unknown ArchiveManifest top-level fields and unknown source-entry fields are invalid. In R10, `created_at` and `workspace_identity` were display/audit metadata; MT1-R11 supersedes that model by binding opaque workspace identity into ArchiveManifest v4 snapshot identity.
 
 Archive source order is canonical by `original_relative_path`. Snapshot reports distinguish `source_count` from `unique_blob_count`, because byte-identical source paths may share one blob.
 
 Canonical source span construction must start from a verified archive view and contained blob reads. It must not construct a filesystem path from mutable manifest text without validating the digest grammar and SafeRoot containment.
+
+## MT1-R11 Archive v4 And SafeStorage
+
+ArchiveManifest v3 is no longer active-compatible and returns `legacy_mt1_archive_v3_requires_rearchive`. New snapshots use `schema: nollm.archive_manifest.v4`.
+
+The snapshot seed includes:
+
+- archive schema
+- source policy id
+- opaque `workspace_identity`
+- `workspace_identity_scheme`
+- ordered `(original_relative_path, content_hash)` entries
+
+The default workspace identity is a SHA-256 digest of the canonical absolute workspace root. The raw absolute path is not written into the manifest. `source_object_id` is derived from snapshot id, policy id, workspace identity scheme, workspace identity, original path, and content hash.
+
+If a manifest path for the computed `snapshot_id` already exists:
+
+- byte-identical canonical manifest bytes are reused without rewriting;
+- any canonical byte mismatch fails with `snapshot_id_collision`;
+- existing blobs are verified read-only and are never repaired in place.
+
+SafeStorage is the archive write boundary. It rejects symlink/reparse paths, rejects hard-linked authoritative files when read or verified, writes blobs and manifests through temporary files in the same controlled directory, and publishes manifests last. Boolean JSON values are not accepted as integers, duplicate JSON keys and non-finite numbers fail closed, and unknown authoritative fields remain invalid.
+
+Source-span inventory is treated as deterministic derived provenance. Active validation rebuilds canonical spans from verified archive blobs and compares the full record, including `schema`, `locator`, `lifecycle`, `reason`, `related_shard_ids`, source states, byte ranges, and hashes.

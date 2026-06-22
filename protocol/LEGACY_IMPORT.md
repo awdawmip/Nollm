@@ -166,11 +166,11 @@ The R7 legacy-import shard profile is immutable for every shard related to a sou
 
 MT1-R8 replaces the hardcoded legacy state profile with exact source-state preservation from the archive source entry. A `DREAMS.md` source marked `tentative` remains `tentative`; no import step may promote it to `legacy_recorded` or `confirmed`. Shard identity is derived from canonical text plus the exact source ref and source policy, so byte-identical source entries remain distinct shards.
 
-MT1-R9 requires ArchiveManifest v3. The archive has one canonical `sources[]` list; v2 manifests, `objects`, `source_entries`, and `archive_object_id` aliases require rearchive or are invalid. Source id, source state, archived path, blob metadata, and source policy are rederived from policy and archived bytes before any span build, import, or active admission.
+MT1-R9 required ArchiveManifest v3. MT1-R11 supersedes it with ArchiveManifest v4. v2 and v3 manifests require rearchive before active import. The archive has one canonical `sources[]` list; `objects`, `source_entries`, and `archive_object_id` aliases require rearchive or are invalid. Source id, source state, archived path, blob metadata, workspace identity, and source policy are rederived before any span build, import, or active admission.
 
 The complete active predicate is package-local and archive-bound: HEAD, publication manifest, activation, receipt, revision, shard roster, source-span links, projection, archive manifest, archive blobs, canonical source inventory, coverage, and immutable source-derived shard profile must all validate together. Ingress request, handoff, state, report, and ledger files are audit workflow only.
 
-Publication uses one package writer guarded by a memory-root single-writer lock, SafeRoot-contained file operations, a pre-HEAD publish journal, and HEAD compare-and-swap. Obsolete flat revision/shard publishers return `unsupported_legacy_flat_writer` without I/O.
+Publication uses one package writer guarded by a memory-root single-writer lock, SafeStorage file operations, a pre-HEAD publish journal, and HEAD compare-and-swap. Obsolete flat revision/shard publishers return `unsupported_legacy_flat_writer` without I/O.
 
 Failed recovery batches use `batch_<20hex>_rN`. Repeated recovery increments `N`; invalid `_recovery_recovery` identifiers are never generated.
 
@@ -178,7 +178,26 @@ MT1-R10 makes the import request a canonical plan binding, not editable workflow
 
 Authoritative workflow and publication records reject unknown fields. Display timestamps remain audit metadata only. Recovery copies no opaque ingress bytes; it regenerates canonical extraction from the verified archive and keeps the same logical plan base with a serialized `_rN` attempt id.
 
-Commit, reconcile, recovery, finalization ledger append, and state transition share the writer lock. A stale lock may be reclaimed only from a validated expired owner record; a fresh lock remains `writer_busy`.
+Commit, reconcile, recovery, finalization ledger append, and state transition share the writer lock. A stale lock may be reclaimed only when the owner record is valid and the owner process is not alive. Age alone is insufficient proof. A live or unprovable owner remains `writer_busy`.
+
+## MT1-R11 Safe Storage And Recovery
+
+Plan registration is an atomic batch initialization. For the same canonical plan, exactly one caller creates the batch and writes the `legacy_import_plan` ledger event; concurrent callers reuse the existing request after the winning writer publishes it.
+
+Authoritative ingress, ledger, state, staging, publication, journal, and HEAD artifacts are written through SafeStorage. JSON and JSONL writes are temp-file plus atomic replace/create under the controlled memory root. Ledger writes are atomic rewrites, not append-through existing inodes. Hard-linked authoritative files are rejected or replaced only at the memory-root name, leaving external hard-link targets unchanged.
+
+The publish journal records:
+
+- `prior_head` and `prior_head_bytes_sha256`
+- candidate revision id
+- candidate manifest and activation hashes
+- `candidate_head_bytes_sha256`
+- `fencing_token`
+- batch id and transaction id
+
+HEAD write is compare-and-swap against the exact prior HEAD bytes observed under the writer lock. Rollback is also CAS: it may restore the exact prior HEAD only if current HEAD bytes still match the candidate head hash and the fencing token is current. Otherwise recovery writes a conflict report and leaves HEAD unchanged.
+
+`recover_legacy_import()` must not self-lock. When it already holds the writer lock for a `publishing` batch, it calls the locked reconciliation path directly.
 
 ## Default State
 

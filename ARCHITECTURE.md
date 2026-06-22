@@ -65,11 +65,11 @@ Nollm v0.1 excludes embeddings, vector stores, graph backends, automatic ontolog
 
 ## MT1 Archive Publication Boundary
 
-MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; ArchiveManifest v3 derives source-entry identity and source state from source policy plus archived bytes, preserving original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by SafeRoot-contained writes, a publish journal, single-writer locking, and compare-and-swap rules.
+MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; ArchiveManifest v4 derives source-entry identity and source state from source policy, archived bytes, and an opaque workspace identity, preserving original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by SafeStorage writes, a publish journal, fenced single-writer locking, and compare-and-swap rules.
 
 Ingress, handoff, ledger, and migration reports are audit workflow records. They cannot authorize active memory, rollback, or replacement.
 
-MT1-R10 closes the boundary around a canonical plan: verified archive view, sealed ingress, sealed staging package, validated publication package, atomic HEAD activation, and serialized finalization/recovery. SafeRoot means every trust-bearing path is derived from validated ids and checked for containment, regular-file expectations, and symlink segments before use. Self-hashes are not signatures; unknown authoritative fields are rejected rather than treated as extension channels.
+MT1-R11 closes the storage boundary around immutable snapshot identity, operation-level containment, canonical source inventory, sealed ingress, validated publication packages, atomic HEAD activation, and serialized finalization/recovery. SafeStorage separates opening an existing memory root from initializing one, rejects symlink/reparse/hard-link authoritative artifacts, writes through same-directory temporary files, and returns structured failures. Self-hashes are not signatures; unknown authoritative fields are rejected rather than treated as extension channels.
 
 ## Nollm V1 Route Lock
 
