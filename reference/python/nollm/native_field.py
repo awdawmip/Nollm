@@ -462,7 +462,7 @@ def _validate_legacy_import_shard_profile(
         errors.extend(f"legacy_shard_archive_path_error:{shard_id}:{error}" for error in object_errors)
         return
     try:
-        data = object_path.read_bytes()
+        data = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
     except OSError as exc:
         errors.append(f"legacy_shard_archive_unreadable:{shard_id}:{exc.__class__.__name__}")
         return
@@ -556,19 +556,24 @@ def _validate_contained_regular_path(
 def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
     try:
         return read_json(path)
-    except JSONDecodeError:
-        errors.append(f"malformed_json:{label}")
-    except OSError as exc:
-        errors.append(f"unreadable_json:{label}:{exc.__class__.__name__}")
     except Exception as exc:
-        errors.append(f"invalid_json:{label}:{exc.__class__.__name__}")
+        ename = exc.__class__.__name__
+        msg = str(exc)
+        if "malformed_json" in msg:
+            errors.append(f"malformed_json:{label}")
+        elif "unreadable" in msg or isinstance(exc, OSError):
+            errors.append(f"unreadable_json:{label}:{ename}")
+        else:
+            errors.append(f"invalid_json:{label}:{ename}")
     return None
 
 
 def _safe_read_jsonl(path: Path, label: str, errors: list[str]) -> list[dict[str, Any]] | None:
     records: list[dict[str, Any]] = []
     try:
-        for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        from .safe_storage import safe_read_file
+        raw = safe_read_file(path, label=label, require_private=False)
+        for index, line in enumerate(raw.decode("utf-8").splitlines(), start=1):
             if not line.strip():
                 continue
             item = json.loads(line)
@@ -586,8 +591,9 @@ def _safe_read_jsonl(path: Path, label: str, errors: list[str]) -> list[dict[str
 
 def _safe_sha256_file(path: Path, label: str, errors: list[str]) -> str | None:
     try:
-        return sha256_bytes(path.read_bytes())
-    except OSError as exc:
+        from .safe_storage import safe_read_file
+        return sha256_bytes(safe_read_file(path, label=label, require_private=False))
+    except Exception as exc:
         errors.append(f"unreadable_file:{label}:{exc.__class__.__name__}")
     return None
 
@@ -758,7 +764,8 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    from .safe_storage import safe_read_file, read_jsonl_bytes
+    return read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
 
 
 def append_jsonl(path: Path, record: dict[str, Any]) -> None:

@@ -24,6 +24,7 @@ from .native_field import (
 )
 from .path_safety import contained_path, no_symlink_segments, validate_batch_id, validate_field_revision_id, validate_snapshot_id
 from .safe_storage import SafeStorageError, read_jsonl_bytes, safe_read_regular
+from .safe_storage import safe_read_file
 from .source_spans import SPAN_SCHEMA, _classify_span, _line_locator, _paragraph_ranges, load_source_spans, validate_source_span_record
 
 
@@ -260,7 +261,8 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
             if object_errors:
                 errors.extend(object_errors)
                 continue
-            data = object_path.read_bytes()
+            from .safe_storage import safe_read_regular
+            data = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
             if sha256_bytes(data) != digest:
                 errors.append(f"archive_object_hash_mismatch:{digest}")
             if not (0 <= start < end <= int(obj.get("byte_length", 0))):
@@ -328,16 +330,16 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
     if require_head:
         head = load_field_head(root)
         try:
-            actual_manifest_hash = "sha256:" + sha256_bytes(manifest_path.read_bytes())
-        except OSError as exc:
+            actual_manifest_hash = "sha256:" + sha256_bytes(safe_read_file(manifest_path, label="publication_manifest", require_private=False))
+        except Exception as exc:
             return [f"unreadable_publication_manifest:{exc.__class__.__name__}"]
         if not head or head.get("field_revision_id") != field_revision_id:
             errors.append(f"unpublished_revision:{field_revision_id}")
         elif head.get("publication_manifest_hash") != actual_manifest_hash:
             errors.append(f"publication_manifest_hash_mismatch:{field_revision_id}")
         try:
-            actual_activation_hash = "sha256:" + sha256_bytes((publication / "activation.json").read_bytes())
-        except OSError as exc:
+            actual_activation_hash = "sha256:" + sha256_bytes(safe_read_file(publication / "activation.json", label="publication_activation", require_private=False))
+        except Exception as exc:
             return [f"unreadable_publication_activation:{exc.__class__.__name__}"]
         if head and head.get("field_revision_id") == field_revision_id and head.get("activation_hash") != actual_activation_hash:
             errors.append(f"activation_hash_mismatch:{field_revision_id}")
@@ -575,14 +577,16 @@ def _load_links(root: Path, snapshot_id: str, field_revision_id: str) -> list[di
         return []
     import json
 
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    from .safe_storage import safe_read_file, read_jsonl_bytes
+    return read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
 
 
 def _load_publication_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     try:
-        records = read_jsonl_bytes(path.read_bytes(), path.name)
+        from .safe_storage import safe_read_file
+        records = read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
     except SafeStorageError as exc:
         raise ValueError(str(exc)) from exc
     for index, record in enumerate(records, start=1):
