@@ -104,7 +104,8 @@ def _published_spans(root: Path, snapshot_id: str) -> list[dict[str, Any]]:
     receipt = read_json(receipt_path)
     if receipt.get("snapshot_id") != snapshot_id:
         return []
-    return [json.loads(line) for line in projection_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    from .safe_storage import safe_read_file
+    return [json.loads(line) for line in safe_read_file(projection_path, label="source_span_projection", require_private=False).decode("utf-8").splitlines() if line.strip()]
 
 
 def _coverage_error(snapshot_id: str, error: str) -> dict[str, Any]:

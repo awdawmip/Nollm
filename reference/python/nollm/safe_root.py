@@ -66,7 +66,7 @@ def _win_open(path_str: str, *, write: bool = False, create_always: bool = False
     if write:
         access |= _GENERIC_WRITE
     creation = _CREATE_ALWAYS if create_always else _OPEN_EXISTING
-    flags = _FILE_FLAG_BACKUP_SEMANTICS | _FILE_ATTRIBUTE_NORMAL
+    flags = _FILE_FLAG_BACKUP_SEMANTICS | _FILE_FLAG_OPEN_REPARSE_POINT | _FILE_ATTRIBUTE_NORMAL
     handle = _kernel32.CreateFileW(
         path_str, access,
         _FILE_SHARE_READ | _FILE_SHARE_WRITE | _FILE_SHARE_DELETE,
@@ -230,6 +230,27 @@ class SafeRoot:
             if not isinstance(part, str) or part in ("", ".", "..") or "/" in part or "\\" in part or "\x00" in part:
                 raise SafeRootError(f"unsafe_path_segment:{part}")
         return self._root_path.joinpath(*parts)
+
+    def _verify_path_segments(self, *parts: str, label: str = "") -> None:
+        current = self._root_path
+        for part in parts[:-1]:
+            current = current / part
+            try:
+                st = current.lstat()
+            except OSError:
+                return
+            if _IS_WINDOWS:
+                handle = _win_open(str(current))
+                try:
+                    attrs, vol, ih, il, nlink = _win_file_info(handle)
+                finally:
+                    _win_close(handle)
+                if _is_reparse(attrs):
+                    raise SafeRootError(f"path_symlink:{label}:{part}")
+            else:
+                if stat.S_ISLNK(st.st_mode):
+                    raise SafeRootError(f"path_symlink:{label}:{part}")
+
  
     def _open_child_dir(self, *parts: str, label: str = "child") -> int:
         path = self._resolve_relative(*parts, label=label)
@@ -258,6 +279,7 @@ class SafeRoot:
  
     def _open_regular(self, *parts: str, label: str, require_private: bool = True) -> tuple[int, bytes]:
         path = self._resolve_relative(*parts, label=label)
+        self._verify_path_segments(*parts, label=label)
         if _IS_WINDOWS:
             handle = _win_open(str(path))
             try:
@@ -311,6 +333,9 @@ class SafeRoot:
  
     def read_bytes(self, *parts: str, label: str, require_private: bool = True) -> bytes:
         _, data = self._open_regular(*parts, label=label, require_private=require_private)
+        # Verify parent directories are not symlinks/reparse points
+        if len(parts) > 1:
+            self._open_child_dir(*parts[:-1], label=f"{label}_parent")
         return data
  
     def read_text(self, *parts: str, label: str) -> str:
@@ -363,16 +388,13 @@ class SafeRoot:
         tmp_name = f".{path.name}.tmp.{os.getpid()}.{uuid.uuid4().hex}"
         tmp_path = path.parent / tmp_name
         if _IS_WINDOWS:
-            handle = _win_open(str(tmp_path), write=True, create_always=True)
+            fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_BINARY, 0o644)
             try:
-                written = ctypes.c_uint32(0)
-                ok = _kernel32.WriteFile(handle, data, len(data), ctypes.byref(written), None)
-                if not ok or written.value != len(data):
-                    raise SafeRootError(f"write_failed:{label}")
-                _win_flush(handle)
+                os.write(fd, data)
+                os.fsync(fd)
             finally:
-                _win_close(handle)
-            _win_move(str(tmp_path), str(path))
+                os.close(fd)
+            os.replace(str(tmp_path), str(path))
             _fsync_dir(path.parent)
         else:
             fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)

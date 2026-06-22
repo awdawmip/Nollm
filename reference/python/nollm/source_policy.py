@@ -74,7 +74,7 @@ def read_stable_source_bytes(workspace: Path, relative_path: str) -> bytes:
         return safe_read_regular(root, *Path(relative_path).parts, label=f"source:{relative_path}", require_private_inode=False)
     except ValueError as exc:
         message = str(exc)
-        if message.startswith("path_symlink"):
+        if message.startswith("path_symlink") or message.startswith("file_reparse") or message.startswith("file_symlink"):
             raise ValueError(f"source path is a symlink: {relative_path}") from exc
         if message.startswith("path_not_file"):
             raise ValueError(f"source_not_regular:{relative_path}") from exc

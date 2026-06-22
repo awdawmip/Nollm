@@ -132,18 +132,7 @@ def write_source_spans(memory_root: Path | str, snapshot_id: str, spans: list[di
 
 
 def mark_spans_linked(memory_root: Path | str, snapshot_id: str, links: list[dict[str, Any]]) -> None:
-    by_span: dict[str, list[str]] = {}
-    for link in links:
-        by_span.setdefault(str(link["span_id"]), []).append(str(link["shard_id"]))
-    spans = load_source_spans(memory_root, snapshot_id)
-    for span in spans:
-        related = sorted(set(by_span.get(str(span["span_id"]), [])))
-        if related:
-            span["disposition"] = "sharded"
-            span["related_shard_ids"] = related
-            span["lifecycle"] = "linked"
-            span["reason"] = "linked_to_committed_shard"
-    write_source_spans(memory_root, snapshot_id, spans)
+    raise ValueError("unsupported_legacy_mutator:mark_spans_linked")
 
 
 def _paragraph_ranges(data: bytes) -> list[tuple[int, int]]:

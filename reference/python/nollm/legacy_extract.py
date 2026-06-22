@@ -28,7 +28,8 @@ def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict
         object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
         if object_errors:
             raise ValueError(object_errors[0])
-        data = object_path.read_bytes()
+        from .safe_storage import safe_read_regular
+        data = safe_read_regular(root, "archive", "objects", "sha256", digest, label="archive_object")
         start = int(span["start_byte"])
         end = int(span["end_byte_exclusive"])
         chunk = data[start:end]

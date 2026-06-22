@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from .safe_storage import json_dumps, read_json_bytes
+from .safe_storage import json_dumps, read_json_bytes, safe_read_file
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -26,12 +26,13 @@ def manifest_hash(manifest: Mapping[str, Any]) -> str:
 
 
 def write_json(path: Path, data: Mapping[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json_dumps(data), encoding="utf-8")
+    from .safe_storage import safe_write_file
+    safe_write_file(path, json_dumps(data).encode("utf-8"), label=path.name)
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    data = read_json_bytes(path.read_bytes(), path.name)
+    from .safe_storage import safe_read_file
+    data = read_json_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
     if not isinstance(data, dict):
         raise ValueError("invalid_json:not_object")
     return data
