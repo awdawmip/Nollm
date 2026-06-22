@@ -90,7 +90,7 @@ def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> di
     if path_errors:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": path_errors}
     try:
-        safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), records, label="source_span_inventory")
+        safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), records, label="source_span_inventory", replace=False, allow_idempotent=True)
     except SafeStorageError as exc:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
     return {"ok": True, "snapshot_id": snapshot_id, "span_count": len(records), "inventory_path": str(path)}
@@ -128,7 +128,7 @@ def write_source_spans(memory_root: Path | str, snapshot_id: str, spans: list[di
         errors = validate_source_span_record(span, index=index)
         if errors:
             raise ValueError(",".join(errors))
-    safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), spans, label="source_span_inventory")
+    safe_atomic_jsonl(root, ("archive", "source-spans", f"{snapshot_id}.jsonl"), spans, label="source_span_inventory", replace=False, allow_idempotent=True)
 
 
 def mark_spans_linked(memory_root: Path | str, snapshot_id: str, links: list[dict[str, Any]]) -> None:

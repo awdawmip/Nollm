@@ -81,7 +81,7 @@ def safe_write_file(path: Path, data: bytes, *, label: str, replace: bool = True
     try:
         sr = SafeRoot.open_existing(path.parent)
         try:
-            sr.write_bytes(path.name, data=data, label=label, replace=replace)
+            sr.write_bytes(path.name, data=data, label=label, replace=replace, allow_idempotent=False)
         finally:
             sr.close()
     except SafeRootError as exc:
@@ -129,9 +129,9 @@ def safe_atomic_json(
     )
 
 
-def safe_atomic_jsonl(root: Path, parts: Iterable[str], records: list[dict[str, Any]], *, label: str, replace: bool = True) -> str:
+def safe_atomic_jsonl(root: Path, parts: Iterable[str], records: list[dict[str, Any]], *, label: str, replace: bool = True, allow_idempotent: bool = False) -> str:
     payload = "".join(json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False) + "\n" for record in records).encode("utf-8")
-    return safe_atomic_write(root, parts, payload, label=label, replace=replace)
+    return safe_atomic_write(root, parts, payload, label=label, replace=replace, allow_idempotent=allow_idempotent)
 
 
 def safe_append_jsonl(root: Path, parts: Iterable[str], record: dict[str, Any], *, label: str) -> None:
