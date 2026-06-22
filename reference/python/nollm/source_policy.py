@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from stat import S_ISREG
 
 
 POLICY_ID = "openclaw_legacy_v1"
@@ -64,6 +65,28 @@ def resolve_source_path(workspace: Path, relative_path: str) -> Path:
     if target.is_symlink():
         raise ValueError(f"source path is a symlink: {relative_path}")
     return target
+
+
+def read_stable_source_bytes(workspace: Path, relative_path: str) -> bytes:
+    target = resolve_source_path(workspace, relative_path)
+    try:
+        before = target.lstat()
+    except OSError as exc:
+        raise ValueError(f"source_unreadable:{relative_path}:{exc.__class__.__name__}") from exc
+    if not S_ISREG(before.st_mode) or target.is_symlink():
+        raise ValueError(f"source_not_regular:{relative_path}")
+    try:
+        data = target.read_bytes()
+        after = target.lstat()
+    except OSError as exc:
+        raise ValueError(f"source_unreadable:{relative_path}:{exc.__class__.__name__}") from exc
+    if target.is_symlink() or not S_ISREG(after.st_mode):
+        raise ValueError(f"source_not_regular:{relative_path}")
+    before_identity = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+    after_identity = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+    if before_identity != after_identity:
+        raise ValueError(f"source_changed_during_snapshot:{relative_path}")
+    return data
 
 
 def state_for_path(relative_path: str) -> dict[str, str]:

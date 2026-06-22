@@ -7,7 +7,7 @@ from typing import Any
 
 from .archive_manifest import canonical_json, detect_encoding, manifest_hash, newline_profile, read_json, sha256_bytes, write_json
 from .path_safety import contained_path, ensure_contained_parent, validate_sha256_hex, validate_snapshot_id, validate_source_object_id
-from .source_policy import POLICY_ID, enumerate_legacy_sources, resolve_source_path, state_for_path, validate_relative_source_path
+from .source_policy import POLICY_ID, enumerate_legacy_sources, read_stable_source_bytes, state_for_path, validate_relative_source_path
 
 
 ARCHIVE_SCHEMA = "nollm.archive_manifest.v3"
@@ -24,6 +24,17 @@ SOURCE_FIELDS = {
     "origin_kind",
     "original_relative_path",
     "source_object_id",
+}
+MANIFEST_FIELDS = {
+    "archive_manifest_hash",
+    "created_at",
+    "manifest_hash",
+    "schema",
+    "snapshot_id",
+    "snapshot_seed_hash",
+    "source_policy_id",
+    "sources",
+    "workspace_identity",
 }
 
 
@@ -57,17 +68,12 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
         content_digests: dict[str, str] = {}
         for source in sources:
             try:
-                path = resolve_source_path(workspace_path, source.relative_path)
-                before = path.read_bytes()
+                before = read_stable_source_bytes(workspace_path, source.relative_path)
             except ValueError as exc:
                 return {"ok": False, "errors": [str(exc)]}
-            except OSError as exc:
-                return {"ok": False, "errors": [f"source_unreadable:{source.relative_path}:{exc.__class__.__name__}"]}
             digest = sha256_bytes(before)
             source_bytes[source.relative_path] = before
             content_digests[source.relative_path] = digest
-            if path.read_bytes() != before:
-                return {"ok": False, "errors": [f"source_changed_during_snapshot:{source.relative_path}"]}
         seed_digest = snapshot_seed_digest(policy_id, content_digests)
         snapshot_id = f"snap_{created_at.replace('-', '').replace(':', '').replace('T', '_').replace('Z', '')}_{seed_digest[:12]}"
         source_records: list[dict[str, Any]] = []
@@ -112,7 +118,8 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
             "snapshot_id": pre_manifest["snapshot_id"],
             "manifest_path": str(path),
             "source_count": len(source_records),
-            "object_count": len(source_records),
+            "unique_blob_count": len(set(content_digests.values())),
+            "object_count": len(set(content_digests.values())),
             "manifest_hash": pre_manifest["manifest_hash"],
             "archive_manifest_hash": pre_manifest["archive_manifest_hash"],
         }
@@ -219,7 +226,8 @@ def verify_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[s
         "archive_verified": not errors,
         "errors": errors,
         "source_count": len(sources),
-        "object_count": len(sources),
+        "unique_blob_count": len({str(source.get("content_hash")) for source in sources}),
+        "object_count": len({str(source.get("content_hash")) for source in sources}),
     }
     return report
 
@@ -242,6 +250,9 @@ def inspect_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[
 def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snapshot_id: str | None = None, memory_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     schema = manifest.get("schema")
+    unknown_top = sorted(set(manifest) - MANIFEST_FIELDS)
+    for field in unknown_top:
+        errors.append(f"unknown_archive_manifest_field:{field}")
     if schema == "nollm.archive_manifest.v2":
         return [LEGACY_ARCHIVE_V2_ERROR]
     if schema != ARCHIVE_SCHEMA:
@@ -257,9 +268,16 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
         errors.append("invalid_snapshot_id")
     if manifest.get("source_policy_id") != POLICY_ID:
         errors.append("invalid_source_policy_id")
+    if not isinstance(manifest.get("created_at"), str) or not _is_utc_timestamp(str(manifest.get("created_at"))):
+        errors.append("invalid_archive_created_at")
+    if not isinstance(manifest.get("workspace_identity"), str) or not manifest.get("workspace_identity"):
+        errors.append("invalid_workspace_identity")
     sources = manifest.get("sources")
     if not isinstance(sources, list):
         return errors + ["invalid_archive_sources"]
+    source_paths_for_order = [source.get("original_relative_path") for source in sources if isinstance(source, dict)]
+    if source_paths_for_order != sorted(source_paths_for_order):
+        errors.append("archive_sources_not_canonical_order")
     seed_items: dict[str, str] = {}
     seen_ids: set[str] = set()
     seen_paths: set[str] = set()
@@ -337,3 +355,13 @@ def _is_relative_to(path: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _is_utc_timestamp(value: str) -> bool:
+    if not value.endswith("Z"):
+        return False
+    try:
+        datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError:
+        return False
+    return True
