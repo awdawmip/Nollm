@@ -85,8 +85,8 @@ P5.4 validates scale links but does not introduce parent/children or leaf semant
 
 Validation must not infer ontology, generate anchors automatically, call external LLMs, build embeddings, place cards automatically, calculate polygon overlap, or mutate memory autonomously.
 
-## MT1-R8 Active Publication Validation
+## MT1-R9 Active Publication Validation
 
 Active MT1 validation uses one complete archive-bound predicate. A publication is active only when HEAD binding, manifest closure, activation binding, package semantics, archive manifest validity, contained regular paths, canonical source inventory, exact projection/link closure, full importable coverage, and source-derived shard profile all pass.
 
-Malformed archive, source-span, ingress, or publication files must produce structured validation errors, not parser/type exceptions. R8 v2 artifacts are required for active MT1 reads; earlier R1-R7 active packages report `legacy_mt1_package_requires_reimport`.
+Malformed archive, source-span, ingress, ledger, or publication files must produce structured validation errors, not parser/type exceptions. R9 requires ArchiveManifest v3 `sources[]`; v2 artifacts report `legacy_mt1_archive_v2_requires_rearchive`, and earlier active packages require rearchive/reimport.

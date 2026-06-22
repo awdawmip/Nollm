@@ -93,9 +93,9 @@ Legacy import defaults to `origin_kind: legacy_import`, `operational_state: loos
 
 ## MT1-R1 Source Provenance
 
-Each MT1-R1 imported shard must include exactly matching archive provenance:
+Each MT1 imported shard must include exactly matching archive provenance:
 
-- `source_refs` uses `archive://object/sha256:<digest>#B<start>-B<end>`.
+- `source_refs` uses `archive://snapshot/<snapshot_id>/source/<source_object_id>/blob/sha256:<digest>#B<start>-B<end>`.
 - `source_range_hash` is SHA-256 over the raw bytes selected by the source ref.
 - `continuity_refs` includes the exact SourceSpan `span_id`.
 - `normalization_id` is `nollm.legacy_text_normalization.v1`.
@@ -115,4 +115,6 @@ R5 requires the active roster to be admitted through a contained, regular HEAD t
 
 R6 binds imported DreamShard identity to provenance. For `origin_kind: legacy_import`, `source_refs`, `continuity_refs`, `source_policy_id`, `batch_id`, `idempotence_key`, and `shard_id` must match the archived source span and receipt exactly. A forged dedupe key or dangling continuity lineage is inactive and blocks further writes behind the existing HEAD.
 
-R7 locks the MT1 legacy-import shard profile by provenance relation, not by the mutable shard type marker. Any shard linked from a legacy source span must retain `origin_kind: legacy_import`, `operational_state: loose`, `epistemic_state: legacy_recorded`, the archive-ingest seed geometry intent, empty anchor weights, exact source refs, exact continuity refs, canonical text and range hashes, current normalization, recomputed idempotence key, and recomputed shard id. Unknown top-level fields are invalid except `created_at` as timestamp metadata. A shard cannot opt out of the profile by editing `origin_kind`.
+R7 locks the MT1 legacy-import shard profile by provenance relation, not by the mutable shard type marker. Any shard linked from a legacy source span must retain `origin_kind: legacy_import`, `operational_state: loose`, the policy-derived `epistemic_state`, the archive-ingest seed geometry intent, empty anchor weights, exact source refs, exact continuity refs, canonical text and range hashes, current normalization, recomputed idempotence key, and recomputed shard id. Unknown top-level fields are invalid except `created_at` as timestamp metadata. A shard cannot opt out of the profile by editing `origin_kind`.
+
+R9 derives source state from ArchiveManifest v3 policy semantics rather than trusting mutable copies. `DREAMS.md` remains `tentative`; `MEMORY.md` and `memory/**/*.md` remain `legacy_recorded`. A shard cannot become active by rewriting archive state, source policy, source id, or archived path metadata.

@@ -65,7 +65,7 @@ Nollm v0.1 excludes embeddings, vector stores, graph backends, automatic ontolog
 
 ## MT1 Archive Publication Boundary
 
-MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; source-entry identity preserves original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by single-writer and compare-and-swap rules.
+MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; ArchiveManifest v3 derives source-entry identity and source state from source policy plus archived bytes, preserving original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by SafeRoot-contained writes, a publish journal, single-writer locking, and compare-and-swap rules.
 
 Ingress, handoff, ledger, and migration reports are audit workflow records. They cannot authorize active memory, rollback, or replacement.
 

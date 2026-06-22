@@ -19,4 +19,4 @@ LLM inference must not be recorded as a confirmed stable notebook record without
 
 MT1 archive ingest separates blob identity, source-entry identity, span identity, and source references. Blob identity is a content hash and may be shared by equal bytes. Source-entry identity is unique per snapshot source path. Span identity is source-entry identity plus byte range/ordinal. Source references bind snapshot id, source object id, blob hash, and byte range.
 
-Trust and state metadata (`origin_kind`, `operational_state`, `epistemic_state`, `source_policy_id`) must be preserved from the archive source entry into imported shards.
+Trust and state metadata (`origin_kind`, `operational_state`, `epistemic_state`, `source_policy_id`) is derived from the fixed source policy and canonical archive source entry, then preserved into imported shards. Mutable manifest rewrites cannot promote `DREAMS.md`, change `MEMORY.md` state, or invent a source policy.

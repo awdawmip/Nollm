@@ -13,16 +13,18 @@ The Archive plane preserves raw legacy records before any interpretation. Archiv
 - `created_at`
 - `workspace_identity`
 - `source_policy_id`
-- `objects`
+- `sources`
+- `snapshot_seed_hash`
 - `manifest_hash`
+- `archive_manifest_hash`
 
 `manifest_hash` is computed from canonical JSON with `manifest_hash` set to `null`.
 
-## ArchiveObject
+## Archive Source
 
-Each object records:
+Each canonical source entry records:
 
-- `archive_object_id`
+- `source_object_id`
 - `original_relative_path`
 - `content_hash`
 - `byte_length`
@@ -30,8 +32,11 @@ Each object records:
 - `encoding`
 - `newline_profile`
 - `archived_path`
+- `origin_kind`
+- `epistemic_state`
+- `operational_state`
 
-Archive bytes are copied exactly. Text decoding is only metadata.
+Archive bytes are copied exactly. Text decoding and source state are derived from the fixed source policy, not trusted from mutable manifest text.
 
 ## SourceSpan
 
@@ -58,10 +63,16 @@ Every byte range must have one disposition:
 - `structural_heading`
 - `blank`
 
-The canonical archive source ref grammar is:
+The legacy R1 archive source ref grammar was:
 
 ```text
 archive://object/sha256:<64 lowercase hex digest>#B<start>-B<end>
+```
+
+MT1-R9 replaces that legacy grammar with:
+
+```text
+archive://snapshot/<snapshot_id>/source/<source_object_id>/blob/sha256:<digest>#B<start>-B<end>
 ```
 
 `source_range_hash` is `sha256:<digest>` over the raw archived bytes selected by that exact source ref. It is distinct from a DreamShard `text_hash`.
@@ -81,7 +92,7 @@ R3 treats archive source spans as deterministic facts. Validation must either re
 The canonical span fields are:
 
 - `snapshot_id`
-- `archive_object_id`
+- `source_object_id`
 - `original_relative_path`
 - `span_id`
 - `start_byte`
@@ -109,11 +120,20 @@ Archive snapshot may read legacy files. Archive verify, span inventory, extracti
 
 `NOLLM_MEMORY_ROOT` must be physically outside the source workspace: neither path may contain the other. Source paths are checked with `lstat` before resolution, and any source symlink is rejected.
 
-## MT1-R8 Archive v2
+## MT1-R9 Archive v3
 
-R8 corrects source identity. Blob identity is the SHA-256 content hash and may be shared by byte-identical files. Source-entry identity is a snapshot-local record and remains distinct for different original paths even when bytes are equal.
+R9 makes source identity and source state policy-derived. Blob identity is the SHA-256 content hash and may be shared by byte-identical files. Source-entry identity is a snapshot-local record and remains distinct for different original paths even when bytes are equal.
 
-`ArchiveManifest` v2 uses `schema: nollm.archive_manifest.v2`, a self-bound `archive_manifest_hash`, and `objects[]` entries with `source_object_id`, `original_relative_path`, `content_hash`, byte metadata, and source trust-state fields.
+`ArchiveManifest` v3 uses `schema: nollm.archive_manifest.v3`, a self-bound `archive_manifest_hash`, and exactly one canonical `sources[]` list. Independent `objects`, `source_entries`, and `archive_object_id` aliases are invalid.
+
+Verification derives and compares:
+
+- `source_policy_id: openclaw_legacy_v1`
+- allowed original relative path
+- source states from policy (`DREAMS.md` is `tentative`; `MEMORY.md` and `memory/**/*.md` are `legacy_recorded`)
+- `source_object_id` from snapshot id, policy id, path, and content hash
+- canonical `archived_path`
+- blob hash, byte length, encoding, newline profile, and line count
 
 Canonical source refs bind snapshot, source entry, blob hash, and byte range:
 
@@ -123,4 +143,4 @@ archive://snapshot/<snapshot_id>/source/<source_object_id>/blob/sha256:<digest>#
 
 Manifest files, blob files, source-span inventories, and every traversed ancestor must stay under `memory_root` and must not be symlinks. Snapshot ids and artifact ids are grammar-checked before path construction.
 
-An archive-only snapshot with no importable spans is successful archive evidence, but it does not create an active field revision and does not block the later first substantive import. R1-R7 archive/source-ref artifacts are not active-compatible after R8 and require reimport.
+An archive-only snapshot with no importable spans is successful archive evidence, but it does not create an active field revision and does not block the later first substantive import. R1-R8 archive/source-ref artifacts are not active-compatible after R9 and require rearchive/reimport with `legacy_mt1_archive_v2_requires_rearchive`.
