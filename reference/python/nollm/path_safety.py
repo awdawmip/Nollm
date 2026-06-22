@@ -115,7 +115,7 @@ def no_symlink_segments(root: Path, path: Path, label: str) -> list[str]:
     for part in rel.parts:
         current = current / part
         try:
-            if current.exists() and current.is_symlink():
+            if current.is_symlink():
                 errors.append(f"path_symlink:{label}:{current.relative_to(root_abs).as_posix()}")
                 return errors
         except OSError as exc:

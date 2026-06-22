@@ -14,7 +14,7 @@ from .archive_manifest import canonical_json, read_json, sha256_bytes, write_jso
 from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID
 from .legacy_text import normalize_legacy_text, source_range_hash, text_hash
-from .path_safety import contained_path, validate_field_id, validate_field_revision_id
+from .path_safety import contained_path, validate_batch_id, validate_field_id, validate_field_revision_id
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
@@ -44,6 +44,36 @@ LEGACY_IMPORT_ALLOWED_SHARD_FIELDS = {
     "source_refs",
     "text",
     "text_hash",
+}
+HEAD_FIELDS = {"activation_hash", "field_id", "field_revision_id", "publication_manifest_hash"}
+PUBLICATION_MANIFEST_FIELDS = {"artifact_hashes", "batch_id", "field_id", "field_revision_id", "schema", "snapshot_id"}
+REVISION_FIELDS = {"batch_id", "created_at", "field_id", "field_revision_id", "schema", "shard_count", "shard_ids"}
+RECEIPT_FIELDS = {
+    "batch_id",
+    "committed_at",
+    "created_shard_count",
+    "created_shard_ids",
+    "duplicate_count",
+    "field_revision_id",
+    "schema",
+    "snapshot_id",
+    "source_policy_id",
+    "target_field_id",
+}
+ACTIVATION_FIELDS = {
+    "archive_manifest_hash",
+    "archive_manifest_schema",
+    "batch_id",
+    "field_id",
+    "field_revision_id",
+    "legacy_import_profile",
+    "receipt_hash",
+    "revision_hash",
+    "schema",
+    "snapshot_id",
+    "source_policy_id",
+    "source_span_links_hash",
+    "source_span_projection_hash",
 }
 
 
@@ -134,8 +164,9 @@ def move_staged_shards(memory_root: Path | str, batch_id: str) -> dict[str, Any]
 
 
 def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
-    path = memory_root_path(memory_root) / "field" / "HEAD.json"
-    if not path.exists() or path.is_symlink():
+    root = memory_root_path(memory_root)
+    path, errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=True, require_file=True)
+    if errors:
         return None
     try:
         return read_json(path)
@@ -163,6 +194,7 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     if not isinstance(head, dict):
         errors.append("invalid_field_head")
         return {"publication": None, "head": None, "errors": errors}
+    errors.extend(_unknown_fields(head, HEAD_FIELDS, "field_head"))
     field_id = head.get("field_id")
     revision_id = head.get("field_revision_id")
     expected = head.get("publication_manifest_hash")
@@ -242,6 +274,10 @@ def validate_publication_activation(publication: Path, *, head: dict[str, Any] |
         return errors or [f"invalid_publication_activation:{revision_id}"]
     if activation.get("schema") != ACTIVATION_SCHEMA:
         errors.append(f"invalid_activation_schema:{revision_id}")
+    errors.extend(_unknown_fields(activation, ACTIVATION_FIELDS, f"activation:{revision_id}"))
+    errors.extend(_unknown_fields(revision, REVISION_FIELDS, f"revision:{revision_id}"))
+    errors.extend(_unknown_fields(receipt, RECEIPT_FIELDS, f"receipt:{revision_id}"))
+    errors.extend(_unknown_fields(manifest, PUBLICATION_MANIFEST_FIELDS, f"publication_manifest:{revision_id}"))
     expected_pairs = {
         "field_id": manifest.get("field_id"),
         "field_revision_id": revision.get("field_revision_id"),
@@ -252,6 +288,8 @@ def validate_publication_activation(publication: Path, *, head: dict[str, Any] |
     for key, expected in expected_pairs.items():
         if activation.get(key) != expected:
             errors.append(f"activation_{key}_mismatch:{revision_id}")
+    if receipt.get("target_field_id") != activation.get("field_id"):
+        errors.append(f"receipt_target_field_mismatch:{revision_id}")
     if head is not None:
         if head.get("field_id") != activation.get("field_id"):
             errors.append(f"activation_head_field_mismatch:{revision_id}")
@@ -637,6 +675,10 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         return errors
     if manifest.get("schema") != "nollm.publication_manifest.v1":
         errors.append("invalid_publication_manifest_schema")
+    errors.extend(_unknown_fields(manifest, PUBLICATION_MANIFEST_FIELDS, f"publication_manifest:{revision_id}"))
+    errors.extend(_unknown_fields(revision, REVISION_FIELDS, f"revision:{revision_id}"))
+    errors.extend(_unknown_fields(receipt, RECEIPT_FIELDS, f"receipt:{revision_id}"))
+    errors.extend(_unknown_fields(activation, ACTIVATION_FIELDS, f"activation:{revision_id}"))
     if activation.get("schema") != ACTIVATION_SCHEMA:
         errors.append(f"invalid_activation_schema:{revision_id}")
     for label, value in (
@@ -657,12 +699,24 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         errors.append(f"activation_revision_mismatch:{revision_id}")
     if manifest.get("field_id") != revision.get("field_id"):
         errors.append(f"publication_manifest_field_mismatch:{revision_id}")
+    if receipt.get("target_field_id") != revision.get("field_id"):
+        errors.append(f"receipt_target_field_mismatch:{revision_id}")
+    if activation.get("field_id") != revision.get("field_id"):
+        errors.append(f"activation_field_mismatch:{revision_id}")
     if expected_field_id is not None and manifest.get("field_id") != expected_field_id:
         errors.append(f"head_field_id_mismatch:{revision_id}")
     if expected_field_id is not None and revision.get("field_id") != expected_field_id:
         errors.append(f"head_revision_field_id_mismatch:{revision_id}")
     if manifest.get("batch_id") != revision.get("batch_id") or manifest.get("batch_id") != receipt.get("batch_id"):
         errors.append(f"publication_batch_mismatch:{revision_id}")
+    for label, value in (
+        ("manifest", manifest.get("batch_id")),
+        ("revision", revision.get("batch_id")),
+        ("receipt", receipt.get("batch_id")),
+        ("activation", activation.get("batch_id")),
+    ):
+        for error in validate_batch_id(value):
+            errors.append(f"{label}_{error}:{revision_id}")
     shard_ids = [str(item) for item in revision.get("shard_ids", [])]
     if len(shard_ids) != len(set(shard_ids)):
         errors.append(f"duplicate_revision_shard_ids:{revision_id}")
@@ -710,6 +764,10 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
 def write_jsonl(path: Path, records: list[dict[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records), encoding="utf-8")
+
+
+def _unknown_fields(record: dict[str, Any], allowed: set[str], label: str) -> list[str]:
+    return [f"unknown_{label}_field:{field}" for field in sorted(set(record) - allowed)]
 
 
 def _current_field_shards(root: Path, target_field_id: str) -> list[str]:

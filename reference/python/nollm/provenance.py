@@ -22,12 +22,42 @@ from .native_field import (
     validate_publication_manifest_closure,
     validate_publication_semantics,
 )
-from .path_safety import validate_batch_id, validate_field_revision_id, validate_snapshot_id
-from .source_spans import _classify_span, _paragraph_ranges, load_source_spans
+from .path_safety import contained_path, no_symlink_segments, validate_batch_id, validate_field_revision_id, validate_snapshot_id
+from .source_spans import SPAN_SCHEMA, _classify_span, _line_locator, _paragraph_ranges, load_source_spans
 
 
 SOURCE_REF_RE = re.compile(r"^archive://snapshot/(snap_[0-9]{8}_[0-9]{6}_[0-9a-f]{12})/source/(src_[0-9a-f]{24})/blob/sha256:([0-9a-f]{64})#B([0-9]+)-B([0-9]+)$")
 LINK_SCHEMA = "nollm.source_span_link.v1"
+SOURCE_SPAN_FIELDS = {
+    "content_hash",
+    "disposition",
+    "end_byte_exclusive",
+    "epistemic_state",
+    "lifecycle",
+    "locator",
+    "operational_state",
+    "origin_kind",
+    "original_relative_path",
+    "reason",
+    "related_shard_ids",
+    "schema",
+    "snapshot_id",
+    "source_object_id",
+    "span_id",
+    "start_byte",
+    "text_hash",
+}
+LINK_FIELDS = {
+    "batch_id",
+    "field_revision_id",
+    "schema",
+    "shard_id",
+    "snapshot_id",
+    "source_range_hash",
+    "source_ref",
+    "span_id",
+    "text_hash",
+}
 
 
 def parse_source_ref(source_ref: str) -> tuple[str, str, str, int, int]:
@@ -66,17 +96,24 @@ def build_source_span_links(
 
 def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[str, Any]]:
     root = memory_root_path(memory_root)
+    archive = verify_archive_snapshot(root, snapshot_id)
+    if not archive.get("ok"):
+        raise ValueError(",".join(str(error) for error in archive.get("errors", [])))
     manifest = load_manifest(root, snapshot_id)
     records: list[dict[str, Any]] = []
     for obj in archive_sources(manifest):
         digest = str(obj["content_hash"]).removeprefix("sha256:")
-        data = (root / "archive" / "objects" / "sha256" / digest).read_bytes()
+        object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
+        if object_errors:
+            raise ValueError(",".join(object_errors))
+        data = object_path.read_bytes()
         source_object_id = str(obj["source_object_id"])
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
             disposition, reason = _classify_span(chunk, obj.get("encoding"))
             records.append(
                 {
+                    "schema": SPAN_SCHEMA,
                     "snapshot_id": snapshot_id,
                     "source_object_id": source_object_id,
                     "original_relative_path": obj["original_relative_path"],
@@ -84,12 +121,15 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
                     "span_id": f"span_{source_object_id.removeprefix('src_')}_{index:04d}",
                     "start_byte": start,
                     "end_byte_exclusive": end,
+                    "locator": _line_locator(data, start, end),
                     "text_hash": "sha256:" + sha256_bytes(chunk),
                     "origin_kind": obj.get("origin_kind"),
                     "epistemic_state": obj.get("epistemic_state"),
                     "operational_state": obj.get("operational_state"),
                     "disposition": disposition,
+                    "related_shard_ids": [],
                     "reason": reason,
+                    "lifecycle": "classified",
                 }
             )
     return records
@@ -103,7 +143,9 @@ def validate_staged_publication(memory_root: Path | str, batch_id: str, snapshot
     id_errors = validate_batch_id(batch_id) + validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
     if id_errors:
         return _result(snapshot_id, field_revision_id, id_errors)
-    publication = root / "field" / ".staging" / batch_id / "publication"
+    publication, path_errors = contained_path(root, "field", ".staging", batch_id, "publication", label="field_staging", must_exist=True, require_file=False)
+    if path_errors:
+        return _result(snapshot_id, field_revision_id, path_errors)
     errors = _validate_publication_package(root, snapshot_id, field_revision_id, publication, require_head=False)
     return _result(snapshot_id, field_revision_id, errors)
 
@@ -213,9 +255,9 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
                 errors.append(f"source_ref_snapshot_mismatch:{shard_id}")
             if str(obj.get("content_hash", "")).removeprefix("sha256:") != digest:
                 errors.append(f"source_ref_digest_mismatch:{shard_id}")
-            object_path = root / "archive" / "objects" / "sha256" / digest
-            if not object_path.exists():
-                errors.append(f"missing_archive_object:{digest}")
+            object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
+            if object_errors:
+                errors.extend(object_errors)
                 continue
             data = object_path.read_bytes()
             if sha256_bytes(data) != digest:
@@ -270,6 +312,13 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
 
 def _validate_publication_package(root: Path, snapshot_id: str, field_revision_id: str, publication: Path, *, require_head: bool) -> list[str]:
     errors: list[str] = []
+    try:
+        publication.resolve(strict=False).relative_to(root.resolve())
+    except ValueError:
+        return [f"path_escape:publication:{field_revision_id}"]
+    segment_errors = no_symlink_segments(root, publication, f"publication:{field_revision_id}")
+    if segment_errors:
+        return segment_errors
     if not publication.exists():
         return [f"missing_publication:{field_revision_id}"]
     manifest_path = publication / "publication-manifest.json"
@@ -363,7 +412,22 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
         if not expected:
             errors.append(f"projection_unknown_span:{span_id}")
             continue
-        for key in ["snapshot_id", "source_object_id", "original_relative_path", "span_id", "start_byte", "end_byte_exclusive", "text_hash"]:
+        errors.extend(_unknown_fields(span, SOURCE_SPAN_FIELDS, f"projection:{span_id}"))
+        for key in [
+            "schema",
+            "snapshot_id",
+            "source_object_id",
+            "original_relative_path",
+            "content_hash",
+            "span_id",
+            "start_byte",
+            "end_byte_exclusive",
+            "locator",
+            "text_hash",
+            "origin_kind",
+            "epistemic_state",
+            "operational_state",
+        ]:
             if span.get(key) != expected.get(key):
                 errors.append(f"projection_{key}_mismatch:{span_id}")
         expected_disposition = expected.get("disposition")
@@ -442,6 +506,7 @@ def _validate_exact_relation_closure(
         errors.append(f"extra_relation_link:{key[0]}:{key[2]}")
 
     for link in links:
+        errors.extend(_unknown_fields(link, LINK_FIELDS, f"link:{link.get('shard_id')}:{link.get('span_id')}"))
         shard_id = str(link.get("shard_id"))
         source_ref = str(link.get("source_ref"))
         span_id = str(link.get("span_id"))
@@ -481,6 +546,9 @@ def _span_core(span: dict[str, Any]) -> dict[str, Any]:
         "start_byte": span.get("start_byte"),
         "end_byte_exclusive": span.get("end_byte_exclusive"),
         "text_hash": span.get("text_hash"),
+        "origin_kind": span.get("origin_kind"),
+        "epistemic_state": span.get("epistemic_state"),
+        "operational_state": span.get("operational_state"),
         "disposition": span.get("disposition"),
         "reason": span.get("reason"),
     }
@@ -510,6 +578,10 @@ def _load_publication_jsonl(path: Path) -> list[dict[str, Any]]:
     import json
 
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _unknown_fields(record: dict[str, Any], allowed: set[str], label: str) -> list[str]:
+    return [f"unknown_{label}_field:{field}" for field in sorted(set(record) - allowed)]
 
 
 def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
