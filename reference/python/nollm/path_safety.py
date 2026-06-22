@@ -6,7 +6,8 @@ from typing import Iterable
 
 
 SNAPSHOT_ID_RE = re.compile(r"^snap_[0-9]{8}_[0-9]{6}_[0-9a-f]{12}$")
-BATCH_ID_RE = re.compile(r"^batch_[0-9a-f]{20}(?:_recovery)?$")
+BATCH_ID_RE = re.compile(r"^batch_[0-9a-f]{20}(?:_r[1-9][0-9]*)?$")
+FIELD_ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
 FIELD_REVISION_ID_RE = re.compile(r"^fieldrev_[0-9a-f]{20}$")
 SOURCE_OBJECT_ID_RE = re.compile(r"^src_[0-9a-f]{24}$")
 SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -19,6 +20,10 @@ def validate_snapshot_id(value: object) -> list[str]:
 
 def validate_batch_id(value: object) -> list[str]:
     return _validate_id(value, BATCH_ID_RE, "batch_id")
+
+
+def validate_field_id(value: object) -> list[str]:
+    return _validate_id(value, FIELD_ID_RE, "field_id")
 
 
 def validate_field_revision_id(value: object) -> list[str]:
@@ -39,6 +44,10 @@ def require_snapshot_id(value: object) -> str:
 
 def require_batch_id(value: object) -> str:
     return _require_id(value, validate_batch_id)
+
+
+def require_field_id(value: object) -> str:
+    return _require_id(value, validate_field_id)
 
 
 def require_field_revision_id(value: object) -> str:
@@ -64,6 +73,9 @@ def validate_relative_artifact_path(value: object) -> list[str]:
 
 def contained_path(root: Path, *parts: str, label: str, must_exist: bool = True, require_file: bool | None = None) -> tuple[Path, list[str]]:
     errors: list[str] = []
+    root_raw = Path(root)
+    if root_raw.exists() and root_raw.is_symlink():
+        return root_raw, ["unsafe_storage_root"]
     root_abs = root.resolve()
     path = root_abs.joinpath(*parts)
     try:
@@ -90,6 +102,9 @@ def contained_path(root: Path, *parts: str, label: str, must_exist: bool = True,
 
 def no_symlink_segments(root: Path, path: Path, label: str) -> list[str]:
     errors: list[str] = []
+    root_raw = Path(root)
+    if root_raw.exists() and root_raw.is_symlink():
+        return ["unsafe_storage_root"]
     root_abs = root.resolve()
     target_abs = path.absolute()
     try:
@@ -110,6 +125,9 @@ def no_symlink_segments(root: Path, path: Path, label: str) -> list[str]:
 
 
 def ensure_contained_parent(root: Path, path: Path, label: str) -> list[str]:
+    root_raw = Path(root)
+    if root_raw.exists() and root_raw.is_symlink():
+        return ["unsafe_storage_root"]
     parent = path.parent
     try:
         parent.resolve(strict=False).relative_to(root.resolve())

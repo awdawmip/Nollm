@@ -8,13 +8,13 @@ from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
 
-from .archive import load_manifest, memory_root_path, utc_now
+from .archive import ARCHIVE_SCHEMA, LEGACY_ARCHIVE_V2_ERROR, archive_sources, load_manifest, memory_root_path, utc_now
 from .archive import verify_archive_snapshot
 from .archive_manifest import canonical_json, read_json, sha256_bytes, write_json
 from .legacy_extract import idempotence_key
 from .legacy_text import NORMALIZATION_ID
 from .legacy_text import normalize_legacy_text, source_range_hash, text_hash
-from .path_safety import validate_field_revision_id
+from .path_safety import contained_path, validate_field_id, validate_field_revision_id
 
 
 FIELD_REVISION_SCHEMA = "nollm.native_field_revision.v1"
@@ -110,41 +110,27 @@ def existing_shards_by_key(memory_root: Path | str) -> dict[str, dict[str, Any]]
     return shards
 
 
-def stage_shards(memory_root: Path | str, batch_id: str, shards: list[dict[str, Any]]) -> Path:
-    root = memory_root_path(memory_root)
-    staging = root / "field" / ".staging" / batch_id
-    if staging.exists():
-        for path in sorted(staging.glob("*.json")):
-            path.unlink()
-    staging.mkdir(parents=True, exist_ok=True)
-    for shard in shards:
-        write_json(staging / f"{shard['shard_id']}.json", shard)
-    return staging
+def stage_shards(memory_root: Path | str, batch_id: str, shards: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "ok": False,
+        "errors": ["unsupported_legacy_flat_writer"],
+        "batch_id": batch_id,
+        "shard_count": len(shards),
+    }
 
 
 def publish_field_revision(memory_root: Path | str, *, batch_id: str, target_field_id: str, shard_ids: list[str]) -> dict[str, Any]:
     return {
         "ok": False,
-        "errors": ["unsupported_flat_field_publisher"],
+        "errors": ["unsupported_legacy_flat_writer"],
         "batch_id": batch_id,
         "target_field_id": target_field_id,
         "shard_ids": shard_ids,
     }
 
 
-def move_staged_shards(memory_root: Path | str, batch_id: str) -> list[str]:
-    root = memory_root_path(memory_root)
-    staging = root / "field" / ".staging" / batch_id
-    target = root / "field" / "shards"
-    target.mkdir(parents=True, exist_ok=True)
-    moved: list[str] = []
-    for path in sorted(staging.glob("*.json")):
-        data = read_json(path)
-        out = target / path.name
-        if not out.exists():
-            out.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
-        moved.append(str(data["shard_id"]))
-    return moved
+def move_staged_shards(memory_root: Path | str, batch_id: str) -> dict[str, Any]:
+    return {"ok": False, "errors": ["unsupported_legacy_flat_writer"], "batch_id": batch_id}
 
 
 def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
@@ -162,7 +148,10 @@ def current_publication(memory_root: Path | str) -> Path | None:
 
 
 def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return {"publication": None, "head": None, "errors": [str(exc)]}
     errors: list[str] = []
     field_dir = root / "field"
     head_path = field_dir / "HEAD.json"
@@ -178,8 +167,9 @@ def admit_current_publication(memory_root: Path | str) -> dict[str, Any]:
     revision_id = head.get("field_revision_id")
     expected = head.get("publication_manifest_hash")
     expected_activation = head.get("activation_hash")
-    if not isinstance(field_id, str) or not field_id:
-        errors.append("invalid_head_field_id")
+    field_errors = validate_field_id(field_id)
+    if field_errors:
+        errors.extend("invalid_head_" + error.removeprefix("invalid_") for error in field_errors)
     revision_errors = validate_field_revision_id(revision_id)
     if revision_errors:
         errors.extend("invalid_head_" + error.removeprefix("invalid_") for error in revision_errors)
@@ -332,9 +322,11 @@ def validate_legacy_import_shard_profile(root: Path, publication: Path, activati
         return [f"invalid_json:archive_manifest:{exc.__class__.__name__}"]
     if manifest.get("source_policy_id") != source_policy_id:
         errors.append(f"activation_source_policy_mismatch:{revision_id}")
-    if manifest.get("schema") != "nollm.archive_manifest.v2":
-        errors.append(f"legacy_mt1_package_requires_reimport:{revision_id}")
-    objects_by_source_id = {str(obj.get("source_object_id", obj.get("archive_object_id"))): obj for obj in manifest.get("objects", [])}
+    if manifest.get("schema") == "nollm.archive_manifest.v2":
+        errors.append(f"{LEGACY_ARCHIVE_V2_ERROR}:{revision_id}")
+    elif manifest.get("schema") != ARCHIVE_SCHEMA:
+        errors.append(f"legacy_mt1_archive_requires_rearchive:{revision_id}")
+    objects_by_source_id = {str(obj["source_object_id"]): obj for obj in archive_sources(manifest)}
     revision = _safe_read_json(publication / "revision.json", "publication_revision", errors)
     links = _safe_read_jsonl(publication / "source-span-links.jsonl", "source_span_links", errors)
     if not isinstance(revision, dict) or links is None:
@@ -421,7 +413,10 @@ def _validate_legacy_import_shard_profile(
     if not (0 <= start < end <= int(obj.get("byte_length", 0))):
         errors.append(f"legacy_shard_source_ref_range_out_of_bounds:{shard_id}")
         return
-    object_path = root / "archive" / "objects" / "sha256" / digest
+    object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
+    if object_errors:
+        errors.extend(f"legacy_shard_archive_path_error:{shard_id}:{error}" for error in object_errors)
+        return
     try:
         data = object_path.read_bytes()
     except OSError as exc:
@@ -644,6 +639,14 @@ def validate_publication_semantics(publication: Path, *, expected_revision_id: s
         errors.append("invalid_publication_manifest_schema")
     if activation.get("schema") != ACTIVATION_SCHEMA:
         errors.append(f"invalid_activation_schema:{revision_id}")
+    for label, value in (
+        ("manifest", manifest.get("field_id")),
+        ("revision", revision.get("field_id")),
+        ("activation", activation.get("field_id")),
+        ("receipt_target", receipt.get("target_field_id")),
+    ):
+        for error in validate_field_id(value):
+            errors.append(f"{label}_{error}:{revision_id}")
     if manifest.get("field_revision_id") != revision_id:
         errors.append(f"publication_manifest_revision_mismatch:{revision_id}")
     if revision.get("field_revision_id") != revision_id:
