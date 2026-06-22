@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import load_manifest, memory_root_path
+from .archive import archive_sources, load_manifest, memory_root_path, verify_archive_snapshot
 from .archive_manifest import sha256_bytes
 from .path_safety import contained_path, validate_snapshot_id
 
@@ -14,38 +15,48 @@ NON_MEMORY_REASONS = {"blank", "structural_heading"}
 
 
 def build_source_span_inventory(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
     id_errors = validate_snapshot_id(snapshot_id)
     if id_errors:
         return {"ok": False, "snapshot_id": snapshot_id, "errors": id_errors}
-    manifest = load_manifest(root, snapshot_id)
+    archive = verify_archive_snapshot(root, snapshot_id)
+    if not archive.get("ok"):
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": archive.get("errors", [])}
+    try:
+        manifest = load_manifest(root, snapshot_id)
+    except JSONDecodeError:
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": ["malformed_json:archive_manifest"]}
+    except Exception as exc:
+        return {"ok": False, "snapshot_id": snapshot_id, "errors": [f"invalid_archive_manifest:{exc.__class__.__name__}"]}
     records: list[dict[str, Any]] = []
-    for obj in manifest.get("objects", []):
-        digest = str(obj["content_hash"]).removeprefix("sha256:")
-        source_object_id = str(obj.get("source_object_id", obj.get("archive_object_id")))
+    for source in archive_sources(manifest):
+        digest = str(source["content_hash"]).removeprefix("sha256:")
+        source_object_id = str(source["source_object_id"])
         object_path, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=True, require_file=True)
         if object_errors:
             return {"ok": False, "snapshot_id": snapshot_id, "errors": object_errors}
         data = object_path.read_bytes()
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
-            disposition, reason = _classify_span(chunk, obj.get("encoding"))
+            disposition, reason = _classify_span(chunk, source.get("encoding"))
             records.append(
                 {
                     "schema": SPAN_SCHEMA,
                     "snapshot_id": snapshot_id,
                     "source_object_id": source_object_id,
-                    "archive_object_id": source_object_id,
-                    "original_relative_path": obj["original_relative_path"],
-                    "content_hash": obj["content_hash"],
+                    "original_relative_path": source["original_relative_path"],
+                    "content_hash": source["content_hash"],
                     "span_id": f"span_{source_object_id.removeprefix('src_')}_{index:04d}",
                     "start_byte": start,
                     "end_byte_exclusive": end,
                     "locator": _line_locator(data, start, end),
                     "text_hash": "sha256:" + sha256_bytes(chunk),
-                    "origin_kind": obj.get("origin_kind"),
-                    "epistemic_state": obj.get("epistemic_state"),
-                    "operational_state": obj.get("operational_state"),
+                    "origin_kind": source.get("origin_kind"),
+                    "epistemic_state": source.get("epistemic_state"),
+                    "operational_state": source.get("operational_state"),
                     "disposition": disposition,
                     "related_shard_ids": [],
                     "reason": reason,
@@ -68,7 +79,17 @@ def load_source_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[st
     path, path_errors = contained_path(root, "archive", "source-spans", f"{snapshot_id}.jsonl", label="source_span_inventory", must_exist=True, require_file=True)
     if path_errors:
         raise ValueError(path_errors[0])
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    records: list[dict[str, Any]] = []
+    for index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        item = json.loads(line)
+        if not isinstance(item, dict):
+            raise ValueError(f"invalid_source_span_record:{index}")
+        if "archive_object_id" in item:
+            raise ValueError(f"legacy_archive_object_id_forbidden:{index}")
+        records.append(item)
+    return records
 
 
 def write_source_spans(memory_root: Path | str, snapshot_id: str, spans: list[dict[str, Any]]) -> None:

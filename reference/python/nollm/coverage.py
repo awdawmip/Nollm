@@ -5,14 +5,17 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import load_manifest, memory_root_path
+from .archive import archive_sources, load_manifest, memory_root_path
 from .archive_manifest import read_json
 from .native_field import current_publication
 from .source_spans import ALLOWED_DISPOSITIONS, NON_MEMORY_REASONS, load_source_spans
 
 
 def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, require_linked: bool = False) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return _coverage_error(snapshot_id, str(exc))
     try:
         manifest = load_manifest(root, snapshot_id)
         spans = _published_spans(root, snapshot_id) if require_linked else load_source_spans(root, snapshot_id)
@@ -22,7 +25,7 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, requi
         return _coverage_error(snapshot_id, f"invalid_source_coverage_input:{exc.__class__.__name__}")
     by_object: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for span in spans:
-        by_object.setdefault((str(span.get("source_object_id", span.get("archive_object_id"))), str(span["original_relative_path"])), []).append(span)
+        by_object.setdefault((str(span.get("source_object_id")), str(span["original_relative_path"])), []).append(span)
     errors: list[str] = []
     total = 0
     covered = 0
@@ -30,8 +33,8 @@ def validate_source_coverage(memory_root: Path | str, snapshot_id: str, *, requi
     manual_review = 0
     pending = 0
     sharded_without_links = 0
-    for obj in manifest.get("objects", []):
-        key = (str(obj.get("source_object_id", obj.get("archive_object_id"))), str(obj["original_relative_path"]))
+    for obj in archive_sources(manifest):
+        key = (str(obj.get("source_object_id")), str(obj["original_relative_path"]))
         current = 0
         object_spans = sorted(by_object.get(key, []), key=lambda item: int(item["start_byte"]))
         if not object_spans and obj.get("byte_length", 0) != 0:

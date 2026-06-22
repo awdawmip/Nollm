@@ -6,7 +6,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-from .archive import load_manifest, memory_root_path, verify_archive_snapshot
+from .archive import archive_sources, load_manifest, memory_root_path, verify_archive_snapshot
 from .archive_manifest import read_json, sha256_bytes
 from .coverage import validate_source_coverage
 from .legacy_extract import idempotence_key
@@ -68,10 +68,10 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
     root = memory_root_path(memory_root)
     manifest = load_manifest(root, snapshot_id)
     records: list[dict[str, Any]] = []
-    for obj in manifest.get("objects", []):
+    for obj in archive_sources(manifest):
         digest = str(obj["content_hash"]).removeprefix("sha256:")
         data = (root / "archive" / "objects" / "sha256" / digest).read_bytes()
-        source_object_id = str(obj.get("source_object_id", obj.get("archive_object_id")))
+        source_object_id = str(obj["source_object_id"])
         for index, (start, end) in enumerate(_paragraph_ranges(data)):
             chunk = data[start:end]
             disposition, reason = _classify_span(chunk, obj.get("encoding"))
@@ -79,7 +79,6 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
                 {
                     "snapshot_id": snapshot_id,
                     "source_object_id": source_object_id,
-                    "archive_object_id": source_object_id,
                     "original_relative_path": obj["original_relative_path"],
                     "content_hash": obj["content_hash"],
                     "span_id": f"span_{source_object_id.removeprefix('src_')}_{index:04d}",
@@ -97,7 +96,10 @@ def canonical_source_spans(memory_root: Path | str, snapshot_id: str) -> list[di
 
 
 def validate_staged_publication(memory_root: Path | str, batch_id: str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return _result(snapshot_id, field_revision_id, [str(exc)])
     id_errors = validate_batch_id(batch_id) + validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
     if id_errors:
         return _result(snapshot_id, field_revision_id, id_errors)
@@ -115,7 +117,10 @@ def validate_active_publication_package(
     expected_field_id: str | None = None,
     require_head: bool = True,
 ) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return _result("", expected_revision_id or publication.name, [str(exc)])
     revision_id = expected_revision_id or publication.name
     activation = _safe_read_json(publication / "activation.json", f"publication_activation:{revision_id}", [])
     snapshot_id = str(activation.get("snapshot_id")) if isinstance(activation, dict) else ""
@@ -131,7 +136,10 @@ def validate_active_publication_package(
 
 
 def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_revision_id: str) -> dict[str, Any]:
-    root = memory_root_path(memory_root)
+    try:
+        root = memory_root_path(memory_root)
+    except ValueError as exc:
+        return _result(snapshot_id, field_revision_id, [str(exc)])
     errors: list[str] = []
     id_errors = validate_snapshot_id(snapshot_id) + validate_field_revision_id(field_revision_id)
     if id_errors:
@@ -154,7 +162,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
     errors.extend(archive.get("errors", []))
     manifest = load_manifest(root, snapshot_id)
     source_policy_id = str(manifest.get("source_policy_id"))
-    objects_by_source_id = {str(obj.get("source_object_id", obj.get("archive_object_id"))): obj for obj in manifest.get("objects", [])}
+    objects_by_source_id = {str(obj["source_object_id"]): obj for obj in archive_sources(manifest)}
     receipt_path = publication / "receipt.json"
     if not receipt_path.exists():
         errors.append(f"missing_publication_receipt:{field_revision_id}")
@@ -355,7 +363,7 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
         if not expected:
             errors.append(f"projection_unknown_span:{span_id}")
             continue
-        for key in ["snapshot_id", "source_object_id", "archive_object_id", "original_relative_path", "span_id", "start_byte", "end_byte_exclusive", "text_hash"]:
+        for key in ["snapshot_id", "source_object_id", "original_relative_path", "span_id", "start_byte", "end_byte_exclusive", "text_hash"]:
             if span.get(key) != expected.get(key):
                 errors.append(f"projection_{key}_mismatch:{span_id}")
         expected_disposition = expected.get("disposition")
@@ -468,7 +476,6 @@ def _span_core(span: dict[str, Any]) -> dict[str, Any]:
     return {
         "snapshot_id": span.get("snapshot_id"),
         "source_object_id": span.get("source_object_id"),
-        "archive_object_id": span.get("archive_object_id"),
         "original_relative_path": span.get("original_relative_path"),
         "span_id": span.get("span_id"),
         "start_byte": span.get("start_byte"),
@@ -480,7 +487,7 @@ def _span_core(span: dict[str, Any]) -> dict[str, Any]:
 
 
 def _span_source_ref(objects_by_source_id: dict[str, dict[str, Any]], span: dict[str, Any]) -> str | None:
-    source_object_id = str(span.get("source_object_id", span.get("archive_object_id")))
+    source_object_id = str(span.get("source_object_id"))
     obj = objects_by_source_id.get(source_object_id)
     if obj:
         digest = str(obj.get("content_hash", "")).removeprefix("sha256:")
