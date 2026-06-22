@@ -144,3 +144,11 @@ archive://snapshot/<snapshot_id>/source/<source_object_id>/blob/sha256:<digest>#
 Manifest files, blob files, source-span inventories, and every traversed ancestor must stay under `memory_root` and must not be symlinks. Snapshot ids and artifact ids are grammar-checked before path construction.
 
 An archive-only snapshot with no importable spans is successful archive evidence, but it does not create an active field revision and does not block the later first substantive import. R1-R8 archive/source-ref artifacts are not active-compatible after R9 and require rearchive/reimport with `legacy_mt1_archive_v2_requires_rearchive`.
+
+## MT1-R10 Archive Trust Boundary
+
+A self-hash is not a signature. MT1-R10 treats self-hashes as corruption checks only; trust-bearing source identity is rederived from source policy and archived bytes. Unknown ArchiveManifest top-level fields and unknown source-entry fields are invalid. `created_at` and `workspace_identity` are display/audit metadata, not active trust inputs.
+
+Archive source order is canonical by `original_relative_path`. Snapshot reports distinguish `source_count` from `unique_blob_count`, because byte-identical source paths may share one blob.
+
+Canonical source span construction must start from a verified archive view and contained blob reads. It must not construct a filesystem path from mutable manifest text without validating the digest grammar and SafeRoot containment.

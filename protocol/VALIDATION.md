@@ -90,3 +90,7 @@ Validation must not infer ontology, generate anchors automatically, call externa
 Active MT1 validation uses one complete archive-bound predicate. A publication is active only when HEAD binding, manifest closure, activation binding, package semantics, archive manifest validity, contained regular paths, canonical source inventory, exact projection/link closure, full importable coverage, and source-derived shard profile all pass.
 
 Malformed archive, source-span, ingress, ledger, or publication files must produce structured validation errors, not parser/type exceptions. R9 requires ArchiveManifest v3 `sources[]`; v2 artifacts report `legacy_mt1_archive_v2_requires_rearchive`, and earlier active packages require rearchive/reimport.
+
+R10 validates exact authoritative schemas for HEAD, receipt, revision, activation, publication manifest, source-span projection, source-span links, publish journal, handoff, state, and import request. Unknown authoritative fields deactivate the package or mark ingress untrusted. Receipt target field, revision field, activation field, manifest field, and HEAD field must all match. Batch ids are grammar-checked everywhere they appear.
+
+Source-span projection may alter only controlled lifecycle fields: `disposition`, `related_shard_ids`, `lifecycle`, and the linked reason. Snapshot, source object, original path, content hash, byte range, locator, text hash, origin kind, epistemic state, and operational state remain canonical.

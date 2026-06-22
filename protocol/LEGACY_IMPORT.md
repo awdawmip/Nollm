@@ -174,6 +174,12 @@ Publication uses one package writer guarded by a memory-root single-writer lock,
 
 Failed recovery batches use `batch_<20hex>_rN`. Repeated recovery increments `N`; invalid `_recovery_recovery` identifiers are never generated.
 
+MT1-R10 makes the import request a canonical plan binding, not editable workflow text. `logical_plan_id`, `base_batch_id`, `snapshot_id`, `archive_manifest_hash`, `source_policy_id`, `target_field_id`, canonical source-span inventory hash, and canonical extraction hash are regenerated from the verified archive before dry-run, commit, validate, report, reconcile, or recovery. Any mismatch is untrusted ingress and fails before staging or HEAD writes.
+
+Authoritative workflow and publication records reject unknown fields. Display timestamps remain audit metadata only. Recovery copies no opaque ingress bytes; it regenerates canonical extraction from the verified archive and keeps the same logical plan base with a serialized `_rN` attempt id.
+
+Commit, reconcile, recovery, finalization ledger append, and state transition share the writer lock. A stale lock may be reclaimed only from a validated expired owner record; a fresh lock remains `writer_busy`.
+
 ## Default State
 
 Legacy shards use:

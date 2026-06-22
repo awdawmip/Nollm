@@ -69,6 +69,8 @@ MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are 
 
 Ingress, handoff, ledger, and migration reports are audit workflow records. They cannot authorize active memory, rollback, or replacement.
 
+MT1-R10 closes the boundary around a canonical plan: verified archive view, sealed ingress, sealed staging package, validated publication package, atomic HEAD activation, and serialized finalization/recovery. SafeRoot means every trust-bearing path is derived from validated ids and checked for containment, regular-file expectations, and symlink segments before use. Self-hashes are not signatures; unknown authoritative fields are rejected rather than treated as extension channels.
+
 ## Nollm V1 Route Lock
 
 Nollm V1 Core exposes explicit filesystem-backed objects, deterministic validation, audit projections, and tool surfaces.
