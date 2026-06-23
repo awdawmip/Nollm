@@ -159,3 +159,26 @@ These limitations do not block V1.
 - Generated-output recall examples are isolated and should be run against temp notebooks.
 - SQLite audit projection remains future research, not V1 runtime.
 - MCP remains future consideration, not V1.
+
+## F0-01: OpenClaw Native Memory Provider Functional Alpha
+
+A short milestone between MT1 archive ingest and later native recall runtime:
+
+- Add @nollm/openclaw-memory as a standalone kind: \"memory\" plugin.
+- Keep 
+ollm-memory-companion as historical/experimental companion surface.
+- Implement private gent_turn_prepare recall and gent_end capture receipt.
+- Use a synthetic deterministic alpha field.
+- Disable legacy memory fallback.
+- Validate against a fixed OpenClaw commit without model credentials.
+- Document known limitations as public issue seeds.
+
+F0 does **not**:
+
+- complete R14 SafeRoot / capability storage;
+- migrate real MEMORY.md / DREAMS.md history;
+- implement finished Cortex geometry recall;
+- claim production memory takeover.
+
+The next milestone after F0 is F1 Native Ingress Alpha, which promotes capture
+receipts to native shards under R14-safe storage.

@@ -1,3 +1,13 @@
+> **Historical / experimental companion surface**
+>
+> This package (`@nollm/openclaw-memory-companion`, plugin id
+> `nollm-memory-companion`) is a tool plugin that exposes geometry navigation
+> tools and delegates to legacy `memory-core`. It is **not** the OpenClaw active
+> memory provider.
+>
+> The Functional Alpha active memory provider is now
+> `@nollm/openclaw-memory` (plugin id `nollm`, kind `memory`). See
+> `docs/integration/openclaw/F0_NOLLM_MEMORY_PROVIDER_ALPHA.md`.
 # Nollm OpenClaw Memory Companion
 
 This package is a local-development-ready OpenClaw tool plugin that wraps the
@@ -125,3 +135,4 @@ only and are not registered by this plugin.
 | Non-shell bounded sidecar bridge | verified by Python static tests and package test |
 | Config path and timeout constraints | verified by Python static tests and package test |
 | Real OpenClaw gateway installation | skipped until an OpenClaw environment is provided |
+

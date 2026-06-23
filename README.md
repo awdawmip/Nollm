@@ -278,3 +278,37 @@ Compatibility labels:
 - `inspect` is preferred.
 - `read_card` is explicit single-card read.
 - context composition is not a Core action.
+
+## OpenClaw Functional Alpha Provider
+
+Nollm now ships a separate OpenClaw **active memory provider** package:
+
+`	ext
+integrations/openclaw/nollm-memory-provider/
+npm package: @nollm/openclaw-memory
+plugin id:   nollm
+kind:        memory
+`
+
+This is distinct from the historical 
+ollm-memory-companion tool plugin. The
+companion remains available as an experimental geometry-navigation surface that
+delegates to legacy memory-core; it is not the active memory route.
+
+The Functional Alpha provider:
+
+- uses plugins.slots.memory = \"nollm\" to become the active memory provider;
+- injects a bounded NOLLM_MEMORY_CONTEXT_V1 envelope during
+  gent_turn_prepare;
+- writes capture receipts under 
+ollmDataRoot during gent_end;
+- exposes **zero** Primary-visible memory or Nollm geometry tools;
+- never reads or writes MEMORY.md, DREAMS.md, or memory/*.md;
+- uses a synthetic deterministic alpha field, not historical memory.
+
+See docs/integration/openclaw/F0_NOLLM_MEMORY_PROVIDER_ALPHA.md for the full
+contract and docs/issues/FUNCTIONAL_ALPHA_OPEN_ISSUES.md for known
+limitations.
+
+This is Functional Alpha work. It does not claim production cutover, historical
+migration, or R14 capability-storage completion.
