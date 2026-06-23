@@ -555,7 +555,12 @@ def _validate_contained_regular_path(
 
 def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
     try:
-        return read_json(path)
+        from .safe_storage import safe_read_file, read_json_bytes
+        raw = safe_read_file(path, label=label, require_private=True)
+        data = read_json_bytes(raw, label)
+        if not isinstance(data, dict):
+            raise ValueError("invalid_json:not_object")
+        return data
     except Exception as exc:
         ename = exc.__class__.__name__
         msg = str(exc)
@@ -572,7 +577,7 @@ def _safe_read_jsonl(path: Path, label: str, errors: list[str]) -> list[dict[str
     records: list[dict[str, Any]] = []
     try:
         from .safe_storage import safe_read_file
-        raw = safe_read_file(path, label=label, require_private=False)
+        raw = safe_read_file(path, label=label, require_private=True)
         for index, line in enumerate(raw.decode("utf-8").splitlines(), start=1):
             if not line.strip():
                 continue
@@ -592,7 +597,7 @@ def _safe_read_jsonl(path: Path, label: str, errors: list[str]) -> list[dict[str
 def _safe_sha256_file(path: Path, label: str, errors: list[str]) -> str | None:
     try:
         from .safe_storage import safe_read_file
-        return sha256_bytes(safe_read_file(path, label=label, require_private=False))
+        return sha256_bytes(safe_read_file(path, label=label, require_private=True))
     except Exception as exc:
         errors.append(f"unreadable_file:{label}:{exc.__class__.__name__}")
     return None

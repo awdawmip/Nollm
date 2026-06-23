@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .archive import archive_sources, load_manifest, memory_root_path
+from .archive import archive_sources, existing_memory_root_path, load_manifest
 from .archive_manifest import sha256_bytes
 from .legacy_text import NORMALIZATION_ID, normalize_legacy_text, source_range_hash, text_hash
 from .path_safety import contained_path
@@ -14,7 +14,7 @@ EXTRACTION_SCHEMA = "nollm.legacy_extraction.v1"
 
 
 def extract_legacy_spans(memory_root: Path | str, snapshot_id: str) -> list[dict[str, Any]]:
-    root = memory_root_path(memory_root)
+    root = existing_memory_root_path(memory_root)
     manifest = load_manifest(root, snapshot_id)
     by_source = {source["source_object_id"]: source for source in archive_sources(manifest)}
     extracted: list[dict[str, Any]] = []

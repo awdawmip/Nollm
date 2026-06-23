@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import time
+import threading
 import uuid
 from datetime import datetime
 from json import JSONDecodeError
@@ -97,6 +98,16 @@ PUBLISH_JOURNAL_FIELDS = {
     "publish_transaction_id",
     "schema",
 }
+
+
+_LEDGER_LOCK = threading.RLock()
+
+
+def _with_ledger_lock(func):
+    def _wrapper(*args, **kwargs):
+        with _LEDGER_LOCK:
+            return func(*args, **kwargs)
+    return _wrapper
 
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
@@ -1537,6 +1548,7 @@ def _finalization_event_id(receipt: dict[str, Any]) -> str:
     return f"legacy_import_commit:{receipt.get('batch_id')}:{receipt.get('field_revision_id')}"
 
 
+@_with_ledger_lock
 def _ensure_ledger_event(path: Path, event: dict[str, Any]) -> None:
     root = path.parents[1]
     existing_errors = _ledger_errors(root)
@@ -1588,6 +1600,7 @@ def _ledger_errors(root: Path) -> list[str]:
     return []
 
 
+@_with_ledger_lock
 def _append_ledger_event(root: Path, event: dict[str, Any]) -> None:
     path, path_errors = _ledger_path(root, must_exist=False)
     if path_errors:
@@ -1658,6 +1671,21 @@ def _load_state(batch_dir: Path) -> dict[str, Any]:
     return read_json(path)
 
 
+
+_VALID_BATCH_STATES = frozenset({"planned", "staged", "validated", "publishing", "committed", "failed", "quarantined"})
+_VALID_TS_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+
+def _is_valid_utc_timestamp(value: str) -> bool:
+    if not isinstance(value, str) or not _VALID_TS_RE.match(value):
+        return False
+    try:
+        datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return False
+    return True
+
+
 def _load_state_safe(batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
     path = batch_dir / "state.json"
     if not path.exists():
@@ -1667,6 +1695,11 @@ def _load_state_safe(batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
         return {"state": "unknown"}, errors
     if not isinstance(data, dict) or not isinstance(data.get("state"), str):
         return {"state": "unknown"}, ["invalid_state"]
+    if data["state"] not in _VALID_BATCH_STATES:
+        return {"state": "unknown"}, [f"invalid_state_enum:{data['state']}"]
+    updated = data.get("updated_at")
+    if not isinstance(updated, str) or not _is_valid_utc_timestamp(updated):
+        return {"state": "unknown"}, ["invalid_state_timestamp"]
     unknown = _unknown_fields(data, STATE_FIELDS, "state")
     if unknown:
         return {"state": "unknown"}, unknown
