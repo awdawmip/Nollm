@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import time
-import threading
 import uuid
 from datetime import datetime
 from json import JSONDecodeError
@@ -38,6 +37,7 @@ from .safe_storage import (
     SafeStorageError,
     read_jsonl_bytes,
     safe_append_jsonl,
+    safe_append_jsonl_serialized,
     safe_read_file,
     safe_atomic_json,
     safe_atomic_jsonl,
@@ -100,14 +100,66 @@ PUBLISH_JOURNAL_FIELDS = {
 }
 
 
-_LEDGER_LOCK = threading.RLock()
+# Cross-process ledger lock using mkdir atomicity
+import threading as _threading
+_LEDGER_LOCK_LOCAL = _threading.local()
 
 
-def _with_ledger_lock(func):
-    def _wrapper(*args, **kwargs):
-        with _LEDGER_LOCK:
-            return func(*args, **kwargs)
-    return _wrapper
+def _is_ledger_lock_held() -> bool:
+    return getattr(_LEDGER_LOCK_LOCAL, "held", False)
+
+
+def _acquire_ledger_lock(root: Path) -> object | None:
+    import time
+    lock_dir = root / "ledger" / ".lock"
+    lock_dir.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(200):
+        try:
+            lock_dir.mkdir(exist_ok=False)
+            owner = {"pid": os.getpid(), "acquired_at": utc_now(), "fencing_token": "fence_" + uuid.uuid4().hex}
+            (lock_dir / "owner.json").write_text(
+                json.dumps(owner, sort_keys=True), encoding="utf-8")
+            _LEDGER_LOCK_LOCAL.held = True
+            return lock_dir
+        except FileExistsError:
+            owner_file = lock_dir / "owner.json"
+            if owner_file.exists():
+                try:
+                    owner = read_json(owner_file)
+                    acquired_at = owner.get("acquired_at", "")
+                    if acquired_at:
+                        from datetime import datetime, timezone, timedelta
+                        try:
+                            acquired_time = datetime.fromisoformat(acquired_at.replace("Z", "+00:00"))
+                            if datetime.now(timezone.utc) - acquired_time > timedelta(minutes=5):
+                                import shutil
+                                shutil.rmtree(str(lock_dir), ignore_errors=True)
+                                continue
+                        except (ValueError, OSError):
+                            pass
+                except (ValueError, OSError):
+                    pass
+            time.sleep(0.05)
+    return None
+
+
+def _release_ledger_lock(lock: object) -> None:
+    import shutil
+    if lock is not None:
+        _LEDGER_LOCK_LOCAL.held = False
+        shutil.rmtree(str(lock), ignore_errors=True)
+
+
+def _with_ledger_lock_op(root: Path, func, *args, **kwargs):
+    if _is_ledger_lock_held():
+        return func(*args, **kwargs)
+    lock = _acquire_ledger_lock(root)
+    if lock is None:
+        raise ValueError("writer_busy:ledger_lock_timeout")
+    try:
+        return func(*args, **kwargs)
+    finally:
+        _release_ledger_lock(lock)
 
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
@@ -1548,18 +1600,19 @@ def _finalization_event_id(receipt: dict[str, Any]) -> str:
     return f"legacy_import_commit:{receipt.get('batch_id')}:{receipt.get('field_revision_id')}"
 
 
-@_with_ledger_lock
 def _ensure_ledger_event(path: Path, event: dict[str, Any]) -> None:
     root = path.parents[1]
-    existing_errors = _ledger_errors(root)
-    if existing_errors:
-        raise ValueError(",".join(existing_errors))
-    event_id = event.get("event_id")
-    if path.exists():
-        for record in _read_jsonl(path):
-            if record.get("event_id") == event_id:
-                return
-    _append_ledger_event(root, event)
+    def _do_ensure():
+        existing_errors = _ledger_errors(root)
+        if existing_errors:
+            raise ValueError(",".join(existing_errors))
+        event_id = event.get("event_id")
+        if path.exists():
+            for record in _read_jsonl(path):
+                if record.get("event_id") == event_id:
+                    return
+        _append_ledger_event(root, event)
+    _with_ledger_lock_op(root, _do_ensure)
 
 
 def _has_finalization_ledger_event(root: Path, receipt: dict[str, Any]) -> bool:
@@ -1600,15 +1653,17 @@ def _ledger_errors(root: Path) -> list[str]:
     return []
 
 
-@_with_ledger_lock
 def _append_ledger_event(root: Path, event: dict[str, Any]) -> None:
-    path, path_errors = _ledger_path(root, must_exist=False)
-    if path_errors:
-        raise ValueError(",".join(path_errors))
-    existing_errors = _ledger_errors(root)
-    if existing_errors:
-        raise ValueError(",".join(existing_errors))
-    safe_append_jsonl(root, ("ledger", "events.jsonl"), event, label="ledger_events")
+    def _do_append():
+        path, path_errors = _ledger_path(root, must_exist=False)
+        if path_errors:
+            raise ValueError(",".join(path_errors))
+        existing_errors = _ledger_errors(root)
+        if existing_errors:
+            raise ValueError(",".join(existing_errors))
+        line = (json.dumps(event, ensure_ascii=False, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+        safe_append_jsonl_serialized(root, ("ledger", "events.jsonl"), line, label="ledger_events")
+    _with_ledger_lock_op(root, _do_append)
 
 
 def _project_spans(root: Path, snapshot_id: str, links: list[dict[str, Any]]) -> list[dict[str, Any]]:

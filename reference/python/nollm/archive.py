@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import shutil
 from datetime import datetime, timezone
 from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
 from .archive_manifest import canonical_json, detect_encoding, manifest_hash, newline_profile, read_json, sha256_bytes, write_json
+from .archive_manifest import read_json_root
 from .path_safety import contained_path, ensure_contained_parent, validate_sha256_hex, validate_snapshot_id, validate_source_object_id
 from .safe_storage import (
     SafeStorageError,
@@ -18,7 +20,8 @@ from .safe_storage import (
 from .source_policy import POLICY_ID, enumerate_legacy_sources, read_stable_source_bytes, state_for_path, validate_relative_source_path
 
 
-ARCHIVE_SCHEMA = "nollm.archive_manifest.v4"
+ARCHIVE_SCHEMA = "nollm.archive_manifest.v5"
+LEGACY_ARCHIVE_V4_ERROR = "legacy_mt1_archive_v4_requires_rearchive"
 LEGACY_ARCHIVE_V2_ERROR = "legacy_mt1_archive_v2_requires_rearchive"
 LEGACY_ARCHIVE_V3_ERROR = "legacy_mt1_archive_v3_requires_rearchive"
 SOURCE_FIELDS = {
@@ -87,6 +90,8 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
         seed_digest = snapshot_seed_digest(policy_id, content_digests, workspace_identity=workspace_identity, workspace_identity_scheme=workspace_identity_scheme)
         snapshot_id = f"snap_{created_at.replace('-', '').replace(':', '').replace('T', '_').replace('Z', '')}_{seed_digest[:12]}"
         manifest_path = root / "archive" / "manifests" / f"{snapshot_id}.json"
+        staging_dir = root / "archive" / "transactions" / snapshot_id
+        staging_dir.mkdir(parents=True, exist_ok=True)
         source_records: list[dict[str, Any]] = []
         for source in sources:
             before = source_bytes[source.relative_path]
@@ -94,6 +99,7 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
             _, object_errors = contained_path(root, "archive", "objects", "sha256", digest, label="archive_object", must_exist=False)
             object_errors.extend(validate_sha256_hex(digest))
             if object_errors:
+                _cleanup_staging(root, snapshot_id)
                 return {"ok": False, "snapshot_id": snapshot_id, "errors": object_errors}
             object_path = root / "archive" / "objects" / "sha256" / digest
             if object_path.exists():
@@ -152,6 +158,7 @@ def create_archive_snapshot(workspace: Path | str, memory_root: Path | str, *, p
                 if existing and existing != canonical_manifest_bytes(pre_manifest):
                     return {"ok": False, "snapshot_id": snapshot_id, "errors": ["snapshot_id_collision"]}
             return {"ok": False, "snapshot_id": snapshot_id, "errors": [str(exc)]}
+        _cleanup_staging(root, snapshot_id)
         return {
             "ok": True,
             "snapshot_id": pre_manifest["snapshot_id"],
@@ -186,7 +193,12 @@ def load_manifest(memory_root: Path | str, snapshot_id: str) -> dict[str, Any]:
     path, path_errors = contained_path(root, "archive", "manifests", f"{snapshot_id}.json", label="archive_manifest", must_exist=True, require_file=True)
     if path_errors:
         raise ValueError(path_errors[0])
-    return read_json(path)
+    from .safe_root import SafeRoot
+    sr = SafeRoot.open_existing(root)
+    try:
+        return read_json_root(sr, "archive", "manifests", f"{snapshot_id}.json", label="archive_manifest", require_private=True)
+    finally:
+        sr.close()
 
 
 def archive_sources(manifest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -267,7 +279,12 @@ def verify_archive_snapshot(memory_root: Path | str, snapshot_id: str) -> dict[s
     if errors:
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": errors, "source_count": 0, "object_count": 0}
     try:
-        manifest = read_json(manifest_path)
+        from .safe_root import SafeRoot
+        sr = SafeRoot.open_existing(root)
+        try:
+            manifest = read_json_root(sr, "archive", "manifests", f"{snapshot_id}.json", label="archive_manifest", require_private=True)
+        finally:
+            sr.close()
     except JSONDecodeError:
         return {"ok": False, "snapshot_id": snapshot_id, "archive_verified": False, "errors": ["malformed_json:archive_manifest"], "source_count": 0, "object_count": 0}
     except OSError as exc:
@@ -320,6 +337,8 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
         return [LEGACY_ARCHIVE_V2_ERROR]
     if schema == "nollm.archive_manifest.v3":
         return [LEGACY_ARCHIVE_V3_ERROR]
+    if schema == "nollm.archive_manifest.v4":
+        return [LEGACY_ARCHIVE_V4_ERROR]
     if schema != ARCHIVE_SCHEMA:
         errors.append("invalid_archive_manifest_schema")
     if "objects" in manifest:
@@ -430,6 +449,15 @@ def validate_archive_manifest_schema(manifest: dict[str, Any], *, expected_snaps
         if not snapshot_for_id.endswith(seed_digest[:12]):
             errors.append("snapshot_id_seed_mismatch")
     return errors
+
+
+
+def _cleanup_staging(root: Path, snapshot_id: str) -> None:
+    """Remove staging transaction directory for a snapshot."""
+    import shutil
+    staging_dir = root / "archive" / "transactions" / snapshot_id
+    if staging_dir.exists():
+        shutil.rmtree(str(staging_dir), ignore_errors=True)
 
 
 def _is_relative_to(path: Path, root: Path) -> bool:
