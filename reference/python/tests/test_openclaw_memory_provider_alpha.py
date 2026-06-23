@@ -327,4 +327,3 @@ def test_script_invocation_with_empty_stdin() -> None:
     result = json.loads(proc.stdout)
     assert result["ok"] is False
     assert result["error"]["code"] == "invalid_command"
-

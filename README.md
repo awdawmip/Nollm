@@ -290,7 +290,7 @@ plugin id:   nollm
 kind:        memory
 `
 
-This is distinct from the historical 
+This is distinct from the historical
 ollm-memory-companion tool plugin. The
 companion remains available as an experimental geometry-navigation surface that
 delegates to legacy memory-core; it is not the active memory route.
@@ -300,7 +300,7 @@ The Functional Alpha provider:
 - uses plugins.slots.memory = \"nollm\" to become the active memory provider;
 - injects a bounded NOLLM_MEMORY_CONTEXT_V1 envelope during
   gent_turn_prepare;
-- writes capture receipts under 
+- writes capture receipts under
 ollmDataRoot during gent_end;
 - exposes **zero** Primary-visible memory or Nollm geometry tools;
 - never reads or writes MEMORY.md, DREAMS.md, or memory/*.md;

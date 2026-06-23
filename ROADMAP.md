@@ -165,7 +165,7 @@ These limitations do not block V1.
 A short milestone between MT1 archive ingest and later native recall runtime:
 
 - Add @nollm/openclaw-memory as a standalone kind: \"memory\" plugin.
-- Keep 
+- Keep
 ollm-memory-companion as historical/experimental companion surface.
 - Implement private gent_turn_prepare recall and gent_end capture receipt.
 - Use a synthetic deterministic alpha field.

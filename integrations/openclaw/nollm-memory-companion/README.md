@@ -135,4 +135,3 @@ only and are not registered by this plugin.
 | Non-shell bounded sidecar bridge | verified by Python static tests and package test |
 | Config path and timeout constraints | verified by Python static tests and package test |
 | Real OpenClaw gateway installation | skipped until an OpenClaw environment is provided |
-
