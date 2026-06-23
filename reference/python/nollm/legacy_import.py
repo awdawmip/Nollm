@@ -199,69 +199,71 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
         return {"ok": True, "snapshot_id": snapshot_id, "archive_only": True, "state": "archive_only", "extraction_count": 0, "errors": []}
     request = dict(plan_data["request"])
     batch_id = str(request["batch_id"])
-    batch_dir, batch_errors = _batch_dir_checked(root, batch_id, must_exist=False)
-    if batch_errors:
-        return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "errors": batch_errors}
-    request_path = batch_dir / "import-request.json"
-    receipt_path = batch_dir / "import-receipt.json"
-    created_batch = False
-    if not batch_dir.exists():
-        try:
-            batch_dir.mkdir(parents=True)
-            created_batch = True
-        except FileExistsError:
+    def _do_plan():
+        batch_dir, batch_errors = _batch_dir_checked(root, batch_id, must_exist=False)
+        if batch_errors:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "errors": batch_errors}
+        request_path = batch_dir / "import-request.json"
+        receipt_path = batch_dir / "import-receipt.json"
+        created_batch = False
+        if not batch_dir.exists():
+            try:
+                batch_dir.mkdir(parents=True)
+                created_batch = True
+            except FileExistsError:
+                _wait_for_path(request_path)
+        elif not request_path.exists():
             _wait_for_path(request_path)
-    elif not request_path.exists():
-        _wait_for_path(request_path)
-    if batch_dir.exists() and not request_path.exists() and any(batch_dir.iterdir()):
-        state, state_errors = _load_state_safe(root, batch_dir)
-        return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + ["missing_import_request"]}
-    if request_path.exists():
-        request, request_errors = _read_json_safe(root, request_path, "import_request")
-        state, state_errors = _load_state_safe(root, batch_dir)
-        request_contract_errors = (
-            _validate_planned_request_contract(
-                request,
-                batch_id=batch_id,
-                expected_request=dict(plan_data["request"]),
+        if batch_dir.exists() and not request_path.exists() and any(batch_dir.iterdir()):
+            state, state_errors = _load_state_safe(root, batch_dir)
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + ["missing_import_request"]}
+        if request_path.exists():
+            existing_request, existing_request_errors = _read_json_safe(root, request_path, "import_request")
+            state, state_errors = _load_state_safe(root, batch_dir)
+            request_contract_errors = (
+                _validate_planned_request_contract(
+                    existing_request,
+                    batch_id=batch_id,
+                    expected_request=dict(plan_data["request"]),
+                )
+                if isinstance(existing_request, dict)
+                else []
             )
-            if isinstance(request, dict)
-            else []
-        )
-        if request_errors or not isinstance(request, dict) or state_errors:
-            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
-        if request_contract_errors:
-            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": request_contract_errors}
-        receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
-        if receipt_errors:
-            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
-        if state["state"] in {"committed", "publishing"} and not receipt_path.exists():
-            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": ["missing_import_receipt"]}
-        if receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
-            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": [f"invalid_receipted_state:{state['state']}"]}
-        if receipt_path.exists():
-            handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
-            if handoff_errors or not isinstance(handoff, dict):
-                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": handoff_errors or ["invalid_publish_handoff"]}
-        return {
-            "ok": True,
-            "batch_id": batch_id,
-            "snapshot_id": snapshot_id,
-            "extraction_count": request.get("extraction_count", len(extracted)),
-            "batch_dir": str(batch_dir),
-            "state": state["state"],
-            "field_revision_id": receipt.get("field_revision_id") if isinstance(receipt, dict) and not receipt_errors else None,
-            "errors": receipt_errors,
-            "reused": True,
-        }
-    if not created_batch:
-        return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": "recovery_required", "recovery_required": True, "errors": ["missing_import_request"]}
-    _safe_write_json_path(root, request_path, request, "import_request")
-    _write_state(batch_dir, "planned")
-    _write_jsonl(batch_dir / "extraction.jsonl", extracted)
-    _safe_write_json_path(root, batch_dir / "migration-report.json", _migration_report(root, batch_id, request, dry_run=True), "migration_report")
-    _ensure_ledger_event(root / "ledger" / "events.jsonl", {"op": "legacy_import_plan", "event_id": f"legacy_import_plan:{batch_id}", "batch_id": batch_id, "timestamp": utc_now(), "state": "planned"})
-    return {"ok": True, "batch_id": batch_id, "snapshot_id": snapshot_id, "extraction_count": len(extracted), "batch_dir": str(batch_dir), "state": "planned"}
+            if existing_request_errors or not isinstance(existing_request, dict) or state_errors:
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + existing_request_errors + ([] if isinstance(existing_request, dict) else ["invalid_import_request"])}
+            if request_contract_errors:
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": request_contract_errors}
+            receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
+            if receipt_errors:
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
+            if state["state"] in {"committed", "publishing"} and not receipt_path.exists():
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": ["missing_import_receipt"]}
+            if receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
+                return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": [f"invalid_receipted_state:{state['state']}"]}
+            if receipt_path.exists():
+                handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
+                if handoff_errors or not isinstance(handoff, dict):
+                    return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": handoff_errors or ["invalid_publish_handoff"]}
+            return {
+                "ok": True,
+                "batch_id": batch_id,
+                "snapshot_id": snapshot_id,
+                "extraction_count": existing_request.get("extraction_count", len(extracted)),
+                "batch_dir": str(batch_dir),
+                "state": state["state"],
+                "field_revision_id": receipt.get("field_revision_id") if isinstance(receipt, dict) and not receipt_errors else None,
+                "errors": receipt_errors,
+                "reused": True,
+            }
+        if not created_batch:
+            return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": "recovery_required", "recovery_required": True, "errors": ["missing_import_request"]}
+        _safe_write_json_path(root, request_path, request, "import_request")
+        _write_state(batch_dir, "planned")
+        _write_jsonl(batch_dir / "extraction.jsonl", extracted)
+        _safe_write_json_path(root, batch_dir / "migration-report.json", _migration_report(root, batch_id, request, dry_run=True), "migration_report")
+        _ensure_ledger_event(root / "ledger" / "events.jsonl", {"op": "legacy_import_plan", "event_id": f"legacy_import_plan:{batch_id}", "batch_id": batch_id, "timestamp": utc_now(), "state": "planned"})
+        return {"ok": True, "batch_id": batch_id, "snapshot_id": snapshot_id, "extraction_count": len(extracted), "batch_dir": str(batch_dir), "state": "planned"}
+    return _with_ledger_lock_op(root, _do_plan)
 
 
 def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool = False, commit: bool = False) -> dict[str, Any]:
