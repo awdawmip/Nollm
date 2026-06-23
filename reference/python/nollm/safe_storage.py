@@ -64,7 +64,7 @@ def safe_read_text(root: Path, *parts: str, label: str) -> str:
 
 
 def safe_read_file(path: Path, *, label: str, require_private: bool = True) -> bytes:
-    """Read a file with handle-based verification using parent dir as root."""
+    """Deprecated: use safe_read_regular(root, *parts) for authoritative MT1 reads."""
     try:
         sr = SafeRoot.open_existing(path.parent)
         try:
@@ -76,7 +76,7 @@ def safe_read_file(path: Path, *, label: str, require_private: bool = True) -> b
 
 
 def safe_write_file(path: Path, data: bytes, *, label: str, replace: bool = True) -> None:
-    """Write a file with handle-based verification using parent dir as root."""
+    """Deprecated: use safe_atomic_write(root, parts, ...) for authoritative MT1 writes."""
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         sr = SafeRoot.open_existing(path.parent)
