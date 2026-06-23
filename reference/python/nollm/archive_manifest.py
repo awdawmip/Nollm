@@ -56,3 +56,16 @@ def detect_encoding(data: bytes) -> str:
         return "utf-8"
     except UnicodeDecodeError:
         return "binary"
+
+def read_json_root(sr, *parts: str, label: str, require_private: bool = True) -> dict[str, Any]:
+    """Root-relative JSON read through SafeRoot V3."""
+    data = read_json_bytes(sr.read_bytes(*parts, label=label, require_private=require_private), label)
+    if not isinstance(data, dict):
+        raise ValueError("invalid_json:not_object")
+    return data
+
+
+def write_json_root(sr, *parts: str, data: Mapping[str, Any], label: str, replace: bool = True, allow_idempotent: bool = False) -> str:
+    """Root-relative JSON write through SafeRoot V3."""
+    from .safe_storage import safe_atomic_write
+    return safe_atomic_write(sr.root_path, parts, json_dumps(data).encode("utf-8"), label=label, replace=replace, allow_idempotent=allow_idempotent)

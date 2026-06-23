@@ -221,3 +221,16 @@ def _reject_constant(value: str) -> None:
 def _env_hook(label: str, suffix: str) -> str:
     normalized = "".join(ch if ch.isalnum() else "_" for ch in label.upper())
     return f"NOLLM_SAFE_STORAGE_{normalized}_{suffix}"
+
+
+def safe_append_jsonl_serialized(root: Path, parts: Iterable[str], record_line: bytes, *, label: str) -> None:
+    """Atomically append a pre-serialized record line to a JSONL file."""
+    parts_tuple = tuple(parts)
+    try:
+        sr = SafeRoot.open_existing(root)
+        try:
+            sr.append_jsonl_serialized(*parts_tuple, record_line=record_line, label=label)
+        finally:
+            sr.close()
+    except SafeRootError as exc:
+        raise SafeStorageError(str(exc)) from exc
