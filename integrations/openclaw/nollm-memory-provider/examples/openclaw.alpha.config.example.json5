@@ -1,0 +1,21 @@
+{
+  // Functional Alpha fixture: select Nollm as the sole active memory provider.
+  plugins: {
+    slots: {
+      memory: "nollm"
+    },
+    entries: {
+      nollm: {
+        // Absolute paths are required.
+        pythonCommand: "python3",
+        nollmRepoRoot: "/absolute/path/to/nollm",
+        nollmDataRoot: "/absolute/path/to/nollm-alpha-state",
+        alphaFixturePath: "/absolute/path/to/nollm/integrations/openclaw/nollm-memory-provider/fixtures/alpha-field.json",
+        commandTimeoutMs: 15000,
+        maxFacts: 3,
+        maxCharacters: 1200,
+        captureMode: "receipt_only"
+      }
+    }
+  }
+}

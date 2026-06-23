@@ -1,0 +1,48 @@
+{
+  "facts": [
+    {
+      "claim": "The alpha user prefers blue labels in synthetic demonstrations.",
+      "epistemic_state": "source_backed",
+      "keywords": [
+        "blue",
+        "label",
+        "preference"
+      ],
+      "operational_state": "active",
+      "shard_id": "alpha-preference-blue",
+      "source_refs": [
+        "nollm://synthetic/fixture/alpha-field#fact-1"
+      ]
+    },
+    {
+      "claim": "The alpha user is working on a project named Nollm.",
+      "epistemic_state": "source_backed",
+      "keywords": [
+        "project",
+        "nollm"
+      ],
+      "operational_state": "active",
+      "shard_id": "alpha-project-nollm",
+      "source_refs": [
+        "nollm://synthetic/fixture/alpha-field#fact-2"
+      ]
+    },
+    {
+      "claim": "The alpha user runs a daily synthetic check-in at 09:00 UTC.",
+      "epistemic_state": "source_backed",
+      "keywords": [
+        "check-in",
+        "daily",
+        "routine"
+      ],
+      "operational_state": "active",
+      "shard_id": "alpha-routine-checkin",
+      "source_refs": [
+        "nollm://synthetic/fixture/alpha-field#fact-3"
+      ]
+    }
+  ],
+  "field_id": "alpha_main",
+  "revision_id": "744ba101d32371c35f0092135d3ba415d9709a132cd5a80e971c7be8902eb2d3",
+  "schema": "nollm.alpha_field.v1"
+}

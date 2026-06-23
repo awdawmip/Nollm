@@ -42,3 +42,8 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# F0-01 OpenClaw memory provider build artifacts
+integrations/openclaw/nollm-memory-provider/node_modules/
+work/
+*.bundle

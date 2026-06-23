@@ -1,0 +1,69 @@
+{
+  "id": "nollm",
+  "name": "Nollm Memory",
+  "kind": "memory",
+  "description": "Nollm native active memory provider for OpenClaw Functional Alpha.",
+  "version": "0.1.0-alpha.1",
+  "activation": {
+    "onStartup": false
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "pythonCommand",
+      "nollmRepoRoot",
+      "nollmDataRoot",
+      "alphaFixturePath"
+    ],
+    "properties": {
+      "pythonCommand": {
+        "type": "string",
+        "default": "python3",
+        "description": "Python interpreter used to run the Nollm sidecar."
+      },
+      "nollmRepoRoot": {
+        "type": "string",
+        "description": "Absolute path to the Nollm repository."
+      },
+      "nollmDataRoot": {
+        "type": "string",
+        "description": "Absolute path to the Nollm-owned alpha state directory. Must not be inside a legacy memory path."
+      },
+      "alphaFixturePath": {
+        "type": "string",
+        "description": "Absolute path to the synthetic alpha field fixture under the Nollm repository."
+      },
+      "commandTimeoutMs": {
+        "type": "integer",
+        "default": 15000,
+        "minimum": 1000,
+        "maximum": 60000,
+        "description": "Sidecar command timeout in milliseconds."
+      },
+      "maxFacts": {
+        "type": "integer",
+        "default": 3,
+        "minimum": 1,
+        "maximum": 20,
+        "description": "Maximum facts injected per turn."
+      },
+      "maxCharacters": {
+        "type": "integer",
+        "default": 1200,
+        "minimum": 100,
+        "maximum": 10000,
+        "description": "Maximum characters of fact content injected per turn."
+      },
+      "captureMode": {
+        "type": "string",
+        "default": "receipt_only",
+        "enum": ["receipt_only"],
+        "description": "F0 capture mode: receipt-only, no native shard promotion."
+      }
+    }
+  },
+  "contracts": {
+    "tools": []
+  }
+}

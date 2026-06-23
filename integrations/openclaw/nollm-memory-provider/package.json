@@ -1,0 +1,50 @@
+{
+  "name": "@nollm/openclaw-memory",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "Nollm native active memory provider for OpenClaw Functional Alpha.",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "fixtures",
+    "examples",
+    "README.md"
+  ],
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
+    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check && openclaw plugins validate --entry ./dist/index.js",
+    "plugin:validate": "npm run plugin:check",
+    "test": "npm run build && node --test \"tests/*.test.mjs\""
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.5.17"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "typebox": "^1.1.38"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "openclaw": "^2026.6.9",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
+
