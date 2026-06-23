@@ -38,7 +38,6 @@ from .safe_storage import (
     read_jsonl_bytes,
     safe_append_jsonl,
     safe_append_jsonl_serialized,
-    safe_read_file,
     safe_atomic_json,
     safe_atomic_jsonl,
     safe_atomic_write,
@@ -100,9 +99,10 @@ PUBLISH_JOURNAL_FIELDS = {
 }
 
 
-# Cross-process ledger lock using mkdir atomicity
+# Cross-process ledger lock using mkdir atomicity, with in-process serialization
 import threading as _threading
 _LEDGER_LOCK_LOCAL = _threading.local()
+_LEDGER_PROCESS_LOCK = _threading.RLock()
 
 
 def _is_ledger_lock_held() -> bool:
@@ -153,13 +153,17 @@ def _release_ledger_lock(lock: object) -> None:
 def _with_ledger_lock_op(root: Path, func, *args, **kwargs):
     if _is_ledger_lock_held():
         return func(*args, **kwargs)
-    lock = _acquire_ledger_lock(root)
-    if lock is None:
-        raise ValueError("writer_busy:ledger_lock_timeout")
-    try:
-        return func(*args, **kwargs)
-    finally:
-        _release_ledger_lock(lock)
+    with _LEDGER_PROCESS_LOCK:
+        if _is_ledger_lock_held():
+            return func(*args, **kwargs)
+        lock = _acquire_ledger_lock(root)
+        if lock is None:
+            raise ValueError("writer_busy:ledger_lock_timeout")
+        try:
+            _LEDGER_LOCK_LOCAL.held = True
+            return func(*args, **kwargs)
+        finally:
+            _release_ledger_lock(lock)
 
 
 def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_field_id: str) -> dict[str, Any]:
@@ -210,11 +214,11 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
     elif not request_path.exists():
         _wait_for_path(request_path)
     if batch_dir.exists() and not request_path.exists() and any(batch_dir.iterdir()):
-        state, state_errors = _load_state_safe(batch_dir)
+        state, state_errors = _load_state_safe(root, batch_dir)
         return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + ["missing_import_request"]}
     if request_path.exists():
-        request, request_errors = _read_json_safe(request_path, "import_request")
-        state, state_errors = _load_state_safe(batch_dir)
+        request, request_errors = _read_json_safe(root, request_path, "import_request")
+        state, state_errors = _load_state_safe(root, batch_dir)
         request_contract_errors = (
             _validate_planned_request_contract(
                 request,
@@ -228,7 +232,7 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
         if request_contract_errors:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": request_contract_errors}
-        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
+        receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt") if receipt_path.exists() else (None, [])
         if receipt_errors:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": receipt_errors}
         if state["state"] in {"committed", "publishing"} and not receipt_path.exists():
@@ -236,7 +240,7 @@ def plan_legacy_import(memory_root: Path | str, snapshot_id: str, *, target_fiel
         if receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
             return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": [f"invalid_receipted_state:{state['state']}"]}
         if receipt_path.exists():
-            handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+            handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
             if handoff_errors or not isinstance(handoff, dict):
                 return {"ok": False, "batch_id": batch_id, "snapshot_id": snapshot_id, "state": state["state"], "recovery_required": True, "errors": handoff_errors or ["invalid_publish_handoff"]}
         return {
@@ -273,7 +277,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "state": "recovery_required", "recovery_required": True, "errors": batch_errors}
-    state, state_errors = _load_state_safe(batch_dir)
+    state, state_errors = _load_state_safe(root, batch_dir)
     if state_errors:
         return _untrusted_ingress_result(root, batch_dir, batch_id, state_errors)
     if commit and state["state"] == "publishing":
@@ -285,7 +289,7 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
             "state": state["state"],
             "errors": [f"invalid batch state transition: {state['state']} -> staged", f"cannot_commit_state:{state['state']}"],
         }
-    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    request, request_errors = _read_json_safe(root, batch_dir / "import-request.json", "import_request")
     if request_errors or not isinstance(request, dict):
         return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
     request_identity_errors = _validate_request_identity(request, batch_id=batch_id)
@@ -298,19 +302,19 @@ def run_legacy_import(memory_root: Path | str, batch_id: str, *, dry_run: bool =
     if commit and receipt_path.exists() and state["state"] not in {"committed", "publishing"}:
         return _untrusted_ingress_result(root, batch_dir, batch_id, [f"invalid_receipted_state:{state['state']}"])
     if commit and state["state"] == "committed" and receipt_path.exists():
-        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+        receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt")
         if receipt_errors or not isinstance(receipt, dict):
             return {"ok": False, "batch_id": batch_id, "state": "committed", "errors": receipt_errors or ["invalid_import_receipt"]}
         validation = validate_legacy_import(root, batch_id)
         if not validation.get("ok"):
             return {"ok": False, "batch_id": batch_id, "state": "committed", "errors": validation.get("errors", [])}
-        _append_ledger_event(root, {"op": "legacy_import_duplicate_commit", "batch_id": batch_id, "timestamp": utc_now(), "duplicate_count": len(_read_jsonl(batch_dir / "extraction.jsonl"))})
+        _append_ledger_event(root, {"op": "legacy_import_duplicate_commit", "batch_id": batch_id, "timestamp": utc_now(), "duplicate_count": len(_read_jsonl(root, batch_dir / "extraction.jsonl"))})
         return {
             "ok": True,
             "batch_id": batch_id,
             "committed": True,
             "created_shard_count": 0,
-            "duplicate_count": len(_read_jsonl(batch_dir / "extraction.jsonl")),
+            "duplicate_count": len(_read_jsonl(root, batch_dir / "extraction.jsonl")),
             "field_revision_id": receipt.get("field_revision_id"),
             "state": "committed",
         }
@@ -349,7 +353,7 @@ def _run_legacy_import_after_request(
         return {"ok": False, "batch_id": batch_id, "errors": active_errors, "state": state["state"]}
     manifest = load_manifest(root, str(request["snapshot_id"]))
     source_policy_id = str(manifest["source_policy_id"])
-    extracted, extraction_errors = _read_jsonl_safe(batch_dir / "extraction.jsonl", "extraction")
+    extracted, extraction_errors = _read_jsonl_safe(root, batch_dir / "extraction.jsonl", "extraction")
     if extraction_errors:
         return _untrusted_ingress_result(root, batch_dir, batch_id, extraction_errors)
     existing = existing_shards_by_key(root)
@@ -473,7 +477,7 @@ def _reconcile_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "state": "recovery_required", "recovery_required": True, "errors": batch_errors}
-    state_record, state_errors = _load_state_safe(batch_dir)
+    state_record, state_errors = _load_state_safe(root, batch_dir)
     if state_errors:
         return _untrusted_ingress_result(root, batch_dir, batch_id, state_errors)
     state = state_record["state"]
@@ -487,10 +491,10 @@ def _reconcile_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]
     receipt_path = batch_dir / "import-receipt.json"
     if not receipt_path.exists():
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": ["missing_import_receipt"]}
-    receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+    receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt")
     if receipt_errors or not isinstance(receipt, dict):
         return _untrusted_ingress_result(root, batch_dir, batch_id, receipt_errors or ["invalid_import_receipt"])
-    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
     if handoff_errors or not isinstance(handoff, dict):
         return _untrusted_ingress_result(root, batch_dir, batch_id, handoff_errors or ["invalid_publish_handoff"])
     head = load_field_head(root)
@@ -502,7 +506,7 @@ def _reconcile_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]
         _quarantine_and_restore_head(root, batch_dir, None, "reconcile_validation_failed:inactive_publication")
         return {"ok": False, "batch_id": batch_id, "state": "quarantined", "recovery_required": True, "errors": ["inactive_publication"]}
     try:
-        request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+        request, request_errors = _read_json_safe(root, batch_dir / "import-request.json", "import_request")
         if request_errors or not isinstance(request, dict):
             return _untrusted_ingress_result(root, batch_dir, batch_id, request_errors or ["invalid_import_request"])
         contract_errors = _validate_receipt_and_handoff_contract(root, batch_dir, request, receipt, handoff)
@@ -538,7 +542,7 @@ def _recover_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]:
     old_dir, old_errors = _batch_dir_checked(root, batch_id)
     if old_errors:
         return {"ok": False, "batch_id": batch_id, "errors": old_errors, "recovery_required": True}
-    state_record, state_errors = _load_state_safe(old_dir)
+    state_record, state_errors = _load_state_safe(root, old_dir)
     if state_errors:
         return _untrusted_ingress_result(root, old_dir, batch_id, state_errors)
     state = state_record["state"]
@@ -546,7 +550,7 @@ def _recover_legacy_import_locked(root: Path, batch_id: str) -> dict[str, Any]:
         return _reconcile_legacy_import_locked(root, batch_id)
     if state not in {"failed", "quarantined"}:
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": [f"cannot_recover_state:{state}"]}
-    old_request, request_errors = _read_json_safe(old_dir / "import-request.json", "import_request")
+    old_request, request_errors = _read_json_safe(root, old_dir / "import-request.json", "import_request")
     if request_errors or not isinstance(old_request, dict):
         return {"ok": False, "batch_id": batch_id, "state": state, "errors": request_errors or ["invalid_import_request"]}
     request_identity_errors = _validate_request_identity(old_request, batch_id=batch_id)
@@ -586,9 +590,9 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "state": "invalid", "errors": batch_errors}
-    state, state_errors = _load_state_safe(batch_dir)
+    state, state_errors = _load_state_safe(root, batch_dir)
     errors.extend(state_errors)
-    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    request, request_errors = _read_json_safe(root, batch_dir / "import-request.json", "import_request")
     errors.extend(request_errors)
     ledger_errors = _ledger_errors(root)
     errors.extend(ledger_errors)
@@ -597,7 +601,7 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
     errors.extend(_validate_request_identity(request, batch_id=batch_id))
     errors.extend(_validate_canonical_plan(root, batch_dir, batch_id, request))
     if state["state"] == "publishing":
-        handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
         errors.extend(handoff_errors)
         if not isinstance(handoff, dict):
             errors.append("invalid_publish_handoff")
@@ -607,7 +611,7 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
     errors.extend(coverage.get("errors", []))
     receipt_path = batch_dir / "import-receipt.json"
     if receipt_path.exists():
-        receipt, receipt_errors = _read_json_safe(receipt_path, "import_receipt")
+        receipt, receipt_errors = _read_json_safe(root, receipt_path, "import_receipt")
         errors.extend(receipt_errors)
         if not isinstance(receipt, dict):
             return {"ok": False, "batch_id": batch_id, "state": state["state"], "errors": errors or ["invalid_import_receipt"]}
@@ -616,7 +620,7 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
         provenance = validate_deep_provenance(root, str(request["snapshot_id"]), str(receipt.get("field_revision_id")))
         errors.extend(provenance.get("errors", []))
         publication = current_publication(root)
-        handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+        handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
         errors.extend(handoff_errors)
         if isinstance(handoff, dict):
             errors.extend(_validate_receipt_and_handoff_contract(root, batch_dir, request, receipt, handoff))
@@ -627,7 +631,7 @@ def validate_legacy_import(memory_root: Path | str, batch_id: str) -> dict[str, 
             if not shard_path.exists():
                 errors.append(f"missing_shard:{shard_id}")
                 continue
-            shard, shard_errors = _read_json_safe(shard_path, f"publication_shard:{shard_id}")
+            shard, shard_errors = _read_json_safe(root, shard_path, f"publication_shard:{shard_id}")
             errors.extend(shard_errors)
             if not isinstance(shard, dict):
                 errors.append(f"invalid_shard:{shard_id}")
@@ -655,17 +659,17 @@ def legacy_import_report(memory_root: Path | str, batch_id: str) -> dict[str, An
     batch_dir, batch_errors = _batch_dir_checked(root, batch_id)
     if batch_errors:
         return {"ok": False, "batch_id": batch_id, "state": "invalid", "recovery_required": True, "errors": batch_errors}
-    request, request_errors = _read_json_safe(batch_dir / "import-request.json", "import_request")
+    request, request_errors = _read_json_safe(root, batch_dir / "import-request.json", "import_request")
     if request_errors or not isinstance(request, dict):
-        state, state_errors = _load_state_safe(batch_dir)
+        state, state_errors = _load_state_safe(root, batch_dir)
         return {"ok": False, "batch_id": batch_id, "state": state["state"], "recovery_required": True, "errors": state_errors + request_errors + ([] if isinstance(request, dict) else ["invalid_import_request"])}
     report_path = batch_dir / "migration-report.json"
-    report, report_errors = _read_json_safe(report_path, "migration_report") if report_path.exists() else (_migration_report(root, batch_id, request), [])
+    report, report_errors = _read_json_safe(root, report_path, "migration_report") if report_path.exists() else (_migration_report(root, batch_id, request), [])
     if report_errors or not isinstance(report, dict):
-        return {"ok": False, "batch_id": batch_id, "state": _load_state_safe(batch_dir)[0]["state"], "recovery_required": True, "errors": report_errors or ["invalid_migration_report"]}
+        return {"ok": False, "batch_id": batch_id, "state": _load_state_safe(root, batch_dir)[0]["state"], "recovery_required": True, "errors": report_errors or ["invalid_migration_report"]}
     report["validation"] = validate_legacy_import(root, batch_id) if (batch_dir / "import-receipt.json").exists() else {"ok": False, "errors": ["not_committed"]}
     report["ok"] = bool(report["validation"].get("ok"))
-    state, state_errors = _load_state_safe(batch_dir)
+    state, state_errors = _load_state_safe(root, batch_dir)
     report["state"] = state["state"]
     if state_errors:
         report["ok"] = False
@@ -749,7 +753,7 @@ def _validate_canonical_plan(root: Path, batch_dir: Path, batch_id: str, request
     errors.extend(_compare_request_to_expected(request, expected))
     if _base_batch_id(batch_id) != expected.get("base_batch_id"):
         errors.append("import_request_base_batch_id_mismatch")
-    extracted, extraction_errors = _read_jsonl_safe(batch_dir / "extraction.jsonl", "extraction")
+    extracted, extraction_errors = _read_jsonl_safe(root, batch_dir / "extraction.jsonl", "extraction")
     errors.extend(extraction_errors)
     if not extraction_errors:
         actual_hash = "sha256:" + sha256_bytes(_jsonl_bytes(extracted))
@@ -902,10 +906,10 @@ def _validate_receipt_and_handoff_contract(root: Path, batch_dir: Path, request:
         errors.append("inactive_publication")
         errors.extend(str(error) for error in admission.get("errors", []))
         return errors
-    package_receipt, package_receipt_errors = _read_json_safe(publication / "receipt.json", "publication_receipt")
-    activation, activation_errors = _read_json_safe(publication / "activation.json", "publication_activation")
+    package_receipt, package_receipt_errors = _read_json_safe(root, publication / "receipt.json", "publication_receipt")
+    activation, activation_errors = _read_json_safe(root, publication / "activation.json", "publication_activation")
     manifest_path = publication / "publication-manifest.json"
-    manifest, manifest_errors = _read_json_safe(manifest_path, "publication_manifest")
+    manifest, manifest_errors = _read_json_safe(root, manifest_path, "publication_manifest")
     errors.extend(package_receipt_errors + activation_errors + manifest_errors)
     if isinstance(package_receipt, dict):
         errors.extend(_validate_receipt_contract(request, package_receipt, "publication_receipt"))
@@ -1018,7 +1022,7 @@ def _validate_handoff_contract(
     projection_hash = _required_file_hash(publication / "source-span-projection.jsonl", "source_span_projection", errors)
     if None in {receipt_hash, revision_hash, links_hash, projection_hash}:
         return errors
-    archive_manifest, archive_manifest_errors = _read_json_safe(root / "archive" / "manifests" / f"{request.get('snapshot_id')}.json", "archive_manifest")
+    archive_manifest, archive_manifest_errors = _read_json_safe(root, root / "archive" / "manifests" / f"{request.get('snapshot_id')}.json", "archive_manifest")
     errors.extend(archive_manifest_errors)
     if not isinstance(archive_manifest, dict):
         errors.append("invalid_archive_manifest")
@@ -1054,7 +1058,7 @@ def _load_publish_journal(root: Path, transaction_id: object, errors: list[str])
     errors.extend(path_errors)
     if path_errors:
         return None
-    journal, journal_errors = _read_json_safe(journal_path, "publish_journal")
+    journal, journal_errors = _read_json_safe(root, journal_path, "publish_journal")
     errors.extend(journal_errors)
     if not isinstance(journal, dict):
         errors.append("invalid_publish_journal")
@@ -1110,7 +1114,7 @@ def _migration_report(
     duplicate_count: int = 0,
 ) -> dict[str, Any]:
     candidate_shards = candidate_shards or []
-    state, _state_errors = _load_state_safe(root / "ingress" / "legacy-import" / batch_id)
+    state, _state_errors = _load_state_safe(root, root / "ingress" / "legacy-import" / batch_id)
     return {
         "schema": "nollm.legacy_import_migration_report.v1",
         "batch_id": batch_id,
@@ -1315,7 +1319,7 @@ def _write_lock_owner(root: Path, lock_dir: Path, batch_id: str) -> str:
 
 
 def _current_fencing_token(root: Path) -> str:
-    owner, errors = _read_json_safe(root / "locks" / "legacy-import-writer.lock" / "owner.json", "writer_lock_owner")
+    owner, errors = _read_json_safe(root, root / "locks" / "legacy-import-writer.lock" / "owner.json", "writer_lock_owner")
     if errors or not isinstance(owner, dict) or not isinstance(owner.get("fencing_token"), str):
         raise RuntimeError("writer_fencing_token_missing")
     return str(owner["fencing_token"])
@@ -1363,14 +1367,14 @@ def _release_writer_lock(lock_dir: Path | None) -> None:
 
 def _pre_head_publication_errors(root: Path, publication: Path, revision_id: str, field_id: str) -> list[str]:
     errors: list[str] = []
-    manifest, manifest_errors = _read_json_safe(publication / "publication-manifest.json", "publication_manifest")
+    manifest, manifest_errors = _read_json_safe(root, publication / "publication-manifest.json", "publication_manifest")
     errors.extend(manifest_errors)
-    activation, activation_errors = _read_json_safe(publication / "activation.json", "publication_activation")
+    activation, activation_errors = _read_json_safe(root, publication / "activation.json", "publication_activation")
     errors.extend(activation_errors)
-    errors.extend(validate_publication_manifest_closure(publication))
-    errors.extend(validate_publication_semantics(publication, expected_revision_id=revision_id, expected_field_id=field_id))
+    errors.extend(validate_publication_manifest_closure(root, publication))
+    errors.extend(validate_publication_semantics(root, publication, expected_revision_id=revision_id, expected_field_id=field_id))
     if isinstance(manifest, dict):
-        errors.extend(validate_publication_activation(publication, manifest=manifest))
+        errors.extend(validate_publication_activation(root, publication, manifest=manifest))
     else:
         errors.append("invalid_publication_manifest")
     if isinstance(activation, dict):
@@ -1534,7 +1538,7 @@ def _quarantine_and_restore_head(root: Path, batch_dir: Path, prior_head: dict[s
 
 
 def _restore_head_cas(root: Path, batch_dir: Path, prior_head: dict[str, Any] | None) -> bool:
-    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
     if handoff_errors or not isinstance(handoff, dict):
         return False
     fencing_token = str(handoff.get("fencing_token", ""))
@@ -1608,7 +1612,7 @@ def _ensure_ledger_event(path: Path, event: dict[str, Any]) -> None:
             raise ValueError(",".join(existing_errors))
         event_id = event.get("event_id")
         if path.exists():
-            for record in _read_jsonl(path):
+            for record in _read_jsonl(root, path):
                 if record.get("event_id") == event_id:
                     return
         _append_ledger_event(root, event)
@@ -1621,7 +1625,7 @@ def _has_finalization_ledger_event(root: Path, receipt: dict[str, Any]) -> bool:
     if not path.exists():
         return False
     try:
-        return any(record.get("event_id") == event_id for record in _read_jsonl(path))
+        return any(record.get("event_id") == event_id for record in _read_jsonl(root, path))
     except (JSONDecodeError, OSError, ValueError):
         return False
 
@@ -1741,11 +1745,11 @@ def _is_valid_utc_timestamp(value: str) -> bool:
     return True
 
 
-def _load_state_safe(batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
+def _load_state_safe(root: Path, batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
     path = batch_dir / "state.json"
     if not path.exists():
         return {"state": "planned"}, []
-    data, errors = _read_json_safe(path, "state")
+    data, errors = _read_json_safe(root, path, "state")
     if errors:
         return {"state": "unknown"}, errors
     if not isinstance(data, dict) or not isinstance(data.get("state"), str):
@@ -1761,11 +1765,15 @@ def _load_state_safe(batch_dir: Path) -> tuple[dict[str, Any], list[str]]:
     return data, []
 
 
-def _read_json_safe(path: Path, label: str) -> tuple[Any | None, list[str]]:
+def _read_json_safe(root: Path, path: Path, label: str) -> tuple[Any | None, list[str]]:
     if not path.exists():
         return None, [f"missing_{label}"]
     try:
-        return read_json(path), []
+        rel = Path(path).resolve().relative_to(Path(root).resolve())
+        parts = tuple(rel.parts)
+        from .safe_storage import safe_read_regular, read_json_bytes
+        raw = safe_read_regular(root, *parts, label=label, require_private_inode=True)
+        return read_json_bytes(raw, label), []
     except JSONDecodeError:
         return None, [f"malformed_json:{label}"]
     except OSError as exc:
@@ -1793,7 +1801,7 @@ def _force_write_state(batch_dir: Path, state: str) -> None:
 
 
 def _untrusted_ingress_result(root: Path, batch_dir: Path, batch_id: str, errors: list[str]) -> dict[str, Any]:
-    handoff, handoff_errors = _read_json_safe(batch_dir / "publish-handoff.json", "publish_handoff")
+    handoff, handoff_errors = _read_json_safe(root, batch_dir / "publish-handoff.json", "publish_handoff")
     if isinstance(handoff, dict) and not handoff_errors:
         _force_write_state(batch_dir, "quarantined")
         record = {"schema": "nollm.legacy_import_quarantine.v1", "batch_id": batch_id, "timestamp": utc_now(), "reason": "untrusted_ingress:" + ",".join(errors), "state": "quarantined"}
@@ -1822,23 +1830,26 @@ def _write_state(batch_dir: Path, state: str) -> None:
     _safe_write_json_path(_root_from_batch_dir(batch_dir), batch_dir / "state.json", {"state": state, "updated_at": utc_now()}, "state")
 
 
-def _read_jsonl(path: Path) -> list[dict[str, Any]]:
-    from .safe_storage import safe_read_file
-    return read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
+def _read_jsonl(root: Path, path: Path) -> list[dict[str, Any]]:
+    from .safe_storage import safe_read_regular
+    rel = Path(path).resolve().relative_to(Path(root).resolve())
+    return read_jsonl_bytes(safe_read_regular(root, *rel.parts, label=path.name, require_private_inode=False), path.name)
 
 
-def _read_jsonl_strict(path: Path, label: str) -> list[dict[str, Any]]:
-    from .safe_storage import safe_read_file
-    return read_jsonl_bytes(safe_read_file(path, label=label, require_private=False), label)
+def _read_jsonl_strict(root: Path, path: Path, label: str) -> list[dict[str, Any]]:
+    from .safe_storage import safe_read_regular
+    rel = Path(path).resolve().relative_to(Path(root).resolve())
+    return read_jsonl_bytes(safe_read_regular(root, *rel.parts, label=label, require_private_inode=False), label)
 
 
-def _read_jsonl_safe(path: Path, label: str) -> tuple[list[dict[str, Any]], list[str]]:
+def _read_jsonl_safe(root: Path, path: Path, label: str) -> tuple[list[dict[str, Any]], list[str]]:
     if not path.exists():
         return [], [f"missing_{label}"]
     records: list[dict[str, Any]] = []
     try:
-        from .safe_storage import safe_read_file, read_jsonl_bytes
-        raw = safe_read_file(path, label=label, require_private=False)
+        from .safe_storage import safe_read_regular, read_jsonl_bytes
+        rel = Path(path).resolve().relative_to(Path(root).resolve())
+        raw = safe_read_regular(root, *rel.parts, label=label, require_private_inode=False)
         records = read_jsonl_bytes(raw, label)
     except Exception as exc:
         msg = str(exc)

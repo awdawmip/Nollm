@@ -101,11 +101,13 @@ def _published_spans(root: Path, snapshot_id: str) -> list[dict[str, Any]]:
     projection_path = publication / "source-span-projection.jsonl"
     if not receipt_path.exists() or not projection_path.exists():
         return []
-    receipt = read_json(receipt_path)
+    from .safe_storage import safe_read_regular, read_json_bytes
+    rel_parts = tuple(receipt_path.resolve().relative_to(root.resolve()).parts)
+    receipt = read_json_bytes(safe_read_regular(root, *rel_parts, label="publication_receipt", require_private_inode=False), "publication_receipt")
     if receipt.get("snapshot_id") != snapshot_id:
         return []
-    from .safe_storage import safe_read_file
-    return [json.loads(line) for line in safe_read_file(projection_path, label="source_span_projection", require_private=False).decode("utf-8").splitlines() if line.strip()]
+    proj_parts = tuple(projection_path.resolve().relative_to(root.resolve()).parts)
+    return [json.loads(line) for line in safe_read_regular(root, *proj_parts, label="source_span_projection", require_private_inode=False).decode("utf-8").splitlines() if line.strip()]
 
 
 def _coverage_error(snapshot_id: str, error: str) -> dict[str, Any]:

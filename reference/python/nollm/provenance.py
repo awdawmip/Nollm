@@ -24,7 +24,6 @@ from .native_field import (
 )
 from .path_safety import contained_path, no_symlink_segments, validate_batch_id, validate_field_revision_id, validate_snapshot_id
 from .safe_storage import SafeStorageError, read_jsonl_bytes, safe_read_regular
-from .safe_storage import safe_read_file
 from .source_spans import SPAN_SCHEMA, _classify_span, _line_locator, _paragraph_ranges, load_source_spans, validate_source_span_record
 
 
@@ -166,14 +165,14 @@ def validate_active_publication_package(
     except ValueError as exc:
         return _result("", expected_revision_id or publication.name, [str(exc)])
     revision_id = expected_revision_id or publication.name
-    activation = _safe_read_json(publication / "activation.json", f"publication_activation:{revision_id}", [])
+    activation = _safe_read_json(root, publication / "activation.json", f"publication_activation:{revision_id}", [])
     snapshot_id = str(activation.get("snapshot_id")) if isinstance(activation, dict) else ""
     id_errors = validate_field_revision_id(revision_id) + validate_snapshot_id(snapshot_id)
     if id_errors:
         return _result(snapshot_id, revision_id, id_errors)
     errors = _validate_publication_package(root, snapshot_id, revision_id, publication, require_head=require_head)
     if expected_field_id is not None:
-        revision = _safe_read_json(publication / "revision.json", f"publication_revision:{revision_id}", errors)
+        revision = _safe_read_json(root, publication / "revision.json", f"publication_revision:{revision_id}", errors)
         if isinstance(revision, dict) and revision.get("field_id") != expected_field_id:
             errors.append(f"head_revision_field_id_mismatch:{revision_id}")
     return _result(snapshot_id, revision_id, errors)
@@ -211,19 +210,19 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
     if not receipt_path.exists():
         errors.append(f"missing_publication_receipt:{field_revision_id}")
         return _result(snapshot_id, field_revision_id, errors)
-    receipt = read_json(receipt_path)
+    receipt = _safe_read_json(root, receipt_path, "publication_receipt", [])
     if receipt.get("snapshot_id") != snapshot_id:
         errors.append(f"receipt_snapshot_mismatch:{field_revision_id}")
-    spans = _load_publication_jsonl(publication / "source-span-projection.jsonl")
+    spans = _load_publication_jsonl(root, publication / "source-span-projection.jsonl")
     spans_by_id = {str(span["span_id"]): span for span in spans}
     spans_by_ref = {_span_source_ref(objects_by_source_id, span): span for span in spans if _span_source_ref(objects_by_source_id, span)}
     revision_path = publication / "revision.json"
     if not revision_path.exists():
         errors.append(f"missing_field_revision:{field_revision_id}")
         return _result(snapshot_id, field_revision_id, errors)
-    revision = read_json(revision_path)
+    revision = _safe_read_json(root, revision_path, "publication_revision", [])
     revision_shards = set(str(item) for item in revision.get("shard_ids", []))
-    links = _load_publication_jsonl(publication / "source-span-links.jsonl")
+    links = _load_publication_jsonl(root, publication / "source-span-links.jsonl")
     links_by_shard: dict[str, list[dict[str, Any]]] = {}
     links_by_span: dict[str, list[dict[str, Any]]] = {}
     for link in links:
@@ -235,7 +234,7 @@ def validate_deep_provenance(memory_root: Path | str, snapshot_id: str, field_re
         if not shard_path.exists():
             errors.append(f"missing_shard:{shard_id}")
             continue
-        shard = read_json(shard_path)
+        shard = _safe_read_json(root, shard_path, f"publication_shard:{shard_id}", [])
         key = str(shard.get("idempotence_key"))
         if key in seen_keys and seen_keys[key] != shard:
             errors.append(f"idempotence_collision:{key}")
@@ -330,7 +329,7 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
     if require_head:
         head = load_field_head(root)
         try:
-            actual_manifest_hash = "sha256:" + sha256_bytes(safe_read_file(manifest_path, label="publication_manifest", require_private=False))
+            actual_manifest_hash = "sha256:" + sha256_bytes(safe_read_regular(root, *_rel_parts(root, manifest_path), label="publication_manifest", require_private_inode=False))
         except Exception as exc:
             return [f"unreadable_publication_manifest:{exc.__class__.__name__}"]
         if not head or head.get("field_revision_id") != field_revision_id:
@@ -338,12 +337,12 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         elif head.get("publication_manifest_hash") != actual_manifest_hash:
             errors.append(f"publication_manifest_hash_mismatch:{field_revision_id}")
         try:
-            actual_activation_hash = "sha256:" + sha256_bytes(safe_read_file(publication / "activation.json", label="publication_activation", require_private=False))
+            actual_activation_hash = "sha256:" + sha256_bytes(safe_read_regular(root, *_rel_parts(root, publication / "activation.json"), label="publication_activation", require_private_inode=False))
         except Exception as exc:
             return [f"unreadable_publication_activation:{exc.__class__.__name__}"]
         if head and head.get("field_revision_id") == field_revision_id and head.get("activation_hash") != actual_activation_hash:
             errors.append(f"activation_hash_mismatch:{field_revision_id}")
-    manifest = _safe_read_json(manifest_path, f"publication_manifest:{field_revision_id}", errors)
+    manifest = _safe_read_json(root, manifest_path, f"publication_manifest:{field_revision_id}", errors)
     if not isinstance(manifest, dict):
         return errors
     if manifest.get("schema") != "nollm.publication_manifest.v1":
@@ -352,11 +351,11 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
         errors.append(f"publication_manifest_revision_mismatch:{field_revision_id}")
     if manifest.get("snapshot_id") != snapshot_id:
         errors.append(f"publication_manifest_snapshot_mismatch:{field_revision_id}")
-    errors.extend(validate_publication_manifest_closure(publication))
-    errors.extend(validate_publication_semantics(publication, expected_revision_id=field_revision_id))
-    manifest = _safe_read_json(manifest_path, f"publication_manifest:{field_revision_id}", errors)
+    errors.extend(validate_publication_manifest_closure(root, publication))
+    errors.extend(validate_publication_semantics(root, publication, expected_revision_id=field_revision_id))
+    manifest = _safe_read_json(root, manifest_path, f"publication_manifest:{field_revision_id}", errors)
     if isinstance(manifest, dict):
-        errors.extend(validate_publication_activation(publication, head=load_field_head(root) if require_head else None, manifest=manifest))
+        errors.extend(validate_publication_activation(root, publication, head=load_field_head(root) if require_head else None, manifest=manifest))
     if errors:
         return errors
     artifact_hashes = manifest.get("artifact_hashes", {})
@@ -366,7 +365,7 @@ def _validate_publication_package(root: Path, snapshot_id: str, field_revision_i
             if required not in artifact_hashes:
                 errors.append(f"publication_artifact_hash_missing:{required}")
     errors.extend(_validate_inventory_and_projection(root, snapshot_id, publication))
-    activation = _safe_read_json(publication / "activation.json", f"publication_activation:{field_revision_id}", errors)
+    activation = _safe_read_json(root, publication / "activation.json", f"publication_activation:{field_revision_id}", errors)
     if isinstance(activation, dict):
         errors.extend(validate_legacy_import_shard_profile(root, publication, activation))
     return errors
@@ -377,7 +376,7 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
     try:
         canonical = canonical_source_spans(root, snapshot_id)
         persisted = load_source_spans(root, snapshot_id)
-        projection = _load_publication_jsonl(publication / "source-span-projection.jsonl")
+        projection = _load_publication_jsonl(root, publication / "source-span-projection.jsonl")
     except JSONDecodeError:
         return ["malformed_json:source_span_inventory_or_projection"]
     except Exception as exc:
@@ -396,9 +395,9 @@ def _validate_inventory_and_projection(root: Path, snapshot_id: str, publication
         errors.append("canonical_inventory_mismatch")
     if len(projection) != len(canonical):
         errors.append("projection_span_count_mismatch")
-    revision = read_json(publication / "revision.json") if (publication / "revision.json").exists() else {"shard_ids": []}
+    revision = _safe_read_json(root, publication / "revision.json", "publication_revision", []) if (publication / "revision.json").exists() else {"shard_ids": []}
     revision_shards = set(str(item) for item in revision.get("shard_ids", []))
-    links = _load_publication_jsonl(publication / "source-span-links.jsonl")
+    links = _load_publication_jsonl(root, publication / "source-span-links.jsonl")
     link_counts: dict[tuple[str, str, str], int] = {}
     for link in links:
         key = (str(link.get("shard_id")), str(link.get("source_ref")), str(link.get("span_id")))
@@ -481,7 +480,7 @@ def _validate_exact_relation_closure(
     for shard_id in revision_shards:
         path = publication / "shards" / f"{shard_id}.json"
         if path.exists():
-            shards[shard_id] = read_json(path)
+            shards[shard_id] = _safe_read_json(root, path, f"publication_shard:{shard_id}", [])
 
     expected_counts: dict[tuple[str, str, str], int] = {}
     for shard_id, shard in shards.items():
@@ -577,16 +576,17 @@ def _load_links(root: Path, snapshot_id: str, field_revision_id: str) -> list[di
         return []
     import json
 
-    from .safe_storage import safe_read_file, read_jsonl_bytes
-    return read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
+    from .safe_storage import safe_read_regular, read_jsonl_bytes
+    return read_jsonl_bytes(safe_read_regular(root, "archive", "source-span-links", snapshot_id, f"{field_revision_id}.jsonl", label=path.name, require_private_inode=False), path.name)
 
 
-def _load_publication_jsonl(path: Path) -> list[dict[str, Any]]:
+def _load_publication_jsonl(root: Path, path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
     try:
-        from .safe_storage import safe_read_file
-        records = read_jsonl_bytes(safe_read_file(path, label=path.name, require_private=False), path.name)
+        from .safe_storage import safe_read_regular
+        parts = _rel_parts(root, path)
+        records = read_jsonl_bytes(safe_read_regular(root, *parts, label=path.name, require_private_inode=False), path.name)
     except SafeStorageError as exc:
         raise ValueError(str(exc)) from exc
     for index, record in enumerate(records, start=1):
@@ -601,9 +601,18 @@ def _unknown_fields(record: dict[str, Any], allowed: set[str], label: str) -> li
     return [f"unknown_{label}_field:{field}" for field in sorted(set(record) - allowed)]
 
 
-def _safe_read_json(path: Path, label: str, errors: list[str]) -> Any | None:
+def _rel_parts(root: Path, path: Path) -> tuple[str, ...]:
+    """Compute relative path parts from root to path."""
+    rel = Path(path).resolve().relative_to(Path(root).resolve())
+    return tuple(rel.parts)
+
+
+def _safe_read_json(root: Path, path: Path, label: str, errors: list[str]) -> Any | None:
     try:
-        return read_json(path)
+        parts = _rel_parts(root, path)
+        raw = safe_read_regular(root, *parts, label=label, require_private_inode=True)
+        from .safe_storage import read_json_bytes
+        return read_json_bytes(raw, label)
     except JSONDecodeError:
         errors.append(f"malformed_json:{label}")
     except OSError as exc:
