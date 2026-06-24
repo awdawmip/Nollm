@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -644,6 +645,7 @@ def capture(
         ) from exc
 
     # D3: Idempotency with fail-close on content collision
+    # No silent overwrite: corrupt receipt quarantines, collision fails closed
     if receipt_path.exists():
         try:
             existing_raw = receipt_path.read_text(encoding="utf-8")
@@ -651,39 +653,36 @@ def capture(
         except Exception:
             raise NollmProviderError(
                 "capture_failed",
-                "corrupt existing receipt - quarantined",
+                "corrupt existing receipt - quarantined, no overwrite",
                 retryable=False,
             ) from None
-        try:
-            existing = json.loads(receipt_path.read_text(encoding="utf-8"))
-            existing_event_hash = existing.get("event_hash")
-            if existing_event_hash == event_hash:
-                return {
-                    "ok": True,
-                    "schema": CAPTURE_RESULT_SCHEMA,
-                    "reused": True,
-                    "receipt": {
-                        "receipt_id": receipt_id,
-                        "event_hash": event_hash,
-                        "stored_at": str(receipt_path),
-                        "state": "captured_pending_native_ingress",
-                        "legacy_memory_mutated": False,
-                    },
-                }
-            else:
-                raise NollmProviderError(
-                    "capture_failed",
-                    f"receipt collision: {receipt_id} exists with different content",
-                    retryable=False,
-                )
-        except (json.JSONDecodeError, OSError):
-            pass  # Corrupt receipt, overwrite
-
-    try:
-        receipt_path.write_text(
-            _stable_json(receipt_payload, sort_keys=True),
-            encoding="utf-8",
+        existing_event_hash = existing.get("event_hash")
+        if existing_event_hash == event_hash:
+            return {
+                "ok": True,
+                "schema": CAPTURE_RESULT_SCHEMA,
+                "reused": True,
+                "receipt": {
+                    "receipt_id": receipt_id,
+                    "event_hash": event_hash,
+                    "stored_at": str(receipt_path),
+                    "state": "captured_pending_native_ingress",
+                    "legacy_memory_mutated": False,
+                },
+            }
+        raise NollmProviderError(
+            "capture_failed",
+            f"receipt collision: {receipt_id} exists with different content",
+            retryable=False,
         )
+
+    # D3: Atomic no-clobber write (temp file + rename)
+    import tempfile
+    try:
+        fd, tmp_path = tempfile.mkstemp(dir=str(receipt_dir), suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp_f:
+            tmp_f.write(_stable_json(receipt_payload, sort_keys=True))
+        os.replace(tmp_path, str(receipt_path))
     except OSError as exc:
         raise NollmProviderError(
             "capture_failed",
