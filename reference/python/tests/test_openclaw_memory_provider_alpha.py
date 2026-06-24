@@ -327,3 +327,199 @@ def test_script_invocation_with_empty_stdin() -> None:
     result = json.loads(proc.stdout)
     assert result["ok"] is False
     assert result["error"]["code"] == "invalid_command"
+
+
+# ---- F0-02 Additional Tests ----
+
+
+def test_capture_idempotent_same_event(config: ProviderConfig, fixture_path: Path) -> None:
+    """Same agent/session/run/messages twice produces same receipt_id."""
+    field = AlphaField.load(str(fixture_path))
+    payload = {
+        "schema": "nollm.provider.capture.v1",
+        "agent_id": "main",
+        "session_id": "s1",
+        "run_id": "run1",
+        "success": True,
+        "messages": [{"role": "user", "content": "blue"}],
+    }
+    result1 = capture(field, payload, config)
+    result2 = capture(field, payload, config)
+    assert result1["ok"] is True
+    assert result2["ok"] is True
+    assert result1["receipt"]["receipt_id"] == result2["receipt"]["receipt_id"]
+
+
+def test_capture_secret_in_string_content_not_persisted(
+    config: ProviderConfig, fixture_path: Path, tmp_path: Path
+) -> None:
+    """Secrets in string content must not be persisted in receipt."""
+    field = AlphaField.load(str(fixture_path))
+    result = capture(
+        field,
+        {
+            "schema": "nollm.provider.capture.v1",
+            "agent_id": "main",
+            "session_id": "s1",
+            "run_id": "run1",
+            "success": True,
+            "messages": [
+                {"role": "user", "content": "Authorization: Bearer TOP_SECRET_123"}
+            ],
+        },
+        config,
+    )
+    assert result["ok"] is True
+    receipt_path = Path(result["receipt"]["stored_at"])
+    receipt_text = receipt_path.read_text(encoding="utf-8")
+    assert "TOP_SECRET_123" not in receipt_text
+    assert "Bearer" not in receipt_text
+
+
+def test_capture_nested_secret_not_persisted(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """Nested secrets must not be persisted."""
+    field = AlphaField.load(str(fixture_path))
+    result = capture(
+        field,
+        {
+            "schema": "nollm.provider.capture.v1",
+            "agent_id": "main",
+            "session_id": "s1",
+            "run_id": "run1",
+            "success": True,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "check this",
+                    "nested": {"api_key": "NESTED_SECRET_456"},
+                }
+            ],
+        },
+        config,
+    )
+    assert result["ok"] is True
+    receipt_path = Path(result["receipt"]["stored_at"])
+    receipt_text = receipt_path.read_text(encoding="utf-8")
+    assert "NESTED_SECRET_456" not in receipt_text
+
+
+def test_capture_failure_stores_no_body(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """success=false stores no message body."""
+    field = AlphaField.load(str(fixture_path))
+    result = capture(
+        field,
+        {
+            "schema": "nollm.provider.capture.v1",
+            "agent_id": "main",
+            "session_id": "s1",
+            "run_id": "run1",
+            "success": False,
+            "messages": [{"role": "user", "content": "should not be stored"}],
+        },
+        config,
+    )
+    assert result["ok"] is True
+    receipt_path = Path(result["receipt"]["stored_at"])
+    import json as _json
+    receipt = _json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt.get("message_summaries", []) == []
+
+
+def test_capture_invalid_success_type_rejected(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """Invalid success type must be rejected."""
+    field = AlphaField.load(str(fixture_path))
+    with pytest.raises(Exception):
+        capture(
+            field,
+            {
+                "schema": "nollm.provider.capture.v1",
+                "agent_id": "main",
+                "session_id": "s1",
+                "run_id": "run1",
+                "success": "not_a_bool",
+                "messages": [{"role": "user", "content": "blue"}],
+            },
+            config,
+        )
+
+
+def test_capture_receipt_contains_no_legacy_path(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """Receipt must not contain legacy memory path."""
+    field = AlphaField.load(str(fixture_path))
+    result = capture(
+        field,
+        {
+            "schema": "nollm.provider.capture.v1",
+            "agent_id": "main",
+            "session_id": "s1",
+            "run_id": "run1",
+            "success": True,
+            "messages": [{"role": "user", "content": "blue"}],
+        },
+        config,
+    )
+    assert result["ok"] is True
+    receipt_path = Path(result["receipt"]["stored_at"])
+    receipt_text = receipt_path.read_text(encoding="utf-8")
+    assert "MEMORY.md" not in receipt_text
+    assert "DREAMS.md" not in receipt_text
+    assert "memory/" not in receipt_text
+
+
+def test_segment_aware_legacy_path_rejection(tmp_path: Path) -> None:
+    """nollmDataRoot ending with 'memory' must be rejected."""
+    from nollm.openclaw_memory_provider_alpha import ProviderConfig, NollmProviderError
+
+    fixture_path = tmp_path / "alpha-field.json"
+    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    with pytest.raises(NollmProviderError, match="legacy"):
+        ProviderConfig.from_payload(
+            {
+                "pythonCommand": "python",
+                "nollmRepoRoot": str(tmp_path / "repo"),
+                "nollmDataRoot": str(tmp_path / "memory"),
+                "alphaFixturePath": str(fixture_path),
+            }
+        )
+
+
+def test_segment_aware_legacy_path_rejection_memory_md(tmp_path: Path) -> None:
+    """nollmDataRoot with MEMORY.md segment must be rejected."""
+    from nollm.openclaw_memory_provider_alpha import ProviderConfig, NollmProviderError
+
+    fixture_path = tmp_path / "alpha-field.json"
+    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    with pytest.raises(NollmProviderError, match="legacy"):
+        ProviderConfig.from_payload(
+            {
+                "pythonCommand": "python",
+                "nollmRepoRoot": str(tmp_path / "repo"),
+                "nollmDataRoot": str(tmp_path / "MEMORY.md"),
+                "alphaFixturePath": str(fixture_path),
+            }
+        )
+
+
+def test_nollm_memory_alpha_accepted(tmp_path: Path) -> None:
+    """nollm-memory-alpha should be accepted as data root."""
+    from nollm.openclaw_memory_provider_alpha import ProviderConfig
+
+    fixture_path = tmp_path / "alpha-field.json"
+    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    config = ProviderConfig.from_payload(
+        {
+            "pythonCommand": "python",
+            "nollmRepoRoot": str(tmp_path / "repo"),
+            "nollmDataRoot": str(tmp_path / "nollm-memory-alpha"),
+            "alphaFixturePath": str(fixture_path),
+        }
+    )
+    assert config.nollm_data_root == tmp_path / "nollm-memory-alpha"

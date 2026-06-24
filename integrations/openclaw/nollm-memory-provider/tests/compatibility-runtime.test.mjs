@@ -10,8 +10,8 @@ import {
 import { createNollmCompatibilityRuntime } from "../dist/memory-runtime.js";
 import { normalizeConfig } from "../dist/config.js";
 
-describe("T9 compatibility manager rejects arbitrary path", () => {
-  it("readFile rejects non-nollm:// and traversal paths", async () => {
+describe("T9 compatibility manager rejects arbitrary and unissued paths", () => {
+  it("readFile rejects non-nollm://, traversal, and unissued refs", async () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
@@ -34,13 +34,16 @@ describe("T9 compatibility manager rejects arbitrary path", () => {
       async () => manager.readFile({ relPath: "nollm://compat/../etc/passwd" }),
       /nollm_compat_ref_rejected/
     );
-    const result = await manager.readFile({ relPath: "nollm://compat/0" });
-    assert.equal(result.text, "opaque Nollm compatibility reference");
+    // Unissued ref must be rejected
+    await assert.rejects(
+      async () => manager.readFile({ relPath: "nollm://compat/v1/attacker-unissued" }),
+      /nollm_compat_ref_rejected/
+    );
   });
 });
 
-describe("T10 compatibility opaque ref is revision-bound", () => {
-  it("search returns facts bound to source_refs", async () => {
+describe("T10 compatibility opaque ref is revision-bound and readable", () => {
+  it("search issues refs and readFile returns exact excerpt", async () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
     writeStubSidecar(cfg.nollmRepoRoot, STUB_PREPARE);
@@ -53,10 +56,14 @@ describe("T10 compatibility opaque ref is revision-bound", () => {
     const results = await manager.search("nollm");
     assert.ok(results.length > 0, "search should return at least one result");
     assert.ok(
-      results[0].path.startsWith("nollm://"),
-      "result path must be a nollm opaque reference"
+      results[0].path.startsWith("nollm://compat/v1/"),
+      "result path must be a v1 opaque reference"
     );
     assert.equal(results[0].source, "memory");
+    // readFile with the issued ref must return the exact excerpt
+    const readResult = await manager.readFile({ relPath: results[0].path });
+    assert.equal(readResult.text, results[0].snippet);
+    assert.equal(readResult.path, results[0].path);
   });
 });
 

@@ -3,20 +3,26 @@ import type {
 } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
 import { runSidecarCommand } from "./sidecar.js";
+import { NollmCompatibilityReferenceRegistry } from "./compat-registry.js";
 import type { NormalizedConfig } from "./types.js";
+import { createHash } from "node:crypto";
+
+const REF_PREFIX = "nollm://compat/v1/";
 
 export function createNollmCompatibilityRuntime(
   config: NormalizedConfig
 ): MemoryPluginRuntime {
+  const registry = new NollmCompatibilityReferenceRegistry();
+
   const runtime: MemoryPluginRuntime = {
     async getMemorySearchManager(params: {
       cfg: OpenClawConfig;
       agentId: string;
       purpose?: "default" | "status" | "cli";
     }) {
-      const result = await runSidecarCommand(config, "status", {});
-      if (!result.ok) {
-        return { manager: null, error: result.error.message };
+      const statusResult = await runSidecarCommand(config, "status", {});
+      if (!statusResult.ok) {
+        return { manager: null, error: statusResult.error.message };
       }
 
       return {
@@ -36,37 +42,63 @@ export function createNollmCompatibilityRuntime(
             if (!prepareResult.ok) {
               return [];
             }
-            const ctx = (
-              prepareResult as unknown as {
-                context: {
-                  facts: Array<{
-                    shard_id: string;
-                    claim: string;
-                    source_refs: string[];
-                  }>;
-                };
-              }
-            ).context;
-            return ctx.facts.map((fact, index) => ({
-              path: fact.source_refs[0] ?? `nollm://compat/${index}`,
-              startLine: index + 1,
-              endLine: index + 1,
-              score: 1.0,
-              snippet: fact.claim.slice(0, 240),
-              source: "memory" as const,
-            }));
+            const raw = prepareResult as unknown as {
+              context: {
+                field_id: string;
+                field_revision_id: string;
+                facts: Array<{
+                  shard_id: string;
+                  claim: string;
+                  source_refs: string[];
+                }>;
+              };
+            };
+            const ctx = raw.context;
+            const queryHash = createHash("sha256").update(query).digest("hex");
+            return ctx.facts.map((fact) => {
+              const ref = registry.issueRef({
+                agentId: params.agentId,
+                fieldId: ctx.field_id,
+                fieldRevisionId: ctx.field_revision_id,
+                shardId: fact.shard_id,
+                boundedExcerpt: fact.claim.slice(0, 240),
+                queryHash,
+              });
+              return {
+                path: ref,
+                startLine: 1,
+                endLine: 1,
+                score: 1.0,
+                snippet: fact.claim.slice(0, 240),
+                source: "memory" as const,
+              };
+            });
           },
 
-          async readFile(params) {
-            if (
-              !params.relPath.startsWith("nollm://") ||
-              params.relPath.includes("..")
-            ) {
+          async readFile(readParams) {
+            if (!readParams.relPath.startsWith(REF_PREFIX)) {
+              throw new Error("nollm_compat_ref_rejected");
+            }
+            const statusRes = await runSidecarCommand(config, "status", {});
+            let fieldRevisionId = "unknown";
+            if (statusRes.ok) {
+              const s = statusRes as unknown as { field_revision_id?: string; context?: { field_revision_id?: string } };
+              if (s.field_revision_id) {
+                fieldRevisionId = s.field_revision_id;
+              } else if (s.context?.field_revision_id) {
+                fieldRevisionId = s.context.field_revision_id;
+              }
+            }
+            const resolved = registry.resolveRef(readParams.relPath, {
+              agentId: params.agentId,
+              fieldRevisionId,
+            });
+            if (!resolved) {
               throw new Error("nollm_compat_ref_rejected");
             }
             return {
-              text: "opaque Nollm compatibility reference",
-              path: params.relPath,
+              text: resolved.excerpt,
+              path: readParams.relPath,
             };
           },
 

@@ -35,6 +35,7 @@ For the active provider:
 - `memory_search`, `memory_get`, `memory_store`, `memory_recall` are not exposed
   to Primary.
 - Nollm geometry/navigation tools are not exposed to Primary.
+- Do not map `drift_class` to trust/status; drift_class is orientation metadata only.
 - Recall is private through `agent_turn_prepare`.
 - Capture is receipt-only through `agent_end`.
 

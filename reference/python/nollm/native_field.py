@@ -167,7 +167,7 @@ def move_staged_shards(memory_root: Path | str, batch_id: str) -> dict[str, Any]
 def load_field_head(memory_root: Path | str) -> dict[str, Any] | None:
     try:
         root = existing_memory_root_path(memory_root)
-    except ValueError:
+    except (ValueError, FileNotFoundError, OSError):
         return None
     path, errors = contained_path(root, "field", "HEAD.json", label="field_head", must_exist=True, require_file=True)
     if errors:

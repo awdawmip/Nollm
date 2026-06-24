@@ -23,7 +23,7 @@ CAPTURE_SCHEMA = "nollm.provider.capture.v1"
 CAPTURE_RESULT_SCHEMA = "nollm.provider.capture_result.v1"
 MEMORY_CONTEXT_SCHEMA = "nollm.memory_context.v1"
 
-LEGACY_PATH_FRAGMENTS = {"memory.md", "dreams.md", "memory/", "\\memory\\"}
+LEGACY_SEGMENTS = {"memory", "memory.md", "dreams.md", "legacy_workspace", "legacy-workspace"}
 
 
 class NollmProviderError(Exception):
@@ -60,8 +60,16 @@ def _sha256_hex(data: bytes | str) -> str:
 
 def _is_path_under_legacy(path: Path) -> bool:
     """Fail-close if nollmDataRoot appears to live inside legacy memory paths."""
-    lower = str(path).lower()
-    return any(fragment.lower() in lower for fragment in LEGACY_PATH_FRAGMENTS)
+    s = str(path).replace(chr(92), "/").lower()
+    parts = [p for p in s.split("/") if p]
+    for part in parts:
+        if part in LEGACY_SEGMENTS:
+            return True
+    import os
+    basename = os.path.splitext(parts[-1] if parts else "")[0]
+    if basename in LEGACY_SEGMENTS:
+        return True
+    return False
 
 
 def _validate_absolute_directory(path: str | Path, name: str) -> Path:
@@ -408,12 +416,7 @@ def prepare(
             f"expected schema {PREPARE_SCHEMA}, got {schema!r}",
             retryable=False,
         )
-    request_id = payload.get("request_id")
     run_id = payload.get("run_id")
-    if not isinstance(request_id, str) or not request_id:
-        raise NollmProviderError(
-            "invalid_command", "request_id must be a non-empty string", retryable=False
-        )
     if not isinstance(run_id, str) or not run_id:
         raise NollmProviderError(
             "invalid_command", "run_id must be a non-empty string", retryable=False
@@ -459,7 +462,7 @@ def prepare(
 
     context = {
         "schema": MEMORY_CONTEXT_SCHEMA,
-        "context_id": _make_context_id(run_id, request_id),
+        "context_id": _make_context_id(run_id, payload.get("request_id", "")),
         "field_id": field.field_id,
         "field_revision_id": field.revision_id,
         "freshness": freshness,
@@ -491,8 +494,26 @@ def _event_hash(run_id: str, messages: list[dict[str, object]]) -> str:
 
 
 def _sanitize_messages(messages: list[dict[str, object]]) -> list[dict[str, object]]:
-    """Drop anything that looks like a secret or credential from capture."""
+    """Recursively redact secrets and credentials from capture messages.
+
+    F0 default capture_mode is receipt_only: we store only role, content hash,
+    content length, and a bounded safe summary. Raw message bodies are not
+    persisted. This function is still applied as defense-in-depth.
+    """
     secret_keys = {"api_key", "apikey", "token", "password", "secret", "authorization"}
+    secret_patterns = re.compile(
+        r"(?i)(api[_-]?key|token|password|secret|authorization|bearer)\s*[:=]\s*\S+",
+    )
+
+    def _redact_value(value: object) -> object:
+        if isinstance(value, dict):
+            return {k: ("<redacted>" if any(sk in str(k).lower() for sk in secret_keys) else _redact_value(v)) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_redact_value(item) for item in value]
+        if isinstance(value, str):
+            return secret_patterns.sub(lambda m: m.group(0).split("=")[0].split(":")[0] + "=<redacted>", value)
+        return value
+
     result: list[dict[str, object]] = []
     for message in messages:
         if not isinstance(message, dict):
@@ -503,7 +524,7 @@ def _sanitize_messages(messages: list[dict[str, object]]) -> list[dict[str, obje
             if any(sk in lower_key for sk in secret_keys):
                 copy[key] = "<redacted>"
             else:
-                copy[key] = value
+                copy[key] = _redact_value(value)
         result.append(copy)
     return result
 
@@ -521,12 +542,7 @@ def capture(
             f"expected schema {CAPTURE_SCHEMA}, got {schema!r}",
             retryable=False,
         )
-    request_id = payload.get("request_id")
     run_id = payload.get("run_id")
-    if not isinstance(request_id, str) or not request_id:
-        raise NollmProviderError(
-            "invalid_command", "request_id must be a non-empty string", retryable=False
-        )
     if not isinstance(run_id, str) or not run_id:
         raise NollmProviderError(
             "invalid_command", "run_id must be a non-empty string", retryable=False
@@ -534,7 +550,11 @@ def capture(
 
     success = payload.get("success", True)
     if not isinstance(success, bool):
-        success = bool(success)
+        raise NollmProviderError(
+            "invalid_command",
+            "success must be a boolean",
+            retryable=False,
+        )
 
     messages = payload.get("messages", [])
     if not isinstance(messages, list):
@@ -542,23 +562,51 @@ def capture(
     typed_messages = [m for m in messages if isinstance(m, dict)]
 
     event_hash = _event_hash(run_id, typed_messages)
+    agent_id = payload.get("agent_id", "")
+    session_id = payload.get("session_id", "")
     receipt_id = _sha256_hex(
-        _stable_json({"run_id": run_id, "request_id": request_id, "event_hash": event_hash})
+        _stable_json({
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "run_id": run_id,
+            "event_hash": event_hash,
+            "capture_protocol_version": "v1",
+        })
     )
 
-    stored_messages = _sanitize_messages(typed_messages) if success else []
+    # receipt_only mode: store only structural metadata, not raw content
+    message_summaries: list[dict[str, object]] = []
+    if success:
+        for msg in _sanitize_messages(typed_messages):
+            role = msg.get("role", "unknown")
+            content = msg.get("content", "")
+            if isinstance(content, str):
+                content_hash = _sha256_hex(content.encode("utf-8"))
+                content_length = len(content)
+            elif isinstance(content, list):
+                content_json = _stable_json(content)
+                content_hash = _sha256_hex(content_json.encode("utf-8"))
+                content_length = len(content_json)
+            else:
+                content_hash = _sha256_hex(str(content).encode("utf-8"))
+                content_length = len(str(content))
+            message_summaries.append({
+                "role": role,
+                "content_hash": content_hash,
+                "content_length": content_length,
+            })
     receipt_payload = {
         "schema": "nollm.capture_receipt.v1",
         "receipt_id": receipt_id,
         "event_hash": event_hash,
         "run_id": run_id,
-        "request_id": request_id,
+        "request_id": payload.get("request_id", ""),
         "success": success,
         "captured_at": datetime.now(timezone.utc).isoformat(),
         "field_id": field.field_id,
         "field_revision_id": field.revision_id,
         "legacy_memory_mutated": False,
-        "messages": stored_messages,
+        "message_summaries": message_summaries,
     }
 
     receipt_dir = config.nollm_data_root / "functional-alpha" / "capture-receipts"
@@ -566,6 +614,41 @@ def capture(
 
     try:
         receipt_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise NollmProviderError(
+            "capture_failed",
+            f"failed to create receipt directory: {exc}",
+            retryable=True,
+        ) from exc
+
+    # Idempotency: if receipt already exists, verify content matches
+    if receipt_path.exists():
+        try:
+            existing = json.loads(receipt_path.read_text(encoding="utf-8"))
+            existing_event_hash = existing.get("event_hash")
+            if existing_event_hash == event_hash:
+                return {
+                    "ok": True,
+                    "schema": CAPTURE_RESULT_SCHEMA,
+                    "reused": True,
+                    "receipt": {
+                        "receipt_id": receipt_id,
+                        "event_hash": event_hash,
+                        "stored_at": str(receipt_path),
+                        "state": "captured_pending_native_ingress",
+                        "legacy_memory_mutated": False,
+                    },
+                }
+            else:
+                raise NollmProviderError(
+                    "capture_failed",
+                    f"receipt collision: {receipt_id} exists with different content",
+                    retryable=False,
+                )
+        except (json.JSONDecodeError, OSError):
+            pass  # Corrupt receipt, overwrite
+
+    try:
         receipt_path.write_text(
             _stable_json(receipt_payload, sort_keys=True),
             encoding="utf-8",
@@ -580,6 +663,7 @@ def capture(
     return {
         "ok": True,
         "schema": CAPTURE_RESULT_SCHEMA,
+        "reused": False,
         "receipt": {
             "receipt_id": receipt_id,
             "event_hash": event_hash,

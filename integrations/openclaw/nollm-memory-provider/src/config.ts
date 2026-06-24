@@ -23,9 +23,34 @@ export const ConfigSchema = Type.Object(
       Type.Integer({ default: 1200, minimum: 100, maximum: 10000 })
     ),
     captureMode: Type.Optional(Type.Literal("receipt_only")),
+    allowAgentIds: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false }
 );
+
+// Legacy path segment names that must never be a data root
+const LEGACY_SEGMENTS = new Set([
+  "memory", "memory.md", "dreams.md",
+  "legacy_workspace", "legacy-workspace",
+]);
+
+export function isLegacyPathSegment(absPath: string): boolean {
+  // Normalize separators to forward slash, split into parts
+  const normalized = absPath.replace(/\\/g, "/").toLowerCase();
+  const parts = normalized.split("/").filter((p) => p.length > 0);
+  for (const part of parts) {
+    if (LEGACY_SEGMENTS.has(part)) {
+      return true;
+    }
+  }
+  // Also check basename without extension
+  const basename = parts[parts.length - 1] || "";
+  const basenameNoExt = basename.replace(/\.[^.]+$/, "");
+  if (LEGACY_SEGMENTS.has(basenameNoExt)) {
+    return true;
+  }
+  return false;
+}
 
 export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   const nollmRepoRoot = requireAbsolutePath(config.nollmRepoRoot, "nollmRepoRoot");
@@ -42,6 +67,16 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
     throw new Error(`sidecar script not found: ${sidecarScript}`);
   }
   requirePathUnder(alphaFixturePath, nollmRepoRoot, "alphaFixturePath", "nollmRepoRoot");
+
+  // Segment-aware legacy path rejection
+  if (isLegacyPathSegment(nollmDataRoot)) {
+    throw new Error(`nollmDataRoot must not be inside or be a legacy memory path: ${nollmDataRoot}`);
+  }
+
+  const allowAgentIds = Array.isArray(config.allowAgentIds)
+    ? config.allowAgentIds.filter((id) => typeof id === "string" && id.length > 0)
+    : ["main"];
+
   return {
     pythonCommand: config.pythonCommand || "python3",
     nollmRepoRoot,
@@ -62,6 +97,7 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
       "maxCharacters"
     ),
     captureMode: config.captureMode || "receipt_only",
+    allowAgentIds,
   };
 }
 

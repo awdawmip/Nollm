@@ -7,6 +7,7 @@ export type PluginConfig = {
   maxFacts?: number;
   maxCharacters?: number;
   captureMode?: string;
+  allowAgentIds?: string[];
 };
 
 export type NormalizedConfig = {
@@ -19,6 +20,7 @@ export type NormalizedConfig = {
   maxFacts: number;
   maxCharacters: number;
   captureMode: string;
+  allowAgentIds: string[];
 };
 
 export type SidecarErrorCode =
@@ -68,4 +70,5 @@ export type CaptureReceipt = {
   stored_at: string;
   state: "captured_pending_native_ingress";
   legacy_memory_mutated: false;
+  reused?: boolean;
 };

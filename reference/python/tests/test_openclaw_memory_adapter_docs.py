@@ -18,14 +18,17 @@ def test_openclaw_memory_adapter_docs_exist_and_set_boundaries() -> None:
 
     for path in DOCS:
         assert path.exists(), path
-    assert "OpenClaw remains the memory file and candidate retrieval source" in corpus
-    assert "Nollm is the topology and gravity instrumentation layer" in corpus
-    assert "companion tool mode" in corpus
-    assert "not implemented in OC0" in corpus
-    assert "There is no automatic durable write to `MEMORY.md`" in corpus
+    # F0-02: Nollm provider is the active memory source, not legacy companion
+    assert "active memory provider" in corpus.lower()
+    assert "private recall" in corpus.lower()
+    assert "private capture" in corpus.lower()
+    assert "NOLLM_MEMORY_CONTEXT_V1" in corpus
+    # Legacy files are not used for active recall
+    assert "not read or written" in corpus.lower()
+    # Companion mode is historical, not the active path
+    assert "companion tool mode" in corpus.lower()
+    # drift_class must not map to trust/status
     assert "Do not map `drift_class` to trust/status" in corpus
-    assert "`write-candidate` writes only to the Nollm sidecar pending store" in corpus
-    assert "OpenClaw `MEMORY.md` and `memory/YYYY-MM-DD.md` remain the source of truth" in corpus
 
 
 def test_openclaw_memory_adapter_docs_avoid_forbidden_claims() -> None:
