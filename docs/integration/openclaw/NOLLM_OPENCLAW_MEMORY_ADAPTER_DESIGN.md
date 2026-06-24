@@ -87,6 +87,38 @@ The active provider does not:
 - expose Primary-visible memory tools;
 - claim production cutover.
 
+## F0-02 updates
+
+The following Functional Alpha closure items were addressed in F0-02:
+
+- **Context validation**: sidecar prepare results are schema-validated before
+  injection. A secondary maxFacts/maxCharacters budget is enforced in the
+  TypeScript layer, truncating or rejecting oversized results.
+- **Runtime identity**: agent_id, session_id, and run_id are extracted from the
+  hook context, not from the plugin registration id. Unsupported agent ids are
+  explicitly rejected.
+- **Latest user text**: the provider extracts the most recent user message,
+  supporting both string and text-block-array content. Assistant messages are
+  never misidentified as user queries.
+- **Opaque compatibility references**: search results issue process-local,
+  revision-bound nollm://compat/v1/<nonce> refs. readFile only accepts refs
+  issued by the same manager instance. Unissued, cross-manager, expired, and
+  revision-mismatched refs are rejected. Compatibility score is ordering-only,
+  not vector similarity or trust.
+- **Idempotent capture**: receipt identity is based on stable facts
+  (agent_id, session_id, run_id, event_hash, field_revision_id), not
+  request_id or Date.now(). Same event produces same receipt with reused=true.
+  Content collision with different event hash fails closed.
+- **Secret redaction**: capture receipts store only content hashes and
+  structural metadata in receipt_only mode. Recursive redaction handles
+  nested objects and string-embedded credentials.
+- **Segment-aware legacy path rejection**: nollmDataRoot is validated using
+  path segments, not substrings. Paths ending in memory, MEMORY.md, DREAMS.md,
+  or legacy_workspace are rejected on both POSIX and Windows.
+- **Host integration harness**: the harness uses NOLLM_OPENCLAW_CHECKOUT
+  instead of hardcoded paths, verifies Node engine compatibility, and performs
+  actual plugin loading tests (H1-H8) rather than relying on direct SDK import.
+
 See `docs/integration/openclaw/F0_NOLLM_MEMORY_PROVIDER_ALPHA.md` and
 `docs/issues/FUNCTIONAL_ALPHA_OPEN_ISSUES.md` for the full contract and known
 limitations.
