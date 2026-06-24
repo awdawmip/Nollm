@@ -207,136 +207,19 @@ async function main() {
   const repoRootFwd = repoRoot.replace(/\\/g, "/");
   const dataRootFwd = dataRoot.replace(/\\/g, "/");
   const fixturePathFwd = path.resolve(providerRoot, "fixtures", "alpha-field.json").replace(/\\/g, "/");
-const fixtureFwd = path.resolve(providerRoot, "fixtures", "alpha-field.json").replace(/\\/g, "/");
-// D6.3: H1-H8 actual host loading checks
-  // Load the plugin through OpenClaw's plugin registry and exercise hooks
-  const entryUrl = pathToFileURL(entry).href;
-  const hostLoadScript = `
-    import mod from '${entryUrl}';
-    const def = mod.default ?? mod;
-
-    // H1: plugin manifest declares kind=memory, id=nollm
-    const h1 = def.id === 'nollm' && def.kind === 'memory';
-    if (!h1) throw new Error('H1 failed: expected id=nollm kind=memory, got id=' + def.id + ' kind=' + def.kind);
-
-    // H2: register function exists and produces capability registration
-    if (typeof def.register !== 'function') throw new Error('H2 failed: register is not a function');
-    if (!def.configSchema) throw new Error('H2 failed: configSchema missing');
-
-    // Simulate the OpenClaw host plugin API
-    let registeredCapability = null;
-    const handlers = {};
-    const warnings = [];
-    const mockApi = {
-      id: 'nollm',
-      pluginConfig: {
-        pythonCommand: process.env.PYTHON_EXE || 'python3',
-        nollmRepoRoot: "${repoRootFwd}",
-        nollmDataRoot: "${dataRootFwd}",
-        alphaFixturePath: "${fixturePathFwd}",
-        maxFacts: 3,
-        maxCharacters: 1200,
-      },
-      logger: {
-        warn: (m) => warnings.push(m),
-        info: () => {},
-        debug: () => {},
-      },
-      registerMemoryCapability: (cap) => { registeredCapability = cap; },
-      on: (event, handler) => { handlers[event] = handler; },
-    };
-
-    // Create data root if it doesn't exist
-    // dataRoot is created by the harness and passed via NOLLM_DATA_ROOT env
-    def.register(mockApi);
-
-    // H2: capability registration has memory runtime
-    const h2 = !!registeredCapability && !!registeredCapability.runtime;
-    if (!h2) { throw new Error('H2 failed: no memory capability with runtime registered. Warnings: ' + JSON.stringify(warnings)); }
-
-    // H3: memory-core is not the active owner (our provider is)
-    const h3 = registeredCapability.runtime !== null;
-    if (!h3) throw new Error('H3 failed: no runtime provided');
-
-    // H4: active-memory default is our provider, not memory-core
-    // The capability registration replaces memory-core's runtime
-    const h4 = typeof registeredCapability.promptBuilder === 'function' &&
-               typeof registeredCapability.flushPlanResolver === 'function';
-    if (!h4) throw new Error('H4 failed: promptBuilder/flushPlanResolver not functions');
-
-    // H5: agent_turn_prepare hook is registered and produces a bounded context
-    const h5 = typeof handlers['agent_turn_prepare'] === 'function';
-    if (!h5) throw new Error('H5 failed: agent_turn_prepare handler not registered');
-
-    // H6: agent_end hook is registered
-    const h6 = typeof handlers['agent_end'] === 'function';
-    if (!h6) throw new Error('H6 failed: agent_end handler not registered');
-
-    // H7: no prohibited tools registered (provider never calls registerTool)
-    // The mockApi does not have registerTool, so if the provider tried to use it,
-    // it would throw. Since register completed without error, H7 passes.
-    const h7 = true; // verified by successful register without registerTool
-
-    // H8: no model credentials or external model calls required
-    // The provider uses only a local Python sidecar, no model API calls
-    const h8 = true; // verified by design: no model API keys in config or code
-
-    // Exercise H5: call agent_turn_prepare with a user message
-    let prepareResult = null;
-    try {
-      prepareResult = await handlers['agent_turn_prepare'](
-        { messages: [{ role: 'user', content: 'blue preference' }] },
-        { agentId: 'main', sessionId: 'harness-session', runId: 'harness-run' }
-      );
-    } catch (e) {
-      // Sidecar may not be available in test env, but the hook must exist and return something
-      prepareResult = { error: e.message };
-    }
-
-    // Exercise H6: call agent_end
-    let endResult = null;
-    try {
-      endResult = await handlers['agent_end'](
-        { success: true, messages: [{ role: 'user', content: 'blue' }], runId: 'harness-run' }
-      );
-    } catch (e) {
-      endResult = { error: e.message };
-    }
-
-    // Exercise H6 again for idempotency
-    let endResult2 = null;
-    try {
-      endResult2 = await handlers['agent_end'](
-        { success: true, messages: [{ role: 'user', content: 'blue' }], runId: 'harness-run' }
-      );
-    } catch (e) {
-      endResult2 = { error: e.message };
-    }
-
-    const checks = {
-      h1_slot_selection: h1,
-      h2_capability_registration: h2,
-      h3_memory_core_not_active: h3,
-      h4_active_memory_is_nollm: h4,
-      h5_prepare_hook_executes: h5,
-      h6_end_hook_executes: h6,
-      h7_no_prohibited_tools: h7,
-      h8_no_model_credentials: h8,
-      prepareReturned: !!prepareResult,
-      endReturned: endResult !== null,
-    };
-
-    console.log(JSON.stringify({ ok: true, schema: 'nollm.f0_02.host_load.v1', checks, warnings }));
-  `;
+  // D6.3: Real OpenClaw host integration via host-integration-check.mjs
+  // This uses the actual OpenClaw plugin-sdk/memory-core APIs, not a mockApi.
+  const hostCheckScript = path.resolve(providerRoot, "scripts", "host-integration-check.mjs");
   const hostLoadResult = await run(
     nodeBin,
-    ["--input-type=module", "-e", hostLoadScript],
+    [hostCheckScript],
     providerRoot,
     {
       ...profileEnv(profileDir),
       NODE_PATH: path.join(tempCheckout, "node_modules"),
-      PYTHON_EXE: process.env.PYTHON_EXE || "python3",
+      NOLLM_OPENCLAW_CHECKOUT: tempCheckout,
       NOLLM_DATA_ROOT: dataRoot,
+      PYTHON_EXE: process.env.PYTHON_EXE || "python3",
     }
   );
   let hostLoadOk = false;

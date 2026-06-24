@@ -76,7 +76,7 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
 
       const validated = validatePrepareResult(result, { maxFacts: config.maxFacts,
         maxContextCharacters: config.maxContextCharacters,
-        
+
         maxCharacters: config.maxCharacters,
       });
       if (!validated.ok) {
