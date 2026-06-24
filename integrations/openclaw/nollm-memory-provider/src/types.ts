@@ -6,6 +6,7 @@ export type PluginConfig = {
   commandTimeoutMs?: number;
   maxFacts?: number;
   maxCharacters?: number;
+  maxContextCharacters?: number;
   captureMode?: string;
   allowAgentIds?: string[];
 };
@@ -19,6 +20,7 @@ export type NormalizedConfig = {
   commandTimeoutMs: number;
   maxFacts: number;
   maxCharacters: number;
+  maxContextCharacters: number;
   captureMode: string;
   allowAgentIds: string[];
 };

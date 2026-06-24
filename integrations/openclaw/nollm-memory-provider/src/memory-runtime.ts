@@ -4,8 +4,9 @@ import type {
 import type { OpenClawConfig } from "openclaw/plugin-sdk/plugin-entry";
 import { runSidecarCommand } from "./sidecar.js";
 import { NollmCompatibilityReferenceRegistry } from "./compat-registry.js";
-import type { NormalizedConfig } from "./types.js";
+import { validatePrepareResult } from "./context-validation.js";
 import { createHash } from "node:crypto";
+import type { NormalizedConfig } from "./types.js";
 
 const REF_PREFIX = "nollm://compat/v1/";
 
@@ -13,6 +14,7 @@ export function createNollmCompatibilityRuntime(
   config: NormalizedConfig
 ): MemoryPluginRuntime {
   const registry = new NollmCompatibilityReferenceRegistry();
+  let managerGeneration = 0;
 
   const runtime: MemoryPluginRuntime = {
     async getMemorySearchManager(params: {
@@ -20,6 +22,10 @@ export function createNollmCompatibilityRuntime(
       agentId: string;
       purpose?: "default" | "status" | "cli";
     }) {
+      managerGeneration++;
+      const currentGeneration = managerGeneration;
+      const sessionId = "compat";
+
       const statusResult = await runSidecarCommand(config, "status", {});
       if (!statusResult.ok) {
         return { manager: null, error: statusResult.error.message };
@@ -27,11 +33,11 @@ export function createNollmCompatibilityRuntime(
 
       return {
         manager: {
-          async search(query, opts) {
+          async search(query: string, opts?: { maxResults?: number }) {
             const prepareResult = await runSidecarCommand(config, "prepare", {
               request_id: `compat-search-${Date.now()}`,
               agent_id: params.agentId,
-              session_id: "compat",
+              session_id: sessionId,
               run_id: `compat-${Date.now()}`,
               messages: [{ role: "user", content: query }],
               budget: {
@@ -39,10 +45,22 @@ export function createNollmCompatibilityRuntime(
                 max_characters: config.maxCharacters,
               },
             });
+
             if (!prepareResult.ok) {
               return [];
             }
-            const raw = prepareResult as unknown as {
+
+            const validated = validatePrepareResult(prepareResult, {
+              maxFacts: config.maxFacts,
+              maxCharacters: config.maxCharacters,
+              maxContextCharacters: config.maxContextCharacters,
+            });
+
+            if (!validated.ok) {
+              return [];
+            }
+
+            const raw = validated as unknown as {
               context: {
                 field_id: string;
                 field_revision_id: string;
@@ -55,9 +73,12 @@ export function createNollmCompatibilityRuntime(
             };
             const ctx = raw.context;
             const queryHash = createHash("sha256").update(query).digest("hex");
+
             return ctx.facts.map((fact) => {
               const ref = registry.issueRef({
                 agentId: params.agentId,
+                sessionId,
+                managerGeneration: currentGeneration,
                 fieldId: ctx.field_id,
                 fieldRevisionId: ctx.field_revision_id,
                 shardId: fact.shard_id,
@@ -75,10 +96,11 @@ export function createNollmCompatibilityRuntime(
             });
           },
 
-          async readFile(readParams) {
+          async readFile(readParams: { relPath: string; from?: number; lines?: number }) {
             if (!readParams.relPath.startsWith(REF_PREFIX)) {
               throw new Error("nollm_compat_ref_rejected");
             }
+
             const statusRes = await runSidecarCommand(config, "status", {});
             let fieldRevisionId = "unknown";
             if (statusRes.ok) {
@@ -89,10 +111,14 @@ export function createNollmCompatibilityRuntime(
                 fieldRevisionId = s.context.field_revision_id;
               }
             }
+
             const resolved = registry.resolveRef(readParams.relPath, {
               agentId: params.agentId,
+              sessionId,
+              managerGeneration: currentGeneration,
               fieldRevisionId,
             });
+
             if (!resolved) {
               throw new Error("nollm_compat_ref_rejected");
             }

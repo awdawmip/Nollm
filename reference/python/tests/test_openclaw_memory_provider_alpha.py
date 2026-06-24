@@ -53,7 +53,7 @@ def _make_fixture(field_id: str = "alpha_test") -> dict[str, object]:
 
 @pytest.fixture
 def fixture_path(tmp_path: Path) -> Path:
-    path = tmp_path / "alpha-field.json"
+    repo_dir = tmp_path / "repo"; repo_dir.mkdir(parents=True, exist_ok=True); path = repo_dir / "alpha-field.json"
     path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
     return path
 
@@ -478,15 +478,17 @@ def test_segment_aware_legacy_path_rejection(tmp_path: Path) -> None:
     """nollmDataRoot ending with 'memory' must be rejected."""
     from nollm.openclaw_memory_provider_alpha import ProviderConfig, NollmProviderError
 
-    fixture_path = tmp_path / "alpha-field.json"
-    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    fixture_repo_dir = tmp_path / "repo"
+    fixture_repo_dir.mkdir(parents=True, exist_ok=True)
+    fixture_file = fixture_repo_dir / "alpha-field.json"
+    fixture_file.write_text(json.dumps(_make_fixture()), encoding="utf-8")
     with pytest.raises(NollmProviderError, match="legacy"):
         ProviderConfig.from_payload(
             {
                 "pythonCommand": "python",
                 "nollmRepoRoot": str(tmp_path / "repo"),
                 "nollmDataRoot": str(tmp_path / "memory"),
-                "alphaFixturePath": str(fixture_path),
+                "alphaFixturePath": str(fixture_file),
             }
         )
 
@@ -495,15 +497,17 @@ def test_segment_aware_legacy_path_rejection_memory_md(tmp_path: Path) -> None:
     """nollmDataRoot with MEMORY.md segment must be rejected."""
     from nollm.openclaw_memory_provider_alpha import ProviderConfig, NollmProviderError
 
-    fixture_path = tmp_path / "alpha-field.json"
-    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    fixture_repo_dir = tmp_path / "repo"
+    fixture_repo_dir.mkdir(parents=True, exist_ok=True)
+    fixture_file = fixture_repo_dir / "alpha-field.json"
+    fixture_file.write_text(json.dumps(_make_fixture()), encoding="utf-8")
     with pytest.raises(NollmProviderError, match="legacy"):
         ProviderConfig.from_payload(
             {
                 "pythonCommand": "python",
                 "nollmRepoRoot": str(tmp_path / "repo"),
                 "nollmDataRoot": str(tmp_path / "MEMORY.md"),
-                "alphaFixturePath": str(fixture_path),
+                "alphaFixturePath": str(fixture_file),
             }
         )
 
@@ -512,14 +516,16 @@ def test_nollm_memory_alpha_accepted(tmp_path: Path) -> None:
     """nollm-memory-alpha should be accepted as data root."""
     from nollm.openclaw_memory_provider_alpha import ProviderConfig
 
-    fixture_path = tmp_path / "alpha-field.json"
-    fixture_path.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    fixture_repo_dir = tmp_path / "repo"
+    fixture_repo_dir.mkdir(parents=True, exist_ok=True)
+    fixture_file = fixture_repo_dir / "alpha-field.json"
+    fixture_file.write_text(json.dumps(_make_fixture()), encoding="utf-8")
     config = ProviderConfig.from_payload(
         {
             "pythonCommand": "python",
             "nollmRepoRoot": str(tmp_path / "repo"),
             "nollmDataRoot": str(tmp_path / "nollm-memory-alpha"),
-            "alphaFixturePath": str(fixture_path),
+            "alphaFixturePath": str(fixture_file),
         }
     )
     assert config.nollm_data_root == tmp_path / "nollm-memory-alpha"

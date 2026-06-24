@@ -317,6 +317,16 @@ class ProviderConfig:
             payload.get("alphaFixturePath", ""), "alphaFixturePath"
         )
 
+        # D5: fixture containment - alphaFixturePath must be under nollmRepoRoot
+        try:
+            nollm_repo_root.resolve().joinpath(alpha_fixture_path.resolve().relative_to(nollm_repo_root.resolve()))
+        except ValueError:
+            raise NollmProviderError(
+                "configuration_error",
+                "alphaFixturePath must be under nollmRepoRoot",
+                retryable=False,
+            ) from None
+
         if _is_path_under_legacy(nollm_data_root):
             raise NollmProviderError(
                 "configuration_error",
@@ -564,13 +574,25 @@ def capture(
     event_hash = _event_hash(run_id, typed_messages)
     agent_id = payload.get("agent_id", "")
     session_id = payload.get("session_id", "")
+    if not isinstance(agent_id, str) or not agent_id:
+        raise NollmProviderError(
+            "invalid_command", "agent_id must be a non-empty string", retryable=False
+        )
+    if not isinstance(session_id, str) or not session_id:
+        raise NollmProviderError(
+            "invalid_command", "session_id must be a non-empty string", retryable=False
+        )
+    # D3: canonical capture identity including success and field_revision_id
     receipt_id = _sha256_hex(
         _stable_json({
             "agent_id": agent_id,
             "session_id": session_id,
             "run_id": run_id,
+            "success": success,
             "event_hash": event_hash,
-            "capture_protocol_version": "v1",
+            "field_id": field.field_id,
+            "field_revision_id": field.revision_id,
+            "capture_protocol_version": "nollm.capture_identity.v1",
         })
     )
 
@@ -621,8 +643,17 @@ def capture(
             retryable=True,
         ) from exc
 
-    # Idempotency: if receipt already exists, verify content matches
+    # D3: Idempotency with fail-close on content collision
     if receipt_path.exists():
+        try:
+            existing_raw = receipt_path.read_text(encoding="utf-8")
+            existing = json.loads(existing_raw)
+        except Exception:
+            raise NollmProviderError(
+                "capture_failed",
+                "corrupt existing receipt - quarantined",
+                retryable=False,
+            ) from None
         try:
             existing = json.loads(receipt_path.read_text(encoding="utf-8"))
             existing_event_hash = existing.get("event_hash")

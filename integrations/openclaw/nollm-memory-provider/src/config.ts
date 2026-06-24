@@ -22,6 +22,9 @@ export const ConfigSchema = Type.Object(
     maxCharacters: Type.Optional(
       Type.Integer({ default: 1200, minimum: 100, maximum: 10000 })
     ),
+    maxContextCharacters: Type.Optional(
+      Type.Integer({ default: 4096, minimum: 200, maximum: 65536 })
+    ),
     captureMode: Type.Optional(Type.Literal("receipt_only")),
     allowAgentIds: Type.Optional(Type.Array(Type.String())),
   },
@@ -95,6 +98,12 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
       100,
       10000,
       "maxCharacters"
+    ),
+    maxContextCharacters: boundedInteger(
+      config.maxContextCharacters ?? 4096,
+      200,
+      65536,
+      "maxContextCharacters"
     ),
     captureMode: config.captureMode || "receipt_only",
     allowAgentIds,

@@ -74,8 +74,9 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         return { prependContext: makeUnavailableBoundary() };
       }
 
-      const validated = validatePrepareResult(result, {
-        maxFacts: config.maxFacts,
+      const validated = validatePrepareResult(result, { maxFacts: config.maxFacts,
+        maxContextCharacters: config.maxContextCharacters,
+        
         maxCharacters: config.maxCharacters,
       });
       if (!validated.ok) {
