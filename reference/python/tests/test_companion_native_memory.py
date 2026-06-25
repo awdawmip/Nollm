@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import subprocess
 import threading
 from pathlib import Path
 
@@ -160,7 +161,55 @@ def test_p12_status_reports_native_store_count_and_revision(tmp_path: Path) -> N
     assert native["active_revision_id"].startswith("nrev_")
 
 
-def test_p13_adapter_exposes_native_commands(tmp_path: Path) -> None:
+def test_p13_concurrent_duplicate_writes_produce_one_active_record(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    procs: list[subprocess.Popen[str]] = []
+    for _ in range(6):
+        p = subprocess.Popen(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--repo-root",
+                str(ROOT),
+                "native-remember",
+                "--workspace",
+                str(workspace),
+                "--out",
+                str(out),
+                "--memory",
+                "用户叫卡卡布拉。",
+                "--kind",
+                "identity",
+                "--scope",
+                "user",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        procs.append(p)
+    results: list[dict[str, object]] = []
+    for p in procs:
+        stdout, _stderr = p.communicate(timeout=60)
+        results.append(json.loads(stdout) if stdout.strip() else {})
+
+    assert sum(1 for r in results if r.get("ok")) == 6
+    assert sum(1 for r in results if r.get("created")) == 1
+    assert sum(1 for r in results if r.get("deduplicated")) == 5
+    assert native_store_summary(out)["record_count"] == 1
+
+    records_path = out / "native-companion-v1" / "records.jsonl"
+    records = [
+        json.loads(line)
+        for line in records_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len([r for r in records if r.get("status") == "active"]) == 1
+
+
+def test_p14_adapter_exposes_native_commands(tmp_path: Path) -> None:
     out = _out_dir(tmp_path)
     remembered = remember_native_companion_memory(
         ROOT, tmp_path / "workspace", out, memory="W1 adapter memory.", kind="note", scope="user"
