@@ -32,14 +32,18 @@
       "nollm_drift",
       "nollm_read",
       "nollm_recall_trace",
-      "nollm_memory_status"
+      "nollm_memory_status",
+      "nollm_memory_remember",
+      "nollm_memory_recall",
+      "nollm_memory_get"
     ]
   },
 
   // 3. Optional Active Memory Cortex guidance:
   // Configure Active Memory toolsAllow with nollm_field_overview,
   // nollm_open_well, nollm_surface, nollm_focus, nollm_drift,
-  // nollm_read, and nollm_recall_trace.
+  // nollm_read, nollm_recall_trace, nollm_memory_remember,
+  // nollm_memory_recall, and nollm_memory_get.
   // Do not make memory_search / memory_get the Nollm internal model. Nollm's
   // Cortex path reads dream shards through a revision-bound well, not source
   // chunks; dream shards do not replace source verification.

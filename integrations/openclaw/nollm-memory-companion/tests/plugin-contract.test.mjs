@@ -23,7 +23,10 @@ const toolNames = [
   "nollm_focus",
   "nollm_drift",
   "nollm_read",
-  "nollm_recall_trace"
+  "nollm_recall_trace",
+  "nollm_memory_remember",
+  "nollm_memory_recall",
+  "nollm_memory_get"
 ];
 const isWindows = process.platform === "win32";
 
@@ -136,6 +139,36 @@ test("builds dream cortex navigation argv", () => {
   assert.equal(trace.includes("recall-trace"), true);
 });
 
+
+test("builds native companion memory argv", () => {
+  const fixture = makeFixture();
+  const config = normalizeConfig(fixture.config);
+  const remember = buildSidecarArgv(config, "native-remember", {
+    memory: "用户叫卡卡布拉。",
+    kind: "identity",
+    scope: "user",
+    source: "explicit_user"
+  });
+  const recall = buildSidecarArgv(config, "native-recall", {
+    query: "我叫什么？",
+    limit: 5,
+    scope: "user"
+  });
+  const get = buildSidecarArgv(config, "native-get", { id: "nmem_abc123" });
+
+  assert.equal(remember.includes("native-remember"), true);
+  assert.equal(remember.includes("--memory"), true);
+  assert.equal(remember.includes("用户叫卡卡布拉。"), true);
+  assert.equal(remember.includes("--kind"), true);
+  assert.equal(remember.includes("identity"), true);
+  assert.equal(recall.includes("native-recall"), true);
+  assert.equal(recall.includes("--query"), true);
+  assert.equal(recall.includes("我叫什么？"), true);
+  assert.equal(recall.includes("--limit"), true);
+  assert.equal(get.includes("native-get"), true);
+  assert.equal(get.includes("--id"), true);
+  assert.equal(get.includes("nmem_abc123"), true);
+});
 test("unconfigured tools fail closed without spawning sidecar", async () => {
   const status = configurationRequiredStatus({});
   assert.equal(status.ok, false);

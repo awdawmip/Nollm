@@ -100,3 +100,32 @@ export const RecallTraceInputSchema = Type.Object(
   },
   { additionalProperties: false }
 );
+export const RememberInputSchema = Type.Object(
+  {
+    memory: Type.String({ minLength: 1, maxLength: 600 }),
+    kind: Type.Optional(Type.Union([
+      Type.Literal("identity"),
+      Type.Literal("preference"),
+      Type.Literal("decision"),
+      Type.Literal("project"),
+      Type.Literal("fact"),
+      Type.Literal("note")
+    ])),
+    scope: Type.Optional(Type.Union([Type.Literal("user"), Type.Literal("workspace")]))
+  },
+  { additionalProperties: false }
+);
+export const RecallInputSchema = Type.Object(
+  {
+    query: Type.String({ minLength: 1, maxLength: 600 }),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 20 })),
+    scope: Type.Optional(Type.Union([Type.Literal("user"), Type.Literal("workspace")]))
+  },
+  { additionalProperties: false }
+);
+export const GetInputSchema = Type.Object(
+  {
+    memory_id: Type.String({ minLength: 1, pattern: "^nmem_" })
+  },
+  { additionalProperties: false }
+);

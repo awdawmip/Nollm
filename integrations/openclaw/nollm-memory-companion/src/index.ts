@@ -10,6 +10,12 @@ import {
   StatusInputSchema,
   SurfaceInputSchema
 } from "./schemas.js";
+
+import {
+  GetInputSchema,
+  RecallInputSchema,
+  RememberInputSchema
+} from "./schemas.js";
 import { configurationRequiredStatus, runSidecarCommand } from "./sidecar.js";
 import type { PluginConfig } from "./types.js";
 
@@ -180,6 +186,75 @@ const plugin = defineToolPlugin({
           config,
           "recall-trace",
           { well_id: input.well_id, path: JSON.stringify(input.path) },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_memory_remember",
+      label: "Nollm Memory Remember",
+      description:
+        "Persist an explicit user identity, preference, decision, project fact, or other standalone memory sentence in Nollm native companion storage. Never use it for secrets, credentials, or transient tool output.",
+      parameters: RememberInputSchema,
+      async execute(input: { memory: string; kind?: string; scope?: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        return await runSidecarCommand(
+          config,
+          "native-remember",
+          {
+            memory: input.memory,
+            kind: input.kind ?? "note",
+            scope: input.scope ?? "user",
+            source: "explicit_user"
+          },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_memory_recall",
+      label: "Nollm Memory Recall",
+      description:
+        "Recall explicit Nollm native companion memories relevant to a user question. Use it when the user asks about their saved identity, preference, decision, or previously requested remembered fact.",
+      parameters: RecallInputSchema,
+      async execute(input: { query: string; limit?: number; scope?: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        return await runSidecarCommand(
+          config,
+          "native-recall",
+          {
+            query: input.query,
+            limit: input.limit,
+            scope: input.scope
+          },
+          context.signal
+        );
+      }
+    }),
+    tool({
+      name: "nollm_memory_get",
+      label: "Nollm Memory Get",
+      description:
+        "Read a Nollm native companion memory by its Nollm-issued memory_id only.",
+      parameters: GetInputSchema,
+      async execute(input: { memory_id: string }, config: PluginConfig, context) {
+        context.signal?.throwIfAborted();
+        const configRequired = configurationRequiredStatus(config);
+        if (configRequired.ok === false) {
+          return configRequired;
+        }
+        return await runSidecarCommand(
+          config,
+          "native-get",
+          { id: input.memory_id },
           context.signal
         );
       }

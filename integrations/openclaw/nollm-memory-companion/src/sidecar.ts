@@ -184,7 +184,10 @@ export function buildSidecarArgv(
     | "focus"
     | "drift"
     | "read"
-    | "recall-trace",
+    | "recall-trace"
+    | "native-remember"
+    | "native-recall"
+    | "native-get",
   params: Record<string, string | number | boolean | undefined> = {}
 ): string[] {
   const argv = [
@@ -254,6 +257,23 @@ export function buildSidecarArgv(
     argv.push("--path", String(params.path ?? "[]"));
   }
 
+  if (command === "native-remember") {
+    argv.push("--memory", String(params.memory ?? ""));
+    argv.push("--kind", String(params.kind ?? "note"));
+    argv.push("--scope", String(params.scope ?? "user"));
+    argv.push("--source", String(params.source ?? "explicit_user"));
+  }
+  if (command === "native-recall") {
+    argv.push("--query", String(params.query ?? ""));
+    argv.push("--limit", String(clampSearchLimit(Number(params.limit ?? config.maxSearchResults), config.maxSearchResults)));
+    if (params.scope !== undefined && params.scope !== null && params.scope !== "") {
+      argv.push("--scope", String(params.scope));
+    }
+  }
+  if (command === "native-get") {
+    argv.push("--id", String(params.id ?? ""));
+  }
+
   return argv;
 }
 
@@ -278,7 +298,10 @@ export async function runSidecarCommand(
     | "focus"
     | "drift"
     | "read"
-    | "recall-trace",
+    | "recall-trace"
+    | "native-remember"
+    | "native-recall"
+    | "native-get",
   params: Record<string, string | number | boolean | undefined> = {},
   signal?: AbortSignal
 ): Promise<SidecarResult> {

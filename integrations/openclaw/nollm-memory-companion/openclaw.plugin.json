@@ -66,16 +66,19 @@
       "entry": "./dist/index.js"
     }
   ],
-  "contracts": {
-    "tools": [
-      "nollm_memory_status",
-      "nollm_field_overview",
-      "nollm_open_well",
-      "nollm_surface",
-      "nollm_focus",
-      "nollm_drift",
-      "nollm_read",
-      "nollm_recall_trace"
-    ]
-  }
+    "contracts": {
+      "tools": [
+        "nollm_memory_status",
+        "nollm_field_overview",
+        "nollm_open_well",
+        "nollm_surface",
+        "nollm_focus",
+        "nollm_drift",
+        "nollm_read",
+        "nollm_recall_trace",
+        "nollm_memory_remember",
+        "nollm_memory_recall",
+        "nollm_memory_get"
+      ]
+    }
 }

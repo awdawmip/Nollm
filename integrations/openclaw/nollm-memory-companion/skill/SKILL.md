@@ -3,6 +3,28 @@
 Use this skill only when the workspace has enabled the Nollm companion tools.
 Nollm is a geometry-executed dream field; it is not a `MEMORY.md` search adapter and not a source-memory writer.
 
+## Explicit native companion memory
+
+When the user explicitly says "记住", "请记住", "remember this", or clearly
+states a stable identity/preference such as "我叫…", "我偏好…":
+1. Use `nollm_memory_remember`.
+2. Confirm only after the tool returns `ok=true`.
+3. Do not claim it was written to `MEMORY.md`.
+
+When the user asks "我叫什么", "我偏好什么", or asks for a saved fact:
+1. Use `nollm_memory_recall`.
+2. Answer only from returned native memory.
+3. When none is found, say no Nollm native memory was found.
+4. Do not silently read legacy files as fallback.
+
+Use `nollm_memory_get` only when the user supplies a Nollm-issued `memory_id`
+from a previous `nollm_memory_remember` result. Reject file paths, line locators,
+and legacy source locators.
+
+These explicit native-memory tools write only to `.nollm-memory/native-companion-v1`.
+They do not replace `memory-core`, do not modify `MEMORY.md` / `DREAMS.md` /
+`memory/*.md`, and do not call a real LLM.
+
 Primary Cortex workflow:
 
 1. Use `nollm_field_overview` to inspect the bounded field map and stale state. Use `nollm_memory_status` only for field availability/stale status. Core does not choose the semantic entry.

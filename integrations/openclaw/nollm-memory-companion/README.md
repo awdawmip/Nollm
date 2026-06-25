@@ -18,6 +18,7 @@ It is:
 - a companion tool plugin for `memory-core`;
 - a strict TypeScript adapter around `reference/python/scripts/run_openclaw_nollm_memory.py`;
 - a source-backed search/get/status/pending-write surface with geometry and gravity instrumentation.
+- a source-backed search/get/status/pending-write surface with geometry and gravity instrumentation, plus an explicit Nollm native companion-memory remember/recall/get path.
 
 It is not:
 
@@ -69,9 +70,28 @@ No secrets are accepted or needed.
 
 ## Tools
 
-The normal plugin surface exposes the seven geometry navigation tools:
-`nollm_field_overview`, `nollm_open_well`, `nollm_surface`, `nollm_focus`,
-`nollm_drift`, `nollm_read`, and `nollm_recall_trace`.
+The plugin surface exposes the seven geometry navigation tools
+(`nollm_field_overview`, `nollm_open_well`, `nollm_surface`, `nollm_focus`,
+`nollm_drift`, `nollm_read`, `nollm_recall_trace`) and three explicit native
+companion-memory tools (`nollm_memory_remember`, `nollm_memory_recall`,
+`nollm_memory_get`).
+
+### `nollm_memory_remember`
+
+Persist an explicit user identity, preference, decision, project fact, or other
+standalone memory sentence in Nollm native companion storage. It never writes
+`MEMORY.md`, `DREAMS.md`, or `memory/*.md`, and it rejects secret-like input.
+
+### `nollm_memory_recall`
+
+Recall explicit Nollm native companion memories relevant to a user question. It
+returns only native companion memory evidence; it does not read legacy files as
+a fallback.
+
+### `nollm_memory_get`
+
+Read a single Nollm native companion memory by its Nollm-issued `memory_id`
+only. File paths, line locators, and legacy source locators are rejected.
 
 ### `nollm_memory_status`
 
@@ -141,13 +161,13 @@ file manually into a workspace skill location. The skill is not a system prompt.
 ## With memory-core
 
 Keep OpenClaw `memory-core` active as the memory owner. Configure these tools as
-companion tools so the LLM can laterally inspect Nollm geometry/gravity
-instrumentation while ordinary file memory lifecycle remains owned by
-`memory-core`.
+companion tools so the LLM can explicitly remember/recall Nollm native memories
+and laterally inspect Nollm geometry/gravity instrumentation while ordinary file
+memory lifecycle remains owned by `memory-core`.
 
-The active Nollm path should use only the geometry navigation tools plus
-`nollm_memory_status`. Legacy Python search/get helpers are compatibility code
-only and are not registered by this plugin.
+The active Nollm path may use the geometry navigation tools, `nollm_memory_status`,
+and the explicit native remember/recall/get tools. Legacy Python search/get/write
+helpers are compatibility code only and are not registered by this plugin.
 
 ## Verification Matrix
 
