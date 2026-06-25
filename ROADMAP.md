@@ -182,3 +182,26 @@ F0 does **not**:
 
 The next milestone after F0 is F1 Native Ingress Alpha, which promotes capture
 receipts to native shards under R14-safe storage.
+
+## W1-01: OpenClaw Native Companion Memory MVP
+
+A short milestone that adds explicit native remember/recall/get tools to the
+existing `nollm-memory-companion` package while keeping `memory-core` active:
+
+- Deterministic Nollm-owned store under `.nollm-memory/native-companion-v1/`.
+- `nollm_memory_remember`, `nollm_memory_recall`, `nollm_memory_get` exposed as
+  strict OpenClaw tool-plugin tools.
+- Secret-like input guard, canonical deduplication by `(scope, kind, text)`,
+  and Chinese identity/preference query aliases.
+- Python sidecar commands `native-remember`, `native-recall`, `native-get`.
+- Updated skill guidance for explicit user identity/preference remember/recall.
+- Windows live smoke with a synthetic marker, legacy source hashes unchanged.
+
+W1-01 does **not**:
+
+- replace `memory-core` or claim the OpenClaw memory slot;
+- write or migrate `MEMORY.md`, `DREAMS.md`, or `memory/*.md`;
+- call a real LLM or use embeddings;
+- automatically capture every conversation turn;
+- implement R14 capability-storage hardening.
+

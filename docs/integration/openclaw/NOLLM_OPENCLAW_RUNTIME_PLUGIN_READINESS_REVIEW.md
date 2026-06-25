@@ -29,7 +29,14 @@ Current commands:
 - `search`: run deterministic lexical search and attach gravity reports.
 - `get`: read one candidate by `candidate_id`, `memory_id`, or `shard_id`.
 - `write-candidate`: write pending review material to sidecar storage only.
-- `status`: report counts, manifest details, accepted ID forms, and boundaries.
+- `status`: report counts, manifest details, accepted ID forms, native companion
+  memory counts, and boundaries.
+- `native-remember`: write an explicit memory sentence to the Nollm-owned
+  companion store (`native-companion-v1/`).
+- `native-recall`: recall Nollm-owned companion memories by deterministic token
+  overlap and Chinese identity/preference aliases.
+- `native-get`: read one Nollm-owned companion record by Nollm-issued
+  `memory_id` only.
 
 ## Current Schemas
 
@@ -58,6 +65,9 @@ The companion package exposes these tools:
 - `nollm_drift`
 - `nollm_read`
 - `nollm_recall_trace`
+- `nollm_memory_remember` (W1-01 native companion memory write)
+- `nollm_memory_recall` (W1-01 native companion memory recall)
+- `nollm_memory_get` (W1-01 native companion memory read by id)
 
 Build and validation commands:
 

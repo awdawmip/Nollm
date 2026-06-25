@@ -312,3 +312,23 @@ limitations.
 
 This is Functional Alpha work. It does not claim production cutover, historical
 migration, or R14 capability-storage completion.
+
+## W1-01: OpenClaw Native Companion Memory MVP
+
+Nollm also ships an explicit native companion-memory path inside the historical
+`nollm-memory-companion` tool plugin:
+
+- `nollm_memory_remember` writes an explicit user identity, preference,
+  decision, project fact, or standalone memory sentence to a Nollm-owned store
+  under `<workspaceRoot>/.nollm-memory/native-companion-v1/`.
+- `nollm_memory_recall` returns Nollm-owned native memory evidence for a user
+  question using deterministic token overlap and Chinese identity/preference
+  aliases; it does not use embeddings or call an LLM.
+- `nollm_memory_get` reads a single native record by its Nollm-issued
+  `memory_id`; it rejects file paths, line locators, and legacy source locators.
+
+W1-01 keeps `memory-core` active, does not replace the OpenClaw memory slot,
+does not write `MEMORY.md` / `DREAMS.md` / `memory/*.md`, and does not call a
+real LLM. It is a minimal explicit remember/recall/get loop for user-stated
+identities and preferences, not an automatic conversation capture system.
+
