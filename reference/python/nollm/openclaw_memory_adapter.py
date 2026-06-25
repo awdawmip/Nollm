@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
@@ -385,6 +386,10 @@ def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path |
         "schema": STATUS_SCHEMA,
         "ok": True,
         "status": STATUS,
+        "python_executable": Path(sys.executable).resolve().as_posix(),
+        "python_version": sys.version.split()[0],
+        "python_prefix": Path(sys.prefix).resolve().as_posix(),
+        "platform": sys.platform,
         "workspace": _display_path(repo, workspace_path),
         "out_dir": _display_path(repo, out),
         "manifest": manifest,
