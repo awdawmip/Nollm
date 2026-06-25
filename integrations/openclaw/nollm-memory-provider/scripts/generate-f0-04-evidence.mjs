@@ -10,9 +10,9 @@ const repoRoot = path.resolve(providerRoot, "..", "..", "..");
 const outDir = path.join(repoRoot, "out");
 fs.mkdirSync(outDir, { recursive: true });
 
-function run(cmd, args, cwd, envExtras = {}) {
+function run(cmd, args, cwd, envExtras = {}, shell = false) {
   return new Promise((resolve) => {
-    const opts = { cwd, shell: false };
+    const opts = { cwd, shell };
     if (Object.keys(envExtras).length > 0) {
       opts.env = { ...process.env };
       for (const [k, v] of Object.entries(envExtras)) {
@@ -90,9 +90,9 @@ async function main() {
     remote: {},
   };
 
-  const npmV = await run("npm", ["-v"], repoRoot);
+  const npmV = await run("npm", ["-v"], repoRoot, {}, process.platform === "win32");
   evidence.environment.npm = npmV.stdout.trim();
-  const pyV = await run("python", ["--version"], repoRoot);
+  const pyV = await run("python", ["--version"], repoRoot, {}, process.platform === "win32");
   evidence.environment.python = pyV.stdout.trim() || pyV.stderr.trim();
 
   const branchR = await run("git", ["branch", "--show-current"], repoRoot);
@@ -123,7 +123,8 @@ async function main() {
     evidence.artifacts.push({ path: rel, sha256: await gitHash(full) });
   }
 
-  const tsR = await run("npm", ["test"], providerRoot);
+  // On Windows npm/python are typically .cmd shims; spawn needs shell to resolve them.
+  const tsR = await run("npm", ["test"], providerRoot, {}, process.platform === "win32");
   evidence.commands.push({
     name: "ts_provider_tests",
     argv: ["npm", "test"],
@@ -139,7 +140,7 @@ async function main() {
   });
 
   const pyRoot = path.join(repoRoot, "reference/python");
-  const pyR = await run("python", ["-m", "pytest", "tests/test_openclaw_memory_provider_alpha.py", "tests/test_openclaw_memory_adapter_docs.py", "tests/test_native_field.py", "-v"], pyRoot);
+  const pyR = await run("python", ["-m", "pytest", "tests/test_openclaw_memory_provider_alpha.py", "tests/test_openclaw_memory_adapter_docs.py", "tests/test_native_field.py", "-v"], pyRoot, {}, process.platform === "win32");
   evidence.commands.push({
     name: "python_provider_tests",
     argv: ["python", "-m", "pytest", "tests/test_openclaw_memory_provider_alpha.py", "tests/test_openclaw_memory_adapter_docs.py", "tests/test_native_field.py", "-v"],
