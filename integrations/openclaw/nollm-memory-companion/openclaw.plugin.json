@@ -11,7 +11,20 @@
     "properties": {
       "pythonCommand": {
         "type": "string",
-        "default": "python"
+        "default": "python",
+        "description": "Deprecated. Use pythonExecutable instead."
+      },
+      "pythonExecutable": {
+        "type": "string",
+        "description": "Absolute path to the Python executable. Required on Windows; recommended everywhere."
+      },
+      "pythonArgs": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "default": [],
+        "description": "Additional arguments passed to pythonExecutable before the sidecar script."
       },
       "nollmRepoRoot": {
         "type": "string",

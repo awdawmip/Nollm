@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
-from nollm.dream_shard import DreamShard, shard_to_record
+from nollm.dream_shard import DreamShard, shard_to_record, is_independently_meaningful
 from nollm.geometry_profiles import default_geometry_profile
 from nollm.gravity import (
     GravityMark,
@@ -134,6 +134,7 @@ def build_sidecar_store(repo_root: Path | str, workspace: Path | str, out_dir: P
     index = parse_openclaw_memory_workspace(workspace_path)
     candidates = [chunk.to_record() for chunk in index.chunks]
     shards = [_shard_record(chunk) for chunk in index.chunks]
+    shards = [shard for shard in shards if shard is not None]
     marks = [_geometry_mark_record(chunk) for chunk in index.chunks]
     manifest = _sidecar_manifest(repo, workspace_path, out, index, candidates, shards, marks)
     sidecar_report = {
@@ -185,12 +186,15 @@ def search_sidecar(
     shards = {str(item["candidate_id"]): item for item in _read_jsonl(out / "shards.jsonl")}
     scored: list[dict[str, object]] = []
     for candidate in candidates:
+        candidate_id = str(candidate["candidate_id"])
+        if candidate_id not in shards:
+            continue
         scored.append(
             {
                 "candidate": candidate,
                 "retrieval_score": _lexical_score(query, str(candidate["text"])),
-                "geometry_mark": marks[str(candidate["candidate_id"])],
-                "shard": shards[str(candidate["candidate_id"])],
+                "geometry_mark": marks[candidate_id],
+                "shard": shards[candidate_id],
             }
         )
     scored.sort(
@@ -557,6 +561,8 @@ def _source_kind_from_role(source_role: str) -> str:
 def _shard_record(chunk: OpenClawMemoryChunk) -> dict[str, object]:
     shard_id = _shard_id(chunk.candidate_id, chunk.chunk_sha256)
     anchor = _anchor_vector(chunk.text)
+    if not is_independently_meaningful(chunk.text):
+        return None
     shard = DreamShard(
         shard_id=shard_id,
         text=chunk.text,

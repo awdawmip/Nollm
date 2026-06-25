@@ -2,7 +2,17 @@ import { Type } from "typebox";
 
 export const ConfigSchema = Type.Object(
   {
-    pythonCommand: Type.Optional(Type.String({ default: "python" })),
+    pythonCommand: Type.Optional(Type.String({
+      default: "python",
+      description: "Deprecated. Use pythonExecutable instead."
+    })),
+    pythonExecutable: Type.Optional(Type.String({
+      description: "Absolute path to the Python executable. Required on Windows; recommended everywhere."
+    })),
+    pythonArgs: Type.Optional(Type.Array(Type.String(), {
+      default: [],
+      description: "Additional arguments passed to pythonExecutable before the sidecar script."
+    })),
     nollmRepoRoot: Type.Optional(Type.String({
       description: "Optional at install time; required absolute path to the Nollm repository before tool use."
     })),

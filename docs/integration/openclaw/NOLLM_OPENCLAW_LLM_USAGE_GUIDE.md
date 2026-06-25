@@ -22,6 +22,10 @@ nollm_field_overview
 
 Core only executes geometry and returns deterministic facts: true honeycomb neighborhoods, cross-scale coverage, Gravity Well/Mark/Report data, drift class, and return vectors. Core does not rank by query text and does not compose prose recall digests.
 
+## Windows Runtime Note
+
+On Windows, `nollm_memory_status` and all companion tools require an absolute, probed `pythonExecutable` in `plugins.entries.nollm-memory-companion.config`. Bare `python3`/`python`/`py` launchers are rejected with a structured configuration error. The companion remains a tool-only companion; `memory-core` stays the active memory owner.
+
 ## Cortex Rules
 
 - Inspect `nollm_field_overview` first.

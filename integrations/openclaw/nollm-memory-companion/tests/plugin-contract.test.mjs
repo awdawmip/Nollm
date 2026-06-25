@@ -10,6 +10,7 @@ import {
   clampSearchLimit,
   configurationRequiredStatus,
   normalizeConfig,
+  resolvePythonExecutable,
   runSidecarCommand
 } from "../dist/sidecar.js";
 
@@ -24,6 +25,7 @@ const toolNames = [
   "nollm_read",
   "nollm_recall_trace"
 ];
+const isWindows = process.platform === "win32";
 
 test("default export exposes real defineToolPlugin metadata", () => {
   const metadata = getToolPluginMetadata(entry);
@@ -44,6 +46,8 @@ test("generated manifest matches native OpenClaw metadata shape", () => {
   assert.equal(Object.hasOwn(manifest, "toolMetadata"), false);
   assert.equal(manifest.configSchema.type, "object");
   assert.equal(manifest.configSchema.required, undefined);
+  assert.ok(manifest.configSchema.properties.pythonExecutable);
+  assert.ok(manifest.configSchema.properties.pythonArgs);
   assert.ok(manifest.activation);
   assert.equal(manifest.activation.onStartup, false);
   assert.deepEqual(manifest.skills, ["skill"]);
@@ -66,13 +70,25 @@ test("builds argv and clamps search limit", () => {
   const config = normalizeConfig(fixture.config);
   const argv = buildSidecarArgv(config, "search", { query: "gravity", limit: 99 });
 
-  assert.equal(argv[0], fixture.sidecarScript);
+  assert.equal(argv[0], config.sidecarScript);
   assert.deepEqual(argv.slice(1, 7), ["--repo-root", config.nollmRepoRoot, "search", "--workspace", config.workspaceRoot, "--out"]);
   assert.equal(argv.includes("--query"), true);
   assert.equal(argv.at(-1), "5");
   assert.equal(clampSearchLimit(0, 5), 1);
   assert.equal(clampSearchLimit(9, 5), 5);
   assert.equal(clampSearchLimit(99, 20), 20);
+});
+
+test("pythonArgs are passed as discrete argv before sidecar script", () => {
+  const fixture = makeFixture();
+  const fakePython = fixture.config.pythonArgs[0];
+  const config = normalizeConfig({
+    ...fixture.config,
+    pythonArgs: [fakePython, "--no-warnings"]
+  });
+
+  assert.equal(config.pythonExecutable, process.execPath);
+  assert.deepEqual(config.pythonArgs, [fakePython, "--no-warnings"]);
 });
 
 test("builds dream cortex navigation argv", () => {
@@ -126,7 +142,7 @@ test("unconfigured tools fail closed without spawning sidecar", async () => {
   assert.equal(status.status, "configuration_required");
   assert.deepEqual(status.required_fields, ["nollmRepoRoot", "workspaceRoot"]);
 
-  const failed = await runSidecarCommand({ pythonCommand: "__should_not_spawn__" }, "search", { query: "x" });
+  const failed = await runSidecarCommand({ pythonExecutable: "__should_not_spawn__" }, "search", { query: "x" });
   assert.equal(failed.ok, false);
   assert.equal(failed.error.code, "configuration_error");
   assert.match(failed.error.message, /nollmRepoRoot/);
@@ -158,18 +174,18 @@ test("returns structured failures for timeout, non-zero exit, and invalid JSON",
   );
 
   process.env.NOLLM_TEST_MODE = "fail";
-  const failed = await runSidecarCommand({ ...fixture.config, pythonCommand: process.execPath }, "status");
+  const failed = await runSidecarCommand(fixture.config, "status");
   assert.equal(failed.ok, false);
   assert.equal(failed.error.code, "sidecar_failed");
 
   process.env.NOLLM_TEST_MODE = "invalid";
-  const invalid = await runSidecarCommand({ ...fixture.config, pythonCommand: process.execPath }, "status");
+  const invalid = await runSidecarCommand(fixture.config, "status");
   assert.equal(invalid.ok, false);
   assert.equal(invalid.error.code, "sidecar_invalid_json");
 
   process.env.NOLLM_TEST_MODE = "timeout";
   const timeout = await runSidecarCommand(
-    { ...fixture.config, pythonCommand: process.execPath, commandTimeoutMs: 1000 },
+    { ...fixture.config, commandTimeoutMs: 1000 },
     "status"
   );
   assert.equal(timeout.ok, false);
@@ -177,7 +193,117 @@ test("returns structured failures for timeout, non-zero exit, and invalid JSON",
   delete process.env.NOLLM_TEST_MODE;
 });
 
-function makeFixture() {
+test("status success reports safe resolved executable metadata", async () => {
+  const fixture = makeFixture();
+  const status = await runSidecarCommand(fixture.config, "status");
+  assert.equal(status.ok, true);
+  assert.equal(status.python_executable, process.execPath);
+});
+
+test("Windows rejects bare python3/python/py with structured error", { skip: !isWindows }, async () => {
+  const fixture = makeFixture();
+  for (const launcher of ["python3", "python", "py"]) {
+    const failed = await runSidecarCommand(
+      { ...fixture.config, pythonCommand: launcher, pythonExecutable: undefined },
+      "status"
+    );
+    assert.equal(failed.ok, false, `expected failure for ${launcher}`);
+    assert.equal(failed.error.code, "legacy_python_launcher_rejected", `expected legacy launcher rejection for ${launcher}`);
+    assert.match(failed.error.message, /absolute python\.exe/);
+  }
+});
+
+test("Windows requires pythonExecutable when no legacy command given", { skip: !isWindows }, async () => {
+  const fixture = makeFixture();
+  const failed = await runSidecarCommand(
+    { ...fixture.config, pythonCommand: undefined, pythonExecutable: undefined },
+    "status"
+  );
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.code, "windows_python_executable_required");
+});
+
+test("Windows rejects non-absolute pythonExecutable", { skip: !isWindows }, async () => {
+  const fixture = makeFixture();
+  const failed = await runSidecarCommand(
+    { ...fixture.config, pythonExecutable: "python.exe" },
+    "status"
+  );
+  assert.equal(failed.ok, false);
+  assert.equal(failed.error.code, "python_executable_not_absolute");
+});
+
+test("legacy absolute pythonCommand is accepted on Windows", { skip: !isWindows }, async () => {
+  const fixture = makeFixture();
+  const status = await runSidecarCommand(
+    { ...fixture.config, pythonCommand: process.execPath, pythonExecutable: undefined },
+    "status"
+  );
+  assert.equal(status.ok, true);
+});
+
+test("shell remains false in sidecar spawn", async () => {
+  const fixture = makeFixture();
+  const status = await runSidecarCommand(fixture.config, "status");
+  assert.equal(status.ok, true);
+  assert.equal(status.shell, false);
+});
+
+function makeFakePython(root) {
+  const script = path.join(root, "fake-python.js");
+  fs.writeFileSync(
+    script,
+    [
+      "const cp = require('child_process');",
+      "const fs = require('fs');",
+      "const path = require('path');",
+      "const args = process.argv.slice(2);",
+      "if (args.includes('-c')) {",
+      "  console.log(JSON.stringify({",
+      "    executable: process.execPath,",
+      "    version: 'fake-python-for-tests',",
+      "    sysPrefix: '/fake',",
+      "    platform: process.platform",
+      "  }));",
+      "  process.exit(0);",
+      "}",
+      "const thisScript = path.resolve(__filename);",
+      "let sidecarScript = null;",
+      "let sidecarScriptIndex = -1;",
+      "for (let i = 0; i < args.length; i++) {",
+      "  const candidate = args[i];",
+      "  try {",
+      "    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {",
+      "      const realCandidate = fs.realpathSync(candidate);",
+      "      if (realCandidate !== thisScript) {",
+      "        sidecarScript = candidate;",
+      "        sidecarScriptIndex = i;",
+      "        break;",
+      "      }",
+      "    }",
+      "  } catch {}",
+      "}",
+      "const sidecarArgs = sidecarScript ? args.slice(sidecarScriptIndex + 1) : [];",
+      "if (sidecarScript) {",
+      "  const result = cp.spawnSync(process.execPath, [sidecarScript, ...sidecarArgs], {",
+      "    encoding: 'utf8',",
+      "    shell: false,",
+      "    windowsHide: true",
+      "  });",
+      "  process.stdout.write(result.stdout ?? '');",
+      "  process.stderr.write(result.stderr ?? '');",
+      "  process.exit(result.status ?? 0);",
+      "} else {",
+      "  console.log(JSON.stringify({ ok: true, shell: false, python_executable: process.execPath }));",
+      "}",
+      ""
+    ].join("\n"),
+    "utf8"
+  );
+  return script;
+}
+
+function makeFixture(overrides = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "nollm-plugin-test-"));
   const nollmRepoRoot = path.join(root, "nollm");
   const workspaceRoot = path.join(root, "workspace");
@@ -185,20 +311,23 @@ function makeFixture() {
   fs.mkdirSync(scriptDir, { recursive: true });
   fs.mkdirSync(workspaceRoot, { recursive: true });
   const sidecarScript = path.join(scriptDir, "run_openclaw_nollm_memory.js");
-  fs.writeFileSync(sidecarScript, "console.log(JSON.stringify({ ok: true }));\n", "utf8");
+  fs.writeFileSync(sidecarScript, "console.log(JSON.stringify({ ok: true, shell: false, python_executable: process.execPath }));\n", "utf8");
   const sidecarOutDir = path.join(workspaceRoot, ".nollm-memory");
+  const fakePython = makeFakePython(root);
   return {
     nollmRepoRoot,
     workspaceRoot,
     sidecarScript,
     config: {
-      pythonCommand: process.execPath,
+      pythonExecutable: process.execPath,
+      pythonArgs: [fakePython],
       nollmRepoRoot,
       workspaceRoot,
       sidecarScript,
       sidecarOutDir,
       commandTimeoutMs: 5000,
-      maxSearchResults: 5
+      maxSearchResults: 5,
+      ...overrides
     }
   };
 }

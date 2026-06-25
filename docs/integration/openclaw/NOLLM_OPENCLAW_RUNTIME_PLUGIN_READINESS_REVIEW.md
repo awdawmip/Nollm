@@ -21,6 +21,8 @@ The experimental CLI is:
 python scripts/run_openclaw_nollm_memory.py <command>
 ```
 
+On Windows the plugin uses a probed absolute `python.exe`; bare `python3`/`python`/`py` launchers are rejected.
+
 Current commands:
 
 - `index`: parse OpenClaw memory files and write deterministic sidecar JSONL.
@@ -46,12 +48,16 @@ The sidecar currently writes inspectable JSON/JSONL records:
 
 ## Plugin Package
 
-The companion package exposes four fixed tools:
+The companion package exposes these tools:
 
-- `nollm_memory_search`
-- `nollm_memory_get`
-- `nollm_memory_write_candidate`
 - `nollm_memory_status`
+- `nollm_field_overview`
+- `nollm_open_well`
+- `nollm_surface`
+- `nollm_focus`
+- `nollm_drift`
+- `nollm_read`
+- `nollm_recall_trace`
 
 Build and validation commands:
 
@@ -76,15 +82,18 @@ Configuration uses the current OpenClaw entry convention:
       "nollm-memory-companion": {
         "enabled": true,
         "config": {
-          "pythonCommand": "python3",
-          "nollmRepoRoot": "/absolute/path/to/nollm",
-          "workspaceRoot": "/absolute/path/to/openclaw-workspace"
+          "pythonExecutable": "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe",
+          "pythonArgs": [],
+          "nollmRepoRoot": "C:/path/to/nollm",
+          "workspaceRoot": "C:/Users/Administrator/.openclaw/workspace"
         }
       }
     }
   }
 }
 ```
+
+Windows paths must be absolute and forward-slash normalized.
 
 The plugin must not claim the exclusive OpenClaw memory slot. It must not
 replace `memory-core`, auto-write `MEMORY.md`, call a real LLM, map

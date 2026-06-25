@@ -39,6 +39,11 @@ CONFIG_TIMEOUT_SECONDS = 60
 INSPECT_TIMEOUT_SECONDS = 30
 READINESS_DEADLINE_SECONDS = 20
 READINESS_POLL_INTERVAL_SECONDS = 2
+
+
+def _as_posix(value: str | Path) -> str:
+    """Return a resolved forward-slash path for OpenClaw JSON/JSON5 config."""
+    return Path(value).resolve().as_posix()
 SOURCE_MEMORY_PATTERNS = ["MEMORY.md", "DREAMS.md", "memory/**/*.md"]
 
 
@@ -64,11 +69,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true", help="Discover and validate without writing config or installing.")
     mode.add_argument("--apply", action="store_true", help="Apply local OpenClaw integration changes.")
+    mode.add_argument("--repair-runtime", action="store_true", help="Repair an existing installation with an absolute Python executable.")
     parser.add_argument("--openclaw-bin", default=None)
     parser.add_argument("--workspace", default=None)
     parser.add_argument("--config-path", default=None)
     parser.add_argument("--plugin-root", default=None)
     parser.add_argument("--repo-root", default=None)
+    parser.add_argument("--python-executable", default=None)
     parser.add_argument("--no-restart", action="store_true")
     parser.add_argument("--enable-write-candidate", action="store_true", help="Deprecated no-op; source-memory write tools are disabled.")
     parser.add_argument("--probe-query", default="Nollm companion integration status")
@@ -92,6 +99,8 @@ def build_initial_report(args: argparse.Namespace) -> dict[str, Any]:
         "skill_discovery_or_manifest_check": {"attempted": False, "ok": False},
         "gateway_restart_or_reload": {"attempted": False, "ok": False, "skipped": False},
         "gateway_status": {"attempted": False, "ok": False},
+        "python_executable": None,
+        "python_args": None,
         "sidecar_probe": {"attempted": False, "ok": False},
         "read_tools_visible": [],
         "write_candidate_visible": False,
@@ -141,11 +150,16 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
     report["workspace_root"] = str(workspace_root)
     report["integration_evidence"]["source_memory_hashes_before"] = hash_source_memory_files(workspace_root)
 
+    python_executable = probe_python_executable(args.python_executable)
+    report["python_executable"] = _as_posix(python_executable)
+    report["python_args"] = []
+
     ensure_plugin_package_ready(openclaw_bin, plugin_root, report)
     patch = build_config_patch(
         config_before=config_before,
         repo_root=repo_root,
         workspace_root=workspace_root,
+        python_executable=python_executable,
         enable_write_candidate=args.enable_write_candidate,
     )
     report["config_patch_summary"] = summarize_patch(patch)
@@ -172,9 +186,31 @@ def run_installer(args: argparse.Namespace, report: dict[str, Any]) -> None:
     if not args.no_restart:
         poll_runtime_tools(openclaw_bin, repo_root, plugin_root, report, "post_restart_readiness")
     report["skill_discovery_or_manifest_check"] = check_skill_manifest(plugin_root)
-    run_sidecar_probe(repo_root, workspace_root, args.probe_query, report)
+    run_sidecar_probe(repo_root, workspace_root, python_executable, args.probe_query, report)
     finish_source_hash_evidence(workspace_root, report)
     report["ok"] = len(report["errors"]) == 0 and report["runtime_inspection"].get("ok") is True
+
+
+def probe_python_executable(explicit: str | None) -> str:
+    executable = Path(explicit).resolve() if explicit else Path(sys.executable).resolve()
+    if not executable.exists():
+        raise InstallerError(
+            "python_executable_not_found",
+            f"Python executable does not exist: {executable}",
+        )
+    probe_script = 'import json, sys; print(json.dumps({"executable": sys.executable, "version": sys.version, "sysPrefix": sys.prefix, "platform": sys.platform}))'
+    result = subprocess.run(
+        [str(executable), "-c", probe_script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        raise InstallerError(
+            "python_executable_probe_failed",
+            result.stderr.strip() or f"Failed to probe Python executable: {executable}",
+        )
+    return str(executable)
 
 
 def ensure_plugin_package_ready(openclaw_bin: str, plugin_root: Path, report: dict[str, Any]) -> None:
@@ -205,15 +241,17 @@ def build_config_patch(
     config_before: dict[str, Any],
     repo_root: Path,
     workspace_root: Path,
+    python_executable: str,
     enable_write_candidate: bool,
 ) -> dict[str, Any]:
     plugin_config = {
         "enabled": True,
         "config": {
-            "pythonCommand": sys.executable,
-            "nollmRepoRoot": str(repo_root),
-            "workspaceRoot": str(workspace_root),
-            "sidecarOutDir": str(workspace_root / ".nollm-memory"),
+            "pythonExecutable": _as_posix(python_executable),
+            "pythonArgs": [],
+            "nollmRepoRoot": _as_posix(repo_root),
+            "workspaceRoot": _as_posix(workspace_root),
+            "sidecarOutDir": _as_posix(workspace_root / ".nollm-memory"),
             "commandTimeoutMs": 15000,
             "maxSearchResults": 5,
         },
@@ -342,25 +380,25 @@ def inspect_runtime(openclaw_bin: str, cwd: Path, report: dict[str, Any]) -> Non
     report["integration_evidence"]["write_candidate_default_enabled"] = bool(report["write_candidate_visible"])
 
 
-def run_sidecar_probe(repo_root: Path, workspace_root: Path, probe_query: str, report: dict[str, Any]) -> None:
+def run_sidecar_probe(repo_root: Path, workspace_root: Path, python_executable: str, probe_query: str, report: dict[str, Any]) -> None:
     out_dir = workspace_root / ".nollm-memory"
     script = repo_root / "reference/python/scripts/run_openclaw_nollm_memory.py"
     report["sidecar_probe"]["attempted"] = True
     index = run_capture(
-        ["python", str(script), "--repo-root", str(repo_root), "index", "--workspace", str(workspace_root), "--out", str(out_dir)],
+        [python_executable, str(script), "--repo-root", str(repo_root), "index", "--workspace", str(workspace_root), "--out", str(out_dir)],
         cwd=repo_root / "reference/python",
         check=False,
         timeout=60,
     )
     status = run_capture(
-        ["python", str(script), "--repo-root", str(repo_root), "status", "--workspace", str(workspace_root), "--out", str(out_dir)],
+        [python_executable, str(script), "--repo-root", str(repo_root), "status", "--workspace", str(workspace_root), "--out", str(out_dir)],
         cwd=repo_root / "reference/python",
         check=False,
         timeout=60,
     )
     search = run_capture(
         [
-            "python",
+            python_executable,
             str(script),
             "--repo-root",
             str(repo_root),

@@ -33,9 +33,22 @@ It is not:
 - TypeScript ESM.
 - OpenClaw >= 2026.5.17 with the tool-plugin SDK available.
 - A working Nollm Python sidecar.
-- Python command available as `python3` or configured explicitly.
+- A working Nollm Python sidecar. On Windows the installer must configure an absolute `python.exe` path; bare `python3`/`python`/`py` launchers are rejected.
 
 ## Configuration
+
+### Python executable
+
+The companion requires either:
+
+- `pythonExecutable`: absolute path to the Python executable (recommended, required on Windows).
+- `pythonCommand`: deprecated; a legacy absolute path is still accepted, but bare launchers such as `python3` are rejected on Windows.
+
+`pythonArgs` can be used to pass discrete arguments before the sidecar script.
+
+All Windows paths written to OpenClaw config are forward-slash normalized.
+
+### Required paths
 
 Required paths must be absolute:
 
@@ -98,6 +111,16 @@ From `reference/python` in the Nollm repository:
 ```bash
 python scripts/install_openclaw_nollm_companion.py --dry-run
 python scripts/install_openclaw_nollm_companion.py --apply
+```
+
+To repair an existing install on Windows:
+
+```powershell
+python scripts/install_openclaw_nollm_companion.py `
+  --repair-runtime `
+  --python-executable "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe" `
+  --workspace "C:/Users/Administrator/.openclaw/workspace" `
+  --repo-root "C:/path/to/nollm"
 ```
 
 The installer builds and validates this package, links it into the local

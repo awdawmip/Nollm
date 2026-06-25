@@ -5,7 +5,10 @@
       "nollm-memory-companion": {
         enabled: true,
         config: {
-          pythonCommand: "python3",
+          // Use pythonExecutable on Windows. pythonCommand is deprecated.
+          pythonExecutable: "C:/absolute/path/to/python.exe",
+          pythonArgs: [],
+          // pythonCommand: "python3", // deprecated; use pythonExecutable
           nollmRepoRoot: "C:/absolute/path/to/nollm",
           workspaceRoot: "C:/absolute/path/to/openclaw-workspace",
           // Optional; must resolve under nollmRepoRoot.

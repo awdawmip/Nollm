@@ -1,10 +1,20 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { NormalizedConfig, PluginConfig, SidecarFailure, SidecarResult } from "./types.js";
+import type { NormalizedConfig, PluginConfig, PythonProbeResult, SidecarFailure, SidecarResult } from "./types.js";
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
 const REQUIRED_CONFIG_FIELDS = ["nollmRepoRoot", "workspaceRoot"] as const;
+const WINDOWS_BARE_LAUNCHERS = new Set(["python", "python3", "py", "pythonw", "pythonw3"]);
+
+export class PythonExecutableError extends Error {
+  code: SidecarFailure["error"]["code"];
+  constructor(code: SidecarFailure["error"]["code"], message: string) {
+    super(message);
+    this.code = code;
+    this.name = "PythonExecutableError";
+  }
+}
 
 export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   const nollmRepoRoot = requireAbsolutePath(config.nollmRepoRoot, "nollmRepoRoot");
@@ -21,8 +31,11 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   requirePathUnder(sidecarScript, nollmRepoRoot, "sidecarScript", "nollmRepoRoot", true);
   requirePathUnder(sidecarOutDir, workspaceRoot, "sidecarOutDir", "workspaceRoot", false);
 
+  const { executable, args } = resolvePythonExecutable(config);
+
   return {
-    pythonCommand: config.pythonCommand || "python",
+    pythonExecutable: executable,
+    pythonArgs: args,
     nollmRepoRoot,
     workspaceRoot,
     sidecarScript,
@@ -30,6 +43,131 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
     commandTimeoutMs,
     maxSearchResults
   };
+}
+
+export function resolvePythonExecutable(config: PluginConfig): {
+  executable: string;
+  args: string[];
+  probe: PythonProbeResult;
+} {
+  const isWin = process.platform === "win32";
+  const rawArgs = Array.isArray(config.pythonArgs) ? config.pythonArgs : [];
+
+  if (config.pythonExecutable) {
+    return validateAndProbe(config.pythonExecutable, rawArgs, isWin, { requireAbsolute: isWin });
+  }
+
+  if (config.pythonCommand) {
+    const cmd = config.pythonCommand.trim();
+    if (isWin) {
+      if (path.isAbsolute(cmd)) {
+        return validateAndProbe(cmd, rawArgs, isWin, { requireAbsolute: true });
+      }
+      throw new PythonExecutableError(
+        "legacy_python_launcher_rejected",
+        `Windows bare Python launcher "${cmd}" is not allowed. Set plugins.entries.nollm-memory-companion.config.pythonExecutable to an absolute python.exe path.`
+      );
+    }
+    return validateAndProbe(cmd, rawArgs, isWin, { requireAbsolute: false });
+  }
+
+  if (isWin) {
+    throw new PythonExecutableError(
+      "windows_python_executable_required",
+      "Nollm companion requires an absolute Python executable on Windows. Set plugins.entries.nollm-memory-companion.config.pythonExecutable."
+    );
+  }
+
+  return validateAndProbe("python3", rawArgs, isWin, { requireAbsolute: false });
+}
+
+function validateAndProbe(
+  executable: string,
+  args: string[],
+  isWin: boolean,
+  options: { requireAbsolute: boolean }
+): { executable: string; args: string[]; probe: PythonProbeResult } {
+  const trimmed = executable.trim();
+
+  if (options.requireAbsolute && !path.isAbsolute(trimmed)) {
+    throw new PythonExecutableError(
+      "python_executable_not_absolute",
+      `Python executable must be an absolute path on Windows: ${trimmed}`
+    );
+  }
+
+  const resolved = options.requireAbsolute ? path.resolve(trimmed) : trimmed;
+
+  if (isWin && path.isAbsolute(resolved)) {
+    if (!fs.existsSync(resolved)) {
+      throw new PythonExecutableError(
+        "python_executable_not_found",
+        `Python executable does not exist: ${resolved}`
+      );
+    }
+    const stat = fs.statSync(resolved);
+    if (!stat.isFile() && !stat.isSymbolicLink()) {
+      throw new PythonExecutableError(
+        "python_executable_not_found",
+        `Python executable is not a file: ${resolved}`
+      );
+    }
+  }
+
+  if (isWin && !path.isAbsolute(resolved) && isBareLauncher(resolved)) {
+    throw new PythonExecutableError(
+      "legacy_python_launcher_rejected",
+      `Windows bare Python launcher "${resolved}" is not allowed. Use an absolute python.exe path.`
+    );
+  }
+
+  return probePythonExecutable(resolved, args);
+}
+
+function isBareLauncher(command: string): boolean {
+  const base = path.basename(command, path.extname(command)).toLowerCase();
+  return WINDOWS_BARE_LAUNCHERS.has(base);
+}
+
+function probePythonExecutable(executable: string, args: string[]): {
+  executable: string;
+  args: string[];
+  probe: PythonProbeResult;
+} {
+  const probeScript =
+    "import json, sys; print(json.dumps({\"executable\": sys.executable, \"version\": sys.version, \"sysPrefix\": sys.prefix, \"platform\": sys.platform}))";
+  const result = spawnSync(executable, [...args, "-c", probeScript], {
+    shell: false,
+    windowsHide: true,
+    encoding: "utf8",
+    timeout: 10000
+  });
+
+  if (result.error || result.status !== 0) {
+    const message = result.stderr?.trim() || result.error?.message || `Failed to probe Python executable: ${executable}`;
+    throw new PythonExecutableError(
+      "python_executable_probe_failed",
+      safeErrorMessage(message)
+    );
+  }
+
+  let probe: PythonProbeResult;
+  try {
+    const parsed = JSON.parse(result.stdout.trim());
+    probe = {
+      executable: String(parsed.executable || executable),
+      version: String(parsed.version || ""),
+      sysPrefix: String(parsed.sysPrefix || ""),
+      platform: String(parsed.platform || "")
+    };
+  } catch {
+    throw new PythonExecutableError(
+      "python_executable_probe_failed",
+      `Python executable probe returned invalid JSON: ${safeErrorMessage(result.stdout)}`
+    );
+  }
+
+  return { executable: probe.executable, args, probe };
 }
 
 export function buildSidecarArgv(
@@ -152,15 +290,19 @@ export async function runSidecarCommand(
       false
     );
   }
+
   let normalized: NormalizedConfig;
   try {
     normalized = normalizeConfig(config);
   } catch (error) {
+    if (error instanceof PythonExecutableError) {
+      return sidecarFailure(error.code, safeErrorMessage(error), false);
+    }
     return sidecarFailure("configuration_error", safeErrorMessage(error), false);
   }
 
   const argv = buildSidecarArgv(normalized, command, params);
-  return await spawnJson(normalized.pythonCommand, argv, normalized.commandTimeoutMs, signal);
+  return await spawnJson(normalized.pythonExecutable, normalized.pythonArgs, argv, normalized.commandTimeoutMs, signal);
 }
 
 export function missingRequiredConfig(config: PluginConfig): string[] {
@@ -192,13 +334,19 @@ export function configurationRequiredStatus(config: PluginConfig): SidecarResult
   };
 }
 
-async function spawnJson(command: string, argv: string[], timeoutMs: number, signal?: AbortSignal): Promise<SidecarResult> {
+async function spawnJson(
+  executable: string,
+  pythonArgs: string[],
+  argv: string[],
+  timeoutMs: number,
+  signal?: AbortSignal
+): Promise<SidecarResult> {
   return await new Promise((resolve) => {
     if (signal?.aborted) {
       resolve(sidecarFailure("sidecar_timeout", "Nollm sidecar command was aborted before start.", true));
       return;
     }
-    const child = spawn(command, argv, {
+    const child = spawn(executable, [...pythonArgs, ...argv], {
       shell: false,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"]
@@ -327,6 +475,9 @@ function conciseSidecarFailure(text: string): string {
 function safeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message.slice(0, 240);
+  }
+  if (typeof error === "string") {
+    return error.slice(0, 240);
   }
   return "Nollm sidecar adapter error.";
 }
