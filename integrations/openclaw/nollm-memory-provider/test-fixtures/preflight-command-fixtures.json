@@ -1,0 +1,26 @@
+{
+  "schema": "nollm.test.preflight_command_fixtures.v1",
+  "allowed_command_prefixes": [
+    "openclaw --version",
+    "openclaw --help",
+    "openclaw plugins --help",
+    "openclaw config --help",
+    "openclaw sessions --help",
+    "openclaw status",
+    "openclaw plugins list",
+    "openclaw config validate",
+    "openclaw gateway status",
+    "openclaw sessions list"
+  ],
+  "forbidden_command_patterns": [
+    "openclaw gateway restart",
+    "openclaw gateway start",
+    "openclaw gateway stop",
+    "openclaw plugins install",
+    "openclaw plugins link",
+    "openclaw plugins uninstall",
+    "openclaw config patch",
+    "python -m nollm",
+    "run_openclaw_nollm_memory"
+  ]
+}

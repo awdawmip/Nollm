@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "nollm.windows_openclaw_preflight.v1",
+  "title": "Windows OpenClaw/Nollm Live Preflight Report",
+  "type": "object",
+  "required": [
+    "schema",
+    "generated_at",
+    "platform",
+    "safety",
+    "openclaw",
+    "workspace",
+    "python",
+    "gateway_process",
+    "readiness",
+    "operator_private_paths",
+    "unknowns",
+    "commands"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "nollm.windows_openclaw_preflight.v1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "platform": {
+      "type": "object",
+      "required": ["os", "powershell_version", "node"],
+      "properties": {
+        "os": { "type": "string", "const": "Windows" },
+        "powershell_version": { "type": "string" },
+        "node": {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": { "type": "string" },
+            "value": {},
+            "notes": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "mode",
+        "config_modified",
+        "gateway_restarted",
+        "plugin_installed_or_linked",
+        "nollm_python_started",
+        "legacy_memory_content_emitted",
+        "transcript_content_emitted"
+      ],
+      "properties": {
+        "mode": { "type": "string", "const": "read_only" },
+        "config_modified": { "type": "boolean", "const": false },
+        "gateway_restarted": { "type": "boolean", "const": false },
+        "plugin_installed_or_linked": { "type": "boolean", "const": false },
+        "nollm_python_started": { "type": "boolean", "const": false },
+        "legacy_memory_content_emitted": { "type": "boolean", "const": false },
+        "transcript_content_emitted": { "type": "boolean", "const": false }
+      }
+    },
+    "openclaw": {
+      "type": "object",
+      "required": ["cli", "profile", "config", "state", "plugins", "memory", "sessions"],
+      "properties": {
+        "cli": { "type": "object" },
+        "profile": { "type": "object" },
+        "config": { "type": "object" },
+        "state": { "type": "object" },
+        "plugins": { "type": "object" },
+        "memory": { "type": "object" },
+        "sessions": { "type": "object" }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["path", "legacy_memory_metadata", "bootstrap_risk"],
+      "properties": {
+        "path": { "type": "object" },
+        "legacy_memory_metadata": { "type": "object" },
+        "bootstrap_risk": { "type": "object" }
+      }
+    },
+    "python": {
+      "type": "object",
+      "required": ["interactive_shell", "gateway_environment"],
+      "properties": {
+        "interactive_shell": {
+          "type": "object",
+          "required": ["candidates"],
+          "properties": {
+            "candidates": { "type": "array" }
+          }
+        },
+        "gateway_environment": { "type": "object" }
+      }
+    },
+    "gateway_process": { "type": "object" },
+    "readiness": {
+      "type": "object",
+      "required": ["p1_node_only_probe", "p2_managed_python_probe"],
+      "properties": {
+        "p1_node_only_probe": {
+          "type": "object",
+          "required": ["status", "blocking_reasons"],
+          "properties": {
+            "status": { "type": "string", "enum": ["ready", "blocked", "unknown"] },
+            "blocking_reasons": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "p2_managed_python_probe": {
+          "type": "object",
+          "required": ["status", "blocking_reasons"],
+          "properties": {
+            "status": { "type": "string", "enum": ["ready", "blocked", "unknown"] },
+            "blocking_reasons": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "operator_private_paths": { "type": "object" },
+    "unknowns": { "type": "array", "items": { "type": "string" } },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "status"],
+        "properties": {
+          "command": { "type": "string" },
+          "status": { "type": "string", "enum": ["observed", "unavailable", "blocked", "timeout"] }
+        }
+      }
+    }
+  }
+}

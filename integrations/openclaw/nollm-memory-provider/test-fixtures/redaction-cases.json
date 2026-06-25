@@ -1,0 +1,33 @@
+{
+  "schema": "nollm.test.redaction_cases.v1",
+  "cases": [
+    {
+      "name": "bearer_token",
+      "input": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+      "expected_contains": "<redacted>",
+      "expected_not_contains": "eyJhbGci"
+    },
+    {
+      "name": "openai_key",
+      "input": "api_key = sk-abcdefghijklmnopqrstuvwxyz123456",
+      "expected_contains": "<redacted>",
+      "expected_not_contains": "sk-abcdefghij"
+    },
+    {
+      "name": "github_token",
+      "input": "token: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expected_contains": "<redacted>",
+      "expected_not_contains": "ghp_xxxx"
+    },
+    {
+      "name": "nested_object_secret",
+      "input": { "user": "admin", "apiSecret": "should-be-redacted" },
+      "expected": { "user": "admin", "apiSecret": "<redacted>" }
+    },
+    {
+      "name": "plain_text_untouched",
+      "input": "hello world",
+      "expected": "hello world"
+    }
+  ]
+}

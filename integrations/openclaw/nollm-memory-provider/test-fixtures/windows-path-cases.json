@@ -1,0 +1,36 @@
+{
+  "schema": "nollm.test.windows_path_cases.v1",
+  "cases": [
+    {
+      "name": "simple_backslash",
+      "input": "C:\\Users\\Administrator\\.openclaw\\workspace",
+      "expected_normalized": "C:/Users/Administrator/.openclaw/workspace",
+      "expected_public": "%USERPROFILE%/.openclaw/workspace"
+    },
+    {
+      "name": "already_forward_slash",
+      "input": "C:/Users/Administrator/.openclaw/workspace",
+      "expected_normalized": "C:/Users/Administrator/.openclaw/workspace",
+      "expected_public": "%USERPROFILE%/.openclaw/workspace"
+    },
+    {
+      "name": "unc_path",
+      "input": "\\\\server\\share\\folder",
+      "expected_normalized": null,
+      "expected_public": null,
+      "expected_resolution_status": "unsupported_unc"
+    },
+    {
+      "name": "relative_path",
+      "input": "./workspace",
+      "expected_normalized_starts_with": "C:/",
+      "expected_public": "./workspace"
+    },
+    {
+      "name": "empty_path",
+      "input": "",
+      "expected_normalized": null,
+      "expected_resolution_status": "empty"
+    }
+  ]
+}
