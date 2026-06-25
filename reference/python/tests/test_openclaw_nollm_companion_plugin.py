@@ -65,6 +65,9 @@ def test_manifest_is_tool_plugin_not_active_memory_slot() -> None:
         "nollm_drift",
         "nollm_read",
         "nollm_recall_trace",
+        "nollm_memory_remember",
+        "nollm_memory_recall",
+        "nollm_memory_get",
     ]
     assert "toolMetadata" not in manifest
 
@@ -80,11 +83,14 @@ def test_typescript_declares_exact_static_tool_names_and_optional_write() -> Non
         "nollm_read",
         "nollm_recall_trace",
         "nollm_memory_status",
+        "nollm_memory_remember",
+        "nollm_memory_recall",
+        "nollm_memory_get",
     ]
 
     for tool in expected:
         assert source.count(f'name: "{tool}"') == 1
-    for tool in ["nollm_memory_recall", "nollm_memory_search", "nollm_memory_get"]:
+    for tool in ["nollm_memory_search", "nollm_memory_write_candidate", "nollm_memory_commit_candidate"]:
         assert f'name: "{tool}"' not in source
     assert 'name: "nollm_memory_write_candidate"' not in source
     assert 'name: "nollm_memory_commit_candidate"' not in source
@@ -129,6 +135,9 @@ def test_skill_teaches_required_workflow_and_gravity_trust_distinction() -> None
         "Do not use `memory_search` / `memory_get` as the Nollm internal model",
         "Gravity report = instrumentation, not permission.",
         "Drift class = orientation, not trust.",
+        "Use `nollm_memory_remember`",
+        "Use `nollm_memory_recall`",
+        "Use `nollm_memory_get`",
     ]:
         assert phrase in skill
 
@@ -147,7 +156,9 @@ def test_config_example_does_not_set_memory_slot_and_marks_active_memory_experim
     assert "nollm_memory_write_candidate" not in example
     assert "nollm_memory_commit_candidate" not in example
     assert "nollm_memory_search" not in example
-    assert "nollm_memory_get" not in example
+    assert "nollm_memory_remember" in example
+    assert "nollm_memory_recall" in example
+    assert "nollm_memory_get" in example
     assert "do not replace source verification" in example
 
 
@@ -182,8 +193,10 @@ def test_sidecar_bridge_uses_safe_process_boundaries() -> None:
     sidecar = (PACKAGE / "src/sidecar.ts").read_text(encoding="utf-8")
 
     assert 'from "node:child_process"' in sidecar
-    assert "spawn(command, argv" in sidecar
+    assert "spawn(" in sidecar
     assert "shell: false" in sidecar
+    assert "executable" in sidecar
+    assert "pythonArgs" in sidecar
     assert "setTimeout" in sidecar
     assert "fs.realpathSync.native" in sidecar
     assert "signal?.addEventListener" in sidecar
