@@ -104,4 +104,49 @@ describe("E4 capture idempotency and redaction", () => {
     const normalized = normalizeConfig(cfg);
     assert.equal(normalized.captureMode, "receipt_only");
   });
+
+  it("capture sidecar receives v2 schema and no event_hash from TS", async () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    const payloadPath = path.join(tmp, "capture-payload.json");
+    writeStubSidecar(cfg.nollmRepoRoot, [
+      "import json, sys, os",
+      "config = json.loads(sys.argv[sys.argv.index('--config-json') + 1])",
+      "stdin = json.loads(sys.stdin.read())",
+      "payload_path = os.path.join(os.path.dirname(config.get('nollmDataRoot')), 'capture-payload.json')",
+      "with open(payload_path, 'w') as f:",
+      "    json.dump(stdin, f, sort_keys=True)",
+      "print(json.dumps({",
+      "  'ok': True,",
+      "  'schema': 'nollm.provider.capture_result.v1',",
+      "  'receipt': {",
+      "    'receipt_id': 'r-2',",
+      "    'event_hash': 'python-computed-hash',",
+      "    'stored_at': config.get('nollmDataRoot') + '/functional-alpha/capture-receipts/r-2.json',",
+      "    'state': 'captured_pending_native_ingress',",
+      "    'legacy_memory_mutated': False",
+      "  }",
+      "}, sort_keys=True))",
+    ].join("\n"));
+    const normalized = normalizeConfig(cfg);
+    const api = makeMockApi(normalized);
+    createNollmProvider(api);
+
+    const event = {
+      success: true,
+      messages: [{ role: "user", content: "blue" }],
+      runId: "run-2",
+    };
+    await invokeEnd(api, event, { agentId: "main", sessionId: "s2", runId: "run-2" });
+
+    const payload = JSON.parse(fs.readFileSync(payloadPath, "utf8"));
+    assert.equal(payload.schema, "nollm.provider.capture.v2");
+    assert.equal(payload.event_hash, undefined);
+    assert.equal(payload.request_id, undefined);
+    assert.equal(payload.agent_id, "main");
+    assert.equal(payload.session_id, "s2");
+    assert.equal(payload.run_id, "run-2");
+    assert.equal(payload.success, true);
+    assert.ok(Array.isArray(payload.messages));
+  });
 });

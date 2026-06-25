@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 interface RegistryEntry {
   agentId: string;
-  sessionId: string;
+  managerScope: string;
   managerGeneration: number;
   fieldId: string;
   fieldRevisionId: string;
@@ -26,7 +26,7 @@ export class NollmCompatibilityReferenceRegistry {
 
   issueRef(params: {
     agentId: string;
-    sessionId: string;
+    managerScope: string;
     managerGeneration: number;
     fieldId: string;
     fieldRevisionId: string;
@@ -38,8 +38,8 @@ export class NollmCompatibilityReferenceRegistry {
     const ref = REF_PREFIX + nonce;
     this.entries.set(nonce, {
       agentId: params.agentId,
-      sessionId: params.sessionId,
-      managerGeneration: params.managerGeneration,
+      managerScope: params.managerScope,
+      managerGeneration: params.managerGeneration ?? 0,
       fieldId: params.fieldId,
       fieldRevisionId: params.fieldRevisionId,
       shardId: params.shardId,
@@ -52,7 +52,7 @@ export class NollmCompatibilityReferenceRegistry {
 
   resolveRef(ref: string, opts: {
     agentId: string;
-    sessionId: string;
+    managerScope: string;
     managerGeneration: number;
     fieldRevisionId: string;
   }): { excerpt: string; shardId: string } | null {
@@ -61,8 +61,8 @@ export class NollmCompatibilityReferenceRegistry {
     const entry = this.entries.get(nonce);
     if (!entry) return null;
     if (entry.agentId !== opts.agentId) return null;
-    if (entry.sessionId !== opts.sessionId) return null;
-    if (entry.managerGeneration !== opts.managerGeneration) return null;
+    if (entry.managerScope !== opts.managerScope) return null;
+    if (entry.managerGeneration !== (opts.managerGeneration ?? 0)) return null;
     if (entry.fieldRevisionId !== opts.fieldRevisionId) return null;
     if (Date.now() > entry.expiresAt) {
       this.entries.delete(nonce);

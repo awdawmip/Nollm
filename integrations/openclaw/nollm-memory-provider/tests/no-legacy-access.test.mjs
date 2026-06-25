@@ -127,7 +127,6 @@ describe("dynamic no-legacy access", () => {
 
     const prepareResult = await runSidecarCommand(normalized, "prepare", {
       schema: "nollm.provider.prepare.v1",
-      request_id: "r1",
       agent_id: "main",
       session_id: "s1",
       run_id: "run1",
@@ -144,8 +143,7 @@ describe("dynamic no-legacy access", () => {
     );
 
     const captureResult = await runSidecarCommand(normalized, "capture", {
-      schema: "nollm.provider.capture.v1",
-      request_id: "r1",
+      schema: "nollm.provider.capture.v2",
       agent_id: "main",
       session_id: "s1",
       run_id: "run1",

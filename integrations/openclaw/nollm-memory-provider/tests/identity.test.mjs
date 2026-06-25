@@ -44,6 +44,24 @@ describe("E2 query and identity", () => {
     assert.notEqual(r1.sessionId, r2.sessionId);
   });
 
+  it("missing session/run emits empty values and warnings", () => {
+    const result = resolveNollmTurnIdentity({ agentId: "a" });
+    assert.equal(result.agentId, "a");
+    assert.equal(result.sessionId, "");
+    assert.equal(result.runId, "");
+    assert.ok(result.warnings.some((w) => w.startsWith("session_id_missing")));
+    assert.ok(result.warnings.some((w) => w.startsWith("run_id_missing")));
+  });
+
+  it("missing identity for both sessions is still empty, not a Date.now fallback", () => {
+    const r1 = resolveNollmTurnIdentity({});
+    const r2 = resolveNollmTurnIdentity({});
+    assert.equal(r1.sessionId, "");
+    assert.equal(r2.sessionId, "");
+    assert.equal(r1.runId, "");
+    assert.equal(r2.runId, "");
+  });
+
   it("configured unsupported agent -> explicit rejection", () => {
     const result = resolveNollmTurnIdentity(
       { agentId: "other", sessionId: "s", runId: "r" },

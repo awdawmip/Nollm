@@ -76,12 +76,12 @@ export async function invokePrepare(api, event, ctx = {}) {
   return handlers[0](event, ctx);
 }
 
-export async function invokeEnd(api, event) {
+export async function invokeEnd(api, event, ctx = {}) {
   const handlers = api._events["agent_end"];
   if (!handlers || handlers.length === 0) {
     throw new Error("no agent_end handler registered");
   }
-  return handlers[0](event);
+  return handlers[0](event, ctx);
 }
 
 export function writeStubSidecar(repoRoot, source) {

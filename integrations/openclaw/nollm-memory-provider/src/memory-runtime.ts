@@ -24,7 +24,7 @@ export function createNollmCompatibilityRuntime(
     }) {
       managerGeneration++;
       const currentGeneration = managerGeneration;
-      const sessionId = "compat";
+      const managerScope = "manager-scoped-compat";
 
       const statusResult = await runSidecarCommand(config, "status", {});
       if (!statusResult.ok) {
@@ -35,9 +35,8 @@ export function createNollmCompatibilityRuntime(
         manager: {
           async search(query: string, opts?: { maxResults?: number }) {
             const prepareResult = await runSidecarCommand(config, "prepare", {
-              request_id: `compat-search-${Date.now()}`,
               agent_id: params.agentId,
-              session_id: sessionId,
+              session_id: managerScope,
               run_id: `compat-${Date.now()}`,
               messages: [{ role: "user", content: query }],
               budget: {
@@ -77,7 +76,7 @@ export function createNollmCompatibilityRuntime(
             return ctx.facts.map((fact) => {
               const ref = registry.issueRef({
                 agentId: params.agentId,
-                sessionId,
+                managerScope,
                 managerGeneration: currentGeneration,
                 fieldId: ctx.field_id,
                 fieldRevisionId: ctx.field_revision_id,
@@ -114,7 +113,7 @@ export function createNollmCompatibilityRuntime(
 
             const resolved = registry.resolveRef(readParams.relPath, {
               agentId: params.agentId,
-              sessionId,
+              managerScope,
               managerGeneration: currentGeneration,
               fieldRevisionId,
             });

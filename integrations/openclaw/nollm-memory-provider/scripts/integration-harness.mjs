@@ -7,19 +7,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const providerRoot = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(providerRoot, "..", "..", "..");
-const tempCheckout = process.env.NOLLM_OPENCLAW_CHECKOUT || "";
 const expectedCommit = "dc9c11be917ebdc711b956250aa80a8e5b47bea6";
+const upstreamUrl = "https://github.com/openclaw/openclaw.git";
 const nodeBin = process.execPath;
+
 // D6.2: Node runtime gate - verify Node satisfies OpenClaw engines requirement
 const REQUIRED_NODE_MAJOR = 22;
 const REQUIRED_NODE_MINOR = 19;
 const currentNodeMajor = parseInt(process.versions.node.split(".")[0], 10);
 const currentNodeMinor = parseInt(process.versions.node.split(".")[1], 10);
-const dataRoot = path.join(os.tmpdir(), "nollm-f0-02-harness-data").replace(/\\\\/g, "/");
-fs.mkdirSync(dataRoot, { recursive: true });
 const nodeEngineOk = currentNodeMajor > REQUIRED_NODE_MAJOR ||
   (currentNodeMajor === REQUIRED_NODE_MAJOR && currentNodeMinor >= REQUIRED_NODE_MINOR);
-
 
 function npmCommandArgs(args) {
   if (process.platform !== "win32") {
@@ -37,8 +35,8 @@ function npmCommandArgs(args) {
   return { cmd: "npm.cmd", args };
 }
 
-function run(cmd, args, cwd, envExtras = {}) {
-  return new Promise((resolve, reject) => {
+function run(cmd, args, cwd, envExtras = {}, maxOutput = 4000) {
+  return new Promise((resolve) => {
     const opts = { cwd, shell: false };
     const extraKeys = Object.keys(envExtras);
     if (extraKeys.length > 0) {
@@ -53,31 +51,135 @@ function run(cmd, args, cwd, envExtras = {}) {
         }
       }
     }
+    const start = new Date().toISOString();
     const child = spawn(cmd, args, opts);
     let stdout = "";
     let stderr = "";
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (d) => {
-      stdout += d;
+    child.stdout.on("data", (d) => { stdout += d; });
+    child.stderr.on("data", (d) => { stderr += d; });
+    child.on("error", (error) => {
+      resolve({
+        cmd, args, cwd,
+        start,
+        end: new Date().toISOString(),
+        code: null,
+        error: error.message,
+        stdout: stdout.slice(0, maxOutput),
+        stderr: stderr.slice(0, maxOutput),
+      });
     });
-    child.stderr.on("data", (d) => {
-      stderr += d;
-    });
-    child.on("error", reject);
     child.on("close", (code) => {
-      resolve({ code, stdout, stderr });
+      resolve({
+        cmd, args, cwd,
+        start,
+        end: new Date().toISOString(),
+        code,
+        stdout: stdout.slice(0, maxOutput),
+        stderr: stderr.slice(0, maxOutput),
+      });
     });
   });
 }
 
+function isGitRepo(dir) {
+  return fs.existsSync(path.join(dir, ".git"));
+}
+
+async function provisionCheckout(envCheckout) {
+  const steps = [];
+  let checkout = envCheckout;
+
+  // D2: verify or provision exact upstream checkout
+  if (!checkout || !fs.existsSync(checkout) || !isGitRepo(checkout)) {
+    checkout = path.join(os.tmpdir(), `openclaw-f0-04-${Date.now()}`);
+    fs.mkdirSync(checkout, { recursive: true });
+    steps.push({
+      name: "provision_temp_checkout",
+      ok: true,
+      checkout,
+      note: "NOLLM_OPENCLAW_CHECKOUT not set or invalid; provisioning temp checkout",
+    });
+
+    const clone = await run("git", ["clone", "--no-checkout", upstreamUrl, checkout], repoRoot);
+    steps.push({ name: "git_clone", ...clone, ok: clone.code === 0 });
+    if (clone.code !== 0) {
+      return { checkout: null, steps, blocked: "git_clone_failed" };
+    }
+
+    const fetch = await run("git", ["fetch", "--depth", "1", "origin", expectedCommit], checkout);
+    steps.push({ name: "git_fetch_commit", ...fetch, ok: fetch.code === 0 });
+    if (fetch.code !== 0) {
+      return { checkout: null, steps, blocked: "git_fetch_commit_failed" };
+    }
+
+    const checkoutCmd = await run("git", ["checkout", "-f", expectedCommit], checkout);
+    steps.push({ name: "git_checkout_commit", ...checkoutCmd, ok: checkoutCmd.code === 0 });
+    if (checkoutCmd.code !== 0) {
+      return { checkout: null, steps, blocked: "git_checkout_commit_failed" };
+    }
+  }
+
+  const head = await run("git", ["rev-parse", "HEAD"], checkout);
+  const actualCommit = head.stdout.trim();
+  steps.push({
+    name: "verify_upstream_commit",
+    ...head,
+    ok: actualCommit === expectedCommit,
+    actualCommit,
+    expectedCommit,
+  });
+  if (actualCommit !== expectedCommit) {
+    return { checkout: null, steps, blocked: "commit_mismatch" };
+  }
+
+  // D2: install dependencies if missing
+  const nodeModulesPath = path.join(checkout, "node_modules");
+  if (!fs.existsSync(nodeModulesPath)) {
+    const installCmd = npmCommandArgs(["ci"]);
+    const install = await run(installCmd.cmd, installCmd.args, checkout);
+    steps.push({ name: "npm_ci", ...install, ok: install.code === 0 });
+    if (install.code !== 0) {
+      return { checkout: null, steps, blocked: "npm_ci_failed" };
+    }
+  } else {
+    steps.push({ name: "npm_ci", ok: true, skipped: true, reason: "node_modules present" });
+  }
+
+  // D2: build if dist missing
+  const distPath = path.join(checkout, "dist");
+  if (!fs.existsSync(distPath)) {
+    const buildCmd = npmCommandArgs(["run", "build"]);
+    const build = await run(buildCmd.cmd, buildCmd.args, checkout);
+    steps.push({ name: "openclaw_build", ...build, ok: build.code === 0 });
+    if (build.code !== 0) {
+      return { checkout: null, steps, blocked: "openclaw_build_failed" };
+    }
+  } else {
+    steps.push({ name: "openclaw_build", ok: true, skipped: true, reason: "dist present" });
+  }
+
+  return { checkout, steps, blocked: null };
+}
+
 async function makeIsolatedOpenClawProfile() {
-  const profileDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "oc-f0-01-profile-"));
+  const profileDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "oc-f0-04-profile-"));
   const openclawDir = path.join(profileDir, ".openclaw");
   await fs.promises.mkdir(openclawDir, { recursive: true });
-  // Minimal valid OpenClaw config. The memory slot is selected by the operator
-  // via plugins.slots.memory = "nollm" in their real OpenClaw config.
-  await fs.promises.writeFile(path.join(openclawDir, "openclaw.json"), "{}", "utf8");
+  // D1: real isolated config selecting nollm as the memory slot
+  const profile = {
+    plugins: {
+      enabled: true,
+      slots: { memory: "nollm" },
+      entries: {
+        nollm: { enabled: true, config: {} },
+        "memory-core": { enabled: false },
+        "active-memory": { enabled: false },
+      },
+    },
+  };
+  await fs.promises.writeFile(path.join(openclawDir, "openclaw.json"), JSON.stringify(profile, null, 2), "utf8");
   return profileDir;
 }
 
@@ -89,39 +191,33 @@ function profileEnv(profileDir) {
 
 async function main() {
   const results = {
-    schema: "nollm.f0_02.integration_harness.v1",
+    schema: "nollm.f0_04.integration_harness.v1",
     timestamp: new Date().toISOString(),
     repoRoot,
     providerRoot,
-    tempCheckout,
     expectedCommit,
+    nodeEngineOk,
+    nodeVersion: process.versions.node,
     steps: [],
     knownLimitations: [],
+    blocked: null,
   };
 
-  const headResult = await run("git", ["rev-parse", "HEAD"], tempCheckout);
-  const actualCommit = headResult.stdout.trim();
-  results.steps.push({
-    name: "verify_upstream_commit",
-    ok: actualCommit === expectedCommit,
-    actualCommit,
-    expectedCommit,
-  });
-  if (actualCommit !== expectedCommit) {
+  if (!nodeEngineOk) {
+    results.blocked = `node_engine_unsatisfied: requires >=${REQUIRED_NODE_MAJOR}.${REQUIRED_NODE_MINOR}, got ${process.versions.node}`;
     console.error(JSON.stringify(results, null, 2));
     process.exit(1);
   }
 
-  const nodeModulesPath = path.join(tempCheckout, "node_modules");
-  results.steps.push({
-    name: "node_modules_present",
-    ok: fs.existsSync(nodeModulesPath),
-    nodeModulesPath,
-  });
-  if (!fs.existsSync(nodeModulesPath)) {
+  const envCheckout = process.env.NOLLM_OPENCLAW_CHECKOUT || "";
+  const provision = await provisionCheckout(envCheckout);
+  results.steps.push(...provision.steps);
+  if (provision.blocked) {
+    results.blocked = provision.blocked;
     console.error(JSON.stringify(results, null, 2));
     process.exit(1);
   }
+  const tempCheckout = provision.checkout;
 
   const profileDir = await makeIsolatedOpenClawProfile();
   results.steps.push({
@@ -130,85 +226,23 @@ async function main() {
     profileDir,
   });
 
-  const openclawEntry = path.join(tempCheckout, "openclaw.mjs");
-  if (!fs.existsSync(openclawEntry)) {
-    const openclawBuildCmd = npmCommandArgs(["run", "build"]);
-    const openclawBuild = await run(openclawBuildCmd.cmd, openclawBuildCmd.args, tempCheckout, profileEnv(profileDir));
-    results.steps.push({
-      name: "openclaw_build",
-      ok: openclawBuild.code === 0,
-      code: openclawBuild.code,
-      stderr: openclawBuild.stderr.slice(0, 1000),
-    });
-    if (openclawBuild.code !== 0) {
-      await fs.promises.rm(profileDir, { recursive: true, force: true }).catch(() => {});
-      console.error(JSON.stringify(results, null, 2));
-      process.exit(1);
-    }
-  } else {
-    results.steps.push({ name: "openclaw_build", ok: true, skipped: true, reason: "openclaw.mjs already present" });
-  }
-
+  // Build provider
   const providerBuildCmd = npmCommandArgs(["run", "build"]);
   const buildResult = await run(providerBuildCmd.cmd, providerBuildCmd.args, providerRoot, profileEnv(profileDir));
   results.steps.push({
     name: "provider_build",
     ok: buildResult.code === 0,
-    code: buildResult.code,
-    stderr: buildResult.stderr.slice(0, 500),
+    ...buildResult,
   });
-
-  const entry = path.join(providerRoot, "dist", "index.js");
-
-  const pluginBuildResult = await run(
-    nodeBin,
-    [openclawEntry, "plugins", "build", "--entry", entry],
-    providerRoot,
-    profileEnv(profileDir)
-  );
-  results.steps.push({
-    name: "openclaw_plugins_build",
-    ok: pluginBuildResult.code === 0,
-    code: pluginBuildResult.code,
-    stdout: pluginBuildResult.stdout.slice(0, 2000),
-    stderr: pluginBuildResult.stderr.slice(0, 2000),
-  });
-
-  const pluginValidateResult = await run(
-    nodeBin,
-    [openclawEntry, "plugins", "validate", "--entry", entry],
-    providerRoot,
-    profileEnv(profileDir)
-  );
-  results.steps.push({
-    name: "openclaw_plugins_validate",
-    ok: pluginValidateResult.code === 0,
-    code: pluginValidateResult.code,
-    stdout: pluginValidateResult.stdout.slice(0, 2000),
-    stderr: pluginValidateResult.stderr.slice(0, 2000),
-  });
-
-  const cliFailureExpected =
-    pluginBuildResult.code !== 0 ||
-    pluginValidateResult.code !== 0;
-  if (cliFailureExpected) {
-    const reason =
-      "OpenClaw CLI plugins build/validate at this commit only accepts defineToolPlugin entries. " +
-      "The Nollm provider correctly uses definePluginEntry({ kind: \"memory\" }) per the memory-slot contract, " +
-      "so the CLI rejects it. This is a known upstream limitation, not a provider bug.";
-    results.knownLimitations.push({
-      code: "OPENCLAW_CLI_MEMORY_PLUGIN_LIMITATION",
-      message: reason,
-      upstreamIssue: "FA-ISSUE-09",
-    });
+  if (buildResult.code !== 0) {
+    console.error(JSON.stringify(results, null, 2));
+    process.exit(1);
   }
 
-  const harnessDataDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nollm-f0-02-data-'));
-  const repoRootFwd = repoRoot.replace(/\\/g, "/");
-  const dataRootFwd = dataRoot.replace(/\\/g, "/");
-  const fixturePathFwd = path.resolve(providerRoot, "fixtures", "alpha-field.json").replace(/\\/g, "/");
-  // D6.3: Real OpenClaw host integration via host-integration-check.mjs
-  // This uses the actual OpenClaw plugin-sdk/memory-core APIs, not a mockApi.
+  // D1: Real OpenClaw host integration via host-integration-check.mjs
+  const dataRoot = path.join(os.tmpdir(), `nollm-f0-04-data-${Date.now()}`).replace(/\\/g, "/");
+  fs.mkdirSync(dataRoot, { recursive: true });
+  const fixturePath = path.resolve(providerRoot, "fixtures", "alpha-field.json").replace(/\\/g, "/");
   const hostCheckScript = path.resolve(providerRoot, "scripts", "host-integration-check.mjs");
   const hostLoadResult = await run(
     nodeBin,
@@ -220,40 +254,43 @@ async function main() {
       NOLLM_OPENCLAW_CHECKOUT: tempCheckout,
       NOLLM_DATA_ROOT: dataRoot,
       PYTHON_EXE: process.env.PYTHON_EXE || "python3",
-    }
+      NOLLM_REPO_ROOT: repoRoot.replace(/\\/g, "/"),
+      NOLLM_FIXTURE_PATH: fixturePath,
+    },
+    1024 * 1024
   );
+
   let hostLoadOk = false;
   let hostChecks = {};
+  let hostTargetLimitation = null;
   try {
     const parsed = JSON.parse(hostLoadResult.stdout);
     hostLoadOk = parsed.ok === true;
     hostChecks = parsed.checks || {};
+    hostTargetLimitation = parsed.target_limitation || null;
   } catch {
     hostLoadOk = false;
   }
+
   results.steps.push({
     name: "host_integration_load",
     ok: hostLoadOk,
-    code: hostLoadResult.code,
+    target_limitation: hostTargetLimitation,
+    ...hostLoadResult,
     checks: hostChecks,
-    stdout: hostLoadResult.stdout.slice(0, 2000),
-    stderr: hostLoadResult.stderr.slice(0, 2000),
   });
 
-  const allOk = results.steps.every((s) => s.ok);
+  if (hostTargetLimitation) {
+    results.knownLimitations.push(hostTargetLimitation);
+  }
+
   const outputDir = path.join(repoRoot, "out");
   fs.mkdirSync(outputDir, { recursive: true });
-  const outputPath = path.join(outputDir, "f0-02-integration-harness.json");
+  const outputPath = path.join(outputDir, "f0-04-integration-harness.json");
   fs.writeFileSync(outputPath, JSON.stringify(results, null, 2), "utf8");
 
-  await fs.promises.rm(profileDir, { recursive: true, force: true }).catch(() => {});
   console.log(JSON.stringify(results, null, 2));
-  // CLI build/validate failures are expected due to upstream tool-only CLI.
-  // The harness passes if upstream commit, builds, and direct SDK load are OK.
-  const requiredOk = results.steps
-    .filter((s) => !["openclaw_plugins_build", "openclaw_plugins_validate"].includes(s.name))
-    .every((s) => s.ok);
-  process.exit(requiredOk ? 0 : 1);
+  process.exit(hostLoadOk ? 0 : 1);
 }
 
 main().catch((err) => {

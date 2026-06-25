@@ -94,7 +94,6 @@ def test_relevant_turn_returns_fact(config: ProviderConfig, fixture_path: Path) 
         field,
         {
             "schema": "nollm.provider.prepare.v1",
-            "request_id": "r1",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -118,7 +117,6 @@ def test_irrelevant_turn_returns_none_and_explicit_absence(
         field,
         {
             "schema": "nollm.provider.prepare.v1",
-            "request_id": "r1",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -143,7 +141,6 @@ def test_budget_honored(config: ProviderConfig, fixture_path: Path) -> None:
         field,
         {
             "schema": "nollm.provider.prepare.v1",
-            "request_id": "r1",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -178,8 +175,7 @@ def test_capture_receipt_under_data_root(
     result = capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
-            "request_id": "r1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -198,7 +194,7 @@ def test_capture_receipt_under_data_root(
 def test_repeated_capture_idempotent(config: ProviderConfig, fixture_path: Path) -> None:
     field = AlphaField.load(str(fixture_path))
     payload = {
-        "schema": "nollm.provider.capture.v1",
+        "schema": "nollm.provider.capture.v2",
         "request_id": "r1",
         "agent_id": "main",
         "session_id": "s1",
@@ -254,7 +250,6 @@ def test_no_legacy_file_read_write(
         field,
         {
             "schema": "nollm.provider.prepare.v1",
-            "request_id": "r1",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -266,8 +261,7 @@ def test_no_legacy_file_read_write(
     capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
-            "request_id": "r1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -336,7 +330,7 @@ def test_capture_idempotent_same_event(config: ProviderConfig, fixture_path: Pat
     """Same agent/session/run/messages twice produces same receipt_id."""
     field = AlphaField.load(str(fixture_path))
     payload = {
-        "schema": "nollm.provider.capture.v1",
+        "schema": "nollm.provider.capture.v2",
         "agent_id": "main",
         "session_id": "s1",
         "run_id": "run1",
@@ -358,7 +352,7 @@ def test_capture_secret_in_string_content_not_persisted(
     result = capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -384,7 +378,7 @@ def test_capture_nested_secret_not_persisted(
     result = capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -413,7 +407,7 @@ def test_capture_failure_stores_no_body(
     result = capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -438,7 +432,7 @@ def test_capture_invalid_success_type_rejected(
         capture(
             field,
             {
-                "schema": "nollm.provider.capture.v1",
+                "schema": "nollm.provider.capture.v2",
                 "agent_id": "main",
                 "session_id": "s1",
                 "run_id": "run1",
@@ -457,7 +451,7 @@ def test_capture_receipt_contains_no_legacy_path(
     result = capture(
         field,
         {
-            "schema": "nollm.provider.capture.v1",
+            "schema": "nollm.provider.capture.v2",
             "agent_id": "main",
             "session_id": "s1",
             "run_id": "run1",
@@ -472,6 +466,7 @@ def test_capture_receipt_contains_no_legacy_path(
     assert "MEMORY.md" not in receipt_text
     assert "DREAMS.md" not in receipt_text
     assert "memory/" not in receipt_text
+    assert "request_id" not in receipt_text
 
 
 def test_segment_aware_legacy_path_rejection(tmp_path: Path) -> None:
@@ -529,3 +524,180 @@ def test_nollm_memory_alpha_accepted(tmp_path: Path) -> None:
         }
     )
     assert config.nollm_data_root == tmp_path / "nollm-memory-alpha"
+
+
+# ---- F0-04 Additional Tests ----
+
+
+def test_capture_rejects_non_list_messages(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D4: messages must be a list."""
+    field = AlphaField.load(str(fixture_path))
+    with pytest.raises(Exception):
+        capture(
+            field,
+            {
+                "schema": "nollm.provider.capture.v2",
+                "agent_id": "main",
+                "session_id": "s1",
+                "run_id": "run1",
+                "success": True,
+                "messages": "not-a-list",
+            },
+            config,
+        )
+
+
+def test_capture_rejects_missing_agent(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D4: agent_id must be a non-empty string."""
+    field = AlphaField.load(str(fixture_path))
+    with pytest.raises(Exception):
+        capture(
+            field,
+            {
+                "schema": "nollm.provider.capture.v2",
+                "session_id": "s1",
+                "run_id": "run1",
+                "success": True,
+                "messages": [],
+            },
+            config,
+        )
+
+
+def test_capture_rejects_missing_success(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D4: success must be a boolean (no silent default)."""
+    field = AlphaField.load(str(fixture_path))
+    with pytest.raises(Exception):
+        capture(
+            field,
+            {
+                "schema": "nollm.provider.capture.v2",
+                "agent_id": "main",
+                "session_id": "s1",
+                "run_id": "run1",
+                "messages": [],
+            },
+            config,
+        )
+
+
+def test_capture_success_differs_receipt_differs(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D4: success change produces distinct receipt_id."""
+    field = AlphaField.load(str(fixture_path))
+    payload_true = {
+        "schema": "nollm.provider.capture.v2",
+        "agent_id": "main",
+        "session_id": "s1",
+        "run_id": "run1",
+        "success": True,
+        "messages": [{"role": "user", "content": "blue"}],
+    }
+    payload_false = {**payload_true, "success": False}
+    result_true = capture(field, payload_true, config)
+    result_false = capture(field, payload_false, config)
+    assert result_true["receipt"]["receipt_id"] != result_false["receipt"]["receipt_id"]
+
+
+def test_capture_canonical_hash_includes_full_identity(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D4: canonical event hash is computed by Python and includes identity."""
+    field = AlphaField.load(str(fixture_path))
+    result = capture(
+        field,
+        {
+            "schema": "nollm.provider.capture.v2",
+            "agent_id": "main",
+            "session_id": "s1",
+            "run_id": "run1",
+            "success": True,
+            "messages": [{"role": "user", "content": "blue"}],
+        },
+        config,
+    )
+    assert result["ok"] is True
+    receipt = json.loads(Path(result["receipt"]["stored_at"]).read_text(encoding="utf-8"))
+    assert receipt["schema"] == "nollm.capture_receipt.v2"
+    assert "canonical_event_hash" in receipt
+    assert "request_id" not in receipt
+
+
+def test_capture_corrupt_existing_receipt_quarantined(
+    config: ProviderConfig, fixture_path: Path, tmp_path: Path
+) -> None:
+    """D5: corrupt existing receipt is quarantined, not overwritten."""
+    field = AlphaField.load(str(fixture_path))
+    payload = {
+        "schema": "nollm.provider.capture.v2",
+        "agent_id": "main",
+        "session_id": "s1",
+        "run_id": "run1",
+        "success": True,
+        "messages": [{"role": "user", "content": "blue"}],
+    }
+    result1 = capture(field, payload, config)
+    receipt_path = Path(result1["receipt"]["stored_at"])
+    # Corrupt the receipt
+    receipt_path.write_text("not valid json", encoding="utf-8")
+    with pytest.raises(Exception):
+        capture(field, payload, config)
+    quarantine_dir = receipt_path.parent / "quarantine"
+    assert any(quarantine_dir.glob("*.json"))
+
+
+def test_symlinked_fixture_escaping_repo_root_rejected(tmp_path: Path) -> None:
+    """D7: Python config follows symlinks and rejects escape."""
+    from nollm.openclaw_memory_provider_alpha import ProviderConfig, NollmProviderError
+
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir(parents=True, exist_ok=True)
+    fixture_file = repo_dir / "alpha-field.json"
+    fixture_file.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    outside_fixture = outside_dir / "alpha-field.json"
+    outside_fixture.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    link_dir = repo_dir / "external-link"
+    import os
+    os.symlink(str(outside_dir), str(link_dir), target_is_directory=True)
+    with pytest.raises(NollmProviderError, match="alphaFixturePath must be under nollmRepoRoot"):
+        ProviderConfig.from_payload(
+            {
+                "pythonCommand": "python",
+                "nollmRepoRoot": str(repo_dir),
+                "nollmDataRoot": str(tmp_path / "data"),
+                "alphaFixturePath": str(link_dir / "alpha-field.json"),
+            }
+        )
+
+
+def test_symlinked_fixture_inside_repo_root_accepted(tmp_path: Path) -> None:
+    """D7: Python config accepts symlinks that stay inside repo root."""
+    from nollm.openclaw_memory_provider_alpha import ProviderConfig
+
+    repo_dir = tmp_path / "repo"
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    fixtures_dir = repo_dir / "fixtures2"
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+    fixture_file = fixtures_dir / "alpha-field.json"
+    fixture_file.write_text(json.dumps(_make_fixture()), encoding="utf-8")
+    link_dir = repo_dir / "external-link-in"
+    import os
+    os.symlink(str(fixtures_dir), str(link_dir), target_is_directory=True)
+    config = ProviderConfig.from_payload(
+        {
+            "pythonCommand": "python",
+            "nollmRepoRoot": str(repo_dir),
+            "nollmDataRoot": str(tmp_path / "data"),
+            "alphaFixturePath": str(link_dir / "alpha-field.json"),
+        }
+    )
+    assert config.alpha_fixture_path.resolve() == (link_dir / "alpha-field.json").resolve()

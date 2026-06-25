@@ -7,6 +7,8 @@ describe("E3 compatibility references", () => {
     const reg = new NollmCompatibilityReferenceRegistry();
     const ref = reg.issueRef({
       agentId: "main",
+      managerScope: "manager-scoped-compat",
+      managerGeneration: 1,
       fieldId: "f1",
       fieldRevisionId: "r1",
       shardId: "s1",
@@ -20,13 +22,15 @@ describe("E3 compatibility references", () => {
     const reg = new NollmCompatibilityReferenceRegistry();
     const ref = reg.issueRef({
       agentId: "main",
+      managerScope: "manager-scoped-compat",
+      managerGeneration: 1,
       fieldId: "f1",
       fieldRevisionId: "r1",
       shardId: "s1",
       boundedExcerpt: "exact text here",
       queryHash: "h1",
     });
-    const result = reg.resolveRef(ref, { agentId: "main", fieldRevisionId: "r1" });
+    const result = reg.resolveRef(ref, { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" });
     assert.ok(result);
     assert.equal(result.excerpt, "exact text here");
     assert.equal(result.shardId, "s1");
@@ -43,13 +47,15 @@ describe("E3 compatibility references", () => {
     const regB = new NollmCompatibilityReferenceRegistry();
     const ref = regA.issueRef({
       agentId: "main",
+      managerScope: "manager-scoped-compat",
+      managerGeneration: 1,
       fieldId: "f1",
       fieldRevisionId: "r1",
       shardId: "s1",
       boundedExcerpt: "text",
       queryHash: "h1",
     });
-    const result = regB.resolveRef(ref, { agentId: "main", fieldRevisionId: "r1" });
+    const result = regB.resolveRef(ref, { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" });
     assert.equal(result, null);
   });
 
@@ -57,6 +63,8 @@ describe("E3 compatibility references", () => {
     const reg = new NollmCompatibilityReferenceRegistry();
     const ref = reg.issueRef({
       agentId: "main",
+      managerScope: "manager-scoped-compat",
+      managerGeneration: 1,
       fieldId: "f1",
       fieldRevisionId: "r1",
       shardId: "s1",
@@ -65,7 +73,7 @@ describe("E3 compatibility references", () => {
     });
     // Force expiry by manipulating internal state is not possible;
     // Instead test that a different agentId rejects
-    const result = reg.resolveRef(ref, { agentId: "other", fieldRevisionId: "r1" });
+    const result = reg.resolveRef(ref, { agentId: "other", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" });
     assert.equal(result, null);
   });
 
@@ -73,21 +81,23 @@ describe("E3 compatibility references", () => {
     const reg = new NollmCompatibilityReferenceRegistry();
     const ref = reg.issueRef({
       agentId: "main",
+      managerScope: "manager-scoped-compat",
+      managerGeneration: 1,
       fieldId: "f1",
       fieldRevisionId: "r1",
       shardId: "s1",
       boundedExcerpt: "text",
       queryHash: "h1",
     });
-    const result = reg.resolveRef(ref, { agentId: "main", fieldRevisionId: "r2" });
+    const result = reg.resolveRef(ref, { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r2" });
     assert.equal(result, null);
   });
 
   it("file://, absolute path, legacy locator, source ref all reject", () => {
     const reg = new NollmCompatibilityReferenceRegistry();
-    assert.equal(reg.resolveRef("file:///etc/passwd", { agentId: "main", fieldRevisionId: "r1" }), null);
-    assert.equal(reg.resolveRef("/etc/passwd", { agentId: "main", fieldRevisionId: "r1" }), null);
-    assert.equal(reg.resolveRef("nollm://synthetic/fixture/alpha-field#fact-1", { agentId: "main", fieldRevisionId: "r1" }), null);
-    assert.equal(reg.resolveRef("nollm://compat/v1/00000000000000000000000000000000", { agentId: "main", fieldRevisionId: "r1" }), null);
+    assert.equal(reg.resolveRef("file:///etc/passwd", { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" }), null);
+    assert.equal(reg.resolveRef("/etc/passwd", { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" }), null);
+    assert.equal(reg.resolveRef("nollm://synthetic/fixture/alpha-field#fact-1", { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" }), null);
+    assert.equal(reg.resolveRef("nollm://compat/v1/00000000000000000000000000000000", { agentId: "main", managerScope: "manager-scoped-compat", managerGeneration: 1, fieldRevisionId: "r1" }), null);
   });
 });

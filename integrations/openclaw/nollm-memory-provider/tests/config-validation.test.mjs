@@ -43,4 +43,33 @@ describe("E5 config segment-aware legacy path rejection", () => {
     cfg.nollmRepoRoot = "relative/path";
     assert.throws(() => normalizeConfig(cfg));
   });
+
+  it("D7: symlinked fixture escaping repo root is rejected (realpath containment)", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    const outsideDir = path.join(tmp, "outside");
+    const linkDir = path.join(cfg.nollmRepoRoot, "external-link");
+    fs.mkdirSync(outsideDir, { recursive: true });
+    const outsideFixture = path.join(outsideDir, "alpha-field.json");
+    fs.copyFileSync(cfg.alphaFixturePath, outsideFixture);
+    // Directory junction does not require admin privileges on Windows
+    fs.symlinkSync(outsideDir, linkDir, "junction");
+    cfg.alphaFixturePath = path.join(linkDir, "alpha-field.json");
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.throws(() => normalizeConfig(cfg), /symlink-escaped path rejected|must resolve under/i);
+  });
+
+  it("D7: symlinked fixture staying inside repo root is accepted", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    const insideDir = path.join(cfg.nollmRepoRoot, "fixtures2");
+    const linkDir = path.join(cfg.nollmRepoRoot, "external-link-in");
+    fs.mkdirSync(insideDir, { recursive: true });
+    const insideFixture = path.join(insideDir, "alpha-field.json");
+    fs.copyFileSync(cfg.alphaFixturePath, insideFixture);
+    fs.symlinkSync(insideDir, linkDir, "junction");
+    cfg.alphaFixturePath = path.join(linkDir, "alpha-field.json");
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.doesNotThrow(() => normalizeConfig(cfg));
+  });
 });

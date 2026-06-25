@@ -30,7 +30,7 @@ describe("T5 prepare injects valid bounded envelope", () => {
     const result = await invokePrepare(
       api,
       { messages: [{ role: "user", content: "tell me about nollm" }] },
-      { runId: "run-1" }
+      { agentId: "main", sessionId: "s1", runId: "run-1" }
     );
     assert.ok(result.prependContext.includes("NOLLM MEMORY CONTEXT"));
     assert.ok(result.prependContext.includes("nollm.memory_context.v1"));
@@ -66,11 +66,15 @@ describe("T7 capture produces receipt", () => {
     writeStubSidecar(cfg.nollmRepoRoot, STUB_CAPTURE);
     const api = makeMockApi(cfg);
     createNollmProvider(api);
-    await invokeEnd(api, {
-      runId: "run-1",
-      success: true,
-      messages: [{ role: "user", content: "hello" }],
-    });
+    await invokeEnd(
+      api,
+      {
+        runId: "run-1",
+        success: true,
+        messages: [{ role: "user", content: "hello" }],
+      },
+      { agentId: "main", sessionId: "s1", runId: "run-1" }
+    );
     assert.equal(api._events.warnings.length, 0);
   });
 });
