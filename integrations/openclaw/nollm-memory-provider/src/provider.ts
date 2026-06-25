@@ -11,6 +11,14 @@ import { extractLatestUserText, resolveNollmTurnIdentity } from "./identity.js";
 import type { HookContext, TurnMessage } from "./identity.js";
 import type { MemoryContextEnvelope, PluginConfig } from "./types.js";
 
+function eventIdentity(event: unknown): { runId?: string; sessionId?: string } {
+  const e = event as Record<string, unknown>;
+  return {
+    runId: typeof e.runId === "string" ? e.runId : undefined,
+    sessionId: typeof e.sessionId === "string" ? e.sessionId : undefined,
+  };
+}
+
 const CAPTURE_SCHEMA = "nollm.provider.capture.v2";
 
 export function createNollmProvider(api: OpenClawPluginApi): void {
@@ -25,12 +33,6 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
     const message = error instanceof Error ? error.message : String(error);
     api.logger.warn(`Nollm memory provider config invalid: ${message}`);
   }
-
-  // Track capture receipts for idempotency within this process.
-  // D4: Python is the sole canonical identity authority. TS does not compute
-  // its own event_hash; it forwards raw payload to Python and accepts the
-  // returned receipt_id as canonical.
-  const captureRegistry = new Map<string, { receiptId: string }>();
 
   const capability: MemoryPluginCapability = {
     promptBuilder: () => [],
@@ -47,7 +49,7 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
       }
 
       const ctxTyped = (ctx ?? {}) as HookContext;
-      const identity = resolveNollmTurnIdentity(ctxTyped, {
+      const identity = resolveNollmTurnIdentity(ctxTyped, eventIdentity(event), {
         allowAgentIds: config.allowAgentIds,
       });
       if (identity.warnings.some((w) => w.startsWith("agent_id_rejected"))) {
@@ -117,31 +119,25 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
       }
       try {
         const ctxTyped = (ctx ?? {}) as HookContext;
-        const identity = resolveNollmTurnIdentity(ctxTyped, {
+        const identity = resolveNollmTurnIdentity(ctxTyped, eventIdentity(event), {
           allowAgentIds: config.allowAgentIds,
         });
         if (identity.warnings.some((w) => w.startsWith("agent_id_rejected"))) {
           api.logger.warn(`Nollm capture skipped: agent rejected`);
           return;
         }
+        // D3: fail-close on incomplete durable identity
+        if (!identity.sessionId || !identity.runId) {
+          api.logger.warn(`Nollm capture rejected: incomplete identity`);
+          return;
+        }
 
         const messages = Array.isArray(event.messages) ? event.messages : [];
         const success = typeof event.success === "boolean" ? event.success : true;
 
-        // D4: Do NOT compute event_hash on TS side. Python is the sole
-        // canonical identity authority. Forward raw payload only.
-        const captureKey = `${identity.agentId}:${identity.sessionId}:${identity.runId}:${success}`;
-
-        // Check for existing receipt (idempotent) using Python-returned receipt_id
-        const existing = captureRegistry.get(captureKey);
-        if (existing) {
-          // Same canonical key already captured - Python sidecar handles dedupe
-          api.logger.info(`Nollm capture idempotent: reusing receipt ${existing.receiptId}`);
-          return;
-        }
-
-        // D4: Send capture v2 schema without event_hash. Python computes
-        // canonical identity and returns receipt_id.
+        // D4: Python is the sole canonical capture identity authority.
+        // TS forwards raw payload and accepts the returned receipt_id.
+        // No TS-side duplicate authority; Python handles dedupe via atomic receipt publish.
         const result = await runSidecarCommand(config, "capture", {
           schema: CAPTURE_SCHEMA,
           agent_id: identity.agentId,
@@ -156,10 +152,7 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         }
 
         const receipt = (result as unknown as { receipt: { receipt_id: string; reused?: boolean } }).receipt;
-        if (receipt.reused) {
-          api.logger.info(`Nollm capture idempotent: Python returned reused receipt ${receipt.receipt_id}`);
-        }
-        captureRegistry.set(captureKey, { receiptId: receipt.receipt_id });
+        api.logger.info(`Nollm capture ${receipt.reused ? "idempotent: Python reused receipt " : "stored receipt "}${receipt.receipt_id}`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         api.logger.warn(`Nollm capture exception: ${message}`);

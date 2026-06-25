@@ -113,9 +113,12 @@ async function main() {
     "integrations/openclaw/nollm-memory-provider/scripts/host-integration-check.mjs",
     "integrations/openclaw/nollm-memory-provider/scripts/integration-harness.mjs",
     "integrations/openclaw/nollm-memory-provider/scripts/generate-f0-04-evidence.mjs",
+    "integrations/openclaw/nollm-memory-provider/tests/capture-idempotency.test.mjs",
+    "integrations/openclaw/nollm-memory-provider/tests/identity.test.mjs",
     "reference/python/nollm/openclaw_memory_provider_alpha.py",
     "reference/python/tests/test_openclaw_memory_provider_alpha.py",
     "docs/integration/openclaw/issues/FA-ISSUE-10-loader-local-memory-plugin.md",
+    "docs/integration/openclaw/issues/FA-ISSUE-11-memorysearchmanager-caller-context.md",
   ];
   for (const rel of artifactPaths) {
     const full = path.join(repoRoot, rel);

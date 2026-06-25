@@ -683,80 +683,90 @@ def capture(
             retryable=True,
         ) from exc
 
-    # D5: Atomic no-clobber publish with real quarantine for corrupt receipts
-    if receipt_path.exists():
+    receipt_bytes = _stable_json(receipt_payload, sort_keys=True).encode("utf-8")
+
+    # D5: Atomic no-clobber publish. Try to create the final file with O_EXCL
+    # so concurrent duplicate events produce exactly one creator; all others
+    # fall through to the reuse path.
+    try:
+        fd = os.open(str(receipt_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        # Another caller created the receipt in the race window; reuse below.
+        fd = None
+    except OSError as exc:
+        raise NollmProviderError(
+            "capture_failed",
+            f"failed to open capture receipt: {exc}",
+            retryable=True,
+        ) from exc
+
+    if fd is not None:
         try:
-            existing_raw = receipt_path.read_text(encoding="utf-8")
-            existing = json.loads(existing_raw)
-        except Exception as exc:
-            # Move corrupt receipt to quarantine and fail closed
-            quarantine_dir = receipt_dir / "quarantine"
+            with os.fdopen(fd, "wb") as tmp_f:
+                tmp_f.write(receipt_bytes)
+        except OSError as exc:
+            # Best-effort cleanup of partially written file
             try:
-                quarantine_dir.mkdir(parents=True, exist_ok=True)
-                import time
-                quarantine_path = quarantine_dir / f"{receipt_id}-{int(time.time())}.json"
-                receipt_path.rename(quarantine_path)
+                receipt_path.unlink(missing_ok=True)
             except OSError:
                 pass
             raise NollmProviderError(
                 "capture_failed",
-                f"corrupt existing receipt quarantined, no overwrite: {exc}",
-                retryable=False,
-            ) from None
+                f"failed to write capture receipt: {exc}",
+                retryable=True,
+            ) from exc
+        return {
+            "ok": True,
+            "schema": CAPTURE_RESULT_SCHEMA,
+            "reused": False,
+            "receipt": {
+                "receipt_id": receipt_id,
+                "event_hash": event_hash,
+                "stored_at": str(receipt_path),
+                "state": "captured_pending_native_ingress",
+                "legacy_memory_mutated": False,
+            },
+        }
 
-        existing_event_hash = existing.get("canonical_event_hash") or existing.get("event_hash")
-        if existing_event_hash == event_hash:
-            return {
-                "ok": True,
-                "schema": CAPTURE_RESULT_SCHEMA,
-                "reused": True,
-                "receipt": {
-                    "receipt_id": receipt_id,
-                    "event_hash": event_hash,
-                    "stored_at": str(receipt_path),
-                    "state": "captured_pending_native_ingress",
-                    "legacy_memory_mutated": False,
-                },
-            }
-        raise NollmProviderError(
-            "capture_failed",
-            f"receipt collision: {receipt_id} exists with different content",
-            retryable=False,
-        )
-
-    # D5: Atomic write (temp file + rename)
-    import tempfile
-    tmp_path = ""
+    # D5: Receipt already exists. Validate expected identity; quarantine corrupt files.
     try:
-        fd, tmp_path = tempfile.mkstemp(dir=str(receipt_dir), suffix=".tmp")
-        with os.fdopen(fd, "w", encoding="utf-8") as tmp_f:
-            tmp_f.write(_stable_json(receipt_payload, sort_keys=True))
-        os.replace(tmp_path, str(receipt_path))
-    except OSError as exc:
-        # Best-effort cleanup of temp file
-        if tmp_path:
-            try:
-                Path(tmp_path).unlink(missing_ok=True)
-            except OSError:
-                pass
+        existing_raw = receipt_path.read_text(encoding="utf-8")
+        existing = json.loads(existing_raw)
+    except Exception as exc:
+        # Move corrupt receipt to quarantine and fail closed
+        quarantine_dir = receipt_dir / "quarantine"
+        try:
+            quarantine_dir.mkdir(parents=True, exist_ok=True)
+            import time
+            quarantine_path = quarantine_dir / f"{receipt_id}-{int(time.time())}.json"
+            receipt_path.rename(quarantine_path)
+        except OSError:
+            pass
         raise NollmProviderError(
             "capture_failed",
-            f"failed to write capture receipt: {exc}",
-            retryable=True,
-        ) from exc
+            f"corrupt existing receipt quarantined, no overwrite: {exc}",
+            retryable=False,
+        ) from None
 
-    return {
-        "ok": True,
-        "schema": CAPTURE_RESULT_SCHEMA,
-        "reused": False,
-        "receipt": {
-            "receipt_id": receipt_id,
-            "event_hash": event_hash,
-            "stored_at": str(receipt_path),
-            "state": "captured_pending_native_ingress",
-            "legacy_memory_mutated": False,
-        },
-    }
+    existing_event_hash = existing.get("canonical_event_hash") or existing.get("event_hash")
+    if existing_event_hash == event_hash:
+        return {
+            "ok": True,
+            "schema": CAPTURE_RESULT_SCHEMA,
+            "reused": True,
+            "receipt": {
+                "receipt_id": receipt_id,
+                "event_hash": event_hash,
+                "stored_at": str(receipt_path),
+                "state": "captured_pending_native_ingress",
+                "legacy_memory_mutated": False,
+            },
+        }
+    raise NollmProviderError(
+        "capture_failed",
+        f"receipt collision: {receipt_id} exists with different content",
+        retryable=False,
+    )
 
 
 def status(field: AlphaField | None, config: ProviderConfig) -> dict[str, object]:

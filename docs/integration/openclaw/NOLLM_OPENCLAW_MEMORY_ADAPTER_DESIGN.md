@@ -101,10 +101,14 @@ The following Functional Alpha closure items were addressed in F0-02:
   supporting both string and text-block-array content. Assistant messages are
   never misidentified as user queries.
 - **Opaque compatibility references**: search results issue process-local,
-  revision-bound nollm://compat/v1/<nonce> refs. readFile only accepts refs
-  issued by the same manager instance. Unissued, cross-manager, expired, and
-  revision-mismatched refs are rejected. Compatibility score is ordering-only,
-  not vector similarity or trust.
+  manager-scoped, agent-scoped, revision-bound nollm://compat/v1/<nonce> refs.
+  readFile only accepts refs issued by the same manager instance. These refs
+  are explicitly not session-bound: the upstream `MemorySearchManager.readFile()`
+  contract does not accept caller/session context, so true cross-session
+  authorization cannot be enforced through this compatibility facade
+  (see `FA-ISSUE-11`). Unissued, cross-manager, expired, and revision-mismatched
+  refs are rejected. Compatibility score is ordering-only, not vector similarity
+  or trust.
 - **Idempotent capture**: receipt identity is based on stable facts
   (agent_id, session_id, run_id, event_hash, field_revision_id), not
   request_id or Date.now(). Same event produces same receipt with reused=true.
@@ -118,6 +122,36 @@ The following Functional Alpha closure items were addressed in F0-02:
 - **Host integration harness**: the harness uses NOLLM_OPENCLAW_CHECKOUT
   instead of hardcoded paths, verifies Node engine compatibility, and performs
   actual plugin loading tests (H1-H8) rather than relying on direct SDK import.
+
+
+## F0-04 updates
+
+The following Functional Alpha closure items were addressed in F0-04:
+
+- **Real OpenClaw loader integration**: the harness provisions a fixed upstream
+  checkout (`dc9c11be917ebdc711b956250aa80a8e5b47bea6`), creates an isolated
+  OpenClaw profile selecting `plugins.slots.memory = "nollm"`, and attempts to
+  load the local plugin through public OpenClaw entry points only. The target
+  commit does not export a public local-memory-plugin loader seam, so the host
+  proof is recorded as `target_limitation: OPENCLAW_LOADER_LOCAL_MEMORY_PLUGIN_LIMITATION`
+  rather than substituted with a mock proof (see `FA-ISSUE-10`).
+- **Canonical capture identity authority**: Python is the sole canonical
+  identity authority. TypeScript forwards a strict `nollm.provider.capture.v2`
+  event without an `event_hash`; Python validates strict input, computes the
+  canonical event hash, and returns the canonical `receipt_id`.
+- **Atomic receipt publish**: receipts are created with an atomic no-clobber
+  `O_CREAT | O_EXCL` open. Duplicate canonical events fall through to a reuse
+  path; corrupt existing receipts are moved to a `quarantine/` directory and
+  never overwritten.
+- **Compatibility scope honesty**: the compatibility facade is explicitly
+  manager-scoped, not session-bound, because the upstream
+  `MemorySearchManager.readFile()` contract lacks caller/session context (see
+  `FA-ISSUE-11`).
+- **Fixture containment parity**: TypeScript and Python both canonicalize
+  fixture paths with `realpath`/`resolve()` and reject symlink escapes.
+- **Auto-generated evidence**: command records, artifact hashes, upstream
+  commit, and remote state are generated from actual execution output, not
+  hand-written counts.
 
 See `docs/integration/openclaw/F0_NOLLM_MEMORY_PROVIDER_ALPHA.md` and
 `docs/issues/FUNCTIONAL_ALPHA_OPEN_ISSUES.md` for the full contract and known

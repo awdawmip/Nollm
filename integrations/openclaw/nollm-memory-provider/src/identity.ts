@@ -1,3 +1,8 @@
+export interface TurnIdentityEvent {
+  runId?: string;
+  sessionId?: string;
+}
+
 export interface HookContext {
   agentId?: string;
   sessionId?: string;
@@ -36,6 +41,7 @@ export function extractLatestUserText(messages: TurnMessage[]): string {
 
 export function resolveNollmTurnIdentity(
   ctx: HookContext,
+  event?: TurnIdentityEvent,
   config?: { allowAgentIds?: string[] }
 ): {
   agentId: string;
@@ -65,14 +71,22 @@ export function resolveNollmTurnIdentity(
   // D3: fail-close durable identity. No Date.now fallbacks that make context
   // non-reproducible. Missing session/run is a warning, and callers must
   // degrade to unavailable/no-capture if identity is incomplete.
-  const sessionId = ctx.sessionId || ctx.sessionKey || "";
+  let sessionId = ctx.sessionId || ctx.sessionKey || "";
   if (!sessionId) {
-    warnings.push("session_id_missing: ctx.sessionId/sessionKey missing");
+    if (event?.sessionId) {
+      sessionId = event.sessionId;
+    } else {
+      warnings.push("session_id_missing: ctx.sessionId/sessionKey and event.sessionId missing");
+    }
   }
 
-  const runId = ctx.runId || "";
+  let runId = ctx.runId || "";
   if (!runId) {
-    warnings.push("run_id_missing: ctx.runId missing");
+    if (event?.runId) {
+      runId = event.runId;
+    } else {
+      warnings.push("run_id_missing: ctx.runId and event.runId missing");
+    }
   }
 
   return { agentId, sessionId, runId, warnings };

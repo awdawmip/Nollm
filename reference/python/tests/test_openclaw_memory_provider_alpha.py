@@ -701,3 +701,42 @@ def test_symlinked_fixture_inside_repo_root_accepted(tmp_path: Path) -> None:
         }
     )
     assert config.alpha_fixture_path.resolve() == (link_dir / "alpha-field.json").resolve()
+
+
+def test_concurrent_duplicate_capture_publishes_once(
+    config: ProviderConfig, fixture_path: Path
+) -> None:
+    """D5: concurrent duplicate events produce exactly one receipt publish."""
+    import threading
+
+    field = AlphaField.load(str(fixture_path))
+    payload = {
+        "schema": "nollm.provider.capture.v2",
+        "agent_id": "main",
+        "session_id": "s1",
+        "run_id": "run1",
+        "success": True,
+        "messages": [{"role": "user", "content": "blue"}],
+    }
+    results: list[dict[str, object]] = []
+    lock = threading.Lock()
+
+    def call() -> None:
+        result = capture(field, payload, config)
+        with lock:
+            results.append(result)
+
+    threads = [threading.Thread(target=call) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert all(r["ok"] for r in results), "all concurrent calls must succeed"
+    receipt_ids = {r["receipt"]["receipt_id"] for r in results}
+    assert len(receipt_ids) == 1, "all calls must observe the same canonical receipt id"
+    assert sum(1 for r in results if r.get("reused")) >= 7, "all but at most one call must reuse"
+
+    receipt_dir = config.nollm_data_root / "functional-alpha" / "capture-receipts"
+    receipt_files = [f for f in receipt_dir.glob("*.json") if f.parent == receipt_dir]
+    assert len(receipt_files) == 1, "exactly one receipt file must exist"
