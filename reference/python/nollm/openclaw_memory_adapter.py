@@ -15,6 +15,17 @@ from nollm.gravity import (
     gravity_mark_to_record,
 )
 
+from nollm.companion_memory_store import (
+    CompanionMemoryError,
+    get_native_memory as _store_get_native_memory,
+    native_store_summary,
+    recall_native_memory as _store_recall_native_memory,
+    remember_native_memory as _store_remember_native_memory,
+)
+
+REMEMBER_NATIVE_SCHEMA = "nollm.companion_memory_remember.v1"
+RECALL_NATIVE_SCHEMA = "nollm.companion_memory_recall.v1"
+GET_NATIVE_SCHEMA = "nollm.companion_memory_get.v1"
 
 SCHEMA = "nollm.openclaw_memory_fixture_index.v1"
 SIDECAR_SCHEMA = "nollm.openclaw_memory_sidecar.v1"
@@ -25,6 +36,7 @@ WRITE_SCHEMA = "nollm.openclaw_memory_sidecar_write_candidate.v1"
 COMMIT_SCHEMA = "nollm.openclaw_memory_sidecar_commit_candidate.v1"
 RECALL_SCHEMA = "nollm.openclaw_memory_sidecar_recall.v1"
 DEFAULT_PROFILE = "default_dream"
+
 DEFAULT_CHART = "openclaw_memory_fixture"
 STATUS = "experimental_internal_sidecar"
 LAYOUT_METHOD = "semantic_local_v1"
@@ -366,6 +378,72 @@ def recall_sidecar(
     return report
 
 
+def remember_native_companion_memory(
+    repo_root: Path | str,
+    workspace: Path | str,
+    out_dir: Path | str,
+    *,
+    memory: str,
+    kind: str | None = None,
+    scope: str | None = None,
+    source: str = "explicit_user",
+) -> dict[str, object]:
+    try:
+        return _store_remember_native_memory(
+            repo_root, workspace, out_dir, memory=memory, kind=kind, scope=scope, source=source
+        )
+    except CompanionMemoryError as exc:
+        return {
+            "schema": REMEMBER_NATIVE_SCHEMA,
+            "ok": False,
+            "error": exc.code,
+            "message": exc.message,
+            "store": "nollm_native_companion",
+        }
+
+
+def recall_native_companion_memory(
+    repo_root: Path | str,
+    workspace: Path | str,
+    out_dir: Path | str,
+    *,
+    query: str,
+    limit: int = 5,
+    scope: str | None = None,
+) -> dict[str, object]:
+    try:
+        return _store_recall_native_memory(
+            repo_root, workspace, out_dir, query=query, limit=limit, scope=scope
+        )
+    except CompanionMemoryError as exc:
+        return {
+            "schema": RECALL_NATIVE_SCHEMA,
+            "ok": False,
+            "error": exc.code,
+            "message": exc.message,
+            "store": "nollm_native_companion",
+        }
+
+
+def get_native_companion_memory(
+    repo_root: Path | str,
+    workspace: Path | str,
+    out_dir: Path | str,
+    memory_id: str,
+) -> dict[str, object]:
+    try:
+        return _store_get_native_memory(repo_root, workspace, out_dir, memory_id)
+    except CompanionMemoryError as exc:
+        return {
+            "schema": GET_NATIVE_SCHEMA,
+            "ok": False,
+            "status": "error",
+            "error": exc.code,
+            "message": exc.message,
+            "store": "nollm_native_companion",
+        }
+
+
 def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path | str) -> dict[str, object]:
     repo = Path(repo_root).resolve()
     out = Path(out_dir).resolve()
@@ -413,6 +491,7 @@ def sidecar_status(repo_root: Path | str, workspace: Path | str, out_dir: Path |
         "legacy_search_tools_registered": False,
         "forbidden_semantics": dict(FORBIDDEN_SEMANTICS),
     }
+    report["native_companion_memory"] = native_store_summary(out_dir)
     _write_json(out / "last_status_report.json", report)
     return report
 
@@ -1154,4 +1233,7 @@ __all__ = [
     "sidecar_status",
     "write_candidate",
     "write_openclaw_memory_fixture_report",
+    "remember_native_companion_memory",
+    "recall_native_companion_memory",
+    "get_native_companion_memory",
 ]

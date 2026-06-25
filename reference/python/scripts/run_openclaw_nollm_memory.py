@@ -10,8 +10,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from nollm.openclaw_memory_adapter import (  # noqa: E402
     build_sidecar_store,
+    get_native_companion_memory,
     get_sidecar_item,
+    recall_native_companion_memory,
     recall_sidecar,
+    remember_native_companion_memory,
     search_sidecar,
     sidecar_status,
 )
@@ -51,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
         "read",
         "recall-trace",
         "dream-demo",
+        "native-remember",
+        "native-recall",
+        "native-get",
     ):
         sub = subparsers.add_parser(name)
         sub.add_argument("--workspace", default="examples/openclaw_memory_fixture")
@@ -91,6 +97,17 @@ def main(argv: list[str] | None = None) -> int:
             sub.add_argument("--path", required=True, help="JSON array of Cortex-selected shard ids.")
         if name == "get":
             sub.add_argument("--id", required=True)
+        if name == "native-remember":
+            sub.add_argument("--memory", required=True)
+            sub.add_argument("--kind", default="note")
+            sub.add_argument("--scope", default="user")
+            sub.add_argument("--source", default="explicit_user")
+        if name == "native-recall":
+            sub.add_argument("--query", required=True)
+            sub.add_argument("--limit", type=int, default=5)
+            sub.add_argument("--scope", default=None)
+        if name == "native-get":
+            sub.add_argument("--id", required=True)
 
     args = parser.parse_args(argv)
     repo_root = Path(args.repo_root).resolve()
@@ -107,6 +124,27 @@ def main(argv: list[str] | None = None) -> int:
         report = get_sidecar_item(repo_root, workspace, out_dir, args.id)
     elif args.command == "status":
         report = sidecar_status(repo_root, workspace, out_dir)
+    elif args.command == "native-remember":
+        report = remember_native_companion_memory(
+            repo_root,
+            workspace,
+            out_dir,
+            memory=args.memory,
+            kind=args.kind,
+            scope=args.scope,
+            source=args.source,
+        )
+    elif args.command == "native-recall":
+        report = recall_native_companion_memory(
+            repo_root,
+            workspace,
+            out_dir,
+            query=args.query,
+            limit=args.limit,
+            scope=args.scope,
+        )
+    elif args.command == "native-get":
+        report = get_native_companion_memory(repo_root, workspace, out_dir, args.id)
     elif args.command == "snapshot":
         report = source_snapshot(workspace)
     elif args.command == "dream-ingest":
