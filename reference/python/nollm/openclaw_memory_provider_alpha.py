@@ -20,7 +20,7 @@ from typing import Iterable
 ALPHA_FIELD_SCHEMA = "nollm.alpha_field.v1"
 PREPARE_SCHEMA = "nollm.provider.prepare.v1"
 PREPARE_RESULT_SCHEMA = "nollm.provider.prepare_result.v1"
-CAPTURE_SCHEMA = "nollm.provider.capture.v1"
+CAPTURE_SCHEMA = "nollm.provider.capture.v2"
 CAPTURE_RESULT_SCHEMA = "nollm.provider.capture_result.v1"
 MEMORY_CONTEXT_SCHEMA = "nollm.memory_context.v1"
 
@@ -410,8 +410,8 @@ def _keyword_match(query: str, facts: Iterable[AlphaFact]) -> list[AlphaFact]:
     return [fact for _, fact in scored]
 
 
-def _make_context_id(run_id: str, request_id: str) -> str:
-    return _sha256_hex(_stable_json({"run_id": run_id, "request_id": request_id}))
+def _make_context_id(run_id: str) -> str:
+    return _sha256_hex(_stable_json({"run_id": run_id}))
 
 
 def prepare(
@@ -473,7 +473,7 @@ def prepare(
 
     context = {
         "schema": MEMORY_CONTEXT_SCHEMA,
-        "context_id": _make_context_id(run_id, payload.get("request_id", "")),
+        "context_id": _make_context_id(run_id),
         "field_id": field.field_id,
         "field_revision_id": field.revision_id,
         "freshness": freshness,
@@ -500,8 +500,30 @@ def prepare(
     }
 
 
-def _event_hash(run_id: str, messages: list[dict[str, object]]) -> str:
-    return _sha256_hex(_stable_json({"run_id": run_id, "messages": messages}))
+def _canonical_event_hash(
+    agent_id: str,
+    session_id: str,
+    run_id: str,
+    success: bool,
+    messages: list[dict[str, object]],
+    field_id: str,
+    field_revision_id: str,
+) -> str:
+    """D4: Python is the sole canonical capture identity authority.
+    The canonical event includes all durable identity fields, the field
+    revision, and the capture protocol version."""
+    return _sha256_hex(
+        _stable_json({
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "run_id": run_id,
+            "success": success,
+            "messages": messages,
+            "field_id": field_id,
+            "field_revision_id": field_revision_id,
+            "capture_protocol_version": "nollm.capture_identity.v2",
+        })
+    )
 
 
 def _sanitize_messages(messages: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -545,7 +567,12 @@ def capture(
     payload: dict[str, object],
     config: ProviderConfig,
 ) -> dict[str, object]:
-    """Handle a capture command and write a durable receipt under nollmDataRoot."""
+    """Handle a capture command and write a durable receipt under nollmDataRoot.
+
+    D4: Python is the sole canonical capture identity authority. TS forwards a
+    strict minimal event; Python validates, computes the canonical event hash,
+    and returns the canonical receipt_id. No caller event_hash is accepted.
+    """
     schema = payload.get("schema")
     if schema != CAPTURE_SCHEMA:
         raise NollmProviderError(
@@ -553,13 +580,21 @@ def capture(
             f"expected schema {CAPTURE_SCHEMA}, got {schema!r}",
             retryable=False,
         )
-    run_id = payload.get("run_id")
-    if not isinstance(run_id, str) or not run_id:
-        raise NollmProviderError(
-            "invalid_command", "run_id must be a non-empty string", retryable=False
-        )
 
-    success = payload.get("success", True)
+    # D4: strict identity validation
+    agent_id = payload.get("agent_id", "")
+    session_id = payload.get("session_id", "")
+    run_id = payload.get("run_id", "")
+    for name, value in [("agent_id", agent_id), ("session_id", session_id), ("run_id", run_id)]:
+        if not isinstance(value, str) or not value:
+            raise NollmProviderError(
+                "invalid_command",
+                f"{name} must be a non-empty string",
+                retryable=False,
+            )
+
+    # D4: strict success validation - no silent default
+    success = payload.get("success")
     if not isinstance(success, bool):
         raise NollmProviderError(
             "invalid_command",
@@ -567,33 +602,37 @@ def capture(
             retryable=False,
         )
 
-    messages = payload.get("messages", [])
+    # D4: strict messages validation - must be a list
+    messages = payload.get("messages")
     if not isinstance(messages, list):
-        messages = []
+        raise NollmProviderError(
+            "invalid_command",
+            "messages must be a list",
+            retryable=False,
+        )
     typed_messages = [m for m in messages if isinstance(m, dict)]
 
-    event_hash = _event_hash(run_id, typed_messages)
-    agent_id = payload.get("agent_id", "")
-    session_id = payload.get("session_id", "")
-    if not isinstance(agent_id, str) or not agent_id:
-        raise NollmProviderError(
-            "invalid_command", "agent_id must be a non-empty string", retryable=False
-        )
-    if not isinstance(session_id, str) or not session_id:
-        raise NollmProviderError(
-            "invalid_command", "session_id must be a non-empty string", retryable=False
-        )
-    # D3: canonical capture identity including success and field_revision_id
+    # D4: Canonical event hash computed solely by Python
+    event_hash = _canonical_event_hash(
+        agent_id=agent_id,
+        session_id=session_id,
+        run_id=run_id,
+        success=success,
+        messages=typed_messages,
+        field_id=field.field_id,
+        field_revision_id=field.revision_id,
+    )
+
     receipt_id = _sha256_hex(
         _stable_json({
             "agent_id": agent_id,
             "session_id": session_id,
             "run_id": run_id,
             "success": success,
-            "event_hash": event_hash,
+            "canonical_event_hash": event_hash,
             "field_id": field.field_id,
             "field_revision_id": field.revision_id,
-            "capture_protocol_version": "nollm.capture_identity.v1",
+            "capture_protocol_version": "nollm.capture_identity.v2",
         })
     )
 
@@ -602,28 +641,28 @@ def capture(
     if success:
         for msg in _sanitize_messages(typed_messages):
             role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                content_hash = _sha256_hex(content.encode("utf-8"))
-                content_length = len(content)
-            elif isinstance(content, list):
-                content_json = _stable_json(content)
+            msg_content = msg.get("content", "")
+            if isinstance(msg_content, str):
+                content_hash = _sha256_hex(msg_content.encode("utf-8"))
+                content_length = len(msg_content)
+            elif isinstance(msg_content, list):
+                content_json = _stable_json(msg_content)
                 content_hash = _sha256_hex(content_json.encode("utf-8"))
                 content_length = len(content_json)
             else:
-                content_hash = _sha256_hex(str(content).encode("utf-8"))
-                content_length = len(str(content))
+                content_hash = _sha256_hex(str(msg_content).encode("utf-8"))
+                content_length = len(str(msg_content))
             message_summaries.append({
                 "role": role,
                 "content_hash": content_hash,
                 "content_length": content_length,
             })
+
     receipt_payload = {
-        "schema": "nollm.capture_receipt.v1",
+        "schema": "nollm.capture_receipt.v2",
         "receipt_id": receipt_id,
-        "event_hash": event_hash,
+        "canonical_event_hash": event_hash,
         "run_id": run_id,
-        "request_id": payload.get("request_id", ""),
         "success": success,
         "captured_at": datetime.now(timezone.utc).isoformat(),
         "field_id": field.field_id,
@@ -644,19 +683,28 @@ def capture(
             retryable=True,
         ) from exc
 
-    # D3: Idempotency with fail-close on content collision
-    # No silent overwrite: corrupt receipt quarantines, collision fails closed
+    # D5: Atomic no-clobber publish with real quarantine for corrupt receipts
     if receipt_path.exists():
         try:
             existing_raw = receipt_path.read_text(encoding="utf-8")
             existing = json.loads(existing_raw)
-        except Exception:
+        except Exception as exc:
+            # Move corrupt receipt to quarantine and fail closed
+            quarantine_dir = receipt_dir / "quarantine"
+            try:
+                quarantine_dir.mkdir(parents=True, exist_ok=True)
+                import time
+                quarantine_path = quarantine_dir / f"{receipt_id}-{int(time.time())}.json"
+                receipt_path.rename(quarantine_path)
+            except OSError:
+                pass
             raise NollmProviderError(
                 "capture_failed",
-                "corrupt existing receipt - quarantined, no overwrite",
+                f"corrupt existing receipt quarantined, no overwrite: {exc}",
                 retryable=False,
             ) from None
-        existing_event_hash = existing.get("event_hash")
+
+        existing_event_hash = existing.get("canonical_event_hash") or existing.get("event_hash")
         if existing_event_hash == event_hash:
             return {
                 "ok": True,
@@ -676,14 +724,21 @@ def capture(
             retryable=False,
         )
 
-    # D3: Atomic no-clobber write (temp file + rename)
+    # D5: Atomic write (temp file + rename)
     import tempfile
+    tmp_path = ""
     try:
         fd, tmp_path = tempfile.mkstemp(dir=str(receipt_dir), suffix=".tmp")
         with os.fdopen(fd, "w", encoding="utf-8") as tmp_f:
             tmp_f.write(_stable_json(receipt_payload, sort_keys=True))
         os.replace(tmp_path, str(receipt_path))
     except OSError as exc:
+        # Best-effort cleanup of temp file
+        if tmp_path:
+            try:
+                Path(tmp_path).unlink(missing_ok=True)
+            except OSError:
+                pass
         raise NollmProviderError(
             "capture_failed",
             f"failed to write capture receipt: {exc}",
