@@ -62,16 +62,17 @@ export function resolveNollmTurnIdentity(
     }
   }
 
-  let sessionId = ctx.sessionId || ctx.sessionKey;
+  // D3: fail-close durable identity. No Date.now fallbacks that make context
+  // non-reproducible. Missing session/run is a warning, and callers must
+  // degrade to unavailable/no-capture if identity is incomplete.
+  const sessionId = ctx.sessionId || ctx.sessionKey || "";
   if (!sessionId) {
-    sessionId = `session-fallback-${Date.now()}`;
-    warnings.push("session_id_fallback: ctx.sessionId/sessionKey missing");
+    warnings.push("session_id_missing: ctx.sessionId/sessionKey missing");
   }
 
-  let runId = ctx.runId;
+  const runId = ctx.runId || "";
   if (!runId) {
-    runId = `run-fallback-${Date.now()}`;
-    warnings.push("run_id_fallback: ctx.runId missing");
+    warnings.push("run_id_missing: ctx.runId missing");
   }
 
   return { agentId, sessionId, runId, warnings };

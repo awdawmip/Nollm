@@ -11,7 +11,7 @@ import { extractLatestUserText, resolveNollmTurnIdentity } from "./identity.js";
 import type { HookContext, TurnMessage } from "./identity.js";
 import type { MemoryContextEnvelope, PluginConfig } from "./types.js";
 
-const CAPTURE_PROTOCOL_VERSION = "nollm.capture.v1";
+const CAPTURE_SCHEMA = "nollm.provider.capture.v2";
 
 export function createNollmProvider(api: OpenClawPluginApi): void {
   const rawConfig = (api.pluginConfig ?? {}) as PluginConfig;
@@ -26,8 +26,11 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
     api.logger.warn(`Nollm memory provider config invalid: ${message}`);
   }
 
-  // Track capture receipts for idempotency within this process
-  const captureRegistry = new Map<string, { receiptId: string; eventHash: string }>();
+  // Track capture receipts for idempotency within this process.
+  // D4: Python is the sole canonical identity authority. TS does not compute
+  // its own event_hash; it forwards raw payload to Python and accepts the
+  // returned receipt_id as canonical.
+  const captureRegistry = new Map<string, { receiptId: string }>();
 
   const capability: MemoryPluginCapability = {
     promptBuilder: () => [],
@@ -51,6 +54,11 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         api.logger.warn(`Nollm agent rejected: ${identity.warnings.join("; ")}`);
         return { prependContext: makeUnavailableBoundary() };
       }
+      // D3: fail-close on incomplete durable identity
+      if (!identity.sessionId || !identity.runId) {
+        api.logger.warn(`Nollm prepare rejected: incomplete identity`);
+        return { prependContext: makeUnavailableBoundary() };
+      }
 
       const messages = Array.isArray(event.messages) ? event.messages : [];
       const typedMessages = messages as TurnMessage[];
@@ -58,7 +66,6 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
 
       const result = await runSidecarCommand(config, "prepare", {
         schema: "nollm.provider.prepare.v1",
-        request_id: `prepare-${identity.runId}`,
         agent_id: identity.agentId,
         session_id: identity.sessionId,
         run_id: identity.runId,
@@ -74,21 +81,31 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         return { prependContext: makeUnavailableBoundary() };
       }
 
-      const validated = validatePrepareResult(result, { maxFacts: config.maxFacts,
+      // D3: Pre-validate sidecar envelope, then add identity warnings,
+      // then do final budget check on the complete rendered text.
+      const preValidated = validatePrepareResult(result, {
+        maxFacts: config.maxFacts,
         maxContextCharacters: config.maxContextCharacters,
-
         maxCharacters: config.maxCharacters,
       });
-      if (!validated.ok) {
-        api.logger.warn(`Nollm prepare validation failed: ${validated.error.message}`);
+      if (!preValidated.ok) {
+        api.logger.warn(`Nollm prepare validation failed: ${preValidated.error.message}`);
         return { prependContext: makeUnavailableBoundary() };
       }
 
-      const ctxEnvelope = (validated as unknown as { context: MemoryContextEnvelope }).context;
+      const ctxEnvelope = (preValidated as unknown as { context: MemoryContextEnvelope }).context;
+      // D3: Add identity warnings BEFORE final budget check
       if (identity.warnings.length > 0) {
         ctxEnvelope.warnings.push(...identity.warnings);
       }
-      return { prependContext: formatMemoryContext(ctxEnvelope) };
+
+      // D3: Final budget check on the complete rendered text including identity warnings
+      const finalRendered = formatMemoryContext(ctxEnvelope);
+      if (finalRendered.length > config.maxContextCharacters) {
+        api.logger.warn("Nollm context exceeds final budget after identity warnings");
+        return { prependContext: makeUnavailableBoundary() };
+      }
+      return { prependContext: finalRendered };
     }
   );
 
@@ -111,49 +128,38 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         const messages = Array.isArray(event.messages) ? event.messages : [];
         const success = typeof event.success === "boolean" ? event.success : true;
 
-        // Compute stable canonical event hash for idempotency
-        const canonicalEvent = JSON.stringify({
-          agent_id: identity.agentId,
-          session_id: identity.sessionId,
-          run_id: identity.runId,
-          success,
-          messages,
-        });
-        const crypto = await import("node:crypto");
-        const eventHash = crypto.createHash("sha256").update(canonicalEvent).digest("hex");
-        const captureKey = `${identity.agentId}:${identity.sessionId}:${identity.runId}`;
+        // D4: Do NOT compute event_hash on TS side. Python is the sole
+        // canonical identity authority. Forward raw payload only.
+        const captureKey = `${identity.agentId}:${identity.sessionId}:${identity.runId}:${success}`;
 
-        // Check for existing receipt (idempotent)
+        // Check for existing receipt (idempotent) using Python-returned receipt_id
         const existing = captureRegistry.get(captureKey);
-        if (existing && existing.eventHash === eventHash) {
-          // Same event already captured - return existing receipt
+        if (existing) {
+          // Same canonical key already captured - Python sidecar handles dedupe
           api.logger.info(`Nollm capture idempotent: reusing receipt ${existing.receiptId}`);
           return;
         }
-        if (existing && existing.eventHash !== eventHash) {
-          // Collision: same key but different content
-          api.logger.warn(`Nollm capture collision: same key but different event hash`);
-          return;
-        }
 
+        // D4: Send capture v2 schema without event_hash. Python computes
+        // canonical identity and returns receipt_id.
         const result = await runSidecarCommand(config, "capture", {
-          schema: "nollm.provider.capture.v1",
-          request_id: `capture-${identity.runId}`,
+          schema: CAPTURE_SCHEMA,
           agent_id: identity.agentId,
           session_id: identity.sessionId,
           run_id: identity.runId,
           success,
           messages,
-          event_hash: eventHash,
-          capture_protocol_version: CAPTURE_PROTOCOL_VERSION,
         });
         if (!result.ok) {
           api.logger.warn(`Nollm capture failed: ${result.error.message}`);
           return;
         }
 
-        const receipt = (result as unknown as { receipt: { receipt_id: string } }).receipt;
-        captureRegistry.set(captureKey, { receiptId: receipt.receipt_id, eventHash });
+        const receipt = (result as unknown as { receipt: { receipt_id: string; reused?: boolean } }).receipt;
+        if (receipt.reused) {
+          api.logger.info(`Nollm capture idempotent: Python returned reused receipt ${receipt.receipt_id}`);
+        }
+        captureRegistry.set(captureKey, { receiptId: receipt.receipt_id });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         api.logger.warn(`Nollm capture exception: ${message}`);
