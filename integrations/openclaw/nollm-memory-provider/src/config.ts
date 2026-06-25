@@ -151,11 +151,14 @@ function requirePathUnder(
   valueName: string,
   rootName: string
 ): void {
-  const relative = path.relative(path.resolve(root), path.resolve(value));
+  // D7: canonicalize symlinks to match Python Path.resolve() containment policy
+  const realValue = fs.realpathSync(value);
+  const realRoot = fs.realpathSync(root);
+  const relative = path.relative(realRoot, realValue);
   if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
     return;
   }
-  throw new Error(`${valueName} must resolve under ${rootName}.`);
+  throw new Error(`${valueName} must resolve under ${rootName} (symlink-escaped path rejected).`);
 }
 
 function boundedInteger(
