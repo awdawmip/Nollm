@@ -28,12 +28,15 @@ def test_build_config_patch_preserves_existing_maps_and_disables_write_by_defaul
         config_before=config,
         repo_root=ROOT,
         workspace_root=tmp_path,
+        python_executable=sys.executable,
         enable_write_candidate=False,
     )
 
     assert patch["plugins"]["entries"]["nollm-memory-companion"]["enabled"] is True
-    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["nollmRepoRoot"] == str(ROOT)
-    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["pythonCommand"] == sys.executable
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["nollmRepoRoot"] == installer._as_posix(ROOT)
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["workspaceRoot"] == installer._as_posix(tmp_path)
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["pythonExecutable"] == installer._as_posix(sys.executable)
+    assert patch["plugins"]["entries"]["nollm-memory-companion"]["config"]["pythonArgs"] == []
     assert "memory-core" not in patch["plugins"]["entries"]
     assert "allow" not in patch["plugins"]
     assert "deny" not in patch["plugins"]
@@ -70,6 +73,7 @@ def test_build_config_patch_write_candidate_flag_is_noop(tmp_path: Path) -> None
         config_before={"tools": {"allow": []}},
         repo_root=ROOT,
         workspace_root=tmp_path,
+        python_executable=sys.executable,
         enable_write_candidate=True,
     )
 
