@@ -22,7 +22,7 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   requirePathUnder(sidecarOutDir, workspaceRoot, "sidecarOutDir", "workspaceRoot", false);
 
   return {
-    pythonCommand: config.pythonCommand || "python3",
+    pythonCommand: config.pythonCommand || "python",
     nollmRepoRoot,
     workspaceRoot,
     sidecarScript,

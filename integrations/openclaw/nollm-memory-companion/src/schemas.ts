@@ -2,7 +2,7 @@ import { Type } from "typebox";
 
 export const ConfigSchema = Type.Object(
   {
-    pythonCommand: Type.Optional(Type.String({ default: "python3" })),
+    pythonCommand: Type.Optional(Type.String({ default: "python" })),
     nollmRepoRoot: Type.Optional(Type.String({
       description: "Optional at install time; required absolute path to the Nollm repository before tool use."
     })),
