@@ -266,7 +266,7 @@ def test_cli_native_remember_recall_and_get(tmp_path: Path) -> None:
     )
     secret = json.loads(secret_result.stdout)
     assert secret["ok"] is False
-    assert secret["error"] == "memory_content_rejected"
+    assert secret["error"]["code"] == "memory_content_rejected"
     assert native_store_summary(out)["record_count"] == 1
 
 
@@ -285,3 +285,124 @@ def _source_hashes(workspace: Path) -> dict[str, str]:
 
     paths = [workspace / "MEMORY.md", workspace / "DREAMS.md", *sorted((workspace / "memory").glob("*.md"))]
     return {path.relative_to(workspace).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths if path.exists()}
+
+
+def test_w1_02_p1_three_records_identity_query_returns_only_identity(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户喜欢紫色标签。', kind='preference')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='项目决策：周五发版。', kind='project')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='我叫什么？')
+    assert result['ok'] is True
+    assert len(result['results']) == 1
+    assert result['results'][0]['kind'] == 'identity'
+    assert result['results'][0]['text'] == '用户叫卡卡布拉。'
+
+
+def test_w1_02_p2_preference_color_query_returns_only_preference(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='我的 W1-02 标签颜色偏好是 SILVER-MOSS-52。', kind='preference')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='项目决策：周五发版。', kind='project')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='喜欢什么标签颜色？')
+    assert result['ok'] is True
+    assert len(result['results']) == 1
+    assert result['results'][0]['kind'] == 'preference'
+    assert 'SILVER-MOSS-52' in result['results'][0]['text']
+
+
+def test_w1_02_p3_project_release_query_returns_only_project(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户喜欢紫色标签。', kind='preference')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='项目决策：周五发版。', kind='project')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='项目何时发版？')
+    assert result['ok'] is True
+    assert len(result['results']) == 1
+    assert result['results'][0]['kind'] == 'project'
+    assert '周五发版' in result['results'][0]['text']
+
+
+def test_w1_02_p4_test_code_query_returns_only_test_code_record(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户喜欢紫色标签。', kind='preference')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='项目决策：周五发版。', kind='project')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='我的 W1 测试代号是 SAPPHIRE-KITE-73。', kind='note')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='我的 W1 测试代号是什么？')
+    assert result['ok'] is True
+    assert len(result['results']) == 1
+    assert 'SAPPHIRE-KITE-73' in result['results'][0]['text']
+    mode = result['results'][0]['match']['mode']
+    assert 'test_code' in mode
+    assert 'latin' in mode
+
+
+def test_w1_02_p5_unrelated_weather_query_returns_empty_result(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户喜欢紫色标签。', kind='preference')
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='项目决策：周五发版。', kind='project')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='明天东京天气怎样？')
+    assert result['ok'] is True
+    assert result['results'] == []
+    assert 'no relevant native companion memory found' in result['warnings']
+    assert result['explicit_absences']
+
+
+def test_w1_02_p6_no_chinese_whitespace_matches_by_cjk_ngrams(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户偏好紫色标签', kind='preference')
+    result = recall_native_companion_memory(ROOT, tmp_path / 'workspace', out, query='喜欢紫色标签')
+    assert result['ok'] is True
+    assert len(result['results']) == 1
+    assert '紫色标签' in result['results'][0]['text']
+
+
+def test_w1_02_p7_repeated_writes_still_deduplicate(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    first = remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='W1-02 dedup marker。', kind='note')
+    second = remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='W1-02 dedup marker。', kind='note')
+    assert first['memory_id'] == second['memory_id']
+    assert second['deduplicated'] is True
+    assert native_store_summary(out)['record_count'] == 1
+
+
+def test_w1_02_p8_secret_remember_returns_structured_error_and_no_write(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    result = remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='Bearer W1-02-NOT-A-REAL-SECRET')
+    assert result['ok'] is False
+    assert result['error']['code'] == 'memory_content_rejected'
+    assert result['error']['retryable'] is False
+    assert native_store_summary(out)['record_count'] == 0
+
+
+def test_w1_02_p9_unknown_native_id_returns_structured_not_found(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    remember_native_companion_memory(ROOT, tmp_path / 'workspace', out, memory='用户叫卡卡布拉。', kind='identity')
+    result = get_native_companion_memory(ROOT, tmp_path / 'workspace', out, 'nmem_0000000000000000')
+    assert result['ok'] is False
+    assert result['status'] == 'not_found'
+    assert result['error']['code'] == 'native_memory_not_found'
+    assert result['error']['retryable'] is False
+    assert native_store_summary(out)['record_count'] == 1
+
+
+def test_w1_02_p10_corrupt_record_returns_structured_error_without_traceback(tmp_path: Path) -> None:
+    out = _out_dir(tmp_path)
+    workspace = tmp_path / 'workspace'
+    workspace.mkdir()
+    remember_native_companion_memory(ROOT, workspace, out, memory='用户叫卡卡布拉。', kind='identity')
+    records_path = out / 'native-companion-v1' / 'records.jsonl'
+    records_path.write_text(records_path.read_text(encoding='utf-8') + 'not valid json\n', encoding='utf-8')
+    result = run_subprocess(
+        [sys.executable, str(SCRIPT), 'native-recall', '--workspace', str(workspace), '--out', str(out), '--query', '卡卡布拉'],
+        cwd=ROOT / 'reference/python',
+        timeout_seconds=60,
+    )
+    parsed = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert parsed['ok'] is False
+    assert parsed['error']['code'] == 'corrupt_records'
+    assert 'Traceback' not in result.stdout
+    assert 'Traceback' not in result.stderr

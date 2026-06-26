@@ -396,8 +396,11 @@ def remember_native_companion_memory(
         return {
             "schema": REMEMBER_NATIVE_SCHEMA,
             "ok": False,
-            "error": exc.code,
-            "message": exc.message,
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "retryable": False,
+            },
             "store": "nollm_native_companion",
         }
 
@@ -419,8 +422,11 @@ def recall_native_companion_memory(
         return {
             "schema": RECALL_NATIVE_SCHEMA,
             "ok": False,
-            "error": exc.code,
-            "message": exc.message,
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "retryable": False,
+            },
             "store": "nollm_native_companion",
         }
 
@@ -437,9 +443,13 @@ def get_native_companion_memory(
         return {
             "schema": GET_NATIVE_SCHEMA,
             "ok": False,
-            "status": "error",
-            "error": exc.code,
-            "message": exc.message,
+            "status": "not_found",
+            "memory_id": memory_id,
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "retryable": False,
+            },
             "store": "nollm_native_companion",
         }
 
