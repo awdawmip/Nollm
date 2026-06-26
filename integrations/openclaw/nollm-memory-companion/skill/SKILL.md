@@ -17,6 +17,8 @@ When the user asks "我叫什么", "我偏好什么", or asks for a saved fact:
 3. When none is found, say no Nollm native memory was found.
 4. Do not silently read legacy files as fallback.
 
+The `nollm_memory_recall` tool returns an empty `results` array when no relevant native memory is found. Do not choose an unrelated returned memory and do not silently use legacy file memory as Nollm evidence. If `nollm_memory_remember` returns `memory_content_rejected` or `nollm_memory_get` returns `native_memory_not_found`, report the structured error code to the user and do not guess.
+
 Use `nollm_memory_get` only when the user supplies a Nollm-issued `memory_id`
 from a previous `nollm_memory_remember` result. Reject file paths, line locators,
 and legacy source locators.

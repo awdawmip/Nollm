@@ -84,9 +84,19 @@ standalone memory sentence in Nollm native companion storage. It never writes
 
 ### `nollm_memory_recall`
 
-Recall explicit Nollm native companion memories relevant to a user question. It
-returns only native companion memory evidence; it does not read legacy files as
-a fallback.
+Recall only Nollm native companion memories that match the user question. It
+returns an empty result when no relevant native memory is found. It never falls
+back to legacy files.
+
+The relevance gate is deterministic and local: it matches by normalized
+exact/substring, Latin/digit token overlap, CJK 2-gram overlap, kind-intent, and
+explicit test-code markers. It does not use embeddings, vector search, or LLM
+reranking.
+
+Structured errors (for example `memory_content_rejected` for secret-like input
+and `native_memory_not_found` for an unknown `memory_id`) are returned as
+`ok: false` results with `{ code, message, retryable }` and are propagated by
+the TypeScript bridge even when the sidecar exits with a non-zero code.
 
 ### `nollm_memory_get`
 
