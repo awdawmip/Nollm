@@ -8,17 +8,13 @@ export function makeTempDir(prefix = "nollm-test-") {
 
 export function makeTempRepo(tmpDir) {
   const repoRoot = path.join(tmpDir, "repo");
-  const dataRoot = path.join(tmpDir, "data");
-  const fixtureDir = path.join(repoRoot, "fixtures");
+  const workspaceRoot = path.join(tmpDir, "workspace");
+  const nativeStoreRoot = path.join(workspaceRoot, ".nollm-memory", "native-companion-v1");
+  const trialRoot = path.join(workspaceRoot, ".nollm-memory", "active-trials");
   fs.mkdirSync(path.join(repoRoot, "reference", "python", "scripts"), { recursive: true });
-  fs.mkdirSync(dataRoot, { recursive: true });
-  fs.mkdirSync(fixtureDir, { recursive: true });
-
-  const fixtureSrc = path.resolve(import.meta.dirname, "..", "fixtures", "alpha-field.json");
-  const fixtureDst = path.join(fixtureDir, "alpha-field.json");
-  fs.copyFileSync(fixtureSrc, fixtureDst);
-
-  return { repoRoot, dataRoot, fixturePath: fixtureDst };
+  fs.mkdirSync(nativeStoreRoot, { recursive: true });
+  fs.mkdirSync(trialRoot, { recursive: true });
+  return { repoRoot, workspaceRoot, nativeStoreRoot, trialRoot };
 }
 
 export function resolvePythonCommand() {
@@ -37,13 +33,20 @@ export function resolvePythonCommand() {
 }
 
 export function makeProviderConfig(tmpDir, overrides = {}) {
-  const { repoRoot, dataRoot, fixturePath } = makeTempRepo(tmpDir);
+  const { repoRoot, workspaceRoot, nativeStoreRoot, trialRoot } = makeTempRepo(tmpDir);
   writeStubSidecar(repoRoot, STUB_STATUS);
   return {
-    pythonCommand: resolvePythonCommand(),
+    pythonExecutable: resolvePythonCommand(),
+    pythonArgs: ["-u"],
     nollmRepoRoot: repoRoot,
-    nollmDataRoot: dataRoot,
-    alphaFixturePath: fixturePath,
+    workspaceRoot,
+    nativeStoreRoot,
+    trialRoot,
+    commandTimeoutMs: 15000,
+    maxFacts: 4,
+    maxContextCharacters: 1400,
+    captureMode: "deterministic_explicit_v1",
+    trialMode: "active_empirical_v1",
     ...overrides,
   };
 }
@@ -85,7 +88,7 @@ export async function invokeEnd(api, event, ctx = {}) {
 }
 
 export function writeStubSidecar(repoRoot, source) {
-  const scriptPath = path.join(repoRoot, "reference", "python", "scripts", "run_openclaw_nollm_provider.py");
+  const scriptPath = path.join(repoRoot, "reference", "python", "scripts", "run_openclaw_nollm_active_memory.py");
   fs.writeFileSync(scriptPath, source, "utf8");
   return scriptPath;
 }
@@ -106,63 +109,67 @@ export function listFiles(dir, extFilter = null) {
 
 export const STUB_STATUS = [
   "import json, sys",
-  "config = json.loads(sys.argv[sys.argv.index('--config-json') + 1])",
   "stdin = json.loads(sys.stdin.read())",
   "print(json.dumps({",
   "  'ok': True,",
-  "  'schema': 'nollm.provider.status.v1',",
-  "  'provider': 'nollm',",
-  "  'backend_kind': 'nollm',",
-  "  'compatibility_shim': True,",
-  "  'field_id': 'alpha_main',",
-  "  'field_revision_id': 'rev-1',",
-  "  'freshness': 'fresh',",
-  "  'data_root': config.get('nollmDataRoot')",
+  "  'schema': 'nollm.active_memory_status.v1',",
+  "  'store': 'nollm_native_companion',",
+  "  'native_record_count': 7,",
+  "  'active_revision_id': 'nrev_1234',",
+  "  'python_executable': sys.executable,",
+  "  'capture_mode': 'deterministic_explicit_v1',",
+  "  'trial_mode': 'active_empirical_v1'",
   "}, sort_keys=True))",
 ].join("\n");
 
 export const STUB_PREPARE = [
   "import json, sys",
-  "config = json.loads(sys.argv[sys.argv.index('--config-json') + 1])",
   "stdin = json.loads(sys.stdin.read())",
   "print(json.dumps({",
   "  'ok': True,",
-  "  'schema': 'nollm.provider.prepare_result.v1',",
+  "  'schema': 'nollm.provider.prepare.v2',",
   "  'context': {",
-  "    'schema': 'nollm.memory_context.v1',",
-  "    'context_id': 'ctx-1',",
-  "    'field_id': 'alpha_main',",
-  "    'field_revision_id': 'rev-1',",
+  "    'schema': 'NOLLM_MEMORY_CONTEXT_V1',",
   "    'freshness': 'fresh',",
   "    'facts': [{",
-  "      'shard_id': 'stub-fact',",
+  "      'memory_id': 'nmem_stub',",
   "      'claim': 'stub claim about Nollm',",
-  "      'keywords': ['nollm'],",
-  "      'epistemic_state': 'source_backed',",
-  "      'operational_state': 'active',",
-  "      'source_refs': ['nollm://synthetic/fixture/alpha-field#fact-stub']",
+  "      'kind': 'note',",
+  "      'source': 'nollm_native_companion',",
+  "      'revision_id': 'nrev_stub'",
   "    }],",
   "    'boundaries': [],",
   "    'warnings': [],",
-  "    'completeness': {'mode': 'bounded', 'explicit_absences': []}",
+  "    'explicit_absences': []",
+  "  },",
+  "  'metrics': {",
+  "    'native_record_count': 7,",
+  "    'result_count': 1,",
+  "    'rendered_context_characters': 200,",
+  "    'recall_mode': 'exact'",
   "  }",
   "}, sort_keys=True))",
 ].join("\n");
 
 export const STUB_CAPTURE = [
   "import json, sys",
-  "config = json.loads(sys.argv[sys.argv.index('--config-json') + 1])",
   "stdin = json.loads(sys.stdin.read())",
-  "data_root = config.get('nollmDataRoot', '/tmp')",
   "print(json.dumps({",
   "  'ok': True,",
-  "  'schema': 'nollm.provider.capture_result.v1',",
-  "  'receipt': {",
-  "    'receipt_id': 'r-1',",
-  "    'event_hash': 'h-1',",
-  "    'stored_at': data_root + '/functional-alpha/capture-receipts/r-1.json',",
-  "    'state': 'captured_pending_native_ingress',",
-  "    'legacy_memory_mutated': False",
+  "  'schema': 'nollm.active_memory_capture.v1',",
+  "  'capture': {",
+  "    'event_id': 'evt_1',",
+  "    'promoted_count': 1,",
+  "    'deduplicated_count': 0,",
+  "    'suppressed_count': 0,",
+  "    'rejected_count': 0,",
+  "    'records': [{ 'memory_id': 'nmem_1', 'kind': 'identity', 'source': 'active_turn_explicit_v1' }]",
+  "  },",
+  "  'metrics': {",
+  "    'user_messages_seen': 1,",
+  "    'assistant_messages_ignored': 0,",
+  "    'candidate_count': 1,",
+  "    'latency_ms': 12",
   "  }",
   "}, sort_keys=True))",
 ].join("\n");
@@ -172,30 +179,32 @@ export const STUB_UNAVAILABLE = [
   "stdin = json.loads(sys.stdin.read())",
   "print(json.dumps({",
   "  'ok': True,",
-  "  'schema': 'nollm.provider.prepare_result.v1',",
+  "  'schema': 'nollm.provider.prepare.v2',",
   "  'context': {",
-  "    'schema': 'nollm.memory_context.v1',",
-  "    'context_id': 'ctx-none',",
-  "    'field_id': 'alpha_main',",
-  "    'field_revision_id': 'rev-1',",
-  "    'freshness': 'unavailable',",
+  "    'schema': 'NOLLM_MEMORY_CONTEXT_V1',",
+  "    'freshness': 'none',",
   "    'facts': [],",
-  "    'boundaries': [{'scope': 'functional_alpha', 'source': 'unavailable'}],",
-  "    'warnings': ['alpha field unavailable'],",
-  "    'completeness': {'mode': 'bounded', 'explicit_absences': ['No matching active Nollm memory was found in the Functional Alpha field.']}",
+  "    'boundaries': [],",
+  "    'warnings': [],",
+  "    'explicit_absences': ['No Nollm native companion memory matched this query.']",
+  "  },",
+  "  'metrics': {",
+  "    'native_record_count': 7,",
+  "    'result_count': 0,",
+  "    'rendered_context_characters': 120,",
+  "    'recall_mode': 'none'",
   "  }",
   "}, sort_keys=True))",
 ].join("\n");
 
 export const STUB_ECHO = [
   "import json, sys",
-  "config = json.loads(sys.argv[sys.argv.index('--config-json') + 1])",
   "stdin = json.loads(sys.stdin.read())",
   "print(json.dumps({",
   "  'ok': True,",
   "  'argv': sys.argv,",
   "  'command': stdin.get('command'),",
-  "  'config_timeout': config.get('commandTimeoutMs')",
+  "  'native_store_root': next((sys.argv[i+1] for i in range(len(sys.argv)-1) if sys.argv[i] == '--native-store-root'), None)",
   "}, sort_keys=True))",
 ].join("\n");
 

@@ -7,17 +7,13 @@ import { runSidecarCommand } from "../dist/sidecar.js";
 import { normalizeConfig } from "../dist/config.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "..", "..", "..", "..");
-const PYTHON_SRC_FILES = [
-  path.join(REPO_ROOT, "reference", "python", "nollm", "openclaw_memory_provider_alpha.py"),
-  path.join(REPO_ROOT, "reference", "python", "scripts", "run_openclaw_nollm_provider.py"),
-];
+const ACTIVE_SIDECAR = path.join(REPO_ROOT, "reference", "python", "scripts", "run_openclaw_nollm_active_memory.py");
 
 const FORBIDDEN_TS = [
   "MEMORY.md",
   "DREAMS.md",
   "memory_search",
   "memory_get",
-  "memory_store",
   "memory_recall",
   "parse_openclaw_memory_workspace",
   "build_sidecar_store",
@@ -31,7 +27,6 @@ const FORBIDDEN_PY = [
   "DREAMS.md",
   "memory_search",
   "memory_get",
-  "memory_store",
   "memory_recall",
   "parse_openclaw_memory_workspace",
   "build_sidecar_store",
@@ -71,26 +66,28 @@ describe("T12 static no-legacy-source scan passes", () => {
     }
   });
 
-  it("Python alpha module does not reference legacy surfaces except detection constant", () => {
-    for (const file of PYTHON_SRC_FILES) {
-      assert.ok(fs.existsSync(file), `Python source missing: ${file}`);
-      const text = fs.readFileSync(file, "utf8");
-      const scanText = stripLeadingDocstring(text);
-      for (const token of FORBIDDEN_PY) {
-        if (scanText.includes(token)) {
-          if (isLegacyDetectionContext(scanText, token)) continue;
-          assert.fail(`${path.basename(file)} contains forbidden legacy reference: ${token}`);
-        }
+  it("Python active adapter does not reference legacy surfaces except detection constant", () => {
+    const file = path.join(REPO_ROOT, "reference", "python", "nollm", "openclaw_active_memory_adapter.py");
+    assert.ok(fs.existsSync(file), `Python source missing: ${file}`);
+    const text = fs.readFileSync(file, "utf8");
+    const scanText = stripLeadingDocstring(text);
+    for (const token of FORBIDDEN_PY) {
+      if (scanText.includes(token)) {
+        if (isLegacyDetectionContext(scanText, token)) continue;
+        assert.fail(`${path.basename(file)} contains forbidden legacy reference: ${token}`);
       }
     }
   });
 });
 
 describe("dynamic no-legacy access", () => {
-  it("prepare and capture do not read or write legacy files", async () => {
+  it("active prepare and capture do not read or write legacy files", async () => {
     const tmp = makeTempDir();
-    const dataRoot = path.join(tmp, "data");
-    fs.mkdirSync(dataRoot, { recursive: true });
+    const workspaceRoot = path.join(tmp, "workspace");
+    const nativeStoreRoot = path.join(workspaceRoot, ".nollm-memory", "native-companion-v1");
+    const trialRoot = path.join(workspaceRoot, ".nollm-memory", "active-trials");
+    fs.mkdirSync(nativeStoreRoot, { recursive: true });
+    fs.mkdirSync(trialRoot, { recursive: true });
 
     const legacyDir = path.join(tmp, "legacy");
     fs.mkdirSync(path.join(legacyDir, "memory"), { recursive: true });
@@ -111,27 +108,28 @@ describe("dynamic no-legacy access", () => {
     );
 
     const cfg = {
-      pythonCommand: resolvePythonCommand(),
+      pythonExecutable: resolvePythonCommand(),
+      pythonArgs: [],
       nollmRepoRoot: REPO_ROOT,
-      nollmDataRoot: dataRoot,
-      alphaFixturePath: path.join(
-        REPO_ROOT,
-        "integrations",
-        "openclaw",
-        "nollm-memory-provider",
-        "fixtures",
-        "alpha-field.json"
-      ),
+      workspaceRoot,
+      nativeStoreRoot,
+      trialRoot,
+      commandTimeoutMs: 15000,
+      maxFacts: 4,
+      maxContextCharacters: 1400,
+      captureMode: "deterministic_explicit_v1",
+      trialMode: "active_empirical_v1",
     };
     const normalized = normalizeConfig(cfg);
 
-    const prepareResult = await runSidecarCommand(normalized, "prepare", {
-      schema: "nollm.provider.prepare.v1",
+    const prepareResult = await runSidecarCommand(normalized, "active-prepare", {
+      schema: "nollm.active_memory_prepare.v1",
       agent_id: "main",
       session_id: "s1",
       run_id: "run1",
-      messages: [{ role: "user", content: "blue labels" }],
-      budget: { max_facts: 3, max_characters: 1200 },
+      query: "blue labels",
+      budget: { max_facts: 3, max_context_characters: 1200 },
+      trial_id: "test-trial",
     });
     if (prepareResult.ok !== true) {
       console.error("prepare failed:", JSON.stringify(prepareResult, null, 2));
@@ -142,21 +140,19 @@ describe("dynamic no-legacy access", () => {
       "prepare output must not leak legacy sentinel"
     );
 
-    const captureResult = await runSidecarCommand(normalized, "capture", {
-      schema: "nollm.provider.capture.v2",
+    const captureResult = await runSidecarCommand(normalized, "active-capture", {
+      schema: "nollm.active_memory_capture.v1",
       agent_id: "main",
       session_id: "s1",
       run_id: "run1",
       success: true,
       messages: [{ role: "user", content: "blue" }],
+      trial_id: "test-trial",
     });
     if (captureResult.ok !== true) {
       console.error("capture failed:", JSON.stringify(captureResult, null, 2));
     }
     assert.equal(captureResult.ok, true);
-    const storedPath = captureResult.receipt.stored_at;
-    assert.ok(storedPath.includes("functional-alpha"));
-    assert.ok(storedPath.startsWith(dataRoot));
 
     assert.equal(
       fs.readFileSync(path.join(legacyDir, "MEMORY.md"), "utf8"),

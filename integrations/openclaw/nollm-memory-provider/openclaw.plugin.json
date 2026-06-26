@@ -2,8 +2,8 @@
   "id": "nollm",
   "name": "Nollm Memory",
   "kind": "memory",
-  "description": "Nollm native active memory provider for OpenClaw Functional Alpha.",
-  "version": "0.1.0-alpha.1",
+  "description": "Nollm native active memory provider for OpenClaw. Reuses the W1 native companion store for automatic prepare/recall and deterministic explicit capture.",
+  "version": "0.2.0-w2.1",
   "activation": {
     "onStartup": false
   },
@@ -11,28 +11,37 @@
     "type": "object",
     "additionalProperties": false,
     "required": [
-      "pythonCommand",
+      "pythonExecutable",
       "nollmRepoRoot",
-      "nollmDataRoot",
-      "alphaFixturePath"
+      "workspaceRoot",
+      "nativeStoreRoot"
     ],
     "properties": {
-      "pythonCommand": {
+      "pythonExecutable": {
         "type": "string",
-        "default": "python3",
-        "description": "Python interpreter used to run the Nollm sidecar."
+        "description": "Absolute path to the Python interpreter used to run the Nollm active sidecar."
+      },
+      "pythonArgs": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": [],
+        "description": "Discrete argv values passed to the Python interpreter before the sidecar script."
       },
       "nollmRepoRoot": {
         "type": "string",
         "description": "Absolute path to the Nollm repository."
       },
-      "nollmDataRoot": {
+      "workspaceRoot": {
         "type": "string",
-        "description": "Absolute path to the Nollm-owned alpha state directory. Must not be inside a legacy memory path."
+        "description": "Absolute path to the OpenClaw workspace root."
       },
-      "alphaFixturePath": {
+      "nativeStoreRoot": {
         "type": "string",
-        "description": "Absolute path to the synthetic alpha field fixture under the Nollm repository."
+        "description": "Absolute path to the native companion store directory (e.g. <workspace>/.nollm-memory/native-companion-v1)."
+      },
+      "trialRoot": {
+        "type": "string",
+        "description": "Absolute path to the active-trials directory. Defaults to <nativeStoreRoot>/../active-trials."
       },
       "commandTimeoutMs": {
         "type": "integer",
@@ -43,23 +52,29 @@
       },
       "maxFacts": {
         "type": "integer",
-        "default": 3,
+        "default": 4,
         "minimum": 1,
         "maximum": 20,
         "description": "Maximum facts injected per turn."
       },
-      "maxCharacters": {
+      "maxContextCharacters": {
         "type": "integer",
-        "default": 1200,
-        "minimum": 100,
-        "maximum": 10000,
-        "description": "Maximum characters of fact content injected per turn."
+        "default": 1400,
+        "minimum": 200,
+        "maximum": 65536,
+        "description": "Maximum characters of rendered memory context injected per turn."
       },
       "captureMode": {
         "type": "string",
-        "default": "receipt_only",
-        "enum": ["receipt_only"],
-        "description": "F0 capture mode: receipt-only, no native shard promotion."
+        "default": "deterministic_explicit_v1",
+        "enum": ["deterministic_explicit_v1"],
+        "description": "W2 active capture mode: deterministic explicit stable-sentence promotion only."
+      },
+      "trialMode": {
+        "type": "string",
+        "default": "active_empirical_v1",
+        "enum": ["active_empirical_v1"],
+        "description": "W2 trial mode: local-only redacted operator metrics."
       }
     }
   },

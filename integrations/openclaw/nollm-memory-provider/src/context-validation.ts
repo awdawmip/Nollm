@@ -2,7 +2,6 @@ import type { MemoryContextEnvelope, SidecarResult } from "./types.js";
 import { sidecarFailure } from "./errors.js";
 import { formatMemoryContext } from "./hook-context.js";
 
-const HEADER_OVERHEAD = 512;
 const MAX_WARNINGS = 10;
 const MAX_BOUNDARIES = 10;
 const MAX_ABSENCES = 10;
@@ -12,15 +11,15 @@ const MAX_ABSENCE_LEN = 500;
 
 export function validatePrepareResult(
   result: SidecarResult,
-  config: { maxFacts: number; maxCharacters: number; maxContextCharacters: number }
-): SidecarResult {
+  config: { maxFacts: number; maxContextCharacters: number }
+): SidecarResult | { ok: true; schema: "nollm.provider.prepare.v2"; context: MemoryContextEnvelope } {
   if (!result.ok) {
     return result;
   }
 
   const raw = result as Record<string, unknown>;
 
-  if (raw.schema !== "nollm.provider.prepare_result.v1") {
+  if (raw.schema !== "nollm.provider.prepare.v2") {
     return sidecarFailure("sidecar_failed", "prepare result schema mismatch", false);
   }
 
@@ -34,28 +33,24 @@ export function validatePrepareResult(
     return sidecarFailure("sidecar_failed", "context envelope validation failed", false);
   }
 
-  // D2: verify total rendered context is within budget
-  const rendered = formatMemoryContext(validated);
-  if (rendered.length > config.maxContextCharacters) {
+  const finalRendered = formatMemoryContext(validated);
+  if (finalRendered.length > config.maxContextCharacters) {
     return sidecarFailure("sidecar_failed", "rendered context exceeds total budget after trimming", false);
   }
 
-  return { ok: true, schema: "nollm.provider.prepare_result.v1", context: validated };
+  return { ok: true, schema: "nollm.provider.prepare.v2", context: validated };
 }
 
 export function validateContextEnvelope(
   context: unknown,
-  config: { maxFacts: number; maxCharacters: number; maxContextCharacters: number }
+  config: { maxFacts: number; maxContextCharacters: number }
 ): MemoryContextEnvelope | null {
   if (!context || typeof context !== "object") {
     return null;
   }
   const c = context as Record<string, unknown>;
 
-  if (c.schema !== "nollm.memory_context.v1") return null;
-  if (typeof c.context_id !== "string" || !c.context_id) return null;
-  if (typeof c.field_id !== "string" || !c.field_id) return null;
-  if (typeof c.field_revision_id !== "string" || !c.field_revision_id) return null;
+  if (c.schema !== "NOLLM_MEMORY_CONTEXT_V1") return null;
 
   const freshness = c.freshness;
   if (freshness !== "fresh" && freshness !== "none" && freshness !== "unavailable") {
@@ -67,34 +62,31 @@ export function validateContextEnvelope(
   if (!Array.isArray(c.warnings) || !c.warnings.every((w) => typeof w === "string")) {
     return null;
   }
-
-  const completeness = c.completeness;
-  if (!completeness || typeof completeness !== "object") return null;
-  const comp = completeness as Record<string, unknown>;
-  if (comp.mode !== "bounded") return null;
-  if (!Array.isArray(comp.explicit_absences) || !comp.explicit_absences.every((e) => typeof e === "string")) {
+  if (!Array.isArray(c.explicit_absences) || !c.explicit_absences.every((e) => typeof e === "string")) {
     return null;
   }
 
-  // freshness=fresh requires at least one fact
-  if (freshness === "fresh" && c.facts.length === 0) return null;
-  // freshness=none/unavailable requires empty facts
-  if ((freshness === "none" || freshness === "unavailable") && c.facts.length > 0) return null;
-
-  // Validate each fact has required fields
-  const validatedFacts: Array<Record<string, unknown>> = [];
+  const validatedFacts: Array<{ memory_id: string; claim: string; kind: string; source: string; revision_id?: string }> = [];
   for (const fact of c.facts) {
     if (!fact || typeof fact !== "object") return null;
     const f = fact as Record<string, unknown>;
-    if (typeof f.shard_id !== "string" || !f.shard_id) return null;
+    if (typeof f.memory_id !== "string" || !f.memory_id) return null;
     if (typeof f.claim !== "string" || !f.claim) return null;
-    if (typeof f.epistemic_state !== "string" || !f.epistemic_state) return null;
-    if (typeof f.operational_state !== "string" || !f.operational_state) return null;
-    if (!Array.isArray(f.source_refs)) return null;
-    validatedFacts.push(f);
+    if (typeof f.kind !== "string" || !f.kind) return null;
+    if (typeof f.source !== "string" || !f.source) return null;
+    validatedFacts.push({
+      memory_id: f.memory_id,
+      claim: f.claim,
+      kind: f.kind,
+      source: f.source,
+      revision_id: typeof f.revision_id === "string" ? f.revision_id : undefined,
+    });
   }
 
-  // D2: Trim warnings, boundaries, explicit_absences to bounded counts and lengths
+  // Sidecar fresh with zero facts is invalid; none/unavailable must have zero facts.
+  if (freshness === "fresh" && validatedFacts.length === 0) return null;
+  if ((freshness === "none" || freshness === "unavailable") && validatedFacts.length > 0) return null;
+
   const trimmedWarnings = (c.warnings as string[])
     .slice(0, MAX_WARNINGS)
     .map((w) => w.slice(0, MAX_WARNING_LEN));
@@ -109,78 +101,68 @@ export function validateContextEnvelope(
       return b;
     });
 
-  const trimmedAbsences = (comp.explicit_absences as string[])
+  const trimmedAbsences = (c.explicit_absences as string[])
     .slice(0, MAX_ABSENCES)
     .map((e) => e.slice(0, MAX_ABSENCE_LEN));
 
-  // Secondary budget enforcement on facts
-  const maxFacts = config.maxFacts;
-  const maxChars = config.maxCharacters;
-  const slicedFacts = validatedFacts.slice(0, maxFacts);
+  const slicedFacts = validatedFacts.slice(0, config.maxFacts);
 
-  let factChars = 0;
-  const budgetFacts: Array<Record<string, unknown>> = [];
-  for (const fact of slicedFacts) {
-    const factJson = JSON.stringify(fact);
-    if (factChars + factJson.length > maxChars && budgetFacts.length > 0) {
-      break;
-    }
-    factChars += factJson.length;
-    budgetFacts.push(fact);
-  }
-
-  // D2: If all facts were trimmed away but freshness was fresh, degrade to none
   let finalFreshness = freshness as "fresh" | "none" | "unavailable";
   let finalAbsences = trimmedAbsences;
-  if (freshness === "fresh" && budgetFacts.length === 0) {
+  if (freshness === "fresh" && slicedFacts.length === 0 && validatedFacts.length > 0) {
     finalFreshness = "none";
     finalAbsences = [
       ...trimmedAbsences,
-      "Context budget exceeded: facts trimmed to zero. Memory may exist but could not be rendered within limits.",
+      "Context budget exceeded: facts trimmed to zero.",
     ];
   }
 
-  // D2: Check total rendered context against maxContextCharacters
   const envelope: MemoryContextEnvelope = {
-    schema: "nollm.memory_context.v1",
-    context_id: c.context_id as string,
-    field_id: c.field_id as string,
-    field_revision_id: c.field_revision_id as string,
+    schema: "NOLLM_MEMORY_CONTEXT_V1",
     freshness: finalFreshness,
-    facts: budgetFacts,
+    facts: slicedFacts,
     boundaries: trimmedBoundaries,
     warnings: trimmedWarnings,
-    completeness: {
-      mode: "bounded",
-      explicit_absences: finalAbsences,
-    },
+    explicit_absences: finalAbsences,
   };
 
-  // Final total budget check
   const rendered = formatMemoryContext(envelope);
   if (rendered.length > config.maxContextCharacters) {
-    // Try reducing facts further
-    while (budgetFacts.length > 0 && rendered.length > config.maxContextCharacters) {
-      budgetFacts.pop();
-      envelope.facts = budgetFacts;
-      if (budgetFacts.length === 0) {
+    while (envelope.facts.length > 0 && rendered.length > config.maxContextCharacters) {
+      envelope.facts.pop();
+      if (envelope.facts.length === 0) {
         envelope.freshness = "none";
-        envelope.completeness.explicit_absences = [
+        envelope.explicit_absences = [
           ...finalAbsences,
           "Context budget exceeded: all facts removed to fit within total context limit.",
         ];
       }
-      // Re-check
       const reRendered = formatMemoryContext(envelope);
       if (reRendered.length <= config.maxContextCharacters) {
         return envelope;
       }
     }
-    // If still over budget with empty facts, return null (caller emits unavailable)
     if (formatMemoryContext(envelope).length > config.maxContextCharacters) {
       return null;
     }
   }
 
   return envelope;
+}
+
+export function validateCaptureResult(result: SidecarResult): boolean {
+  if (!result.ok) return false;
+  const raw = result as Record<string, unknown>;
+  if (raw.schema !== "nollm.active_memory_capture.v1") return false;
+  const capture = raw.capture;
+  if (!capture || typeof capture !== "object") return false;
+  const cap = capture as Record<string, unknown>;
+  return (
+    typeof cap.event_id === "string" &&
+    typeof cap.promoted_count === "number" &&
+    typeof cap.deduplicated_count === "number" &&
+    typeof cap.suppressed_count === "number" &&
+    typeof cap.rejected_count === "number" &&
+    Array.isArray(cap.records)
+  );
 }

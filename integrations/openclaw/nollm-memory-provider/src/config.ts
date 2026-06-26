@@ -5,40 +5,47 @@ import type { NormalizedConfig, PluginConfig, SidecarResult } from "./types.js";
 
 export const ConfigSchema = Type.Object(
   {
-    pythonCommand: Type.Optional(Type.String({ default: "python3" })),
+    pythonExecutable: Type.String({
+      description: "Absolute path to the Python interpreter used to run the Nollm active sidecar.",
+    }),
+    pythonArgs: Type.Optional(
+      Type.Array(Type.String(), { default: [] })
+    ),
     nollmRepoRoot: Type.String({
       description: "Absolute path to the Nollm repository.",
     }),
-    nollmDataRoot: Type.String({
-      description: "Absolute path to Nollm-owned alpha state.",
+    workspaceRoot: Type.String({
+      description: "Absolute path to the OpenClaw workspace root.",
     }),
-    alphaFixturePath: Type.String({
-      description: "Absolute path to the synthetic alpha field fixture.",
+    nativeStoreRoot: Type.String({
+      description: "Absolute path to the native companion store directory.",
     }),
+    trialRoot: Type.Optional(Type.String({
+      description: "Absolute path to the active-trials directory.",
+    })),
     commandTimeoutMs: Type.Optional(
       Type.Integer({ default: 15000, minimum: 1000, maximum: 60000 })
     ),
-    maxFacts: Type.Optional(Type.Integer({ default: 3, minimum: 1, maximum: 20 })),
-    maxCharacters: Type.Optional(
-      Type.Integer({ default: 1200, minimum: 100, maximum: 10000 })
-    ),
+    maxFacts: Type.Optional(Type.Integer({ default: 4, minimum: 1, maximum: 20 })),
     maxContextCharacters: Type.Optional(
-      Type.Integer({ default: 4096, minimum: 200, maximum: 65536 })
+      Type.Integer({ default: 1400, minimum: 200, maximum: 65536 })
     ),
-    captureMode: Type.Optional(Type.Literal("receipt_only")),
-    allowAgentIds: Type.Optional(Type.Array(Type.String())),
+    captureMode: Type.Optional(
+      Type.Literal("deterministic_explicit_v1", { default: "deterministic_explicit_v1" })
+    ),
+    trialMode: Type.Optional(
+      Type.Literal("active_empirical_v1", { default: "active_empirical_v1" })
+    ),
   },
   { additionalProperties: false }
 );
 
-// Legacy path segment names that must never be a data root
 const LEGACY_SEGMENTS = new Set([
   "memory", "memory.md", "dreams.md",
   "legacy_workspace", "legacy-workspace",
 ]);
 
 export function isLegacyPathSegment(absPath: string): boolean {
-  // Normalize separators to forward slash, split into parts
   const normalized = absPath.replace(/\\/g, "/").toLowerCase();
   const parts = normalized.split("/").filter((p) => p.length > 0);
   for (const part of parts) {
@@ -46,7 +53,6 @@ export function isLegacyPathSegment(absPath: string): boolean {
       return true;
     }
   }
-  // Also check basename without extension
   const basename = parts[parts.length - 1] || "";
   const basenameNoExt = basename.replace(/\.[^.]+$/, "");
   if (LEGACY_SEGMENTS.has(basenameNoExt)) {
@@ -56,35 +62,38 @@ export function isLegacyPathSegment(absPath: string): boolean {
 }
 
 export function normalizeConfig(config: PluginConfig): NormalizedConfig {
+  const pythonExecutable = requireAbsoluteExecutable(config.pythonExecutable, "pythonExecutable");
   const nollmRepoRoot = requireAbsolutePath(config.nollmRepoRoot, "nollmRepoRoot");
-  const nollmDataRoot = requireAbsolutePath(config.nollmDataRoot, "nollmDataRoot");
-  const alphaFixturePath = requireAbsolutePath(
-    config.alphaFixturePath,
-    "alphaFixturePath"
-  );
+  const workspaceRoot = requireAbsolutePath(config.workspaceRoot, "workspaceRoot");
+  const nativeStoreRoot = requireAbsolutePath(config.nativeStoreRoot, "nativeStoreRoot");
+
   const sidecarScript = path.resolve(
     nollmRepoRoot,
-    "reference/python/scripts/run_openclaw_nollm_provider.py"
+    "reference/python/scripts/run_openclaw_nollm_active_memory.py"
   );
   if (!fs.existsSync(sidecarScript)) {
-    throw new Error(`sidecar script not found: ${sidecarScript}`);
-  }
-  requirePathUnder(alphaFixturePath, nollmRepoRoot, "alphaFixturePath", "nollmRepoRoot");
-
-  // Segment-aware legacy path rejection
-  if (isLegacyPathSegment(nollmDataRoot)) {
-    throw new Error(`nollmDataRoot must not be inside or be a legacy memory path: ${nollmDataRoot}`);
+    throw new Error(`active sidecar script not found: ${sidecarScript}`);
   }
 
-  const allowAgentIds = Array.isArray(config.allowAgentIds)
-    ? config.allowAgentIds.filter((id) => typeof id === "string" && id.length > 0)
-    : ["main"];
+  if (isLegacyPathSegment(nativeStoreRoot)) {
+    throw new Error(`nativeStoreRoot must not be inside or be a legacy memory path: ${nativeStoreRoot}`);
+  }
+
+  const trialRoot = config.trialRoot
+    ? requireAbsolutePath(config.trialRoot, "trialRoot")
+    : path.resolve(nativeStoreRoot, "..", "active-trials");
+
+  if (isLegacyPathSegment(trialRoot)) {
+    throw new Error(`trialRoot must not be inside or be a legacy memory path: ${trialRoot}`);
+  }
 
   return {
-    pythonCommand: config.pythonCommand || "python3",
+    pythonExecutable,
+    pythonArgs: Array.isArray(config.pythonArgs) ? config.pythonArgs.filter((a) => typeof a === "string") : [],
     nollmRepoRoot,
-    nollmDataRoot,
-    alphaFixturePath,
+    workspaceRoot,
+    nativeStoreRoot,
+    trialRoot,
     sidecarScript,
     commandTimeoutMs: boundedInteger(
       config.commandTimeoutMs ?? 15000,
@@ -92,21 +101,15 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
       60000,
       "commandTimeoutMs"
     ),
-    maxFacts: boundedInteger(config.maxFacts ?? 3, 1, 20, "maxFacts"),
-    maxCharacters: boundedInteger(
-      config.maxCharacters ?? 1200,
-      100,
-      10000,
-      "maxCharacters"
-    ),
+    maxFacts: boundedInteger(config.maxFacts ?? 4, 1, 20, "maxFacts"),
     maxContextCharacters: boundedInteger(
-      config.maxContextCharacters ?? 4096,
+      config.maxContextCharacters ?? 1400,
       200,
       65536,
       "maxContextCharacters"
     ),
-    captureMode: config.captureMode || "receipt_only",
-    allowAgentIds,
+    captureMode: config.captureMode || "deterministic_explicit_v1",
+    trialMode: config.trialMode || "active_empirical_v1",
   };
 }
 
@@ -117,7 +120,7 @@ export function configurationRequiredStatus(
   required_fields?: string[];
   message?: string;
 } {
-  const required = ["nollmRepoRoot", "nollmDataRoot", "alphaFixturePath"];
+  const required = ["pythonExecutable", "nollmRepoRoot", "workspaceRoot", "nativeStoreRoot"];
   const missing = required.filter((field) => {
     const value = config[field as keyof PluginConfig];
     return typeof value !== "string" || value.trim() === "";
@@ -129,10 +132,10 @@ export function configurationRequiredStatus(
     ok: false,
     status: "configuration_required",
     required_fields: required,
-    message: "Configure nollmRepoRoot, nollmDataRoot, and alphaFixturePath.",
+    message: "Configure pythonExecutable, nollmRepoRoot, workspaceRoot, and nativeStoreRoot.",
     error: {
       code: "configuration_error",
-      message: `Missing required Nollm provider config: ${missing.join(", ")}.`,
+      message: `Missing required Nollm active memory config: ${missing.join(", ")}.`,
       retryable: false,
     },
   };
@@ -145,20 +148,22 @@ function requireAbsolutePath(value: string | undefined, field: string): string {
   return path.resolve(value);
 }
 
-function requirePathUnder(
-  value: string,
-  root: string,
-  valueName: string,
-  rootName: string
-): void {
-  // D7: canonicalize symlinks to match Python Path.resolve() containment policy
-  const realValue = fs.realpathSync(value);
-  const realRoot = fs.realpathSync(root);
-  const relative = path.relative(realRoot, realValue);
-  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
-    return;
+function requireAbsoluteExecutable(value: string | undefined, field: string): string {
+  if (!value || !path.isAbsolute(value)) {
+    throw new Error(`${field} must be an absolute path.`);
   }
-  throw new Error(`${valueName} must resolve under ${rootName} (symlink-escaped path rejected).`);
+  const resolved = path.resolve(value);
+  if (!fs.existsSync(resolved)) {
+    throw new Error(`${field} executable not found: ${resolved}`);
+  }
+  const basename = path.basename(resolved).toLowerCase();
+  if (basename === "python3" || basename === "python" || basename === "py") {
+    // We accept python.exe because it is explicit. Reject bare "python3" only if it is the literal basename without .exe on Windows.
+    if (!basename.endsWith(".exe") && process.platform === "win32") {
+      throw new Error(`${field} on Windows must be an absolute python.exe, not a PATH launcher.`);
+    }
+  }
+  return resolved;
 }
 
 function boundedInteger(

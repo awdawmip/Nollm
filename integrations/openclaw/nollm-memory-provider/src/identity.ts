@@ -15,26 +15,32 @@ export interface TurnMessage {
   content?: unknown;
 }
 
+export function normalizeMessageContent(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    const parts: string[] = [];
+    for (const part of content) {
+      if (part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string") {
+        parts.push((part as Record<string, string>).text);
+      }
+    }
+    return parts.join("\n");
+  }
+  if (content && typeof content === "object" && typeof (content as Record<string, unknown>).text === "string") {
+    return (content as Record<string, string>).text;
+  }
+  return "";
+}
+
 export function extractLatestUserText(messages: TurnMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (!msg || msg.role !== "user") continue;
 
-    const content = msg.content;
-    if (typeof content === "string") {
-      return content;
-    }
-    if (Array.isArray(content)) {
-      const parts: string[] = [];
-      for (const part of content) {
-        if (part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string") {
-          parts.push((part as Record<string, string>).text);
-        }
-      }
-      if (parts.length > 0) {
-        return parts.join("\n");
-      }
-    }
+    const text = normalizeMessageContent(msg.content);
+    if (text) return text;
   }
   return "";
 }

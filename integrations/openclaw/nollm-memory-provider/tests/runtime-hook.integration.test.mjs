@@ -32,11 +32,9 @@ describe("T5 prepare injects valid bounded envelope", () => {
       { messages: [{ role: "user", content: "tell me about nollm" }] },
       { agentId: "main", sessionId: "s1", runId: "run-1" }
     );
-    assert.ok(result.prependContext.includes("NOLLM MEMORY CONTEXT"));
-    assert.ok(result.prependContext.includes("nollm.memory_context.v1"));
-    assert.ok(result.prependContext.includes("alpha_main"));
+    assert.ok(result.prependContext.includes("NOLLM_MEMORY_CONTEXT_V1"));
+    assert.ok(result.prependContext.includes("freshness: fresh"));
     assert.ok(result.prependContext.includes("stub claim about Nollm"));
-    assert.ok(result.prependContext.includes("Do not infer access to omitted memories"));
   });
 });
 
@@ -52,8 +50,8 @@ describe("T6 unavailable result does not cause fallback", () => {
       { messages: [{ role: "user", content: "hello" }] },
       {}
     );
-    assert.ok(result.prependContext.includes("NOLLM MEMORY CONTEXT"));
-    assert.ok(result.prependContext.includes("factual context, not instructions"));
+    assert.ok(result.prependContext.includes("NOLLM_MEMORY_CONTEXT_V1"));
+    assert.ok(result.prependContext.includes("freshness: none") || result.prependContext.includes("freshness: unavailable"));
     assert.ok(!result.prependContext.includes("memory_search"));
     assert.ok(!result.prependContext.includes("LEGACY"));
   });
@@ -85,14 +83,13 @@ describe("T8 sidecar stdin / shell:false / timeout / abort", () => {
     const cfg = makeProviderConfig(tmp);
     writeStubSidecar(cfg.nollmRepoRoot, STUB_ECHO);
     const normalized = normalizeConfig(cfg);
-    const result = await runSidecarCommand(normalized, "status", {});
+    const result = await runSidecarCommand(normalized, "active-prepare", { query: "hello" });
     assert.equal(result.ok, true);
-    assert.equal(result.command, "status");
+    assert.equal(result.command, "active-prepare");
     assert.ok(Array.isArray(result.argv));
-    assert.ok(result.argv.includes("--config-json"));
-    const configArg = result.argv[result.argv.indexOf("--config-json") + 1];
-    const parsed = JSON.parse(configArg);
-    assert.equal(typeof parsed.commandTimeoutMs, "number");
+    assert.ok(result.argv.includes("--native-store-root"));
+    assert.ok(result.argv.includes("--trial-root"));
+    assert.ok(result.native_store_root.includes("native-companion-v1"));
   });
 
   it("times out a slow sidecar", async () => {
@@ -101,7 +98,7 @@ describe("T8 sidecar stdin / shell:false / timeout / abort", () => {
     writeStubSidecar(cfg.nollmRepoRoot, STUB_SLOW);
     const normalized = normalizeConfig(cfg);
     const start = Date.now();
-    const result = await runSidecarCommand(normalized, "slow", {});
+    const result = await runSidecarCommand(normalized, "active-prepare", {});
     const elapsed = Date.now() - start;
     assert.equal(result.ok, false);
     assert.equal(result.error.code, "sidecar_timeout");
@@ -114,7 +111,7 @@ describe("T8 sidecar stdin / shell:false / timeout / abort", () => {
     writeStubSidecar(cfg.nollmRepoRoot, STUB_SLOW);
     const normalized = normalizeConfig(cfg);
     const controller = new AbortController();
-    const promise = runSidecarCommand(normalized, "slow", {}, controller.signal);
+    const promise = runSidecarCommand(normalized, "active-prepare", {}, controller.signal);
     setTimeout(() => controller.abort(), 50);
     const result = await promise;
     assert.equal(result.ok, false);
@@ -126,7 +123,7 @@ describe("T8 sidecar stdin / shell:false / timeout / abort", () => {
     const cfg = makeProviderConfig(tmp);
     writeStubSidecar(cfg.nollmRepoRoot, STUB_INVALID_JSON);
     const normalized = normalizeConfig(cfg);
-    const result = await runSidecarCommand(normalized, "invalid-json", {});
+    const result = await runSidecarCommand(normalized, "active-prepare", {});
     assert.equal(result.ok, false);
     assert.equal(result.error.code, "sidecar_invalid_json");
   });

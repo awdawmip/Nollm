@@ -4,26 +4,26 @@ import type { NormalizedConfig, SidecarResult } from "./types.js";
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
 
+export type ActiveCommand = "active-status" | "active-prepare" | "active-capture";
+
 export async function runSidecarCommand(
   config: NormalizedConfig,
-  command: "prepare" | "capture" | "status",
+  command: ActiveCommand,
   payload: Record<string, unknown>,
   signal?: AbortSignal
 ): Promise<SidecarResult> {
-  const configJson = JSON.stringify({
-    pythonCommand: config.pythonCommand,
-    nollmRepoRoot: config.nollmRepoRoot,
-    nollmDataRoot: config.nollmDataRoot,
-    alphaFixturePath: config.alphaFixturePath,
-    commandTimeoutMs: config.commandTimeoutMs,
-    maxFacts: config.maxFacts,
-    maxCharacters: config.maxCharacters,
-    captureMode: config.captureMode,
-  });
+  const argv: string[] = [
+    ...config.pythonArgs,
+    config.sidecarScript,
+    "--native-store-root",
+    config.nativeStoreRoot,
+    "--trial-root",
+    config.trialRoot,
+  ];
   const stdinPayload = JSON.stringify({ command, ...payload });
   return spawnJson(
-    config.pythonCommand,
-    [config.sidecarScript, "--config-json", configJson],
+    config.pythonExecutable,
+    argv,
     stdinPayload,
     config.commandTimeoutMs,
     signal

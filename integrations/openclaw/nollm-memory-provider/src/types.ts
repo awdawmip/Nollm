@@ -1,28 +1,30 @@
 export type PluginConfig = {
-  pythonCommand?: string;
+  pythonExecutable?: string;
+  pythonArgs?: string[];
   nollmRepoRoot?: string;
-  nollmDataRoot?: string;
-  alphaFixturePath?: string;
+  workspaceRoot?: string;
+  nativeStoreRoot?: string;
+  trialRoot?: string;
   commandTimeoutMs?: number;
   maxFacts?: number;
-  maxCharacters?: number;
   maxContextCharacters?: number;
   captureMode?: string;
-  allowAgentIds?: string[];
+  trialMode?: string;
 };
 
 export type NormalizedConfig = {
-  pythonCommand: string;
+  pythonExecutable: string;
+  pythonArgs: string[];
   nollmRepoRoot: string;
-  nollmDataRoot: string;
-  alphaFixturePath: string;
+  workspaceRoot: string;
+  nativeStoreRoot: string;
+  trialRoot: string;
   sidecarScript: string;
   commandTimeoutMs: number;
   maxFacts: number;
-  maxCharacters: number;
   maxContextCharacters: number;
   captureMode: string;
-  allowAgentIds: string[];
+  trialMode: string;
 };
 
 export type SidecarErrorCode =
@@ -51,26 +53,54 @@ export type SidecarSuccess = {
 
 export type SidecarResult = SidecarSuccess | SidecarFailure;
 
+export type MemoryFact = {
+  memory_id: string;
+  claim: string;
+  kind: string;
+  source: string;
+  revision_id?: string;
+};
+
 export type MemoryContextEnvelope = {
-  schema: "nollm.memory_context.v1";
-  context_id: string;
-  field_id: string;
-  field_revision_id: string;
+  schema: "NOLLM_MEMORY_CONTEXT_V1";
   freshness: "fresh" | "none" | "unavailable";
-  facts: Array<Record<string, unknown>>;
+  facts: MemoryFact[];
   boundaries: Array<Record<string, unknown>>;
   warnings: string[];
-  completeness: {
-    mode: "bounded";
-    explicit_absences: string[];
+  explicit_absences: string[];
+};
+
+export type ActivePrepareResult = {
+  schema: "nollm.provider.prepare.v2";
+  ok: true;
+  context: MemoryContextEnvelope;
+  metrics?: {
+    native_record_count?: number;
+    result_count?: number;
+    rendered_context_characters?: number;
+    recall_mode?: string;
   };
 };
 
-export type CaptureReceipt = {
-  receipt_id: string;
-  event_hash: string;
-  stored_at: string;
-  state: "captured_pending_native_ingress";
-  legacy_memory_mutated: false;
-  reused?: boolean;
+export type ActiveCaptureResult = {
+  schema: "nollm.active_memory_capture.v1";
+  ok: true;
+  capture: {
+    event_id: string;
+    promoted_count: number;
+    deduplicated_count: number;
+    suppressed_count: number;
+    rejected_count: number;
+    records: Array<{
+      memory_id: string;
+      kind: string;
+      source: string;
+    }>;
+  };
+  metrics?: {
+    user_messages_seen?: number;
+    assistant_messages_ignored?: number;
+    candidate_count?: number;
+    latency_ms?: number;
+  };
 };

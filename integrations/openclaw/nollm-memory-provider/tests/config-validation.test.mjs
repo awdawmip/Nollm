@@ -15,24 +15,24 @@ describe("E5 config segment-aware legacy path rejection", () => {
   it("/tmp/x/memory rejected", () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
-    cfg.nollmDataRoot = path.join(os.tmpdir(), "test", "memory");
+    cfg.nativeStoreRoot = path.join(os.tmpdir(), "test", "memory");
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
     assert.throws(() => normalizeConfig(cfg), /legacy memory path/i);
   });
 
-  it("/tmp/nollm-memory-alpha accepted", () => {
+  it("/tmp/nollm-memory/native-companion-v1 accepted", () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
-    cfg.nollmDataRoot = path.join(os.tmpdir(), "nollm-memory-alpha-test");
+    cfg.nativeStoreRoot = path.join(os.tmpdir(), "nollm-memory-alpha-test", "native-companion-v1");
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
-    fs.mkdirSync(cfg.nollmDataRoot, { recursive: true });
+    fs.mkdirSync(cfg.nativeStoreRoot, { recursive: true });
     assert.doesNotThrow(() => normalizeConfig(cfg));
   });
 
   it("MEMORY.md in path rejected", () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
-    cfg.nollmDataRoot = path.join(os.tmpdir(), "MEMORY.md");
+    cfg.nativeStoreRoot = path.join(os.tmpdir(), "MEMORY.md");
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
     assert.throws(() => normalizeConfig(cfg), /legacy memory path/i);
   });
@@ -44,32 +44,19 @@ describe("E5 config segment-aware legacy path rejection", () => {
     assert.throws(() => normalizeConfig(cfg));
   });
 
-  it("D7: symlinked fixture escaping repo root is rejected (realpath containment)", () => {
+  it("relative pythonExecutable rejected", () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
-    const outsideDir = path.join(tmp, "outside");
-    const linkDir = path.join(cfg.nollmRepoRoot, "external-link");
-    fs.mkdirSync(outsideDir, { recursive: true });
-    const outsideFixture = path.join(outsideDir, "alpha-field.json");
-    fs.copyFileSync(cfg.alphaFixturePath, outsideFixture);
-    // Directory junction does not require admin privileges on Windows
-    fs.symlinkSync(outsideDir, linkDir, "junction");
-    cfg.alphaFixturePath = path.join(linkDir, "alpha-field.json");
+    cfg.pythonExecutable = "python3";
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
-    assert.throws(() => normalizeConfig(cfg), /symlink-escaped path rejected|must resolve under/i);
+    assert.throws(() => normalizeConfig(cfg), /absolute path/i);
   });
 
-  it("D7: symlinked fixture staying inside repo root is accepted", () => {
+  it("W2 config rejects missing pythonExecutable", () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);
-    const insideDir = path.join(cfg.nollmRepoRoot, "fixtures2");
-    const linkDir = path.join(cfg.nollmRepoRoot, "external-link-in");
-    fs.mkdirSync(insideDir, { recursive: true });
-    const insideFixture = path.join(insideDir, "alpha-field.json");
-    fs.copyFileSync(cfg.alphaFixturePath, insideFixture);
-    fs.symlinkSync(insideDir, linkDir, "junction");
-    cfg.alphaFixturePath = path.join(linkDir, "alpha-field.json");
+    delete cfg.pythonExecutable;
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
-    assert.doesNotThrow(() => normalizeConfig(cfg));
+    assert.throws(() => normalizeConfig(cfg), /pythonExecutable/i);
   });
 });

@@ -21,17 +21,21 @@ describe("T1 manifest", () => {
     assert.equal(manifest.id, "nollm");
     assert.equal(manifest.kind, "memory");
     assert.deepEqual(manifest.contracts?.tools, []);
+    const required = manifest.configSchema.required;
+    assert.ok(required.includes("pythonExecutable"), "requires pythonExecutable");
+    assert.ok(required.includes("nativeStoreRoot"), "requires nativeStoreRoot");
+    assert.ok(!required.includes("alphaFixturePath"), "no alphaFixturePath");
   });
 });
 
 describe("T2-T4 provider registration", () => {
-  it("registers memory capability with promptBuilder=[], flushPlanResolver=null, and runtime", () => {
+  it("registers memory capability with promptBuilder=[], flushPlanResolver=null, and no active runtime", () => {
     const api = makeMockApi(makeProviderConfig(makeTempDir()));
     createNollmProvider(api);
     assert.ok(api._events.capability, "capability should be registered");
     assert.deepEqual(api._events.capability.promptBuilder(), []);
     assert.equal(api._events.capability.flushPlanResolver(), null);
-    assert.ok(api._events.capability.runtime, "runtime should be set");
+    assert.equal(api._events.capability.runtime, undefined, "compatibility runtime must not be exposed in W2");
   });
 
   it("registers agent_turn_prepare and agent_end handlers", () => {
@@ -60,6 +64,7 @@ describe("T2-T4 provider registration", () => {
       { messages: [{ role: "user", content: "hello" }] },
       {}
     );
-    assert.ok(result.prependContext.includes("No Nollm memory is available"));
+    assert.ok(result.prependContext.includes("NOLLM_MEMORY_CONTEXT_V1"));
+    assert.ok(result.prependContext.includes("unavailable"));
   });
 });
