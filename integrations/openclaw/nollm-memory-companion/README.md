@@ -93,6 +93,20 @@ exact/substring, Latin/digit token overlap, CJK 2-gram overlap, kind-intent, and
 explicit test-code markers. It does not use embeddings, vector search, or LLM
 reranking.
 
+W1-03 separates *admission* from *ranking*: `kind_intent` is no longer an
+admission condition on its own. Specific queries return only records that share
+a matching deterministic facet (`identity_name`, `identity_code`,
+`preference_color_or_label`, `preference_response_style`, `project_release`,
+`project_decision`, `generic_test_code`) or discriminative lexical evidence.
+Broad queries may return a facet collection (for example "我有哪些项目决定？"),
+but generic namespace tokens (`W1`, `W1-02`, pure numbers, "代号/项目/偏好")
+do not alone constitute relevance. Generic test-code queries with multiple
+candidates return an explicit `ambiguity` block instead of picking by timestamp.
+
+`nollm_memory_get` distinguishes an invalid `memory_id`
+(`status=invalid_input`, `code=native_memory_id_invalid`) from an unknown but
+well-formed native id (`status=not_found`, `code=native_memory_not_found`).
+
 Structured errors (for example `memory_content_rejected` for secret-like input
 and `native_memory_not_found` for an unknown `memory_id`) are returned as
 `ok: false` results with `{ code, message, retryable }` and are propagated by

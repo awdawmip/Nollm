@@ -14,8 +14,13 @@ states a stable identity/preference such as "我叫…", "我偏好…":
 When the user asks "我叫什么", "我偏好什么", or asks for a saved fact:
 1. Use `nollm_memory_recall`.
 2. Answer only from returned native memory.
-3. When none is found, say no Nollm native memory was found.
-4. Do not silently read legacy files as fallback.
+3. Specific queries (for example "喜欢什么标签颜色？" or "项目何时发版？") return only the
+   matching facet; broad queries (for example "我有哪些项目决定？") may return a facet
+   collection. Generic tokens like `W1`, `W1-02`, pure numbers, or "代号/项目/偏好" alone
+   are not relevance evidence.
+4. When none is found, or when a generic test-code query has multiple candidates, say no
+   uniquely relevant Nollm native memory was found.
+5. Do not silently read legacy files as fallback.
 
 The `nollm_memory_recall` tool returns an empty `results` array when no relevant native memory is found. Do not choose an unrelated returned memory and do not silently use legacy file memory as Nollm evidence. If `nollm_memory_remember` returns `memory_content_rejected` or `nollm_memory_get` returns `native_memory_not_found`, report the structured error code to the user and do not guess.
 
