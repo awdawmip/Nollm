@@ -83,8 +83,8 @@
     },
     {
       "path": "out/nollm_runtime/gravity_report_demo.json",
-      "sha256": "12a009c2270d5e01fb20c0a7d263d20abad3d36591a8eecd5076e9e0bbb980a8",
-      "size_bytes": 1977
+      "sha256": "3fabbc30e2a033fed504de2832c23a1814d352b871baa46a73d6ded536eea9fb",
+      "size_bytes": 1930
     },
     {
       "path": "out/nollm_runtime/minimal_ablation_experiment_report.json",
@@ -108,8 +108,8 @@
     },
     {
       "path": "out/nollm_runtime/reverse_cover_report.json",
-      "sha256": "2f66542fb9b28c057e680072b13d4003487a879f5fa9b9f0779190da85b08a7f",
-      "size_bytes": 356289
+      "sha256": "2a37141959671586a4b35fdbe49de0d48181c4c266e2bf3574d0a605137374df",
+      "size_bytes": 374806
     },
     {
       "path": "protocol/DRIFT_REPORT.md",

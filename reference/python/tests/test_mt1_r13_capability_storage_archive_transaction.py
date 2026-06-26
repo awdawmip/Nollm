@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import json
 import os
-import subprocess
+from tests.conftest import _run_command
 import sys
 import threading
 from datetime import datetime, timezone
@@ -371,7 +371,7 @@ def test_I1_two_processes_preserve_both_ledger_events(tmp_path: Path) -> None:
         f"import json; r = plan_legacy_import(r'{memory_root}', '{snap1['snapshot_id']}', target_field_id='field_a'); "
         "print(json.dumps(r))"
     )
-    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
+    proc = _run_command([sys.executable, "-c", code], cwd=r"C:\Users\chaos\nollm", timeout=60)
     assert proc.returncode == 0, proc.stderr
     r1 = json.loads(proc.stdout.strip())
     assert r1["ok"] is True, r1
@@ -382,7 +382,7 @@ def test_I1_two_processes_preserve_both_ledger_events(tmp_path: Path) -> None:
         f"import json; r = plan_legacy_import(r'{memory_root}', '{snap2['snapshot_id']}', target_field_id='field_b'); "
         "print(json.dumps(r))"
     )
-    proc2 = subprocess.run([sys.executable, "-c", code2], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
+    proc2 = _run_command([sys.executable, "-c", code2], cwd=r"C:\Users\chaos\nollm", timeout=60)
     assert proc2.returncode == 0, proc2.stderr
     r2 = json.loads(proc2.stdout.strip())
     assert r2["ok"] is True, r2
@@ -401,8 +401,8 @@ def test_I2_same_batch_concurrent_yields_reuse(tmp_path: Path) -> None:
         f"import json; r = plan_legacy_import(r'{memory_root}', '{snapshot_id}', target_field_id='field_fixture'); "
         "print(json.dumps(r))"
     )
-    p1 = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
-    p2 = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
+    p1 = _run_command([sys.executable, "-c", code], cwd=r"C:\Users\chaos\nollm", timeout=60)
+    p2 = _run_command([sys.executable, "-c", code], cwd=r"C:\Users\chaos\nollm", timeout=60)
     assert p1.returncode == 0, p1.stderr
     assert p2.returncode == 0, p2.stderr
     r1 = json.loads(p1.stdout.strip())
@@ -421,8 +421,8 @@ def test_I3_contention_no_duplicate_finalization(tmp_path: Path) -> None:
         f"import json; r = run_legacy_import(r'{memory_root}', '{batch_id}', commit=True); "
         "print(json.dumps(r))"
     )
-    p1 = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
-    p2 = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=r"C:\Users\chaos\nollm")
+    p1 = _run_command([sys.executable, "-c", code], cwd=r"C:\Users\chaos\nollm", timeout=60)
+    p2 = _run_command([sys.executable, "-c", code], cwd=r"C:\Users\chaos\nollm", timeout=60)
     r1 = json.loads(p1.stdout.strip()) if p1.stdout.strip() else {}
     r2 = json.loads(p2.stdout.strip()) if p2.stdout.strip() else {}
     # At least one should succeed
@@ -555,3 +555,4 @@ def test_R4_coverage_validation(tmp_path: Path) -> None:
     coverage = validate_source_coverage(memory_root, snapshot_id, require_linked=True)
     assert "ok" in coverage
     assert "errors" in coverage
+

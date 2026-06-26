@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+from tests.conftest import _run_command
+
 import pytest
 
 from nollm.openclaw_memory_provider_alpha import (
@@ -298,7 +300,6 @@ def test_no_side_effect_before_invalid_config_preflight(tmp_path: Path) -> None:
 
 
 def test_script_invocation_with_empty_stdin() -> None:
-    import subprocess
     repo_root = Path(__file__).resolve().parents[3]
     sidecar_script = repo_root / "reference" / "python" / "scripts" / "run_openclaw_nollm_provider.py"
     config_json = json.dumps(
@@ -311,11 +312,10 @@ def test_script_invocation_with_empty_stdin() -> None:
             ),
         }
     )
-    proc = subprocess.run(
+    proc = _run_command(
         [sys.executable, str(sidecar_script), "--config-json", config_json],
-        input="",
-        capture_output=True,
-        text=True,
+        input_data="",
+        cwd=Path.cwd(),
         timeout=10,
     )
     result = json.loads(proc.stdout)

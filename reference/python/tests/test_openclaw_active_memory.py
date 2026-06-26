@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
+from tests.conftest import _run_command
 import sys
 from pathlib import Path
 
@@ -333,19 +333,16 @@ def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: d
         "--trial-root", str(trial_root),
     ]
     stdin = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-    result = subprocess.run(
+    result = _run_command(
         command,
-        input=stdin,
-        text=True,
-        capture_output=True,
+        input_data=stdin,
         cwd=ROOT / "reference/python",
         timeout=60,
     )
     stdin_bytes = stdin.encode("utf-8")
-    result = subprocess.run(
+    result = _run_command(
         command,
-        input=stdin_bytes,
-        capture_output=True,
+        input_data=stdin_bytes,
         cwd=ROOT / "reference/python",
         timeout=60,
     )
