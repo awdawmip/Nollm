@@ -6,12 +6,13 @@ import os
 import re
 import sys
 import time
-import unicodedata
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
+
+from nollm.companion_memory_matching import rank_candidates
 
 STORE_DIR_NAME = "native-companion-v1"
 STORE_VERSION = "1"
@@ -25,128 +26,6 @@ DEFAULT_KIND = "note"
 ALLOWED_SCOPES = {"user", "workspace"}
 DEFAULT_SCOPE = "user"
 DEFAULT_SOURCE = "explicit_user"
-
-CJK_STOP_CHARS = {
-    "的", "是", "我", "你", "他", "她", "它", "这", "那", "什", "么", "怎",
-    "请", "记", "忆", "一", "下", "吗", "呢", "了", "在", "和", "或", "与",
-    "就", "都", "不", "有", "没", "为", "对", "给", "说", "问", "查", "询",
-    "回", "忆", "用", "把", "被", "让", "向", "到", "从", "上", "下", "中",
-    "里", "外", "前", "后", "会", "能", "可", "要", "想", "看", "听", "来",
-    "去", "过", "也", "很", "最", "更", "太", "还", "只", "又", "再", "但",
-    "而", "因", "所", "如", "果", "虽", "然", "个", "条", "次", "种",
-}
-
-IDENTITY_QUERY_ALIASES = ["我叫什么", "我的名字", "我是谁", "我姓名", "我叫", "名字是什么", "我名字", "姓名"]
-PREFERENCE_QUERY_ALIASES = ["我偏好什么", "我喜欢怎样回答", "我偏好", "我的偏好", "我喜欢什么", "偏好", "喜欢"]
-PROJECT_DECISION_QUERY_ALIASES = ["项目", "发版", "发布", "决策", "release", "launch", "decision", "project"]
-TEST_CODE_QUERY_MARKERS = ["测试代号", "测试代码", "测试码", "代号", "编号", "code", "marker", "token", "identifier"]
-TEST_CODE_RECORD_MARKERS = ["测试代号", "测试代码", "测试码", "code", "marker", "token", "identifier"]
-
-
-def _normalize_recall_text(text: str) -> str:
-    text = unicodedata.normalize("NFKC", text)
-    text = text.lower()
-    normalized_chars = []
-    for char in text:
-        cat = unicodedata.category(char)
-        if cat.startswith("L") or cat.startswith("N") or char.isspace():
-            normalized_chars.append(char)
-        else:
-            normalized_chars.append(" ")
-    return " ".join("".join(normalized_chars).split())
-
-
-def _latin_tokens(text: str) -> set[str]:
-    return set(re.findall(r"[a-z0-9]+", text.lower()))
-
-
-def _cjk_ngrams(text: str) -> set[str]:
-    normalized = _normalize_recall_text(text)
-    chars = [c for c in normalized if not c.isascii() and not c.isspace()]
-    ngrams: set[str] = set()
-    for i in range(len(chars) - 1):
-        ngrams.add(chars[i] + chars[i + 1])
-    return ngrams
-
-
-def _query_intents(query: str) -> set[str]:
-    normalized = _normalize_recall_text(query)
-    intents: set[str] = set()
-    if any(alias in normalized for alias in IDENTITY_QUERY_ALIASES):
-        intents.add("identity")
-    if any(alias in normalized for alias in PREFERENCE_QUERY_ALIASES):
-        intents.add("preference")
-    if any(alias in normalized for alias in PROJECT_DECISION_QUERY_ALIASES):
-        intents.add("project_decision")
-    if any(marker in normalized for marker in TEST_CODE_QUERY_MARKERS):
-        intents.add("test_code")
-    return intents
-
-
-def _record_intent_match(record: dict[str, Any], intents: set[str]) -> bool:
-    kind = record.get("kind", "")
-    if "identity" in intents and kind == "identity":
-        return True
-    if "preference" in intents and kind == "preference":
-        return True
-    if "project_decision" in intents and kind in {"project", "decision"}:
-        return True
-    return False
-
-
-def _record_has_test_code_marker(record: dict[str, Any]) -> bool:
-    text = _normalize_recall_text(record.get("text", ""))
-    return any(marker in text for marker in TEST_CODE_RECORD_MARKERS)
-
-
-def _is_stop_ngram(ngram: str) -> bool:
-    return all(char in CJK_STOP_CHARS for char in ngram)
-
-
-def _relevance_gate(query_analysis: dict[str, Any], record: dict[str, Any]) -> dict[str, Any] | None:
-    record_text = _normalize_recall_text(record.get("text", ""))
-    record_latin = _latin_tokens(record_text)
-    record_cjk = _cjk_ngrams(record_text)
-    query_text = query_analysis["normalized_text"]
-    query_latin = query_analysis["latin_tokens"]
-    query_cjk = query_analysis["cjk_ngrams"]
-    intents = query_analysis["intents"]
-    matched_terms: list[str] = []
-    match_modes: set[str] = set()
-
-    if query_text and (query_text in record_text or record_text in query_text):
-        match_modes.add("exact")
-        matched_terms.append(query_text if len(query_text) <= len(record_text) else record_text)
-
-    latin_overlap = query_latin & record_latin
-    if latin_overlap:
-        match_modes.add("latin")
-        matched_terms.extend(sorted(latin_overlap))
-
-    cjk_overlap = query_cjk & record_cjk
-    non_stop_cjk = {ngram for ngram in cjk_overlap if not _is_stop_ngram(ngram)}
-    if non_stop_cjk:
-        match_modes.add("cjk")
-        matched_terms.extend(sorted(non_stop_cjk)[:4])
-
-    if _record_intent_match(record, intents):
-        match_modes.add("kind_intent")
-        matched_terms.append(f"kind={record.get('kind')}")
-
-    if "test_code" in intents and _record_has_test_code_marker(record):
-        match_modes.add("test_code")
-        matched_terms.append("test_code_marker")
-
-    if not match_modes:
-        return None
-
-    return {
-        "modes": sorted(match_modes),
-        "latin_overlap": len(latin_overlap),
-        "cjk_overlap": len(non_stop_cjk),
-        "matched_terms": matched_terms[:8],
-    }
-
 
 SECRET_PATTERNS = [
     re.compile(r"Bearer\s+\S+", re.IGNORECASE),
@@ -319,36 +198,11 @@ def _append_record(store_dir: Path, record: dict[str, Any]) -> None:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def _rank_records(query: str, records: list[dict[str, Any]], scope: str | None) -> list[tuple[dict[str, Any], dict[str, Any]]]:
-    query_analysis = {
-        "normalized_text": _normalize_recall_text(query),
-        "latin_tokens": _latin_tokens(query),
-        "cjk_ngrams": _cjk_ngrams(query),
-        "intents": _query_intents(query),
-    }
-
+def _rank_records(query: str, records: list[dict[str, Any]], scope: str | None) -> tuple[list[tuple[dict[str, Any], dict[str, Any]]], dict[str, Any] | None]:
     filtered = records
     if scope is not None:
         filtered = [r for r in records if r.get("scope") == scope]
-
-    scored: list[tuple[dict[str, Any], dict[str, Any]]] = []
-    for record in filtered:
-        relevance = _relevance_gate(query_analysis, record)
-        if relevance is None:
-            continue
-        score = (
-            1 if "exact" in relevance["modes"] else 0,
-            relevance["latin_overlap"],
-            relevance["cjk_overlap"],
-            1 if "kind_intent" in relevance["modes"] else 0,
-            1 if "test_code" in relevance["modes"] else 0,
-            record.get("created_at", ""),
-            record.get("memory_id", ""),
-        )
-        scored.append((record, {**relevance, "score": score}))
-
-    scored.sort(key=lambda item: item[1]["score"], reverse=True)
-    return scored
+    return rank_candidates(query, filtered)
 
 
 def _validate_memory_text(text: str) -> str:
@@ -491,8 +345,24 @@ def recall_native_memory(
     with _store_lock(_lock_path(store_dir)):
         active_records = _active_records(_read_records(store_dir))
 
-    ranked = _rank_records(query, active_records, scope)
+    ranked, ambiguity = _rank_records(query, active_records, scope)
     selected = ranked[:limit]
+
+    if ambiguity is not None:
+        return {
+            "schema": RECALL_SCHEMA,
+            "ok": True,
+            "query": query,
+            "results": [],
+            "warnings": [
+                "multiple native companion memories match a generic query; ask for a more specific memory facet"
+            ],
+            "explicit_absences": [
+                "No uniquely relevant Nollm native companion memory could be selected."
+            ],
+            "ambiguity": ambiguity,
+            "store": "nollm_native_companion",
+        }
 
     if not selected:
         return {
@@ -517,8 +387,9 @@ def recall_native_memory(
                 "source": r["source"],
                 "revision_id": r["revision_id"],
                 "match": {
-                    "mode": " | ".join(match["modes"]),
+                    "mode": match["mode"],
                     "matched_terms": match["matched_terms"],
+                    "matched_facets": match["matched_facets"],
                 },
             }
         )
