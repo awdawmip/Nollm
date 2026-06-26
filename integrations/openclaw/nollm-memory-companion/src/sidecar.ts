@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import type { NormalizedConfig, PluginConfig, PythonProbeResult, SidecarFailure, SidecarResult } from "./types.js";
+import type { NativeError, NormalizedConfig, PluginConfig, PythonProbeResult, SidecarFailure, SidecarResult, SidecarSuccess } from "./types.js";
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
 const REQUIRED_CONFIG_FIELDS = ["nollmRepoRoot", "workspaceRoot"] as const;
@@ -342,7 +342,7 @@ export function configurationRequiredStatus(config: PluginConfig): SidecarResult
 } {
   const missing = missingRequiredConfig(config);
   if (missing.length === 0) {
-    return { ok: true };
+    return { ok: true, schema: "nollm.companion.configuration_ok.v1" };
   }
   return {
     ok: false,
@@ -355,6 +355,36 @@ export function configurationRequiredStatus(config: PluginConfig): SidecarResult
       retryable: false
     }
   };
+}
+
+
+function _isSidecarErrorObject(value: unknown): value is { code: string; message: string; retryable: boolean } {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.code === "string" &&
+    typeof obj.message === "string" &&
+    typeof obj.retryable === "boolean"
+  );
+}
+
+function _isRecognizedSidecarResponse(parsed: unknown): parsed is SidecarSuccess | NativeError {
+  if (typeof parsed !== "object" || parsed === null) {
+    return false;
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.ok !== "boolean") {
+    return false;
+  }
+  if (typeof obj.schema !== "string" || !obj.schema.startsWith("nollm.")) {
+    return false;
+  }
+  if (obj.ok === false && !_isSidecarErrorObject(obj.error)) {
+    return false;
+  }
+  return true;
 }
 
 async function spawnJson(
@@ -405,15 +435,26 @@ async function spawnJson(
         resolve(sidecarFailure("sidecar_timeout", "Nollm sidecar command timed out.", true));
         return;
       }
-      if (code !== 0) {
-        resolve(sidecarFailure("sidecar_failed", conciseSidecarFailure(stderr || stdout), true));
+
+      let parsed: unknown;
+      let parseError = false;
+      try {
+        parsed = JSON.parse(stdout);
+      } catch {
+        parseError = true;
+      }
+
+      if (!parseError && _isRecognizedSidecarResponse(parsed)) {
+        resolve(parsed);
         return;
       }
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        resolve(sidecarFailure("sidecar_invalid_json", "Nollm sidecar returned invalid JSON.", true));
+
+      if (code !== 0) {
+        resolve(sidecarFailure("sidecar_failed", `Nollm sidecar exited with code ${code}.`, true));
+        return;
       }
+
+      resolve(sidecarFailure("sidecar_invalid_json", "Nollm sidecar returned invalid JSON.", true));
     });
   });
 }
@@ -490,9 +531,8 @@ function sidecarFailure(code: SidecarFailure["error"]["code"], message: string, 
   };
 }
 
-function conciseSidecarFailure(text: string): string {
-  const firstLine = text.split(/\r?\n/).find((line) => line.trim()) ?? "Nollm sidecar command failed.";
-  return firstLine.slice(0, 240);
+function conciseSidecarFailure(_text: string): string {
+  return "Nollm sidecar command failed.";
 }
 
 function safeErrorMessage(error: unknown): string {

@@ -201,9 +201,9 @@ test("validates configured paths and output containment", () => {
 test("returns structured failures for timeout, non-zero exit, and invalid JSON", async () => {
   const fixture = makeFixture();
   fs.writeFileSync(
-    fixture.sidecarScript,
-    "const mode = process.env.NOLLM_TEST_MODE; if (mode === 'timeout') setTimeout(() => {}, 10000); else if (mode === 'fail') { console.error('sidecar failed safely'); process.exit(2); } else if (mode === 'invalid') console.log('not json'); else console.log(JSON.stringify({ ok: true }));\n",
-    "utf8"
+   fixture.sidecarScript,
+    "const mode = process.env.NOLLM_TEST_MODE; if (mode === 'timeout') setTimeout(() => {}, 10000); else if (mode === 'fail') { console.error('sidecar failed safely'); process.exit(2); } else if (mode === 'invalid') console.log('not json'); else console.log(JSON.stringify({ schema: 'nollm.companion.status_ok.v1', ok: true }));\n",
+   "utf8"
   );
 
   process.env.NOLLM_TEST_MODE = "fail";
@@ -326,9 +326,9 @@ function makeFakePython(root) {
       "  process.stdout.write(result.stdout ?? '');",
       "  process.stderr.write(result.stderr ?? '');",
       "  process.exit(result.status ?? 0);",
-      "} else {",
-      "  console.log(JSON.stringify({ ok: true, shell: false, python_executable: process.execPath }));",
-      "}",
+     "} else {",
+      "  console.log(JSON.stringify({ schema: 'nollm.companion.status_ok.v1', ok: true, shell: false, python_executable: process.execPath }));",
+     "}",
       ""
     ].join("\n"),
     "utf8"
@@ -343,9 +343,9 @@ function makeFixture(overrides = {}) {
   const scriptDir = path.join(nollmRepoRoot, "reference", "python", "scripts");
   fs.mkdirSync(scriptDir, { recursive: true });
   fs.mkdirSync(workspaceRoot, { recursive: true });
-  const sidecarScript = path.join(scriptDir, "run_openclaw_nollm_memory.js");
-  fs.writeFileSync(sidecarScript, "console.log(JSON.stringify({ ok: true, shell: false, python_executable: process.execPath }));\n", "utf8");
-  const sidecarOutDir = path.join(workspaceRoot, ".nollm-memory");
+ const sidecarScript = path.join(scriptDir, "run_openclaw_nollm_memory.js");
+  fs.writeFileSync(sidecarScript, "console.log(JSON.stringify({ schema: 'nollm.companion.status_ok.v1', ok: true, shell: false, python_executable: process.execPath }));\n", "utf8");
+ const sidecarOutDir = path.join(workspaceRoot, ".nollm-memory");
   const fakePython = makeFakePython(root);
   return {
     nollmRepoRoot,
@@ -362,5 +362,94 @@ function makeFixture(overrides = {}) {
       maxSearchResults: 5,
       ...overrides
     }
+ };
+}
+// W1-02 structured error bridge tests
+test("T1: nonzero exit with valid native remember error JSON returns structured result", async () => {
+  const fixture = makeFixture();
+  fs.writeFileSync(
+    fixture.sidecarScript,
+    "const payload = { schema: 'nollm.companion_memory_remember.v1', ok: false, error: { code: 'memory_content_rejected', message: 'rejected', retryable: false }, store: 'nollm_native_companion' };\nconsole.log(JSON.stringify(payload));\nprocess.exit(1);\n",
+    "utf8"
+  );
+  const result = await runSidecarCommand(fixture.config, "native-remember", { memory: "Bearer x", kind: "note" });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "memory_content_rejected");
+  assert.equal(result.schema, "nollm.companion_memory_remember.v1");
+});
+test("T2: nonzero exit with valid native get not_found JSON returns structured result", async () => {
+  const fixture = makeFixture();
+  fs.writeFileSync(
+    fixture.sidecarScript,
+    "const payload = { schema: 'nollm.companion_memory_get.v1', ok: false, status: 'not_found', memory_id: 'nmem_test', error: { code: 'native_memory_not_found', message: 'not found', retryable: false }, store: 'nollm_native_companion' };\nconsole.log(JSON.stringify(payload));\nprocess.exit(1);\n",
+    "utf8"
+  );
+  const result = await runSidecarCommand(fixture.config, "native-get", { id: "nmem_test" });
+  assert.equal(result.ok, false);
+  assert.equal(result.status, "not_found");
+  assert.equal(result.error.code, "native_memory_not_found");
+});
+test("T3: nonzero exit with invalid JSON returns sidecar_failed", async () => {
+  const fixture = makeFixture();
+  fs.writeFileSync(fixture.sidecarScript, "console.log('not json');\nprocess.exit(1);\n", "utf8");
+  const result = await runSidecarCommand(fixture.config, "native-remember", { memory: "x", kind: "note" });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "sidecar_failed");
+});
+test("T4: zero exit with malformed JSON returns sidecar_invalid_json", async () => {
+  const fixture = makeFixture();
+  fs.writeFileSync(fixture.sidecarScript, "console.log('not json');\nprocess.exit(0);\n", "utf8");
+  const result = await runSidecarCommand(fixture.config, "native-remember", { memory: "x", kind: "note" });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "sidecar_invalid_json");
+});
+test("T5: nonzero stderr/stdout with secret text does not leak secret in tool-visible error", async () => {
+  const fixture = makeFixture();
+  fs.writeFileSync(
+    fixture.sidecarScript,
+    "console.log('Bearer sk-leaked-secret-token');\nconsole.error('api_key=leaked');\nprocess.exit(1);\n",
+    "utf8"
+  );
+  const result = await runSidecarCommand(fixture.config, "native-remember", { memory: "x", kind: "note" });
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, "sidecar_failed");
+  assert.equal(JSON.stringify(result).includes("sk-leaked-secret-token"), false);
+  assert.equal(JSON.stringify(result).includes("api_key=leaked"), false);
+});
+test("T6: optional real native bridge smoke", { skip: !realPythonAvailable() }, async () => {
+  const repoRoot = path.resolve(import.meta.dirname, "..", "..", "..", "..");
+  const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "nollm-real-bridge-"));
+  const sidecarScript = path.join(repoRoot, "reference", "python", "scripts", "run_openclaw_nollm_memory.py");
+  const config = {
+    pythonExecutable: realPythonPath(),
+    pythonArgs: [],
+    nollmRepoRoot: repoRoot,
+    workspaceRoot,
+    sidecarScript,
+    sidecarOutDir: path.join(workspaceRoot, ".nollm-memory"),
+    commandTimeoutMs: 15000,
+    maxSearchResults: 5,
   };
+ const remembered = await runSidecarCommand(config, "native-remember", { memory: "W1-02 T6 smoke marker.", kind: "note", scope: "user" });
+ assert.equal(remembered.ok, true);
+  assert.ok(remembered.memory_id);
+  const recalled = await runSidecarCommand(config, "native-recall", { query: "W1-02 T6 smoke marker", limit: 5 });
+  assert.equal(recalled.ok, true);
+  assert.equal(recalled.results.length, 1);
+  const fetched = await runSidecarCommand(config, "native-get", { id: remembered.memory_id });
+  assert.equal(fetched.ok, true);
+  assert.equal(fetched.record.text, "W1-02 T6 smoke marker.");
+  const unknown = await runSidecarCommand(config, "native-get", { id: "nmem_0000000000000000" });
+  assert.equal(unknown.ok, false);
+  assert.equal(unknown.status, "not_found");
+  const secret = await runSidecarCommand(config, "native-remember", { memory: "Bearer not-real", kind: "note" });
+  assert.equal(secret.ok, false);
+  assert.equal(secret.error.code, "memory_content_rejected");
+});
+function realPythonPath() {
+  const fallback = "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe";
+  return process.env.PYTHON_EXECUTABLE || fallback;
+}
+function realPythonAvailable() {
+  return fs.existsSync(realPythonPath());
 }

@@ -36,6 +36,17 @@ export type SidecarErrorCode =
   | "commit_rejected"
   | PythonProbeErrorCode;
 
+export type NativeError = {
+  ok: false;
+  schema: string;
+  error: {
+    code: string;
+    message: string;
+    retryable: boolean;
+  };
+  [key: string]: unknown;
+};
+
 export type SidecarFailure = {
   ok: false;
   error: {
@@ -47,10 +58,11 @@ export type SidecarFailure = {
 
 export type SidecarSuccess = {
   ok: true;
+  schema: string;
   [key: string]: unknown;
 };
 
-export type SidecarResult = SidecarSuccess | SidecarFailure;
+export type SidecarResult = SidecarSuccess | NativeError | SidecarFailure;
 
 export type PythonProbeResult = {
   executable: string;
