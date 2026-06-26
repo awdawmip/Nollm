@@ -332,3 +332,16 @@ does not write `MEMORY.md` / `DREAMS.md` / `memory/*.md`, and does not call a
 real LLM. It is a minimal explicit remember/recall/get loop for user-stated
 identities and preferences, not an automatic conversation capture system.
 
+
+## W2-01: Direct Active Memory Cutover
+
+Owner-authorized empirical trial on the local Windows OpenClaw Gateway. The `nollm` provider (`integrations/openclaw/nollm-memory-provider/`) is the active OpenClaw memory-slot owner (`plugins.slots.memory = "nollm"`).
+
+- `agent_turn_prepare` recalls from the W1 native companion store and injects a bounded `NOLLM_MEMORY_CONTEXT_V1` envelope.
+- `agent_end` deterministically auto-captures explicit stable user sentences (remember directives, identity, preference, project/release decisions) into the same native store.
+- No Primary-visible Nollm memory tools in active mode.
+- No read/write of `MEMORY.md`, `DREAMS.md`, or `memory/*.md` by the provider.
+- Rollback to `memory-core` is tested and documented.
+- Legacy workspace `MEMORY.md` bootstrap is recorded as a measured confound; W2 does not claim exclusive prompt memory ownership while bootstrap may exist.
+
+Trial result: `PARTIAL`. Active slot ownership, capture, and most recalls succeeded; identity recall was confounded by legacy `MEMORY.md` bootstrap. Local-only redacted metrics live in `.local-runs/active-memory-w2/` and are not stored in Git.

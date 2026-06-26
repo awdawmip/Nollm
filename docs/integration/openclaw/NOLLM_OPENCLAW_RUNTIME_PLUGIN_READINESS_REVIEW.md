@@ -1,5 +1,11 @@
 # Nollm OpenClaw Runtime Plugin Readiness Review
 
+
+## W2-01 Direct Active Memory Trial (2026-06-26)
+
+Owner-authorized empirical trial on the local Windows OpenClaw Gateway. The `nollm` provider is the active OpenClaw memory-slot owner.
+See the provider README and local trial report for full metrics.
+
 Date: 2026-06-20
 
 This review records the current OpenClaw-Nollm companion tool plugin package

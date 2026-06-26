@@ -75,3 +75,25 @@ call a real LLM.
 `nollm_memory_recall`, `nollm_memory_search`, and `nollm_memory_get` are not part of the OCP10 Active Memory surface. They are not the Nollm internal model.
 
 `nollm_memory_write_candidate` and `nollm_memory_commit_candidate` are not exposed by the plugin. Python compatibility functions fail closed with `source_memory_write_disabled`.
+
+## W2-01 Direct Active Memory Usage
+
+Status: owner-authorized empirical active-memory trial.
+
+The `nollm` provider owns `plugins.slots.memory`. There are no Primary-visible
+Nollm memory tools in active mode. Recall and capture run automatically through
+OpenClaw hooks:
+
+- `agent_turn_prepare` injects a bounded `NOLLM_MEMORY_CONTEXT_V1` envelope.
+- `agent_end` auto-captures only explicit stable user sentences.
+
+Capture is deterministic and narrow: explicit remember directives, identity
+statements, preference statements, and project/release decisions. It does not
+capture assistant messages, tool outputs, questions, or secrets.
+
+Legacy `MEMORY.md`, `DREAMS.md`, and `memory/*.md` are preserved and may still
+be bootstrap-injected by the host; W2 measures this as a confound and does not
+claim exclusive prompt memory ownership.
+
+Trial metrics are local-only and redacted; no raw transcripts or secrets are
+stored in Git. Rollback to `memory-core` was tested and succeeded.

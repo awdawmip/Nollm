@@ -47,3 +47,6 @@ Thumbs.db
 integrations/openclaw/nollm-memory-provider/node_modules/
 work/
 *.bundle
+
+# W2-01 local private trial reports and snapshots
+.local-runs/
