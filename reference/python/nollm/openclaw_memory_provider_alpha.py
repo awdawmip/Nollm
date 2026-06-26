@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -729,22 +730,36 @@ def capture(
         }
 
     # D5: Receipt already exists. Validate expected identity; quarantine corrupt files.
-    try:
-        existing_raw = receipt_path.read_text(encoding="utf-8")
-        existing = json.loads(existing_raw)
-    except Exception as exc:
+    # Retry briefly only when the file is empty, which tolerates the race between
+    # a concurrent creator opening the file and finishing the write.
+    existing: dict[str, object] | None = None
+    existing_raw = ""
+    for attempt in range(10):
+        try:
+            existing_raw = receipt_path.read_text(encoding="utf-8")
+            if not existing_raw.strip():
+                time.sleep(0.005)
+                continue
+            existing = json.loads(existing_raw)
+            break
+        except json.JSONDecodeError:
+            # Non-empty but malformed: treat as corrupt immediately.
+            break
+        except Exception:
+            time.sleep(0.005)
+
+    if existing is None:
         # Move corrupt receipt to quarantine and fail closed
         quarantine_dir = receipt_dir / "quarantine"
         try:
             quarantine_dir.mkdir(parents=True, exist_ok=True)
-            import time
             quarantine_path = quarantine_dir / f"{receipt_id}-{int(time.time())}.json"
             receipt_path.rename(quarantine_path)
         except OSError:
             pass
         raise NollmProviderError(
             "capture_failed",
-            f"corrupt existing receipt quarantined, no overwrite: {exc}",
+            f"corrupt existing receipt quarantined, no overwrite: {'empty file' if not existing_raw.strip() else 'invalid json'}",
             retryable=False,
         ) from None
 

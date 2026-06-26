@@ -1,0 +1,30 @@
+{
+  // W2-01 active memory example: select the Nollm native active memory provider.
+  plugins: {
+    slots: {
+      memory: "nollm"
+    },
+    entries: {
+      nollm: {
+        enabled: true,
+        config: {
+          // Absolute Windows paths with forward slashes.
+          pythonExecutable: "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe",
+          pythonArgs: [],
+          nollmRepoRoot: "C:/path/to/nollm",
+          workspaceRoot: "C:/Users/Administrator/.openclaw/workspace",
+          nativeStoreRoot: "C:/Users/Administrator/.openclaw/workspace/.nollm-memory/native-companion-v1",
+          trialRoot: "C:/Users/Administrator/.openclaw/workspace/.nollm-memory/active-trials",
+          commandTimeoutMs: 15000,
+          maxFacts: 4,
+          maxContextCharacters: 1400,
+          captureMode: "deterministic_explicit_v1",
+          trialMode: "active_empirical_v1"
+        }
+      },
+      "memory-core": { enabled: false },
+      "active-memory": { enabled: false },
+      "nollm-memory-companion": { enabled: false }
+    }
+  }
+}

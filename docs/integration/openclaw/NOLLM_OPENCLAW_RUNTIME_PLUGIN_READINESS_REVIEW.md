@@ -140,3 +140,33 @@ making user-facing claims from a recalled item.
 `write-candidate` produces pending review records only. Durable writes to
 OpenClaw memory files require an explicit future promotion policy and are out of
 scope for this review.
+
+## W2-01 Direct Active Memory Provider Trial
+
+Owner-authorized empirical trial on the local Windows OpenClaw Gateway. The
+`nollm` provider (`integrations/openclaw/nollm-memory-provider/`) is the active
+OpenClaw memory-slot owner (`plugins.slots.memory = "nollm"`).
+
+- `agent_turn_prepare` recalls from the W1 native companion store into a bounded
+  `NOLLM_MEMORY_CONTEXT_V1` envelope.
+- `agent_end` deterministically auto-captures explicit stable user sentences.
+- No Primary-visible Nollm memory tools in active mode.
+- No read/write of `MEMORY.md`, `DREAMS.md`, or `memory/*.md` by the provider.
+- Local-only redacted trial metrics; tested rollback to `memory-core`.
+- Legacy `MEMORY.md` workspace bootstrap recorded as a measured confound.
+
+Trial result: `PARTIAL`. Active slot ownership, capture, and most recalls
+succeeded; identity recall was confounded by legacy `MEMORY.md` bootstrap.
+
+Build/validate commands for the active memory provider:
+
+```bash
+cd integrations/openclaw/nollm-memory-provider
+npm install
+npm run plugin:build
+npm run plugin:check
+npm test
+```
+
+Configuration example: see
+`integrations/openclaw/nollm-memory-provider/examples/openclaw.w2-active.config.example.json5`.

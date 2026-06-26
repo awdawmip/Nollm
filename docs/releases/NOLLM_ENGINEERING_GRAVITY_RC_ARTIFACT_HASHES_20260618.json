@@ -73,8 +73,8 @@
     },
     {
       "path": "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md",
-      "sha256": "aa0601e716477f416ae093770e92e07b3da371d7b21132a069c84d065f9d7bc4",
-      "size_bytes": 5158
+      "sha256": "5ac526a4f2eb265588b440da9322587725e2a8eabeeb9e950c88749e59c0cd5f",
+      "size_bytes": 6575
     },
     {
       "path": "out/nollm_runtime/g_series_engineering_closure_report.json",

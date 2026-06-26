@@ -204,4 +204,30 @@ W1-01 does **not**:
 - call a real LLM or use embeddings;
 - automatically capture every conversation turn;
 - implement R14 capability-storage hardening.
+## W2-01: OpenClaw Direct Active Memory Cutover
 
+Owner-authorized empirical trial that makes the `nollm` provider the active
+OpenClaw memory-slot owner (`plugins.slots.memory = "nollm"`).
+
+- Convert `integrations/openclaw/nollm-memory-provider/` from F0 alpha fixture
+  mode to a Windows-safe native active memory provider.
+- Reuse the W1 native companion store (`native-companion-v1/`).
+- `agent_turn_prepare` recalls from the native store into a bounded
+  `NOLLM_MEMORY_CONTEXT_V1` envelope.
+- `agent_end` deterministically auto-captures explicit stable user sentences
+  (remember directives, identity, preference, project/release decisions).
+- No Primary-visible Nollm memory tools in active mode.
+- No read/write of `MEMORY.md`, `DREAMS.md`, or `memory/*.md` by the provider.
+- Local-only redacted trial metrics; tested rollback to `memory-core`.
+- Record legacy `MEMORY.md` workspace bootstrap as a measured confound.
+
+W2-01 result: `PARTIAL`. Active slot ownership, capture, and most recalls
+succeeded; identity recall was confounded by legacy `MEMORY.md` bootstrap.
+
+W2-01 does **not**:
+
+- claim exclusive prompt memory ownership while workspace bootstrap may exist;
+- clean up or tombstone `MEMORY.md`, `DREAMS.md`, or `memory/*.md`;
+- wait for W1-04 generic exact-match cleanup or F0 harness closure;
+- use embeddings, vector DB, SQLite recall, or external LLM calls;
+- expose manual Nollm memory tools to Primary while active.
