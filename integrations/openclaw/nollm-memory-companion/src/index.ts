@@ -219,7 +219,7 @@ const plugin = defineToolPlugin({
       name: "nollm_memory_recall",
       label: "Nollm Memory Recall",
       description:
-        "Recall only Nollm native companion memories that match the user question. It returns an empty result when no relevant native memory is found. It never falls back to legacy files.",
+        "Recall only Nollm native companion memories that match the user question. Specific queries return only records with matching lexical or facet evidence; broad queries may return a facet collection. It returns an empty result when no relevant native memory is found and never falls back to legacy files.",
       parameters: RecallInputSchema,
       async execute(input: { query: string; limit?: number; scope?: string }, config: PluginConfig, context) {
         context.signal?.throwIfAborted();

@@ -7,6 +7,12 @@ const MAX_CAPTURE_BYTES = 256 * 1024;
 const REQUIRED_CONFIG_FIELDS = ["nollmRepoRoot", "workspaceRoot"] as const;
 const WINDOWS_BARE_LAUNCHERS = new Set(["python", "python3", "py", "pythonw", "pythonw3"]);
 
+const NATIVE_SCHEMA_BY_COMMAND: Record<string, string> = {
+  "native-remember": "nollm.companion_memory_remember.v1",
+  "native-recall": "nollm.companion_memory_recall.v1",
+  "native-get": "nollm.companion_memory_get.v1",
+};
+
 export class PythonExecutableError extends Error {
   code: SidecarFailure["error"]["code"];
   constructor(code: SidecarFailure["error"]["code"], message: string) {
@@ -325,7 +331,8 @@ export async function runSidecarCommand(
   }
 
   const argv = buildSidecarArgv(normalized, command, params);
-  return await spawnJson(normalized.pythonExecutable, normalized.pythonArgs, argv, normalized.commandTimeoutMs, signal);
+  const expectedSchema = NATIVE_SCHEMA_BY_COMMAND[command];
+  return await spawnJson(normalized.pythonExecutable, normalized.pythonArgs, argv, normalized.commandTimeoutMs, signal, expectedSchema);
 }
 
 export function missingRequiredConfig(config: PluginConfig): string[] {
@@ -392,7 +399,8 @@ async function spawnJson(
   pythonArgs: string[],
   argv: string[],
   timeoutMs: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  expectedSchema?: string
 ): Promise<SidecarResult> {
   return await new Promise((resolve) => {
     if (signal?.aborted) {
@@ -445,6 +453,16 @@ async function spawnJson(
       }
 
       if (!parseError && _isRecognizedSidecarResponse(parsed)) {
+        if (expectedSchema && parsed.schema !== expectedSchema) {
+          resolve(
+            sidecarFailure(
+              "sidecar_invalid_response",
+              `Expected schema ${expectedSchema}, got ${parsed.schema}.`,
+              false
+            )
+          );
+          return;
+        }
         resolve(parsed);
         return;
       }

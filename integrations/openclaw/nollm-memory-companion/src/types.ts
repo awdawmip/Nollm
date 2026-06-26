@@ -32,6 +32,7 @@ export type SidecarErrorCode =
   | "sidecar_timeout"
   | "sidecar_failed"
   | "sidecar_invalid_json"
+  | "sidecar_invalid_response"
   | "configuration_error"
   | "commit_rejected"
   | PythonProbeErrorCode;
