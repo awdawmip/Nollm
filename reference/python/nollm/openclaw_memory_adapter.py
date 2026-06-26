@@ -440,10 +440,11 @@ def get_native_companion_memory(
     try:
         return _store_get_native_memory(repo_root, workspace, out_dir, memory_id)
     except CompanionMemoryError as exc:
+        status = "invalid_input" if exc.code == "native_memory_id_invalid" else "not_found"
         return {
             "schema": GET_NATIVE_SCHEMA,
             "ok": False,
-            "status": "not_found",
+            "status": status,
             "memory_id": memory_id,
             "error": {
                 "code": exc.code,
