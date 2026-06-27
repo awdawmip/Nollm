@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+PYTHON_ROOT = Path(__file__).resolve().parents[1]
+if str(PYTHON_ROOT) not in sys.path:
+    sys.path.insert(0, str(PYTHON_ROOT))
 
 from nollm.openclaw_active_memory_adapter import (
     ACTIVE_STATUS_SCHEMA,
@@ -118,8 +120,16 @@ def main(argv: list[str] | None = None) -> int:
         if schema != ACTIVE_CAPTURE_SCHEMA:
             result = _fail("schema_mismatch", f"Expected {ACTIVE_CAPTURE_SCHEMA}, got {schema}")
         else:
-            messages = command.get("messages", [])
-            success = bool(command.get("success", False))
+            messages = command.get("messages")
+            success = command.get("success")
+            if not isinstance(messages, list):
+                result = _fail("invalid_event", "messages must be an array.")
+                _print_json(result)
+                return 1
+            if not isinstance(success, bool):
+                result = _fail("invalid_event", "success must be a boolean.")
+                _print_json(result)
+                return 1
             result = active_capture(
                 native_store_root,
                 messages,

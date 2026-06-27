@@ -24,15 +24,31 @@ ACTIVE_PREPARE_OUTPUT_SCHEMA = "nollm.provider.prepare.v2"
 ACTIVE_CAPTURE_SCHEMA = "nollm.active_memory_capture.v1"
 ACTIVE_TRIAL_REPORT_SCHEMA = "nollm.active_memory_trial_report.v1"
 MEMORY_CONTEXT_SCHEMA = "NOLLM_MEMORY_CONTEXT_V1"
+NON_MEMORY_QUERY_MARKERS = (
+    "天气",
+    "气温",
+    "新闻",
+    "股价",
+    "汇率",
+    "航班",
+    "路线",
+    "价格",
+    "weather",
+    "stock",
+    "news",
+    "exchange rate",
+)
 
 PROMOTION_PATTERNS: list[tuple[str, str]] = [
     ("explicit_remember", r"^(?:记住|请记住|remember|remember this)\s*[：:]\s*(.+)$"),
     ("identity_name", r"^(?:我叫|我的名字是|我的姓名是)\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
-    ("w2_identity_marker", r"^我的\s+W2-01\s+姓名\s+marker\s+是\s*(.+?)[。\.]?$"),
+    ("w_marker_identity", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+(?:身份|姓名)\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
+    ("identity_code", r"^我的\s+身份代号\s+是\s*(.+?)[。\.]?$"),
     ("preference", r"^(?:我偏好|我喜欢|我希望回答|我希望你)\s*(.+?)[。\.]?$"),
-    ("w2_preference_marker", r"^我的\s+W2-01\s+标签颜色偏好是\s*(.+?)[。\.]?$"),
+    ("w_marker_preference", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+标签颜色\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
+    ("response_style_preference", r"^我的\s+回答风格偏好\s+是\s*(.+?)[。\.]?$"),
     ("project_decision", r"^(?:项目决定|决定|发布窗口是|发版时间是)\s*(.+?)[。\.]?$"),
-    ("w2_release_marker", r"^我的\s+W2-01\s+发布窗口\s+marker\s+是\s*(.+?)[。\.]?$"),
+    ("w_marker_release", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+发布窗口\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
 ]
 
 SECRET_PATTERNS = [
@@ -74,6 +90,11 @@ def _normalize_text(text: str) -> str:
     return " ".join(text.strip().split())
 
 
+def _is_obvious_non_memory_query(query: str) -> bool:
+    normalized = _normalize_text(query).lower()
+    return any(marker in normalized for marker in NON_MEMORY_QUERY_MARKERS)
+
+
 def _derive_out_dir(native_store_root: Path | str) -> Path:
     """The W1 native store functions expect the parent of native-companion-v1."""
     return Path(native_store_root).resolve().parent
@@ -102,8 +123,43 @@ def _update_trial_manifest(trial_dir: Path, manifest: dict[str, Any]) -> None:
     path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8")
 
 
-def _safe_event_id(trial_id: str, agent_id: str, session_id: str, run_id: str, timestamp: str) -> str:
-    return _hash_id(f"{trial_id}:{agent_id}:{session_id}:{run_id}:{timestamp}")
+def _active_error(code: str, message: str, retryable: bool = False) -> dict[str, Any]:
+    return {
+        "schema": "nollm.active_memory_error.v1",
+        "ok": False,
+        "error": {"code": code, "message": message, "retryable": retryable},
+    }
+
+
+def _capture_event_id(
+    trial_id: str,
+    agent_id: str,
+    session_id: str,
+    run_id: str,
+    success: bool,
+    current_user_message: str,
+) -> str:
+    canonical = json.dumps(
+        {
+            "schema": "nollm.active_capture_event.v2",
+            "trial_id": trial_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "run_id": run_id,
+            "success": success,
+            "current_user_message": _normalize_text(current_user_message),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _hash_id(canonical)
+
+
+def _identity_complete(identity: dict[str, str] | None) -> bool:
+    if not identity:
+        return False
+    return all(isinstance(identity.get(key), str) and bool(identity.get(key)) for key in ("agent_id", "session_id", "run_id"))
 
 
 def active_status(native_store_root: Path | str) -> dict[str, Any]:
@@ -131,11 +187,70 @@ def active_prepare(
 ) -> dict[str, Any]:
     start = time.monotonic()
     out_dir = _derive_out_dir(native_store_root)
+    if not isinstance(query, str) or not _normalize_text(query):
+        return _active_error("invalid_event", "active prepare requires a non-empty query.")
     max_facts = max(1, min(20, budget.get("max_facts", 4)))
     max_chars = max(200, min(65536, budget.get("max_context_characters", 1400)))
 
+    if _is_obvious_non_memory_query(query):
+        latency_ms = int((time.monotonic() - start) * 1000)
+        envelope = {
+            "schema": MEMORY_CONTEXT_SCHEMA,
+            "freshness": "none",
+            "facts": [],
+            "boundaries": [],
+            "warnings": [],
+            "explicit_absences": ["No Nollm native companion memory matched this query."],
+        }
+        if trial_id:
+            trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
+            _write_trial_metric(trial_dir, {
+                "event": "prepare",
+                "timestamp": _now_iso(),
+                "trial_id": trial_id,
+                "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+                "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+                "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+                "query_hash": _hash_id(query),
+                "query_class": "non_memory",
+                "result_count": 0,
+                "facts_returned": 0,
+                "rendered_chars": len(_format_memory_context(envelope)),
+                "recall_mode": "none",
+                "latency_ms": latency_ms,
+            })
+        return {
+            "schema": ACTIVE_PREPARE_OUTPUT_SCHEMA,
+            "ok": True,
+            "context": envelope,
+            "metrics": {
+                "native_record_count": native_store_summary(out_dir).get("record_count", 0),
+                "result_count": 0,
+                "rendered_context_characters": len(_format_memory_context(envelope)),
+                "recall_mode": "none",
+            },
+        }
+
     result = recall_native_memory(out_dir, out_dir, out_dir, query=query, limit=max_facts)
     latency_ms = int((time.monotonic() - start) * 1000)
+
+    if result.get("ok") is not True:
+        error = result.get("error") if isinstance(result.get("error"), dict) else {}
+        code = str(error.get("code") or "native_recall_failed")
+        if trial_id:
+            trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
+            _write_trial_metric(trial_dir, {
+                "event": "prepare_error",
+                "timestamp": _now_iso(),
+                "trial_id": trial_id,
+                "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+                "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+                "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+                "query_hash": _hash_id(query),
+                "prepare_error_code": code,
+                "latency_ms": latency_ms,
+            })
+        return _active_error(code, "Native active recall failed.", retryable=True)
 
     facts: list[dict[str, Any]] = []
     recall_mode = "none"
@@ -227,11 +342,11 @@ def _format_memory_context(envelope: dict[str, Any]) -> str:
 
 
 def _classify_kind(pattern_name: str, text: str) -> str:
-    if pattern_name in ("identity_name", "w2_identity_marker"):
+    if pattern_name in ("identity_name", "w_marker_identity", "identity_code"):
         return "identity"
-    if pattern_name in ("preference", "w2_preference_marker"):
+    if pattern_name in ("preference", "w_marker_preference", "response_style_preference"):
         return "preference"
-    if pattern_name in ("project_decision", "w2_release_marker"):
+    if pattern_name in ("project_decision", "w_marker_release"):
         return "project"
     facets = analyze_facets(text)
     if "identity_name" in facets or "identity_code" in facets:
@@ -283,21 +398,59 @@ def active_capture(
     start = time.monotonic()
     out_dir = _derive_out_dir(native_store_root)
 
+    if not _identity_complete(identity):
+        return _active_error("active_identity_incomplete", "agent_id, session_id, and run_id are required for active capture.")
+
+    if not isinstance(success, bool):
+        return _active_error("invalid_event", "success must be a boolean.")
+
     if not isinstance(messages, list):
-        messages = []
+        return _active_error("invalid_event", "messages must be an array.")
+
+    if len(messages) != 1 or not isinstance(messages[0], dict):
+        return _active_error("invalid_event", "active capture requires exactly one current user message.")
+
+    current = messages[0]
+    if current.get("role") != "user" or not isinstance(current.get("content"), str):
+        return _active_error("invalid_event", "active capture requires one user text message.")
+
+    current_user_message = _normalize_text(current.get("content", ""))
+    event_id = _capture_event_id(
+        trial_id or "",
+        identity.get("agent_id", ""),
+        identity.get("session_id", ""),
+        identity.get("run_id", ""),
+        success,
+        current_user_message,
+    )
+
+    if not current_user_message:
+        return {
+            "schema": ACTIVE_CAPTURE_SCHEMA,
+            "ok": True,
+            "capture": {
+                "event_id": event_id,
+                "promoted_count": 0,
+                "deduplicated_count": 0,
+                "suppressed_count": 1,
+                "rejected_count": 0,
+                "records": [],
+                "skipped_code": "suppressed_no_current_user_message",
+            },
+            "metrics": {
+                "user_messages_seen": 0,
+                "assistant_messages_ignored": 0,
+                "candidate_count": 0,
+                "latency_ms": int((time.monotonic() - start) * 1000),
+            },
+        }
 
     if not success:
         return {
             "schema": ACTIVE_CAPTURE_SCHEMA,
             "ok": True,
             "capture": {
-                "event_id": _safe_event_id(
-                    trial_id or "",
-                    identity.get("agent_id", "") if identity else "",
-                    identity.get("session_id", "") if identity else "",
-                    identity.get("run_id", "") if identity else "",
-                    _now_iso(),
-                ),
+                "event_id": event_id,
                 "promoted_count": 0,
                 "deduplicated_count": 0,
                 "suppressed_count": 0,
@@ -312,8 +465,8 @@ def active_capture(
             },
         }
 
-    user_count = sum(1 for m in messages if isinstance(m, dict) and m.get("role") == "user")
-    assistant_count = sum(1 for m in messages if isinstance(m, dict) and m.get("role") == "assistant")
+    user_count = 1
+    assistant_count = 0
 
     candidates = _extract_promotion_candidates(messages)
     promoted: list[dict[str, Any]] = []
@@ -358,14 +511,6 @@ def active_capture(
             rejected += 1
 
     latency_ms = int((time.monotonic() - start) * 1000)
-    event_id = _safe_event_id(
-        trial_id or "",
-        identity.get("agent_id", "") if identity else "",
-        identity.get("session_id", "") if identity else "",
-        identity.get("run_id", "") if identity else "",
-        _now_iso(),
-    )
-
     if trial_id:
         trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
         _write_trial_metric(trial_dir, {
@@ -381,6 +526,7 @@ def active_capture(
             "candidate_count": len(candidates),
             "promoted_count": len(promoted),
             "deduplicated_count": deduplicated,
+            "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
             "suppressed_count": suppressed,
             "rejected_count": rejected,
             "latency_ms": latency_ms,
@@ -401,6 +547,7 @@ def active_capture(
             "event_id": event_id,
             "promoted_count": len(promoted),
             "deduplicated_count": deduplicated,
+            "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
             "suppressed_count": suppressed,
             "rejected_count": rejected,
             "records": promoted,

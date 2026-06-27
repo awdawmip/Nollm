@@ -4,7 +4,7 @@ import type { NormalizedConfig, SidecarResult } from "./types.js";
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
 
-export type ActiveCommand = "active-status" | "active-prepare" | "active-capture";
+export type ActiveCommand = "active-status" | "active-prepare" | "active-capture" | "active-trial-report";
 
 export async function runSidecarCommand(
   config: NormalizedConfig,
@@ -99,14 +99,13 @@ async function spawnJson(
         );
         return;
       }
+      const parsed = parseAcceptedSidecarJson(stdout, stdinPayload);
+      if (parsed) {
+        finish(parsed);
+        return;
+      }
       if (code !== 0) {
-        finish(
-          sidecarFailure(
-            "sidecar_failed",
-            conciseSidecarFailure(stderr || stdout),
-            true
-          )
-        );
+        finish(sidecarFailure("sidecar_failed", conciseSidecarFailure(stderr || stdout), true));
         return;
       }
       try {
@@ -153,7 +152,70 @@ function appendBounded(current: string, chunk: Buffer): string {
 }
 
 function conciseSidecarFailure(text: string): string {
-  const firstLine =
-    text.split(/\r?\n/).find((line) => line.trim()) ?? "Nollm sidecar command failed.";
-  return firstLine.slice(0, 240);
+  const allLines = text.split(/\r?\n/).filter((line) => line.trim());
+  const lines =
+    allLines.length <= 14
+      ? allLines
+      : [...allLines.slice(0, 6), "...", ...allLines.slice(-8)];
+  const summary = lines.length > 0 ? lines.join(" | ") : "Nollm sidecar command failed.";
+  return summary.slice(0, 3000);
+}
+
+function parseAcceptedSidecarJson(stdout: string, stdinPayload: string): SidecarResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+  const obj = parsed as Record<string, unknown>;
+  const schema = typeof obj.schema === "string" ? obj.schema : "";
+  const invoked = invokedCommand(stdinPayload);
+  const accepted = acceptedSchemas(invoked);
+  if (!accepted.has(schema)) {
+    return null;
+  }
+  if (obj.ok === false && schema === "nollm.active_memory_error.v1") {
+    return parsed as SidecarResult;
+  }
+  if (obj.ok === true) {
+    return parsed as SidecarResult;
+  }
+  return null;
+}
+
+function invokedCommand(stdinPayload: string): ActiveCommand | "" {
+  try {
+    const payload = JSON.parse(stdinPayload) as Record<string, unknown>;
+    const command = payload.command;
+    if (
+      command === "active-status" ||
+      command === "active-prepare" ||
+      command === "active-capture" ||
+      command === "active-trial-report"
+    ) {
+      return command;
+    }
+  } catch {
+    // Ignore invalid input; the sidecar will report the command error.
+  }
+  return "";
+}
+
+function acceptedSchemas(command: ActiveCommand | ""): Set<string> {
+  switch (command) {
+    case "active-status":
+      return new Set(["nollm.active_memory_status.v1", "nollm.active_memory_error.v1"]);
+    case "active-prepare":
+      return new Set(["nollm.provider.prepare.v2", "nollm.active_memory_error.v1"]);
+    case "active-capture":
+      return new Set(["nollm.active_memory_capture.v1", "nollm.active_memory_error.v1"]);
+    case "active-trial-report":
+      return new Set(["nollm.active_memory_trial_report.v1", "nollm.active_memory_error.v1"]);
+    default:
+      return new Set(["nollm.active_memory_error.v1"]);
+  }
 }

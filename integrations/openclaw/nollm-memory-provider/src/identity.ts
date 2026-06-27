@@ -59,8 +59,8 @@ export function resolveNollmTurnIdentity(
 
   let agentId = ctx.agentId;
   if (!agentId) {
-    agentId = "main";
-    warnings.push("agent_id_fallback: ctx.agentId missing, using default 'main'");
+    agentId = "";
+    warnings.push("agent_id_missing: ctx.agentId missing");
   }
 
   if (config?.allowAgentIds && config.allowAgentIds.length > 0) {

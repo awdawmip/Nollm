@@ -72,10 +72,11 @@ describe("E2 query and identity", () => {
     assert.equal(result.sessionId, "");
   });
 
-  it("fallback identity has warnings", () => {
+  it("missing agent identity has warnings and no fallback", () => {
     const result = resolveNollmTurnIdentity({});
     assert.ok(result.warnings.length > 0);
-    assert.equal(result.agentId, "main");
+    assert.equal(result.agentId, "");
+    assert.ok(result.warnings.some((w) => w.startsWith("agent_id_missing")));
   });
 
   it("event.runId fallback used when ctx.runId missing", () => {

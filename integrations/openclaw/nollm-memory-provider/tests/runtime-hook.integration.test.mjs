@@ -15,6 +15,7 @@ import {
   STUB_ECHO,
   STUB_SLOW,
   STUB_INVALID_JSON,
+  STUB_NONZERO_ACTIVE_ERROR,
 } from "./helpers.mjs";
 import { createNollmProvider } from "../dist/provider.js";
 import { runSidecarCommand } from "../dist/sidecar.js";
@@ -35,6 +36,32 @@ describe("T5 prepare injects valid bounded envelope", () => {
     assert.ok(result.prependContext.includes("NOLLM_MEMORY_CONTEXT_V1"));
     assert.ok(result.prependContext.includes("freshness: fresh"));
     assert.ok(result.prependContext.includes("stub claim about Nollm"));
+  });
+
+  it("uses event.prompt when prepare messages do not include a user turn", async () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    const payloadPath = path.join(tmp, "prepare-payload.json");
+    writeStubSidecar(cfg.nollmRepoRoot, [
+      "import json, sys",
+      "stdin = json.loads(sys.stdin.read())",
+      "open(r'" + payloadPath.replace(/\\/g, "\\\\") + "', 'w', encoding='utf-8').write(json.dumps(stdin, ensure_ascii=False, sort_keys=True))",
+      "print(json.dumps({",
+      "  'ok': True,",
+      "  'schema': 'nollm.provider.prepare.v2',",
+      "  'context': {'schema': 'NOLLM_MEMORY_CONTEXT_V1', 'freshness': 'none', 'facts': [], 'boundaries': [], 'warnings': [], 'explicit_absences': []},",
+      "  'metrics': {'native_record_count': 0, 'result_count': 0, 'rendered_context_characters': 80, 'recall_mode': 'none'}",
+      "}, sort_keys=True))",
+    ].join("\n"));
+    const api = makeMockApi(cfg);
+    createNollmProvider(api);
+    await invokePrepare(
+      api,
+      { messages: [], prompt: "prompt fallback query" },
+      { agentId: "main", sessionId: "s1", runId: "run-1" }
+    );
+    const payload = JSON.parse(fs.readFileSync(payloadPath, "utf8"));
+    assert.equal(payload.query, "prompt fallback query");
   });
 });
 
@@ -126,6 +153,17 @@ describe("T8 sidecar stdin / shell:false / timeout / abort", () => {
     const result = await runSidecarCommand(normalized, "active-prepare", {});
     assert.equal(result.ok, false);
     assert.equal(result.error.code, "sidecar_invalid_json");
+  });
+
+  it("preserves structured active error JSON from nonzero sidecar exits", async () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_NONZERO_ACTIVE_ERROR);
+    const normalized = normalizeConfig(cfg);
+    const result = await runSidecarCommand(normalized, "active-prepare", {});
+    assert.equal(result.ok, false);
+    assert.equal(result.schema, "nollm.active_memory_error.v1");
+    assert.equal(result.error.code, "native_recall_failed");
   });
 
   it("uses spawn with shell:false", () => {

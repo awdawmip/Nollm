@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 
@@ -18,18 +19,46 @@ export function makeTempRepo(tmpDir) {
 }
 
 export function resolvePythonCommand() {
-  if (process.env.PYTHON_EXE) return process.env.PYTHON_EXE;
+  if (process.env.PYTHON_EXE) return requireAbsolutePython(process.env.PYTHON_EXE, "PYTHON_EXE");
   const candidates = [
     "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+    "C:\\Users\\chaos\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+    "C:\\Users\\chaos\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "C:\\Users\\chaos\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
     "C:\\Python314\\python.exe",
     "C:\\Python313\\python.exe",
     "C:\\Python312\\python.exe",
     process.env.PYTHON || "",
   ];
   for (const c of candidates) {
-    if (c && fs.existsSync(c)) return c;
+    if (c && path.isAbsolute(c) && fs.existsSync(c)) return c;
   }
-  return process.env.PYTHON || "python3";
+  const discovered = discoverPythonExecutable();
+  if (discovered) return discovered;
+  throw new Error("Set PYTHON_EXE to an absolute python executable path for provider tests.");
+}
+
+function requireAbsolutePython(value, source) {
+  if (!path.isAbsolute(value) || !fs.existsSync(value)) {
+    throw new Error(`${source} must be an absolute existing python executable path.`);
+  }
+  return value;
+}
+
+function discoverPythonExecutable() {
+  for (const launcher of ["py", "python"]) {
+    try {
+      const out = execFileSync(
+        launcher,
+        ["-c", "import sys; print(sys.executable)"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 5000 }
+      ).trim();
+      if (out && path.isAbsolute(out) && fs.existsSync(out)) return out;
+    } catch {
+      // Keep probing; tests must end with an absolute executable or fail loudly.
+    }
+  }
+  return "";
 }
 
 export function makeProviderConfig(tmpDir, overrides = {}) {
@@ -217,4 +246,14 @@ export const STUB_SLOW = [
 
 export const STUB_INVALID_JSON = [
   "print('this is not valid json')",
+].join("\n");
+
+export const STUB_NONZERO_ACTIVE_ERROR = [
+  "import json, sys",
+  "print(json.dumps({",
+  "  'ok': False,",
+  "  'schema': 'nollm.active_memory_error.v1',",
+  "  'error': {'code': 'native_recall_failed', 'message': 'Native active recall failed.', 'retryable': True}",
+  "}, sort_keys=True))",
+  "raise SystemExit(1)",
 ].join("\n");

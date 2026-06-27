@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from tests.conftest import _run_command
+import os
+import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -18,6 +20,7 @@ from nollm.openclaw_active_memory_adapter import (
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "reference/python/scripts/run_openclaw_nollm_active_memory.py"
+IDENTITY = {"agent_id": "agent-1", "session_id": "session-1", "run_id": "run-1"}
 
 
 def _out_dir(tmp_path: Path) -> Path:
@@ -105,6 +108,19 @@ def test_p4_active_prepare_unrelated_query_returns_no_facts(tmp_path: Path) -> N
     assert result["metrics"]["recall_mode"] == "none"
 
 
+def test_p4b_active_prepare_weather_query_with_response_instruction_returns_no_facts(tmp_path: Path) -> None:
+    _seed_identity(tmp_path)
+    _seed_preference(tmp_path)
+    result = active_prepare(
+        _native_store_root(tmp_path),
+        "明天东京天气如何？不要使用工具。简短回答。",
+        {"max_facts": 4, "max_context_characters": 1400},
+    )
+    assert result["context"]["freshness"] == "none"
+    assert result["context"]["facts"] == []
+    assert result["metrics"]["recall_mode"] == "none"
+
+
 def test_p5_active_prepare_respects_max_context_characters(tmp_path: Path) -> None:
     for i in range(5):
         remember_native_memory(
@@ -126,6 +142,7 @@ def test_p6_active_capture_explicit_remember_promotes(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "请记住：我的 W2-01 标签颜色偏好是 CORAL-SIGNAL-22。"}],
         success=True,
+        identity=IDENTITY,
     )
     assert result["ok"] is True
     assert result["capture"]["promoted_count"] == 1
@@ -141,6 +158,7 @@ def test_p7_active_capture_identity_name_promotes(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "我叫卡卡布拉。"}],
         success=True,
+        identity=IDENTITY,
     )
     assert result["capture"]["promoted_count"] == 1
     assert native_store_summary(_out_dir(tmp_path))["record_count"] == 1
@@ -151,6 +169,7 @@ def test_p8_active_capture_preference_promotes(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "我偏好简洁回答。"}],
         success=True,
+        identity=IDENTITY,
     )
     assert result["capture"]["promoted_count"] == 1
     assert result["capture"]["records"][0]["kind"] == "preference"
@@ -161,12 +180,13 @@ def test_p9_active_capture_project_decision_promotes(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "项目决定周五发版。"}],
         success=True,
+        identity=IDENTITY,
     )
     assert result["capture"]["promoted_count"] == 1
     assert result["capture"]["records"][0]["kind"] == "project"
 
 
-def test_p10_active_capture_ignores_assistant_message(tmp_path: Path) -> None:
+def test_p10_active_capture_rejects_history_batch(tmp_path: Path) -> None:
     result = active_capture(
         _native_store_root(tmp_path),
         [
@@ -174,9 +194,10 @@ def test_p10_active_capture_ignores_assistant_message(tmp_path: Path) -> None:
             {"role": "user", "content": "好的。"},
         ],
         success=True,
+        identity=IDENTITY,
     )
-    assert result["capture"]["promoted_count"] == 0
-    assert result["metrics"]["assistant_messages_ignored"] == 1
+    assert result["ok"] is False
+    assert result["error"]["code"] == "invalid_event"
     assert native_store_summary(_out_dir(tmp_path))["record_count"] == 0
 
 
@@ -185,6 +206,18 @@ def test_p11_active_capture_ordinary_question_suppressed(tmp_path: Path) -> None
         _native_store_root(tmp_path),
         [{"role": "user", "content": "明天东京天气怎样？"}],
         success=True,
+        identity=IDENTITY,
+    )
+    assert result["capture"]["promoted_count"] == 0
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 0
+
+
+def test_p11b_active_capture_marker_question_suppressed(tmp_path: Path) -> None:
+    result = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": "我的 W2-02 身份 marker 是什么？"}],
+        success=True,
+        identity=IDENTITY,
     )
     assert result["capture"]["promoted_count"] == 0
     assert native_store_summary(_out_dir(tmp_path))["record_count"] == 0
@@ -195,11 +228,13 @@ def test_p12_active_capture_duplicate_deduplicates(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "我叫卡卡布拉。"}],
         success=True,
+        identity=IDENTITY,
     )
     second = active_capture(
         _native_store_root(tmp_path),
         [{"role": "user", "content": "我叫卡卡布拉。"}],
         success=True,
+        identity=IDENTITY,
     )
     assert first["capture"]["promoted_count"] == 1
     assert second["capture"]["deduplicated_count"] == 1
@@ -211,6 +246,7 @@ def test_p13_active_capture_secret_rejected(tmp_path: Path) -> None:
         _native_store_root(tmp_path),
         [{"role": "user", "content": "请记住：Bearer W2-01-NOT-A-REAL-SECRET"}],
         success=True,
+        identity=IDENTITY,
     )
     assert result["capture"]["rejected_count"] == 1
     assert result["capture"]["promoted_count"] == 0
@@ -222,6 +258,7 @@ def test_p14_active_capture_malformed_input_no_side_effect(tmp_path: Path) -> No
         _native_store_root(tmp_path),
         [{"role": "user", "content": "我叫卡卡布拉。"}],
         success=False,
+        identity=IDENTITY,
     )
     assert missing_success["capture"]["promoted_count"] == 0
 
@@ -229,9 +266,18 @@ def test_p14_active_capture_malformed_input_no_side_effect(tmp_path: Path) -> No
         _native_store_root(tmp_path),
         "not a list",  # type: ignore[arg-type]
         success=True,
+        identity=IDENTITY,
     )
-    assert bad_messages["ok"] is True
-    assert bad_messages["capture"]["promoted_count"] == 0
+    assert bad_messages["ok"] is False
+    assert bad_messages["error"]["code"] == "invalid_event"
+
+    missing_identity = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": "我叫卡卡布拉。"}],
+        success=True,
+    )
+    assert missing_identity["ok"] is False
+    assert missing_identity["error"]["code"] == "active_identity_incomplete"
     assert native_store_summary(_out_dir(tmp_path))["record_count"] == 0
 
 
@@ -280,10 +326,19 @@ def test_p17_active_status_has_only_safe_runtime_fields(tmp_path: Path) -> None:
     assert status["store"] == "nollm_native_companion"
     assert isinstance(status["native_record_count"], int)
     assert status["capture_mode"] == "deterministic_explicit_v1"
-    forbidden = ["messages", "transcript", "session", "run", "raw", "env"]
-    raw = json.dumps(status, ensure_ascii=False).lower()
-    for token in forbidden:
-        assert token not in raw
+    allowed = {
+        "schema",
+        "ok",
+        "store",
+        "native_record_count",
+        "active_revision_id",
+        "python_executable",
+        "capture_mode",
+        "trial_mode",
+    }
+    forbidden = {"messages", "transcript", "session_id", "run_id", "raw_message", "environment", "env", "command_line"}
+    assert set(status) == allowed
+    assert not (set(status) & forbidden)
 
 
 def test_p18_store_survives_active_sidecar_process_restart(tmp_path: Path) -> None:
@@ -298,7 +353,7 @@ def test_p18_store_survives_active_sidecar_process_restart(tmp_path: Path) -> No
         "session_id": "s1",
         "run_id": "r1",
         "success": True,
-        "messages": [{"role": "user", "content": "我的 W2-01 姓名 marker 是 FROST-QUARTZ-11。"}],
+        "messages": [{"role": "user", "content": "我的 W2-02 身份 marker 是 HARBOR-ONYX-51。"}],
         "trial_id": "w2-p18",
     }
     capture_result = _run_active_subprocess(native_store_root, trial_root, capture_payload)
@@ -311,14 +366,14 @@ def test_p18_store_survives_active_sidecar_process_restart(tmp_path: Path) -> No
         "agent_id": "a1",
         "session_id": "s1",
         "run_id": "r1",
-        "query": "我叫什么？",
+        "query": "我的 W2-02 身份 marker 是什么？",
         "budget": {"max_facts": 4, "max_context_characters": 1400},
         "trial_id": "w2-p18",
     }
     prepare_result = _run_active_subprocess(native_store_root, trial_root, prepare_payload)
     assert prepare_result["ok"] is True
     assert prepare_result["context"]["freshness"] == "fresh"
-    assert any("FROST-QUARTZ-11" in f["claim"] for f in prepare_result["context"]["facts"])
+    assert any("HARBOR-ONYX-51" in f["claim"] for f in prepare_result["context"]["facts"])
 
     report = active_trial_report(native_store_root, "w2-p18", trial_root=trial_root)
     assert report["capture_count"] >= 1
@@ -333,20 +388,22 @@ def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: d
         "--trial-root", str(trial_root),
     ]
     stdin = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-    result = _run_command(
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    arbitrary_cwd = native_store_root.parent
+    arbitrary_cwd.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(
         command,
-        input_data=stdin,
-        cwd=ROOT / "reference/python",
+        input=stdin,
+        text=True,
+        encoding="utf-8",
+        cwd=arbitrary_cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         timeout=60,
     )
-    stdin_bytes = stdin.encode("utf-8")
-    result = _run_command(
-        command,
-        input_data=stdin_bytes,
-        cwd=ROOT / "reference/python",
-        timeout=60,
-    )
-    stdout_text = result.stdout.decode("utf-8", errors="replace")
-    stderr_text = result.stderr.decode("utf-8", errors="replace")
+    stdout_text = result.stdout
+    stderr_text = result.stderr
     assert result.returncode == 0, f"exit={result.returncode}\nstdout={stdout_text}\nstderr={stderr_text}"
     return json.loads(stdout_text)

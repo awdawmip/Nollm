@@ -6,7 +6,7 @@ import { configurationRequiredStatus, normalizeConfig } from "./config.js";
 import { formatMemoryContext, makeUnavailableBoundary } from "./hook-context.js";
 import { runSidecarCommand } from "./sidecar.js";
 import { validatePrepareResult, validateCaptureResult } from "./context-validation.js";
-import { extractLatestUserText, normalizeMessageContent, resolveNollmTurnIdentity } from "./identity.js";
+import { extractLatestUserText, resolveNollmTurnIdentity } from "./identity.js";
 import type { HookContext, TurnMessage } from "./identity.js";
 import type { MemoryContextEnvelope, PluginConfig } from "./types.js";
 
@@ -25,7 +25,19 @@ const ACTIVE_CAPTURE_SCHEMA = "nollm.active_memory_capture.v1";
 function makeTrialId(): string {
   const now = new Date();
   const iso = now.toISOString().replace(/[:.]/g, "").slice(0, 15);
-  return `w2-01-${iso}`;
+  return `w2-02-${iso}`;
+}
+
+function extractPrepareQuery(event: unknown): string {
+  const e = event as Record<string, unknown>;
+  if (Array.isArray(e.messages)) {
+    const fromMessages = extractLatestUserText(e.messages as TurnMessage[]);
+    if (fromMessages) return fromMessages;
+  }
+  if (typeof e.prompt === "string" && e.prompt.trim()) {
+    return e.prompt;
+  }
+  return "";
 }
 
 export function createNollmProvider(api: OpenClawPluginApi): void {
@@ -63,14 +75,17 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
         api.logger.warn(`Nollm agent rejected: ${identity.warnings.join("; ")}`);
         return { prependContext: makeUnavailableBoundary() };
       }
-      if (!identity.sessionId || !identity.runId) {
+      if (!identity.agentId || !identity.sessionId || !identity.runId) {
         api.logger.warn(`Nollm prepare rejected: incomplete identity`);
         return { prependContext: makeUnavailableBoundary() };
       }
 
-      const messages = Array.isArray(event.messages) ? event.messages : [];
-      const typedMessages = messages as TurnMessage[];
-      const query = extractLatestUserText(typedMessages);
+      const query = extractPrepareQuery(event);
+      if (!query) {
+        const eventKeys = Object.keys(event as Record<string, unknown>).sort().join(",");
+        api.logger.warn(`Nollm prepare skipped: no current user query; event_keys=${eventKeys}`);
+        return { prependContext: makeUnavailableBoundary() };
+      }
 
       const result = await runSidecarCommand(config, "active-prepare", {
         schema: ACTIVE_PREPARE_SCHEMA,
@@ -126,7 +141,7 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
           api.logger.warn(`Nollm capture skipped: agent rejected`);
           return;
         }
-        if (!identity.sessionId || !identity.runId) {
+        if (!identity.agentId || !identity.sessionId || !identity.runId) {
           api.logger.warn(`Nollm capture rejected: incomplete identity`);
           return;
         }
@@ -135,11 +150,16 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
           api.logger.warn(`Nollm capture rejected: event.success is not a boolean`);
           return;
         }
-        const rawMessages = (Array.isArray(event.messages) ? event.messages : []) as TurnMessage[];
-        const messages = rawMessages.map((m: TurnMessage) => ({
-          role: m.role,
-          content: normalizeMessageContent(m.content),
-        }));
+        if (!Array.isArray(event.messages)) {
+          api.logger.warn(`Nollm capture rejected: event.messages is not an array`);
+          return;
+        }
+        const currentUserMessage = extractLatestUserText(event.messages as TurnMessage[]);
+        if (!currentUserMessage) {
+          api.logger.warn(`Nollm capture skipped: no current user message`);
+          return;
+        }
+        const messages = [{ role: "user", content: currentUserMessage }];
 
         const result = await runSidecarCommand(config, "active-capture", {
           schema: ACTIVE_CAPTURE_SCHEMA,
