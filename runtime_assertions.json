@@ -1,0 +1,20 @@
+{
+  "assertions": {
+    "disabled_entry_config_issues": [],
+    "memory_slot": "nollm",
+    "mutation_tools": [],
+    "nollm_enabled": true,
+    "ok": true,
+    "primary_nollm_tools_exposed": false,
+    "stale_nollm_tools": [],
+    "trial_agent_context_injection": "never",
+    "trial_agent_exposed_forbidden_tools": [],
+    "trial_agent_id": "w2-02-nollm-active-trial",
+    "trial_agent_memory_provider": "none",
+    "trial_agent_missing_denies": [],
+    "trial_agent_present": true
+  },
+  "created_at": "2026-06-27T15:25:22Z",
+  "ok": true,
+  "schema": "nollm.w2_02.active_trial_runtime_assertions.v1"
+}

@@ -1,0 +1,26 @@
+{
+  "commands": [
+    {
+      "command": "python -m pytest -q reference/python/tests/test_openclaw_active_memory.py",
+      "result": "20 passed"
+    },
+    {
+      "command": "npm test",
+      "cwd": "integrations/openclaw/nollm-memory-provider",
+      "result": "98 passed"
+    },
+    {
+      "command": "python -m pytest -q reference/python/tests",
+      "result": "timeout after 304 seconds"
+    },
+    {
+      "command": "run_openclaw_nollm_active_trial.py apply/assert-runtime/rollback/reapply/report",
+      "result": "pass"
+    },
+    {
+      "command": "openclaw agent W2-02 synthetic capture/recall/no-match",
+      "result": "pass after no-match hardening"
+    }
+  ],
+  "schema": "nollm.w2_02.test_command_summary.v1"
+}

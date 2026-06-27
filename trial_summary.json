@@ -1,0 +1,35 @@
+{
+  "created_at": "2026-06-27T15:34:51Z",
+  "isolation_observed": {
+    "active_provider_primary_tools": [],
+    "legacy_bootstrap": "absent_in_trial_agent_system_prompt",
+    "mutation_tools_visible": [],
+    "primary_visible_tools": [
+      "session_status"
+    ],
+    "workspace_files_injected": 0
+  },
+  "known_limitations": [
+    "Full reference/python/tests run timed out after 304 seconds in this environment; targeted W2 Python and provider Node gates passed.",
+    "One pre-fix no-match live turn leaked HARBOR-ONYX-51; code was hardened and the post-fix no-match turn passed."
+  ],
+  "live_results": {
+    "identity_recall": "pass",
+    "legacy_sources_unchanged": true,
+    "preference_recall": "pass",
+    "reapply": "pass",
+    "release_recall": "pass",
+    "rollback": "pass",
+    "weather_no_match_after_fix": "pass"
+  },
+  "ok": true,
+  "project_branch": "feature/nollm-active-trial-isolation-runtime-closure",
+  "project_commit": "47bad3add6205c16cf63357d1ed92c0bfc16a6ad",
+  "schema": "nollm.w2_02.synthetic_trial_summary.v1",
+  "synthetic_markers": {
+    "identity": "HARBOR-ONYX-51",
+    "preference": "CITRINE-VALE-62",
+    "release": "INDIGO-QUILL-73"
+  },
+  "trial_agent": "w2-02-nollm-active-trial"
+}
