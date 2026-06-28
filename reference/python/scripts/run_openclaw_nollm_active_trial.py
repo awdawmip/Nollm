@@ -43,7 +43,7 @@ LEGACY_MEMORY_TOOLS = {
     "nollm_memory_commit_candidate",
 }
 LEGACY_SOURCE_NAMES = {"MEMORY.md", "DREAMS.md"}
-DEFAULT_TRIAL_ID_PREFIX = "w2-03r"
+DEFAULT_TRIAL_ID_PREFIX = "w2-04"
 ACTIVE_STATUS_SCHEMA = "nollm.active_memory_status.v1"
 ACTIVE_PREPARE_SCHEMA = "nollm.active_memory_prepare.v1"
 ACTIVE_TRIAL_REPORT_SCHEMA = "nollm.active_memory_trial_report.v1"
@@ -67,6 +67,20 @@ def _sha256_file(path: Path) -> str:
 
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _detect_config_format(path: Path) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8")
+    try:
+        json.loads(text)
+    except json.JSONDecodeError as exc:
+        return {
+            "format": "json5_or_unsupported",
+            "patch_route": "blocked_before_mutation",
+            "ok": False,
+            "error": f"json_parse_failed:{exc.lineno}:{exc.colno}",
+        }
+    return {"format": "json", "patch_route": "staged_json_atomic_replace", "ok": True}
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
@@ -126,10 +140,12 @@ class TargetBinding:
         missing = [name for name, value in required.items() if not value]
         if missing:
             raise ValueError(f"missing required target arguments: {', '.join(missing)}")
-        paths = {name: Path(value).resolve() for name, value in required.items() if name != "target_agent_id"}
+        raw_paths = {name: Path(value) for name, value in required.items() if name != "target_agent_id"}
         for name in ("openclaw_bin", "config", "workspace", "repo_root", "python_executable"):
-            if not paths[name].is_absolute():
+            if not raw_paths[name].is_absolute():
                 raise ValueError(f"{name} must be absolute")
+        paths = {name: value.resolve() for name, value in raw_paths.items()}
+        for name in ("openclaw_bin", "config", "workspace", "repo_root", "python_executable"):
             if not paths[name].exists():
                 raise ValueError(f"{name} does not exist")
         return cls(
@@ -301,6 +317,7 @@ def _config_assertions(config: dict[str, Any], binding: TargetBinding) -> dict[s
         "commandTimeoutMs", "maxFacts", "maxContextCharacters", "captureMode", "trialMode", "trialId",
     }
     missing_config = sorted(k for k in required if k not in cfg)
+    trial_id_matches = cfg.get("trialId") == binding.trial_id
     missing_denies = sorted(forbidden - trial_deny)
     stale_tools = sorted(tool_names & STALE_NOLLM_TOOLS)
     mutation_tools = sorted(tool_names & MUTATION_TOOLS)
@@ -315,6 +332,7 @@ def _config_assertions(config: dict[str, Any], binding: TargetBinding) -> dict[s
         and not trial_exposed
         and not missing_denies
         and not missing_config
+        and trial_id_matches
         and trial_agent.get("contextInjection") == "never"
         and (trial_agent.get("memorySearch") or {}).get("provider") == "none"
     )
@@ -326,6 +344,8 @@ def _config_assertions(config: dict[str, Any], binding: TargetBinding) -> dict[s
         "mutation_tools": mutation_tools,
         "disabled_entry_config_issues": disabled_issues,
         "complete_config_missing_keys": missing_config,
+        "trial_id_matches_binding": trial_id_matches,
+        "configured_trial_id_sha256": hashlib.sha256(str(cfg.get("trialId", "")).encode("utf-8")).hexdigest() if cfg.get("trialId") else None,
         "target_agent_id": binding.target_agent_id,
         "trial_agent_present": isinstance(trial_agent, dict),
         "trial_agent_exposed_forbidden_tools": trial_exposed,
@@ -423,6 +443,7 @@ def _sidecar_probe(binding: TargetBinding, payload: dict[str, Any]) -> dict[str,
 
 
 def _plan(binding: TargetBinding) -> dict[str, Any]:
+    config_format = _detect_config_format(binding.config)
     version = _run_bound(binding, binding.argv("--version"), timeout=30)
     config_help = _run_bound(binding, binding.argv("config", "--help"), timeout=30)
     plugins_help = _run_bound(binding, binding.argv("plugins", "--help"), timeout=30)
@@ -433,7 +454,9 @@ def _plan(binding: TargetBinding) -> dict[str, Any]:
     routes = {
         "config_binding": "supported" if binding_probe["ok"] else "unavailable",
         "config_validate": "supported" if "validate" in config_help.get("stdout_tail", "") else "unavailable",
-        "plugin_inspect": "supported" if "list" in plugins_help.get("stdout_tail", "") else "unavailable",
+        "runtime_inspect_route": "supported" if "inspect" in plugins_help.get("stdout_tail", "") else "unavailable",
+        "memory_owner_route": "supported" if "inspect" in plugins_help.get("stdout_tail", "") else "unavailable",
+        "tool_catalog_route": "supported" if "--json" in agent_help.get("stdout_tail", "") else "unavailable",
         "provider_build": "supported" if (binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider" / "package.json").exists() else "unavailable",
         "provider_link_or_refresh": "supported" if plugin_route else "unavailable",
         "real_turn": "supported" if "--message" in agent_help.get("stdout_tail", "") and "--json" in agent_help.get("stdout_tail", "") else "unavailable",
@@ -441,12 +464,13 @@ def _plan(binding: TargetBinding) -> dict[str, Any]:
         "tool_catalog": "supported",
     }
     required = list(routes)
-    ok = version["exit_code"] == 0 and all(routes[k] == "supported" for k in required)
+    ok = config_format["ok"] and version["exit_code"] == 0 and all(routes[k] == "supported" for k in required)
     return {
-        "schema": "nollm.w2_03.target_capability_plan.v1",
+        "schema": "nollm.w2_04.target_capability_plan.v1",
         "ok": ok,
         "created_at": _now(),
         "binding": binding.redacted(),
+        "config_format": config_format,
         "routes": routes,
         "required_routes": required,
         "version": version,
@@ -558,30 +582,80 @@ def _restore_backup(binding: TargetBinding) -> dict[str, Any]:
     backup = _backup_path(binding)
     if not backup.exists():
         return {"ok": False, "error": "backup_missing"}
+    backup_hash = _sha256_file(backup)
     tmp = binding.config.with_suffix(binding.config.suffix + ".rollback.tmp")
     shutil.copy2(backup, tmp)
     os.replace(str(tmp), str(binding.config))
     reload_receipt = _run_bound(binding, binding.argv("gateway", "restart"), timeout=120)
-    return {"ok": reload_receipt["exit_code"] == 0, "reload": reload_receipt}
+    restored_hash = _sha256_file(binding.config)
+    validate = _run_bound(binding, binding.argv("config", "validate"), timeout=60)
+    return {
+        "ok": reload_receipt["exit_code"] == 0 and validate["exit_code"] == 0 and restored_hash == backup_hash,
+        "config_restored_byte_identical": restored_hash == backup_hash,
+        "restored_config_sha256": restored_hash,
+        "backup_sha256": backup_hash,
+        "reload": reload_receipt,
+        "validate": validate,
+    }
 
 
 def _runtime_assert(binding: TargetBinding) -> dict[str, Any]:
     config_assert = _config_assertions(_read_json(binding.config), binding)
-    plugin_receipt = _run_bound(binding, binding.argv("plugins", "list"), timeout=60)
+    plugin_receipt = _run_bound(binding, binding.argv("plugins", "inspect", "nollm"), timeout=60)
+    plugin_text = "\n".join([plugin_receipt.get("stdout_tail", ""), plugin_receipt.get("stderr_tail", "")])
+    loaded_nollm = plugin_receipt["exit_code"] == 0 and re.search(r"\bid:\s*nollm\b", plugin_text, flags=re.I) and re.search(r"\bStatus:\s*loaded\b", plugin_text, flags=re.I)
+    provider_files = [
+        binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider" / "dist" / "index.js",
+        binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider" / "openclaw.plugin.json",
+        binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider" / "package.json",
+    ]
+    provider_hash = hashlib.sha256()
+    provider_hash_count = 0
+    for path in provider_files:
+        if path.exists():
+            provider_hash.update(path.name.encode("utf-8"))
+            provider_hash.update(path.read_bytes())
+            provider_hash_count += 1
     active_status = _sidecar_probe(binding, {"command": "active-status", "schema": ACTIVE_STATUS_SCHEMA})
-    turn = _run_agent_turn(binding, f"w2-03r-runtime-assert-{_stamp()}", "只回答 OK-W2-03R-RUNTIME。")
+    turn = _run_agent_turn(binding, f"w2-04-runtime-assert-{_stamp()}", "只回答 OK-W2-04-RUNTIME。")
     catalog_safe, catalog_names, catalog_status = _tool_catalog_safe(turn)
     runtime = {
-        "schema": "nollm.w2_03.runtime_assertions.v1",
+        "schema": "nollm.w2_04.runtime_proof.v1",
         "config_assertions": config_assert,
-        "plugin_inspect_exit_code": plugin_receipt["exit_code"],
-        "active_status_exit_code": active_status["exit_code"],
-        "active_status_ok": bool((active_status.get("parsed_safe_result") or {}).get("ok")),
-        "tool_catalog_status": catalog_status,
-        "observed_tool_catalog": catalog_names,
-        "target_turn_exit_code": turn["exit_code"],
+        "runtime_assertions": {
+            "status": "observed" if loaded_nollm else "failed",
+            "loaded_plugin_ids": ["nollm"] if loaded_nollm else [],
+            "loaded_nollm_provider": bool(loaded_nollm),
+            "selected_memory_owner": "nollm" if config_assert.get("memory_slot") == "nollm" and loaded_nollm else None,
+            "memory_core_selected": False,
+            "active_memory_selected": False,
+            "provider_build_identity": provider_hash.hexdigest() if provider_hash_count else None,
+            "provider_build_file_count": provider_hash_count,
+            "source": "target runtime inspect route plus config memory slot",
+            "plugin_inspect_exit_code": plugin_receipt["exit_code"],
+        },
+        "sidecar_health": {
+            "active_status_exit_code": active_status["exit_code"],
+            "active_status_ok": bool((active_status.get("parsed_safe_result") or {}).get("ok")),
+        },
+        "turn_assertions": {
+            "status": "observed" if turn["exit_code"] == 0 and catalog_status == "observed" else "failed",
+            "target_agent_id": binding.target_agent_id,
+            "tool_catalog_status": catalog_status,
+            "visible_tools": catalog_names,
+            "target_turn_exit_code": turn["exit_code"],
+            "primary_visible_nollm_tools": sorted(set(catalog_names) & (STALE_NOLLM_TOOLS | LEGACY_MEMORY_TOOLS)),
+        },
     }
-    runtime["ok"] = config_assert["ok"] and plugin_receipt["exit_code"] == 0 and runtime["active_status_ok"] and turn["exit_code"] == 0 and catalog_safe
+    runtime["ok"] = (
+        config_assert["ok"]
+        and bool(loaded_nollm)
+        and runtime["runtime_assertions"]["selected_memory_owner"] == "nollm"
+        and runtime["sidecar_health"]["active_status_ok"]
+        and turn["exit_code"] == 0
+        and catalog_safe
+        and not runtime["turn_assertions"]["primary_visible_nollm_tools"]
+    )
     return runtime
 
 
@@ -603,7 +677,7 @@ def _cmd_snapshot(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     backup = _ensure_private_backup(binding)
     config = _read_json(binding.config)
-    report = {"schema": "nollm.w2_03.snapshot.v1", "ok": True, "created_at": _now(), "config_sha256": _sha256_file(binding.config), "legacy_sources": _legacy_hashes(binding.workspace), "config_assertions": _config_assertions(config, binding), "private_backup": str(backup)}
+    report = {"schema": "nollm.w2_04.snapshot.v1", "ok": True, "created_at": _now(), "config_sha256": _sha256_file(binding.config), "legacy_sources": _legacy_hashes(binding.workspace), "config_assertions": _config_assertions(config, binding), "private_backup": str(backup)}
     _write_json(binding.out / "snapshot.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
@@ -615,19 +689,19 @@ def _cmd_apply(args: argparse.Namespace) -> int:
     _write_json(binding.out / "target-capability-plan.json", plan)
     if not plan["ok"]:
         diag = _diagnose(binding)
-        result = {"schema": "nollm.w2_03.apply_result.v1", "ok": False, "live_validation_blocked": True, "reason": "plan_unavailable_or_ambiguous", "diagnostic": diag, "apply_rolled_back": False}
+        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "live_validation_blocked": True, "reason": "plan_unavailable_or_ambiguous", "diagnostic": diag, "apply_rolled_back": False}
         _write_json(binding.out / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 2
     before_hashes = _legacy_hashes(binding.workspace)
     backup = _ensure_private_backup(binding)
-    staged = binding.out / "staged" / "openclaw.w2-03r.json"
+    staged = binding.out / "staged" / "openclaw.w2-04.json"
     config = _read_json(binding.config)
     _configure_active_trial(config, binding)
     _write_json(staged, config)
     build = _run_bound(binding, ["npm", "run", "build"], cwd=binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider", timeout=180)
     if build["exit_code"] != 0:
-        result = {"schema": "nollm.w2_03.apply_result.v1", "ok": False, "stage": "provider_build", "apply_rolled_back": False, "build": build}
+        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "stage": "provider_build", "apply_rolled_back": False, "build": build}
         _write_json(binding.out / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 1
@@ -639,14 +713,14 @@ def _cmd_apply(args: argparse.Namespace) -> int:
     install_args.append(str(provider_dir))
     install = _run_bound(binding, binding.argv(*install_args), timeout=180)
     if install["exit_code"] != 0:
-        result = {"schema": "nollm.w2_03r.apply_result.v1", "ok": False, "stage": "provider_link_or_refresh", "apply_rolled_back": False, "install": install}
+        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "stage": "provider_link_or_refresh", "apply_rolled_back": False, "install": install}
         _write_json(binding.out / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 1
     live_mutated = False
     receipts: list[dict[str, Any]] = [build, install]
     try:
-        tmp = binding.config.with_suffix(binding.config.suffix + ".w2-03r.tmp")
+        tmp = binding.config.with_suffix(binding.config.suffix + ".w2-04.tmp")
         shutil.copy2(staged, tmp)
         stage_binding = TargetBinding(binding.openclaw_bin, tmp, binding.profile, binding.workspace, binding.repo_root, binding.python_executable, binding.out, binding.target_agent_id, binding.trial_id)
         staged_validate = _run_bound(stage_binding, stage_binding.argv("config", "validate"), timeout=60)
@@ -664,13 +738,13 @@ def _cmd_apply(args: argparse.Namespace) -> int:
             raise RuntimeError("runtime_assertion_failed")
         if _legacy_hashes(binding.workspace) != before_hashes:
             raise RuntimeError("legacy_source_mutation")
-        result = {"schema": "nollm.w2_03.apply_result.v1", "ok": True, "created_at": _now(), "backup": str(backup), "apply_rolled_back": False, "legacy_sources_unchanged": True, "runtime_assertions": runtime, "receipts": receipts}
+        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": True, "created_at": _now(), "backup": str(backup), "apply_rolled_back": False, "legacy_sources_unchanged": True, "runtime_assertions": runtime, "receipts": receipts}
         _write_json(binding.out / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     except Exception as exc:
         rollback = _restore_backup(binding) if live_mutated else {"ok": True, "not_needed": True}
-        result = {"schema": "nollm.w2_03.apply_result.v1", "ok": False, "error": str(exc), "apply_rolled_back": bool(live_mutated), "rollback": rollback, "receipts": receipts}
+        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "error": str(exc), "apply_rolled_back": bool(live_mutated), "rollback": rollback, "receipts": receipts}
         _write_json(binding.out / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 1
@@ -704,54 +778,156 @@ def _tool_catalog_safe(turn: dict[str, Any]) -> tuple[bool, list[str], str]:
     return not forbidden, names, "observed"
 
 
+def _final_answer_text(turn: dict[str, Any]) -> dict[str, Any]:
+    parsed = turn.get("parsed_safe_result") if isinstance(turn.get("parsed_safe_result"), dict) else None
+    result = parsed.get("result") if isinstance(parsed, dict) and isinstance(parsed.get("result"), dict) else {}
+    meta = result.get("meta") if isinstance(result.get("meta"), dict) else {}
+    candidates = [
+        meta.get("finalAssistantVisibleText"),
+        result.get("finalAssistantVisibleText"),
+        result.get("text"),
+        result.get("content"),
+    ]
+    payloads = result.get("payloads")
+    if isinstance(payloads, list):
+        for item in payloads:
+            if isinstance(item, dict):
+                candidates.extend([item.get("text"), item.get("content")])
+    for value in candidates:
+        if isinstance(value, str) and value.strip():
+            text = value.strip()
+            return {"ok": True, "text": text, "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest()}
+    return {"ok": False, "text": "", "sha256": None}
+
+
+def _active_report(binding: TargetBinding) -> dict[str, Any]:
+    receipt = _sidecar_probe(binding, {"command": "active-trial-report", "schema": ACTIVE_TRIAL_REPORT_SCHEMA, "trial_id": binding.trial_id})
+    parsed = receipt.get("parsed_safe_result") if isinstance(receipt.get("parsed_safe_result"), dict) else {}
+    return {"receipt": receipt, "parsed": parsed if isinstance(parsed, dict) else {}}
+
+
+def _active_status(binding: TargetBinding) -> dict[str, Any]:
+    receipt = _sidecar_probe(binding, {"command": "active-status", "schema": ACTIVE_STATUS_SCHEMA})
+    parsed = receipt.get("parsed_safe_result") if isinstance(receipt.get("parsed_safe_result"), dict) else {}
+    return {"receipt": receipt, "parsed": parsed if isinstance(parsed, dict) else {}}
+
+
+def _active_prepare_contains(binding: TargetBinding, query: str, expected: str) -> dict[str, Any]:
+    receipt = _sidecar_probe(binding, {"command": "active-prepare", "schema": ACTIVE_PREPARE_SCHEMA, "query": query, "trial_id": binding.trial_id})
+    parsed = receipt.get("parsed_safe_result") if isinstance(receipt.get("parsed_safe_result"), dict) else {}
+    facts = (((parsed.get("context") if isinstance(parsed, dict) else {}) or {}).get("facts") or [])
+    claims = [str(f.get("claim", "")) for f in facts if isinstance(f, dict)]
+    found = any(expected in claim for claim in claims)
+    return {
+        "ok": receipt["exit_code"] == 0 and bool(parsed.get("ok")) and found,
+        "exit_code": receipt["exit_code"],
+        "expected_sha256": hashlib.sha256(expected.encode("utf-8")).hexdigest(),
+        "fact_count": len(claims),
+        "matched": found,
+        "receipt": receipt,
+    }
+
+
 def _cmd_trial(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     before = _legacy_hashes(binding.workspace)
+    status_before = _active_status(binding)
+    report_before = _active_report(binding)
     stages = [
-        ("temporal-no-save", "昆明今天下雨了。只回答 OK-W2-03R-TEMPORAL。"),
-        ("capture-identity", "请记住：我的 W2-03R 身份 marker 是 SUNSET-MICA-41。只回答 OK-W2-03R-CAPTURE-IDENTITY。"),
-        ("capture-preference", "请记住：我的 W2-03R 标签颜色 marker 是 WILLOW-EMBER-52。只回答 OK-W2-03R-CAPTURE-PREFERENCE。"),
-        ("capture-release", "请记住：我的 W2-03R 发布窗口 marker 是 AURORA-SLATE-63。只回答 OK-W2-03R-CAPTURE-RELEASE。"),
-        ("recall-identity", "我的 W2-03R 身份 marker 是什么？只回答 marker 本身。"),
-        ("recall-preference", "我的 W2-03R 标签颜色 marker 是什么？只回答 marker 本身。"),
-        ("recall-release", "我的 W2-03R 发布窗口 marker 是什么？只回答 marker 本身。"),
+        ("temporal-no-save", "2026年6月28日，用户报告昆明当天下雨。只回答 OK-W2-04-TEMPORAL。"),
+        ("capture-identity", "请记住：我的 W2-04 身份 marker 是 LANTERN-CEDAR-71。只回答 OK-W2-04-CAPTURE-IDENTITY。"),
+        ("capture-preference", "请记住：我的 W2-04 标签颜色 marker 是 MINT-ORBIT-82。只回答 OK-W2-04-CAPTURE-PREFERENCE。"),
+        ("capture-release", "请记住：我的 W2-04 发布窗口 marker 是 GRANITE-EMBER-93。只回答 OK-W2-04-CAPTURE-RELEASE。"),
+        ("capture-rain-note", "请记住：2026年6月28日，用户报告昆明当天下雨。只回答 OK-W2-04-CAPTURE-RAIN-NOTE。"),
+        ("recall-identity", "我的 W2-04 身份 marker 是什么？只回答 marker 本身。"),
+        ("recall-preference", "我的 W2-04 标签颜色 marker 是什么？只回答 marker 本身。"),
+        ("recall-release", "我的 W2-04 发布窗口 marker 是什么？只回答 marker 本身。"),
+        ("recall-rain-note", "用户报告昆明当天下雨的日期和内容是什么？只回答已保存的完整原句。"),
         ("weather-no-match", "明天东京天气如何？不要使用工具。简短回答。"),
     ]
+    expected = {
+        "recall-identity": "LANTERN-CEDAR-71",
+        "recall-preference": "MINT-ORBIT-82",
+        "recall-release": "GRANITE-EMBER-93",
+        "recall-rain-note": "2026年6月28日，用户报告昆明当天下雨。",
+    }
     receipts = []
     ok = True
     failures: list[str] = []
     observed_tools: list[str] = []
     for name, message in stages:
-        receipt = _run_agent_turn(binding, f"w2-03r-{name}-{_stamp()}", message)
-        receipts.append({"stage": name, "receipt": receipt})
+        if name.startswith("recall-"):
+            prepare = _active_prepare_contains(binding, message, expected[name])
+            receipts.append({"stage": f"{name}-active-prepare", "receipt": _redact_obj(prepare)})
+            if not prepare["ok"]:
+                ok = False
+                failures.append(f"active_prepare_missing_expected_marker:{name}")
+                break
+        pre_status = _active_status(binding)
+        pre_report = _active_report(binding)
+        receipt = _run_agent_turn(binding, f"w2-04-{name}-{_stamp()}", message)
+        answer = _final_answer_text(receipt)
+        post_status = _active_status(binding)
+        post_report = _active_report(binding)
+        receipts.append({
+            "stage": name,
+            "final_answer": answer,
+            "native_record_count_before": (pre_status.get("parsed") or {}).get("native_record_count"),
+            "native_record_count_after": (post_status.get("parsed") or {}).get("native_record_count"),
+            "promotion_total_before": (pre_report.get("parsed") or {}).get("promotion_total"),
+            "promotion_total_after": (post_report.get("parsed") or {}).get("promotion_total"),
+            "receipt": receipt,
+        })
         safe, tools, catalog_status = _tool_catalog_safe(receipt)
         observed_tools = tools
         if not safe:
             ok = False
             failures.append(f"unsafe_or_missing_tool_catalog:{name}:{catalog_status}")
             break
-        text = json.dumps(receipt.get("parsed_safe_result"), ensure_ascii=False)
-        if name == "temporal-no-save" and ("已记住" in text or "所在地" in text):
-            ok = False; failures.append("temporal_report_false_persistence_or_location_inference")
-        if name == "recall-identity" and "SUNSET-MICA-41" not in text:
-            ok = False; failures.append("identity_recall_failed")
-        if name == "recall-preference" and "WILLOW-EMBER-52" not in text:
-            ok = False; failures.append("preference_recall_failed")
-        if name == "recall-release" and "AURORA-SLATE-63" not in text:
-            ok = False; failures.append("release_recall_failed")
-        if name == "weather-no-match" and any(m in text for m in ["SUNSET-MICA-41", "WILLOW-EMBER-52", "AURORA-SLATE-63"]):
-            ok = False; failures.append("weather_query_injected_w2_03_fact")
+        if not answer["ok"]:
+            ok = False; failures.append(f"final_answer_unavailable:{name}")
+        visible_text = answer.get("text", "")
+        if name == "temporal-no-save":
+            if ("已记住" in visible_text or "所在地" in visible_text):
+                ok = False; failures.append("temporal_report_false_persistence_or_location_inference")
+            if (pre_status.get("parsed") or {}).get("native_record_count") != (post_status.get("parsed") or {}).get("native_record_count"):
+                ok = False; failures.append("temporal_native_record_delta")
+            if (pre_report.get("parsed") or {}).get("promotion_total") != (post_report.get("parsed") or {}).get("promotion_total"):
+                ok = False; failures.append("temporal_promotion_delta")
+        if name in expected and visible_text.strip() != expected[name]:
+            ok = False; failures.append(f"{name}_final_answer_not_exact_expected")
+        if name == "weather-no-match" and any(m in visible_text for m in expected.values()):
+            ok = False; failures.append("weather_query_injected_w2_04_fact")
         if _legacy_hashes(binding.workspace) != before:
             ok = False
             failures.append("legacy_source_mutation")
-            receipts.append({"stage": "automatic-rollback", "receipt": _restore_backup(binding)})
             break
-    active_report = _sidecar_probe(binding, {"command": "active-trial-report", "schema": ACTIVE_TRIAL_REPORT_SCHEMA, "trial_id": binding.trial_id})
-    active_result = active_report.get("parsed_safe_result") if isinstance(active_report.get("parsed_safe_result"), dict) else {}
+        if not ok:
+            break
+    automatic_rollback = None
+    if not ok:
+        automatic_rollback = _restore_backup(binding)
+        receipts.append({"stage": "automatic-rollback", "receipt": automatic_rollback})
+    active_report = _active_report(binding)
+    active_result = active_report.get("parsed") or {}
     if ok and not active_result.get("ok"):
         ok = False
         failures.append("active_trial_report_unavailable")
-    report = {"schema": "nollm.w2_03r.trial_result.v1", "ok": ok, "created_at": _now(), "trial_id": binding.trial_id, "failures": failures, "observed_trial_tool_catalog": observed_tools, "active_trial_report": _redact_obj(active_result), "active_trial_report_exit_code": active_report["exit_code"], "legacy_sources_unchanged": _legacy_hashes(binding.workspace) == before, "receipts": receipts}
+    report = {
+        "schema": "nollm.w2_04.trial_result.v1",
+        "ok": ok,
+        "created_at": _now(),
+        "trial_id": binding.trial_id,
+        "failures": failures,
+        "observed_trial_tool_catalog": observed_tools,
+        "status_before": _redact_obj(status_before.get("parsed") or {}),
+        "report_before": _redact_obj(report_before.get("parsed") or {}),
+        "active_trial_report": _redact_obj(active_result),
+        "active_trial_report_exit_code": active_report["receipt"]["exit_code"],
+        "automatic_rollback": automatic_rollback,
+        "legacy_sources_unchanged": _legacy_hashes(binding.workspace) == before,
+        "receipts": receipts,
+    }
     _write_json(binding.out / "trial.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if ok else 1
@@ -761,7 +937,7 @@ def _cmd_rollback(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     before = _legacy_hashes(binding.workspace)
     rollback = _restore_backup(binding)
-    report = {"schema": "nollm.w2_03.rollback_result.v1", "ok": rollback.get("ok") is True and _legacy_hashes(binding.workspace) == before, "created_at": _now(), "legacy_sources_unchanged": _legacy_hashes(binding.workspace) == before, "rollback": rollback}
+    report = {"schema": "nollm.w2_04.rollback_result.v1", "ok": rollback.get("ok") is True and _legacy_hashes(binding.workspace) == before, "created_at": _now(), "legacy_sources_unchanged": _legacy_hashes(binding.workspace) == before, "rollback": rollback}
     _write_json(binding.out / "rollback.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if report["ok"] else 1
@@ -769,7 +945,7 @@ def _cmd_rollback(args: argparse.Namespace) -> int:
 
 def _cmd_hash_legacy(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
-    report = {"schema": "nollm.w2_03.legacy_hashes.v1", "ok": True, "created_at": _now(), "stage": args.stage, "legacy_sources": _legacy_hashes(binding.workspace)}
+    report = {"schema": "nollm.w2_04.legacy_hashes.v1", "ok": True, "created_at": _now(), "stage": args.stage, "legacy_sources": _legacy_hashes(binding.workspace)}
     _write_json(binding.out / f"legacy-hashes-{args.stage}.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
@@ -778,14 +954,14 @@ def _cmd_hash_legacy(args: argparse.Namespace) -> int:
 def _cmd_report(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     files = {path.name: _sha256_file(path) for path in sorted(binding.out.glob("*.json"))}
-    report = {"schema": "nollm.w2_03.report_manifest.v1", "ok": True, "created_at": _now(), "artifact_hashes": files}
+    report = {"schema": "nollm.w2_04.report_manifest.v1", "ok": True, "created_at": _now(), "artifact_hashes": files}
     _write_json(binding.out / "report-manifest.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="W2-03 target-bound Nollm active-memory trial controller.")
+    parser = argparse.ArgumentParser(description="W2-04 target-bound Nollm active-memory trial controller.")
     parser.add_argument("command", choices=["plan", "diagnose", "snapshot", "apply", "assert-runtime", "trial", "rollback", "reapply", "report", "hash-legacy"])
     parser.add_argument("--openclaw-bin", required=True)
     parser.add_argument("--config", required=True)
@@ -820,7 +996,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "report":
             return _cmd_report(args)
     except Exception as exc:
-        print(json.dumps({"schema": "nollm.w2_03.controller_error.v1", "ok": False, "error": str(exc)}, indent=2, sort_keys=True))
+        print(json.dumps({"schema": "nollm.w2_04.controller_error.v1", "ok": False, "error": str(exc)}, indent=2, sort_keys=True))
         return 1
     return 2
 

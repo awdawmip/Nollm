@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -11,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from subprocess_harness import run_subprocess
 from nollm.companion_memory_store import remember_native_memory, native_store_summary
 from nollm.openclaw_active_memory_adapter import (
     _capture_event_fingerprint,
@@ -413,10 +413,17 @@ def test_p19_active_capture_replay_receipt_excludes_duplicate_metric(tmp_path: P
     metrics_path = trial_root / trial_id / "trial-metrics.jsonl"
     metrics = [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     capture_metrics = [m for m in metrics if m.get("event") == "capture"]
+    replay_metrics = [m for m in metrics if m.get("event") == "capture_replay"]
     assert len(capture_metrics) == 1
+    assert len(replay_metrics) == 1
 
     report = active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=trial_root)
     assert report["capture_count"] == 1
+    assert report["normal_capture_count"] == 1
+    assert report["promotion_total"] == 1
+    assert report["deduplication_total"] == 0
+    assert report["replay_observation_count"] == 1
+    assert report["committed_receipt_count"] == 1
 
 
 def test_p20_claimed_receipt_before_remember_recovers_with_one_capture(tmp_path: Path) -> None:
@@ -535,7 +542,7 @@ def test_p24_explicit_temporal_report_promotes_exact_note_not_location_identity(
     text = "2026年6月28日，用户报告昆明当天下雨。"
     result = active_capture(
         _native_store_root(tmp_path),
-        [{"role": "user", "content": f"请记住：{text}"}],
+        [{"role": "user", "content": f"请记住：{text}只回答 OK-W2-04-CAPTURE-RAIN-NOTE。"}],
         success=True,
         trial_id="test-p24",
         identity=IDENTITY,
@@ -546,6 +553,7 @@ def test_p24_explicit_temporal_report_promotes_exact_note_not_location_identity(
     recall = active_prepare(_native_store_root(tmp_path), "昆明当天下雨", {"max_facts": 4, "max_context_characters": 1400})
     claims = [fact["claim"] for fact in recall["context"]["facts"]]
     assert text in claims
+    assert all("OK-W2-04-CAPTURE-RAIN-NOTE" not in claim for claim in claims)
     location = active_prepare(_native_store_root(tmp_path), "用户所在地在哪里？", {"max_facts": 4, "max_context_characters": 1400})
     assert all("所在地" not in fact["claim"] for fact in location["context"]["facts"])
 
@@ -562,16 +570,12 @@ def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: d
     env.pop("PYTHONPATH", None)
     arbitrary_cwd = native_store_root.parent
     arbitrary_cwd.mkdir(parents=True, exist_ok=True)
-    result = subprocess.run(
+    result = run_subprocess(
         command,
-        input=stdin,
-        text=True,
-        encoding="utf-8",
         cwd=arbitrary_cwd,
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=60,
+        timeout_seconds=60,
+        input_text=stdin,
     )
     stdout_text = result.stdout
     stderr_text = result.stderr

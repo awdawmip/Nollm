@@ -402,10 +402,15 @@ def active_prepare(
     recall_mode = "none"
     if result.get("ok") and result.get("results"):
         recall_mode = result["results"][0].get("match", {}).get("mode", "lexical")
+        seen_claims: set[str] = set()
         for r in result["results"][:max_facts]:
+            claim = _strip_explicit_remember_tail_instruction(str(r["text"]))
+            if claim in seen_claims:
+                continue
+            seen_claims.add(claim)
             facts.append({
                 "memory_id": r["memory_id"],
-                "claim": r["text"],
+                "claim": claim,
                 "kind": r["kind"],
                 "source": "nollm_native_companion",
                 "revision_id": r.get("revision_id"),
@@ -504,6 +509,15 @@ def _classify_kind(pattern_name: str, text: str) -> str:
     return "note"
 
 
+def _strip_explicit_remember_tail_instruction(text: str) -> str:
+    for marker in ("只回答", "仅回答", "只回复", "仅回复", "only reply", "only respond"):
+        idx = text.lower().find(marker.lower())
+        if idx >= 0:
+            text = text[:idx]
+            break
+    return _normalize_text(text).strip()
+
+
 def _extract_promotion_candidates(messages: list[dict[str, Any]]) -> list[tuple[str, str]]:
     """Return list of (kind_hint, text) for user messages that match promotion patterns.
 
@@ -524,7 +538,7 @@ def _extract_promotion_candidates(messages: list[dict[str, Any]]) -> list[tuple[
             match = re.search(pattern, content, re.IGNORECASE)
             if match:
                 if pattern_name == "explicit_remember":
-                    text = _normalize_text(match.group(1))
+                    text = _strip_explicit_remember_tail_instruction(match.group(1))
                 else:
                     text = _normalize_text(content)
                 if text:
@@ -600,6 +614,17 @@ def active_capture(
                     "claimed_at": _now_iso(),
                 }, sort_keys=True) + "\n", encoding="utf-8")
             if not claimed and receipt and receipt.get("state") == "committed":
+                if trial_dir is not None:
+                    _write_trial_metric(trial_dir, {
+                        "event": "capture_replay",
+                        "timestamp": _now_iso(),
+                        "trial_id": trial_id,
+                        "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+                        "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+                        "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+                        "event_id": event_id,
+                        "latency_ms": int((time.monotonic() - start) * 1000),
+                    })
                 result = {
                     "schema": ACTIVE_CAPTURE_SCHEMA,
                     "ok": True,
@@ -833,8 +858,11 @@ def active_trial_report(
     path = trial_root_dir / "trial-metrics.jsonl"
     metrics = _read_trial_metrics(trial_root_dir)
 
-    prepare_times = [m["latency_ms"] for m in metrics if m.get("event") == "prepare" and isinstance(m.get("latency_ms"), int)]
-    capture_times = [m["latency_ms"] for m in metrics if m.get("event") == "capture" and isinstance(m.get("latency_ms"), int)]
+    prepare_metrics = [m for m in metrics if m.get("event") == "prepare"]
+    capture_metrics = [m for m in metrics if m.get("event") == "capture"]
+    replay_metrics = [m for m in metrics if m.get("event") == "capture_replay"]
+    prepare_times = [m["latency_ms"] for m in prepare_metrics if isinstance(m.get("latency_ms"), int)]
+    capture_times = [m["latency_ms"] for m in capture_metrics if isinstance(m.get("latency_ms"), int)]
     prepare_count = len(prepare_times)
     capture_count = len(capture_times)
     receipt_dir = trial_root_dir / "event-receipts"
@@ -860,8 +888,16 @@ def active_trial_report(
         "trial_id": trial_id,
         "prepare_count": prepare_count,
         "capture_count": capture_count,
+        "normal_capture_count": capture_count,
+        "prepare_error_count": len([m for m in metrics if m.get("event") == "prepare_error"]),
+        "promotion_total": sum(int(m.get("promoted_count") or 0) for m in capture_metrics),
+        "deduplication_total": sum(int(m.get("deduplicated_count") or 0) for m in capture_metrics),
+        "suppression_total": sum(int(m.get("suppressed_count") or 0) for m in capture_metrics),
+        "rejection_total": sum(int(m.get("rejected_count") or 0) for m in capture_metrics),
+        "replay_observation_count": len(replay_metrics),
         "unique_capture_event_count": len({m.get("event_id") for m in metrics if m.get("event") == "capture" and m.get("event_id")}),
         "receipt_count": sum(receipt_states.values()),
+        "committed_receipt_count": receipt_states["committed"],
         "receipt_states": receipt_states,
         "prepare_latency_ms": {
             "p50": _pctile(prepare_times, 50),

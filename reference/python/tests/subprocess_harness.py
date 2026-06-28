@@ -31,6 +31,7 @@ def run_subprocess(
     timeout_seconds: int = 20,
     label: str | None = None,
     request_path: Path | None = None,
+    input_text: str | None = None,
 ) -> RunResult:
     if label is None and request_path is not None:
         label = request_path.as_posix()
@@ -44,12 +45,19 @@ def run_subprocess(
                 command,
                 cwd=cwd,
                 env=env,
+                stdin=subprocess.PIPE if input_text is not None else None,
                 stdout=stdout_file,
                 stderr=stderr_file,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 start_new_session=os.name != "nt",
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
             )
+            if input_text is not None:
+                assert process.stdin is not None
+                process.stdin.write(input_text)
+                process.stdin.close()
             timed_out = wait_with_deadline(process, timeout_seconds)
 
         stdout = read_tail(stdout_path)

@@ -8,6 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 sys.dont_write_bytecode = True
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 import subprocess
