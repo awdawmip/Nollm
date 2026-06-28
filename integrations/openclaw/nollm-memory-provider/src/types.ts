@@ -10,6 +10,7 @@ export type PluginConfig = {
   maxContextCharacters?: number;
   captureMode?: string;
   trialMode?: string;
+  trialId?: string;
 };
 
 export type NormalizedConfig = {
@@ -25,6 +26,7 @@ export type NormalizedConfig = {
   maxContextCharacters: number;
   captureMode: string;
   trialMode: string;
+  trialId?: string;
 };
 
 export type SidecarErrorCode =

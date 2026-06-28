@@ -119,6 +119,7 @@ describe("dynamic no-legacy access", () => {
       maxContextCharacters: 1400,
       captureMode: "deterministic_explicit_v1",
       trialMode: "active_empirical_v1",
+      trialId: "test-trial",
     };
     const normalized = normalizeConfig(cfg);
 

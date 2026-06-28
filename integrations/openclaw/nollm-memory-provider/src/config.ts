@@ -36,6 +36,9 @@ export const ConfigSchema = Type.Object(
     trialMode: Type.Optional(
       Type.Literal("active_empirical_v1", { default: "active_empirical_v1" })
     ),
+    trialId: Type.Optional(Type.String({
+      description: "Controller-assigned active empirical trial id. Required when trialMode is active_empirical_v1.",
+    })),
   },
   { additionalProperties: false }
 );
@@ -87,6 +90,12 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
     throw new Error(`trialRoot must not be inside or be a legacy memory path: ${trialRoot}`);
   }
 
+  const trialMode = config.trialMode || "active_empirical_v1";
+  const trialId = typeof config.trialId === "string" ? config.trialId.trim() : "";
+  if (trialMode === "active_empirical_v1" && !trialId) {
+    throw new Error("trialId is required when trialMode is active_empirical_v1.");
+  }
+
   return {
     pythonExecutable,
     pythonArgs: Array.isArray(config.pythonArgs) ? config.pythonArgs.filter((a) => typeof a === "string") : [],
@@ -109,7 +118,8 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
       "maxContextCharacters"
     ),
     captureMode: config.captureMode || "deterministic_explicit_v1",
-    trialMode: config.trialMode || "active_empirical_v1",
+    trialMode,
+    trialId: trialId || undefined,
   };
 }
 
@@ -121,10 +131,14 @@ export function configurationRequiredStatus(
   message?: string;
 } {
   const required = ["pythonExecutable", "nollmRepoRoot", "workspaceRoot", "nativeStoreRoot"];
+  const activeEmpirical = config.trialMode === undefined || config.trialMode === "active_empirical_v1";
   const missing = required.filter((field) => {
     const value = config[field as keyof PluginConfig];
     return typeof value !== "string" || value.trim() === "";
   });
+  if (activeEmpirical && (typeof config.trialId !== "string" || config.trialId.trim() === "")) {
+    missing.push("trialId");
+  }
   if (missing.length === 0) {
     return { ok: true };
   }
@@ -132,7 +146,7 @@ export function configurationRequiredStatus(
     ok: false,
     status: "configuration_required",
     required_fields: required,
-    message: "Configure pythonExecutable, nollmRepoRoot, workspaceRoot, and nativeStoreRoot.",
+    message: "Configure pythonExecutable, nollmRepoRoot, workspaceRoot, nativeStoreRoot, and trialId.",
     error: {
       code: "configuration_error",
       message: `Missing required Nollm active memory config: ${missing.join(", ")}.`,

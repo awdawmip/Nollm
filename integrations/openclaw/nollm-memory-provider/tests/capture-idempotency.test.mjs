@@ -95,6 +95,7 @@ describe("E4 capture idempotency and redaction", () => {
 
     const payload = JSON.parse(fs.readFileSync(payloadPath, "utf8"));
     assert.equal(payload.schema, "nollm.active_memory_capture.v1");
+    assert.equal(payload.trial_id, cfg.trialId);
     assert.equal(payload.success, true);
     assert.ok(Array.isArray(payload.messages));
   });

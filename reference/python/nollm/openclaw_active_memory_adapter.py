@@ -6,9 +6,10 @@ import os
 import re
 import sys
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from nollm.companion_memory_matching import analyze_facets, classify_query
 from nollm.companion_memory_store import (
@@ -42,13 +43,13 @@ NON_MEMORY_QUERY_MARKERS = (
 PROMOTION_PATTERNS: list[tuple[str, str]] = [
     ("explicit_remember", r"^(?:记住|请记住|remember|remember this)\s*[：:]\s*(.+)$"),
     ("identity_name", r"^(?:我叫|我的名字是|我的姓名是)\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
-    ("w_marker_identity", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+(?:身份|姓名)\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
+    ("w_marker_identity", r"^我的\s+W[0-9]+(?:-[0-9]+)?R?\s+(?:身份|姓名)\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
     ("identity_code", r"^我的\s+身份代号\s+是\s*(.+?)[。\.]?$"),
     ("preference", r"^(?:我偏好|我喜欢|我希望回答|我希望你)\s*(.+?)[。\.]?$"),
-    ("w_marker_preference", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+标签颜色\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
+    ("w_marker_preference", r"^我的\s+W[0-9]+(?:-[0-9]+)?R?\s+标签颜色\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
     ("response_style_preference", r"^我的\s+回答风格偏好\s+是\s*(.+?)[。\.]?$"),
     ("project_decision", r"^(?:项目决定|决定|发布窗口是|发版时间是)\s*(.+?)[。\.]?$"),
-    ("w_marker_release", r"^我的\s+W[0-9]+(?:-[0-9]+)?\s+发布窗口\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
+    ("w_marker_release", r"^我的\s+W[0-9]+(?:-[0-9]+)?R?\s+发布窗口\s+marker\s+是\s*(?!什么|谁|哪里|吗|呢|？|\?)(.+?)[。\.]?$"),
 ]
 
 SECRET_PATTERNS = [
@@ -118,6 +119,23 @@ def _write_trial_metric(trial_dir: Path, metric: dict[str, Any]) -> None:
         handle.write(json.dumps(metric, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _read_trial_metrics(trial_dir: Path) -> list[dict[str, Any]]:
+    path = trial_dir / "trial-metrics.jsonl"
+    if not path.exists():
+        return []
+    metrics: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                metrics.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return metrics
+
+
 def _update_trial_manifest(trial_dir: Path, manifest: dict[str, Any]) -> None:
     path = trial_dir / "trial-manifest.json"
     path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8")
@@ -131,9 +149,50 @@ def _receipt_dir(trial_root: Path | str, trial_id: str) -> Path:
     return path
 
 
-def _claim_event_receipt(trial_root: Path | str, trial_id: str, event_id: str) -> tuple[bool, Path]:
+@contextmanager
+def _receipt_lock(receipt: Path, timeout_seconds: float = 10.0) -> Iterator[None]:
+    lock_path = receipt.with_suffix(receipt.suffix + ".lock")
+    deadline = time.monotonic() + timeout_seconds
+    while True:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            try:
+                os.write(fd, str(os.getpid()).encode("utf-8"))
+            finally:
+                os.close(fd)
+            break
+        except FileExistsError:
+            if time.monotonic() > deadline:
+                raise CompanionMemoryError("receipt_lock_timeout", f"Could not acquire receipt lock: {receipt}")
+            time.sleep(0.02)
+    try:
+        yield
+    finally:
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _read_event_receipt(receipt: Path) -> dict[str, Any] | None:
+    if not receipt.exists():
+        return None
+    try:
+        data = json.loads(receipt.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"schema": "nollm.active_capture_event_receipt.v2", "event_id": receipt.stem, "state": "recovery_required"}
+    return data if isinstance(data, dict) else None
+
+
+def _claim_event_receipt(trial_root: Path | str, trial_id: str, event_id: str, event_fingerprint: str) -> tuple[bool, Path]:
     receipt = _receipt_dir(trial_root, trial_id) / f"{event_id}.json"
-    payload = json.dumps({"schema": "nollm.active_capture_event_receipt.v1", "event_id": event_id, "state": "claimed", "created_at": _now_iso()}, sort_keys=True) + "\n"
+    payload = json.dumps({
+        "schema": "nollm.active_capture_event_receipt.v2",
+        "event_id": event_id,
+        "state": "claimed",
+        "event_fingerprint": event_fingerprint,
+        "claimed_at": _now_iso(),
+    }, sort_keys=True) + "\n"
     try:
         fd = os.open(str(receipt), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
@@ -143,15 +202,47 @@ def _claim_event_receipt(trial_root: Path | str, trial_id: str, event_id: str) -
     return True, receipt
 
 
-def _commit_event_receipt(receipt: Path, summary: dict[str, Any]) -> None:
+def _commit_event_receipt(receipt: Path, event_fingerprint: str, summary: dict[str, Any]) -> None:
+    previous = _read_event_receipt(receipt) or {}
     data = {
-        "schema": "nollm.active_capture_event_receipt.v1",
+        "schema": "nollm.active_capture_event_receipt.v2",
         "event_id": receipt.stem,
         "state": "committed",
+        "event_fingerprint": event_fingerprint or previous.get("event_fingerprint", ""),
+        "claimed_at": previous.get("claimed_at"),
         "committed_at": _now_iso(),
         "summary": summary,
     }
     receipt.write_text(json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _canonical_memory_id(text: str, kind: str, scope: str = "user") -> str:
+    canonical = f"{scope}:{kind}:{_normalize_text(text)}"
+    return f"nmem_{_sha256(canonical)[:16]}"
+
+
+def _existing_candidate_count(out_dir: Path, candidates: list[tuple[str, str]]) -> int:
+    index_path = out_dir / "native-companion-v1" / "index.json"
+    if not index_path.exists():
+        return 0
+    try:
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return 0
+    if not isinstance(index, dict):
+        return 0
+    count = 0
+    for pattern_name, text in candidates:
+        kind = _classify_kind(pattern_name, text)
+        memory_id = _canonical_memory_id(text, kind)
+        record = index.get(memory_id)
+        if isinstance(record, dict) and record.get("status") == "active":
+            count += 1
+    return count
+
+
+def _has_capture_metric(trial_dir: Path, event_id: str) -> bool:
+    return any(m.get("event") == "capture" and m.get("event_id") == event_id for m in _read_trial_metrics(trial_dir))
 
 def _active_error(code: str, message: str, retryable: bool = False) -> dict[str, Any]:
     return {
@@ -184,6 +275,31 @@ def _capture_event_id(
         separators=(",", ":"),
     )
     return _hash_id(canonical)
+
+
+def _capture_event_fingerprint(
+    trial_id: str,
+    agent_id: str,
+    session_id: str,
+    run_id: str,
+    success: bool,
+    current_user_message: str,
+) -> str:
+    canonical = json.dumps(
+        {
+            "schema": "nollm.active_capture_event.v2",
+            "trial_id": trial_id,
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "run_id": run_id,
+            "success": success,
+            "current_user_message_hash": _sha256(_normalize_text(current_user_message)),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _sha256(canonical)
 
 
 def _identity_complete(identity: dict[str, str] | None) -> bool:
@@ -453,181 +569,259 @@ def active_capture(
         success,
         current_user_message,
     )
+    event_fingerprint = _capture_event_fingerprint(
+        trial_id or "",
+        identity.get("agent_id", ""),
+        identity.get("session_id", ""),
+        identity.get("run_id", ""),
+        success,
+        current_user_message,
+    )
+    candidates = _extract_promotion_candidates(messages) if current_user_message and success else []
 
+    receipt_path: Path | None = None
+    trial_dir: Path | None = None
+    receipt_lock = None
     if trial_id:
         receipt_root = _resolve_trial_root(native_store_root, trial_root)
-        claimed, receipt_path = _claim_event_receipt(receipt_root, trial_id, event_id)
-        if not claimed:
-            return {
-                "schema": ACTIVE_CAPTURE_SCHEMA,
-                "ok": True,
-                "capture": {
+        trial_dir = _ensure_trial_dir(receipt_root, trial_id)
+        receipt_path = _receipt_dir(receipt_root, trial_id) / f"{event_id}.json"
+        receipt_lock = _receipt_lock(receipt_path)
+        receipt_lock.__enter__()
+        try:
+            receipt = _read_event_receipt(receipt_path)
+            claimed = receipt is None
+            if claimed:
+                receipt_path.write_text(json.dumps({
+                    "schema": "nollm.active_capture_event_receipt.v2",
+                    "event_id": event_id,
+                    "state": "claimed",
+                    "event_fingerprint": event_fingerprint,
+                    "claimed_at": _now_iso(),
+                }, sort_keys=True) + "\n", encoding="utf-8")
+            if not claimed and receipt and receipt.get("state") == "committed":
+                result = {
+                    "schema": ACTIVE_CAPTURE_SCHEMA,
+                    "ok": True,
+                    "capture": {
+                        "event_id": event_id,
+                        "promoted_count": 0,
+                        "deduplicated_count": 0,
+                        "reused_duplicate": True,
+                        "suppressed_count": 0,
+                        "rejected_count": 0,
+                        "records": [],
+                    },
+                    "metrics": {
+                        "user_messages_seen": 1 if current_user_message else 0,
+                        "assistant_messages_ignored": 0,
+                        "candidate_count": 0,
+                        "latency_ms": int((time.monotonic() - start) * 1000),
+                        "replay_observation": True,
+                    },
+                }
+                receipt_lock.__exit__(None, None, None)
+                receipt_lock = None
+                return result
+            if not claimed:
+                existing = _existing_candidate_count(out_dir, candidates)
+                if existing > 0:
+                    if trial_dir is not None and not _has_capture_metric(trial_dir, event_id):
+                        _write_trial_metric(trial_dir, {
+                            "event": "capture",
+                            "timestamp": _now_iso(),
+                            "trial_id": trial_id,
+                            "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+                            "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+                            "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+                            "event_id": event_id,
+                            "user_messages_seen": 1,
+                            "assistant_messages_ignored": 0,
+                            "candidate_count": len(candidates),
+                            "promoted_count": existing,
+                            "deduplicated_count": 0,
+                            "reused_duplicate": False,
+                            "suppressed_count": 0,
+                            "rejected_count": 0,
+                            "latency_ms": int((time.monotonic() - start) * 1000),
+                            "recovered_after_remember": True,
+                        })
+                    _commit_event_receipt(receipt_path, event_fingerprint, {
+                        "promoted_count": existing,
+                        "deduplicated_count": 0,
+                        "suppressed_count": 0,
+                        "rejected_count": 0,
+                        "recovered_after_remember": True,
+                    })
+                    result = {
+                        "schema": ACTIVE_CAPTURE_SCHEMA,
+                        "ok": True,
+                        "capture": {
+                            "event_id": event_id,
+                            "promoted_count": 0,
+                            "deduplicated_count": 0,
+                            "reused_duplicate": True,
+                            "recovered_claim": True,
+                            "suppressed_count": 0,
+                            "rejected_count": 0,
+                            "records": [],
+                        },
+                        "metrics": {
+                            "user_messages_seen": 1,
+                            "assistant_messages_ignored": 0,
+                            "candidate_count": len(candidates),
+                            "latency_ms": int((time.monotonic() - start) * 1000),
+                            "replay_observation": True,
+                        },
+                    }
+                    receipt_lock.__exit__(None, None, None)
+                    receipt_lock = None
+                    return result
+        except Exception:
+            if receipt_lock is not None:
+                receipt_lock.__exit__(*sys.exc_info())
+            raise
+
+    def finish(summary: dict[str, Any], capture: dict[str, Any], metrics: dict[str, Any]) -> dict[str, Any]:
+        if receipt_path is not None:
+            _commit_event_receipt(receipt_path, event_fingerprint, summary)
+        return {"schema": ACTIVE_CAPTURE_SCHEMA, "ok": True, "capture": capture, "metrics": metrics}
+
+    try:
+        if not current_user_message:
+            return finish(
+                {"promoted_count": 0, "deduplicated_count": 0, "suppressed_count": 1, "rejected_count": 0, "skipped_code": "suppressed_no_current_user_message"},
+                {
                     "event_id": event_id,
                     "promoted_count": 0,
                     "deduplicated_count": 0,
-                    "reused_duplicate": True,
+                    "suppressed_count": 1,
+                    "rejected_count": 0,
+                    "records": [],
+                    "skipped_code": "suppressed_no_current_user_message",
+                },
+                {
+                    "user_messages_seen": 0,
+                    "assistant_messages_ignored": 0,
+                    "candidate_count": 0,
+                    "latency_ms": int((time.monotonic() - start) * 1000),
+                },
+            )
+
+        if not success:
+            return finish(
+                {"promoted_count": 0, "deduplicated_count": 0, "suppressed_count": 0, "rejected_count": 0, "skipped_code": "unsuccessful_turn"},
+                {
+                    "event_id": event_id,
+                    "promoted_count": 0,
+                    "deduplicated_count": 0,
                     "suppressed_count": 0,
                     "rejected_count": 0,
                     "records": [],
                 },
-                "metrics": {
-                    "user_messages_seen": 1 if current_user_message else 0,
+                {
+                    "user_messages_seen": 0,
                     "assistant_messages_ignored": 0,
                     "candidate_count": 0,
                     "latency_ms": int((time.monotonic() - start) * 1000),
-                    "replay_observation": True,
                 },
-            }
-    else:
-        receipt_path = None
-
-    if not current_user_message:
-        if receipt_path is not None:
-            _commit_event_receipt(receipt_path, {"promoted_count": 0, "skipped_code": "suppressed_no_current_user_message"})
-        return {
-            "schema": ACTIVE_CAPTURE_SCHEMA,
-            "ok": True,
-            "capture": {
-                "event_id": event_id,
-                "promoted_count": 0,
-                "deduplicated_count": 0,
-                "suppressed_count": 1,
-                "rejected_count": 0,
-                "records": [],
-                "skipped_code": "suppressed_no_current_user_message",
-            },
-            "metrics": {
-                "user_messages_seen": 0,
-                "assistant_messages_ignored": 0,
-                "candidate_count": 0,
-                "latency_ms": int((time.monotonic() - start) * 1000),
-            },
-        }
-
-    if not success:
-        if receipt_path is not None:
-            _commit_event_receipt(receipt_path, {"promoted_count": 0, "skipped_code": "unsuccessful_turn"})
-        return {
-            "schema": ACTIVE_CAPTURE_SCHEMA,
-            "ok": True,
-            "capture": {
-                "event_id": event_id,
-                "promoted_count": 0,
-                "deduplicated_count": 0,
-                "suppressed_count": 0,
-                "rejected_count": 0,
-                "records": [],
-            },
-            "metrics": {
-                "user_messages_seen": 0,
-                "assistant_messages_ignored": 0,
-                "candidate_count": 0,
-                "latency_ms": int((time.monotonic() - start) * 1000),
-            },
-        }
-
-    user_count = 1
-    assistant_count = 0
-
-    candidates = _extract_promotion_candidates(messages)
-    promoted: list[dict[str, Any]] = []
-    deduplicated = 0
-    suppressed = 0
-    rejected = 0
-
-    for pattern_name, text in candidates:
-        if len(text) > 600:
-            suppressed += 1
-            continue
-        if _is_secret(text):
-            rejected += 1
-            continue
-        kind = _classify_kind(pattern_name, text)
-        try:
-            result = remember_native_memory(
-                out_dir, out_dir, out_dir,
-                memory=text,
-                kind=kind,
-                source="active_turn_explicit_v1",
             )
-        except CompanionMemoryError as exc:
-            if exc.code == "memory_content_too_long":
+
+        promoted: list[dict[str, Any]] = []
+        deduplicated = 0
+        suppressed = 0
+        rejected = 0
+
+        for pattern_name, text in candidates:
+            if len(text) > 600:
                 suppressed += 1
-            elif exc.code == "memory_content_rejected":
+                continue
+            if _is_secret(text):
                 rejected += 1
+                continue
+            kind = _classify_kind(pattern_name, text)
+            try:
+                result = remember_native_memory(
+                    out_dir, out_dir, out_dir,
+                    memory=text,
+                    kind=kind,
+                    source="active_turn_explicit_v1",
+                )
+            except CompanionMemoryError as exc:
+                if exc.code == "memory_content_too_long":
+                    suppressed += 1
+                elif exc.code == "memory_content_rejected":
+                    rejected += 1
+                else:
+                    rejected += 1
+                continue
+
+            if result.get("ok"):
+                if result.get("deduplicated"):
+                    deduplicated += 1
+                else:
+                    promoted.append({
+                        "memory_id": result.get("memory_id", ""),
+                        "kind": kind,
+                        "source": "active_turn_explicit_v1",
+                    })
             else:
                 rejected += 1
-            continue
 
-        if result.get("ok"):
-            if result.get("deduplicated"):
-                deduplicated += 1
-            else:
-                promoted.append({
-                    "memory_id": result.get("memory_id", ""),
-                    "kind": kind,
-                    "source": "active_turn_explicit_v1",
-                })
-        else:
-            rejected += 1
+        latency_ms = int((time.monotonic() - start) * 1000)
+        if trial_id and trial_dir is not None:
+            _write_trial_metric(trial_dir, {
+                "event": "capture",
+                "timestamp": _now_iso(),
+                "trial_id": trial_id,
+                "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+                "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+                "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+                "event_id": event_id,
+                "user_messages_seen": 1,
+                "assistant_messages_ignored": 0,
+                "candidate_count": len(candidates),
+                "promoted_count": len(promoted),
+                "deduplicated_count": deduplicated,
+                "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
+                "suppressed_count": suppressed,
+                "rejected_count": rejected,
+                "latency_ms": latency_ms,
+            })
+            _update_trial_manifest(trial_dir, {
+                "schema": "nollm.active_memory_trial_manifest.v1",
+                "trial_id": trial_id,
+                "store": "nollm_native_companion",
+                "capture_mode": "deterministic_explicit_v1",
+                "trial_mode": "active_empirical_v1",
+            })
 
-    latency_ms = int((time.monotonic() - start) * 1000)
-    if trial_id:
-        trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
-        _write_trial_metric(trial_dir, {
-            "event": "capture",
-            "timestamp": _now_iso(),
-            "trial_id": trial_id,
-            "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
-            "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
-            "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
-            "event_id": event_id,
-            "user_messages_seen": user_count,
-            "assistant_messages_ignored": assistant_count,
-            "candidate_count": len(candidates),
-            "promoted_count": len(promoted),
-            "deduplicated_count": deduplicated,
-            "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
-            "suppressed_count": suppressed,
-            "rejected_count": rejected,
-            "latency_ms": latency_ms,
-        })
-        if receipt_path is not None:
-            _commit_event_receipt(receipt_path, {
+        return finish(
+            {
                 "promoted_count": len(promoted),
                 "deduplicated_count": deduplicated,
                 "suppressed_count": suppressed,
                 "rejected_count": rejected,
-            })
-        # Keep a lightweight manifest for operator inspection.
-        _update_trial_manifest(trial_dir, {
-            "schema": "nollm.active_memory_trial_manifest.v1",
-            "trial_id": trial_id,
-            "store": "nollm_native_companion",
-            "capture_mode": "deterministic_explicit_v1",
-            "trial_mode": "active_empirical_v1",
-        })
-
-    return {
-        "schema": ACTIVE_CAPTURE_SCHEMA,
-        "ok": True,
-        "capture": {
-            "event_id": event_id,
-            "promoted_count": len(promoted),
-            "deduplicated_count": deduplicated,
-            "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
-            "suppressed_count": suppressed,
-            "rejected_count": rejected,
-            "records": promoted,
-        },
-        "metrics": {
-            "user_messages_seen": user_count,
-            "assistant_messages_ignored": assistant_count,
-            "candidate_count": len(candidates),
-            "latency_ms": latency_ms,
-        },
-    }
-
+            },
+            {
+                "event_id": event_id,
+                "promoted_count": len(promoted),
+                "deduplicated_count": deduplicated,
+                "reused_duplicate": deduplicated > 0 and len(promoted) == 0,
+                "suppressed_count": suppressed,
+                "rejected_count": rejected,
+                "records": promoted,
+            },
+            {
+                "user_messages_seen": 1,
+                "assistant_messages_ignored": 0,
+                "candidate_count": len(candidates),
+                "latency_ms": latency_ms,
+            },
+        )
+    finally:
+        if receipt_lock is not None:
+            receipt_lock.__exit__(None, None, None)
 
 def active_trial_report(
     native_store_root: Path | str,
@@ -636,22 +830,22 @@ def active_trial_report(
 ) -> dict[str, Any]:
     trial_root_path = _resolve_trial_root(native_store_root, trial_root)
     trial_root_dir = trial_root_path / trial_id
-    metrics: list[dict[str, Any]] = []
     path = trial_root_dir / "trial-metrics.jsonl"
-    if path.exists():
-        with path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if line:
-                    try:
-                        metrics.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        pass
+    metrics = _read_trial_metrics(trial_root_dir)
 
     prepare_times = [m["latency_ms"] for m in metrics if m.get("event") == "prepare" and isinstance(m.get("latency_ms"), int)]
     capture_times = [m["latency_ms"] for m in metrics if m.get("event") == "capture" and isinstance(m.get("latency_ms"), int)]
     prepare_count = len(prepare_times)
     capture_count = len(capture_times)
+    receipt_dir = trial_root_dir / "event-receipts"
+    receipt_states: dict[str, int] = {"claimed": 0, "committed": 0, "recovery_required": 0}
+    if receipt_dir.exists():
+        for receipt_path in receipt_dir.glob("*.json"):
+            receipt = _read_event_receipt(receipt_path) or {}
+            state = str(receipt.get("state") or "recovery_required")
+            if state not in receipt_states:
+                state = "recovery_required"
+            receipt_states[state] += 1
 
     def _pctile(values: list[int], p: float) -> int:
         if not values:
@@ -666,6 +860,9 @@ def active_trial_report(
         "trial_id": trial_id,
         "prepare_count": prepare_count,
         "capture_count": capture_count,
+        "unique_capture_event_count": len({m.get("event_id") for m in metrics if m.get("event") == "capture" and m.get("event_id")}),
+        "receipt_count": sum(receipt_states.values()),
+        "receipt_states": receipt_states,
         "prepare_latency_ms": {
             "p50": _pctile(prepare_times, 50),
             "p95": _pctile(prepare_times, 95),

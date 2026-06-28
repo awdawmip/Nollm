@@ -6,7 +6,7 @@ import stat
 import sys
 from pathlib import Path
 
-from reference.python.scripts.run_openclaw_nollm_active_trial import TargetBinding, _diagnose, _plan, _redact_text
+from reference.python.scripts.run_openclaw_nollm_active_trial import TargetBinding, _diagnose, _plan, _redact_text, _tool_catalog_safe
 
 
 def _fake_openclaw(tmp_path: Path, text: str) -> Path:
@@ -30,7 +30,7 @@ def _binding(tmp_path: Path, openclaw: Path) -> TargetBinding:
     config.write_text(json.dumps({"plugins": {"entries": {}, "slots": {}}, "agents": {"list": []}}), encoding="utf-8")
     out = tmp_path / "out"
     out.mkdir()
-    return TargetBinding(openclaw, config, None, workspace, repo, Path(sys.executable).resolve(), out, "w2-03-test")
+    return TargetBinding(openclaw, config, None, workspace, repo, Path(sys.executable).resolve(), out, "main", "w2-03r-test")
 
 
 def test_target_binding_requires_absolute_openclaw(tmp_path: Path) -> None:
@@ -42,7 +42,8 @@ def test_target_binding_requires_absolute_openclaw(tmp_path: Path) -> None:
         "repo_root": str(tmp_path),
         "python_executable": sys.executable,
         "out": str(tmp_path / "out"),
-        "trial_agent_id": "agent",
+        "target_agent_id": "main",
+        "trial_id": "test",
     })()
     try:
         TargetBinding.from_args(ns)
@@ -81,3 +82,28 @@ def test_diagnose_writes_private_and_share_capsules(tmp_path: Path) -> None:
     assert Path(result["private_capsule"]).exists()
     assert Path(result["sanitized_share_capsule"]).exists()
     assert (Path(result["private_capsule"]) / "manifest.json").exists()
+
+
+def test_tool_catalog_missing_is_failure() -> None:
+    safe, names, status = _tool_catalog_safe({"parsed_safe_result": {"result": {"meta": {}}}})
+    assert safe is False
+    assert names == []
+    assert status != "observed"
+
+
+def test_tool_catalog_with_file_or_exec_is_failure() -> None:
+    turn = {
+        "parsed_safe_result": {
+            "result": {
+                "meta": {
+                    "systemPromptReport": {
+                        "tools": {"entries": [{"name": "session_status"}, {"name": "exec"}, {"name": "file_fetch"}]}
+                    }
+                }
+            }
+        }
+    }
+    safe, names, status = _tool_catalog_safe(turn)
+    assert safe is False
+    assert "exec" in names and "file_fetch" in names
+    assert status == "observed"

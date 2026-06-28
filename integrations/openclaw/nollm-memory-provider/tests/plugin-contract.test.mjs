@@ -24,6 +24,7 @@ describe("T1 manifest", () => {
     const required = manifest.configSchema.required;
     assert.ok(required.includes("pythonExecutable"), "requires pythonExecutable");
     assert.ok(required.includes("nativeStoreRoot"), "requires nativeStoreRoot");
+    assert.ok(manifest.configSchema.properties.trialId, "declares controller-provided trialId");
     assert.ok(!required.includes("alphaFixturePath"), "no alphaFixturePath");
   });
 });

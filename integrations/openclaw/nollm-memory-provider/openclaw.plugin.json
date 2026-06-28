@@ -75,6 +75,10 @@
         "default": "active_empirical_v1",
         "enum": ["active_empirical_v1"],
         "description": "W2 trial mode: local-only redacted operator metrics."
+      },
+      "trialId": {
+        "type": "string",
+        "description": "Controller-assigned active empirical trial id."
       }
     }
   },

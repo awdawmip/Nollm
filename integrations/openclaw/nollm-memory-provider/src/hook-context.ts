@@ -2,6 +2,7 @@ import type { MemoryContextEnvelope } from "./types.js";
 
 export function formatMemoryContext(envelope: MemoryContextEnvelope): string {
   const lines: string[] = ["NOLLM_MEMORY_CONTEXT_V1"];
+  lines.push("memory_persistence_rule: Do not claim that a current-turn fact has been permanently remembered, written, or persisted unless it already appears as a returned Nollm native memory in this context. Capture happens after the response and may fail.");
   lines.push(`freshness: ${envelope.freshness}`);
   if (envelope.facts && envelope.facts.length > 0) {
     lines.push("facts:");
@@ -34,6 +35,7 @@ export function formatMemoryContext(envelope: MemoryContextEnvelope): string {
 export function makeUnavailableBoundary(): string {
   return [
     "NOLLM_MEMORY_CONTEXT_V1",
+    "memory_persistence_rule: Do not claim that a current-turn fact has been permanently remembered, written, or persisted unless it already appears as a returned Nollm native memory in this context. Capture happens after the response and may fail.",
     "freshness: unavailable",
     "explicit_absences:",
     "- Nollm active memory is unavailable for this turn.",

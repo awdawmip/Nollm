@@ -58,3 +58,20 @@ execution controller for the local active-memory trial. It is target-bound:
   inflate capture metrics.
 - Raw logs, config backups, and full traces remain local-private. Sanitized
   evidence is published separately on an orphan evidence branch.
+
+## W2-03R main-agent cutover
+
+W2-03R targets the actual user-facing OpenClaw agent through
+`--target-agent-id`; it must not create a parallel trial agent and call that a
+main-agent cutover.
+
+- `trialId` is controller-provided and passed unchanged to prepare/capture.
+- `agent_turn_prepare` injects a memory persistence rule: the model must not
+  claim a current-turn fact has already been permanently remembered unless that
+  fact is already present in returned Nollm context.
+- Capture receipts use claim/commit recovery so committed replay does not call
+  remember again and does not inflate normal capture metrics.
+- Short temporal reports such as `昆明今天下雨了。` are not promoted and must not
+  become a location identity.
+- Explicit temporal notes may be stored as notes with source
+  `active_turn_explicit_v1`; they must not be rewritten into identity/location.

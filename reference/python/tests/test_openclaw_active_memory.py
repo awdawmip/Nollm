@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,8 @@ import pytest
 
 from nollm.companion_memory_store import remember_native_memory, native_store_summary
 from nollm.openclaw_active_memory_adapter import (
+    _capture_event_fingerprint,
+    _capture_event_id,
     active_capture,
     active_prepare,
     active_status,
@@ -414,6 +417,137 @@ def test_p19_active_capture_replay_receipt_excludes_duplicate_metric(tmp_path: P
 
     report = active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=trial_root)
     assert report["capture_count"] == 1
+
+
+def test_p20_claimed_receipt_before_remember_recovers_with_one_capture(tmp_path: Path) -> None:
+    trial_id = "test-p20"
+    trial_root = _trial_root(tmp_path)
+    message = "我的 W2-03R 身份 marker 是 SUNSET-MICA-41。"
+    event_id = _capture_event_id(trial_id, IDENTITY["agent_id"], IDENTITY["session_id"], IDENTITY["run_id"], True, message)
+    event_fingerprint = _capture_event_fingerprint(trial_id, IDENTITY["agent_id"], IDENTITY["session_id"], IDENTITY["run_id"], True, message)
+    receipt_dir = trial_root / trial_id / "event-receipts"
+    receipt_dir.mkdir(parents=True)
+    (receipt_dir / f"{event_id}.json").write_text(
+        json.dumps({
+            "schema": "nollm.active_capture_event_receipt.v2",
+            "event_id": event_id,
+            "state": "claimed",
+            "event_fingerprint": event_fingerprint,
+            "claimed_at": "2026-06-28T00:00:00Z",
+        }),
+        encoding="utf-8",
+    )
+
+    result = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": message}],
+        success=True,
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=trial_root,
+    )
+    assert result["capture"]["promoted_count"] == 1
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 1
+    receipt = json.loads((receipt_dir / f"{event_id}.json").read_text(encoding="utf-8"))
+    assert receipt["state"] == "committed"
+    assert receipt["schema"] == "nollm.active_capture_event_receipt.v2"
+    assert "SUNSET-MICA-41" not in json.dumps(receipt, ensure_ascii=False)
+    assert active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=trial_root)["capture_count"] == 1
+
+
+def test_p21_claimed_receipt_after_remember_finalizes_without_second_promotion(tmp_path: Path) -> None:
+    trial_id = "test-p21"
+    trial_root = _trial_root(tmp_path)
+    message = "我的 W2-03R 标签颜色 marker 是 WILLOW-EMBER-52。"
+    active_capture(_native_store_root(tmp_path), [{"role": "user", "content": message}], success=True, identity=IDENTITY)
+    event_id = _capture_event_id(trial_id, IDENTITY["agent_id"], IDENTITY["session_id"], IDENTITY["run_id"], True, message)
+    event_fingerprint = _capture_event_fingerprint(trial_id, IDENTITY["agent_id"], IDENTITY["session_id"], IDENTITY["run_id"], True, message)
+    receipt_dir = trial_root / trial_id / "event-receipts"
+    receipt_dir.mkdir(parents=True)
+    (receipt_dir / f"{event_id}.json").write_text(
+        json.dumps({
+            "schema": "nollm.active_capture_event_receipt.v2",
+            "event_id": event_id,
+            "state": "claimed",
+            "event_fingerprint": event_fingerprint,
+            "claimed_at": "2026-06-28T00:00:00Z",
+        }),
+        encoding="utf-8",
+    )
+
+    result = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": message}],
+        success=True,
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=trial_root,
+    )
+    assert result["capture"]["reused_duplicate"] is True
+    assert result["capture"]["promoted_count"] == 0
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 1
+    report = active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=trial_root)
+    assert report["capture_count"] == 1
+    assert report["receipt_states"]["committed"] == 1
+
+
+def test_p22_concurrent_same_event_has_one_record_and_one_metric(tmp_path: Path) -> None:
+    trial_id = "test-p22"
+    message = "我的 W2-03R 发布窗口 marker 是 AURORA-SLATE-63。"
+
+    def run_once() -> dict[str, Any]:
+        return active_capture(
+            _native_store_root(tmp_path),
+            [{"role": "user", "content": message}],
+            success=True,
+            trial_id=trial_id,
+            identity=IDENTITY,
+            trial_root=_trial_root(tmp_path),
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: run_once(), range(2)))
+
+    assert sum(r["capture"]["promoted_count"] for r in results) == 1
+    assert sum(1 for r in results if r["capture"].get("reused_duplicate")) == 1
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 1
+    report = active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=_trial_root(tmp_path))
+    assert report["capture_count"] == 1
+    assert report["receipt_count"] == 1
+
+
+def test_p23_temporal_weather_report_is_not_promoted_or_location_identity(tmp_path: Path) -> None:
+    result = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": "昆明今天下雨了。"}],
+        success=True,
+        trial_id="test-p23",
+        identity=IDENTITY,
+        trial_root=_trial_root(tmp_path),
+    )
+    assert result["capture"]["promoted_count"] == 0
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 0
+    recall = active_prepare(_native_store_root(tmp_path), "用户所在地在哪里？", {"max_facts": 4, "max_context_characters": 1400})
+    assert recall["context"]["facts"] == []
+
+
+def test_p24_explicit_temporal_report_promotes_exact_note_not_location_identity(tmp_path: Path) -> None:
+    text = "2026年6月28日，用户报告昆明当天下雨。"
+    result = active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": f"请记住：{text}"}],
+        success=True,
+        trial_id="test-p24",
+        identity=IDENTITY,
+        trial_root=_trial_root(tmp_path),
+    )
+    assert result["capture"]["promoted_count"] == 1
+    assert result["capture"]["records"][0]["kind"] == "note"
+    recall = active_prepare(_native_store_root(tmp_path), "昆明当天下雨", {"max_facts": 4, "max_context_characters": 1400})
+    claims = [fact["claim"] for fact in recall["context"]["facts"]]
+    assert text in claims
+    location = active_prepare(_native_store_root(tmp_path), "用户所在地在哪里？", {"max_facts": 4, "max_context_characters": 1400})
+    assert all("所在地" not in fact["claim"] for fact in location["context"]["facts"])
 
 
 def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: dict[str, Any]) -> dict[str, Any]:

@@ -19,7 +19,8 @@
           maxFacts: 4,
           maxContextCharacters: 1400,
           captureMode: "deterministic_explicit_v1",
-          trialMode: "active_empirical_v1"
+          trialMode: "active_empirical_v1",
+          trialId: "w2-03r-YYYYMMDDTHHMMSSZ"
         }
       },
       "memory-core": { enabled: false },

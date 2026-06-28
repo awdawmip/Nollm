@@ -22,12 +22,6 @@ const ACTIVE_STATUS_SCHEMA = "nollm.active_memory_status.v1";
 const ACTIVE_PREPARE_SCHEMA = "nollm.active_memory_prepare.v1";
 const ACTIVE_CAPTURE_SCHEMA = "nollm.active_memory_capture.v1";
 
-function makeTrialId(): string {
-  const now = new Date();
-  const iso = now.toISOString().replace(/[:.]/g, "").slice(0, 15);
-  return `w2-02-${iso}`;
-}
-
 function extractPrepareQuery(event: unknown): string {
   const e = event as Record<string, unknown>;
   if (Array.isArray(e.messages)) {
@@ -53,7 +47,7 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
     api.logger.warn(`Nollm active memory provider config invalid: ${message}`);
   }
 
-  const trialId = rawConfig.trialMode === "active_empirical_v1" ? makeTrialId() : undefined;
+  const trialId = config?.trialId;
 
   const capability: MemoryPluginCapability = {
     promptBuilder: () => [],

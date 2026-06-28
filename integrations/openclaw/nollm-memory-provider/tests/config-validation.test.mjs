@@ -59,4 +59,12 @@ describe("E5 config segment-aware legacy path rejection", () => {
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
     assert.throws(() => normalizeConfig(cfg), /pythonExecutable/i);
   });
+
+  it("W2-03R active empirical mode rejects missing trialId", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    delete cfg.trialId;
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.throws(() => normalizeConfig(cfg), /trialId/i);
+  });
 });
