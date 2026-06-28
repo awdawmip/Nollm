@@ -380,6 +380,42 @@ def test_p18_store_survives_active_sidecar_process_restart(tmp_path: Path) -> No
     assert report["prepare_count"] >= 1
 
 
+
+def test_p19_active_capture_replay_receipt_excludes_duplicate_metric(tmp_path: Path) -> None:
+    trial_id = "test-p19"
+    trial_root = _trial_root(tmp_path)
+    payload = [{"role": "user", "content": "我的 W2-03 身份 marker 是 MIST-COPPER-81。"}]
+    first = active_capture(
+        _native_store_root(tmp_path),
+        payload,
+        success=True,
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=trial_root,
+    )
+    second = active_capture(
+        _native_store_root(tmp_path),
+        payload,
+        success=True,
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=trial_root,
+    )
+    assert first["capture"]["promoted_count"] == 1
+    assert second["capture"]["reused_duplicate"] is True
+    assert second["capture"]["promoted_count"] == 0
+    assert second["capture"]["deduplicated_count"] == 0
+    assert native_store_summary(_out_dir(tmp_path))["record_count"] == 1
+
+    metrics_path = trial_root / trial_id / "trial-metrics.jsonl"
+    metrics = [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    capture_metrics = [m for m in metrics if m.get("event") == "capture"]
+    assert len(capture_metrics) == 1
+
+    report = active_trial_report(_native_store_root(tmp_path), trial_id, trial_root=trial_root)
+    assert report["capture_count"] == 1
+
+
 def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: dict[str, Any]) -> dict[str, Any]:
     command = [
         sys.executable,

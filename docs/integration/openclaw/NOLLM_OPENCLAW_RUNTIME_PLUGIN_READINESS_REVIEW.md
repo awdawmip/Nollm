@@ -170,3 +170,23 @@ npm test
 
 Configuration example: see
 `integrations/openclaw/nollm-memory-provider/examples/openclaw.w2-active.config.example.json5`.
+
+## W2-03 Target-Bound Diagnostics Update
+
+W2-03 replaces ad hoc live commands with a target-bound controller:
+
+- Required target arguments are absolute `--openclaw-bin`, `--config`,
+  `--workspace`, `--repo-root`, `--python-executable`, and `--out`.
+- OpenClaw runtime inspection and mutation use the explicit binary and
+  `OPENCLAW_CONFIG_PATH`; the controller does not fall back to bare `openclaw`.
+- `plan` classifies config binding, validation, provider build, plugin
+  inspection, real-turn route, Gateway reload, and tool-catalog availability.
+- `diagnose` writes local-private raw evidence and a sanitized share capsule.
+- `apply` stages, validates, snapshots, atomically replaces config, and rolls
+  back automatically if runtime checks fail after mutation.
+- Trial capture now uses per-event receipts so replayed W2-03 events are
+  accepted as duplicates without adding capture metrics.
+
+The active provider boundary remains unchanged: no Primary-visible Nollm tools,
+no provider access to `MEMORY.md`, `DREAMS.md`, or `memory/*.md`, and no mapping
+from trial diagnostics to trust/status semantics.

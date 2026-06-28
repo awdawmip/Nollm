@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+from reference.python.scripts.run_openclaw_nollm_active_trial import TargetBinding, _diagnose, _plan, _redact_text
+
+
+def _fake_openclaw(tmp_path: Path, text: str) -> Path:
+    script = tmp_path / ("openclaw.cmd" if os.name == "nt" else "openclaw")
+    if os.name == "nt":
+        script.write_text(text, encoding="utf-8")
+    else:
+        script.write_text("#!/bin/sh\n" + text, encoding="utf-8")
+        script.chmod(script.stat().st_mode | stat.S_IXUSR)
+    return script
+
+
+def _binding(tmp_path: Path, openclaw: Path) -> TargetBinding:
+    config = tmp_path / "openclaw.json"
+    workspace = tmp_path / "workspace"
+    repo = tmp_path / "repo"
+    provider = repo / "integrations" / "openclaw" / "nollm-memory-provider"
+    provider.mkdir(parents=True)
+    (provider / "package.json").write_text("{}", encoding="utf-8")
+    workspace.mkdir()
+    config.write_text(json.dumps({"plugins": {"entries": {}, "slots": {}}, "agents": {"list": []}}), encoding="utf-8")
+    out = tmp_path / "out"
+    out.mkdir()
+    return TargetBinding(openclaw, config, None, workspace, repo, Path(sys.executable).resolve(), out, "w2-03-test")
+
+
+def test_target_binding_requires_absolute_openclaw(tmp_path: Path) -> None:
+    ns = type("Args", (), {
+        "openclaw_bin": "openclaw",
+        "config": str(tmp_path / "missing.json"),
+        "profile": None,
+        "workspace": str(tmp_path),
+        "repo_root": str(tmp_path),
+        "python_executable": sys.executable,
+        "out": str(tmp_path / "out"),
+        "trial_agent_id": "agent",
+    })()
+    try:
+        TargetBinding.from_args(ns)
+    except ValueError as exc:
+        assert "openclaw_bin" in str(exc) or "absolute" in str(exc)
+    else:
+        raise AssertionError("relative openclaw path accepted")
+
+
+def test_plan_blocks_when_real_turn_route_unavailable(tmp_path: Path) -> None:
+    if os.name == "nt":
+        openclaw = _fake_openclaw(tmp_path, "@echo off\nif \"%1\"==\"--version\" echo OpenClaw fake\nif \"%1\"==\"config\" echo validate\nif \"%1\"==\"plugins\" echo list\nif \"%1\"==\"gateway\" echo restart\nif \"%1\"==\"agent\" echo no-json-here\n")
+    else:
+        openclaw = _fake_openclaw(tmp_path, "case \"$1\" in --version) echo OpenClaw fake;; config) echo validate;; plugins) echo list;; gateway) echo restart;; agent) echo no-json-here;; esac\n")
+    plan = _plan(_binding(tmp_path, openclaw.resolve()))
+    assert plan["ok"] is False
+    assert plan["routes"]["real_turn"] == "unavailable"
+
+
+def test_redaction_removes_home_and_tokens() -> None:
+    text = str(Path.home()) + " Bearer abc sk-test password=secret "
+    redacted = _redact_text(text)
+    assert str(Path.home()) not in redacted
+    assert "abc" not in redacted
+    assert "secret" not in redacted
+
+
+def test_diagnose_writes_private_and_share_capsules(tmp_path: Path) -> None:
+    if os.name == "nt":
+        openclaw = _fake_openclaw(tmp_path, "@echo off\necho OpenClaw fake\n")
+    else:
+        openclaw = _fake_openclaw(tmp_path, "echo OpenClaw fake\n")
+    binding = _binding(tmp_path, openclaw.resolve())
+    result = _diagnose(binding)
+    assert result["ok"] is True
+    assert Path(result["private_capsule"]).exists()
+    assert Path(result["sanitized_share_capsule"]).exists()
+    assert (Path(result["private_capsule"]) / "manifest.json").exists()

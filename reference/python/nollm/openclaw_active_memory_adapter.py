@@ -123,6 +123,36 @@ def _update_trial_manifest(trial_dir: Path, manifest: dict[str, Any]) -> None:
     path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True), encoding="utf-8")
 
 
+
+
+def _receipt_dir(trial_root: Path | str, trial_id: str) -> Path:
+    path = Path(trial_root).resolve() / trial_id / "event-receipts"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _claim_event_receipt(trial_root: Path | str, trial_id: str, event_id: str) -> tuple[bool, Path]:
+    receipt = _receipt_dir(trial_root, trial_id) / f"{event_id}.json"
+    payload = json.dumps({"schema": "nollm.active_capture_event_receipt.v1", "event_id": event_id, "state": "claimed", "created_at": _now_iso()}, sort_keys=True) + "\n"
+    try:
+        fd = os.open(str(receipt), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return False, receipt
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(payload)
+    return True, receipt
+
+
+def _commit_event_receipt(receipt: Path, summary: dict[str, Any]) -> None:
+    data = {
+        "schema": "nollm.active_capture_event_receipt.v1",
+        "event_id": receipt.stem,
+        "state": "committed",
+        "committed_at": _now_iso(),
+        "summary": summary,
+    }
+    receipt.write_text(json.dumps(data, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
 def _active_error(code: str, message: str, retryable: bool = False) -> dict[str, Any]:
     return {
         "schema": "nollm.active_memory_error.v1",
@@ -424,7 +454,36 @@ def active_capture(
         current_user_message,
     )
 
+    if trial_id:
+        receipt_root = _resolve_trial_root(native_store_root, trial_root)
+        claimed, receipt_path = _claim_event_receipt(receipt_root, trial_id, event_id)
+        if not claimed:
+            return {
+                "schema": ACTIVE_CAPTURE_SCHEMA,
+                "ok": True,
+                "capture": {
+                    "event_id": event_id,
+                    "promoted_count": 0,
+                    "deduplicated_count": 0,
+                    "reused_duplicate": True,
+                    "suppressed_count": 0,
+                    "rejected_count": 0,
+                    "records": [],
+                },
+                "metrics": {
+                    "user_messages_seen": 1 if current_user_message else 0,
+                    "assistant_messages_ignored": 0,
+                    "candidate_count": 0,
+                    "latency_ms": int((time.monotonic() - start) * 1000),
+                    "replay_observation": True,
+                },
+            }
+    else:
+        receipt_path = None
+
     if not current_user_message:
+        if receipt_path is not None:
+            _commit_event_receipt(receipt_path, {"promoted_count": 0, "skipped_code": "suppressed_no_current_user_message"})
         return {
             "schema": ACTIVE_CAPTURE_SCHEMA,
             "ok": True,
@@ -446,6 +505,8 @@ def active_capture(
         }
 
     if not success:
+        if receipt_path is not None:
+            _commit_event_receipt(receipt_path, {"promoted_count": 0, "skipped_code": "unsuccessful_turn"})
         return {
             "schema": ACTIVE_CAPTURE_SCHEMA,
             "ok": True,
@@ -531,6 +592,13 @@ def active_capture(
             "rejected_count": rejected,
             "latency_ms": latency_ms,
         })
+        if receipt_path is not None:
+            _commit_event_receipt(receipt_path, {
+                "promoted_count": len(promoted),
+                "deduplicated_count": deduplicated,
+                "suppressed_count": suppressed,
+                "rejected_count": rejected,
+            })
         # Keep a lightweight manifest for operator inspection.
         _update_trial_manifest(trial_dir, {
             "schema": "nollm.active_memory_trial_manifest.v1",
