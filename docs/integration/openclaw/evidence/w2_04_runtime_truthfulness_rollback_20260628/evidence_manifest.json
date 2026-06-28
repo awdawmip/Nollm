@@ -168,6 +168,9 @@
   "remote_receipt": {
     "origin_present": true,
     "origin_url_redacted": "https://github.com/awdawmip/Nollm.git",
-    "push_verified": "pending"
+    "push_verified": true,
+    "branch": "feature/nollm-runtime-truthful-main-agent-closure",
+    "verified_pushed_commit": "ca259758fc81c46ca29b4ac71a5fb2d3fb1eef60",
+    "verification_command": "git ls-remote origin refs/heads/feature/nollm-runtime-truthful-main-agent-closure"
   }
 }
