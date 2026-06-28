@@ -1,0 +1,116 @@
+{
+  "schema": "nollm.w2_03r.sanitized_evidence.v1",
+  "created_at_utc": "2026-06-28T09:48:00Z",
+  "project_branch": "feature/nollm-main-agent-active-cutover-transactional-closure",
+  "project_commit": "7b3d64586b7b605d78652fa2081241540f929857",
+  "evidence_branch": "evidence/w2-03r-main-agent-active-cutover-20260628T094800Z",
+  "remote_project_head": "7b3d64586b7b605d78652fa2081241540f929857",
+  "target_agent_id": "main",
+  "trial_label": "w2-03r-20260628T000000Z",
+  "w2_03_evidence_status": "quarantined_for_redaction_failure_not_for_share",
+  "binding_probe": {
+    "ok": true,
+    "real_config_exit_code": 0,
+    "invalid_fixture_exit_code": 1
+  },
+  "provider_route": {
+    "build_and_install_invoked": true,
+    "discovered": "install"
+  },
+  "apply": {
+    "rolled_back": false,
+    "ok": true,
+    "legacy_sources_unchanged": true
+  },
+  "runtime": {
+    "memory_slot": "nollm",
+    "ok": true,
+    "observed_tool_catalog": [
+      "session_status"
+    ],
+    "tool_catalog_status": "observed",
+    "active_status_ok": true
+  },
+  "live_trial": {
+    "active_report": {
+      "receipt_count": 10,
+      "committed_receipts": 10,
+      "capture_latency_ms": {
+        "max": 24,
+        "p50": 3,
+        "p95": 5
+      },
+      "recovery_required_receipts": 0,
+      "capture_count": 10,
+      "prepare_latency_ms": {
+        "max": 3,
+        "p50": 2,
+        "p95": 3
+      },
+      "prepare_count": 10,
+      "claimed_receipts": 0
+    },
+    "observed_tool_catalog": [
+      "session_status"
+    ],
+    "ok": true,
+    "failures_count": 0,
+    "legacy_sources_unchanged": true,
+    "markers": [
+      "SUNSET-MICA-41",
+      "WILLOW-EMBER-52",
+      "AURORA-SLATE-63"
+    ]
+  },
+  "replay": {
+    "committed_receipts": 11,
+    "ok": true,
+    "after_capture_count": 11,
+    "before_capture_count": 10,
+    "second_reused_duplicate": true
+  },
+  "rollback_reapply": {
+    "post_reapply_recall_ok": true,
+    "rollback_legacy_sources_unchanged": true,
+    "post_reapply_marker": "SUNSET-MICA-41",
+    "rollback_ok": true,
+    "post_reapply_tool_catalog": [
+      "session_status"
+    ]
+  },
+  "tests": [
+    {
+      "command": "python -m pytest -q reference/python/tests/test_openclaw_active_memory.py reference/python/tests/test_openclaw_active_trial_controller.py reference/python/tests/test_companion_native_memory.py",
+      "result": "74 passed in 7.60s"
+    },
+    {
+      "command": "cd integrations/openclaw/nollm-memory-provider; PYTHON_EXE=<absolute python.exe> npm test",
+      "result": "99 passed, 0 failed"
+    }
+  ],
+  "artifact_hashes": {
+    "apply.json": "a5441297a7e118f6bc09037bcaaf83e8795ce9827751b03a43fae99cba5580b0",
+    "diagnose.json": "52c603ba53a49283f01d6f29b4d6841ef123ab95ed8ab0aa6174fb74ed73a9d7",
+    "legacy-hashes-final.json": "5df4c6beae172fdabdb1336e59e6a8a2b214f7882e8130dfe7b9597088318ec2",
+    "local-replay.json": "655207ba8b2a761b554531181479e095d4af8c3908033db58389a1f01b36df4a",
+    "post-reapply-recall.json": "e09b9b19cc0ee40a13da600badeee77942afe96e0f61e5863bcdb89ef818eb06",
+    "rollback.json": "bd72d16eedfa458de9ef9205f7b7c672dbc322c77cfdc61ad5e3c4abf3dd09ee",
+    "runtime-assertions.json": "4752eec3b5404ebdb4fc68ec4fcce3b0420430d4fbd56133b28038f6c4b3b46a",
+    "snapshot.json": "b715311413822d591cec1768045f09a495f0b5c5ac5b56aef56e75463bff1036",
+    "target-capability-plan.json": "eae1e41af1da39a0e9477162890a3591b4d19706024947231e134de63ead60bb",
+    "trial.json": "0bf8184ce55238174dcfb0ef50daa60cca3eb0cb81b6d8465652906202fd6ba2",
+    "w2-03-evidence-quarantine-note.json": "80eb7f9ae952363a42b82b1f0c8ea5b359d1364e01688c4c1f7c619f915d16cf"
+  },
+  "exclusions": [
+    "zip files",
+    "raw logs",
+    "tracebacks",
+    "absolute paths",
+    "host names",
+    "session identifiers",
+    "run identifiers",
+    "config backups",
+    "legacy memory content",
+    "model response transcript"
+  ]
+}
