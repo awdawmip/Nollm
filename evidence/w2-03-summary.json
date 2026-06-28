@@ -1,0 +1,107 @@
+{
+  "schema": "nollm.w2_03.evidence_summary.v1",
+  "created_at_utc": "2026-06-28T07:36:00Z",
+  "project_branch": "feature/nollm-target-bound-active-trial-diagnostics",
+  "project_commit": "f71602a7942e782a8a8c71821b53b3dd34a1fc98",
+  "evidence_branch": "evidence/w2-03-target-bound-active-trial-20260628T073600Z",
+  "sanitized_artifacts": [
+    {
+      "bytes": 12844,
+      "sha256": "f5ca9a1f6f91c72b0764ec8af576a6e6293c27df7bab5374cfc128a273652314",
+      "path": "artifacts/diagnose-share-sanitized.zip"
+    }
+  ],
+  "target_bound_plan": {
+    "required_routes": [
+      "config_binding",
+      "config_validate",
+      "plugin_inspect",
+      "provider_build",
+      "provider_link_or_refresh",
+      "real_turn",
+      "gateway_reload",
+      "tool_catalog"
+    ],
+    "routes": {
+      "config_binding": "supported",
+      "config_validate": "supported",
+      "gateway_reload": "supported",
+      "plugin_inspect": "supported",
+      "provider_build": "supported",
+      "provider_link_or_refresh": "supported",
+      "real_turn": "supported",
+      "tool_catalog": "supported"
+    },
+    "ok": true
+  },
+  "diagnostics": {
+    "sanitized_share_capsule": "artifacts/diagnose-share-sanitized.zip",
+    "private_backups_committed": false,
+    "minimal_reproduction_classification": "none_observed",
+    "raw_capsule_committed": false,
+    "ok": true
+  },
+  "apply": {
+    "trial_agent_present": true,
+    "missing_denies_count": 0,
+    "apply_rolled_back": false,
+    "runtime_ok": true,
+    "legacy_sources_unchanged": true,
+    "ok": true,
+    "memory_slot": "nollm"
+  },
+  "runtime_assertions": {
+    "plugin_inspect_exit_code": 0,
+    "active_status_ok": true,
+    "primary_tools_expected": "no Nollm memory tools exposed",
+    "ok": true
+  },
+  "live_trial": {
+    "markers": [
+      "MIST-COPPER-81",
+      "PINE-EMBER-92",
+      "RIVER-ONYX-03"
+    ],
+    "failures_count": 0,
+    "weather_no_match_checked": true,
+    "legacy_sources_unchanged": true,
+    "ok": true,
+    "observed_trial_tool_catalog": [
+      "session_status"
+    ]
+  },
+  "rollback_reapply": {
+    "rollback_legacy_sources_unchanged": true,
+    "rollback_ok": true,
+    "final_reapply_ok": true
+  },
+  "legacy_source_hashes": {
+    "count": 15,
+    "content_committed": false,
+    "ok": true
+  },
+  "tests": [
+    {
+      "result": "67 passed in 6.63s",
+      "command": "python -m pytest -q reference/python/tests/test_openclaw_active_memory.py reference/python/tests/test_openclaw_active_trial_controller.py reference/python/tests/test_companion_native_memory.py"
+    },
+    {
+      "result": "98 passed, 0 failed",
+      "command": "cd integrations/openclaw/nollm-memory-provider; PYTHON_EXE=<absolute python.exe> npm test"
+    }
+  ],
+  "artifact_hashes": {
+    "apply.json": "d237bd364b87ac56c20df6d64b7ff308729d9effed68cb0f334a93ccf6395a98",
+    "diagnose.json": "6e29296ecaa0f58ff4b6b0f75d592afd55386dc921889b7bdc0ff115d609cca3",
+    "runtime-assertions.json": "088f333165ae099e806dd2aff2829f1ce90c0f22ac42c1f9b8a5725f9fe31d5b",
+    "snapshot.json": "42a10f27bd88c09749f07126281dc8739af6bc086114c61665af62922f5da30b",
+    "target-capability-plan.json": "02cedc2332b4543dc188e14b6b190e40e4908d891ecf56c526d50fbda268fa85",
+    "trial.json": "ac0fd9d7a98f5b114923100fbfe65168d91b4fe035bd8f4831155f74af31ca2f"
+  },
+  "exclusions": [
+    "raw command-results.jsonl",
+    "private OpenClaw config backup",
+    "full raw trial transcript",
+    "legacy MEMORY/DREAMS/memory content"
+  ]
+}
