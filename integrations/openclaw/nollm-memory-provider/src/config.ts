@@ -39,6 +39,9 @@ export const ConfigSchema = Type.Object(
     trialId: Type.Optional(Type.String({
       description: "Controller-assigned active empirical trial id. Required when trialMode is active_empirical_v1.",
     })),
+    operationId: Type.Optional(Type.String({
+      description: "Controller-assigned W2-05 operation id for operation-isolated forensic receipt binding.",
+    })),
   },
   { additionalProperties: false }
 );
@@ -95,6 +98,13 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
   if (trialMode === "active_empirical_v1" && !trialId) {
     throw new Error("trialId is required when trialMode is active_empirical_v1.");
   }
+  if (trialId && !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(trialId)) {
+    throw new Error("trialId has invalid W2 forensic id format.");
+  }
+  const operationId = typeof config.operationId === "string" ? config.operationId.trim() : "";
+  if (operationId && !/^w2-05-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$/.test(operationId)) {
+    throw new Error("operationId has invalid W2-05 forensic operation id format.");
+  }
 
   return {
     pythonExecutable,
@@ -120,6 +130,7 @@ export function normalizeConfig(config: PluginConfig): NormalizedConfig {
     captureMode: config.captureMode || "deterministic_explicit_v1",
     trialMode,
     trialId: trialId || undefined,
+    operationId: operationId || undefined,
   };
 }
 

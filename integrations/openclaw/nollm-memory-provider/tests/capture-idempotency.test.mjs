@@ -151,6 +151,32 @@ describe("E4 capture idempotency and redaction", () => {
     assert.ok(Array.isArray(payload.messages));
   });
 
+  it("W2-05 capture sidecar receives operation-bound agent hook receipt fields", async () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp, { operationId: "w2-05-20260628T000004Z-abcdef123456" });
+    const payloadPath = path.join(tmp, "capture-payload.json");
+    writeStubSidecar(cfg.nollmRepoRoot, [
+      "import json, sys, os",
+      "stdin = json.loads(sys.stdin.read())",
+      "with open(r'" + payloadPath.replace(/\\/g, "\\\\") + "', 'w') as f:",
+      "    json.dump(stdin, f, sort_keys=True)",
+      "print(json.dumps({'ok': True, 'schema': 'nollm.active_memory_capture.v1', 'capture': {'event_id': 'evt-w205', 'promoted_count': 0, 'deduplicated_count': 0, 'suppressed_count': 0, 'rejected_count': 0, 'records': []}, 'metrics': {}}, sort_keys=True))",
+    ].join("\n"));
+    const normalized = normalizeConfig(cfg);
+    const api = makeMockApi(normalized);
+    createNollmProvider(api);
+
+    await invokeEnd(
+      api,
+      { success: true, messages: [{ role: "user", content: "blue" }], runId: "run-w205" },
+      { agentId: "main", sessionId: "s-w205", runId: "run-w205" }
+    );
+    const payload = JSON.parse(fs.readFileSync(payloadPath, "utf8"));
+    assert.equal(payload.operation_id, cfg.operationId);
+    assert.equal(payload.event_source, "agent_hook");
+    assert.match(payload.turn_receipt_id, /^[A-Za-z0-9][A-Za-z0-9_-]{31,127}$/);
+  });
+
   it("D3: capture skipped when durable identity is incomplete", async () => {
     const tmp = makeTempDir();
     const cfg = makeProviderConfig(tmp);

@@ -18,6 +18,12 @@ from nollm.companion_memory_store import (
     recall_native_memory,
     native_store_summary,
 )
+from nollm.w2_forensic import (
+    safe_join_under_root,
+    validate_operation_id,
+    validate_trial_id,
+    validate_turn_receipt_id,
+)
 
 ACTIVE_STATUS_SCHEMA = "nollm.active_memory_status.v1"
 ACTIVE_PREPARE_INPUT_SCHEMA = "nollm.active_memory_prepare.v1"
@@ -108,7 +114,9 @@ def _resolve_trial_root(native_store_root: Path | str, trial_root: Path | str | 
 
 
 def _ensure_trial_dir(trial_root: Path | str, trial_id: str) -> Path:
-    trial_dir = Path(trial_root).resolve() / trial_id
+    trial_root_path = Path(trial_root).resolve()
+    trial_root_path.mkdir(parents=True, exist_ok=True)
+    trial_dir = safe_join_under_root(trial_root_path, validate_trial_id(trial_id))
     trial_dir.mkdir(parents=True, exist_ok=True)
     return trial_dir
 
@@ -144,9 +152,51 @@ def _update_trial_manifest(trial_dir: Path, manifest: dict[str, Any]) -> None:
 
 
 def _receipt_dir(trial_root: Path | str, trial_id: str) -> Path:
-    path = Path(trial_root).resolve() / trial_id / "event-receipts"
+    trial_dir = _ensure_trial_dir(trial_root, trial_id)
+    path = trial_dir / "event-receipts"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def _turn_receipt_dir(trial_root: Path | str, trial_id: str) -> Path:
+    trial_dir = _ensure_trial_dir(trial_root, trial_id)
+    path = trial_dir / "turn-receipts"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _write_w2_05_turn_receipt(
+    trial_root: Path | str,
+    trial_id: str,
+    operation_id: str,
+    turn_receipt_id: str,
+    event_kind: str,
+    event_source: str,
+    identity: dict[str, str] | None,
+    summary: dict[str, Any],
+) -> Path | None:
+    if event_source != "agent_hook":
+        return None
+    validate_operation_id(operation_id)
+    validate_trial_id(trial_id)
+    validate_turn_receipt_id(turn_receipt_id)
+    receipt_dir = _turn_receipt_dir(trial_root, trial_id)
+    receipt_path = receipt_dir / f"{turn_receipt_id}-{event_kind}.json"
+    payload = {
+        "schema": "nollm.w2_05.turn_receipt.v1",
+        "operation_id": operation_id,
+        "trial_id": trial_id,
+        "turn_receipt_id": turn_receipt_id,
+        "event_kind": event_kind,
+        "event_source": event_source,
+        "agent_id_hash": _hash_id(identity.get("agent_id", "")) if identity else None,
+        "session_id_hash": _hash_id(identity.get("session_id", "")) if identity else None,
+        "run_id_hash": _hash_id(identity.get("run_id", "")) if identity else None,
+        "summary": summary,
+        "created_at": _now_iso(),
+    }
+    receipt_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    return receipt_path
 
 
 @contextmanager
@@ -330,6 +380,9 @@ def active_prepare(
     trial_id: str | None = None,
     identity: dict[str, str] | None = None,
     trial_root: Path | str | None = None,
+    operation_id: str | None = None,
+    turn_receipt_id: str | None = None,
+    event_source: str = "preflight",
 ) -> dict[str, Any]:
     start = time.monotonic()
     out_dir = _derive_out_dir(native_store_root)
@@ -349,7 +402,8 @@ def active_prepare(
             "explicit_absences": ["No Nollm native companion memory matched this query."],
         }
         if trial_id:
-            trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
+            receipt_root = _resolve_trial_root(native_store_root, trial_root)
+            trial_dir = _ensure_trial_dir(receipt_root, trial_id)
             _write_trial_metric(trial_dir, {
                 "event": "prepare",
                 "timestamp": _now_iso(),
@@ -365,6 +419,17 @@ def active_prepare(
                 "recall_mode": "none",
                 "latency_ms": latency_ms,
             })
+            if operation_id and turn_receipt_id:
+                _write_w2_05_turn_receipt(
+                    receipt_root,
+                    trial_id,
+                    operation_id,
+                    turn_receipt_id,
+                    "prepare",
+                    event_source,
+                    identity,
+                    {"query_hash": _hash_id(query), "result_count": 0, "recall_mode": "none"},
+                )
         return {
             "schema": ACTIVE_PREPARE_OUTPUT_SCHEMA,
             "ok": True,
@@ -384,7 +449,8 @@ def active_prepare(
         error = result.get("error") if isinstance(result.get("error"), dict) else {}
         code = str(error.get("code") or "native_recall_failed")
         if trial_id:
-            trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
+            receipt_root = _resolve_trial_root(native_store_root, trial_root)
+            trial_dir = _ensure_trial_dir(receipt_root, trial_id)
             _write_trial_metric(trial_dir, {
                 "event": "prepare_error",
                 "timestamp": _now_iso(),
@@ -396,6 +462,17 @@ def active_prepare(
                 "prepare_error_code": code,
                 "latency_ms": latency_ms,
             })
+            if operation_id and turn_receipt_id:
+                _write_w2_05_turn_receipt(
+                    receipt_root,
+                    trial_id,
+                    operation_id,
+                    turn_receipt_id,
+                    "prepare_error",
+                    event_source,
+                    identity,
+                    {"query_hash": _hash_id(query), "prepare_error_code": code},
+                )
         return _active_error(code, "Native active recall failed.", retryable=True)
 
     facts: list[dict[str, Any]] = []
@@ -447,7 +524,8 @@ def active_prepare(
     }
 
     if trial_id:
-        trial_dir = _ensure_trial_dir(_resolve_trial_root(native_store_root, trial_root), trial_id)
+        receipt_root = _resolve_trial_root(native_store_root, trial_root)
+        trial_dir = _ensure_trial_dir(receipt_root, trial_id)
         _write_trial_metric(trial_dir, {
             "event": "prepare",
             "timestamp": _now_iso(),
@@ -463,6 +541,22 @@ def active_prepare(
             "recall_mode": recall_mode,
             "latency_ms": latency_ms,
         })
+        if operation_id and turn_receipt_id:
+            _write_w2_05_turn_receipt(
+                receipt_root,
+                trial_id,
+                operation_id,
+                turn_receipt_id,
+                "prepare",
+                event_source,
+                identity,
+                {
+                    "query_hash": _hash_id(query),
+                    "result_count": metrics["result_count"],
+                    "facts_returned": len(facts),
+                    "recall_mode": recall_mode,
+                },
+            )
 
     return {
         "schema": ACTIVE_PREPARE_OUTPUT_SCHEMA,
@@ -554,6 +648,9 @@ def active_capture(
     trial_id: str | None = None,
     identity: dict[str, str] | None = None,
     trial_root: Path | str | None = None,
+    operation_id: str | None = None,
+    turn_receipt_id: str | None = None,
+    event_source: str = "preflight",
 ) -> dict[str, Any]:
     start = time.monotonic()
     out_dir = _derive_out_dir(native_store_root)
@@ -710,6 +807,24 @@ def active_capture(
     def finish(summary: dict[str, Any], capture: dict[str, Any], metrics: dict[str, Any]) -> dict[str, Any]:
         if receipt_path is not None:
             _commit_event_receipt(receipt_path, event_fingerprint, summary)
+        if trial_id and operation_id and turn_receipt_id:
+            _write_w2_05_turn_receipt(
+                _resolve_trial_root(native_store_root, trial_root),
+                trial_id,
+                operation_id,
+                turn_receipt_id,
+                "capture",
+                event_source,
+                identity,
+                {
+                    "event_id": event_id,
+                    "event_fingerprint": event_fingerprint,
+                    "promoted_count": capture.get("promoted_count", 0),
+                    "deduplicated_count": capture.get("deduplicated_count", 0),
+                    "suppressed_count": capture.get("suppressed_count", 0),
+                    "rejected_count": capture.get("rejected_count", 0),
+                },
+            )
         return {"schema": ACTIVE_CAPTURE_SCHEMA, "ok": True, "capture": capture, "metrics": metrics}
 
     try:
@@ -854,7 +969,7 @@ def active_trial_report(
     trial_root: Path | str | None = None,
 ) -> dict[str, Any]:
     trial_root_path = _resolve_trial_root(native_store_root, trial_root)
-    trial_root_dir = trial_root_path / trial_id
+    trial_root_dir = _ensure_trial_dir(trial_root_path, trial_id)
     path = trial_root_dir / "trial-metrics.jsonl"
     metrics = _read_trial_metrics(trial_root_dir)
 

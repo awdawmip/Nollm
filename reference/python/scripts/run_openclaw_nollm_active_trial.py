@@ -19,6 +19,16 @@ PYTHON_ROOT = Path(__file__).resolve().parents[1]
 if str(PYTHON_ROOT) not in sys.path:
     sys.path.insert(0, str(PYTHON_ROOT))
 
+from nollm.w2_forensic import (
+    create_operation,
+    operation_root,
+    quarantine_operation,
+    set_operation_state,
+    validate_operation_id,
+    validate_trial_id,
+    write_json as _write_w2_json,
+)
+
 STALE_NOLLM_TOOLS = {
     "nollm_memory_status",
     "nollm_field_overview",
@@ -43,7 +53,7 @@ LEGACY_MEMORY_TOOLS = {
     "nollm_memory_commit_candidate",
 }
 LEGACY_SOURCE_NAMES = {"MEMORY.md", "DREAMS.md"}
-DEFAULT_TRIAL_ID_PREFIX = "w2-04"
+DEFAULT_TRIAL_ID_PREFIX = "w2-05"
 ACTIVE_STATUS_SCHEMA = "nollm.active_memory_status.v1"
 ACTIVE_PREPARE_SCHEMA = "nollm.active_memory_prepare.v1"
 ACTIVE_TRIAL_REPORT_SCHEMA = "nollm.active_memory_trial_report.v1"
@@ -84,8 +94,7 @@ def _detect_config_format(path: Path) -> dict[str, Any]:
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_w2_json(path, data)
 
 
 def _posix(path: Path | str) -> str:
@@ -148,6 +157,8 @@ class TargetBinding:
         for name in ("openclaw_bin", "config", "workspace", "repo_root", "python_executable"):
             if not paths[name].exists():
                 raise ValueError(f"{name} does not exist")
+        trial_id = args.trial_id or f"{DEFAULT_TRIAL_ID_PREFIX}-{_stamp()}"
+        validate_trial_id(trial_id)
         return cls(
             openclaw_bin=paths["openclaw_bin"],
             config=paths["config"],
@@ -157,7 +168,7 @@ class TargetBinding:
             python_executable=paths["python_executable"],
             out=paths["out"],
             target_agent_id=args.target_agent_id,
-            trial_id=args.trial_id or f"{DEFAULT_TRIAL_ID_PREFIX}-{_stamp()}",
+            trial_id=trial_id,
         )
 
     def argv(self, *parts: str) -> list[str]:
@@ -451,7 +462,7 @@ def _plan(binding: TargetBinding) -> dict[str, Any]:
     gateway_help = _run_bound(binding, binding.argv("gateway", "--help"), timeout=30)
     binding_probe = _config_binding_probe(binding)
     plugin_route = _discover_plugin_route(plugins_help.get("stdout_tail", ""))
-    routes = {
+    legacy_routes = {
         "config_binding": "supported" if binding_probe["ok"] else "unavailable",
         "config_validate": "supported" if "validate" in config_help.get("stdout_tail", "") else "unavailable",
         "runtime_inspect_route": "supported" if "inspect" in plugins_help.get("stdout_tail", "") else "unavailable",
@@ -463,16 +474,43 @@ def _plan(binding: TargetBinding) -> dict[str, Any]:
         "gateway_reload": "supported" if "restart" in gateway_help.get("stdout_tail", "") else "unavailable",
         "tool_catalog": "supported",
     }
-    required = list(routes)
-    ok = config_format["ok"] and version["exit_code"] == 0 and all(routes[k] == "supported" for k in required)
+    operation_routes = {
+        "operation_private_config": "supported" if "--config" in agent_help.get("stdout_tail", "") else "unavailable",
+        "operation_private_workspace": "supported" if "--workspace" in agent_help.get("stdout_tail", "") else "unavailable",
+        "operation_private_native_store": "supported",
+        "operation_private_active_trials": "supported",
+        "operation_private_provider_payload": "unavailable",
+        "operation_local_plugin_registry": "unavailable",
+        "operation_local_gateway_or_process": "unavailable",
+        "shared_mutation_fallback": "forbidden",
+    }
+    required = [
+        "operation_private_config",
+        "operation_private_workspace",
+        "operation_private_native_store",
+        "operation_private_active_trials",
+        "operation_private_provider_payload",
+        "operation_local_plugin_registry",
+        "operation_local_gateway_or_process",
+    ]
+    ok = (
+        config_format["ok"]
+        and version["exit_code"] == 0
+        and all(operation_routes[k] == "supported" for k in required)
+        and operation_routes["shared_mutation_fallback"] == "forbidden"
+    )
+    block_reason = None if ok else "operation_isolation_route_unavailable"
     return {
-        "schema": "nollm.w2_04.target_capability_plan.v1",
+        "schema": "nollm.w2_05.target_capability_plan.v1",
         "ok": ok,
         "created_at": _now(),
         "binding": binding.redacted(),
         "config_format": config_format,
-        "routes": routes,
+        "routes": {**legacy_routes, **operation_routes, "real_turn": legacy_routes["real_turn"]},
+        "legacy_shared_routes_observed_only": legacy_routes,
+        "operation_isolation_routes": operation_routes,
         "required_routes": required,
+        "block_reason": block_reason,
         "version": version,
         "binding_probe": binding_probe,
         "plugin_route": plugin_route or None,
@@ -687,67 +725,55 @@ def _cmd_apply(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     plan = _plan(binding)
     _write_json(binding.out / "target-capability-plan.json", plan)
+    op = create_operation(binding.out, getattr(args, "operation_id", None), binding.redacted())
+    op_root = Path(op["operation_root"])
+    _write_json(op_root / "receipts" / "target-capability-plan.json", plan)
+    config_copy = op_root / "private" / "openclaw" / binding.config.name
+    shutil.copy2(binding.config, config_copy)
+    _write_json(op_root / "private" / "openclaw" / "source-config-reference.json", {
+        "schema": "nollm.w2_05.source_config_reference.v1",
+        "source_config_sha256": _sha256_file(binding.config),
+        "source_config_path_redacted": _redact_text(str(binding.config)),
+        "operation_private_copy": str(config_copy),
+    })
     if not plan["ok"]:
-        diag = _diagnose(binding)
-        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "live_validation_blocked": True, "reason": "plan_unavailable_or_ambiguous", "diagnostic": diag, "apply_rolled_back": False}
+        set_operation_state(op_root, "blocked_pre_mutation", "operation_isolation_route_unavailable", {
+            "shared_mutation_fallback": "forbidden",
+            "unavailable_routes": {
+                k: v for k, v in (plan.get("operation_isolation_routes") or {}).items() if v != "supported"
+            },
+        })
+        result = {
+            "schema": "nollm.w2_05.apply_result.v1",
+            "ok": False,
+            "operation_id": op["operation_id"],
+            "operation_root": op["operation_root"],
+            "state": "blocked_pre_mutation",
+            "reason": "operation_isolation_route_unavailable",
+            "live_validation_blocked": True,
+            "shared_mutation_attempted": False,
+            "apply_rolled_back": False,
+            "plan": plan,
+        }
         _write_json(binding.out / "apply.json", result)
+        _write_json(op_root / "apply.json", result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 2
-    before_hashes = _legacy_hashes(binding.workspace)
-    backup = _ensure_private_backup(binding)
-    staged = binding.out / "staged" / "openclaw.w2-04.json"
-    config = _read_json(binding.config)
-    _configure_active_trial(config, binding)
-    _write_json(staged, config)
-    build = _run_bound(binding, ["npm", "run", "build"], cwd=binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider", timeout=180)
-    if build["exit_code"] != 0:
-        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "stage": "provider_build", "apply_rolled_back": False, "build": build}
-        _write_json(binding.out / "apply.json", result)
-        print(json.dumps(result, indent=2, sort_keys=True))
-        return 1
-    provider_dir = binding.repo_root / "integrations" / "openclaw" / "nollm-memory-provider"
-    plugin_route = str(plan.get("plugin_route") or "")
-    install_args = ["plugins", plugin_route]
-    if plugin_route == "install":
-        install_args.append("--force")
-    install_args.append(str(provider_dir))
-    install = _run_bound(binding, binding.argv(*install_args), timeout=180)
-    if install["exit_code"] != 0:
-        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "stage": "provider_link_or_refresh", "apply_rolled_back": False, "install": install}
-        _write_json(binding.out / "apply.json", result)
-        print(json.dumps(result, indent=2, sort_keys=True))
-        return 1
-    live_mutated = False
-    receipts: list[dict[str, Any]] = [build, install]
-    try:
-        tmp = binding.config.with_suffix(binding.config.suffix + ".w2-04.tmp")
-        shutil.copy2(staged, tmp)
-        stage_binding = TargetBinding(binding.openclaw_bin, tmp, binding.profile, binding.workspace, binding.repo_root, binding.python_executable, binding.out, binding.target_agent_id, binding.trial_id)
-        staged_validate = _run_bound(stage_binding, stage_binding.argv("config", "validate"), timeout=60)
-        receipts.append(staged_validate)
-        if staged_validate["exit_code"] != 0:
-            raise RuntimeError("staged_config_validation_failed")
-        os.replace(str(tmp), str(binding.config))
-        live_mutated = True
-        restart = _run_bound(binding, binding.argv("gateway", "restart"), timeout=120)
-        receipts.append(restart)
-        if restart["exit_code"] != 0:
-            raise RuntimeError("gateway_restart_failed")
-        runtime = _runtime_assert(binding)
-        if not runtime["ok"]:
-            raise RuntimeError("runtime_assertion_failed")
-        if _legacy_hashes(binding.workspace) != before_hashes:
-            raise RuntimeError("legacy_source_mutation")
-        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": True, "created_at": _now(), "backup": str(backup), "apply_rolled_back": False, "legacy_sources_unchanged": True, "runtime_assertions": runtime, "receipts": receipts}
-        _write_json(binding.out / "apply.json", result)
-        print(json.dumps(result, indent=2, sort_keys=True))
-        return 0
-    except Exception as exc:
-        rollback = _restore_backup(binding) if live_mutated else {"ok": True, "not_needed": True}
-        result = {"schema": "nollm.w2_04.apply_result.v1", "ok": False, "error": str(exc), "apply_rolled_back": bool(live_mutated), "rollback": rollback, "receipts": receipts}
-        _write_json(binding.out / "apply.json", result)
-        print(json.dumps(result, indent=2, sort_keys=True))
-        return 1
+    quarantine_operation(op_root, "operation_local_runtime_route_not_implemented", {"plan_ok": True})
+    result = {
+        "schema": "nollm.w2_05.apply_result.v1",
+        "ok": False,
+        "operation_id": op["operation_id"],
+        "operation_root": op["operation_root"],
+        "state": "manual_repair_required",
+        "reason": "operation_local_runtime_route_not_implemented",
+        "shared_mutation_attempted": False,
+        "apply_rolled_back": False,
+    }
+    _write_json(binding.out / "apply.json", result)
+    _write_json(op_root / "apply.json", result)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 2
 
 
 def _cmd_assert_runtime(args: argparse.Namespace) -> int:
@@ -829,6 +855,59 @@ def _active_prepare_contains(binding: TargetBinding, query: str, expected: str) 
 
 
 def _cmd_trial(args: argparse.Namespace) -> int:
+    binding = TargetBinding.from_args(args)
+    operation_id = getattr(args, "operation_id", None)
+    plan = _plan(binding)
+    if not operation_id:
+        result = {
+            "schema": "nollm.w2_05.trial_result.v1",
+            "ok": False,
+            "state": "blocked_pre_mutation",
+            "reason": "operation_id_required_for_operation_isolated_trial",
+            "shared_turn_attempted": False,
+            "automatic_rollback": None,
+            "plan": plan,
+        }
+        _write_json(binding.out / "trial.json", result)
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 2
+    validate_operation_id(operation_id)
+    op_root = operation_root(binding.out, operation_id)
+    if not op_root.exists():
+        result = {
+            "schema": "nollm.w2_05.trial_result.v1",
+            "ok": False,
+            "operation_id": operation_id,
+            "state": "blocked_pre_mutation",
+            "reason": "operation_not_prepared",
+            "shared_turn_attempted": False,
+            "automatic_rollback": None,
+        }
+        _write_json(binding.out / "trial.json", result)
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 2
+    set_operation_state(op_root, "blocked_pre_mutation", "operation_local_runtime_route_unavailable_for_trial", {
+        "shared_turn_attempted": False,
+        "shared_mutation_fallback": "forbidden",
+    })
+    result = {
+        "schema": "nollm.w2_05.trial_result.v1",
+        "ok": False,
+        "operation_id": operation_id,
+        "operation_root": str(op_root),
+        "state": "blocked_pre_mutation",
+        "reason": "operation_isolation_route_unavailable",
+        "shared_turn_attempted": False,
+        "automatic_rollback": None,
+        "plan": plan,
+    }
+    _write_json(binding.out / "trial.json", result)
+    _write_json(op_root / "trial.json", result)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 2
+
+
+def _cmd_trial_legacy_disabled(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     before = _legacy_hashes(binding.workspace)
     status_before = _active_status(binding)
@@ -935,12 +1014,57 @@ def _cmd_trial(args: argparse.Namespace) -> int:
 
 def _cmd_rollback(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
-    before = _legacy_hashes(binding.workspace)
-    rollback = _restore_backup(binding)
-    report = {"schema": "nollm.w2_04.rollback_result.v1", "ok": rollback.get("ok") is True and _legacy_hashes(binding.workspace) == before, "created_at": _now(), "legacy_sources_unchanged": _legacy_hashes(binding.workspace) == before, "rollback": rollback}
+    operation_id = getattr(args, "operation_id", None)
+    report = {
+        "schema": "nollm.w2_05.rollback_result.v1",
+        "ok": False,
+        "created_at": _now(),
+        "operation_id": operation_id,
+        "state": "manual_repair_required" if operation_id else "blocked_pre_mutation",
+        "reason": "shared_environment_rollback_forbidden_in_w2_05",
+        "shared_mutation_attempted": False,
+        "legacy_sources_unchanged": True,
+    }
+    if operation_id:
+        op_root = operation_root(binding.out, validate_operation_id(operation_id))
+        if op_root.exists():
+            set_operation_state(op_root, "manual_repair_required", "rollback_requires_manual_operation_resolution", {})
+            _write_json(op_root / "rollback.json", report)
     _write_json(binding.out / "rollback.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if report["ok"] else 1
+    return 2
+
+
+def _cmd_inspect(args: argparse.Namespace) -> int:
+    binding = TargetBinding.from_args(args)
+    operation_id = getattr(args, "operation_id", None)
+    if not operation_id:
+        result = {"schema": "nollm.w2_05.inspect_result.v1", "ok": False, "error": "operation_id_required"}
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 2
+    op_root = operation_root(binding.out, validate_operation_id(operation_id))
+    manifest_path = op_root / "operation.json"
+    if not manifest_path.exists():
+        result = {"schema": "nollm.w2_05.inspect_result.v1", "ok": False, "operation_id": operation_id, "error": "operation_not_found"}
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 2
+    ledger_path = op_root / "operation-ledger.jsonl"
+    ledger = []
+    if ledger_path.exists():
+        ledger = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    result = {
+        "schema": "nollm.w2_05.inspect_result.v1",
+        "ok": True,
+        "operation_id": operation_id,
+        "operation_root": str(op_root),
+        "manifest": _read_json(manifest_path),
+        "ledger_event_count": len(ledger),
+        "latest_state": ledger[-1]["state"] if ledger else None,
+        "quarantined": (op_root / "QUARANTINED").exists(),
+    }
+    _write_json(binding.out / "inspect.json", result)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
 
 
 def _cmd_hash_legacy(args: argparse.Namespace) -> int:
@@ -954,15 +1078,19 @@ def _cmd_hash_legacy(args: argparse.Namespace) -> int:
 def _cmd_report(args: argparse.Namespace) -> int:
     binding = TargetBinding.from_args(args)
     files = {path.name: _sha256_file(path) for path in sorted(binding.out.glob("*.json"))}
-    report = {"schema": "nollm.w2_04.report_manifest.v1", "ok": True, "created_at": _now(), "artifact_hashes": files}
+    operations = []
+    for op_path in sorted((binding.out / "operations").glob("w2-05-*")) if (binding.out / "operations").exists() else []:
+        if (op_path / "operation.json").exists():
+            operations.append(_read_json(op_path / "operation.json"))
+    report = {"schema": "nollm.w2_05.report_manifest.v1", "ok": True, "created_at": _now(), "artifact_hashes": files, "operations": operations}
     _write_json(binding.out / "report-manifest.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="W2-04 target-bound Nollm active-memory trial controller.")
-    parser.add_argument("command", choices=["plan", "diagnose", "snapshot", "apply", "assert-runtime", "trial", "rollback", "reapply", "report", "hash-legacy"])
+    parser = argparse.ArgumentParser(description="W2-05 operation-isolated Nollm active-memory forensic controller.")
+    parser.add_argument("command", choices=["plan", "diagnose", "snapshot", "apply", "assert-runtime", "trial", "rollback", "reapply", "inspect", "report", "hash-legacy"])
     parser.add_argument("--openclaw-bin", required=True)
     parser.add_argument("--config", required=True)
     parser.add_argument("--profile")
@@ -972,6 +1100,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", required=True)
     parser.add_argument("--target-agent-id", required=True)
     parser.add_argument("--trial-id")
+    parser.add_argument("--operation-id")
     parser.add_argument("--stage", default="manual")
     args = parser.parse_args(argv)
     try:
@@ -984,19 +1113,21 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "apply":
             return _cmd_apply(args)
         if args.command == "reapply":
-            return _cmd_apply(args)
+            return _cmd_rollback(args)
         if args.command == "assert-runtime":
             return _cmd_assert_runtime(args)
         if args.command == "trial":
             return _cmd_trial(args)
         if args.command == "rollback":
             return _cmd_rollback(args)
+        if args.command == "inspect":
+            return _cmd_inspect(args)
         if args.command == "hash-legacy":
             return _cmd_hash_legacy(args)
         if args.command == "report":
             return _cmd_report(args)
     except Exception as exc:
-        print(json.dumps({"schema": "nollm.w2_04.controller_error.v1", "ok": False, "error": str(exc)}, indent=2, sort_keys=True))
+        print(json.dumps({"schema": "nollm.w2_05.controller_error.v1", "ok": False, "error": str(exc)}, indent=2, sort_keys=True))
         return 1
     return 2
 

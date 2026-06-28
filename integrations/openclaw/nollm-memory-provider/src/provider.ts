@@ -2,6 +2,7 @@ import type {
   MemoryPluginCapability,
 } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/plugin-entry";
+import { createHash } from "node:crypto";
 import { configurationRequiredStatus, normalizeConfig } from "./config.js";
 import { formatMemoryContext, makeUnavailableBoundary } from "./hook-context.js";
 import { runSidecarCommand } from "./sidecar.js";
@@ -16,6 +17,13 @@ function eventIdentity(event: unknown): { runId?: string; sessionId?: string } {
     runId: typeof e.runId === "string" ? e.runId : undefined,
     sessionId: typeof e.sessionId === "string" ? e.sessionId : undefined,
   };
+}
+
+function turnReceiptId(identity: { agentId?: string; sessionId?: string; runId?: string }, eventKind: string): string {
+  return createHash("sha256")
+    .update(`${identity.agentId || ""}\0${identity.sessionId || ""}\0${identity.runId || ""}\0${eventKind}`)
+    .digest("hex")
+    .slice(0, 32);
 }
 
 const ACTIVE_STATUS_SCHEMA = "nollm.active_memory_status.v1";
@@ -92,6 +100,9 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
           max_context_characters: config.maxContextCharacters,
         },
         trial_id: trialId,
+        operation_id: config.operationId,
+        turn_receipt_id: config.operationId ? turnReceiptId(identity, "prepare") : undefined,
+        event_source: config.operationId ? "agent_hook" : "preflight",
       });
 
       if (!result.ok) {
@@ -163,6 +174,9 @@ export function createNollmProvider(api: OpenClawPluginApi): void {
           success: event.success,
           messages,
           trial_id: trialId,
+          operation_id: config.operationId,
+          turn_receipt_id: config.operationId ? turnReceiptId(identity, "capture") : undefined,
+          event_source: config.operationId ? "agent_hook" : "preflight",
         });
         if (!result.ok) {
           api.logger.warn(`Nollm capture failed: ${result.error.message}`);

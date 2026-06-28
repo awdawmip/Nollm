@@ -11,6 +11,7 @@ export type PluginConfig = {
   captureMode?: string;
   trialMode?: string;
   trialId?: string;
+  operationId?: string;
 };
 
 export type NormalizedConfig = {
@@ -27,6 +28,7 @@ export type NormalizedConfig = {
   captureMode: string;
   trialMode: string;
   trialId?: string;
+  operationId?: string;
 };
 
 export type SidecarErrorCode =

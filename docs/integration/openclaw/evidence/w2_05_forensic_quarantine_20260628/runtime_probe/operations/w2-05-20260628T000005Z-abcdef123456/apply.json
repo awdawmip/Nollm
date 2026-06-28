@@ -1,0 +1,117 @@
+{
+  "apply_rolled_back": false,
+  "live_validation_blocked": true,
+  "ok": false,
+  "operation_id": "w2-05-20260628T000005Z-abcdef123456",
+  "operation_root": "C:\\Users\\chaos\\nollm\\docs\\integration\\openclaw\\evidence\\w2_05_forensic_quarantine_20260628\\runtime_probe\\operations\\w2-05-20260628T000005Z-abcdef123456",
+  "plan": {
+    "binding": {
+      "binding_mode": "OPENCLAW_CONFIG_PATH",
+      "config": "<HOME>\\.openclaw\\openclaw.json",
+      "openclaw_bin": "<HOME>\\AppData\\Local\\Programs\\nodejs\\openclaw.cmd",
+      "profile": null,
+      "python_executable": "<HOME>\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "repo_root": "C:\\Users\\chaos\\nollm",
+      "target_agent_id": "main",
+      "trial_id": "w2-05-live-probe",
+      "workspace": "<HOME>\\.openclaw"
+    },
+    "binding_probe": {
+      "binding_mode": "OPENCLAW_CONFIG_PATH",
+      "invalid_fixture_exit_code": 1,
+      "ok": true,
+      "real_config_exit_code": 0,
+      "schema": "nollm.w2_03r.config_binding_probe.v1"
+    },
+    "block_reason": "operation_isolation_route_unavailable",
+    "config_format": {
+      "format": "json",
+      "ok": true,
+      "patch_route": "staged_json_atomic_replace"
+    },
+    "created_at": "2026-06-28T14:40:27Z",
+    "legacy_shared_routes_observed_only": {
+      "config_binding": "supported",
+      "config_validate": "supported",
+      "gateway_reload": "supported",
+      "memory_owner_route": "supported",
+      "provider_build": "supported",
+      "provider_link_or_refresh": "supported",
+      "real_turn": "supported",
+      "runtime_inspect_route": "supported",
+      "tool_catalog": "supported",
+      "tool_catalog_route": "supported"
+    },
+    "ok": false,
+    "operation_isolation_routes": {
+      "operation_local_gateway_or_process": "unavailable",
+      "operation_local_plugin_registry": "unavailable",
+      "operation_private_active_trials": "supported",
+      "operation_private_config": "unavailable",
+      "operation_private_native_store": "supported",
+      "operation_private_provider_payload": "unavailable",
+      "operation_private_workspace": "unavailable",
+      "shared_mutation_fallback": "forbidden"
+    },
+    "plugin_route": "install",
+    "required_routes": [
+      "operation_private_config",
+      "operation_private_workspace",
+      "operation_private_native_store",
+      "operation_private_active_trials",
+      "operation_private_provider_payload",
+      "operation_local_plugin_registry",
+      "operation_local_gateway_or_process"
+    ],
+    "routes": {
+      "config_binding": "supported",
+      "config_validate": "supported",
+      "gateway_reload": "supported",
+      "memory_owner_route": "supported",
+      "operation_local_gateway_or_process": "unavailable",
+      "operation_local_plugin_registry": "unavailable",
+      "operation_private_active_trials": "supported",
+      "operation_private_config": "unavailable",
+      "operation_private_native_store": "supported",
+      "operation_private_provider_payload": "unavailable",
+      "operation_private_workspace": "unavailable",
+      "provider_build": "supported",
+      "provider_link_or_refresh": "supported",
+      "real_turn": "supported",
+      "runtime_inspect_route": "supported",
+      "shared_mutation_fallback": "forbidden",
+      "tool_catalog": "supported",
+      "tool_catalog_route": "supported"
+    },
+    "schema": "nollm.w2_05.target_capability_plan.v1",
+    "version": {
+      "argv_shape": [
+        "<HOME>\\AppData\\Local\\Programs\\nodejs\\openclaw.cmd",
+        "--version"
+      ],
+      "binding": {
+        "binding_mode": "OPENCLAW_CONFIG_PATH",
+        "config": "<HOME>\\.openclaw\\openclaw.json",
+        "openclaw_bin": "<HOME>\\AppData\\Local\\Programs\\nodejs\\openclaw.cmd",
+        "profile": null,
+        "python_executable": "<HOME>\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+        "repo_root": "C:\\Users\\chaos\\nollm",
+        "target_agent_id": "main",
+        "trial_id": "w2-05-live-probe",
+        "workspace": "<HOME>\\.openclaw"
+      },
+      "exit_code": 0,
+      "parsed_safe_result": null,
+      "schema": "nollm.w2_03.command_receipt.v1",
+      "started_at": "2026-06-28T14:40:15Z",
+      "stderr_bytes": 0,
+      "stderr_tail": "",
+      "stdout_bytes": 28,
+      "stdout_tail": "OpenClaw 2026.6.8 (844f405)\n"
+    }
+  },
+  "reason": "operation_isolation_route_unavailable",
+  "schema": "nollm.w2_05.apply_result.v1",
+  "shared_mutation_attempted": false,
+  "state": "blocked_pre_mutation"
+}

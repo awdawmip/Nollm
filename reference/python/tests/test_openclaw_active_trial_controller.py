@@ -6,7 +6,7 @@ import stat
 import sys
 from pathlib import Path
 
-from reference.python.scripts.run_openclaw_nollm_active_trial import DEFAULT_TRIAL_ID_PREFIX, TargetBinding, _diagnose, _plan, _redact_text, _tool_catalog_safe
+from reference.python.scripts.run_openclaw_nollm_active_trial import DEFAULT_TRIAL_ID_PREFIX, TargetBinding, _cmd_apply, _diagnose, _plan, _redact_text, _tool_catalog_safe
 
 
 def _fake_openclaw(tmp_path: Path, text: str) -> Path:
@@ -82,7 +82,7 @@ def test_target_binding_checks_raw_path_before_resolve(tmp_path: Path, monkeypat
         raise AssertionError("relative config accepted after cwd resolve")
 
 
-def test_target_binding_defaults_to_w2_04_trial_id(tmp_path: Path) -> None:
+def test_target_binding_defaults_to_w2_05_trial_id(tmp_path: Path) -> None:
     if os.name == "nt":
         openclaw = _fake_openclaw(tmp_path, "@echo off\necho fake\n")
     else:
@@ -175,3 +175,39 @@ def test_tool_catalog_with_file_or_exec_is_failure() -> None:
     assert safe is False
     assert "exec" in names and "file_fetch" in names
     assert status == "observed"
+
+
+def test_w2_05_apply_blocks_before_shared_mutation(tmp_path: Path) -> None:
+    log = tmp_path / "openclaw-args.log"
+    if os.name == "nt":
+        openclaw = _fake_openclaw(
+            tmp_path,
+            f"@echo off\r\necho %*>>\"{log}\"\r\nif \"%1\"==\"--version\" echo OpenClaw fake\r\nif \"%1\"==\"config\" echo validate\r\nif \"%1\"==\"plugins\" echo install inspect list\r\nif \"%1\"==\"gateway\" echo restart\r\nif \"%1\"==\"agent\" echo --message --json\r\n",
+        )
+    else:
+        openclaw = _fake_openclaw(
+            tmp_path,
+            f"printf '%s\\n' \"$*\" >> '{log}'\ncase \"$1\" in --version) echo OpenClaw fake;; config) echo validate;; plugins) echo install inspect list;; gateway) echo restart;; agent) echo --message --json;; esac\n",
+        )
+    binding = _binding(tmp_path, openclaw.resolve())
+    ns = type("Args", (), {
+        "openclaw_bin": str(binding.openclaw_bin),
+        "config": str(binding.config),
+        "profile": None,
+        "workspace": str(binding.workspace),
+        "repo_root": str(binding.repo_root),
+        "python_executable": str(binding.python_executable),
+        "out": str(binding.out),
+        "target_agent_id": binding.target_agent_id,
+        "trial_id": binding.trial_id,
+        "operation_id": "w2-05-20260628T000002Z-abcdef123456",
+    })()
+    assert _cmd_apply(ns) == 2
+    result = json.loads((binding.out / "apply.json").read_text(encoding="utf-8"))
+    assert result["schema"] == "nollm.w2_05.apply_result.v1"
+    assert result["state"] == "blocked_pre_mutation"
+    assert result["shared_mutation_attempted"] is False
+    calls = log.read_text(encoding="utf-8") if log.exists() else ""
+    assert "plugins install" not in calls
+    assert "gateway restart" not in calls
+    assert (binding.out / "operations" / "w2-05-20260628T000002Z-abcdef123456" / "operation.json").exists()

@@ -115,6 +115,9 @@ def main(argv: list[str] | None = None) -> int:
                 trial_id=trial_id,
                 identity=identity,
                 trial_root=trial_root,
+                operation_id=command.get("operation_id") if isinstance(command.get("operation_id"), str) else None,
+                turn_receipt_id=command.get("turn_receipt_id") if isinstance(command.get("turn_receipt_id"), str) else None,
+                event_source=str(command.get("event_source") or "preflight"),
             )
     elif cmd == "active-capture":
         if schema != ACTIVE_CAPTURE_SCHEMA:
@@ -137,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
                 trial_id=trial_id,
                 identity=identity,
                 trial_root=trial_root,
+                operation_id=command.get("operation_id") if isinstance(command.get("operation_id"), str) else None,
+                turn_receipt_id=command.get("turn_receipt_id") if isinstance(command.get("turn_receipt_id"), str) else None,
+                event_source=str(command.get("event_source") or "preflight"),
             )
     elif cmd == "active-trial-report":
         if schema != ACTIVE_TRIAL_REPORT_SCHEMA:

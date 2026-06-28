@@ -20,6 +20,7 @@ from nollm.openclaw_active_memory_adapter import (
     active_status,
     active_trial_report,
 )
+from nollm.w2_forensic import validate_operation_id, validate_trial_id
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "reference/python/scripts/run_openclaw_nollm_active_memory.py"
@@ -556,6 +557,64 @@ def test_p24_explicit_temporal_report_promotes_exact_note_not_location_identity(
     assert all("OK-W2-04-CAPTURE-RAIN-NOTE" not in claim for claim in claims)
     location = active_prepare(_native_store_root(tmp_path), "用户所在地在哪里？", {"max_facts": 4, "max_context_characters": 1400})
     assert all("所在地" not in fact["claim"] for fact in location["context"]["facts"])
+
+
+def test_w2_05_invalid_trial_id_rejected_before_path_creation(tmp_path: Path) -> None:
+    bad = "../escape"
+    with pytest.raises(ValueError):
+        validate_trial_id(bad)
+    with pytest.raises(ValueError):
+        active_prepare(
+            _native_store_root(tmp_path),
+            "我叫什么？",
+            {"max_facts": 4, "max_context_characters": 1400},
+            trial_id=bad,
+            trial_root=_trial_root(tmp_path),
+        )
+    assert not (tmp_path / "escape").exists()
+
+
+def test_w2_05_direct_preflight_does_not_create_agent_hook_receipt(tmp_path: Path) -> None:
+    operation_id = "w2-05-20260628T000000Z-abcdef123456"
+    validate_operation_id(operation_id)
+    trial_id = "w2-05-preflight"
+    active_prepare(
+        _native_store_root(tmp_path),
+        "明天东京天气如何？",
+        {"max_facts": 4, "max_context_characters": 1400},
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=_trial_root(tmp_path),
+        operation_id=operation_id,
+        turn_receipt_id="a" * 32,
+        event_source="preflight",
+    )
+    assert not (_trial_root(tmp_path) / trial_id / "turn-receipts").exists()
+
+
+def test_w2_05_agent_hook_creates_hash_only_turn_receipt(tmp_path: Path) -> None:
+    operation_id = "w2-05-20260628T000001Z-abcdef123456"
+    trial_id = "w2-05-agent-hook"
+    turn_receipt_id = "b" * 32
+    active_capture(
+        _native_store_root(tmp_path),
+        [{"role": "user", "content": "请记住：我的 W2-05 身份 marker 是 QUARTZ-IRON-15。"}],
+        success=True,
+        trial_id=trial_id,
+        identity=IDENTITY,
+        trial_root=_trial_root(tmp_path),
+        operation_id=operation_id,
+        turn_receipt_id=turn_receipt_id,
+        event_source="agent_hook",
+    )
+    receipt = _trial_root(tmp_path) / trial_id / "turn-receipts" / f"{turn_receipt_id}-capture.json"
+    assert receipt.exists()
+    data = json.loads(receipt.read_text(encoding="utf-8"))
+    raw = json.dumps(data, ensure_ascii=False)
+    assert data["schema"] == "nollm.w2_05.turn_receipt.v1"
+    assert data["event_source"] == "agent_hook"
+    assert "QUARTZ-IRON-15" not in raw
+    assert IDENTITY["agent_id"] not in raw
 
 
 def _run_active_subprocess(native_store_root: Path, trial_root: Path, payload: dict[str, Any]) -> dict[str, Any]:

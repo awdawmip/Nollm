@@ -67,4 +67,26 @@ describe("E5 config segment-aware legacy path rejection", () => {
     writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
     assert.throws(() => normalizeConfig(cfg), /trialId/i);
   });
+
+  it("W2-05 rejects path-like trialId", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp);
+    cfg.trialId = "../escape";
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.throws(() => normalizeConfig(cfg), /trialId/i);
+  });
+
+  it("W2-05 rejects malformed operationId", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp, { operationId: "w2-05-bad" });
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.throws(() => normalizeConfig(cfg), /operationId/i);
+  });
+
+  it("W2-05 accepts valid operationId", () => {
+    const tmp = makeTempDir();
+    const cfg = makeProviderConfig(tmp, { operationId: "w2-05-20260628T000003Z-abcdef123456" });
+    writeStubSidecar(cfg.nollmRepoRoot, STUB_STATUS);
+    assert.equal(normalizeConfig(cfg).operationId, "w2-05-20260628T000003Z-abcdef123456");
+  });
 });
