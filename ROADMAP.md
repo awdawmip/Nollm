@@ -42,6 +42,21 @@ G0 only adds these decided documents. G1-G8 remain separate implementation tasks
 The V4 drafts do not expand the stable V1 recall/tool surface and do not make
 `drift_class` a trust/status mapping.
 
+## Dream Geometry V2 Route
+
+The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_ATLAS_COVERAGE_KERNELS_20260629.md` supersedes older Anchor-oriented route language for new V2 work. V2 is parallel, not yet integrated, and does not replace V1 runtime during DG0.
+
+- DG0: Module boundaries and constitution.
+- DG1: Pure Geometry Kernel and coverage-kernel validation.
+- DG2: Field Dynamics with traces, covers, and internal gravity.
+- DG3: Cortex compiler contracts and fixed fixtures.
+- DG4: Pure geometry Query Probe / Recall Resolver.
+- DG5: Compression, revision, anti-resonance, and scale experiments.
+- DG6: Isolated adapter integration.
+- DG7: Runtime positive verification only after DG0-DG6 acceptance.
+
+W2/OpenClaw runtime work is historical background for this route, not the current V2 mainline and not a DG0 prerequisite.
+
 ## MT1-R9 Trust Boundary Correction
 
 MT1-R9 is a breaking archive/publication trust-boundary correction for the reference Python ingest path. It introduces archive manifest v3 `sources[]`, policy-derived source identity/state, SafeRoot-contained MT1 I/O, retired flat field writers, publish-journal-backed HEAD activation, repeated `_rN` recovery batches, and structured public failures. R1-R8 MT1 active artifacts require rearchive/reimport and are not a stable migration foundation.

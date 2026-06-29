@@ -14,7 +14,7 @@ It is designed to help LLMs write, read, locate, re-locate, audit, and recall st
 
 ---
 
-## Current architecture
+## Current architecture (V1 legacy state)
 
 Nollm uses:
 
@@ -564,3 +564,22 @@ Pure polygon overlap is permitted only inside the D1 geometry kernel as a
 deterministic geometric primitive. It must not be used as geometry recall,
 automatic card placement, automatic anchor creation, semantic scoring, or
 parent/children ownership.
+
+## Dream Geometry V2 Route Lock - Owner Authorized 2026-06-29
+
+The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_ATLAS_COVERAGE_KERNELS_20260629.md` is the owner-authorized target route for Dream Geometry V2 where it conflicts with older V4, V1, or Anchor-oriented descriptions about local charts, external Anchor entry, directed coverage kernels, Query Probe entry, and gravity visibility.
+
+This route lock applies only to new V2 paths. V1 and W-series runtime behavior remain frozen legacy paths unless a later task explicitly authorizes migration or adapter work.
+
+DG0 is limited to:
+
+- V2 module boundaries;
+- protocol constitution;
+- parallel no-runtime Python package scaffolding;
+- executable dependency firewall tests.
+
+DG0 does not authorize geometry recall, automatic placement, OpenClaw integration, plugin work, sidecar work, true memory writes, agent trials, rollback work, or runtime changes.
+
+V2 uses a local cellular atlas, directed `K↑ / K↓` (`K_up` / `K_down`) coverage kernels, Query Probe entry, exact Evidence fallback, and internal Field/Core gravity. Gravity is not an external anchor, query parameter, named index, or adapter-visible selector.
+
+Future Geometry Kernel work must be implemented and independently verified before any runtime, CLI, JSON tool, OpenClaw, or adapter task may depend on it.

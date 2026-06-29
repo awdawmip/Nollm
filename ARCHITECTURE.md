@@ -12,6 +12,18 @@ Required principles:
 
 Nollm is a layered rotating honeycomb memory field. Anchors are column fields / semantic fields crossing layers. Cards exist at every scale as durable memory expressions. Recall is scale scanning, not tree descent, and there is no absolute leaf layer.
 
+## Dream Geometry V2 (parallel, not yet integrated)
+
+The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_ATLAS_COVERAGE_KERNELS_20260629.md` defines the target Dream Geometry route where it conflicts with older Anchor-oriented V1 descriptions.
+
+V2 is being established as a parallel namespace and protocol boundary. It has not replaced V1, is not production recall, and is not an OpenClaw runtime path. The DG0 goal is pure module separation, stable contracts, and dependency firewalls.
+
+The V2 target is a local cellular atlas with directed `K↑ / K↓` (`K_up` / `K_down`) coverage kernels, verified chart transforms, temporary Query Probes, exact Evidence fallback, and internal Field/Core gravity. The old external Anchor selection path is V1 legacy and is not the V2 target architecture.
+
+Pure geometry verifiability comes before semantics, adapters, and runtime integration.
+
+## V1 Legacy Core / Runtime
+
 ## Layers
 
 ### Nollm Core
