@@ -4,6 +4,7 @@ from .types import GrowthTrace, TraceCompaction, cell_payload, float_token, stab
 
 
 def compact_traces(traces: tuple[GrowthTrace, ...]) -> tuple[TraceCompaction, ...]:
+    _reject_duplicate_trace_ids(trace.trace_id for trace in traces)
     groups: dict[str, list[GrowthTrace]] = {}
     for trace in traces:
         groups.setdefault(_canonical_key(trace), []).append(trace)
@@ -27,6 +28,10 @@ def compact_traces(traces: tuple[GrowthTrace, ...]) -> tuple[TraceCompaction, ..
 
 
 def expand_compaction(compaction: TraceCompaction, trace_index: dict[str, GrowthTrace]) -> tuple[GrowthTrace, ...]:
+    _reject_duplicate_trace_ids(compaction.expansion_manifest)
+    missing = tuple(trace_id for trace_id in compaction.expansion_manifest if trace_id not in trace_index)
+    if missing:
+        raise ValueError(f"missing trace_id: {missing[0]}")
     return tuple(trace_index[trace_id] for trace_id in compaction.expansion_manifest)
 
 
@@ -50,3 +55,11 @@ def _canonical_key(trace: GrowthTrace) -> str:
             "geometry_refs": trace.geometry_refs,
         }
     )
+
+
+def _reject_duplicate_trace_ids(trace_ids) -> None:
+    seen: set[str] = set()
+    for trace_id in trace_ids:
+        if trace_id in seen:
+            raise ValueError("duplicate trace_id")
+        seen.add(trace_id)

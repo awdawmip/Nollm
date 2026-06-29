@@ -9,6 +9,7 @@ from .types import GravityContribution, GravityPolicy, GravitySnapshot, cell_ref
 
 
 def calculate_gravity_snapshot(covers, policy: GravityPolicy = GravityPolicy()) -> GravitySnapshot:
+    _reject_duplicate_cover_ids(covers)
     active = tuple(sorted((cover for cover in covers if cover.state in {CoverState.stable, CoverState.crystallized}), key=lambda cover: cover.cover_id))
     if not active:
         return GravitySnapshot(stable_id("gravity_snapshot:v2", {"covers": (), "policy": policy.version}), None, (), (), policy.policy_id, policy.version)
@@ -42,3 +43,11 @@ def _contribution(cover, covers, policy: GravityPolicy) -> GravityContribution:
     )
     potential = support_term - sum(value for _, value in penalties)
     return GravityContribution(cover.cover_id, f"{cover.support_cell.chart_id}:{cover.support_cell.axial.q}:{cover.support_cell.axial.r}", potential, support_term, penalties, policy.policy_id)
+
+
+def _reject_duplicate_cover_ids(covers) -> None:
+    seen: set[str] = set()
+    for cover in covers:
+        if cover.cover_id in seen:
+            raise ValueError("duplicate cover_id")
+        seen.add(cover.cover_id)

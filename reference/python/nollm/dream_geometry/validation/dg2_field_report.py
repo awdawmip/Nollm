@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import platform
+from dataclasses import replace
 from pathlib import Path
 
-from nollm.dream_geometry.field import build_local_covers, calculate_gravity_snapshot, compact_traces, expand_compaction, propagate_trace, seed_to_trace
+from nollm.dream_geometry.field import CoverPolicy, build_local_covers, calculate_gravity_snapshot, compact_traces, expand_compaction, propagate_trace, seed_to_trace
 from nollm.dream_geometry.field.types import GrowthTrace, TraceSeed
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
@@ -23,6 +24,7 @@ def build_report() -> str:
     gravity = fixtures["gravity"]
     compacted = fixtures["compacted"]
     expanded = fixtures["expanded"]
+    integrity = fixtures["integrity"]
     lines = [
         "# DG2 Field Dynamics Baseline Report",
         "",
@@ -79,6 +81,17 @@ def build_report() -> str:
             f"- compaction_count: `{len(compacted)}`",
             f"- expanded_trace_ids: `{tuple(trace.trace_id for trace in expanded)}`",
             "",
+            "## Integrity Checks",
+            "",
+            "| check | result |",
+            "|---|---|",
+        ]
+    )
+    for name, result in integrity:
+        lines.append(f"| {name} | {result} |")
+    lines.extend(
+        [
+            "",
             "## Limits",
             "",
             "- DG2 does not implement Cortex, Query Probe, Recall Resolver, runtime, OpenClaw, adapter, CLI, memory, Evidence persistence, ledger writes, or final parameter selection.",
@@ -119,7 +132,40 @@ def _fixtures() -> dict[str, object]:
     duplicate_peer = GrowthTrace(**{**duplicate.__dict__, "trace_id": "t6"})
     compacted = compact_traces((duplicate, duplicate_peer))
     expanded = expand_compaction(compacted[0], {"t5": duplicate, "t6": duplicate_peer}) if compacted else ()
-    return {"propagation": propagation, "covers": covers, "gravity": gravity, "compacted": compacted, "expanded": expanded}
+    integrity = _integrity_checks(cell)
+    return {"propagation": propagation, "covers": covers, "gravity": gravity, "compacted": compacted, "expanded": expanded, "integrity": integrity}
+
+
+def _integrity_checks(cell) -> tuple[tuple[str, str], ...]:
+    tiny_parent = replace(seed_to_trace(_seed("tiny", cell, "location", "tiny-support")), mass=1e-13)
+    tiny_distribution = compute_distribution(cell, (cell,), CoverageDirection.fine_to_coarse)
+    tiny = propagate_trace(tiny_parent, tiny_distribution)
+    tiny_result = "pass" if len(tiny.derived_traces) == 1 and tiny.derived_traces[0].mass == 1e-13 and tiny.residual.mass == 0.0 else "fail"
+
+    duplicate_trace = _trace("dup", cell, "location", "s1")
+    duplicate_trace_result = _raises_value_error(lambda: build_local_covers((duplicate_trace, duplicate_trace)), "duplicate trace_id")
+
+    stable_cover = build_local_covers((_trace("g1", cell, "location", "s1"), _trace("g2", cell, "phenomenon", "s2")))[0]
+    duplicate_cover_result = _raises_value_error(lambda: calculate_gravity_snapshot((stable_cover, stable_cover)), "duplicate cover_id")
+
+    policy_a = build_local_covers((_trace("p1", cell, "location", "s1"), _trace("p2", cell, "phenomenon", "s2")), CoverPolicy(policy_id="a"))[0]
+    policy_b = build_local_covers((_trace("p1", cell, "location", "s1"), _trace("p2", cell, "phenomenon", "s2")), CoverPolicy(policy_id="b"))[0]
+    policy_result = "pass" if policy_a.policy_id == "a" and policy_b.policy_id == "b" and policy_a.cover_id != policy_b.cover_id else "fail"
+
+    return (
+        ("tiny positive mass retained", tiny_result),
+        ("duplicate trace rejected", duplicate_trace_result),
+        ("duplicate cover rejected", duplicate_cover_result),
+        ("policy identity visible", policy_result),
+    )
+
+
+def _raises_value_error(callback, expected: str) -> str:
+    try:
+        callback()
+    except ValueError as exc:
+        return "pass" if expected in str(exc) else "fail"
+    return "fail"
 
 
 def _seed(trace_id: str, cell, axis: str, support_key: str) -> TraceSeed:

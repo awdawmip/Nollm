@@ -14,6 +14,9 @@ derived_mass + residual_mass = parent_mass
 ```
 
 within DG1 float tolerance. Residual reasons remain explicit.
+All positive DG1 kernel mass is materialized as derived trace mass unless it is
+explicitly residualized. DG2 does not use geometry coordinate tolerance to hide
+small positive trace mass.
 
 Cross-chart propagation requires a caller-supplied verified chart link whose
 source and target fingerprints exactly match the source and target cells.
@@ -24,15 +27,24 @@ Cover aggregation is local to one `(chart_geometry_fingerprint, cell_ref)`.
 Stable eligibility is policy-versioned and requires mass, independent support,
 axis diversity, no provisional mass, bounded genericity / ambiguity / conflict,
 and sufficient stability.
+The provisional, two-support, and two-axis floors are structural hard rules and
+cannot be relaxed by `CoverPolicy`. Cover inputs are trace identity sets; a
+duplicate `trace_id` is rejected instead of deduplicated or counted twice.
+`CoarseCover` keeps `policy_id` and `policy_version`, and cover identity includes
+the full policy semantic payload.
 
 ## Gravity
 
 Gravity is an internal Field snapshot. It is computed only from stable or
 crystallized covers and records support and penalty terms separately. It is not
 an external anchor, index, query parameter, recall selector, or truth score.
+Gravity snapshot inputs are cover identity sets; duplicate `cover_id` is
+rejected.
 
 ## Compaction
 
 Trace compaction is a reversible view. It groups only fully compatible traces
 and expands back to original member trace IDs. It does not delete or mutate
 member traces.
+Compaction rejects duplicate trace identities before grouping, and expansion
+rejects duplicate or missing manifest IDs.

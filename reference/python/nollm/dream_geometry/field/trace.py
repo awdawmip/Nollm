@@ -1,5 +1,7 @@
 """DG2 deterministic Growth Trace propagation."""
 
+from math import fsum
+
 from nollm.dream_geometry.geometry.coverage import CoverageDirection
 from nollm.dream_geometry.geometry.types import GeometryTolerance
 from nollm.dream_geometry.protocol.contracts import GrowthBasis, TraceState
@@ -51,7 +53,7 @@ def propagate_trace(
     derived = []
     for kernel in distribution.kernels:
         mass = parent_trace.mass * kernel.weight
-        if mass <= tolerance.coordinate_abs_tol:
+        if mass <= 0.0:
             continue
         payload = {
             "parent_trace_id": parent_trace.trace_id,
@@ -98,8 +100,8 @@ def propagate_trace(
         reasons=tuple(reason.value for reason in distribution.residual.reasons),
         geometry_refs=(geometry_ref,),
     )
-    derived_mass = sum(trace.mass for trace in derived_traces)
-    accounting_error = abs(derived_mass + residual.mass - parent_trace.mass)
+    derived_mass = fsum(trace.mass for trace in derived_traces)
+    accounting_error = abs(fsum((derived_mass, residual.mass, -parent_trace.mass)))
     limit = tolerance.coordinate_abs_tol + tolerance.coordinate_rel_tol * parent_trace.mass
     if accounting_error > limit:
         raise ValueError("trace propagation violates mass accounting")

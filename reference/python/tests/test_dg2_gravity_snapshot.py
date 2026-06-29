@@ -1,5 +1,7 @@
 from dataclasses import replace
 
+import pytest
+
 from nollm.dream_geometry.field import GravityPolicy, build_local_covers, calculate_gravity_snapshot
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
@@ -29,6 +31,12 @@ def test_dg2_g3_order_invariance() -> None:
     first = _stable_cover(_trace("t1", "location", "s1"), _trace("t2", "phenomenon", "s2"))
     second = _stable_cover(_trace("t3", "location", "s3", cell=make_hex_cell(LocalChart("cover", 0, 1.0, 0, Vec2(0, 0)), AxialCoord(2, 0))), _trace("t4", "phenomenon", "s4", cell=make_hex_cell(LocalChart("cover", 0, 1.0, 0, Vec2(0, 0)), AxialCoord(2, 0))))
     assert calculate_gravity_snapshot((first, second)).snapshot_id == calculate_gravity_snapshot((second, first)).snapshot_id
+
+
+def test_dg2_1_t205_duplicate_cover_id_rejected() -> None:
+    cover = _stable_cover(_trace("t1", "location", "s1"), _trace("t2", "phenomenon", "s2"))
+    with pytest.raises(ValueError, match="duplicate cover_id"):
+        calculate_gravity_snapshot((cover, cover))
 
 
 def test_dg2_g4_g5_penalties_do_not_increase_potential() -> None:

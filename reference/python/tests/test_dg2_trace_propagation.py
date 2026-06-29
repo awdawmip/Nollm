@@ -55,6 +55,19 @@ def test_dg2_t1_single_hop_conserves_mass_with_residual() -> None:
     assert result.residual.reasons == ("threshold_truncation",)
 
 
+def test_dg2_1_t201_tiny_positive_mass_materializes() -> None:
+    chart = _chart("tiny", 0, 1.0)
+    cell = make_hex_cell(chart, AxialCoord(0, 0))
+    parent = replace(seed_to_trace(_seed(cell)), mass=1e-13)
+    distribution = compute_distribution(cell, (cell,), CoverageDirection.fine_to_coarse)
+    result = propagate_trace(parent, distribution)
+    assert len(result.derived_traces) == 1
+    assert result.derived_traces[0].mass == 1e-13
+    assert result.residual.mass == 0.0
+    assert result.derived_mass + result.residual.mass == result.parent_mass
+    assert result.accounting_error == 0.0
+
+
 def test_dg2_t3_target_order_does_not_change_output_ids() -> None:
     fine = _chart("fine", 1, 0.5)
     coarse = _chart("coarse", 0, 1.0)

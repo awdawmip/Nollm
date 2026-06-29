@@ -2,7 +2,7 @@ from dataclasses import replace
 
 import pytest
 
-from nollm.dream_geometry.field import CoverPolicy, CrystallizationDecision, build_local_covers, crystallize_cover
+from nollm.dream_geometry.field import CoverPolicy, CrystallizationDecision, build_local_covers, crystallize_cover, evaluate_cover_eligibility
 from nollm.dream_geometry.field.types import GrowthTrace
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
@@ -59,6 +59,61 @@ def test_dg2_c4_provisional_mass_blocks_stability() -> None:
     cover = build_local_covers((_trace("t1", "location", "s1"), _trace("t2", "phenomenon", "s2", state=TraceState.proposed)))[0]
     assert cover.state is CoverState.candidate
     assert "provisional_mass_present" in cover.eligibility_reasons
+
+
+def test_dg2_1_t202_policy_cannot_relax_structural_floors() -> None:
+    with pytest.raises(ValueError, match="min_independent_support"):
+        CoverPolicy(min_independent_support=1)
+    with pytest.raises(ValueError, match="min_axes"):
+        CoverPolicy(min_axes=1)
+    with pytest.raises(ValueError, match="max_provisional_mass"):
+        CoverPolicy(max_provisional_mass=0.1)
+
+
+def test_dg2_1_t203_provisional_never_crystallizes() -> None:
+    cover = build_local_covers(
+        (
+            _trace("t1", "location", "s1"),
+            _trace("t2", "phenomenon", "s2", basis=GrowthBasis.provisional_llm_generalization, basis_refs=("basis",), state=TraceState.proposed),
+        )
+    )[0]
+    assert cover.state is CoverState.candidate
+    assert "provisional_mass_present" in cover.eligibility_reasons
+    with pytest.raises(ValueError, match="stable covers"):
+        crystallize_cover(cover, CrystallizationDecision("d-provisional", cover.cover_id, True, "operator", ("basis",)))
+
+
+def test_dg2_1_t204_duplicate_trace_id_rejected_for_covers() -> None:
+    trace = _trace("same", "location", "s1")
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        build_local_covers((trace, trace))
+    forged = replace(trace, axis="phenomenon", support_key="s2")
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        build_local_covers((trace, forged))
+
+
+def test_dg2_1_t206_policy_identity_enters_cover_id() -> None:
+    traces = (_trace("t1", "location", "s1", mass=0.3), _trace("t2", "phenomenon", "s2", mass=0.3))
+    strict = build_local_covers(traces, CoverPolicy(policy_id="strict", version="1", min_total_mass=1.0))[0]
+    loose = build_local_covers(traces, CoverPolicy(policy_id="loose", version="1", min_total_mass=0.1))[0]
+    assert strict.cover_id != loose.cover_id
+    assert strict.policy_id == "strict"
+    assert loose.policy_id == "loose"
+    assert strict.state != loose.state
+
+
+def test_dg2_1_t206_policy_semantics_enter_cover_id() -> None:
+    traces = (_trace("t1", "location", "s1", mass=0.3), _trace("t2", "phenomenon", "s2", mass=0.3))
+    lower = build_local_covers(traces, CoverPolicy(policy_id="same", version="1", min_total_mass=0.1))[0]
+    higher = build_local_covers(traces, CoverPolicy(policy_id="same", version="1", min_total_mass=1.0))[0]
+    assert lower.cover_id != higher.cover_id
+
+
+def test_dg2_1_t207_policy_mismatch_rejected() -> None:
+    traces = (_trace("t1", "location", "s1"), _trace("t2", "phenomenon", "s2"))
+    cover = build_local_covers(traces, CoverPolicy(policy_id="strict", version="1"))[0]
+    with pytest.raises(ValueError, match="policy identity mismatch"):
+        evaluate_cover_eligibility(cover, CoverPolicy(policy_id="loose", version="1"), traces)
 
 
 def test_dg2_c5_all_quality_failures_are_reported() -> None:

@@ -1,6 +1,9 @@
 from dataclasses import replace
 
+import pytest
+
 from nollm.dream_geometry.field import compact_traces, expand_compaction
+from nollm.dream_geometry.field.types import TraceCompaction
 from nollm.dream_geometry.protocol.contracts import TraceState
 from tests.test_dg2_cover_lifecycle import _trace
 
@@ -14,6 +17,25 @@ def test_dg2_p1_p2_compatible_traces_compact_and_expand_losslessly() -> None:
     expanded = expand_compaction(compacted[0], {"t1": first, "t2": second})
     assert tuple(trace.trace_id for trace in expanded) == ("t1", "t2")
     assert compacted[0].aggregate_mass == first.mass + second.mass
+
+
+def test_dg2_1_t204_duplicate_trace_id_rejected_for_compaction() -> None:
+    trace = _trace("same", "location", "s1")
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        compact_traces((trace, trace))
+    forged = replace(trace, axis="phenomenon", support_key="s2")
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        compact_traces((trace, forged))
+
+
+def test_dg2_1_t208_expand_rejects_bad_manifest() -> None:
+    first = _trace("t1", "location", "s1")
+    duplicate_manifest = TraceCompaction("c1", ("t1",), "k", first.mass, ("t1", "t1"))
+    missing_manifest = TraceCompaction("c2", ("t1", "missing"), "k", first.mass, ("t1", "missing"))
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        expand_compaction(duplicate_manifest, {"t1": first})
+    with pytest.raises(ValueError, match="missing trace_id"):
+        expand_compaction(missing_manifest, {"t1": first})
 
 
 def test_dg2_p3_different_boundaries_do_not_merge() -> None:

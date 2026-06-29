@@ -1,21 +1,23 @@
 """DG2 local Coarse Cover lifecycle."""
 
 from dataclasses import replace
+from math import fsum
 
 from nollm.dream_geometry.protocol.contracts import CoverState, GrowthBasis, TraceState
 
-from .types import CoarseCover, CoverEligibility, CoverPolicy, CrystallizationDecision, cell_payload, cell_ref_key, stable_id
+from .types import CoarseCover, CoverEligibility, CoverPolicy, CrystallizationDecision, policy_payload, stable_id
 
 
 def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[CoarseCover, ...]:
+    _reject_duplicate_trace_ids(traces)
     groups: dict[tuple[object, object], list] = {}
     for trace in traces:
         groups.setdefault((trace.cell.chart_fingerprint, trace.cell.cell_ref), []).append(trace)
     covers = []
     for (fingerprint, cell_ref), members in groups.items():
         ordered = sorted(members, key=lambda trace: trace.trace_id)
-        mass = sum(trace.mass for trace in ordered)
-        provisional_mass = sum(trace.mass for trace in ordered if trace.state is not TraceState.accepted or trace.basis is GrowthBasis.provisional_llm_generalization)
+        mass = fsum(trace.mass for trace in ordered)
+        provisional_mass = fsum(trace.mass for trace in ordered if trace.state is not TraceState.accepted or trace.basis is GrowthBasis.provisional_llm_generalization)
         genericity = _weighted(ordered, "genericity")
         ambiguity = _weighted(ordered, "ambiguity")
         conflict = _weighted(ordered, "conflict")
@@ -24,7 +26,9 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
             "chart": str(fingerprint),
             "cell": str(cell_ref),
             "trace_ids": tuple(trace.trace_id for trace in ordered),
-            "policy": policy.version,
+            "policy_id": policy.policy_id,
+            "policy_version": policy.version,
+            "policy_payload": policy_payload(policy),
         }
         draft = CoarseCover(
             cover_id=stable_id("cover:v2", payload),
@@ -41,6 +45,7 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
             conflict=conflict,
             stability=stability,
             state=CoverState.candidate,
+            policy_id=policy.policy_id,
             policy_version=policy.version,
             eligibility_reasons=(),
         )
@@ -51,6 +56,8 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
 
 
 def evaluate_cover_eligibility(cover: CoarseCover, policy: CoverPolicy, traces=()) -> CoverEligibility:
+    if cover.policy_id != policy.policy_id or cover.policy_version != policy.version:
+        raise ValueError("policy identity mismatch")
     reasons: list[str] = []
     if cover.mass < policy.min_total_mass:
         reasons.append("mass_below_min_total")
@@ -58,7 +65,7 @@ def evaluate_cover_eligibility(cover: CoarseCover, policy: CoverPolicy, traces=(
         reasons.append("insufficient_independent_support")
     if len(cover.axes_present) < policy.min_axes:
         reasons.append("insufficient_axis_diversity")
-    if cover.provisional_mass > policy.max_provisional_mass:
+    if cover.provisional_mass > 0.0:
         reasons.append("provisional_mass_present")
     if cover.genericity > policy.max_genericity:
         reasons.append("genericity_above_limit")
@@ -89,7 +96,15 @@ def crystallize_cover(cover: CoarseCover, decision: CrystallizationDecision) -> 
 
 
 def _weighted(traces, attr: str) -> float:
-    total = sum(trace.mass for trace in traces)
+    total = fsum(trace.mass for trace in traces)
     if total <= 0.0:
         return 0.0
-    return sum(trace.mass * getattr(trace, attr) for trace in traces) / total
+    return fsum(trace.mass * getattr(trace, attr) for trace in traces) / total
+
+
+def _reject_duplicate_trace_ids(traces) -> None:
+    seen: set[str] = set()
+    for trace in traces:
+        if trace.trace_id in seen:
+            raise ValueError("duplicate trace_id")
+        seen.add(trace.trace_id)

@@ -148,8 +148,14 @@ class CoverPolicy:
         _require_id(self.version, "version")
         _require_non_negative(self.min_total_mass, "min_total_mass")
         _require_non_negative_int(self.min_independent_support, "min_independent_support")
+        if self.min_independent_support < 2:
+            raise ValueError("min_independent_support must be at least 2")
         _require_non_negative_int(self.min_axes, "min_axes")
+        if self.min_axes < 2:
+            raise ValueError("min_axes must be at least 2")
         _require_non_negative(self.max_provisional_mass, "max_provisional_mass")
+        if self.max_provisional_mass != 0.0:
+            raise ValueError("max_provisional_mass must be 0.0")
         _require_unit(self.max_genericity, "max_genericity")
         _require_unit(self.max_ambiguity, "max_ambiguity")
         _require_unit(self.max_conflict, "max_conflict")
@@ -178,6 +184,7 @@ class CoarseCover:
     conflict: float
     stability: int
     state: CoverState
+    policy_id: str
     policy_version: str
     eligibility_reasons: tuple[str, ...]
 
@@ -189,6 +196,7 @@ class CoarseCover:
         _require_unit(self.ambiguity, "ambiguity")
         _require_unit(self.conflict, "conflict")
         _require_non_negative_int(self.stability, "stability")
+        _require_id(self.policy_id, "policy_id")
         _require_id(self.policy_version, "policy_version")
 
 
@@ -303,6 +311,21 @@ def chart_fingerprint_payload(fingerprint: object) -> object:
 
 def cell_payload(cell: HexCell) -> object:
     return {"cell_ref": cell_ref_key(cell), "chart_fingerprint": chart_fingerprint_payload(cell.chart_fingerprint)}
+
+
+def policy_payload(policy: CoverPolicy) -> object:
+    return {
+        "policy_id": policy.policy_id,
+        "policy_version": policy.version,
+        "min_total_mass": float_token(policy.min_total_mass),
+        "min_independent_support": policy.min_independent_support,
+        "min_axes": policy.min_axes,
+        "max_provisional_mass": float_token(policy.max_provisional_mass),
+        "max_genericity": float_token(policy.max_genericity),
+        "max_ambiguity": float_token(policy.max_ambiguity),
+        "max_conflict": float_token(policy.max_conflict),
+        "min_stability": policy.min_stability,
+    }
 
 
 def float_token(value: float) -> str:
