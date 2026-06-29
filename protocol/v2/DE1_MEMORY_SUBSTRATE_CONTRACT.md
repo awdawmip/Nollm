@@ -39,5 +39,21 @@ Same ID and same payload is idempotent. Same ID and different payload is
 rejected. Closing and reopening the root must reconstruct objects, ledger order,
 and usage-state projection.
 
+All durable DE1 record IDs are globally unique within one store root. The same
+ID cannot name both a Dream Shard and an Interpretation, Revision Thread, or
+Usage State Transition. This prevents usage-state and revision references from
+becoming epistemically ambiguous; it is not a user identity or authorization
+rule.
+
+Every durable object must have exactly one matching ledger event, and every
+ledger event must point to exactly one matching object with the expected record
+type, record ID, payload key, and filename position. This ledger closure is a
+file-format consistency rule for DE1 reads, not a signature, hash chain, or
+anti-tamper promise.
+
+An already accepted `UsageStateTransition` can be retried with the same
+canonical payload and transition ID. Such a retry is idempotent and does not
+re-evaluate the historical `expected_from_state` against the current projection.
+
 Relative-time expressions are preserved as expressions with optional reference
 instants; DE1 does not normalize them into event facts.

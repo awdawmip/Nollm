@@ -19,3 +19,12 @@ transition appends a ledger event.
 DE1 IDs are caller-provided stable record identities. They are not credentials.
 Payload hashes are deterministic equivalence keys for idempotency and reports;
 they are not signatures.
+
+Within a store root, durable record IDs are global across shards,
+interpretations, revision threads, and usage-state transitions. References in
+revision and usage state therefore resolve to one epistemic object rather than
+depending on bucket order.
+
+Ledger closure means that DE1 can explain every accepted durable object through
+one corresponding ledger event, and every ledger event through one object. It is
+ordinary format validation, not repair, authentication, or tamper resistance.

@@ -18,3 +18,8 @@ runtime, CLI, adapter, OpenClaw plugin, or real memory store.
 DG1 Geometry and DG2 Field are sealed dependencies. DE1 may preserve opaque
 string refs that future stages can use, but it does not import Geometry or
 Field.
+
+DE1.1 closes identity and ledger consistency only: transition retry
+idempotency, bidirectional object/ledger closure, and global durable record ID
+uniqueness. These are store-format and epistemic-identity rules, not security,
+locking, crash recovery, or runtime integration.

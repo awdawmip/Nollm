@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import tempfile
+from hashlib import sha256
 from pathlib import Path
 
 from nollm.dream_geometry.evidence import (
@@ -16,8 +18,10 @@ from nollm.dream_geometry.evidence import (
     RevisionThread,
     TemporalContext,
     UsageStateTransition,
+    canonical_json,
     open_store,
 )
+from nollm.dream_geometry.evidence.store import MemorySubstrateStore
 from nollm.dream_geometry.protocol.contracts import (
     InterpretationAuthoringMode,
     InterpretationKind,
@@ -123,8 +127,10 @@ def _run_fixtures(root: Path) -> dict[str, object]:
     )
     for transition in transitions:
         store.record_usage_transition(transition)
+    transition_retry = store.record_usage_transition(transitions[0]).idempotent
     idempotent = store.put_dream_shard(shard_a).idempotent
     conflict = _raises(lambda: store.put_dream_shard(_shard(shard_a.shard_id, "different", "2026-06-29T08:00:00+08:00", "turn:rain-1")))
+    transition_conflict = _raises(lambda: store.record_usage_transition(UsageStateTransition(transitions[0].transition_id, shard_a.shard_id, UsageState.active, UsageState.retired, (), "2026-06-29T09:00:00+08:00")))
     missing_subject = _raises(lambda: store.put_interpretation(_interpretation("interpretation:missing", "shard:missing")))
     cycle = _raises(
         lambda: RevisionThread(
@@ -137,7 +143,14 @@ def _run_fixtures(root: Path) -> dict[str, object]:
             (),
         )
     )
+    identity_conflict = _raises(lambda: store.put_interpretation(_interpretation(shard_a.shard_id, shard_a.shard_id)))
     reopened = open_store(root)
+    orphan_root = root / "orphan-check"
+    orphan_store = open_store(orphan_root)
+    orphan_store.put_dream_shard(_shard("shard:base", "base", "2026-06-29T08:00:00+08:00", "turn:base"))
+    orphan = _shard("shard:orphan", "orphan", "2026-06-29T08:00:00+08:00", "turn:orphan")
+    _write_manual_record(orphan_root, "shards", orphan.shard_id, json.loads(canonical_json(orphan)))
+    orphan_rejected = _raises(lambda: MemorySubstrateStore(orphan_root))
     projection = tuple(sorted((record_id, state.value) for record_id, state in reopened.state_projection().items()))
     results = (
         ("F-A same text distinct occurrences", "pass" if reopened.get_dream_shard(shard_a.shard_id).content == reopened.get_dream_shard(shard_b.shard_id).content else "fail"),
@@ -147,9 +160,10 @@ def _run_fixtures(root: Path) -> dict[str, object]:
         ("F-E state history round-trip", "pass" if len(reopened.read_ledger()) == 8 else "fail"),
         ("F-F missing interpretation subject rejected", "pass" if missing_subject else "fail"),
         ("F-G supersedes cycle rejected", "pass" if cycle else "fail"),
-        ("F-H idempotent retry and payload conflict", "pass" if idempotent and conflict else "fail"),
-        ("F-I reopen validates ledger references", "pass"),
+        ("F-H idempotent retry and payload conflict", "pass" if idempotent and transition_retry and conflict and transition_conflict else "fail"),
+        ("F-I reopen validates ledger closure", "pass" if orphan_rejected else "fail"),
         ("F-J opaque field-style refs preserved", "pass" if "basis:field-style-opaque-ref" in reopened.get_interpretation(interpretation.interpretation_id).basis_refs else "fail"),
+        ("F-K global record identity enforced", "pass" if identity_conflict else "fail"),
     )
     return {
         "results": results,
@@ -182,6 +196,12 @@ def _shard(shard_id: str, content: str, captured_at: str, context_ref: str) -> D
 
 def _interpretation(interpretation_id: str, subject_shard_id: str) -> InterpretationRecord:
     return InterpretationRecord(interpretation_id, subject_shard_id, InterpretationKind.summary, "missing subject", InterpretationAuthoringMode.llm_proposed, (), (), UsageState.tentative)
+
+
+def _write_manual_record(root: Path, bucket: str, record_id: str, payload: dict) -> None:
+    path = root / bucket / (sha256(record_id.encode("utf-8")).hexdigest() + ".json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")
 
 
 if __name__ == "__main__":

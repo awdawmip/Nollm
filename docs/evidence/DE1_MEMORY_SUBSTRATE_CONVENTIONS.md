@@ -11,3 +11,9 @@ The store is single-process, single-writer, and file-first. It uses canonical
 JSON and JSONL ledger events for deterministic replay in synthetic and local
 tests. It does not provide concurrency, migration, external verification,
 authorization, redaction, or deletion workflows.
+
+Every durable record must have one matching ledger event, and every ledger event
+must resolve back to one durable record. Reopen fails on orphan objects, orphan
+events, duplicate events, filename/payload ID mismatch, or cross-bucket record
+ID collision. These checks preserve the memory history spine; they do not claim
+cryptographic protection against manual edits.

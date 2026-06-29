@@ -40,6 +40,16 @@ class WriteResult:
     ledger_event_id: str | None
 
 
+@dataclass(frozen=True)
+class RecordInventoryItem:
+    bucket: str
+    record_type: str
+    record_id: str
+    path: Path
+    record: object
+    payload_key: str
+
+
 class MemorySubstrateStore:
     """Single-process, single-writer, file-first DE1 store."""
 
@@ -76,6 +86,10 @@ class MemorySubstrateStore:
         return self._put_record("revision_threads", thread.thread_id, thread, LedgerEventKind.revision_thread_recorded)
 
     def record_usage_transition(self, transition: UsageStateTransition) -> WriteResult:
+        existing = self._existing_record_result("state_transitions", transition.transition_id, transition)
+        if existing is not None:
+            return existing
+        self._reject_global_id_conflict("state_transitions", transition.transition_id)
         if not self._record_exists(transition.target_record_id):
             raise ValueError("usage transition target missing")
         current = self.get_usage_state(transition.target_record_id)
@@ -129,19 +143,32 @@ class MemorySubstrateStore:
         return projection
 
     def _put_record(self, bucket: str, record_id: str, record: object, event_kind: LedgerEventKind) -> WriteResult:
+        existing = self._existing_record_result(bucket, record_id, record)
+        if existing is not None:
+            return existing
+        self._reject_global_id_conflict(bucket, record_id)
         path = self._record_path(bucket, record_id)
         rendered = canonical_json(record)
         key = payload_key(record)
-        if path.exists():
-            existing = path.read_text(encoding="utf-8")
-            if existing == rendered:
-                return WriteResult(record_id, False, True, None)
-            raise ValueError("same record_id different payload")
         _atomic_write_text(path, rendered)
         event = self._make_event(event_kind, record_id, key, _record_recorded_at(record))
         with self._ledger_path.open("a", encoding="utf-8", newline="\n") as handle:
             handle.write(canonical_json(event) + "\n")
         return WriteResult(record_id, True, False, event.event_id)
+
+    def _existing_record_result(self, bucket: str, record_id: str, record: object) -> WriteResult | None:
+        path = self._record_path(bucket, record_id)
+        if not path.exists():
+            return None
+        existing = path.read_text(encoding="utf-8")
+        if existing == canonical_json(record):
+            return WriteResult(record_id, False, True, None)
+        raise ValueError("same record_id different payload")
+
+    def _reject_global_id_conflict(self, bucket: str, record_id: str) -> None:
+        for other_bucket in ("shards", "interpretations", "revision_threads", "state_transitions"):
+            if other_bucket != bucket and self._record_path(other_bucket, record_id).exists():
+                raise ValueError("record_id conflict")
 
     def _make_event(self, event_kind: LedgerEventKind, record_id: str, key: str, recorded_at: str | None) -> LedgerEvent:
         ordinal = len(self.read_ledger())
@@ -190,6 +217,9 @@ class MemorySubstrateStore:
         _atomic_write_text(self._format_path, json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True))
 
     def _validate_store(self) -> None:
+        inventory = self._record_inventory()
+        events = self.read_ledger()
+        self._validate_ledger_closure(inventory, events)
         for interpretation in self._load_all("interpretations", _interpretation_from_payload, "interpretation_record"):
             if not self._record_path("shards", interpretation.subject_shard_id).exists():
                 raise ValueError("interpretation subject shard missing")
@@ -197,16 +227,51 @@ class MemorySubstrateStore:
             for member in thread.member_record_ids:
                 if not self._record_exists(member):
                     raise ValueError("revision member missing")
-        events = self.read_ledger()
+        self.state_projection()
+
+    def _record_inventory(self) -> dict[str, RecordInventoryItem]:
+        inventory: dict[str, RecordInventoryItem] = {}
+        for bucket, record_type in (
+            ("shards", "dream_shard"),
+            ("interpretations", "interpretation_record"),
+            ("revision_threads", "revision_thread"),
+            ("state_transitions", "usage_state_transition"),
+        ):
+            for path in sorted(self._paths[bucket].glob("*.json")):
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                if payload.get("record_type") != record_type:
+                    raise ValueError("record type mismatch")
+                record = _record_from_payload(record_type, payload)
+                current_record_id = _durable_record_id(record)
+                expected_path = self._record_path(bucket, current_record_id)
+                if path != expected_path and expected_path.exists():
+                    raise ValueError("duplicate record_id")
+                if path != expected_path:
+                    raise ValueError("record filename does not match payload record_id")
+                if current_record_id in inventory:
+                    raise ValueError("duplicate record_id")
+                inventory[current_record_id] = RecordInventoryItem(bucket, record_type, current_record_id, path, record, payload_key(record))
+        return inventory
+
+    def _validate_ledger_closure(self, inventory: dict[str, RecordInventoryItem], events: tuple[LedgerEvent, ...]) -> None:
+        event_record_ids: set[str] = set()
         for expected, event in enumerate(events):
             if event.ordinal != expected:
                 raise ValueError("ledger ordinal mismatch")
-            bucket, record_type = _bucket_for_event(event.event_kind)
-            payload = self._read_record(bucket, event.record_id, record_type)
-            record = _record_from_payload(record_type, payload)
-            if payload_key(record) != event.payload_key:
+            if event.record_id in event_record_ids:
+                raise ValueError("duplicate ledger event for record_id")
+            event_record_ids.add(event.record_id)
+            item = inventory.get(event.record_id)
+            if item is None:
+                raise ValueError("record missing")
+            expected_bucket, expected_type = _bucket_for_event(event.event_kind)
+            if item.bucket != expected_bucket or item.record_type != expected_type:
+                raise ValueError("ledger event kind mismatch")
+            if item.payload_key != event.payload_key:
                 raise ValueError("ledger payload_key mismatch")
-        self.state_projection()
+        for record_id in inventory:
+            if record_id not in event_record_ids:
+                raise ValueError("missing ledger event")
 
 
 def open_store(root: Path) -> MemorySubstrateStore:
@@ -250,6 +315,18 @@ def _record_from_payload(record_type: str, payload: dict) -> object:
     if record_type == "usage_state_transition":
         return _transition_from_payload(payload)
     raise ValueError("unsupported record type")
+
+
+def _durable_record_id(record: object) -> str:
+    if isinstance(record, DreamShard):
+        return record.shard_id
+    if isinstance(record, InterpretationRecord):
+        return record.interpretation_id
+    if isinstance(record, RevisionThread):
+        return record.thread_id
+    if isinstance(record, UsageStateTransition):
+        return record.transition_id
+    raise ValueError("unsupported durable record")
 
 
 def _origin_from_payload(payload: dict) -> OriginDescriptor:

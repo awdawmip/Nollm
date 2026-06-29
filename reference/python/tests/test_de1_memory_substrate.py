@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 
 import pytest
 
@@ -15,6 +16,7 @@ from nollm.dream_geometry.evidence import (
     UsageStateTransition,
     canonical_json,
     open_store,
+    payload_key,
 )
 from nollm.dream_geometry.protocol.contracts import (
     InterpretationAuthoringMode,
@@ -242,3 +244,145 @@ def test_de1_t343_opaque_field_refs_are_preserved(tmp_path) -> None:
     store.put_dream_shard(shard)
     store.put_interpretation(interpretation)
     assert store.get_interpretation(interpretation.interpretation_id).basis_refs == ("basis:opaque-field-ref",)
+
+
+def test_de1_1_t350_t351_transition_retry_is_idempotent(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    transition = UsageStateTransition("state:active", shard.shard_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00")
+    store.put_dream_shard(shard)
+    first = store.record_usage_transition(transition)
+    retry = store.record_usage_transition(transition)
+    assert first.created is True
+    assert retry.idempotent is True
+    assert retry.ledger_event_id is None
+    assert len(store.read_ledger()) == 2
+    assert store.get_usage_state(shard.shard_id) is UsageState.active
+
+
+def test_de1_1_t352_transition_retry_after_reopen_is_idempotent(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    transition = UsageStateTransition("state:active", shard.shard_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00")
+    store.put_dream_shard(shard)
+    store.record_usage_transition(transition)
+    reopened = open_store(tmp_path)
+    retry = reopened.record_usage_transition(transition)
+    assert retry.idempotent is True
+    assert len(reopened.read_ledger()) == 2
+
+
+def test_de1_1_t353_transition_same_id_different_payload_rejected(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    transition = UsageStateTransition("state:active", shard.shard_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00")
+    store.put_dream_shard(shard)
+    store.record_usage_transition(transition)
+    before = (store.read_ledger(), store.get_usage_state(shard.shard_id))
+    changed = UsageStateTransition("state:active", shard.shard_id, UsageState.tentative, UsageState.retired, (), "2026-06-29T09:00:00+08:00")
+    with pytest.raises(ValueError, match="different payload"):
+        store.record_usage_transition(changed)
+    assert (store.read_ledger(), store.get_usage_state(shard.shard_id)) == before
+
+
+def test_de1_1_t354_orphan_shard_object_rejected_on_open(tmp_path) -> None:
+    store = open_store(tmp_path)
+    store.put_dream_shard(_shard())
+    orphan = _shard("shard:orphan")
+    _write_manual_record(tmp_path, "shards", orphan.shard_id, json.loads(canonical_json(orphan)))
+    with pytest.raises(ValueError, match="missing ledger event"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t355_orphan_transition_object_rejected_on_open(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    store.put_dream_shard(shard)
+    transition = UsageStateTransition("state:orphan", shard.shard_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00")
+    _write_manual_record(tmp_path, "state_transitions", transition.transition_id, json.loads(canonical_json(transition)))
+    with pytest.raises(ValueError, match="missing ledger event"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t357_duplicate_ledger_event_rejected_on_open(tmp_path) -> None:
+    store = open_store(tmp_path)
+    store.put_dream_shard(_shard())
+    ledger_path = tmp_path / "ledger" / "events.jsonl"
+    line = ledger_path.read_text(encoding="utf-8").splitlines()[0]
+    duplicate = json.loads(line)
+    duplicate["event_id"] = "ledger:duplicate"
+    duplicate["ordinal"] = 1
+    ledger_path.write_text(line + "\n" + json.dumps(duplicate, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate ledger event"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t358_filename_payload_id_mismatch_rejected(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    store.put_dream_shard(shard)
+    payload = json.loads(canonical_json(shard))
+    payload["shard_id"] = "shard:mismatched"
+    path = next((tmp_path / "shards").glob("*.json"))
+    path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    with pytest.raises(ValueError, match="filename"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t359_duplicate_record_id_in_same_bucket_rejected(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard()
+    store.put_dream_shard(shard)
+    duplicate_path = tmp_path / "shards" / "manual-duplicate.json"
+    duplicate_path.write_text(canonical_json(shard), encoding="utf-8")
+    with pytest.raises(ValueError, match="duplicate record_id"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t360_t361_cross_type_record_id_conflict_rejected(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("record:shared")
+    store.put_dream_shard(shard)
+    with pytest.raises(ValueError, match="record_id conflict"):
+        store.put_interpretation(_interpretation("record:shared", shard.shard_id))
+
+    reverse = open_store(tmp_path / "reverse")
+    base = _shard("shard:base")
+    reverse.put_dream_shard(base)
+    reverse.put_interpretation(_interpretation("record:shared", base.shard_id))
+    with pytest.raises(ValueError, match="record_id conflict"):
+        reverse.put_dream_shard(_shard("record:shared"))
+
+
+def test_de1_1_t362_cross_bucket_same_id_rejected_on_open(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("record:shared")
+    store.put_dream_shard(shard)
+    interpretation = _interpretation("record:shared", shard.shard_id)
+    _write_manual_record(tmp_path, "interpretations", interpretation.interpretation_id, json.loads(canonical_json(interpretation)))
+    with pytest.raises(ValueError, match="duplicate record_id"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1_t363_revision_and_usage_targets_work_with_unique_ids(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:unique")
+    interpretation = _interpretation("interpretation:unique", shard.shard_id)
+    store.put_dream_shard(shard)
+    store.put_interpretation(interpretation)
+    store.put_revision_thread(
+        RevisionThread(
+            "revision:unique",
+            (shard.shard_id, interpretation.interpretation_id),
+            (RevisionEdge(interpretation.interpretation_id, shard.shard_id, RevisionRelation.clarifies, ()),),
+            (),
+        )
+    )
+    store.record_usage_transition(UsageStateTransition("state:unique-active", interpretation.interpretation_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00"))
+    assert open_store(tmp_path).get_usage_state(interpretation.interpretation_id) is UsageState.active
+
+
+def _write_manual_record(root, bucket: str, record_id: str, payload: dict) -> None:
+    path = root / bucket / (sha256(record_id.encode("utf-8")).hexdigest() + ".json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")

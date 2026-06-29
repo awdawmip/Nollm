@@ -32,7 +32,9 @@
 - I-V2-021: UsageState denotes current use posture, not truth, authentication, or permanent human confirmation.
 - I-V2-022: Revision relations are explicit and do not automatically determine a unique current truth or mutate member content.
 - I-V2-023: Ledger is an append-only memory-history spine within the DE1 API, not a cryptographic anti-tamper or authorization mechanism.
+  - DE1.1 clarification: every durable DE1 record must have exactly one matching ledger event and every ledger event must resolve to exactly one matching record before projection is accepted.
 - I-V2-024: Evidence persistence is file-first and must not depend on Geometry, Field, Cortex, Recall, Adapter, V1, OpenClaw, runtime, database, or vector search.
 - I-V2-025: Relative-time expressions are preserved as expressions with optional reference instants; Evidence must not interpret them as absolute event facts.
+  - DE1.1 clarification: durable record IDs are globally unique within a store root so revision and usage-state references cannot resolve to multiple epistemic object types.
 
 Pure geometry acceptance comes before semantics and runtime.
