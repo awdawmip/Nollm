@@ -29,6 +29,12 @@ be relaxed by policy. `build_local_covers` accepts trace identity sets, not
 multisets; duplicate `trace_id` input is rejected. `CoarseCover` records
 `policy_id`, `policy_version`, and cover identity includes the complete policy
 semantic payload.
+Stable and crystallized `CoarseCover` values must also satisfy the structural
+hard floors directly: no provisional mass, at least two independent support
+keys, and at least two axes. Crystallization rechecks those floors before the
+final state transition. `CoarseCover` also records a deterministic
+`policy_fingerprint` derived from the complete policy semantic payload, and the
+eligibility evaluator rejects policy ID, version, or fingerprint mismatch.
 
 ## Gravity
 
@@ -43,3 +49,6 @@ Trace compaction is a reversible view. It may group only fully compatible
 traces and must expand back to the original member trace IDs.
 Compaction accepts trace identity sets, rejects duplicate `trace_id`, and
 expansion rejects duplicate or missing manifest IDs.
+`member_trace_ids` and `expansion_manifest` are inseparable: both must be the
+same non-empty canonical trace ID tuple, so expansion cannot silently drop or
+reorder members.

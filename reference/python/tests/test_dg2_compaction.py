@@ -30,12 +30,31 @@ def test_dg2_1_t204_duplicate_trace_id_rejected_for_compaction() -> None:
 
 def test_dg2_1_t208_expand_rejects_bad_manifest() -> None:
     first = _trace("t1", "location", "s1")
-    duplicate_manifest = TraceCompaction("c1", ("t1",), "k", first.mass, ("t1", "t1"))
-    missing_manifest = TraceCompaction("c2", ("t1", "missing"), "k", first.mass, ("t1", "missing"))
+    second = replace(first, trace_id="t2")
+    duplicate_manifest = _forge_compaction(("t1", "t2"), ("t1", "t1"))
+    missing_manifest = TraceCompaction("c2", ("missing", "t1"), "k", first.mass, ("missing", "t1"))
     with pytest.raises(ValueError, match="duplicate trace_id"):
-        expand_compaction(duplicate_manifest, {"t1": first})
+        expand_compaction(duplicate_manifest, {"t1": first, "t2": second})
     with pytest.raises(ValueError, match="missing trace_id"):
         expand_compaction(missing_manifest, {"t1": first})
+
+
+def test_dg2_2_t213_compaction_manifest_must_match_members() -> None:
+    first = _trace("t1", "location", "s1")
+    second = replace(first, trace_id="t2")
+    trace_index = {"t1": first, "t2": second}
+    with pytest.raises(ValueError, match="manifest"):
+        TraceCompaction("missing-member", ("t1", "t2"), "k", first.mass + second.mass, ("t1",))
+    with pytest.raises(ValueError, match="canonical"):
+        TraceCompaction("bad-order", ("t2", "t1"), "k", first.mass + second.mass, ("t2", "t1"))
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        TraceCompaction("duplicate-member", ("t1", "t1"), "k", first.mass + second.mass, ("t1", "t1"))
+    with pytest.raises(ValueError, match="manifest"):
+        expand_compaction(_forge_compaction(("t1", "t2"), ("t1",)), trace_index)
+    with pytest.raises(ValueError, match="canonical"):
+        expand_compaction(_forge_compaction(("t1", "t2"), ("t2", "t1")), trace_index)
+    with pytest.raises(ValueError, match="duplicate trace_id"):
+        expand_compaction(_forge_compaction(("t1", "t2"), ("t1", "t1")), trace_index)
 
 
 def test_dg2_p3_different_boundaries_do_not_merge() -> None:
@@ -63,3 +82,13 @@ def test_dg2_p6_order_invariance_and_no_mutation_api() -> None:
     second = replace(first, trace_id="t2")
     assert compact_traces((first, second))[0].compaction_id == compact_traces((second, first))[0].compaction_id
     assert not hasattr(compact_traces((first, second))[0], "delete_compacted_members")
+
+
+def _forge_compaction(member_trace_ids: tuple[str, ...], expansion_manifest: tuple[str, ...]) -> TraceCompaction:
+    forged = object.__new__(TraceCompaction)
+    object.__setattr__(forged, "compaction_id", "forged")
+    object.__setattr__(forged, "member_trace_ids", member_trace_ids)
+    object.__setattr__(forged, "canonical_key", "k")
+    object.__setattr__(forged, "aggregate_mass", 0.6)
+    object.__setattr__(forged, "expansion_manifest", expansion_manifest)
+    return forged

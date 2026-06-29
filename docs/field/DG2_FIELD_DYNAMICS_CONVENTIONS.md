@@ -32,6 +32,11 @@ cannot be relaxed by `CoverPolicy`. Cover inputs are trace identity sets; a
 duplicate `trace_id` is rejected instead of deduplicated or counted twice.
 `CoarseCover` keeps `policy_id` and `policy_version`, and cover identity includes
 the full policy semantic payload.
+`CoarseCover` also keeps `policy_fingerprint`, a deterministic ID over the full
+policy semantic payload. Evaluators reject policy ID, version, or fingerprint
+mismatch. Stable and crystallized cover values must satisfy the structural
+floors directly, and crystallization rechecks those floors before the final
+state transition.
 
 ## Gravity
 
@@ -48,3 +53,6 @@ and expands back to original member trace IDs. It does not delete or mutate
 member traces.
 Compaction rejects duplicate trace identities before grouping, and expansion
 rejects duplicate or missing manifest IDs.
+`member_trace_ids` and `expansion_manifest` are the same non-empty canonical
+tuple. Expansion validates that relation before returning traces, so a forged
+manifest cannot silently drop a member.

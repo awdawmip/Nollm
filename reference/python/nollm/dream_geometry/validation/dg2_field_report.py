@@ -7,14 +7,14 @@ import platform
 from dataclasses import replace
 from pathlib import Path
 
-from nollm.dream_geometry.field import CoverPolicy, build_local_covers, calculate_gravity_snapshot, compact_traces, expand_compaction, propagate_trace, seed_to_trace
-from nollm.dream_geometry.field.types import GrowthTrace, TraceSeed
+from nollm.dream_geometry.field import CoverPolicy, build_local_covers, calculate_gravity_snapshot, compact_traces, crystallize_cover, evaluate_cover_eligibility, expand_compaction, propagate_trace, seed_to_trace
+from nollm.dream_geometry.field.types import CrystallizationDecision, GrowthTrace, TraceCompaction, TraceSeed
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
 from nollm.dream_geometry.geometry.hexgrid import disk
 from nollm.dream_geometry.geometry.transform import SimilarityTransform, TransformWitness, validate_transform
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
-from nollm.dream_geometry.protocol.contracts import GrowthBasis, TraceState
+from nollm.dream_geometry.protocol.contracts import CoverState, GrowthBasis, TraceState
 
 
 def build_report() -> str:
@@ -150,13 +150,30 @@ def _integrity_checks(cell) -> tuple[tuple[str, str], ...]:
 
     policy_a = build_local_covers((_trace("p1", cell, "location", "s1"), _trace("p2", cell, "phenomenon", "s2")), CoverPolicy(policy_id="a"))[0]
     policy_b = build_local_covers((_trace("p1", cell, "location", "s1"), _trace("p2", cell, "phenomenon", "s2")), CoverPolicy(policy_id="b"))[0]
-    policy_result = "pass" if policy_a.policy_id == "a" and policy_b.policy_id == "b" and policy_a.cover_id != policy_b.cover_id else "fail"
+    policy_result = "pass" if policy_a.policy_id == "a" and policy_b.policy_id == "b" and policy_a.policy_fingerprint != policy_b.policy_fingerprint and policy_a.cover_id != policy_b.cover_id else "fail"
+
+    provisional = build_local_covers((_trace("c1", cell, "location", "s1"), _trace("c2", cell, "phenomenon", "s2", state=TraceState.proposed)))[0]
+    forged_stable_result = _raises_value_error(lambda: replace(provisional, state=CoverState.stable), "provisional")
+    crystallize_recheck_result = _raises_value_error(lambda: crystallize_cover(_forge_cover(provisional, state=CoverState.stable), CrystallizationDecision("d", provisional.cover_id, True, "operator", ("basis",))), "provisional")
+
+    strict = CoverPolicy(policy_id="same", version="1", min_total_mass=1.0)
+    loose = CoverPolicy(policy_id="same", version="1", min_total_mass=0.1)
+    strict_cover = build_local_covers((_trace("p3", cell, "location", "s1"), _trace("p4", cell, "phenomenon", "s2")), strict)[0]
+    fingerprint_result = "pass" if strict.policy_fingerprint != loose.policy_fingerprint else "fail"
+    evaluator_result = _raises_value_error(lambda: evaluate_cover_eligibility(strict_cover, loose), "policy identity mismatch")
+
+    manifest_result = _raises_value_error(lambda: TraceCompaction("bad", ("t1", "t2"), "k", 0.6, ("t1",)), "manifest")
 
     return (
         ("tiny positive mass retained", tiny_result),
         ("duplicate trace rejected", duplicate_trace_result),
         ("duplicate cover rejected", duplicate_cover_result),
         ("policy identity visible", policy_result),
+        ("forged stable cover rejected", forged_stable_result),
+        ("crystallization structural recheck", crystallize_recheck_result),
+        ("policy fingerprint differs by semantics", fingerprint_result),
+        ("policy fingerprint mismatch rejected", evaluator_result),
+        ("compaction manifest matches members", manifest_result),
     )
 
 
@@ -168,12 +185,31 @@ def _raises_value_error(callback, expected: str) -> str:
     return "fail"
 
 
+def _forge_cover(cover, **changes):
+    values = {field: getattr(cover, field) for field in cover.__dataclass_fields__}
+    values.update(changes)
+    forged = object.__new__(type(cover))
+    for field, value in values.items():
+        object.__setattr__(forged, field, value)
+    return forged
+
+
 def _seed(trace_id: str, cell, axis: str, support_key: str) -> TraceSeed:
     return TraceSeed(trace_id, f"shard-{trace_id}", "proposal", cell, axis, GrowthBasis.explicit_in_shard, ("basis",), 1.0, support_key, 0.1, 0.1, 0.0, 2, TraceState.accepted)
 
 
-def _trace(trace_id: str, cell, axis: str, support_key: str, mass: float = 0.3, genericity: float = 0.1, ambiguity: float = 0.1, conflict: float = 0.0) -> GrowthTrace:
-    return GrowthTrace(trace_id, f"shard-{support_key}", "proposal", "parent", cell, axis, GrowthBasis.explicit_in_shard, ("basis",), mass, support_key, genericity, ambiguity, conflict, 2, TraceState.accepted, "synthetic", ("geometry",))
+def _trace(
+    trace_id: str,
+    cell,
+    axis: str,
+    support_key: str,
+    mass: float = 0.3,
+    genericity: float = 0.1,
+    ambiguity: float = 0.1,
+    conflict: float = 0.0,
+    state: TraceState = TraceState.accepted,
+) -> GrowthTrace:
+    return GrowthTrace(trace_id, f"shard-{support_key}", "proposal", "parent", cell, axis, GrowthBasis.explicit_in_shard, ("basis",), mass, support_key, genericity, ambiguity, conflict, 2, state, "synthetic", ("geometry",))
 
 
 if __name__ == "__main__":

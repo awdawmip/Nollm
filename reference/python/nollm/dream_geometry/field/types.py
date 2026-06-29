@@ -161,6 +161,10 @@ class CoverPolicy:
         _require_unit(self.max_conflict, "max_conflict")
         _require_non_negative_int(self.min_stability, "min_stability")
 
+    @property
+    def policy_fingerprint(self) -> str:
+        return policy_fingerprint(self)
+
 
 @dataclass(frozen=True)
 class CoverEligibility:
@@ -186,6 +190,7 @@ class CoarseCover:
     state: CoverState
     policy_id: str
     policy_version: str
+    policy_fingerprint: str
     eligibility_reasons: tuple[str, ...]
 
     def __post_init__(self) -> None:
@@ -198,6 +203,8 @@ class CoarseCover:
         _require_non_negative_int(self.stability, "stability")
         _require_id(self.policy_id, "policy_id")
         _require_id(self.policy_version, "policy_version")
+        _require_id(self.policy_fingerprint, "policy_fingerprint")
+        _require_cover_structural_state(self)
 
 
 @dataclass(frozen=True)
@@ -279,6 +286,15 @@ class TraceCompaction:
     aggregate_mass: float
     expansion_manifest: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        _require_id(self.compaction_id, "compaction_id")
+        _require_id(self.canonical_key, "canonical_key")
+        _require_non_negative(self.aggregate_mass, "aggregate_mass")
+        _require_compaction_ids(self.member_trace_ids, "member_trace_ids")
+        _require_compaction_ids(self.expansion_manifest, "expansion_manifest")
+        if self.member_trace_ids != self.expansion_manifest:
+            raise ValueError("compaction manifest mismatch")
+
 
 def stable_id(prefix: str, payload: object) -> str:
     return f"{prefix}:{sha256(stable_json(payload).encode('utf-8')).hexdigest()[:32]}"
@@ -326,6 +342,10 @@ def policy_payload(policy: CoverPolicy) -> object:
         "max_conflict": float_token(policy.max_conflict),
         "min_stability": policy.min_stability,
     }
+
+
+def policy_fingerprint(policy: CoverPolicy) -> str:
+    return stable_id("cover_policy:v2", policy_payload(policy))
 
 
 def float_token(value: float) -> str:
@@ -384,3 +404,27 @@ def _require_basis_refs(basis: GrowthBasis, basis_refs: tuple[str, ...]) -> None
         raise ValueError("basis_refs must be non-empty")
     for ref in basis_refs:
         _require_id(ref, "basis_ref")
+
+
+def _require_cover_structural_state(cover: CoarseCover) -> None:
+    if cover.state not in {CoverState.stable, CoverState.crystallized}:
+        return
+    if cover.provisional_mass > 0.0:
+        raise ValueError("stable cover violates provisional structural rule")
+    if len(cover.support_keys) < 2:
+        raise ValueError("stable cover violates support structural rule")
+    if len(cover.axes_present) < 2:
+        raise ValueError("stable cover violates axis structural rule")
+
+
+def _require_compaction_ids(trace_ids: tuple[str, ...], label: str) -> None:
+    if not trace_ids:
+        raise ValueError(f"{label} must be non-empty")
+    if tuple(sorted(trace_ids)) != trace_ids:
+        raise ValueError(f"{label} must be canonical")
+    seen: set[str] = set()
+    for trace_id in trace_ids:
+        _require_id(trace_id, "trace_id")
+        if trace_id in seen:
+            raise ValueError("duplicate trace_id")
+        seen.add(trace_id)

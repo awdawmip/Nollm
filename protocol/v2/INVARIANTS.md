@@ -15,13 +15,17 @@
   - DG2.1 clarification: `accounting_error` is only floating summation error; it is not a sink for unclassified positive kernel mass.
 - I-V2-013: Every derived Trace and Cover preserves origin shard, proposal, basis, support, and geometry provenance.
   - DG2.1 clarification: Trace and Cover source identities are set-like; duplicate identity cannot be counted twice.
+  - DG2.2 clarification: Cover policy provenance includes a deterministic fingerprint of the full policy semantic payload.
 - I-V2-014: `provisional_llm_generalization` cannot become accepted, stable, or crystallized by Field alone.
   - DG2.1 clarification: provisional mass blocks stability regardless of `CoverPolicy`.
+  - DG2.2 clarification: stable and crystallized Cover values cannot carry provisional mass, and crystallization rechecks that hard rule.
 - I-V2-015: Field cannot write, replace, or delete Evidence, Card, Ledger, or original Trace inputs.
 - I-V2-016: Stable Cover requires explicit multi-support and anti-black-hole eligibility under a versioned policy.
   - DG2.1 clarification: multi-support and multi-axis floors are structural and cannot be relaxed by policy.
+  - DG2.2 clarification: stable and crystallized Cover values cannot violate the two-support or two-axis floors, even if externally forged.
 - I-V2-017: Gravity Snapshot is internal Field state; it cannot be accepted as an external anchor, index, or query parameter.
 - I-V2-018: Trace compaction is lossless and reversible; it cannot merge across origin, basis, axis, state, geometry, residual, or support boundaries.
   - DG2.1 clarification: compaction is a set-level view and must reject duplicate or missing expansion manifest identities.
+  - DG2.2 clarification: `member_trace_ids` and `expansion_manifest` must be the same canonical tuple, so expansion cannot partially drop members.
 
 Pure geometry acceptance comes before semantics and runtime.

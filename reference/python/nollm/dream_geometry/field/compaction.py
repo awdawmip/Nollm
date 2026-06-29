@@ -28,6 +28,7 @@ def compact_traces(traces: tuple[GrowthTrace, ...]) -> tuple[TraceCompaction, ..
 
 
 def expand_compaction(compaction: TraceCompaction, trace_index: dict[str, GrowthTrace]) -> tuple[GrowthTrace, ...]:
+    _validate_compaction_manifest(compaction)
     _reject_duplicate_trace_ids(compaction.expansion_manifest)
     missing = tuple(trace_id for trace_id in compaction.expansion_manifest if trace_id not in trace_index)
     if missing:
@@ -63,3 +64,16 @@ def _reject_duplicate_trace_ids(trace_ids) -> None:
         if trace_id in seen:
             raise ValueError("duplicate trace_id")
         seen.add(trace_id)
+
+
+def _validate_compaction_manifest(compaction: TraceCompaction) -> None:
+    if not compaction.member_trace_ids or not compaction.expansion_manifest:
+        raise ValueError("compaction manifest must be non-empty")
+    if tuple(sorted(compaction.member_trace_ids)) != compaction.member_trace_ids:
+        raise ValueError("member_trace_ids must be canonical")
+    if tuple(sorted(compaction.expansion_manifest)) != compaction.expansion_manifest:
+        raise ValueError("expansion_manifest must be canonical")
+    _reject_duplicate_trace_ids(compaction.member_trace_ids)
+    _reject_duplicate_trace_ids(compaction.expansion_manifest)
+    if compaction.member_trace_ids != compaction.expansion_manifest:
+        raise ValueError("compaction manifest mismatch")

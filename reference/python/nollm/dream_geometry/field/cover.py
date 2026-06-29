@@ -5,7 +5,7 @@ from math import fsum
 
 from nollm.dream_geometry.protocol.contracts import CoverState, GrowthBasis, TraceState
 
-from .types import CoarseCover, CoverEligibility, CoverPolicy, CrystallizationDecision, policy_payload, stable_id
+from .types import CoarseCover, CoverEligibility, CoverPolicy, CrystallizationDecision, policy_fingerprint, policy_payload, stable_id
 
 
 def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[CoarseCover, ...]:
@@ -28,6 +28,7 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
             "trace_ids": tuple(trace.trace_id for trace in ordered),
             "policy_id": policy.policy_id,
             "policy_version": policy.version,
+            "policy_fingerprint": policy_fingerprint(policy),
             "policy_payload": policy_payload(policy),
         }
         draft = CoarseCover(
@@ -47,6 +48,7 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
             state=CoverState.candidate,
             policy_id=policy.policy_id,
             policy_version=policy.version,
+            policy_fingerprint=policy_fingerprint(policy),
             eligibility_reasons=(),
         )
         eligibility = evaluate_cover_eligibility(draft, policy, tuple(ordered))
@@ -56,7 +58,7 @@ def build_local_covers(traces, policy: CoverPolicy = CoverPolicy()) -> tuple[Coa
 
 
 def evaluate_cover_eligibility(cover: CoarseCover, policy: CoverPolicy, traces=()) -> CoverEligibility:
-    if cover.policy_id != policy.policy_id or cover.policy_version != policy.version:
+    if cover.policy_id != policy.policy_id or cover.policy_version != policy.version or cover.policy_fingerprint != policy_fingerprint(policy):
         raise ValueError("policy identity mismatch")
     reasons: list[str] = []
     if cover.mass < policy.min_total_mass:
@@ -88,6 +90,7 @@ def evaluate_cover_eligibility(cover: CoarseCover, policy: CoverPolicy, traces=(
 def crystallize_cover(cover: CoarseCover, decision: CrystallizationDecision) -> CoarseCover:
     if cover.state is not CoverState.stable:
         raise ValueError("only stable covers can be crystallized")
+    _require_structural_cover_state(cover)
     if decision.cover_id != cover.cover_id:
         raise ValueError("decision cover_id mismatch")
     if not decision.approved:
@@ -108,3 +111,12 @@ def _reject_duplicate_trace_ids(traces) -> None:
         if trace.trace_id in seen:
             raise ValueError("duplicate trace_id")
         seen.add(trace.trace_id)
+
+
+def _require_structural_cover_state(cover: CoarseCover) -> None:
+    if cover.provisional_mass > 0.0:
+        raise ValueError("stable cover violates provisional structural rule")
+    if len(cover.support_keys) < 2:
+        raise ValueError("stable cover violates support structural rule")
+    if len(cover.axes_present) < 2:
+        raise ValueError("stable cover violates axis structural rule")

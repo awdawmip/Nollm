@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from nollm.dream_geometry.field import CoverPolicy, CrystallizationDecision, build_local_covers, crystallize_cover, evaluate_cover_eligibility
-from nollm.dream_geometry.field.types import GrowthTrace
+from nollm.dream_geometry.field.types import CoarseCover, GrowthTrace
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
 from nollm.dream_geometry.protocol.contracts import CoverState, GrowthBasis, TraceState
@@ -116,6 +116,51 @@ def test_dg2_1_t207_policy_mismatch_rejected() -> None:
         evaluate_cover_eligibility(cover, CoverPolicy(policy_id="loose", version="1"), traces)
 
 
+def test_dg2_2_t210_forged_stable_provisional_cover_rejected() -> None:
+    candidate = build_local_covers(
+        (
+            _trace("t1", "location", "s1"),
+            _trace("t2", "phenomenon", "s2", basis=GrowthBasis.provisional_llm_generalization, state=TraceState.proposed),
+        )
+    )[0]
+    assert candidate.state is CoverState.candidate
+    with pytest.raises(ValueError, match="provisional"):
+        replace(candidate, state=CoverState.stable)
+    forged = _forge_cover(candidate, state=CoverState.stable)
+    with pytest.raises(ValueError, match="provisional"):
+        crystallize_cover(forged, CrystallizationDecision("d-forged-provisional", forged.cover_id, True, "operator", ("basis",)))
+
+
+def test_dg2_2_t211_forged_stable_single_support_or_axis_rejected() -> None:
+    single_support = build_local_covers((_trace("t1", "location", "s1"), _trace("t2", "phenomenon", "s1")))[0]
+    single_axis = build_local_covers((_trace("t3", "generic", "s1"), _trace("t4", "generic", "s2")))[0]
+    with pytest.raises(ValueError, match="support"):
+        replace(single_support, state=CoverState.stable)
+    with pytest.raises(ValueError, match="axis"):
+        replace(single_axis, state=CoverState.stable)
+    with pytest.raises(ValueError, match="support"):
+        replace(single_support, state=CoverState.crystallized)
+    with pytest.raises(ValueError, match="axis"):
+        replace(single_axis, state=CoverState.crystallized)
+    with pytest.raises(ValueError, match="support"):
+        crystallize_cover(_forge_cover(single_support, state=CoverState.stable), CrystallizationDecision("d-support", single_support.cover_id, True, "operator", ("basis",)))
+    with pytest.raises(ValueError, match="axis"):
+        crystallize_cover(_forge_cover(single_axis, state=CoverState.stable), CrystallizationDecision("d-axis", single_axis.cover_id, True, "operator", ("basis",)))
+
+
+def test_dg2_2_t212_policy_semantic_mismatch_rejected() -> None:
+    traces = (_trace("t1", "location", "s1", mass=0.3), _trace("t2", "phenomenon", "s2", mass=0.3))
+    strict_policy = CoverPolicy(policy_id="same", version="1", min_total_mass=1.0)
+    loose_policy = CoverPolicy(policy_id="same", version="1", min_total_mass=0.1)
+    cover = build_local_covers(traces, strict_policy)[0]
+    loose_cover = build_local_covers(traces, loose_policy)[0]
+    assert strict_policy.policy_fingerprint != loose_policy.policy_fingerprint
+    assert cover.policy_fingerprint == strict_policy.policy_fingerprint
+    assert cover.cover_id != loose_cover.cover_id
+    with pytest.raises(ValueError, match="policy identity mismatch"):
+        evaluate_cover_eligibility(cover, loose_policy, traces)
+
+
 def test_dg2_c5_all_quality_failures_are_reported() -> None:
     traces = (
         _trace("t1", "location", "s1", genericity=0.9, ambiguity=0.8, conflict=0.7, stability_epochs=0),
@@ -149,3 +194,12 @@ def test_dg2_c10_trace_order_does_not_change_cover() -> None:
     assert first.cover_id == second.cover_id
     assert first.support_trace_ids == second.support_trace_ids
     assert first.state == second.state
+
+
+def _forge_cover(cover: CoarseCover, **changes) -> CoarseCover:
+    values = {field: getattr(cover, field) for field in cover.__dataclass_fields__}
+    values.update(changes)
+    forged = object.__new__(CoarseCover)
+    for field, value in values.items():
+        object.__setattr__(forged, field, value)
+    return forged
