@@ -5,13 +5,20 @@ from nollm.dream_geometry.protocol import contracts
 from nollm.dream_geometry.protocol.contracts import (
     ChartTransformState,
     CoverState,
+    DE1_MEMORY_SUBSTRATE_INVARIANTS,
     GrowthBasis,
     INVARIANTS,
+    InterpretationAuthoringMode,
+    InterpretationKind,
     KernelDirection,
+    LedgerEventKind,
     ModuleName,
     OBJECT_OWNERSHIP,
     ObjectKind,
+    OriginKind,
+    RevisionRelation,
     TraceState,
+    UsageState,
 )
 
 
@@ -35,6 +42,9 @@ def test_required_enum_values_are_stable() -> None:
     assert enum_values(ModuleName) == ["protocol", "evidence", "geometry", "field", "cortex", "recall", "adapters", "validation"]
     assert enum_values(ObjectKind) == [
         "dream_shard",
+        "interpretation_record",
+        "revision_thread",
+        "usage_state_transition",
         "growth_proposal",
         "query_probe",
         "local_chart",
@@ -46,6 +56,12 @@ def test_required_enum_values_are_stable() -> None:
         "recall_digest",
         "ledger_event",
     ]
+    assert enum_values(OriginKind) == ["user_utterance", "assistant_utterance", "tool_observation", "imported_text", "internal_reflection", "system_seed", "unknown"]
+    assert enum_values(UsageState) == ["tentative", "active", "retired", "rejected"]
+    assert enum_values(InterpretationKind) == ["summary", "classification", "relation", "growth_hint", "constraint", "other"]
+    assert enum_values(InterpretationAuthoringMode) == ["user_stated", "llm_proposed", "deterministic_projection", "imported_annotation", "unknown"]
+    assert enum_values(RevisionRelation) == ["supersedes", "withdraws", "clarifies", "coexists", "conflicts"]
+    assert enum_values(LedgerEventKind) == ["shard_recorded", "interpretation_recorded", "revision_thread_recorded", "usage_state_transition_recorded"]
 
 
 def test_contract_dataclasses_are_frozen_and_do_not_use_any() -> None:
@@ -59,6 +75,9 @@ def test_contract_dataclasses_are_frozen_and_do_not_use_any() -> None:
 def test_object_ownership_mapping_is_complete() -> None:
     ownership = {item.object_kind: item for item in OBJECT_OWNERSHIP}
     assert ownership[ObjectKind.dream_shard].owner is ModuleName.evidence
+    assert ownership[ObjectKind.interpretation_record].owner is ModuleName.evidence
+    assert ownership[ObjectKind.revision_thread].owner is ModuleName.evidence
+    assert ownership[ObjectKind.usage_state_transition].owner is ModuleName.evidence
     assert ownership[ObjectKind.ledger_event].owner is ModuleName.evidence
     assert ownership[ObjectKind.growth_proposal].owner is ModuleName.cortex
     assert ownership[ObjectKind.query_probe].owner is ModuleName.cortex
@@ -72,6 +91,9 @@ def test_object_ownership_mapping_is_complete() -> None:
 
     assert ownership[ObjectKind.query_probe].durable is False
     assert ownership[ObjectKind.dream_shard].durable is True
+    assert ownership[ObjectKind.interpretation_record].durable is True
+    assert ownership[ObjectKind.revision_thread].durable is True
+    assert ownership[ObjectKind.usage_state_transition].durable is True
     assert ownership[ObjectKind.ledger_event].durable is True
     assert ownership[ObjectKind.gravity_snapshot].externally_visible is False
     assert ownership[ObjectKind.coverage_kernel].externally_visible is False
@@ -90,6 +112,9 @@ def test_invariant_ids_are_complete_unique_and_layered() -> None:
     assert invariants["I-V2-008"].enforcement_layer is ModuleName.validation
     assert invariants["I-V2-009"].enforcement_layer is ModuleName.adapters
     assert invariants["I-V2-010"].enforcement_layer is ModuleName.protocol
+    de1 = {item.identifier: item for item in DE1_MEMORY_SUBSTRATE_INVARIANTS}
+    assert list(de1) == [f"I-V2-{index:03d}" for index in range(19, 26)]
+    assert all(item.enforcement_layer is ModuleName.evidence for item in de1.values())
 
 
 def test_v2_object_kinds_do_not_reintroduce_legacy_tree_or_anchor_terms() -> None:

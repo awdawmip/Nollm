@@ -75,6 +75,9 @@ class ObjectKind(Enum):
     """Stable V2 object kinds."""
 
     dream_shard = "dream_shard"
+    interpretation_record = "interpretation_record"
+    revision_thread = "revision_thread"
+    usage_state_transition = "usage_state_transition"
     growth_proposal = "growth_proposal"
     query_probe = "query_probe"
     local_chart = "local_chart"
@@ -85,6 +88,67 @@ class ObjectKind(Enum):
     gravity_snapshot = "gravity_snapshot"
     recall_digest = "recall_digest"
     ledger_event = "ledger_event"
+
+
+class OriginKind(Enum):
+    """Opaque channel labels for memory substrate inputs."""
+
+    user_utterance = "user_utterance"
+    assistant_utterance = "assistant_utterance"
+    tool_observation = "tool_observation"
+    imported_text = "imported_text"
+    internal_reflection = "internal_reflection"
+    system_seed = "system_seed"
+    unknown = "unknown"
+
+
+class UsageState(Enum):
+    """Current use posture, not truth or authentication."""
+
+    tentative = "tentative"
+    active = "active"
+    retired = "retired"
+    rejected = "rejected"
+
+
+class InterpretationKind(Enum):
+    """Externally supplied interpretation record kinds."""
+
+    summary = "summary"
+    classification = "classification"
+    relation = "relation"
+    growth_hint = "growth_hint"
+    constraint = "constraint"
+    other = "other"
+
+
+class InterpretationAuthoringMode(Enum):
+    """How an interpretation statement was supplied."""
+
+    user_stated = "user_stated"
+    llm_proposed = "llm_proposed"
+    deterministic_projection = "deterministic_projection"
+    imported_annotation = "imported_annotation"
+    unknown = "unknown"
+
+
+class RevisionRelation(Enum):
+    """Explicit revision relation labels."""
+
+    supersedes = "supersedes"
+    withdraws = "withdraws"
+    clarifies = "clarifies"
+    coexists = "coexists"
+    conflicts = "conflicts"
+
+
+class LedgerEventKind(Enum):
+    """Memory substrate ledger event kinds."""
+
+    shard_recorded = "shard_recorded"
+    interpretation_recorded = "interpretation_recorded"
+    revision_thread_recorded = "revision_thread_recorded"
+    usage_state_transition_recorded = "usage_state_transition_recorded"
 
 
 @dataclass(frozen=True)
@@ -119,6 +183,9 @@ class Invariant:
 
 OBJECT_OWNERSHIP: tuple[ObjectOwnership, ...] = (
     ObjectOwnership(ObjectKind.dream_shard, ModuleName.evidence, True, True, "Durable original evidence."),
+    ObjectOwnership(ObjectKind.interpretation_record, ModuleName.evidence, True, True, "Durable externally supplied interpretation."),
+    ObjectOwnership(ObjectKind.revision_thread, ModuleName.evidence, True, True, "Durable explicit revision relation thread."),
+    ObjectOwnership(ObjectKind.usage_state_transition, ModuleName.evidence, True, True, "Durable usage-state transition."),
     ObjectOwnership(ObjectKind.ledger_event, ModuleName.evidence, True, True, "Durable audit event."),
     ObjectOwnership(ObjectKind.growth_proposal, ModuleName.cortex, False, False, "Cortex candidate, not fact confirmation."),
     ObjectOwnership(ObjectKind.query_probe, ModuleName.cortex, False, False, "Temporary read-side object."),
@@ -158,18 +225,36 @@ DG2_FIELD_INVARIANTS: tuple[Invariant, ...] = (
 )
 
 
+DE1_MEMORY_SUBSTRATE_INVARIANTS: tuple[Invariant, ...] = (
+    Invariant("I-V2-019", "DreamShard preserves original expression, origin, and temporal context; later interpretation, state, or revision cannot replace them.", ModuleName.evidence),
+    Invariant("I-V2-020", "Interpretation is a separate epistemic object and must not be silently promoted to DreamShard, confirmed fact, or Field placement.", ModuleName.evidence),
+    Invariant("I-V2-021", "UsageState denotes current use posture, not truth, authentication, or permanent human confirmation.", ModuleName.evidence),
+    Invariant("I-V2-022", "Revision relations are explicit and do not automatically determine a unique current truth or mutate member content.", ModuleName.evidence),
+    Invariant("I-V2-023", "Ledger is an append-only memory-history spine within the DE1 API, not a cryptographic anti-tamper or authorization mechanism.", ModuleName.evidence),
+    Invariant("I-V2-024", "Evidence persistence is file-first and must not depend on Geometry, Field, Cortex, Recall, Adapter, V1, OpenClaw, runtime, database, or vector search.", ModuleName.evidence),
+    Invariant("I-V2-025", "Relative-time expressions are preserved with optional reference instants; Evidence must not interpret them as absolute event facts.", ModuleName.evidence),
+)
+
+
 __all__ = [
     "ChartTransformState",
     "CoverState",
+    "DE1_MEMORY_SUBSTRATE_INVARIANTS",
     "DG2_FIELD_INVARIANTS",
     "DependencyRule",
     "GrowthBasis",
     "INVARIANTS",
+    "InterpretationAuthoringMode",
+    "InterpretationKind",
     "Invariant",
     "KernelDirection",
+    "LedgerEventKind",
     "ModuleName",
     "OBJECT_OWNERSHIP",
     "ObjectKind",
     "ObjectOwnership",
+    "OriginKind",
+    "RevisionRelation",
     "TraceState",
+    "UsageState",
 ]

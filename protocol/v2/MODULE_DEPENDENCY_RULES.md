@@ -46,3 +46,14 @@ validation/dg2 -> protocol, geometry, field
 Field may carry opaque evidence reference strings supplied by callers, but DG2
 Field code must not import the evidence implementation, read Evidence, write
 Evidence, or depend on adapters, OpenClaw, runtime, V1 modules, or validation.
+
+DE1 active implementation subset:
+
+```text
+evidence -> protocol
+validation/de1 -> protocol, evidence
+```
+
+Evidence may use Python standard-library file and JSON helpers for its
+file-first store. Evidence must not import geometry, field, cortex, recall,
+adapters, V1 modules, OpenClaw, runtime, databases, or vector search.

@@ -49,6 +49,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - DG0: Module boundaries and constitution.
 - DG1: Pure Geometry Kernel and coverage-kernel validation.
 - DG2: Field Dynamics with traces, covers, and internal gravity.
+- DE1: Memory Substrate / Epistemic Core for Dream Shards, externally supplied interpretations, revision threads, usage state, and ledger history.
 - DG3: Cortex compiler contracts and fixed fixtures.
 - DG4: Pure geometry Query Probe / Recall Resolver.
 - DG5: Compression, revision, anti-resonance, and scale experiments.

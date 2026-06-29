@@ -27,5 +27,12 @@
 - I-V2-018: Trace compaction is lossless and reversible; it cannot merge across origin, basis, axis, state, geometry, residual, or support boundaries.
   - DG2.1 clarification: compaction is a set-level view and must reject duplicate or missing expansion manifest identities.
   - DG2.2 clarification: `member_trace_ids` and `expansion_manifest` must be the same canonical tuple, so expansion cannot partially drop members.
+- I-V2-019: DreamShard preserves original expression, origin, and temporal context; later interpretation, state, or revision cannot replace them.
+- I-V2-020: Interpretation is an explicitly separate epistemic object and must not be silently promoted to DreamShard, confirmed fact, or Field placement.
+- I-V2-021: UsageState denotes current use posture, not truth, authentication, or permanent human confirmation.
+- I-V2-022: Revision relations are explicit and do not automatically determine a unique current truth or mutate member content.
+- I-V2-023: Ledger is an append-only memory-history spine within the DE1 API, not a cryptographic anti-tamper or authorization mechanism.
+- I-V2-024: Evidence persistence is file-first and must not depend on Geometry, Field, Cortex, Recall, Adapter, V1, OpenClaw, runtime, database, or vector search.
+- I-V2-025: Relative-time expressions are preserved as expressions with optional reference instants; Evidence must not interpret them as absolute event facts.
 
 Pure geometry acceptance comes before semantics and runtime.
