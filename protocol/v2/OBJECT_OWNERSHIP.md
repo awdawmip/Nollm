@@ -12,6 +12,8 @@ Object sovereignty is module-owned:
 - `growth_trace`: field.
 - `coarse_cover`: field.
 - `gravity_snapshot`: field, internal only.
+- `trace_compaction`: field, derived view, internal only.
 - `recall_digest`: recall.
 
 Evidence, Trace, and Cover are not interchangeable. Trace and Cover never erase or replace Evidence.
+Gravity and compaction are internal Field views. They never authorize external query parameters, anchors, ledger writes, or replacement of original Evidence / Trace inputs.

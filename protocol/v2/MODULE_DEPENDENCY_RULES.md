@@ -35,3 +35,14 @@ Forbidden edges include:
 - V2 -> V1 runtime/OpenClaw during DG0
 
 The executable source of truth for these rules is `nollm.dream_geometry.protocol.dependency_rules`.
+
+DG2 active implementation subset:
+
+```text
+field -> protocol, geometry
+validation/dg2 -> protocol, geometry, field
+```
+
+Field may carry opaque evidence reference strings supplied by callers, but DG2
+Field code must not import the evidence implementation, read Evidence, write
+Evidence, or depend on adapters, OpenClaw, runtime, V1 modules, or validation.

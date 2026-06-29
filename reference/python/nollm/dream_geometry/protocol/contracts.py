@@ -146,9 +146,22 @@ INVARIANTS: tuple[Invariant, ...] = (
 )
 
 
+DG2_FIELD_INVARIANTS: tuple[Invariant, ...] = (
+    Invariant("I-V2-011", "Field propagates only through supplied, DG1-confirmed directed coverage distributions; it must not create nearest-center parent links.", ModuleName.field),
+    Invariant("I-V2-012", "Every propagation conserves parent trace mass after explicit residual accounting.", ModuleName.field),
+    Invariant("I-V2-013", "Every derived Trace and Cover preserves origin shard, proposal, basis, support, and geometry provenance.", ModuleName.field),
+    Invariant("I-V2-014", "provisional_llm_generalization cannot become accepted, stable, or crystallized by Field alone.", ModuleName.field),
+    Invariant("I-V2-015", "Field cannot write, replace, or delete Evidence, Card, Ledger, or original Trace inputs.", ModuleName.field),
+    Invariant("I-V2-016", "Stable Cover requires explicit multi-support and anti-black-hole eligibility under a versioned policy.", ModuleName.field),
+    Invariant("I-V2-017", "Gravity Snapshot is internal Field state and cannot be accepted as an external anchor, index, or query parameter.", ModuleName.field),
+    Invariant("I-V2-018", "Trace compaction is lossless and reversible; it cannot merge across origin, basis, axis, state, geometry, residual, or support boundaries.", ModuleName.field),
+)
+
+
 __all__ = [
     "ChartTransformState",
     "CoverState",
+    "DG2_FIELD_INVARIANTS",
     "DependencyRule",
     "GrowthBasis",
     "INVARIANTS",

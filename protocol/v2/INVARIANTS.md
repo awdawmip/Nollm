@@ -10,5 +10,13 @@
 - I-V2-008: Validation must not enter production paths or write production state.
 - I-V2-009: Adapter must not define, recompute, or bypass Geometry / Field rules.
 - I-V2-010: V1 legacy and V2 are import-isolated during DG0.
+- I-V2-011: Field propagates only through supplied, DG1-confirmed directed coverage distributions; it must not create nearest-center parent links.
+- I-V2-012: Every propagation conserves parent trace mass after explicit residual accounting.
+- I-V2-013: Every derived Trace and Cover preserves origin shard, proposal, basis, support, and geometry provenance.
+- I-V2-014: `provisional_llm_generalization` cannot become accepted, stable, or crystallized by Field alone.
+- I-V2-015: Field cannot write, replace, or delete Evidence, Card, Ledger, or original Trace inputs.
+- I-V2-016: Stable Cover requires explicit multi-support and anti-black-hole eligibility under a versioned policy.
+- I-V2-017: Gravity Snapshot is internal Field state; it cannot be accepted as an external anchor, index, or query parameter.
+- I-V2-018: Trace compaction is lossless and reversible; it cannot merge across origin, basis, axis, state, geometry, residual, or support boundaries.
 
 Pure geometry acceptance comes before semantics and runtime.
