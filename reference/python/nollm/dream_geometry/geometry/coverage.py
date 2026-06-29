@@ -155,10 +155,17 @@ def compute_distribution(
 
 def validate_nonoverlapping_partition(cells: tuple[HexCell, ...], tolerance: GeometryTolerance = DEFAULT_TOLERANCE) -> None:
     seen_refs: set[object] = set()
+    expected_fingerprint = None
     for cell in cells:
         if cell.cell_ref in seen_refs:
             raise PartitionValidationError("duplicate target cell in partition")
         seen_refs.add(cell.cell_ref)
+        if cell.chart_fingerprint is None:
+            raise PartitionValidationError("partition cells must carry chart geometry fingerprint")
+        if expected_fingerprint is None:
+            expected_fingerprint = cell.chart_fingerprint
+        elif cell.chart_fingerprint != expected_fingerprint:
+            raise PartitionValidationError("partition must belong to one chart geometry")
     for index, first in enumerate(cells):
         for second in cells[index + 1 :]:
             if first.cell_ref.chart_id != second.cell_ref.chart_id:

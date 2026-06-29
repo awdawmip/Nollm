@@ -43,9 +43,13 @@ Layer index is an experiment/report coordinate only. It is not a parent-child re
 
 ## Phase
 
-`normalized_phase(chart)` maps translation back through inverse rotation and inverse `sqrt(3) * side_length` scaling into fractional axial coordinates, then returns `(q mod 1, r mod 1)`. `phase_distance` is a torus distance over `[0, 1)^2`.
+`normalized_phase(chart)` maps translation back through inverse rotation and inverse `sqrt(3) * side_length` scaling into fractional axial coordinates, then returns `(q mod 1, r mod 1)`. It is a single-chart local diagnostic.
 
-Phase is a numeric anti-resonance diagnostic. It is not a query entry, anchor, or semantic coordinate.
+`relative_phase(source_chart, target_chart)` reports `phase(source <- target)` by mapping the target chart origin, or an explicit world reference point, into the source chart fractional axial basis and reducing it mod 1. DG1 baseline recurrence scans compute `phase(layer0 <- layer)` over target layers derived from `base_layer + gap`; they do not compare repeated copies of one local phase input.
+
+`phase_distance` is a torus distance over `[0, 1)^2`.
+
+Phase is a numeric anti-resonance diagnostic. It is not a query entry, anchor, or semantic coordinate. Rotation recurrence, relative phase recurrence, and coverage recurrence are separate finite-window diagnostics.
 
 ## Numeric Mode
 
@@ -67,4 +71,12 @@ Floating-point results are approximate. DG1 does not claim exact algebraic-numbe
 
 A distribution may claim mass conservation only against one finite, non-overlapping target partition. Incomplete partitions and threshold truncation must produce residual mass. Overlapping target cells must be rejected before aggregation.
 
+Target cells in one partition must share the same immutable chart geometry fingerprint: chart id, layer index, side length, normalized rotation, translation, and phase metadata items. Matching `chart_id` alone is not sufficient.
+
 DG1 does not implement cross-chart multi-hypothesis aggregation.
+
+## Transform Witness Discipline
+
+Verified transforms must be finite, non-zero-scale, orientation-preserving similarities. A verified recommendation requires residuals within tolerance and at least three distinct source and target witnesses containing a non-collinear triple. Degenerate, duplicate, or collinear witness sets remain `requires_review` or `rejected`.
+
+Cycle residual verification checks both witness residuals and the composed transform itself: `|a - 1|` and `|b| / reference_scale` must be within tolerance, and the witness set must be nondegenerate. A single fixed point of a non-identity transform cannot verify a cycle.

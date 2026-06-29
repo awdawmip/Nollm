@@ -7,7 +7,7 @@ OpenClaw, runtime, filesystem, network, subprocess, or memory behavior.
 """
 
 from dataclasses import dataclass
-from math import atan2, hypot
+from math import hypot, isfinite
 
 from .types import DEFAULT_TOLERANCE, GeometryTolerance, Vec2, default_metadata
 
@@ -20,6 +20,12 @@ class SimilarityTransform:
     a_imag: float
     b: Vec2
     orientation: str = "orientation_preserving"
+
+    def __post_init__(self) -> None:
+        if not isfinite(self.a_real) or not isfinite(self.a_imag):
+            raise ValueError("transform scale components must be finite")
+        if self.orientation not in {"orientation_preserving", "orientation_reversing"}:
+            raise ValueError("unsupported transform orientation")
 
     @property
     def scale(self) -> float:
@@ -39,6 +45,9 @@ class TransformResidual:
     witness_count: int
     reference_scale: float
     orientation: str
+    linear_identity_error: float = 0.0
+    translation_identity_error: float = 0.0
+    witness_geometry_status: str = "unchecked"
 
 
 @dataclass(frozen=True)
@@ -54,6 +63,9 @@ class CycleResidual:
     max_residual: float
     witness_count: int
     reference_scale: float
+    linear_identity_error: float
+    translation_identity_error: float
+    witness_geometry_status: str
     state_recommendation: str
 
 
@@ -67,13 +79,19 @@ def fit_orientation_preserving_similarity_from_two_pairs(
     src_delta = source_b - source_a
     dst_delta = target_b - target_a
     src_len2 = src_delta.x * src_delta.x + src_delta.y * src_delta.y
-    if src_len2 <= tolerance.coordinate_abs_tol * tolerance.coordinate_abs_tol:
+    floor = _nondegenerate_floor(1.0, tolerance)
+    if src_len2 <= floor * floor:
         raise ValueError("source witness pair must be non-degenerate")
+    if dst_delta.norm() <= floor:
+        raise ValueError("target witness pair must be non-degenerate")
     # Complex division (dst_delta / src_delta).
     a_real = (dst_delta.x * src_delta.x + dst_delta.y * src_delta.y) / src_len2
     a_imag = (dst_delta.y * src_delta.x - dst_delta.x * src_delta.y) / src_len2
     mapped = _apply_complex(a_real, a_imag, source_a)
-    return SimilarityTransform(a_real, a_imag, target_a - mapped)
+    transform = SimilarityTransform(a_real, a_imag, target_a - mapped)
+    if transform.scale <= floor:
+        raise ValueError("fitted transform scale must be non-degenerate")
+    return transform
 
 
 def apply_transform(transform: SimilarityTransform, point: Vec2) -> Vec2:
@@ -108,10 +126,13 @@ def validate_transform(
 ) -> TransformValidation:
     if reference_scale <= 0:
         raise ValueError("reference_scale must be positive")
-    if transform.orientation != "orientation_preserving":
-        residual = _residual_for(transform, witnesses, reference_scale)
+    residual = _residual_for(transform, witnesses, reference_scale, tolerance)
+    if transform.orientation != "orientation_preserving" or transform.scale <= _nondegenerate_floor(reference_scale, tolerance):
         return TransformValidation(transform, residual, "rejected")
-    residual = _residual_for(transform, witnesses, reference_scale)
+    if residual.witness_geometry_status == "duplicate" or residual.witness_geometry_status == "collinear":
+        return TransformValidation(transform, residual, "requires_review")
+    if residual.orientation != "orientation_preserving":
+        return TransformValidation(transform, residual, "rejected")
     limit = tolerance.coordinate_abs_tol + tolerance.coordinate_rel_tol * reference_scale
     if residual.witness_count >= 3 and residual.max_residual <= limit:
         state = "verified"
@@ -139,25 +160,74 @@ def cycle_residual(
     rms = (sum(error * error for error in errors) / len(errors)) ** 0.5
     max_error = max(errors)
     limit = tolerance.coordinate_abs_tol + tolerance.coordinate_rel_tol * reference_scale
-    if max_error <= limit:
+    linear_identity_error = hypot(composed.a_real - 1.0, composed.a_imag)
+    translation_identity_error = composed.b.norm() / reference_scale
+    witness_geometry_status = _witness_geometry_status(witness_points, reference_scale, tolerance)
+    nondegenerate = all(transform.scale > _nondegenerate_floor(reference_scale, tolerance) for transform in cycle)
+    identity_ok = linear_identity_error <= limit and translation_identity_error <= limit
+    if composed.orientation != "orientation_preserving" or not nondegenerate:
+        state = "rejected"
+    elif max_error <= limit and identity_ok and witness_geometry_status == "nondegenerate":
         state = "verified"
-    elif max_error <= 100.0 * limit:
+    elif max_error <= 100.0 * limit and identity_ok:
         state = "requires_review"
     else:
         state = "rejected"
-    return CycleResidual(rms, max_error, len(witness_points), reference_scale, state)
+    return CycleResidual(rms, max_error, len(witness_points), reference_scale, linear_identity_error, translation_identity_error, witness_geometry_status, state)
 
 
-def _residual_for(transform: SimilarityTransform, witnesses: tuple[TransformWitness, ...], reference_scale: float) -> TransformResidual:
+def _residual_for(
+    transform: SimilarityTransform,
+    witnesses: tuple[TransformWitness, ...],
+    reference_scale: float,
+    tolerance: GeometryTolerance,
+) -> TransformResidual:
     if not witnesses:
         raise ValueError("witnesses must be non-empty")
     errors = [(apply_transform(transform, witness.source) - witness.target).norm() for witness in witnesses]
     rms = (sum(error * error for error in errors) / len(errors)) ** 0.5
-    return TransformResidual(rms, max(errors), len(witnesses), reference_scale, transform.orientation)
+    source_status = _witness_geometry_status(tuple(witness.source for witness in witnesses), reference_scale, tolerance)
+    target_status = _witness_geometry_status(tuple(witness.target for witness in witnesses), reference_scale, tolerance)
+    status = source_status if source_status != "nondegenerate" else target_status
+    return TransformResidual(rms, max(errors), len(witnesses), reference_scale, transform.orientation, witness_geometry_status=status)
 
 
 def _apply_complex(a_real: float, a_imag: float, point: Vec2) -> Vec2:
     return Vec2(a_real * point.x - a_imag * point.y, a_imag * point.x + a_real * point.y)
+
+
+def _nondegenerate_floor(reference_scale: float, tolerance: GeometryTolerance) -> float:
+    return tolerance.coordinate_abs_tol + tolerance.coordinate_rel_tol * max(reference_scale, 1.0)
+
+
+def _witness_geometry_status(points: tuple[Vec2, ...], reference_scale: float, tolerance: GeometryTolerance) -> str:
+    if len(points) < 3:
+        return "insufficient"
+    if len(_distinct_points(points, reference_scale, tolerance)) < 3:
+        return "duplicate"
+    return "nondegenerate" if _has_noncollinear_triple(points, reference_scale, tolerance) else "collinear"
+
+
+def _distinct_points(points: tuple[Vec2, ...], reference_scale: float, tolerance: GeometryTolerance) -> tuple[Vec2, ...]:
+    limit = _nondegenerate_floor(reference_scale, tolerance)
+    distinct: list[Vec2] = []
+    for point in points:
+        if all((point - existing).norm() > limit for existing in distinct):
+            distinct.append(point)
+    return tuple(distinct)
+
+
+def _has_noncollinear_triple(points: tuple[Vec2, ...], reference_scale: float, tolerance: GeometryTolerance) -> bool:
+    scale = max(reference_scale, 1.0)
+    limit = max(tolerance.coordinate_rel_tol, tolerance.coordinate_abs_tol / scale)
+    distinct = _distinct_points(points, reference_scale, tolerance)
+    for index, first in enumerate(distinct):
+        for jndex, second in enumerate(distinct[index + 1 :], start=index + 1):
+            for third in distinct[jndex + 1 :]:
+                normalized_area = abs((second - first).cross(third - first)) / (scale * scale)
+                if normalized_area > limit:
+                    return True
+    return False
 
 
 __all__ = [

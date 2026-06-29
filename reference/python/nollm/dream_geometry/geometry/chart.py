@@ -41,6 +41,7 @@ def make_hex_cell(chart: LocalChart, axial: AxialCoord) -> HexCell:
         rotation_radians=chart.rotation_radians,
         vertices=vertices,
         metadata=default_metadata(comparison_scale=chart.side_length),
+        chart_fingerprint=chart.geometry_fingerprint,
     )
 
 
@@ -62,6 +63,14 @@ def normalized_phase(chart: LocalChart) -> PhaseCoord:
     local = rotate_vec(chart.translation, -chart.rotation_radians).scale(1.0 / (SQRT3 * chart.side_length))
     rf = 2.0 * local.y / SQRT3
     qf = local.x - rf / 2.0
+    return PhaseCoord(_mod_one(qf), _mod_one(rf))
+
+
+def relative_phase(source_chart: LocalChart, target_chart: LocalChart, reference_world_point: Vec2 | None = None) -> PhaseCoord:
+    """Return phase(source <- target) for one explicit world reference point."""
+
+    point = target_chart.translation if reference_world_point is None else reference_world_point
+    qf, rf = world_to_fractional_axial(source_chart, point)
     return PhaseCoord(_mod_one(qf), _mod_one(rf))
 
 
@@ -96,6 +105,7 @@ __all__ = [
     "make_hex_cell",
     "normalized_phase",
     "phase_distance",
+    "relative_phase",
     "rotate_vec",
     "world_to_fractional_axial",
 ]

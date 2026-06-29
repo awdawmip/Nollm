@@ -1,12 +1,13 @@
 from math import isclose
 
-from nollm.dream_geometry.geometry.chart import normalized_phase, phase_distance
+from nollm.dream_geometry.geometry.chart import normalized_phase, phase_distance, relative_phase
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
 from nollm.dream_geometry.geometry.hexgrid import disk, nearest_axial
-from nollm.dream_geometry.geometry.metrics import effective_parent_count, multi_layer_nesting_tendency, repeat_overlap_entropy, summarize_distributions
+from nollm.dream_geometry.geometry.metrics import effective_parent_count, multi_layer_nesting_tendency, phase_recurrence_score, repeat_overlap_entropy, summarize_distributions
 from nollm.dream_geometry.geometry.schedules import DEFAULT_PHASE_SAMPLES, PARAMETER_MATRIX, PhaseSchedule, ScaleRotationSchedule
 from nollm.dream_geometry.geometry.types import AxialCoord, PhaseCoord
 from nollm.dream_geometry.geometry.chart import make_hex_cell
+from nollm.dream_geometry.validation.dg1_baseline_report import _phase_score_for
 
 
 def test_dg1_ar_01_baseline_b_gap8_rotation_recurrence_mod_60() -> None:
@@ -56,3 +57,40 @@ def test_dg1_ar_08_phase_sample_changes_values_not_definitions() -> None:
     second = normalized_phase(schedule.chart_for_layer(8, PhaseSchedule(0.5, 0.0)))
     assert first != second
     assert hasattr(first, "q") and hasattr(second, "r")
+
+
+def test_dg1_1_ar_01_relative_phase_changes_with_translation() -> None:
+    source = ScaleRotationSchedule(PARAMETER_MATRIX[0]).chart_for_layer(0, PhaseSchedule(0.0, 0.0))
+    first = ScaleRotationSchedule(PARAMETER_MATRIX[0]).chart_for_layer(1, PhaseSchedule(0.0, 0.0))
+    second = ScaleRotationSchedule(PARAMETER_MATRIX[0]).chart_for_layer(1, PhaseSchedule(0.5, 0.0))
+    assert relative_phase(source, first) != relative_phase(source, second)
+
+
+def test_dg1_1_ar_02_relative_phase_is_not_local_phase_echo() -> None:
+    schedule = ScaleRotationSchedule(PARAMETER_MATRIX[1])
+    phase = PhaseSchedule(0.5, 0.0)
+    local = normalized_phase(schedule.chart_for_layer(8, phase))
+    relative = relative_phase(schedule.chart_for_layer(0, phase), schedule.chart_for_layer(8, phase))
+    assert relative != local
+
+
+def test_dg1_1_ar_03_phase_recurrence_score_can_distinguish_samples() -> None:
+    repeated = (PhaseCoord(0.0, 0.0), PhaseCoord(0.0, 0.0), PhaseCoord(0.0, 0.0))
+    varied = (PhaseCoord(0.0, 0.0), PhaseCoord(0.25, 0.0), PhaseCoord(0.5, 0.0))
+    assert phase_recurrence_score(repeated) > phase_recurrence_score(varied)
+
+
+def test_dg1_1_ar_04_baseline_b_gap8_and_gap16_rotation_recurrence_remain() -> None:
+    baseline = next(item for item in PARAMETER_MATRIX if item.parameter_id == "B")
+    assert (baseline.delta_theta_degrees * 8) % 60.0 == 0.0
+    assert (baseline.delta_theta_degrees * 16) % 60.0 == 0.0
+
+
+def test_dg1_1_ar_05_report_phase_score_is_not_globally_constant() -> None:
+    scores = {
+        _phase_score_for(ScaleRotationSchedule(parameter), gap, phase)
+        for parameter in PARAMETER_MATRIX
+        for gap in (1, 2, 4, 8, 16)
+        for phase in DEFAULT_PHASE_SAMPLES
+    }
+    assert len(scores) > 1

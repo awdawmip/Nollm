@@ -14,7 +14,7 @@ import platform
 import sys
 from pathlib import Path
 
-from nollm.dream_geometry.geometry.chart import make_hex_cell, normalized_phase
+from nollm.dream_geometry.geometry.chart import make_hex_cell, relative_phase
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
 from nollm.dream_geometry.geometry.hexgrid import disk, nearest_axial
 from nollm.dream_geometry.geometry.metrics import percentile, phase_recurrence_score, summarize_distributions
@@ -135,6 +135,7 @@ def build_report() -> str:
             "- DG1 does not select a final beta/theta/phase policy.",
             "- DG1 uses float64 tolerance, not exact algebraic-number computation.",
             "- Phase samples are synthetic local-chart offsets and do not represent final global translation policy.",
+            "- rotation recurrence reports angle modulo 60 degrees; relative phase recurrence reports phase(layer0 <- layer) over base_layer + gap targets; coverage recurrence is represented by quantized overlap entropy.",
             "- This report does not prove runtime recall, OpenClaw behavior, Field Dynamics, Query Probe behavior, or memory quality.",
         ]
     )
@@ -167,7 +168,11 @@ def _distributions_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSc
 
 
 def _phase_score_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSchedule) -> float:
-    phases = tuple(normalized_phase(schedule.chart_for_layer(layer, phase)) for layer in range(0, 33, gap))
+    reference_chart = schedule.chart_for_layer(0, PhaseSchedule(0.0, 0.0))
+    phases = tuple(
+        relative_phase(reference_chart, schedule.chart_for_layer(base_layer + gap, phase))
+        for base_layer in range(0, 33 - gap)
+    )
     return phase_recurrence_score(phases)
 
 

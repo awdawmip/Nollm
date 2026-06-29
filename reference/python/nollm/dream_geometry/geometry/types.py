@@ -6,7 +6,7 @@ filesystem, network, subprocess, or memory behavior.
 """
 
 from dataclasses import dataclass
-from math import isfinite, sqrt
+from math import fmod, isfinite, pi, sqrt
 from types import MappingProxyType
 from typing import Mapping
 
@@ -91,6 +91,27 @@ class CellRef:
         _require_non_empty_string(self.chart_id, "chart_id")
 
 
+@dataclass(frozen=True, order=True)
+class ChartGeometryFingerprint:
+    """Immutable identity for one concrete local chart geometry."""
+
+    chart_id: str
+    layer_index: int
+    side_length: float
+    rotation_radians: float
+    translation: Vec2
+    phase_metadata_items: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_non_empty_string(self.chart_id, "chart_id")
+        _require_int(self.layer_index, "layer_index")
+        _require_positive_number(self.side_length, "side_length")
+        _require_finite_number(self.rotation_radians, "rotation_radians")
+        for key, value in self.phase_metadata_items:
+            _require_non_empty_string(key, "phase_metadata key")
+            _require_non_empty_string(value, "phase_metadata value")
+
+
 @dataclass(frozen=True)
 class GeometryTolerance:
     """Float comparison tolerances used by DG1 geometry operations."""
@@ -152,6 +173,7 @@ class HexCell:
     rotation_radians: float
     vertices: tuple[Vec2, ...]
     metadata: ComputationMetadata
+    chart_fingerprint: ChartGeometryFingerprint | None = None
 
     def __post_init__(self) -> None:
         _require_positive_number(self.side_length, "side_length")
@@ -182,6 +204,17 @@ class LocalChart:
         _require_finite_number(self.rotation_radians, "rotation_radians")
         object.__setattr__(self, "phase_metadata", MappingProxyType(dict(self.phase_metadata)))
 
+    @property
+    def geometry_fingerprint(self) -> ChartGeometryFingerprint:
+        return ChartGeometryFingerprint(
+            chart_id=self.chart_id,
+            layer_index=self.layer_index,
+            side_length=self.side_length,
+            rotation_radians=_normalize_rotation(self.rotation_radians),
+            translation=self.translation,
+            phase_metadata_items=tuple(sorted((str(key), str(value)) for key, value in self.phase_metadata.items())),
+        )
+
 
 def _require_int(value: int, label: str) -> None:
     if not isinstance(value, int) or isinstance(value, bool):
@@ -210,6 +243,15 @@ def _require_positive_number(value: float, label: str) -> None:
         raise ValueError(f"{label} must be positive")
 
 
+def _normalize_rotation(value: float) -> float:
+    result = fmod(value, 2.0 * pi)
+    if result < 0.0:
+        result += 2.0 * pi
+    if abs(result) <= 1e-12 or abs(result - 2.0 * pi) <= 1e-12:
+        return 0.0
+    return result
+
+
 DEFAULT_TOLERANCE = GeometryTolerance()
 
 
@@ -234,6 +276,7 @@ __all__ = [
     "DEFAULT_TOLERANCE",
     "AxialCoord",
     "CellRef",
+    "ChartGeometryFingerprint",
     "ComputationMetadata",
     "CubeCoord",
     "GeometryTolerance",

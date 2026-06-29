@@ -87,3 +87,28 @@ def test_dg1_cv_12_kernel_carries_direction_area_and_metadata() -> None:
     assert kernel.direction is CoverageDirection.fine_to_coarse
     assert kernel.overlap_area == kernel.source_area == kernel.target_area
     assert kernel.metadata.numeric_mode == "float64_tolerance"
+
+
+def test_dg1_1_cv_01_same_chart_id_different_translation_rejected() -> None:
+    source = make_hex_cell(LocalChart("source", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(0, 0))
+    first = make_hex_cell(LocalChart("target", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(0, 0))
+    second = make_hex_cell(LocalChart("target", 0, 1.0, 0.0, Vec2(100, 0)), AxialCoord(10, 0))
+    with pytest.raises(PartitionValidationError):
+        compute_distribution(source, (first, second), CoverageDirection.fine_to_coarse)
+
+
+def test_dg1_1_cv_02_same_chart_id_different_rotation_rejected() -> None:
+    source = make_hex_cell(LocalChart("source", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(0, 0))
+    first = make_hex_cell(LocalChart("target", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(0, 0))
+    second = make_hex_cell(LocalChart("target", 0, 1.0, 0.5, Vec2(100, 0)), AxialCoord(10, 0))
+    with pytest.raises(PartitionValidationError):
+        compute_distribution(source, (first, second), CoverageDirection.fine_to_coarse)
+
+
+def test_dg1_1_cv_03_same_geometry_nonoverlapping_targets_still_valid() -> None:
+    source = make_hex_cell(LocalChart("source", 1, 0.5, 0.0, Vec2(0, 0)), AxialCoord(0, 0))
+    chart = LocalChart("target", 0, 1.0, 0.0, Vec2(0, 0))
+    first = make_hex_cell(chart, AxialCoord(0, 0))
+    second = make_hex_cell(chart, AxialCoord(2, 0))
+    distribution = compute_distribution(source, (first, second), CoverageDirection.fine_to_coarse)
+    assert distribution.partition_size == 2

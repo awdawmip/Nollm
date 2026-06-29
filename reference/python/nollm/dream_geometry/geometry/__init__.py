@@ -7,7 +7,7 @@ truth decisions, real memory writes, recall resolution, Field/Cortex/Adapter
 behavior, or runtime integration.
 """
 
-from .chart import axial_to_world, make_hex_cell, normalized_phase, phase_distance, world_to_fractional_axial
+from .chart import axial_to_world, make_hex_cell, normalized_phase, phase_distance, relative_phase, world_to_fractional_axial
 from .coverage import CoverageDirection, CoverageDistribution, CoverageKernel, compute_distribution, compute_kernel
 from .hexgrid import axial_to_cube, cube_to_axial, disk, hex_distance, nearest_axial, neighbors, ring
 from .types import AxialCoord, CellRef, CubeCoord, GeometryTolerance, HexCell, LocalChart, Vec2
@@ -35,6 +35,7 @@ __all__ = [
     "neighbors",
     "normalized_phase",
     "phase_distance",
+    "relative_phase",
     "ring",
     "world_to_fractional_axial",
 ]
