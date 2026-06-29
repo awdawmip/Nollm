@@ -85,3 +85,82 @@ Known risks:
 Boundary statement:
 
 No OpenClaw, runtime, memory, plugin, sidecar, agent, trial, rollback, native memory, real memory, or Git history rewrite operation was performed.
+
+---
+
+# DG0.1 Firewall Repair Delivery Addendum
+
+Task: DG0.1 Dependency Firewall, Fresh Import Purity, and Constitution Consistency Repair
+
+Repair branch: `feature/dg0-1-firewall-repair`
+
+Implementation base SHA: `f8b964cfcfdc84c52fa7a89fea29fb4f9b51bce5`
+
+DG0 implementation SHA: `c87cfb4c75599bfd3bbf764a966e7ed5147fdd5e`
+
+DG0.1 repair SHA: this addendum is committed in the DG0.1 repair commit. A Git commit cannot embed its own literal object id without changing that id; the exact repair SHA and bundle HEAD are verified by `git rev-parse HEAD` and `git bundle list-heads` after commit creation and recorded in the final delivery response.
+
+DG0.1 scope:
+
+- Rebuilt AST import-edge extraction with path, importer module, imported module, line number, and import form.
+- Added coverage for `from package import name`, relative imports, V2 module mapping, root-package OpenClaw imports, and dynamic import forms.
+- Banned DG0.1 dynamic loading mechanisms in V2 source: `importlib`, `runpy`, `pkgutil`, `__import__`, `exec`, `compile`, and `ctypes`.
+- Rebuilt V2 import purity checks to run each V2 package import in a fresh Python subprocess after monkeypatching file I/O, socket, subprocess, and urllib entry points.
+- Added negative regression coverage for B1-B4.
+- Repaired dependency-direction documentation so `A -> B` means `A` may import `B`.
+
+DG0.1 targeted test command and result:
+
+```text
+cd reference/python
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q tests/test_dg0_v2_module_boundaries.py tests/test_dg0_v2_protocol_contracts.py tests/test_dg0_v2_dependency_firewall.py
+19 passed in 5.54s
+```
+
+DG0.1 full test command and result:
+
+```text
+cd reference/python
+python3 run_tests.py
+904 passed, 183 subtests passed in 337.30s (0:05:37)
+```
+
+DG0.1 hygiene command and result:
+
+```text
+cd reference/python
+python3 scripts/check_package_hygiene.py ../..
+PASS package hygiene
+```
+
+DG0.1 pre-commit review:
+
+```text
+git diff --check
+Exit code: 0
+
+git status --short
+ M docs/architecture/NOLLM_V2_MODULE_BOUNDARIES_DG0.md
+ M docs/delivery/DG0_V2_MODULE_BOUNDARIES_DELIVERY_RECEIPT.md
+ M protocol/v2/MODULE_DEPENDENCY_RULES.md
+ M reference/python/tests/test_dg0_v2_dependency_firewall.py
+ M reference/python/tests/test_dg0_v2_module_boundaries.py
+
+git diff --stat
+ docs/architecture/NOLLM_V2_MODULE_BOUNDARIES_DG0.md |  29 +--
+ docs/delivery/DG0_V2_MODULE_BOUNDARIES_DELIVERY_RECEIPT.md | addendum
+ protocol/v2/MODULE_DEPENDENCY_RULES.md             |  22 +-
+ reference/python/tests/test_dg0_v2_dependency_firewall.py | 274 +++++++++++++++------
+ reference/python/tests/test_dg0_v2_module_boundaries.py  |  95 ++++++-
+```
+
+DG0.1 bundle:
+
+```text
+Filename: C:\Users\chaos\nollm_dg0_01_firewall_repair_20260629.bundle
+Verification is performed after final commit creation; raw `git bundle verify` and `git bundle list-heads` output are recorded in the final delivery response.
+```
+
+DG0.1 boundary statement:
+
+No OpenClaw, runtime, memory, plugin, sidecar, agent, trial, rollback, native memory, real memory, network dependency, Node installation, SQLite, embedding, external LLM, or Git history rewrite operation was performed.

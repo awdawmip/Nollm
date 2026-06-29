@@ -1,14 +1,24 @@
 # V2 Module Dependency Rules
 
-The only allowed production dependency direction is:
+The only allowed production dependency direction uses this convention:
 
 ```text
-protocol -> evidence, geometry, cortex
-evidence + geometry -> field
-protocol + evidence + geometry + field + cortex -> recall
-protocol + evidence + cortex + recall -> adapters
-validation -> any V2 module as read-only test support
+A -> B means module A is allowed to import module B in Python source.
 ```
+
+Allowed edges:
+
+```text
+evidence -> protocol
+geometry -> protocol
+cortex -> protocol
+field -> protocol, evidence, geometry
+recall -> protocol, evidence, geometry, field, cortex
+adapters -> protocol, evidence, cortex, recall
+validation -> protocol, evidence, geometry, field, cortex, recall, adapters
+```
+
+Protocol is the foundation/service layer, so production modules import protocol contracts. The arrows above are import edges, not visual foundation arrows.
 
 Forbidden edges include:
 

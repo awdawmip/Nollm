@@ -17,28 +17,23 @@ The V2 namespace is `nollm.dream_geometry`. It is parallel to existing V1 and D-
 | `adapters` | Thin CLI, JSON, OpenClaw, and receipt adaptation after core validation exists. | Defining math, bypassing ledger, recomputing geometry internals, runtime reverse dependency. |
 | `validation` | Read-only fixtures, property tests, metrics, reports. | Production recall path, production state mutation. |
 
-## Dependency DAG
+## Python Import Dependency DAG
+
+In this section, `A -> B` means module `A` is allowed to import module `B` in Python source.
 
 ```text
-protocol
-  -> evidence
-  -> geometry
-  -> cortex
-
-evidence + geometry
-  -> field
-
-protocol + evidence + geometry + field + cortex
-  -> recall
-
-protocol + evidence + cortex + recall
-  -> adapters
-
-validation
-  -> may read protocol, evidence, geometry, field, cortex, recall, adapters
+evidence -> protocol
+geometry -> protocol
+cortex -> protocol
+field -> protocol, evidence, geometry
+recall -> protocol, evidence, geometry, field, cortex
+adapters -> protocol, evidence, cortex, recall
+validation -> protocol, evidence, geometry, field, cortex, recall, adapters
 ```
 
 Production modules must not import `validation`. V1 and OpenClaw runtime modules must not import `nollm.dream_geometry` during DG0. V2 must not import V1 runtime, OpenClaw, sidecar, native memory, subprocess runners, or legacy recall.
+
+Protocol remains the foundation/service layer for stable contracts, but the Python import arrows point toward it rather than away from it.
 
 ## Allowed Data Flow
 
