@@ -7,6 +7,11 @@ Interpretations are separately stored statements supplied by callers. Revision
 Threads are explicit relations and do not choose a single truth. Usage State is
 current use posture only.
 
+An Interpretation subject is always a Dream Shard. DE1 does not model
+interpretation-of-interpretation chains; relations among interpretations must be
+represented explicitly through revision threads or later-stage objects, not by
+changing the subject domain.
+
 The store is single-process, single-writer, and file-first. It uses canonical
 JSON and JSONL ledger events for deterministic replay in synthetic and local
 tests. It does not provide concurrency, migration, external verification,

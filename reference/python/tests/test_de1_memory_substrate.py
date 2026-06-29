@@ -21,6 +21,7 @@ from nollm.dream_geometry.evidence import (
 from nollm.dream_geometry.protocol.contracts import (
     InterpretationAuthoringMode,
     InterpretationKind,
+    LedgerEventKind,
     OriginKind,
     RevisionRelation,
     UsageState,
@@ -382,7 +383,94 @@ def test_de1_1_t363_revision_and_usage_targets_work_with_unique_ids(tmp_path) ->
     assert open_store(tmp_path).get_usage_state(interpretation.interpretation_id) is UsageState.active
 
 
+def test_de1_1r_t365_t371_interpretation_subject_must_be_shard_and_retry_is_idempotent(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:subject")
+    interpretation = _interpretation("interpretation:first", shard.shard_id)
+    store.put_dream_shard(shard)
+    first = store.put_interpretation(interpretation)
+    retry = store.put_interpretation(interpretation)
+    assert first.created is True
+    assert retry.idempotent is True
+    assert len(store.read_ledger()) == 2
+    assert store.get_interpretation(interpretation.interpretation_id).subject_shard_id == shard.shard_id
+
+
+def test_de1_1r_t366_nested_interpretation_write_rejected_without_side_effects(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:subject")
+    first = _interpretation("interpretation:first", shard.shard_id)
+    nested = _interpretation("interpretation:nested", first.interpretation_id)
+    store.put_dream_shard(shard)
+    store.put_interpretation(first)
+    before = (store.read_ledger(), store.state_projection())
+    with pytest.raises(ValueError, match="subject shard"):
+        store.put_interpretation(nested)
+    assert not (tmp_path / "interpretations" / (sha256(nested.interpretation_id.encode("utf-8")).hexdigest() + ".json")).exists()
+    assert (store.read_ledger(), store.state_projection()) == before
+
+
+def test_de1_1r_t367_nested_interpretation_rejected_after_reopen(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:subject")
+    first = _interpretation("interpretation:first", shard.shard_id)
+    nested = _interpretation("interpretation:nested", first.interpretation_id)
+    store.put_dream_shard(shard)
+    store.put_interpretation(first)
+    reopened = open_store(tmp_path)
+    before = (reopened.read_ledger(), reopened.state_projection())
+    with pytest.raises(ValueError, match="subject shard"):
+        reopened.put_interpretation(nested)
+    assert (reopened.read_ledger(), reopened.state_projection()) == before
+
+
+def test_de1_1r_t368_on_disk_nested_interpretation_rejected_on_open(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:subject")
+    first = _interpretation("interpretation:first", shard.shard_id)
+    nested = _interpretation("interpretation:nested", first.interpretation_id)
+    store.put_dream_shard(shard)
+    store.put_interpretation(first)
+    _write_record_with_ledger(store, tmp_path, "interpretations", nested.interpretation_id, nested)
+    with pytest.raises(ValueError, match="subject shard"):
+        MemorySubstrateStore(tmp_path)
+
+
+def test_de1_1r_t369_t370_revision_and_usage_still_accept_interpretation_targets(tmp_path) -> None:
+    store = open_store(tmp_path)
+    shard = _shard("shard:subject")
+    interpretation = _interpretation("interpretation:first", shard.shard_id)
+    store.put_dream_shard(shard)
+    store.put_interpretation(interpretation)
+    store.put_revision_thread(
+        RevisionThread(
+            "revision:subject-and-interpretation",
+            (shard.shard_id, interpretation.interpretation_id),
+            (RevisionEdge(interpretation.interpretation_id, shard.shard_id, RevisionRelation.clarifies, ()),),
+            (),
+        )
+    )
+    store.record_usage_transition(UsageStateTransition("state:interpretation-active", interpretation.interpretation_id, UsageState.tentative, UsageState.active, (), "2026-06-29T09:00:00+08:00"))
+    reopened = open_store(tmp_path)
+    assert reopened.get_revision_thread("revision:subject-and-interpretation").member_record_ids == (interpretation.interpretation_id, shard.shard_id)
+    assert reopened.get_usage_state(interpretation.interpretation_id) is UsageState.active
+
+
 def _write_manual_record(root, bucket: str, record_id: str, payload: dict) -> None:
     path = root / bucket / (sha256(record_id.encode("utf-8")).hexdigest() + ".json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+
+
+def _write_record_with_ledger(store, root, bucket: str, record_id: str, record) -> None:
+    _write_manual_record(root, bucket, record_id, json.loads(canonical_json(record)))
+    event_kind = {
+        "shards": LedgerEventKind.shard_recorded,
+        "interpretations": LedgerEventKind.interpretation_recorded,
+        "revision_threads": LedgerEventKind.revision_thread_recorded,
+        "state_transitions": LedgerEventKind.usage_state_transition_recorded,
+    }[bucket]
+    event = store._make_event(event_kind, record_id, payload_key(record), None)
+    ledger_path = root / "ledger" / "events.jsonl"
+    with ledger_path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(canonical_json(event) + "\n")

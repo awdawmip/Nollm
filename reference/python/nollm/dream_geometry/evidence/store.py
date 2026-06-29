@@ -75,7 +75,7 @@ class MemorySubstrateStore:
         return self._put_record("shards", shard.shard_id, shard, LedgerEventKind.shard_recorded)
 
     def put_interpretation(self, record: InterpretationRecord) -> WriteResult:
-        if not self._record_exists(record.subject_shard_id):
+        if not self._shard_exists(record.subject_shard_id):
             raise ValueError("interpretation subject shard missing")
         return self._put_record("interpretations", record.interpretation_id, record, LedgerEventKind.interpretation_recorded)
 
@@ -207,6 +207,9 @@ class MemorySubstrateStore:
     def _record_exists(self, record_id: str) -> bool:
         return self._record_path("shards", record_id).exists() or self._record_path("interpretations", record_id).exists()
 
+    def _shard_exists(self, shard_id: str) -> bool:
+        return self._record_path("shards", shard_id).exists()
+
     def _ensure_format(self) -> None:
         payload = {"format_version": FORMAT_VERSION, "store_kind": "memory_substrate"}
         if self._format_path.exists():
@@ -221,7 +224,7 @@ class MemorySubstrateStore:
         events = self.read_ledger()
         self._validate_ledger_closure(inventory, events)
         for interpretation in self._load_all("interpretations", _interpretation_from_payload, "interpretation_record"):
-            if not self._record_path("shards", interpretation.subject_shard_id).exists():
+            if not self._shard_exists(interpretation.subject_shard_id):
                 raise ValueError("interpretation subject shard missing")
         for thread in self._load_all("revision_threads", _revision_thread_from_payload, "revision_thread"):
             for member in thread.member_record_ids:

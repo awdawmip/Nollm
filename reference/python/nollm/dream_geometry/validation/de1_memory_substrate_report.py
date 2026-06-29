@@ -144,6 +144,7 @@ def _run_fixtures(root: Path) -> dict[str, object]:
         )
     )
     identity_conflict = _raises(lambda: store.put_interpretation(_interpretation(shard_a.shard_id, shard_a.shard_id)))
+    nested_subject = _raises(lambda: store.put_interpretation(_interpretation("interpretation:nested", interpretation.interpretation_id)))
     reopened = open_store(root)
     orphan_root = root / "orphan-check"
     orphan_store = open_store(orphan_root)
@@ -164,6 +165,7 @@ def _run_fixtures(root: Path) -> dict[str, object]:
         ("F-I reopen validates ledger closure", "pass" if orphan_rejected else "fail"),
         ("F-J opaque field-style refs preserved", "pass" if "basis:field-style-opaque-ref" in reopened.get_interpretation(interpretation.interpretation_id).basis_refs else "fail"),
         ("F-K global record identity enforced", "pass" if identity_conflict else "fail"),
+        ("F-L interpretation subject limited to shard", "pass" if nested_subject else "fail"),
     )
     return {
         "results": results,

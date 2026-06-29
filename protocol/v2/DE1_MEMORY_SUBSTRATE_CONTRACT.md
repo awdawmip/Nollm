@@ -14,6 +14,8 @@ OpenClaw, CLI, adapters, runtime, databases, or vector search.
   context, context refs, and initial usage state.
 - `InterpretationRecord` is a separate externally supplied statement about an
   existing Dream Shard. It never overwrites shard content.
+  Its `subject_shard_id` must resolve to a Dream Shard in the `shards/` bucket,
+  not to another Interpretation.
 - `RevisionThread` records explicit relations among existing shards and
   interpretations. Replacement relations are checked for cycles.
 - `UsageStateTransition` changes only the usage projection of a shard or
@@ -57,3 +59,7 @@ re-evaluate the historical `expected_from_state` against the current projection.
 
 Relative-time expressions are preserved as expressions with optional reference
 instants; DE1 does not normalize them into event facts.
+
+Revision thread members and usage-state targets may still reference either a
+Dream Shard or an Interpretation. Only the Interpretation subject relation is
+restricted to `Interpretation -> DreamShard`.

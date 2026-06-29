@@ -29,6 +29,7 @@
   - DG2.2 clarification: `member_trace_ids` and `expansion_manifest` must be the same canonical tuple, so expansion cannot partially drop members.
 - I-V2-019: DreamShard preserves original expression, origin, and temporal context; later interpretation, state, or revision cannot replace them.
 - I-V2-020: Interpretation is an explicitly separate epistemic object and must not be silently promoted to DreamShard, confirmed fact, or Field placement.
+  - DE1.1R clarification: `InterpretationRecord.subject_shard_id` must identify an existing DreamShard, not another Interpretation.
 - I-V2-021: UsageState denotes current use posture, not truth, authentication, or permanent human confirmation.
 - I-V2-022: Revision relations are explicit and do not automatically determine a unique current truth or mutate member content.
 - I-V2-023: Ledger is an append-only memory-history spine within the DE1 API, not a cryptographic anti-tamper or authorization mechanism.
