@@ -32,6 +32,29 @@ class PhaseSchedule:
 
 
 @dataclass(frozen=True)
+class LayerPhasePolicy:
+    policy_id: str
+    drift_q: float = 0.0
+    drift_r: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.policy_id not in {"constant_local", "layer_drift_control"}:
+            raise ValueError("unsupported layer phase policy")
+
+    def phase_for_layer(self, base: PhaseSchedule, layer_index: int) -> PhaseSchedule:
+        _require_layer(layer_index)
+        return PhaseSchedule(_mod_one(base.phase_q + layer_index * self.drift_q), _mod_one(base.phase_r + layer_index * self.drift_r))
+
+    @classmethod
+    def constant_local(cls) -> "LayerPhasePolicy":
+        return cls("constant_local")
+
+    @classmethod
+    def layer_drift_control(cls) -> "LayerPhasePolicy":
+        return cls("layer_drift_control", 1.0 / 37.0, 2.0 / 41.0)
+
+
+@dataclass(frozen=True)
 class ScaleRotationSchedule:
     parameter_set: ParameterSet
     s0: float = 1.0
@@ -87,6 +110,12 @@ DEFAULT_PHASE_SAMPLES: tuple[PhaseSchedule, ...] = (
 )
 
 
+LAYER_PHASE_POLICIES: tuple[LayerPhasePolicy, ...] = (
+    LayerPhasePolicy.constant_local(),
+    LayerPhasePolicy.layer_drift_control(),
+)
+
+
 def schedules_for_matrix() -> tuple[ScaleRotationSchedule, ...]:
     return tuple(ScaleRotationSchedule(parameter) for parameter in PARAMETER_MATRIX)
 
@@ -96,8 +125,15 @@ def _require_layer(layer_index: int) -> None:
         raise ValueError("layer_index must be a non-negative integer")
 
 
+def _mod_one(value: float) -> float:
+    result = value % 1.0
+    return 0.0 if abs(result - 1.0) <= 1e-12 or abs(result) <= 1e-12 else result
+
+
 __all__ = [
     "DEFAULT_PHASE_SAMPLES",
+    "LAYER_PHASE_POLICIES",
+    "LayerPhasePolicy",
     "PARAMETER_MATRIX",
     "ParameterSet",
     "PhaseSchedule",

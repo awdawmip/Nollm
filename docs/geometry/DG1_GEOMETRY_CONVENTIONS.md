@@ -45,11 +45,15 @@ Layer index is an experiment/report coordinate only. It is not a parent-child re
 
 `normalized_phase(chart)` maps translation back through inverse rotation and inverse `sqrt(3) * side_length` scaling into fractional axial coordinates, then returns `(q mod 1, r mod 1)`. It is a single-chart local diagnostic.
 
-`relative_phase(source_chart, target_chart)` reports `phase(source <- target)` by mapping the target chart origin, or an explicit world reference point, into the source chart fractional axial basis and reducing it mod 1. DG1 baseline recurrence scans compute `phase(layer0 <- layer)` over target layers derived from `base_layer + gap`; they do not compare repeated copies of one local phase input.
+`relative_phase(source_chart, target_chart)` reports `phase(source <- target)` by mapping the target chart origin, or an explicit world reference point, into the source chart fractional axial basis and reducing it mod 1. DG1 baseline recurrence scans compute `phase(layer <- layer + gap)` for each fixed-gap source/target layer pair; they do not compare repeated copies of one local phase input and do not use fixed layer 0 as the source for every pair.
 
 `phase_distance` is a torus distance over `[0, 1)^2`.
 
 Phase is a numeric anti-resonance diagnostic. It is not a query entry, anchor, or semantic coordinate. Rotation recurrence, relative phase recurrence, and coverage recurrence are separate finite-window diagnostics.
+
+`constant_local` holds one local phase value across layers and may legitimately produce high fixed-gap relative phase recurrence in self-similar schedules. `layer_drift_control` uses `((q + layer/37) mod 1, (r + 2*layer/41) mod 1)` only as a deterministic finite-window diagnostic control; it is not a final translation or placement rule.
+
+The phase recurrence score threshold is the default torus distance tolerance `1e-9` under DG1 float64 tolerance unless a caller explicitly supplies another threshold to the metric.
 
 ## Numeric Mode
 

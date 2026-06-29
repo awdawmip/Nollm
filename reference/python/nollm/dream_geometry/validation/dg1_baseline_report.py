@@ -18,7 +18,7 @@ from nollm.dream_geometry.geometry.chart import make_hex_cell, relative_phase
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
 from nollm.dream_geometry.geometry.hexgrid import disk, nearest_axial
 from nollm.dream_geometry.geometry.metrics import percentile, phase_recurrence_score, summarize_distributions
-from nollm.dream_geometry.geometry.schedules import DEFAULT_PHASE_SAMPLES, PARAMETER_MATRIX, PhaseSchedule, ScaleRotationSchedule
+from nollm.dream_geometry.geometry.schedules import DEFAULT_PHASE_SAMPLES, LAYER_PHASE_POLICIES, PARAMETER_MATRIX, LayerPhasePolicy, PhaseSchedule, ScaleRotationSchedule
 from nollm.dream_geometry.geometry.types import AxialCoord, GeometryTolerance
 
 
@@ -49,6 +49,7 @@ def build_report() -> str:
         f"- gaps: `{GAPS}`",
         f"- source sample: axial disk radius `{SOURCE_RADIUS}`",
         f"- phase samples: `{tuple((phase.phase_q, phase.phase_r) for phase in DEFAULT_PHASE_SAMPLES)}`",
+        f"- layer phase policies: `{tuple(policy.policy_id for policy in LAYER_PHASE_POLICIES)}`",
         f"- threshold: `{THRESHOLD}`",
         "",
         "## Parameter Matrix",
@@ -76,7 +77,7 @@ def build_report() -> str:
                     gap,
                     _phase_label(phase),
                     _distributions_for(schedule, gap, phase),
-                    _phase_score_for(schedule, gap, phase),
+                    _phase_score_for(schedule, gap, phase, LayerPhasePolicy.constant_local()),
                 )
                 rows.append(summary)
                 lines.append(
@@ -123,6 +124,28 @@ def build_report() -> str:
     lines.extend(
         [
             "",
+            "## Relative Phase Recurrence Diagnostics",
+            "",
+            "Relative phase recurrence is computed from `phase(source_layer <- target_layer)` over fixed-gap pairs `layer -> layer + gap`.",
+            "",
+            "| parameter | phase policy | base phase | gap | sample count | phase recurrence score | rotation recurrence mod 60 |",
+            "|---|---|---|---:|---:|---:|---|",
+        ]
+    )
+    for parameter in PARAMETER_MATRIX:
+        schedule = ScaleRotationSchedule(parameter)
+        for policy in LAYER_PHASE_POLICIES:
+            for phase in DEFAULT_PHASE_SAMPLES:
+                for gap in GAPS:
+                    rotation_recurrence = "yes" if (parameter.delta_theta_degrees * gap) % 60.0 == 0.0 else "no"
+                    sample_count = 33 - gap
+                    lines.append(
+                        f"| {parameter.parameter_id} | {policy.policy_id} | {_phase_label(phase)} | {gap} | {sample_count} | "
+                        f"{_phase_score_for(schedule, gap, phase, policy):.6f} | {rotation_recurrence} |"
+                    )
+    lines.extend(
+        [
+            "",
             "## Observations",
             "",
             "- All A-E parameter sets can be evaluated on layers 0..32 with finite source and target windows.",
@@ -135,7 +158,8 @@ def build_report() -> str:
             "- DG1 does not select a final beta/theta/phase policy.",
             "- DG1 uses float64 tolerance, not exact algebraic-number computation.",
             "- Phase samples are synthetic local-chart offsets and do not represent final global translation policy.",
-            "- rotation recurrence reports angle modulo 60 degrees; relative phase recurrence reports phase(layer0 <- layer) over base_layer + gap targets; coverage recurrence is represented by quantized overlap entropy.",
+            "- rotation recurrence reports angle modulo 60 degrees; relative phase recurrence reports phase(layer <- layer + gap) over fixed-gap layer pairs; coverage recurrence is represented by quantized overlap entropy.",
+            "- `constant_local` and `layer_drift_control` are finite-window diagnostic phase policies only, not final global translation policies.",
             "- This report does not prove runtime recall, OpenClaw behavior, Field Dynamics, Query Probe behavior, or memory quality.",
         ]
     )
@@ -167,10 +191,17 @@ def _distributions_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSc
     return tuple(distributions)
 
 
-def _phase_score_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSchedule) -> float:
-    reference_chart = schedule.chart_for_layer(0, PhaseSchedule(0.0, 0.0))
+def _phase_score_for(
+    schedule: ScaleRotationSchedule,
+    gap: int,
+    phase: PhaseSchedule,
+    policy: LayerPhasePolicy = LayerPhasePolicy.constant_local(),
+) -> float:
     phases = tuple(
-        relative_phase(reference_chart, schedule.chart_for_layer(base_layer + gap, phase))
+        relative_phase(
+            schedule.chart_for_layer(base_layer, policy.phase_for_layer(phase, base_layer)),
+            schedule.chart_for_layer(base_layer + gap, policy.phase_for_layer(phase, base_layer + gap)),
+        )
         for base_layer in range(0, 33 - gap)
     )
     return phase_recurrence_score(phases)

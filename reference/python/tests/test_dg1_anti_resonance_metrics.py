@@ -1,12 +1,15 @@
 from math import isclose
 
+import pytest
+
 from nollm.dream_geometry.geometry.chart import normalized_phase, phase_distance, relative_phase
-from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
+from nollm.dream_geometry.geometry.coverage import CoverageDirection, CoverageDistribution, CoverageResidual, ResidualReason, compute_distribution
 from nollm.dream_geometry.geometry.hexgrid import disk, nearest_axial
 from nollm.dream_geometry.geometry.metrics import effective_parent_count, multi_layer_nesting_tendency, phase_recurrence_score, repeat_overlap_entropy, summarize_distributions
-from nollm.dream_geometry.geometry.schedules import DEFAULT_PHASE_SAMPLES, PARAMETER_MATRIX, PhaseSchedule, ScaleRotationSchedule
+from nollm.dream_geometry.geometry.schedules import DEFAULT_PHASE_SAMPLES, LAYER_PHASE_POLICIES, LayerPhasePolicy, PARAMETER_MATRIX, PhaseSchedule, ScaleRotationSchedule
 from nollm.dream_geometry.geometry.types import AxialCoord, PhaseCoord
 from nollm.dream_geometry.geometry.chart import make_hex_cell
+from nollm.dream_geometry.validation import dg1_baseline_report as report_module
 from nollm.dream_geometry.validation.dg1_baseline_report import _phase_score_for
 
 
@@ -86,11 +89,53 @@ def test_dg1_1_ar_04_baseline_b_gap8_and_gap16_rotation_recurrence_remain() -> N
     assert (baseline.delta_theta_degrees * 16) % 60.0 == 0.0
 
 
-def test_dg1_1_ar_05_report_phase_score_is_not_globally_constant() -> None:
-    scores = {
-        _phase_score_for(ScaleRotationSchedule(parameter), gap, phase)
-        for parameter in PARAMETER_MATRIX
-        for gap in (1, 2, 4, 8, 16)
-        for phase in DEFAULT_PHASE_SAMPLES
-    }
-    assert len(scores) > 1
+def test_dg1_2_ar_01_report_phase_score_uses_pair_local_source_chart() -> None:
+    schedule = ScaleRotationSchedule(next(item for item in PARAMETER_MATRIX if item.parameter_id == "B"))
+    base_phase = PhaseSchedule(1.0 / 5.0, 2.0 / 5.0)
+    gap = 8
+    policy = LayerPhasePolicy.constant_local()
+    expected = tuple(
+        relative_phase(
+            schedule.chart_for_layer(base_layer, policy.phase_for_layer(base_phase, base_layer)),
+            schedule.chart_for_layer(base_layer + gap, policy.phase_for_layer(base_phase, base_layer + gap)),
+        )
+        for base_layer in range(0, 33 - gap)
+    )
+    assert _phase_score_for(schedule, gap, base_phase, policy) == phase_recurrence_score(expected)
+
+
+def test_dg1_2_ar_02_constant_policy_preserves_self_similar_recurrence() -> None:
+    schedule = ScaleRotationSchedule(next(item for item in PARAMETER_MATRIX if item.parameter_id == "B"))
+    score = _phase_score_for(schedule, 8, PhaseSchedule(1.0 / 5.0, 2.0 / 5.0), LayerPhasePolicy.constant_local())
+    assert isclose(score, 1.0, rel_tol=0.0, abs_tol=1e-12)
+
+
+def test_dg1_2_ar_03_layer_drift_control_differs_from_constant_policy() -> None:
+    schedule = ScaleRotationSchedule(next(item for item in PARAMETER_MATRIX if item.parameter_id == "B"))
+    base_phase = PhaseSchedule(1.0 / 5.0, 2.0 / 5.0)
+    constant = _phase_score_for(schedule, 8, base_phase, LayerPhasePolicy.constant_local())
+    drift = _phase_score_for(schedule, 8, base_phase, LayerPhasePolicy.layer_drift_control())
+    assert abs(constant - drift) > 1e-12
+
+
+def test_dg1_2_ar_04_report_text_names_phase_policies_and_limits(monkeypatch: pytest.MonkeyPatch) -> None:
+    baseline = next(item for item in PARAMETER_MATRIX if item.parameter_id == "B")
+    empty_distribution = CoverageDistribution(
+        source_cell=make_hex_cell(ScaleRotationSchedule(baseline).chart_for_layer(0), AxialCoord(0, 0)),
+        direction=CoverageDirection.fine_to_coarse,
+        kernels=(),
+        residual=CoverageResidual(1.0, (ResidualReason.outside_supplied_partition,)),
+        total_mass=1.0,
+        partition_size=0,
+    )
+    monkeypatch.setattr(report_module, "PARAMETER_MATRIX", (baseline,))
+    monkeypatch.setattr(report_module, "DEFAULT_PHASE_SAMPLES", (PhaseSchedule(1.0 / 5.0, 2.0 / 5.0),))
+    monkeypatch.setattr(report_module, "GAPS", (8, 16))
+    monkeypatch.setattr(report_module, "_distributions_for", lambda *_args, **_kwargs: (empty_distribution,))
+    report = report_module.build_report()
+    assert "Relative Phase Recurrence Diagnostics" in report
+    assert "constant_local" in report
+    assert "layer_drift_control" in report
+    assert "phase(layer0 <- layer)" not in report
+    assert "gap 8 and gap 16" in report
+    assert {policy.policy_id for policy in LAYER_PHASE_POLICIES} == {"constant_local", "layer_drift_control"}
