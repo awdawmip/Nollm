@@ -14,6 +14,11 @@ They are not yet the stable V1 external recall/tool surface.
 - E1 adds an internal Dream Geometry experiment runner. It composes D3-D8
   records over the OpenClaw fixture and writes a deterministic experimental
   report. It is not a stable V1 recall/tool surface and does not write cards.
+- DG0/DG1/DG2/DE1/DC1/DR1 define the V2 reference-side protocol stack through
+  a read-only Recall Resolver foundation. DR1 returns ephemeral RecallDigest
+  values over explicit finite universes; it is not runtime recall, OpenClaw
+  integration, automatic context composition, semantic search, or persistent
+  memory.
 
 Stable Core remains filesystem-first, explicit, ledgered, and auditable. Dream
 Geometry records are experimental primitives unless a later task explicitly

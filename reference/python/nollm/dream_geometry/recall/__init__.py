@@ -1,9 +1,41 @@
-"""Recall boundary for Dream Geometry V2.
+"""Dream Geometry DR1 Recall Resolver.
 
-Allowed: future Probe propagation, evidence fallback, state/time/revision
-filtering, and Recall Digest protocols.
-Forbidden: LLM calls, Evidence writes, direct OpenClaw reads, geometry rule
-definition, or runtime integration.
+Allowed: read-only deterministic recall digest construction over explicit DR1
+universes.
+Forbidden: persistence, upstream mutation, adapters, runtime access, OpenClaw,
+NLP, semantic search, embeddings, vector search, or database-backed recall.
 """
 
-__all__: list[str] = []
+from .resolver import resolve_recall
+from .types import (
+    EvidenceQualification,
+    ProbeAtom,
+    ProposalAdmission,
+    ProposalReadRecord,
+    RecallDigest,
+    RecallDigestStatus,
+    RecallPolicy,
+    RecallResultItem,
+    RecallUniverse,
+    ResolvedRelativeSpan,
+    RuntimeTimeResolution,
+    TraceSemanticProjection,
+    TraversalRecord,
+)
+
+__all__ = [
+    "EvidenceQualification",
+    "ProbeAtom",
+    "ProposalAdmission",
+    "ProposalReadRecord",
+    "RecallDigest",
+    "RecallDigestStatus",
+    "RecallPolicy",
+    "RecallResultItem",
+    "RecallUniverse",
+    "ResolvedRelativeSpan",
+    "RuntimeTimeResolution",
+    "TraceSemanticProjection",
+    "TraversalRecord",
+    "resolve_recall",
+]

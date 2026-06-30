@@ -1,0 +1,73 @@
+# DR1 Recall Resolver Contract
+
+DR1 defines a read-only foundation for resolving a `CompiledQueryProbe` against
+an explicit finite `RecallUniverse`.
+
+## Inputs
+
+- `CompiledQueryProbe`: DC1 query object. The resolver reads it as supplied and
+  does not recompile it.
+- `RecallUniverse`: explicit finite proposal, trace, cover, coverage, gravity,
+  interpretation, and revision objects supplied by the caller.
+- `RuntimeTimeResolution`: caller-supplied resolution for relative-time query
+  atoms. Missing or incomplete relative-time resolution defers recall.
+- DE1 evidence store read API: used only to read DreamShard content and
+  UsageState.
+
+## Output
+
+The output is an ephemeral `RecallDigest`.
+
+The digest may contain:
+
+- qualified DreamShard evidence references;
+- exact projection references to proposal steps and accepted traces;
+- directed coverage traversal diagnostics;
+- residual mass diagnostics;
+- gravity tie-break metadata;
+- interpretation and revision context identifiers.
+
+The digest must not be persisted by DR1 and must not mutate Evidence, Cortex,
+Geometry, Field, Adapter, runtime, or ledger state.
+
+## Projection Rules
+
+Recall seeding is structural:
+
+- Query atoms must come from `explicit_in_query` steps or caller-supplied
+  relative-time resolution.
+- Stored support must bind back to a current accepted DC1 proposal step by exact
+  axis, basis, and basis reference identity.
+- Accepted traces may seed recall only through stable or crystallized covers
+  that satisfy DG2 structural support rules.
+- Generic single-axis matches are insufficient.
+
+No NLP, semantic search, embeddings, vector similarity, geometry recall,
+automatic placement, automatic anchor creation, or automatic context composition
+may fill a missing structural projection.
+
+## Evidence Qualification
+
+DreamShard is the primary evidence fallback. UsageState qualifies inclusion:
+
+- `active`: primary evidence;
+- `tentative`: primary evidence only when policy allows tentative evidence;
+- `retired`: context-only unless policy explicitly includes retired context;
+- `rejected`: context-only unless policy explicitly includes rejected context.
+
+Interpretation and Revision records are context. They do not replace DreamShard
+content, determine truth, or change usage state.
+
+## Coverage And Gravity
+
+`K_up` and `K_down` direction is preserved exactly. Residual mass and residual
+reasons are carried into traversal diagnostics instead of being inferred away.
+
+Gravity may be used only as a deterministic tie-break among already eligible
+structural candidates. It is not an external selector, query parameter, anchor,
+index, or evidence source.
+
+## Legacy Compatibility
+
+Legacy DC1 proposal records may be surfaced as read-only context by policy, but
+they do not seed DR1 recall unless admitted through the current DC1 contract.

@@ -16,6 +16,11 @@ Nollm is aligned around a layered rotating honeycomb memory field. Anchors are c
 
 There is no absolute leaf layer. The stable reference runtime remains filesystem-first and deterministic; it does not perform geometry recall or automatic card placement. D-series reference modules contain experimental Dream Geometry records and diagnostics outside the stable V1 tool surface.
 
+DR1 adds a read-only Dream Geometry Recall Resolver foundation in the reference
+modules. It consumes explicit DC1/DE1/DG1/DG2 objects and returns an ephemeral
+RecallDigest; it does not add runtime recall, OpenClaw integration, persistence,
+semantic search, vector search, or automatic context composition.
+
 P5.1 preserves and validates optional card metadata for layer, hex coordinates, anchor fields, and scale links. Core stores these fields as auditable memory metadata; Cortex may interpret them during orientation.
 
 ## V4 Engineering Gravity Decision

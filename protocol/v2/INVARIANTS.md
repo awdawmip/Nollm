@@ -40,5 +40,13 @@
 - I-V2-026: DC1 Growth Proposals are Cortex-owned proposals, not DreamShards, truth claims, Field placements, or Recall results.
 - I-V2-027: DC1 Query Probes are ephemeral and must not be persisted as Cortex, Evidence, Ledger, Field, Recall, or runtime history.
 - I-V2-028: Every accepted DC1 Growth Step has a strict basis reference with exact quote, rule identity, or adjacent predecessor locality as required by its basis kind.
+- I-V2-029: RecallDigest is ephemeral, read-only, and must not be persisted as Evidence, Cortex, Field, Adapter, runtime, or ledger state.
+- I-V2-030: Recall Resolver may consume only supplied Query Probe, RecallUniverse, and read-only DE1/DC1/DG1/DG2 objects; it must not compile, propagate, place, or mutate upstream objects.
+- I-V2-031: Recall seeding requires exact structural projection from explicit query atoms to stored proposal steps and accepted traces; no NLP, semantic search, embedding, or vector similarity may fill projection gaps.
+- I-V2-032: Directed `K_up` and `K_down` traversal preserves coverage direction and residual diagnostics; residual mass is reported, not inferred away.
+- I-V2-033: DreamShard remains the primary evidence fallback; Interpretation, Revision, and UsageState provide context and qualification, not truth override or source replacement.
+- I-V2-034: UsageState is a recall qualification posture only; active and tentative may be primary evidence by policy, while retired and rejected are context-only unless explicitly included as context.
+- I-V2-035: Gravity may be used only as an internal deterministic tie-break over already eligible structural candidates; it is not an external selector, anchor, query parameter, or source of evidence.
+- I-V2-036: Legacy DC1 proposal records are read-only context and cannot seed DR1 recall unless admitted through the current DC1 contract.
 
 Pure geometry acceptance comes before semantics and runtime.
