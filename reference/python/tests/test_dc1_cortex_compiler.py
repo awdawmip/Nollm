@@ -5,8 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from nollm.dream_geometry.cortex import DC1Rejection, compile_query
+from nollm.dream_geometry.cortex import DC1Rejection, compile_query, payload_fingerprint
 from nollm.dream_geometry.cortex.store import CortexStore, open_store as open_cortex_store
+from nollm.dream_geometry.evidence import RevisionEdge, RevisionThread
+from nollm.dream_geometry.protocol.contracts import RevisionRelation
 from nollm.dream_geometry.validation.dc1_cortex_report import _bad_explicit_payload, _fixture_store, _growth_payload, _query_payload
 
 
@@ -143,6 +145,83 @@ def test_dc1_q001_to_q024_query_ephemeral_and_rejections(tmp_path) -> None:
     assert retry == query
 
 
+def test_dc1_1_t401_to_t407_query_time_and_budget_contract(tmp_path) -> None:
+    rule_only_relative = _query_payload()
+    rule_only_relative["axes"][1]["ray"] = [
+        {
+            "step_id": "step_q_relative_rule",
+            "expression": "相对时间",
+            "basis": "source_backed_rule",
+            "basis_refs": [{"ref_type": "rule", "rule_id": "rule_relative_marker", "rule_version": "v1", "rule_label": "relative marker", "source_ref": "project:dc1"}],
+        }
+    ]
+    assert "DC1_QUERY_RELATIVE_EXPLICIT_SPAN_REQUIRED" in _codes(lambda: compile_query(rule_only_relative))
+
+    accepted = compile_query(_query_payload())
+    assert accepted.budget.max_charts == 64
+    assert accepted.budget.max_layers == 64
+    assert accepted.budget.max_cells_per_layer == 256
+
+    non_relative = _query_payload()
+    non_relative["axes"] = [axis for axis in non_relative["axes"] if axis["axis_id"] != "relative_time"]
+    assert "DC1_QUERY_RESOLVED_TIME_FORBIDDEN" in _codes(lambda: compile_query(non_relative))
+
+    old_budget = _query_payload()
+    old_budget["budget"] = {"max_axes": 3, "max_total_steps": 3, "max_ray_steps": 1}
+    assert "DC1_UNKNOWN_FIELD" in _codes(lambda: compile_query(old_budget))
+
+    excessive_query = _query_payload()
+    excessive_query["budget"]["max_charts"] = 65
+    assert "DC1_BUDGET_EXCEEDED" in _codes(lambda: compile_query(excessive_query))
+
+    evidence = _fixture_store(tmp_path / "evidence")
+    cortex = open_cortex_store(tmp_path / "cortex", evidence)
+    excessive_total = _growth_payload()
+    excessive_total["proposal_id"] = "gp_excess_total"
+    excessive_total["budget"]["max_total_steps"] = 49
+    assert "DC1_BUDGET_EXCEEDED" in _codes(lambda: cortex.compile_growth(excessive_total))
+    excessive_ray = _growth_payload()
+    excessive_ray["proposal_id"] = "gp_excess_ray"
+    excessive_ray["budget"]["max_ray_steps"] = 17
+    assert "DC1_BUDGET_EXCEEDED" in _codes(lambda: cortex.compile_growth(excessive_ray))
+
+
+def test_dc1_1_t410_to_t414_conflict_refs_and_rule_identity(tmp_path) -> None:
+    evidence = _fixture_store(tmp_path / "evidence")
+    evidence.put_revision_thread(RevisionThread("revision:weather", ("shard:rain", "shard:city"), (RevisionEdge("shard:city", "shard:rain", RevisionRelation.clarifies, ()),), ()))
+    cortex = open_cortex_store(tmp_path / "cortex", evidence)
+
+    shard_conflict = _growth_payload()
+    shard_conflict["proposal_id"] = "gp_conflict_shard"
+    shard_conflict["possible_conflict_refs"] = ["shard:city"]
+    assert cortex.compile_growth(shard_conflict).proposal.possible_conflict_refs == ("shard:city",)
+
+    interpretation_conflict = _growth_payload()
+    interpretation_conflict["proposal_id"] = "gp_conflict_interpretation"
+    interpretation_conflict["possible_conflict_refs"] = ["interpretation:city-note"]
+    assert cortex.compile_growth(interpretation_conflict).proposal.possible_conflict_refs == ("interpretation:city-note",)
+
+    duplicate = _growth_payload()
+    duplicate["proposal_id"] = "gp_conflict_duplicate"
+    duplicate["possible_conflict_refs"] = ["shard:city", "shard:city"]
+    assert "DC1_DUPLICATE_CONFLICT_REFERENCE" in _codes(lambda: cortex.compile_growth(duplicate))
+
+    revision_ref = _growth_payload()
+    revision_ref["proposal_id"] = "gp_conflict_revision"
+    revision_ref["possible_conflict_refs"] = ["revision:weather"]
+    assert "DC1_CONFLICT_REFERENCE_NOT_EPISTEMIC_RECORD" in _codes(lambda: cortex.compile_growth(revision_ref))
+
+    same_rule = _growth_payload()
+    same_rule["proposal_id"] = "gp_same_rule_ok"
+    same_rule["axes"][3]["ray"][2]["basis_refs"].append({"ref_type": "rule", "rule_id": "rule_weather_vocab", "rule_version": "v1", "rule_label": "weather vocabulary mapping", "source_ref": "project:weather"})
+    assert cortex.compile_growth(same_rule).proposal.proposal_id == "gp_same_rule_ok"
+
+    inconsistent = _growth_payload()
+    inconsistent["proposal_id"] = "gp_rule_inconsistent"
+    inconsistent["axes"][2]["ray"][2]["basis_refs"][0]["rule_version"] = "v2"
+    assert "DC1_RULE_IDENTITY_INCONSISTENT" in _codes(lambda: cortex.compile_growth(inconsistent))
+
+
 def test_dc1_store_reopen_rejects_contract_violations(tmp_path) -> None:
     evidence = _fixture_store(tmp_path / "evidence")
     cortex_root = tmp_path / "cortex"
@@ -164,6 +243,83 @@ def test_dc1_store_reopen_rejects_contract_violations(tmp_path) -> None:
     assert "DC1_ON_DISK_CONTRACT_VIOLATION" in _codes(lambda: open_cortex_store(cortex_root, evidence))
 
 
+def test_dc1_1_t420_to_t428_reopen_semantic_and_receipt_closure(tmp_path) -> None:
+    def prepared_store(name: str):
+        evidence = _fixture_store(tmp_path / name / "evidence")
+        cortex_root = tmp_path / name / "cortex"
+        cortex = open_cortex_store(cortex_root, evidence)
+        cortex.compile_growth(_growth_payload())
+        proposal_path = next((cortex_root / "compiled_growth_proposals").glob("*.json"))
+        receipt_path = next((cortex_root / "compilation_receipts").glob("*.json"))
+        return evidence, cortex_root, proposal_path, receipt_path
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t420")
+    proposal = _read_json(proposal_path)
+    proposal["axes"][0]["ray"][0]["expression"] = "城市"
+    proposal["axes"][0]["ray"][0]["basis_refs"][0]["quoted_text"] = "城市"
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_INVALID_TEXT_SPAN" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t421")
+    proposal = _read_json(proposal_path)
+    proposal["axes"][1]["ray"][0]["basis_refs"][0]["record_id"] = "shard:rain"
+    proposal["axes"][1]["ray"][0]["basis_refs"][0]["start_char"] = 0
+    proposal["axes"][1]["ray"][0]["basis_refs"][0]["end_char"] = 2
+    proposal["axes"][1]["ray"][0]["basis_refs"][0]["quoted_text"] = "昆明"
+    proposal["axes"][1]["ray"][0]["expression"] = "昆明"
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_BACKING_SHARD_SELF_REFERENCE" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t422")
+    proposal = _read_json(proposal_path)
+    proposal["axes"][0]["axis_id"] = "relative_time"
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_GROWTH_RELATIVE_TIME_FORBIDDEN" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t423")
+    proposal = _read_json(proposal_path)
+    proposal["axes"][2]["ray"][1]["basis_refs"][1]["input_step_id"] = "step_kunming"
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_INVALID_PREDECESSOR" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t424")
+    proposal = _read_json(proposal_path)
+    proposal["axes"][3]["ray"][2]["rationale"] = None
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_PROVISIONAL_RATIONALE_REQUIRED" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t425")
+    proposal = _read_json(proposal_path)
+    proposal["budget"]["max_total_steps"] = 49
+    _write_json(proposal_path, proposal)
+    _sync_receipt_normalized_fingerprint(receipt_path, proposal)
+    assert "DC1_BUDGET_EXCEEDED" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t426")
+    receipt = _read_json(receipt_path)
+    receipt["input_snapshot"]["forbidden_inferences"] = ["changed"]
+    _write_json(receipt_path, receipt)
+    assert "DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t427")
+    receipt = _read_json(receipt_path)
+    receipt["kind"] = "query"
+    _write_json(receipt_path, receipt)
+    assert "DC1_RECEIPT_KIND_INVALID" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+    evidence, cortex_root, proposal_path, receipt_path = prepared_store("t428")
+    receipt = _read_json(receipt_path)
+    receipt["input_snapshot"]["forbidden_inferences"] = ["different but valid"]
+    receipt["submitted_payload_fingerprint"] = payload_fingerprint(receipt["input_snapshot"])
+    _write_json(receipt_path, receipt)
+    assert "DC1_RECEIPT_PROPOSAL_MISMATCH" in _codes(lambda: open_cortex_store(cortex_root, evidence))
+
+
 def test_dc1_evidence_root_unchanged_by_growth_write(tmp_path) -> None:
     evidence_root = tmp_path / "evidence"
     evidence = _fixture_store(evidence_root)
@@ -175,3 +331,17 @@ def test_dc1_evidence_root_unchanged_by_growth_write(tmp_path) -> None:
 
 def _tree_digest(root: Path) -> tuple[tuple[str, str], ...]:
     return tuple(sorted((str(path.relative_to(root)), path.read_text(encoding="utf-8")) for path in root.rglob("*") if path.is_file()))
+
+
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+
+
+def _sync_receipt_normalized_fingerprint(receipt_path: Path, proposal_payload: dict) -> None:
+    receipt = _read_json(receipt_path)
+    receipt["normalized_payload_fingerprint"] = payload_fingerprint(proposal_payload)
+    _write_json(receipt_path, receipt)

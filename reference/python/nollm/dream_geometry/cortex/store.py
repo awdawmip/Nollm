@@ -10,11 +10,13 @@ from typing import Any
 
 from nollm.dream_geometry.evidence import MemorySubstrateStore
 
-from .compiler import compile_growth
+from .compiler import compile_growth, validate_compiled_growth_proposal
 from .errors import (
     DC1_CORTEX_ROOT_EQUALS_EVIDENCE_ROOT,
     DC1_ON_DISK_CONTRACT_VIOLATION,
     DC1_PROPOSAL_ID_PAYLOAD_CONFLICT,
+    DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH,
+    DC1_RECEIPT_KIND_INVALID,
     DC1_RECEIPT_PROPOSAL_MISMATCH,
     DC1Rejection,
     reject,
@@ -27,6 +29,7 @@ from .types import (
     CompilationReceipt,
     CompiledGrowthProposal,
     GrowthStep,
+    QueryBudget,
     RuleReference,
     StepReference,
     TextSpanRef,
@@ -112,8 +115,7 @@ class CortexStore:
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "proposal filename mismatch")
                 if proposal.proposal_id in proposals:
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "duplicate proposal id")
-                self.evidence_store.get_dream_shard(proposal.subject_shard_id)
-                _validate_proposal_refs(self.evidence_store, proposal)
+                validate_compiled_growth_proposal(proposal, self.evidence_store)
                 proposals[proposal.proposal_id] = proposal
             except DC1Rejection:
                 raise
@@ -125,15 +127,27 @@ class CortexStore:
                 receipt = _receipt_from_payload(_read_json(path))
                 if path != self._receipt_path(receipt.receipt_id):
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "receipt filename mismatch")
-                if receipt.decision is CompilationDecision.accepted:
-                    proposal = proposals.get(receipt.proposal_id)
-                    if proposal is None:
-                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "accepted receipt without proposal")
-                    if receipt.normalized_payload_fingerprint != payload_fingerprint(proposal):
-                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal fingerprint mismatch")
-                    if receipt.proposal_id in accepted_receipts:
-                        reject(DC1_ON_DISK_CONTRACT_VIOLATION, "duplicate accepted receipt")
-                    accepted_receipts[receipt.proposal_id] = receipt
+                if receipt.kind != "growth":
+                    reject(DC1_RECEIPT_KIND_INVALID, "receipt kind must be growth")
+                if receipt.decision is not CompilationDecision.accepted:
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "only accepted receipts are durable in DC1")
+                proposal = proposals.get(receipt.proposal_id)
+                if proposal is None:
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "accepted receipt without proposal")
+                if not isinstance(receipt.input_snapshot, dict):
+                    reject(DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH, "receipt input_snapshot must be mapping")
+                if payload_fingerprint(receipt.input_snapshot) != receipt.submitted_payload_fingerprint:
+                    reject(DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH, "receipt input snapshot fingerprint mismatch")
+                normalized = compile_growth(receipt.input_snapshot, self.evidence_store)
+                if normalized.proposal_id != receipt.proposal_id:
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal id mismatch")
+                if canonical_json(normalized) != canonical_json(proposal):
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt snapshot normalizes to different proposal")
+                if receipt.normalized_payload_fingerprint != payload_fingerprint(proposal):
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal fingerprint mismatch")
+                if receipt.proposal_id in accepted_receipts:
+                    reject(DC1_ON_DISK_CONTRACT_VIOLATION, "duplicate accepted receipt")
+                accepted_receipts[receipt.proposal_id] = receipt
             except DC1Rejection:
                 raise
             except Exception as exc:
@@ -153,14 +167,6 @@ def _accepted_receipt(proposal: CompiledGrowthProposal, submission: dict[str, An
     return CompilationReceipt(receipt_id, "growth", proposal.proposal_id, CompilationDecision.accepted, (), submitted_key, normalized_key, proposal.submitted_at, submission)
 
 
-def _validate_proposal_refs(evidence_store: MemorySubstrateStore, proposal: CompiledGrowthProposal) -> None:
-    for axis in proposal.axes:
-        for step in axis.ray:
-            for ref in step.basis_refs:
-                if isinstance(ref, TextSpanRef) and ref.record_id != proposal.subject_shard_id:
-                    evidence_store.get_dream_shard(ref.record_id)
-
-
 def _read_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -169,21 +175,22 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _proposal_from_payload(payload: dict[str, Any]) -> CompiledGrowthProposal:
-    _exact_keys(
-        payload,
-        {
-            "record_type",
-            "contract_version",
-            "proposal_id",
-            "subject_shard_id",
-            "axes",
-            "budget",
-            "do_not_infer",
-            "forbidden_inferences",
-            "submitted_at",
-            "provisional_only_present",
-        },
-    )
+    allowed_keys = {
+        "record_type",
+        "contract_version",
+        "proposal_id",
+        "subject_shard_id",
+        "axes",
+        "budget",
+        "do_not_infer",
+        "forbidden_inferences",
+        "submitted_at",
+        "provisional_only_present",
+    }
+    has_conflict_refs = "possible_conflict_refs" in payload
+    if has_conflict_refs:
+        allowed_keys.add("possible_conflict_refs")
+    _exact_keys(payload, allowed_keys)
     if payload["record_type"] != "compiled_growth_proposal" or payload["contract_version"] != CONTRACT_VERSION:
         reject(DC1_ON_DISK_CONTRACT_VIOLATION, "invalid proposal record type")
     proposal = CompiledGrowthProposal(
@@ -193,9 +200,13 @@ def _proposal_from_payload(payload: dict[str, Any]) -> CompiledGrowthProposal:
         _budget_from_payload(payload["budget"]),
         tuple(payload["do_not_infer"]),
         tuple(payload["forbidden_inferences"]),
+        tuple(payload["possible_conflict_refs"]) if has_conflict_refs else (),
         payload["submitted_at"],
     )
-    if payload != json.loads(canonical_json(proposal)):
+    expected = json.loads(canonical_json(proposal))
+    if not has_conflict_refs:
+        expected.pop("possible_conflict_refs")
+    if payload != expected:
         reject(DC1_ON_DISK_CONTRACT_VIOLATION, "proposal canonical payload mismatch")
     return proposal
 

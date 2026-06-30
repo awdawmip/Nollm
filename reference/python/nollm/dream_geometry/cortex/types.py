@@ -63,6 +63,14 @@ class CompilationBudget:
 
 
 @dataclass(frozen=True)
+class QueryBudget:
+    max_axes: int
+    max_charts: int
+    max_layers: int
+    max_cells_per_layer: int
+
+
+@dataclass(frozen=True)
 class CompiledGrowthProposal:
     proposal_id: str
     subject_shard_id: str
@@ -70,6 +78,7 @@ class CompiledGrowthProposal:
     budget: CompilationBudget
     do_not_infer: tuple[str, ...]
     forbidden_inferences: tuple[str, ...]
+    possible_conflict_refs: tuple[str, ...]
     submitted_at: str | None
     contract_version: str = CONTRACT_VERSION
 
@@ -79,7 +88,7 @@ class CompiledQueryProbe:
     probe_id: str
     query_text: str
     axes: tuple[AxisRay, ...]
-    budget: CompilationBudget
+    budget: QueryBudget
     do_not_infer: tuple[str, ...]
     forbidden_inferences: tuple[str, ...]
     reference_instant: str | None
@@ -138,6 +147,13 @@ def canonical_payload(value: object) -> dict[str, Any]:
             "max_total_steps": value.max_total_steps,
             "max_ray_steps": value.max_ray_steps,
         }
+    if isinstance(value, QueryBudget):
+        return {
+            "max_axes": value.max_axes,
+            "max_charts": value.max_charts,
+            "max_layers": value.max_layers,
+            "max_cells_per_layer": value.max_cells_per_layer,
+        }
     if isinstance(value, CompiledGrowthProposal):
         return {
             "record_type": "compiled_growth_proposal",
@@ -148,6 +164,7 @@ def canonical_payload(value: object) -> dict[str, Any]:
             "budget": canonical_payload(value.budget),
             "do_not_infer": value.do_not_infer,
             "forbidden_inferences": value.forbidden_inferences,
+            "possible_conflict_refs": value.possible_conflict_refs,
             "submitted_at": value.submitted_at,
             "provisional_only_present": any(step.provisional_only for axis in value.axes for step in axis.ray),
         }
@@ -204,6 +221,7 @@ __all__ = [
     "CompiledGrowthProposal",
     "CompiledQueryProbe",
     "GrowthStep",
+    "QueryBudget",
     "RuleReference",
     "StepReference",
     "TextSpanRef",

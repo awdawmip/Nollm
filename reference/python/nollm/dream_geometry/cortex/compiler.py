@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from nollm.dream_geometry.evidence import DreamShard
+from nollm.dream_geometry.evidence import InterpretationRecord
 from nollm.dream_geometry.protocol.contracts import GrowthBasis
 
 from .errors import (
@@ -15,6 +16,7 @@ from .errors import (
     DC1_DUPLICATE_AXIS,
     DC1_DUPLICATE_RAY_EXPRESSION,
     DC1_DUPLICATE_STEP_ID,
+    DC1_DUPLICATE_CONFLICT_REFERENCE,
     DC1_EMPTY_DO_NOT_INFER,
     DC1_EMPTY_FORBIDDEN_INFERENCE,
     DC1_EXPLICIT_EXPRESSION_MISMATCH,
@@ -28,14 +30,18 @@ from .errors import (
     DC1_LEGACY_ANCHOR_FIELD_FORBIDDEN,
     DC1_MISSING_BASIS_REFERENCE,
     DC1_MISSING_REQUIRED_FIELD,
+    DC1_ON_DISK_CONTRACT_VIOLATION,
     DC1_PROVISIONAL_FIRST_STEP_FORBIDDEN,
     DC1_PROVISIONAL_RATIONALE_REQUIRED,
     DC1_QUERY_MEMORY_BASIS_FORBIDDEN,
     DC1_QUERY_NOT_EPHEMERAL,
+    DC1_QUERY_RELATIVE_EXPLICIT_SPAN_REQUIRED,
     DC1_QUERY_RESOLVED_TIME_FORBIDDEN,
     DC1_RULE_IDENTITY_INCOMPLETE,
+    DC1_RULE_IDENTITY_INCONSISTENT,
     DC1_SUBJECT_NOT_DREAM_SHARD,
     DC1_UNKNOWN_FIELD,
+    DC1_CONFLICT_REFERENCE_NOT_EPISTEMIC_RECORD,
     reject,
 )
 from .types import (
@@ -45,6 +51,7 @@ from .types import (
     CompiledGrowthProposal,
     CompiledQueryProbe,
     GrowthStep,
+    QueryBudget,
     RuleReference,
     StepReference,
     TextSpanRef,
@@ -52,11 +59,12 @@ from .types import (
 
 RESERVED_AXES = frozenset({"location", "phenomenon", "absolute_time", "relative_time", "source", "constraint", "revision", "relation"})
 LEGACY_FIELDS = frozenset({"anchor", "anchor_name", "active_anchor_fields", "semantic_search_query", "parent_id", "child_id", "chart", "cell", "trace", "cover", "gravity"})
-GROWTH_TOP_KEYS = frozenset({"contract_version", "proposal_id", "subject_shard_id", "axes", "budget", "do_not_infer", "forbidden_inferences", "submitted_at"})
+GROWTH_TOP_KEYS = frozenset({"contract_version", "proposal_id", "subject_shard_id", "axes", "budget", "do_not_infer", "forbidden_inferences", "possible_conflict_refs", "submitted_at"})
 QUERY_TOP_KEYS = frozenset({"contract_version", "probe_id", "query_text", "axes", "budget", "do_not_infer", "forbidden_inferences", "reference_instant", "requires_runtime_resolution", "ephemeral"})
 AXIS_KEYS = frozenset({"axis_id", "ray"})
 STEP_KEYS = frozenset({"step_id", "expression", "basis", "basis_refs", "rationale"})
-BUDGET_KEYS = frozenset({"max_axes", "max_total_steps", "max_ray_steps"})
+GROWTH_BUDGET_KEYS = frozenset({"max_axes", "max_total_steps", "max_ray_steps"})
+QUERY_BUDGET_KEYS = frozenset({"max_axes", "max_charts", "max_layers", "max_cells_per_layer"})
 TEXT_REF_KEYS = frozenset({"ref_type", "record_id", "start_char", "end_char", "quoted_text"})
 RULE_REF_KEYS = frozenset({"ref_type", "rule_id", "rule_version", "rule_label", "source_ref"})
 STEP_REF_KEYS = frozenset({"ref_type", "input_step_id"})
@@ -81,19 +89,20 @@ QUERY_BASIS = frozenset(
 def compile_growth(submission: dict[str, Any], evidence_reader: object) -> CompiledGrowthProposal:
     _require_mapping(submission, "submission")
     _reject_legacy_fields(submission)
-    _require_keys(submission, GROWTH_TOP_KEYS, {"contract_version", "proposal_id", "subject_shard_id", "axes", "budget", "do_not_infer", "forbidden_inferences"})
+    _require_keys(submission, GROWTH_TOP_KEYS, {"contract_version", "proposal_id", "subject_shard_id", "axes", "budget", "do_not_infer", "forbidden_inferences", "possible_conflict_refs"})
     _require_contract(submission["contract_version"])
     proposal_id = _require_prefixed_id(submission["proposal_id"], "gp_", "proposal_id")
     subject_shard_id = _require_text(submission["subject_shard_id"], "subject_shard_id")
     submitted_at = _optional_rfc3339(submission.get("submitted_at"), "submitted_at")
     subject = _resolve_subject(evidence_reader, subject_shard_id)
-    budget = _parse_budget(submission["budget"])
+    budget = _parse_growth_budget(submission["budget"])
     do_not_infer = _require_non_empty_text_tuple(submission["do_not_infer"], DC1_EMPTY_DO_NOT_INFER, "do_not_infer")
     forbidden = _require_non_empty_text_tuple(submission["forbidden_inferences"], DC1_EMPTY_FORBIDDEN_INFERENCE, "forbidden_inferences")
-    axes = _parse_axes(submission["axes"], budget, "growth", subject, subject_shard_id, None, None, evidence_reader)
-    if any(axis.axis_id == "relative_time" for axis in axes):
-        reject(DC1_GROWTH_RELATIVE_TIME_FORBIDDEN, "growth proposals cannot contain relative_time")
-    return CompiledGrowthProposal(proposal_id, subject_shard_id, axes, budget, do_not_infer, forbidden, submitted_at)
+    conflict_refs = _parse_conflict_refs(submission["possible_conflict_refs"], evidence_reader)
+    axes = _parse_axes(submission["axes"], budget.max_axes, budget.max_ray_steps, "growth", subject, subject_shard_id, None, None, evidence_reader)
+    proposal = CompiledGrowthProposal(proposal_id, subject_shard_id, axes, budget, do_not_infer, forbidden, conflict_refs, submitted_at)
+    validate_compiled_growth_proposal(proposal, evidence_reader)
+    return proposal
 
 
 def compile_query(submission: dict[str, Any]) -> CompiledQueryProbe:
@@ -109,13 +118,18 @@ def compile_query(submission: dict[str, Any]) -> CompiledQueryProbe:
     requires_runtime_resolution = _require_bool(submission["requires_runtime_resolution"], "requires_runtime_resolution")
     if submission["ephemeral"] is not True:
         reject(DC1_QUERY_NOT_EPHEMERAL, "query probes must be ephemeral")
-    budget = _parse_budget(submission["budget"])
+    budget = _parse_query_budget(submission["budget"])
     do_not_infer = _require_non_empty_text_tuple(submission["do_not_infer"], DC1_EMPTY_DO_NOT_INFER, "do_not_infer")
     forbidden = _require_non_empty_text_tuple(submission["forbidden_inferences"], DC1_EMPTY_FORBIDDEN_INFERENCE, "forbidden_inferences")
-    axes = _parse_axes(submission["axes"], budget, "query", None, None, query_text, probe_id, None)
+    axes = _parse_axes(submission["axes"], budget.max_axes, None, "query", None, None, query_text, probe_id, None)
     has_relative = any(axis.axis_id == "relative_time" for axis in axes)
     if has_relative and not requires_runtime_resolution:
         reject(DC1_QUERY_RESOLVED_TIME_FORBIDDEN, "relative_time query requires runtime resolution")
+    if has_relative and not any(
+        axis.axis_id == "relative_time" and any(step.basis == "explicit_in_query" for step in axis.ray)
+        for axis in axes
+    ):
+        reject(DC1_QUERY_RELATIVE_EXPLICIT_SPAN_REQUIRED, "relative_time query requires exact explicit_in_query span")
     if not has_relative and requires_runtime_resolution:
         reject(DC1_QUERY_RESOLVED_TIME_FORBIDDEN, "runtime resolution marker requires relative_time")
     return CompiledQueryProbe(probe_id, query_text, axes, budget, do_not_infer, forbidden, reference_instant, requires_runtime_resolution, True)
@@ -123,7 +137,8 @@ def compile_query(submission: dict[str, Any]) -> CompiledQueryProbe:
 
 def _parse_axes(
     raw_axes: object,
-    budget: CompilationBudget,
+    max_axes: int,
+    max_ray_steps: int | None,
     mode: str,
     subject: DreamShard | None,
     subject_shard_id: str | None,
@@ -133,7 +148,7 @@ def _parse_axes(
 ) -> tuple[AxisRay, ...]:
     if not isinstance(raw_axes, list) or not raw_axes:
         reject(DC1_MISSING_REQUIRED_FIELD, "axes must be a non-empty list")
-    if len(raw_axes) > budget.max_axes:
+    if len(raw_axes) > max_axes:
         reject(DC1_BUDGET_EXCEEDED, "axis budget exceeded")
     axes: list[AxisRay] = []
     seen_axes: set[str] = set()
@@ -150,7 +165,7 @@ def _parse_axes(
         raw_ray = raw_axis["ray"]
         if not isinstance(raw_ray, list) or not raw_ray:
             reject(DC1_MISSING_REQUIRED_FIELD, "ray must be a non-empty list")
-        if len(raw_ray) > budget.max_ray_steps:
+        if max_ray_steps is not None and len(raw_ray) > max_ray_steps:
             reject(DC1_BUDGET_EXCEEDED, "ray step budget exceeded")
         expressions: set[str] = set()
         steps: list[GrowthStep] = []
@@ -167,8 +182,6 @@ def _parse_axes(
             steps.append(step)
         axes.append(AxisRay(axis_id, tuple(steps)))
         total_steps += len(steps)
-    if total_steps > budget.max_total_steps:
-        reject(DC1_BUDGET_EXCEEDED, "total step budget exceeded")
     return tuple(axes)
 
 
@@ -299,6 +312,103 @@ def _require_rule_or_predecessor(rule_refs: tuple[RuleReference, ...], step_refs
         reject(DC1_RULE_IDENTITY_INCOMPLETE, "too many rule references")
 
 
+def validate_compiled_growth_proposal(proposal: CompiledGrowthProposal, evidence_reader: object) -> None:
+    _require_prefixed_id(proposal.proposal_id, "gp_", "proposal_id")
+    subject = _resolve_subject(evidence_reader, proposal.subject_shard_id)
+    if not isinstance(proposal.budget, CompilationBudget):
+        reject(DC1_BUDGET_EXCEEDED, "growth budget required")
+    _validate_growth_budget(proposal.budget)
+    do_not_infer = _require_non_empty_tuple_value(proposal.do_not_infer, DC1_EMPTY_DO_NOT_INFER, "do_not_infer")
+    forbidden = _require_non_empty_tuple_value(proposal.forbidden_inferences, DC1_EMPTY_FORBIDDEN_INFERENCE, "forbidden_inferences")
+    _ = do_not_infer, forbidden
+    _validate_conflict_refs(proposal.possible_conflict_refs, evidence_reader)
+    if len(proposal.axes) > proposal.budget.max_axes:
+        reject(DC1_BUDGET_EXCEEDED, "axis budget exceeded")
+    seen_axes: set[str] = set()
+    seen_steps: set[str] = set()
+    total_steps = 0
+    rule_identity: dict[str, tuple[str, str, str | None]] = {}
+    for axis in proposal.axes:
+        axis_id = _require_axis(axis.axis_id)
+        if axis_id == "relative_time":
+            reject(DC1_GROWTH_RELATIVE_TIME_FORBIDDEN, "growth proposals cannot contain relative_time")
+        if axis_id in seen_axes:
+            reject(DC1_DUPLICATE_AXIS, "duplicate axis")
+        seen_axes.add(axis_id)
+        if not axis.ray:
+            reject(DC1_MISSING_REQUIRED_FIELD, "ray must be non-empty")
+        if len(axis.ray) > proposal.budget.max_ray_steps:
+            reject(DC1_BUDGET_EXCEEDED, "ray step budget exceeded")
+        expressions: set[str] = set()
+        predecessor: GrowthStep | None = None
+        for index, step in enumerate(axis.ray):
+            _require_prefixed_id(step.step_id, "step_", "step_id")
+            _require_text(step.expression, "expression")
+            if step.step_id in seen_steps:
+                reject(DC1_DUPLICATE_STEP_ID, "duplicate step id")
+            if step.expression in expressions:
+                reject(DC1_DUPLICATE_RAY_EXPRESSION, "duplicate expression in ray")
+            seen_steps.add(step.step_id)
+            expressions.add(step.expression)
+            if not step.basis_refs:
+                reject(DC1_MISSING_BASIS_REFERENCE, "basis_refs cannot be empty")
+            for ref in step.basis_refs:
+                if isinstance(ref, RuleReference):
+                    _validate_rule_identity(ref, rule_identity)
+            text_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, TextSpanRef))
+            rule_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, RuleReference))
+            step_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, StepReference))
+            if step.basis is GrowthBasis.explicit_in_shard:
+                if len(text_refs) != 1 or rule_refs or step_refs:
+                    reject(DC1_MISSING_BASIS_REFERENCE, "explicit_in_shard requires one text span")
+                ref = text_refs[0]
+                if ref.record_id != proposal.subject_shard_id:
+                    reject(DC1_SUBJECT_NOT_DREAM_SHARD, "explicit span must reference subject shard")
+                _validate_span(subject.content, ref)
+                if step.expression != ref.quoted_text:
+                    reject(DC1_EXPLICIT_EXPRESSION_MISMATCH, "explicit expression must equal quoted_text")
+            elif step.basis is GrowthBasis.backed_by_other_shard:
+                if len(text_refs) != 1 or rule_refs or step_refs:
+                    reject(DC1_MISSING_BASIS_REFERENCE, "backed_by_other_shard requires one text span")
+                ref = text_refs[0]
+                if ref.record_id == proposal.subject_shard_id:
+                    reject(DC1_BACKING_SHARD_SELF_REFERENCE, "backing shard cannot equal subject")
+                try:
+                    backing = evidence_reader.get_dream_shard(ref.record_id)
+                except Exception:
+                    reject(DC1_BACKING_SUBJECT_NOT_DREAM_SHARD, "backing ref must resolve to DreamShard")
+                if not isinstance(backing, DreamShard):
+                    reject(DC1_BACKING_SUBJECT_NOT_DREAM_SHARD, "backing ref must resolve to DreamShard")
+                _validate_span(backing.content, ref)
+            elif step.basis is GrowthBasis.deterministic_projection:
+                _require_rule_and_predecessor(rule_refs, step_refs, predecessor)
+            elif step.basis is GrowthBasis.source_backed_rule:
+                if len(rule_refs) != 1 or text_refs or step_refs:
+                    reject(DC1_RULE_IDENTITY_INCOMPLETE, "source_backed_rule requires one rule ref")
+            elif step.basis is GrowthBasis.provisional_llm_generalization:
+                if index == 0:
+                    reject(DC1_PROVISIONAL_FIRST_STEP_FORBIDDEN, "provisional step cannot be first")
+                _require_rule_or_predecessor(rule_refs, step_refs, predecessor)
+                if step.rationale is None:
+                    reject(DC1_PROVISIONAL_RATIONALE_REQUIRED, "provisional step requires rationale")
+                if step.provisional_only is not True:
+                    reject(DC1_ON_DISK_CONTRACT_VIOLATION, "provisional step must remain provisional_only")
+            else:
+                reject(DC1_INVALID_ENUM, "invalid growth basis")
+            predecessor = step
+            total_steps += 1
+    if total_steps > proposal.budget.max_total_steps:
+        reject(DC1_BUDGET_EXCEEDED, "total step budget exceeded")
+
+
+def _validate_rule_identity(ref: RuleReference, seen: dict[str, tuple[str, str, str | None]]) -> None:
+    identity = (ref.rule_version, ref.rule_label, ref.source_ref)
+    existing = seen.get(ref.rule_id)
+    if existing is not None and existing != identity:
+        reject(DC1_RULE_IDENTITY_INCONSISTENT, "same rule_id has inconsistent identity")
+    seen[ref.rule_id] = identity
+
+
 def _validate_span(source_text: str, ref: TextSpanRef) -> None:
     if ref.end_char <= ref.start_char:
         reject(DC1_INVALID_TEXT_SPAN, "end_char must be greater than start_char")
@@ -316,13 +426,67 @@ def _resolve_subject(evidence_reader: object, shard_id: str) -> DreamShard:
     return shard
 
 
-def _parse_budget(value: object) -> CompilationBudget:
+def _parse_growth_budget(value: object) -> CompilationBudget:
     _require_mapping(value, "budget")
-    _require_keys(value, BUDGET_KEYS, BUDGET_KEYS)
+    _require_keys(value, GROWTH_BUDGET_KEYS, GROWTH_BUDGET_KEYS)
     budget = CompilationBudget(_require_positive_int(value["max_axes"], "max_axes"), _require_positive_int(value["max_total_steps"], "max_total_steps"), _require_positive_int(value["max_ray_steps"], "max_ray_steps"))
-    if budget.max_axes > 8 or budget.max_total_steps > 256 or budget.max_ray_steps > 64:
-        reject(DC1_BUDGET_EXCEEDED, "compiler budget exceeds DC1 maximum")
+    _validate_growth_budget(budget)
     return budget
+
+
+def _parse_query_budget(value: object) -> QueryBudget:
+    _require_mapping(value, "budget")
+    _require_keys(value, QUERY_BUDGET_KEYS, QUERY_BUDGET_KEYS)
+    budget = QueryBudget(
+        _require_positive_int(value["max_axes"], "max_axes"),
+        _require_positive_int(value["max_charts"], "max_charts"),
+        _require_positive_int(value["max_layers"], "max_layers"),
+        _require_positive_int(value["max_cells_per_layer"], "max_cells_per_layer"),
+    )
+    if budget.max_axes > 8 or budget.max_charts > 64 or budget.max_layers > 64 or budget.max_cells_per_layer > 256:
+        reject(DC1_BUDGET_EXCEEDED, "query budget exceeds DC1 maximum")
+    return budget
+
+
+def _validate_growth_budget(budget: CompilationBudget) -> None:
+    if budget.max_axes > 8 or budget.max_total_steps > 48 or budget.max_ray_steps > 16:
+        reject(DC1_BUDGET_EXCEEDED, "growth budget exceeds DC1 maximum")
+
+
+def _parse_conflict_refs(value: object, evidence_reader: object) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        reject(DC1_MISSING_REQUIRED_FIELD, "possible_conflict_refs must be a list")
+    refs = tuple(_require_text(item, "possible_conflict_ref") for item in value)
+    _validate_conflict_refs(refs, evidence_reader)
+    return refs
+
+
+def _validate_conflict_refs(refs: tuple[str, ...], evidence_reader: object) -> None:
+    if not isinstance(refs, tuple):
+        reject(DC1_MISSING_REQUIRED_FIELD, "possible_conflict_refs must be a tuple")
+    seen: set[str] = set()
+    for ref in refs:
+        _require_text(ref, "possible_conflict_ref")
+        if ref in seen:
+            reject(DC1_DUPLICATE_CONFLICT_REFERENCE, "duplicate possible conflict reference")
+        seen.add(ref)
+        try:
+            record = evidence_reader.get_dream_shard(ref)
+        except Exception:
+            try:
+                record = evidence_reader.get_interpretation(ref)
+            except Exception:
+                reject(DC1_CONFLICT_REFERENCE_NOT_EPISTEMIC_RECORD, "conflict ref must resolve to DreamShard or InterpretationRecord")
+        if not isinstance(record, (DreamShard, InterpretationRecord)):
+            reject(DC1_CONFLICT_REFERENCE_NOT_EPISTEMIC_RECORD, "conflict ref must resolve to DreamShard or InterpretationRecord")
+
+
+def _require_non_empty_tuple_value(value: object, empty_code: str, label: str) -> tuple[str, ...]:
+    if not isinstance(value, tuple) or not value:
+        reject(empty_code, f"{label} must be non-empty tuple")
+    for item in value:
+        _require_text(item, label)
+    return value
 
 
 def _require_keys(value: dict[str, Any], allowed: frozenset[str], required: set[str] | frozenset[str]) -> None:
@@ -420,4 +584,4 @@ def _optional_rfc3339(value: object, label: str) -> str | None:
     return text
 
 
-__all__ = ["compile_growth", "compile_query"]
+__all__ = ["compile_growth", "compile_query", "validate_compiled_growth_proposal"]

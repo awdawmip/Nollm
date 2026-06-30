@@ -42,6 +42,12 @@ def build_report() -> str:
             "## Known Limits",
             "",
             "- DC1 does not prove natural-language understanding, rule truth, rule authority, Geometry placement, Field propagation, Recall quality, runtime integration, or security authenticity.",
+            "- Growth budget schema is `max_axes`, `max_total_steps`, `max_ray_steps` with hard caps `8/48/16`.",
+            "- Query budget schema is `max_axes`, `max_charts`, `max_layers`, `max_cells_per_layer` with hard caps `8/64/64/256`.",
+            "- Relative-time Query requires at least one exact `explicit_in_query` text span and preserves caller text without absolute-time resolution.",
+            "- `possible_conflict_refs` are checked only as explicit DE1 DreamShard or InterpretationRecord pointers; DC1 performs no conflict judgment.",
+            "- Reopen validates compiled proposal semantics and receipt input snapshot / submitted fingerprint / normalized proposal consistency.",
+            "- Same `rule_id` must keep one `(rule_version, rule_label, source_ref)` identity within a proposal.",
             "- Fingerprints are deterministic equivalence keys for idempotency and report recomputation only.",
         ]
     )
@@ -117,6 +123,7 @@ def _growth_payload() -> dict:
         "budget": {"max_axes": 4, "max_total_steps": 8, "max_ray_steps": 4},
         "do_not_infer": ["do not infer city classification from rain sentence"],
         "forbidden_inferences": ["do not infer current weather"],
+        "possible_conflict_refs": ["interpretation:city-note"],
         "axes": [
             {"axis_id": "location", "ray": [{"step_id": "step_kunming", "expression": "昆明", "basis": "explicit_in_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:rain", "start_char": 0, "end_char": 2, "quoted_text": "昆明"}]}]},
             {"axis_id": "relation", "ray": [{"step_id": "step_city", "expression": "城市", "basis": "backed_by_other_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:city", "start_char": 9, "end_char": 11, "quoted_text": "城市"}]}]},
@@ -124,8 +131,8 @@ def _growth_payload() -> dict:
                 "axis_id": "absolute_time",
                 "ray": [
                     {"step_id": "step_day", "expression": "2026年6月29日", "basis": "explicit_in_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:rain", "start_char": 3, "end_char": 13, "quoted_text": "2026年6月29日"}]},
-                    {"step_id": "step_month", "expression": "2026年6月", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date to month", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_day"}]},
-                    {"step_id": "step_year", "expression": "2026年", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date to year", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_month"}]},
+                    {"step_id": "step_month", "expression": "2026年6月", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date projection", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_day"}]},
+                    {"step_id": "step_year", "expression": "2026年", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date projection", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_month"}]},
                 ],
             },
             {
@@ -155,7 +162,7 @@ def _query_payload() -> dict:
         "reference_instant": "2026-06-30T09:00:00+08:00",
         "requires_runtime_resolution": True,
         "ephemeral": True,
-        "budget": {"max_axes": 3, "max_total_steps": 3, "max_ray_steps": 1},
+        "budget": {"max_axes": 3, "max_charts": 64, "max_layers": 64, "max_cells_per_layer": 256},
         "do_not_infer": ["do not resolve relative time in compiler"],
         "forbidden_inferences": ["do not search memory while compiling query"],
         "axes": [
