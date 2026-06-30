@@ -22,7 +22,7 @@ def build_report() -> str:
         deferred = resolve_recall(query_probe(), universe, store)
         legacy = resolve_recall(query_probe(), with_legacy_proposal_only(universe), store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_legacy_context=True))
         wrong_direction = resolve_recall(query_probe(), with_wrong_down_direction(universe), store, runtime_time=relative_time_resolution())
-        budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
+        budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 0))
         budget = resolve_recall(budget_probe, universe, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
         retired_store, _, retired_universe = build_fixture(root / "retired", usage_state=UsageState.retired)
         retired = resolve_recall(query_probe(), retired_universe, retired_store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_retired_context=True))

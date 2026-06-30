@@ -143,6 +143,11 @@ class TraversalRecord:
     residual_reasons: tuple[str, ...]
     mass_in: float = 0.0
     mass_out: float = 0.0
+    trace_id: str | None = None
+    target_cell_ref: str | None = None
+    m_up: float = 0.0
+    m_down: float = 0.0
+    path_mass: float = 0.0
     reason_code: str = "DR1_TRAVERSAL_EXECUTED"
 
 
@@ -165,6 +170,8 @@ class RecallResultItem:
     qualification: EvidenceQualification
     projection_refs: tuple[str, ...]
     context_record_ids: tuple[str, ...]
+    path_mass: float = 0.0
+    route_refs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

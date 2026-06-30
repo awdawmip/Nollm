@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from hashlib import sha256
 
 from nollm.dream_geometry.cortex.types import CompiledQueryProbe
 from nollm.dream_geometry.evidence import MemorySubstrateStore
 from nollm.dream_geometry.field.types import CoarseCover, GrowthTrace, cell_ref_key
+from nollm.dream_geometry.geometry.coverage import CoverageDistribution
 from nollm.dream_geometry.protocol.contracts import CoverState, TraceState
 
 from .projection import projection_for_trace, query_atoms, relative_time_required
@@ -29,6 +31,19 @@ from .universe import validate_recall_universe
 
 
 GRAVITY_TIE_EPSILON = 1e-12
+
+
+@dataclass(frozen=True)
+class _Route:
+    trace: GrowthTrace
+    projection: TraceSemanticProjection
+    cover: CoarseCover
+    m_up: float
+    m_down: float
+    path_mass: float
+    up_distribution: CoverageDistribution
+    down_distribution: CoverageDistribution
+    target_cell_ref: str
 
 
 def resolve_recall(
@@ -74,8 +89,10 @@ def resolve_recall(
             continue
         projections[trace.trace_id] = projection
 
-    if not universe.coverage_down:
-        discarded.append("DR1_K_DOWN_REQUIRED")
+    if not universe.coverage_up or not universe.coverage_down:
+        discarded.append("DR1_K_UP_DOWN_REQUIRED")
+        if not universe.coverage_down:
+            discarded.append("DR1_K_DOWN_REQUIRED")
         return _digest(probe.probe_id, RecallDigestStatus.insufficient_evidence, (), (), (), tuple(warnings), tuple(discarded), 0.0, False)
 
     result_items: list[RecallResultItem] = []
@@ -94,50 +111,65 @@ def resolve_recall(
         if len(matched_axes) < max(1, minimum_axes):
             discarded.append(f"{cover.cover_id}:DR1_INSUFFICIENT_EXACT_AXIS_MATCH")
             continue
-        executed, records, budget_reason = _execute_traversal(cover, matched, universe, probe)
+        routes, records, budget_reason = _execute_traversal(cover, matched, universe, probe, policy)
         if budget_reason is not None:
             discarded.append(budget_reason)
             budget_exhausted = True
             continue
-        if not executed:
+        if not routes:
             discarded.append(f"{cover.cover_id}:DR1_K_UP_DOWN_PATH_MISSING")
             continue
+        route_axes = tuple(sorted({route.projection.axis_id for route in routes}))
+        if len(route_axes) < max(1, minimum_axes):
+            discarded.append(f"{cover.cover_id}:DR1_INSUFFICIENT_EXECUTABLE_AXIS_MATCH")
+            continue
         traversal.extend(records)
-        for shard_id in sorted({trace.origin_shard_id for trace, _ in matched}):
+        routes_by_shard = {route.trace.origin_shard_id: tuple(item for item in routes if item.trace.origin_shard_id == route.trace.origin_shard_id) for route in routes}
+        for shard_id in sorted(routes_by_shard):
             try:
                 qualification = qualify_shard(evidence_store, shard_id, policy)
             except Exception:
                 discarded.append(f"{shard_id}:DR1_TRACE_ORIGIN_SHARD_MISSING")
                 continue
-            context_ids = _context_ids(shard_id, universe)
+            context_ids = _context_ids(shard_id, universe, evidence_store, policy)
             if not qualification.included_as_evidence and not _include_context(qualification.usage_state, policy):
                 discarded.append(f"{shard_id}:DR1_USAGE_STATE_EXCLUDED")
                 continue
-            trace_ids = tuple(sorted(trace.trace_id for trace, _ in matched if trace.origin_shard_id == shard_id))
-            projection_refs = tuple(sorted(projection.step_id for trace, projection in matched if trace.origin_shard_id == shard_id))
-            score = _core_score(cover, matched_axes)
+            shard_routes = routes_by_shard[shard_id]
+            trace_ids = tuple(sorted({route.trace.trace_id for route in shard_routes}))
+            projection_refs = tuple(sorted({route.projection.step_id for route in shard_routes}))
+            shard_axes = tuple(sorted({route.projection.axis_id for route in shard_routes}))
+            score = _core_score(cover, shard_axes)
             result_items.append(
                 RecallResultItem(
                     shard_id,
                     cover.cover_id,
                     trace_ids,
-                    matched_axes,
+                    shard_axes,
                     score,
                     qualification,
                     projection_refs,
                     context_ids,
+                    sum(route.path_mass for route in shard_routes),
+                    tuple(sorted(f"{route.trace.trace_id}->{cover.cover_id}->{route.target_cell_ref}" for route in shard_routes)),
                 )
             )
 
     sorted_items, gravity_applied, gravity_warning = _sort_with_gravity(result_items, universe)
     if gravity_warning:
         warnings.append(gravity_warning)
-    limited_items = sorted_items[: policy.max_result_items]
+    primary_all = tuple(item for item in sorted_items if item.qualification.included_as_evidence)
+    contextual_all = tuple(item for item in sorted_items if not item.qualification.included_as_evidence)
+    result_limit = policy.max_result_items
+    limited_primary = primary_all[:result_limit]
+    remaining_slots = max(0, result_limit - len(limited_primary))
+    limited_contextual = contextual_all[:remaining_slots]
+    limited_items = limited_primary + limited_contextual
     if len(sorted_items) > len(limited_items):
         discarded.append("DR1_BUDGET_MAX_RESULT_ITEMS")
         budget_exhausted = True
-    primary = tuple(item for item in limited_items if item.qualification.included_as_evidence)
-    contextual = tuple(item for item in limited_items if not item.qualification.included_as_evidence)
+    primary = limited_primary
+    contextual = limited_contextual
     residual = sum(record.residual_mass for record in traversal)
     if budget_exhausted:
         status = RecallDigestStatus.budget_exhausted
@@ -185,6 +217,8 @@ def _gravity_potential(cover: CoarseCover, universe: RecallUniverse) -> float:
         return 0.0
     if snapshot.chart_fingerprint != cover.chart_fingerprint:
         return 0.0
+    if cover.cover_id not in snapshot.input_cover_ids:
+        return 0.0
     for contribution in snapshot.contributions:
         if contribution.cover_id == cover.cover_id:
             return min(0.25, max(0.0, contribution.potential) / 1000.0)
@@ -199,11 +233,13 @@ def _include_context(usage_state: str, policy: RecallPolicy) -> bool:
     return False
 
 
-def _context_ids(shard_id: str, universe: RecallUniverse) -> tuple[str, ...]:
+def _context_ids(shard_id: str, universe: RecallUniverse, evidence_store: MemorySubstrateStore, policy: RecallPolicy) -> tuple[str, ...]:
     ids: list[str] = []
     for interpretation in universe.interpretation_records:
         if interpretation.subject_shard_id == shard_id:
-            ids.append(interpretation.interpretation_id)
+            usage = evidence_store.get_usage_state(interpretation.interpretation_id).value
+            if usage in {"active", "tentative"} or _include_context(usage, policy):
+                ids.append(interpretation.interpretation_id)
     for thread in universe.revision_threads:
         if shard_id in thread.member_record_ids:
             ids.append(thread.thread_id)
@@ -222,7 +258,12 @@ def _core_score(cover: CoarseCover, matched_axes: tuple[str, ...]) -> float:
 def _sort_with_gravity(items: list[RecallResultItem], universe: RecallUniverse) -> tuple[tuple[RecallResultItem, ...], bool, str | None]:
     if universe.gravity_snapshot is not None:
         cover_by_id = {cover.cover_id: cover for cover in universe.covers}
-        if any(universe.gravity_snapshot.chart_fingerprint != cover_by_id[item.cover_id].chart_fingerprint for item in items if item.cover_id in cover_by_id):
+        snapshot = universe.gravity_snapshot
+        if snapshot.policy_id != "dg2_gravity_policy" or snapshot.policy_version != "1":
+            return tuple(sorted(items, key=_result_sort_key)), False, "DR1_GRAVITY_SNAPSHOT_IGNORED_IDENTITY_MISMATCH"
+        if any(snapshot.chart_fingerprint != cover_by_id[item.cover_id].chart_fingerprint for item in items if item.cover_id in cover_by_id):
+            return tuple(sorted(items, key=_result_sort_key)), False, "DR1_GRAVITY_SNAPSHOT_IGNORED_IDENTITY_MISMATCH"
+        if any(item.cover_id not in snapshot.input_cover_ids for item in items):
             return tuple(sorted(items, key=_result_sort_key)), False, "DR1_GRAVITY_SNAPSHOT_IGNORED_IDENTITY_MISMATCH"
     ordered: list[RecallResultItem] = []
     gravity_applied = False
@@ -237,88 +278,130 @@ def _sort_with_gravity(items: list[RecallResultItem], universe: RecallUniverse) 
     return tuple(ordered), gravity_applied, None
 
 
-def _score_groups(items: tuple[RecallResultItem, ...]) -> tuple[tuple[float, list[RecallResultItem]], ...]:
-    groups: list[tuple[float, list[RecallResultItem]]] = []
+def _score_groups(items: tuple[RecallResultItem, ...]) -> tuple[tuple[tuple[str, float], list[RecallResultItem]], ...]:
+    groups: list[tuple[tuple[str, float], list[RecallResultItem]]] = []
     for item in items:
-        for score, group in groups:
-            if abs(item.structural_score - score) <= GRAVITY_TIE_EPSILON:
+        for key, group in groups:
+            tier, score = key
+            if item.qualification.tier == tier and abs(item.structural_score - score) <= GRAVITY_TIE_EPSILON:
                 group.append(item)
                 break
         else:
-            groups.append((item.structural_score, [item]))
+            groups.append(((item.qualification.tier, item.structural_score), [item]))
     return tuple(groups)
 
 
-def _execute_traversal(cover: CoarseCover, matched, universe: RecallUniverse, probe: CompiledQueryProbe) -> tuple[bool, tuple[TraversalRecord, ...], str | None]:
-    distinct_charts: set[str] = set()
+def _execute_traversal(
+    cover: CoarseCover,
+    matched: tuple[tuple[GrowthTrace, TraceSemanticProjection], ...],
+    universe: RecallUniverse,
+    probe: CompiledQueryProbe,
+    policy: RecallPolicy,
+) -> tuple[tuple[_Route, ...], tuple[TraversalRecord, ...], str | None]:
     records: list[TraversalRecord] = []
+    routes_by_key: dict[tuple[str, str, str], _Route] = {}
     cover_ref = cell_ref_key(cover.support_cell)
-    up_records = []
+    up_by_source = {cell_ref_key(distribution.source_cell): distribution for distribution in universe.coverage_up}
+    down_by_source = {cell_ref_key(distribution.source_cell): distribution for distribution in universe.coverage_down}
+    down_distribution = down_by_source.get(cover_ref)
+    if down_distribution is None:
+        return (), (), None
     for trace, _ in matched:
         trace_ref = cell_ref_key(trace.cell)
-        up = [
-            distribution
-            for distribution in universe.coverage_up
-            if cell_ref_key(distribution.source_cell) == trace_ref and any(cell_ref_key(kernel.target_cell) == cover_ref for kernel in distribution.kernels)
-        ]
-        if not up:
-            return False, (), None
-        distribution = up[0]
-        mass_out = sum(kernel.weight * trace.mass for kernel in distribution.kernels)
-        residual = distribution.residual.mass * trace.mass
-        if abs((mass_out + residual) - trace.mass) > 1e-9:
-            return False, (), "DR1_K_UP_MASS_ACCOUNTING_FAILED"
-        up_records.append(
+        up_distribution = up_by_source.get(trace_ref)
+        if up_distribution is None:
+            continue
+        up_weight = sum(kernel.weight for kernel in up_distribution.kernels if cell_ref_key(kernel.target_cell) == cover_ref)
+        down_weight = sum(kernel.weight for kernel in down_distribution.kernels if cell_ref_key(kernel.target_cell) == trace_ref)
+        if up_weight <= 0.0 or down_weight <= 0.0:
+            continue
+        m_up = float(trace.mass) * float(up_weight)
+        m_down = float(down_weight)
+        path_mass = m_up * m_down
+        projection = next(projection for candidate, projection in matched if candidate.trace_id == trace.trace_id)
+        route = _Route(trace, projection, cover, m_up, m_down, path_mass, up_distribution, down_distribution, trace_ref)
+        key = (trace.origin_shard_id, trace.axis, trace_ref)
+        if key not in routes_by_key or route.path_mass > routes_by_key[key].path_mass:
+            routes_by_key[key] = route
+    routes = tuple(sorted(routes_by_key.values(), key=lambda item: (item.trace.origin_shard_id, item.projection.axis_id, item.trace.trace_id)))
+    if not routes:
+        return (), (), None
+    budget_reason = _check_route_budget(routes, probe, policy)
+    if budget_reason is not None:
+        return (), (), budget_reason
+    for route in routes:
+        up_mass_out = sum(kernel.weight * route.trace.mass for kernel in route.up_distribution.kernels)
+        up_residual = route.up_distribution.residual.mass * route.trace.mass
+        records.append(
             TraversalRecord(
                 "up",
                 cover.cover_id,
-                trace_ref,
-                distribution.direction.value,
-                tuple(cell_ref_key(kernel.target_cell) for kernel in distribution.kernels),
-                residual,
-                tuple(reason.value for reason in distribution.residual.reasons),
-                trace.mass,
-                mass_out,
+                cell_ref_key(route.trace.cell),
+                route.up_distribution.direction.value,
+                tuple(cell_ref_key(kernel.target_cell) for kernel in route.up_distribution.kernels),
+                up_residual,
+                tuple(reason.value for reason in route.up_distribution.residual.reasons),
+                route.trace.mass,
+                up_mass_out,
+                route.trace.trace_id,
+                cover_ref,
+                route.m_up,
+                route.m_down,
+                route.path_mass,
                 "DR1_K_UP_EXECUTED",
             )
         )
-        distinct_charts.add(getattr(trace.cell.cell_ref, "chart_id"))
-    down = [distribution for distribution in universe.coverage_down if cell_ref_key(distribution.source_cell) == cover_ref]
-    if not down:
-        return False, (), None
-    down_distribution = down[0]
-    if len(down_distribution.kernels) > probe.budget.max_cells_per_layer:
-        return False, (), "DR1_BUDGET_MAX_CELLS_PER_LAYER"
-    distinct_charts.add(getattr(down_distribution.source_cell.cell_ref, "chart_id"))
-    distinct_charts.update(getattr(kernel.target_cell.cell_ref, "chart_id") for kernel in down_distribution.kernels)
-    if len(distinct_charts) > probe.budget.max_charts:
-        return False, (), "DR1_BUDGET_MAX_CHARTS"
-    layers = {getattr(down_distribution.source_cell.chart_fingerprint, "layer_index", 0)}
-    layers.update(getattr(kernel.target_cell.chart_fingerprint, "layer_index", 0) for kernel in down_distribution.kernels)
-    if len(layers) > probe.budget.max_layers:
-        return False, (), "DR1_BUDGET_MAX_LAYERS"
-    down_mass_out = sum(kernel.weight for kernel in down_distribution.kernels)
-    records.extend(up_records)
-    records.append(
-        TraversalRecord(
-            "down",
-            cover.cover_id,
-            cover_ref,
-            down_distribution.direction.value,
-            tuple(cell_ref_key(kernel.target_cell) for kernel in down_distribution.kernels),
-            down_distribution.residual.mass,
-            tuple(reason.value for reason in down_distribution.residual.reasons),
-            1.0,
-            down_mass_out,
-            "DR1_K_DOWN_EXECUTED",
+        down_target_refs = tuple(cell_ref_key(kernel.target_cell) for kernel in route.down_distribution.kernels)
+        records.append(
+            TraversalRecord(
+                "down",
+                cover.cover_id,
+                cover_ref,
+                route.down_distribution.direction.value,
+                down_target_refs,
+                route.down_distribution.residual.mass,
+                tuple(reason.value for reason in route.down_distribution.residual.reasons),
+                1.0,
+                sum(kernel.weight for kernel in route.down_distribution.kernels),
+                route.trace.trace_id,
+                route.target_cell_ref,
+                route.m_up,
+                route.m_down,
+                route.path_mass,
+                "DR1_K_DOWN_EXECUTED",
+            )
         )
-    )
-    return True, tuple(records), None
+    return routes, tuple(records), None
+
+
+def _check_route_budget(routes: tuple[_Route, ...], probe: CompiledQueryProbe, policy: RecallPolicy) -> str | None:
+    cells_by_layer: dict[int, set[str]] = {}
+    chart_ids: set[str] = set()
+    lateral_hops = 0
+    for route in routes:
+        route_cells = (route.trace.cell, route.cover.support_cell) + tuple(kernel.target_cell for kernel in route.down_distribution.kernels if cell_ref_key(kernel.target_cell) == route.target_cell_ref)
+        for cell in route_cells:
+            layer = getattr(cell.chart_fingerprint, "layer_index", 0)
+            cells_by_layer.setdefault(layer, set()).add(cell_ref_key(cell))
+            chart_ids.add(getattr(cell.cell_ref, "chart_id"))
+        if route.trace.cell.chart_fingerprint != route.cover.support_cell.chart_fingerprint:
+            lateral_hops += 1
+        if route.cover.support_cell.chart_fingerprint != route.trace.cell.chart_fingerprint:
+            lateral_hops += 1
+    if any(len(cells) > probe.budget.max_cells_per_layer for cells in cells_by_layer.values()):
+        return "DR1_BUDGET_MAX_CELLS_PER_LAYER"
+    if len(cells_by_layer) > probe.budget.max_layers:
+        return "DR1_BUDGET_MAX_LAYERS"
+    if len(chart_ids) > probe.budget.max_charts:
+        return "DR1_BUDGET_MAX_CHARTS"
+    if lateral_hops > policy.max_lateral_hops or (lateral_hops and not policy.allow_verified_chart_hops):
+        return "DR1_BUDGET_MAX_LATERAL_HOPS"
+    return None
 
 
 def _validate_policy_for_probe(policy: RecallPolicy, probe: CompiledQueryProbe) -> None:
-    if policy.max_seed_covers > probe.budget.max_cells_per_layer:
-        raise RecallValidationError("DR1_POLICY_MAX_SEED_EXCEEDS_QUERY_BUDGET", policy.policy_id)
+    if probe.budget.max_charts < 1 or probe.budget.max_layers < 1 or probe.budget.max_cells_per_layer < 0:
+        raise RecallValidationError("DR1_QUERY_BUDGET_INVALID", policy.policy_id)
 
 
 def _digest(

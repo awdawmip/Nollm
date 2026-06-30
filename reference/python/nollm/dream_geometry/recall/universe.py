@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from nollm.dream_geometry.cortex.types import CompilationDecision, payload_fingerprint
-from nollm.dream_geometry.evidence import MemorySubstrateStore
+from math import isfinite
+
+from nollm.dream_geometry.evidence import MemorySubstrateStore, canonical_json
 from nollm.dream_geometry.field.types import CoverPolicy, cell_ref_key, policy_fingerprint
-from nollm.dream_geometry.geometry.coverage import CoverageDirection
+from nollm.dream_geometry.geometry.coverage import CoverageDirection, PartitionValidationError, validate_nonoverlapping_partition
 from nollm.dream_geometry.protocol.contracts import CoverState, TraceState
 
 from .projection import projection_for_trace
@@ -21,6 +23,7 @@ def validate_recall_universe(universe: RecallUniverse, evidence_reader: MemorySu
     _validate_proposal_records(universe)
     _validate_cover_policies(universe)
     _validate_coverage(universe)
+    _validate_context_records(universe, evidence_reader)
     current_records = tuple(record for record in universe.proposal_records if record.admission is ProposalAdmission.current_accepted)
     legacy_records = tuple(record for record in universe.proposal_records if record.admission is ProposalAdmission.legacy_dc1_read_only)
     legacy_proposal_ids = {record.proposal.proposal_id for record in legacy_records}
@@ -94,12 +97,91 @@ def _validate_covers(universe: RecallUniverse) -> None:
 
 
 def _validate_coverage(universe: RecallUniverse) -> None:
+    seen_sources: set[tuple[str, str]] = set()
     for distribution in universe.coverage_up:
         if distribution.direction is not CoverageDirection.fine_to_coarse:
             raise RecallValidationError("DR1_COVERAGE_UP_DIRECTION_MISMATCH", cell_ref_key(distribution.source_cell))
+        _validate_distribution(distribution, seen_sources, universe, "DR1_COVERAGE_UP_INVALID")
     for distribution in universe.coverage_down:
         if distribution.direction is not CoverageDirection.coarse_to_fine:
             raise RecallValidationError("DR1_COVERAGE_DOWN_DIRECTION_MISMATCH", cell_ref_key(distribution.source_cell))
+        _validate_distribution(distribution, seen_sources, universe, "DR1_COVERAGE_DOWN_INVALID")
+
+
+def _validate_distribution(distribution, seen_sources: set[tuple[str, str]], universe: RecallUniverse, reason_code: str) -> None:
+    source_ref = cell_ref_key(distribution.source_cell)
+    source_key = (distribution.direction.value, source_ref)
+    if source_key in seen_sources:
+        raise RecallValidationError("DR1_COVERAGE_DUPLICATE_SOURCE", f"{distribution.direction.value}:{source_ref}")
+    seen_sources.add(source_key)
+    if not _finite_non_negative(distribution.residual.mass):
+        raise RecallValidationError(reason_code, source_ref)
+    if not _finite_non_negative(distribution.total_mass):
+        raise RecallValidationError(reason_code, source_ref)
+    target_refs: set[str] = set()
+    kernel_mass = 0.0
+    for kernel in distribution.kernels:
+        if kernel.direction is not distribution.direction:
+            raise RecallValidationError("DR1_COVERAGE_KERNEL_DIRECTION_MISMATCH", source_ref)
+        if cell_ref_key(kernel.source_cell) != source_ref:
+            raise RecallValidationError("DR1_COVERAGE_KERNEL_SOURCE_MISMATCH", source_ref)
+        target_ref = cell_ref_key(kernel.target_cell)
+        if target_ref in target_refs:
+            raise RecallValidationError("DR1_COVERAGE_DUPLICATE_TARGET_CELL", target_ref)
+        target_refs.add(target_ref)
+        if not _finite_non_negative(kernel.weight):
+            raise RecallValidationError(reason_code, target_ref)
+        kernel_mass += float(kernel.weight)
+        if kernel.source_cell.chart_fingerprint != kernel.target_cell.chart_fingerprint:
+            _require_verified_chart_link(universe, kernel.source_cell.chart_fingerprint, kernel.target_cell.chart_fingerprint, target_ref)
+    if distribution.kernels:
+        try:
+            validate_nonoverlapping_partition(tuple(kernel.target_cell for kernel in distribution.kernels))
+        except PartitionValidationError as exc:
+            raise RecallValidationError("DR1_COVERAGE_PARTITION_INVALID", source_ref) from exc
+    if abs((kernel_mass + float(distribution.residual.mass)) - 1.0) > 1e-9:
+        raise RecallValidationError("DR1_COVERAGE_MASS_ACCOUNTING_FAILED", source_ref)
+    if abs(float(distribution.total_mass) - 1.0) > 1e-9:
+        raise RecallValidationError("DR1_COVERAGE_TOTAL_MASS_INVALID", source_ref)
+
+
+def _require_verified_chart_link(universe: RecallUniverse, source_fingerprint, target_fingerprint, detail: str) -> None:
+    for link in universe.verified_chart_links:
+        if link.source_chart_fingerprint == source_fingerprint and link.target_chart_fingerprint == target_fingerprint:
+            return
+    raise RecallValidationError("DR1_COVERAGE_VERIFIED_CHART_LINK_MISSING", detail)
+
+
+def _finite_non_negative(value: float) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(float(value)) and float(value) >= 0.0
+
+
+def _validate_context_records(universe: RecallUniverse, evidence_reader: MemorySubstrateStore) -> None:
+    for interpretation in universe.interpretation_records:
+        try:
+            stored = evidence_reader.get_interpretation(interpretation.interpretation_id)
+            evidence_reader.get_dream_shard(stored.subject_shard_id)
+        except Exception as exc:
+            raise RecallValidationError("DR1_CONTEXT_INTERPRETATION_MISSING", interpretation.interpretation_id) from exc
+        if canonical_json(stored) != canonical_json(interpretation):
+            raise RecallValidationError("DR1_CONTEXT_INTERPRETATION_PAYLOAD_MISMATCH", interpretation.interpretation_id)
+    for thread in universe.revision_threads:
+        try:
+            stored = evidence_reader.get_revision_thread(thread.thread_id)
+        except Exception as exc:
+            raise RecallValidationError("DR1_CONTEXT_REVISION_MISSING", thread.thread_id) from exc
+        if canonical_json(stored) != canonical_json(thread):
+            raise RecallValidationError("DR1_CONTEXT_REVISION_PAYLOAD_MISMATCH", thread.thread_id)
+        for member_id in thread.member_record_ids:
+            try:
+                evidence_reader.get_dream_shard(member_id)
+                continue
+            except Exception:
+                pass
+            try:
+                evidence_reader.get_interpretation(member_id)
+            except Exception as exc:
+                raise RecallValidationError("DR1_CONTEXT_REVISION_MEMBER_MISSING", member_id) from exc
 
 
 def _validate_compactions(universe: RecallUniverse) -> None:

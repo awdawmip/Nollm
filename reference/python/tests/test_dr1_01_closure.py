@@ -3,9 +3,10 @@ from dataclasses import replace
 import pytest
 
 from nollm.dream_geometry.cortex.types import CompilationReceipt, QueryBudget
-from nollm.dream_geometry.field.types import CoarseCover, CoverPolicy
+from nollm.dream_geometry.evidence import UsageStateTransition
+from nollm.dream_geometry.field.types import CoarseCover, CoverPolicy, VerifiedChartLink
 from nollm.dream_geometry.geometry.chart import make_hex_cell
-from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
+from nollm.dream_geometry.geometry.coverage import CoverageDirection, CoverageDistribution, CoverageResidual, ResidualReason, compute_distribution
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
 from nollm.dream_geometry.protocol.contracts import CoverState, UsageState
 from nollm.dream_geometry.recall import RecallDigestStatus, RecallPolicy, ResolvedRelativeSpan, RuntimeTimeResolution, resolve_recall, validate_recall_universe
@@ -45,7 +46,7 @@ def test_t_dr1_103_executed_residual_only_and_mass_accounting(tmp_path) -> None:
 
 def test_t_dr1_104_budget_exhaustion_is_explicit(tmp_path) -> None:
     store, _, universe = build_fixture(tmp_path)
-    probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
+    probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 0))
     digest = resolve_recall(probe, universe, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
     assert digest.status is RecallDigestStatus.budget_exhausted
     assert "DR1_BUDGET_MAX_CELLS_PER_LAYER" in digest.discarded
@@ -91,10 +92,109 @@ def test_t_dr1_111_gravity_only_breaks_true_ties(tmp_path) -> None:
     assert [item.cover_id for item in non_tie.primary_evidence][:2] == ["cover:high", "cover:low"]
     tie_a = replace(base, cover_id="cover:a")
     tie_b = replace(base, cover_id="cover:b")
-    gravity = replace(universe.gravity_snapshot, contributions=(replace(universe.gravity_snapshot.contributions[0], cover_id="cover:b", potential=1000.0),))
+    ignored_gravity = replace(universe.gravity_snapshot, input_cover_ids=("cover:rain",), contributions=(replace(universe.gravity_snapshot.contributions[0], cover_id="cover:b", potential=1000.0),))
+    ignored = resolve_recall(query_probe(), replace(universe, covers=(tie_a, tie_b), gravity_snapshot=ignored_gravity), store, runtime_time=relative_time_resolution())
+    assert ignored.gravity_guidance_applied is False
+    assert "DR1_GRAVITY_SNAPSHOT_IGNORED_IDENTITY_MISMATCH" in ignored.warnings
+    gravity = replace(ignored_gravity, input_cover_ids=("cover:a", "cover:b"))
     tied = resolve_recall(query_probe(), replace(universe, covers=(tie_a, tie_b), gravity_snapshot=gravity), store, runtime_time=relative_time_resolution())
     assert [item.cover_id for item in tied.primary_evidence][:2] == ["cover:b", "cover:a"]
     assert tied.gravity_guidance_applied is True
+
+
+def test_e_401_k_down_must_reach_trace_cell(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    down = universe.coverage_down[0]
+    empty_down = CoverageDistribution(
+        down.source_cell,
+        down.direction,
+        (),
+        CoverageResidual(1.0, (ResidualReason.outside_supplied_partition,)),
+        1.0,
+        0,
+    )
+    digest = resolve_recall(query_probe(), replace(universe, coverage_down=(empty_down,)), store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.insufficient_evidence
+    assert digest.primary_evidence == ()
+
+
+def test_e_402_low_k_up_mass_is_reported_not_renormalized(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    up = universe.coverage_up[0]
+    low_kernel = replace(up.kernels[0], weight=0.001)
+    low_up = replace(up, kernels=(low_kernel,), residual=CoverageResidual(0.999, (ResidualReason.threshold_truncation,)), total_mass=1.0)
+    digest = resolve_recall(query_probe(), replace(universe, coverage_up=(low_up,)), store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.resolved
+    assert {round(record.path_mass, 6) for record in digest.traversal_records if record.phase == "up"} == {0.001}
+    assert round(digest.primary_evidence[0].path_mass, 6) == 0.003
+
+
+def test_e_403_k_up_must_reach_cover_support_cell(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    up = universe.coverage_up[0]
+    other = make_hex_cell(LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(3, 0))
+    wrong_kernel = replace(up.kernels[0], target_cell=other)
+    wrong_up = replace(up, kernels=(wrong_kernel,))
+    digest = resolve_recall(query_probe(), replace(universe, coverage_up=(wrong_up,)), store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.insufficient_evidence
+    assert digest.primary_evidence == ()
+
+
+def test_e_404_duplicate_coverage_source_rejected(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    duplicate = replace(universe, coverage_up=universe.coverage_up + universe.coverage_up)
+    digest = resolve_recall(query_probe(), duplicate, store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.rejected
+    assert "DR1_COVERAGE_DUPLICATE_SOURCE" in digest.warnings
+
+
+def test_e_406_cross_chart_distribution_requires_verified_link(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    fine_chart = LocalChart("dr1:fine", 1, 0.5, 0.0, Vec2(0, 0))
+    fine_cell = make_hex_cell(fine_chart, AxialCoord(0, 0))
+    cross_down = compute_distribution(universe.covers[0].support_cell, (fine_cell,), CoverageDirection.coarse_to_fine)
+    digest = resolve_recall(query_probe(), replace(universe, coverage_down=(cross_down,)), store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.rejected
+    assert "DR1_COVERAGE_VERIFIED_CHART_LINK_MISSING" in digest.warnings
+
+
+def test_e_407_verified_cross_chart_route_is_budget_bound(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    fine_chart = LocalChart("dr1:fine", 1, 0.5, 0.0, Vec2(0, 0))
+    fine_cell = make_hex_cell(fine_chart, AxialCoord(0, 0))
+    traces = tuple(replace(trace, cell=fine_cell) for trace in universe.traces)
+    up = compute_distribution(fine_cell, (universe.covers[0].support_cell,), CoverageDirection.fine_to_coarse)
+    down = compute_distribution(universe.covers[0].support_cell, (fine_cell,), CoverageDirection.coarse_to_fine)
+
+    class _Verified:
+        state_recommendation = "verified"
+
+    links = (
+        VerifiedChartLink(fine_cell.chart_fingerprint, universe.covers[0].support_cell.chart_fingerprint, _Verified()),
+        VerifiedChartLink(universe.covers[0].support_cell.chart_fingerprint, fine_cell.chart_fingerprint, _Verified()),
+    )
+    cross = replace(universe, traces=traces, coverage_up=(up,), coverage_down=(down,), verified_chart_links=links)
+    digest = resolve_recall(query_probe(), cross, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(allow_verified_chart_hops=False))
+    assert digest.status is RecallDigestStatus.budget_exhausted
+    assert "DR1_BUDGET_MAX_LATERAL_HOPS" in digest.discarded
+
+
+def test_e_414_ghost_interpretation_context_rejected(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    ghost = replace(universe.interpretation_records[0], statement="Caller supplied ghost context.")
+    digest = resolve_recall(query_probe(), replace(universe, interpretation_records=(ghost,)), store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.rejected
+    assert "DR1_CONTEXT_INTERPRETATION_PAYLOAD_MISMATCH" in digest.warnings
+
+
+def test_e_415_interpretation_usage_policy_controls_context(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    interpretation_id = universe.interpretation_records[0].interpretation_id
+    store.record_usage_transition(UsageStateTransition("state:interp:retired", interpretation_id, UsageState.tentative, UsageState.retired, ("reason:fixture",), "2026-06-30T08:02:00+08:00"))
+    default_digest = resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution())
+    assert interpretation_id not in default_digest.primary_evidence[0].context_record_ids
+    included = resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_retired_context=True))
+    assert interpretation_id in included.primary_evidence[0].context_record_ids
 
 
 def test_t_dr1_112_primary_context_evidence_partition(tmp_path) -> None:

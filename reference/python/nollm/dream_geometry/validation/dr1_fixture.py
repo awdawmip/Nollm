@@ -9,7 +9,6 @@ from nollm.dream_geometry.evidence import DreamShard, InterpretationRecord, Orig
 from nollm.dream_geometry.field.types import CoarseCover, CoverPolicy, GravityContribution, GravitySnapshot, GrowthTrace, cell_ref_key
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
-from nollm.dream_geometry.geometry.hexgrid import disk
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
 from nollm.dream_geometry.protocol.contracts import (
     CoverState,
@@ -58,12 +57,8 @@ def build_fixture(tmp_path, *, usage_state: UsageState = UsageState.active):
     traces = _traces(proposal)
     cover = _cover(traces)
     policy = CoverPolicy()
-    coarse_chart = LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0))
-    fine_chart = LocalChart("dr1:fine", 1, 0.5, 0.0, Vec2(0, 0))
-    coarse_cell = make_hex_cell(coarse_chart, AxialCoord(0, 0))
-    fine_targets = tuple(make_hex_cell(fine_chart, axial) for axial in disk(AxialCoord(0, 0), 2))
-    coverage_down = (compute_distribution(coarse_cell, fine_targets, CoverageDirection.coarse_to_fine),)
-    coverage_up = tuple(compute_distribution(trace.cell, (cover.support_cell,), CoverageDirection.fine_to_coarse) for trace in traces)
+    coverage_down = (compute_distribution(cover.support_cell, (traces[0].cell,), CoverageDirection.coarse_to_fine),)
+    coverage_up = (compute_distribution(traces[0].cell, (cover.support_cell,), CoverageDirection.fine_to_coarse),)
     gravity = GravitySnapshot(
         "gravity:dr1",
         cover.chart_fingerprint,
@@ -130,7 +125,7 @@ def with_legacy_proposal_only(universe: RecallUniverse) -> RecallUniverse:
 
 
 def with_wrong_down_direction(universe: RecallUniverse) -> RecallUniverse:
-    source = universe.coverage_down[0].kernels[0].target_cell
+    source = universe.coverage_down[0].source_cell
     target = universe.coverage_down[0].source_cell
     wrong = compute_distribution(source, (target,), CoverageDirection.fine_to_coarse)
     return replace(universe, coverage_down=(wrong,))

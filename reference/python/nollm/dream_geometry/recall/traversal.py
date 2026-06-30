@@ -18,16 +18,16 @@ def traversal_records(covers: tuple[CoarseCover, ...], coverage_down: tuple[Cove
             continue
         records.append(
             TraversalRecord(
-                "down",
-                cover.cover_id,
-                source_ref,
-                distribution.direction.value,
-                tuple(cell_ref_key(kernel.target_cell) for kernel in distribution.kernels),
-                distribution.residual.mass,
-                tuple(reason.value for reason in distribution.residual.reasons),
-                1.0,
-                sum(kernel.weight for kernel in distribution.kernels),
-                "DR1_K_DOWN_EXECUTED",
+                phase="down",
+                cover_id=cover.cover_id,
+                source_cell_ref=source_ref,
+                direction=distribution.direction.value,
+                target_cell_refs=tuple(cell_ref_key(kernel.target_cell) for kernel in distribution.kernels),
+                residual_mass=distribution.residual.mass,
+                residual_reasons=tuple(reason.value for reason in distribution.residual.reasons),
+                mass_in=1.0,
+                mass_out=sum(kernel.weight for kernel in distribution.kernels),
+                reason_code="DR1_K_DOWN_EXECUTED",
             )
         )
     return tuple(records)
