@@ -13,6 +13,11 @@ spans, separate Growth/Query budget schemas, `possible_conflict_refs`,
 proposal/receipt semantic revalidation on reopen, and same-rule identity
 consistency.
 
+DC1.1R adds only read-only legacy reopen compatibility for pre-DC1.1 accepted
+Cortex Growth artifacts. Legacy records are explicitly admitted as
+`legacy_dc1_read_only`; they are not rewritten, migrated, or treated as new
+current submissions.
+
 The implementation lives under `reference/python/nollm/dream_geometry/cortex/`.
 It may read DE1 `DreamShard` content through the public Evidence store surface
 to validate subjects and exact text-span basis references. It must not write

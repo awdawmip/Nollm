@@ -7,7 +7,7 @@ mutation, recall production, OpenClaw access, runtime calls, or databases.
 
 from .compiler import compile_growth, compile_query
 from .errors import DC1Rejection
-from .store import CompileGrowthResult, CortexStore, open_store
+from .store import ADMISSION_CURRENT_DC1_1, ADMISSION_LEGACY_DC1_READ_ONLY, CompileGrowthResult, CortexStore, StoredProposalView, open_store
 from .types import (
     CONTRACT_VERSION,
     AxisRay,
@@ -29,6 +29,8 @@ from .types import (
 __all__ = [
     "CONTRACT_VERSION",
     "AxisRay",
+    "ADMISSION_CURRENT_DC1_1",
+    "ADMISSION_LEGACY_DC1_READ_ONLY",
     "CompilationBudget",
     "CompilationDecision",
     "CompilationReceipt",
@@ -41,6 +43,7 @@ __all__ = [
     "QueryBudget",
     "RuleReference",
     "StepReference",
+    "StoredProposalView",
     "TextSpanRef",
     "canonical_json",
     "canonical_payload",

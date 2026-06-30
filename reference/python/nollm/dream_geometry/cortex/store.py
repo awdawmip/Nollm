@@ -10,7 +10,7 @@ from typing import Any
 
 from nollm.dream_geometry.evidence import MemorySubstrateStore
 
-from .compiler import compile_growth, validate_compiled_growth_proposal
+from .compiler import compile_growth, compile_growth_legacy_reopen, validate_compiled_growth_proposal
 from .errors import (
     DC1_CORTEX_ROOT_EQUALS_EVIDENCE_ROOT,
     DC1_ON_DISK_CONTRACT_VIOLATION,
@@ -38,6 +38,9 @@ from .types import (
     payload_fingerprint,
 )
 
+ADMISSION_CURRENT_DC1_1 = "current_dc1_1"
+ADMISSION_LEGACY_DC1_READ_ONLY = "legacy_dc1_read_only"
+
 
 @dataclass(frozen=True)
 class CompileGrowthResult:
@@ -45,6 +48,19 @@ class CompileGrowthResult:
     receipt: CompilationReceipt
     created: bool
     idempotent: bool
+
+
+@dataclass(frozen=True)
+class StoredProposalView:
+    proposal: CompiledGrowthProposal
+    admission: str
+
+
+@dataclass(frozen=True)
+class ParsedProposal:
+    proposal: CompiledGrowthProposal
+    raw_payload: dict[str, Any]
+    legacy_shape: bool
 
 
 class CortexStore:
@@ -62,6 +78,7 @@ class CortexStore:
         self.proposals_dir.mkdir(parents=True, exist_ok=True)
         self.receipts_dir.mkdir(parents=True, exist_ok=True)
         self._format_path = self.root / "format.json"
+        self._admissions: dict[str, str] = {}
         self._ensure_format()
         self._validate_store()
 
@@ -78,15 +95,24 @@ class CortexStore:
                 reject(DC1_PROPOSAL_ID_PAYLOAD_CONFLICT, "same proposal_id has different normalized payload")
             if not receipt_path.exists() or receipt_path.read_text(encoding="utf-8") != canonical_json(receipt):
                 reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "idempotent proposal receipt mismatch")
+            self._admissions[proposal.proposal_id] = ADMISSION_CURRENT_DC1_1
             return CompileGrowthResult(proposal, receipt, False, True)
         if any(_receipt_from_payload(_read_json(path)).proposal_id == proposal.proposal_id for path in self.receipts_dir.glob("*.json")):
             reject(DC1_PROPOSAL_ID_PAYLOAD_CONFLICT, "same proposal_id already has receipt")
         _atomic_write_text(proposal_path, canonical_json(proposal))
         _atomic_write_text(receipt_path, canonical_json(receipt))
+        self._admissions[proposal.proposal_id] = ADMISSION_CURRENT_DC1_1
         return CompileGrowthResult(proposal, receipt, True, False)
 
     def get_growth_proposal(self, proposal_id: str) -> CompiledGrowthProposal:
         return _proposal_from_payload(_read_json(self._proposal_path(proposal_id)))
+
+    def stored_growth_proposal(self, proposal_id: str) -> StoredProposalView:
+        proposal = self.get_growth_proposal(proposal_id)
+        return StoredProposalView(proposal, self.proposal_admission(proposal_id))
+
+    def proposal_admission(self, proposal_id: str) -> str:
+        return self._admissions[proposal_id]
 
     def receipts(self) -> tuple[CompilationReceipt, ...]:
         return tuple(_receipt_from_payload(_read_json(path)) for path in sorted(self.receipts_dir.glob("*.json")))
@@ -107,16 +133,21 @@ class CortexStore:
         _atomic_write_text(self._format_path, rendered)
 
     def _validate_store(self) -> None:
-        proposals: dict[str, CompiledGrowthProposal] = {}
+        proposals: dict[str, ParsedProposal] = {}
         for path in sorted(self.proposals_dir.glob("*.json")):
             try:
-                proposal = _proposal_from_payload(_read_json(path))
+                raw_payload = _read_json(path)
+                parsed = _parsed_proposal_from_payload(raw_payload)
+                proposal = parsed.proposal
                 if path != self._proposal_path(proposal.proposal_id):
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "proposal filename mismatch")
                 if proposal.proposal_id in proposals:
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "duplicate proposal id")
-                validate_compiled_growth_proposal(proposal, self.evidence_store)
-                proposals[proposal.proposal_id] = proposal
+                if parsed.legacy_shape:
+                    validate_compiled_growth_proposal(proposal, self.evidence_store, budget_limits=(8, 256, 64), enforce_rule_identity=False, validate_conflict_refs=False)
+                else:
+                    validate_compiled_growth_proposal(proposal, self.evidence_store)
+                proposals[proposal.proposal_id] = parsed
             except DC1Rejection:
                 raise
             except Exception as exc:
@@ -131,20 +162,33 @@ class CortexStore:
                     reject(DC1_RECEIPT_KIND_INVALID, "receipt kind must be growth")
                 if receipt.decision is not CompilationDecision.accepted:
                     reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "only accepted receipts are durable in DC1")
-                proposal = proposals.get(receipt.proposal_id)
-                if proposal is None:
+                parsed = proposals.get(receipt.proposal_id)
+                if parsed is None:
                     reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "accepted receipt without proposal")
+                proposal = parsed.proposal
                 if not isinstance(receipt.input_snapshot, dict):
                     reject(DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH, "receipt input_snapshot must be mapping")
                 if payload_fingerprint(receipt.input_snapshot) != receipt.submitted_payload_fingerprint:
                     reject(DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH, "receipt input snapshot fingerprint mismatch")
-                normalized = compile_growth(receipt.input_snapshot, self.evidence_store)
-                if normalized.proposal_id != receipt.proposal_id:
-                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal id mismatch")
-                if canonical_json(normalized) != canonical_json(proposal):
-                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt snapshot normalizes to different proposal")
-                if receipt.normalized_payload_fingerprint != payload_fingerprint(proposal):
-                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal fingerprint mismatch")
+                input_has_conflicts = "possible_conflict_refs" in receipt.input_snapshot
+                if parsed.legacy_shape != (not input_has_conflicts):
+                    reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "proposal and receipt legacy shape mismatch")
+                if parsed.legacy_shape:
+                    normalized = compile_growth_legacy_reopen(receipt.input_snapshot, self.evidence_store)
+                    if normalized != proposal:
+                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "legacy receipt snapshot normalizes to different proposal")
+                    if receipt.normalized_payload_fingerprint != payload_fingerprint(parsed.raw_payload):
+                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "legacy receipt proposal fingerprint mismatch")
+                    self._admissions[receipt.proposal_id] = ADMISSION_LEGACY_DC1_READ_ONLY
+                else:
+                    normalized = compile_growth(receipt.input_snapshot, self.evidence_store)
+                    if normalized.proposal_id != receipt.proposal_id:
+                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal id mismatch")
+                    if canonical_json(normalized) != canonical_json(proposal):
+                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt snapshot normalizes to different proposal")
+                    if receipt.normalized_payload_fingerprint != payload_fingerprint(proposal):
+                        reject(DC1_RECEIPT_PROPOSAL_MISMATCH, "receipt proposal fingerprint mismatch")
+                    self._admissions[receipt.proposal_id] = ADMISSION_CURRENT_DC1_1
                 if receipt.proposal_id in accepted_receipts:
                     reject(DC1_ON_DISK_CONTRACT_VIOLATION, "duplicate accepted receipt")
                 accepted_receipts[receipt.proposal_id] = receipt
@@ -175,6 +219,10 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _proposal_from_payload(payload: dict[str, Any]) -> CompiledGrowthProposal:
+    return _parsed_proposal_from_payload(payload).proposal
+
+
+def _parsed_proposal_from_payload(payload: dict[str, Any]) -> ParsedProposal:
     allowed_keys = {
         "record_type",
         "contract_version",
@@ -208,7 +256,7 @@ def _proposal_from_payload(payload: dict[str, Any]) -> CompiledGrowthProposal:
         expected.pop("possible_conflict_refs")
     if payload != expected:
         reject(DC1_ON_DISK_CONTRACT_VIOLATION, "proposal canonical payload mismatch")
-    return proposal
+    return ParsedProposal(proposal, payload, not has_conflict_refs)
 
 
 def _receipt_from_payload(payload: dict[str, Any]) -> CompilationReceipt:
@@ -269,4 +317,11 @@ def _atomic_write_text(path: Path, text: str) -> None:
     temporary.replace(path)
 
 
-__all__ = ["CompileGrowthResult", "CortexStore", "open_store"]
+__all__ = [
+    "ADMISSION_CURRENT_DC1_1",
+    "ADMISSION_LEGACY_DC1_READ_ONLY",
+    "CompileGrowthResult",
+    "CortexStore",
+    "StoredProposalView",
+    "open_store",
+]

@@ -48,6 +48,10 @@ def build_report() -> str:
             "- `possible_conflict_refs` are checked only as explicit DE1 DreamShard or InterpretationRecord pointers; DC1 performs no conflict judgment.",
             "- Reopen validates compiled proposal semantics and receipt input snapshot / submitted fingerprint / normalized proposal consistency.",
             "- Same `rule_id` must keep one `(rule_version, rule_label, source_ref)` identity within a proposal.",
+            "- Current DC1.1 submissions use strict `current_dc1_1` admission; pre-DC1.1 artifacts missing `possible_conflict_refs` may reopen only as `legacy_dc1_read_only`.",
+            "- Legacy reopen preserves raw proposal and receipt fingerprints, uses an in-memory validation view, and does not rewrite Cortex or Evidence files.",
+            "- Legacy rule identity variance is preserved as historical read-only state; it is not accepted for new submissions.",
+            "- Legacy read compatibility is not new submission compatibility.",
             "- Fingerprints are deterministic equivalence keys for idempotency and report recomputation only.",
         ]
     )

@@ -50,7 +50,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - DG1: Pure Geometry Kernel and coverage-kernel validation.
 - DG2: Field Dynamics with traces, covers, and internal gravity.
 - DE1: Memory Substrate / Epistemic Core for Dream Shards, externally supplied interpretations, revision threads, usage state, and ledger history.
-- DC1: Cortex Compiler Foundation for structured Growth Proposal and ephemeral Query Probe compilation. DC1.1 closes the final compiler contract and seals DC1.
+- DC1: Cortex Compiler Foundation for structured Growth Proposal and ephemeral Query Probe compilation. DC1.1R closes legacy reopen compatibility and seals DC1.
 - DG4: Pure geometry Query Probe / Recall Resolver.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.

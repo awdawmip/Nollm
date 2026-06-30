@@ -46,6 +46,12 @@ compiled-growth semantic contract and re-normalizes each accepted receipt
 `input_snapshot` to verify submitted fingerprint, normalized proposal, and
 normalized fingerprint consistency.
 
+Pre-DC1.1 artifacts that omit `possible_conflict_refs` in both proposal and
+receipt snapshot may reopen only as `legacy_dc1_read_only`. This path preserves
+raw fingerprints and files, uses an in-memory validation view with empty
+conflict refs, keeps legacy rule-label variance as historical read-only state,
+and does not relax current `compile_growth()` submissions.
+
 Fingerprints are deterministic equivalence keys for idempotency and
 recomputation. They are not signatures, authentication, anti-tamper guarantees,
 or security claims.

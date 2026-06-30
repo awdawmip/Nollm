@@ -312,16 +312,43 @@ def _require_rule_or_predecessor(rule_refs: tuple[RuleReference, ...], step_refs
         reject(DC1_RULE_IDENTITY_INCOMPLETE, "too many rule references")
 
 
-def validate_compiled_growth_proposal(proposal: CompiledGrowthProposal, evidence_reader: object) -> None:
+def compile_growth_legacy_reopen(submission: dict[str, Any], evidence_reader: object) -> CompiledGrowthProposal:
+    _require_mapping(submission, "submission")
+    _reject_legacy_fields(submission)
+    legacy_keys = GROWTH_TOP_KEYS - {"possible_conflict_refs"}
+    _require_keys(submission, legacy_keys, {"contract_version", "proposal_id", "subject_shard_id", "axes", "budget", "do_not_infer", "forbidden_inferences"})
+    _require_contract(submission["contract_version"])
+    proposal_id = _require_prefixed_id(submission["proposal_id"], "gp_", "proposal_id")
+    subject_shard_id = _require_text(submission["subject_shard_id"], "subject_shard_id")
+    submitted_at = _optional_rfc3339(submission.get("submitted_at"), "submitted_at")
+    subject = _resolve_subject(evidence_reader, subject_shard_id)
+    budget = _parse_legacy_growth_budget(submission["budget"])
+    do_not_infer = _require_non_empty_text_tuple(submission["do_not_infer"], DC1_EMPTY_DO_NOT_INFER, "do_not_infer")
+    forbidden = _require_non_empty_text_tuple(submission["forbidden_inferences"], DC1_EMPTY_FORBIDDEN_INFERENCE, "forbidden_inferences")
+    axes = _parse_axes(submission["axes"], budget.max_axes, budget.max_ray_steps, "growth", subject, subject_shard_id, None, None, evidence_reader)
+    proposal = CompiledGrowthProposal(proposal_id, subject_shard_id, axes, budget, do_not_infer, forbidden, (), submitted_at)
+    validate_compiled_growth_proposal(proposal, evidence_reader, budget_limits=(8, 256, 64), enforce_rule_identity=False, validate_conflict_refs=False)
+    return proposal
+
+
+def validate_compiled_growth_proposal(
+    proposal: CompiledGrowthProposal,
+    evidence_reader: object,
+    *,
+    budget_limits: tuple[int, int, int] = (8, 48, 16),
+    enforce_rule_identity: bool = True,
+    validate_conflict_refs: bool = True,
+) -> None:
     _require_prefixed_id(proposal.proposal_id, "gp_", "proposal_id")
     subject = _resolve_subject(evidence_reader, proposal.subject_shard_id)
     if not isinstance(proposal.budget, CompilationBudget):
         reject(DC1_BUDGET_EXCEEDED, "growth budget required")
-    _validate_growth_budget(proposal.budget)
+    _validate_growth_budget(proposal.budget, budget_limits)
     do_not_infer = _require_non_empty_tuple_value(proposal.do_not_infer, DC1_EMPTY_DO_NOT_INFER, "do_not_infer")
     forbidden = _require_non_empty_tuple_value(proposal.forbidden_inferences, DC1_EMPTY_FORBIDDEN_INFERENCE, "forbidden_inferences")
     _ = do_not_infer, forbidden
-    _validate_conflict_refs(proposal.possible_conflict_refs, evidence_reader)
+    if validate_conflict_refs:
+        _validate_conflict_refs(proposal.possible_conflict_refs, evidence_reader)
     if len(proposal.axes) > proposal.budget.max_axes:
         reject(DC1_BUDGET_EXCEEDED, "axis budget exceeded")
     seen_axes: set[str] = set()
@@ -352,9 +379,10 @@ def validate_compiled_growth_proposal(proposal: CompiledGrowthProposal, evidence
             expressions.add(step.expression)
             if not step.basis_refs:
                 reject(DC1_MISSING_BASIS_REFERENCE, "basis_refs cannot be empty")
-            for ref in step.basis_refs:
-                if isinstance(ref, RuleReference):
-                    _validate_rule_identity(ref, rule_identity)
+            if enforce_rule_identity:
+                for ref in step.basis_refs:
+                    if isinstance(ref, RuleReference):
+                        _validate_rule_identity(ref, rule_identity)
             text_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, TextSpanRef))
             rule_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, RuleReference))
             step_refs = tuple(ref for ref in step.basis_refs if isinstance(ref, StepReference))
@@ -430,7 +458,15 @@ def _parse_growth_budget(value: object) -> CompilationBudget:
     _require_mapping(value, "budget")
     _require_keys(value, GROWTH_BUDGET_KEYS, GROWTH_BUDGET_KEYS)
     budget = CompilationBudget(_require_positive_int(value["max_axes"], "max_axes"), _require_positive_int(value["max_total_steps"], "max_total_steps"), _require_positive_int(value["max_ray_steps"], "max_ray_steps"))
-    _validate_growth_budget(budget)
+    _validate_growth_budget(budget, (8, 48, 16))
+    return budget
+
+
+def _parse_legacy_growth_budget(value: object) -> CompilationBudget:
+    _require_mapping(value, "budget")
+    _require_keys(value, GROWTH_BUDGET_KEYS, GROWTH_BUDGET_KEYS)
+    budget = CompilationBudget(_require_positive_int(value["max_axes"], "max_axes"), _require_positive_int(value["max_total_steps"], "max_total_steps"), _require_positive_int(value["max_ray_steps"], "max_ray_steps"))
+    _validate_growth_budget(budget, (8, 256, 64))
     return budget
 
 
@@ -448,8 +484,9 @@ def _parse_query_budget(value: object) -> QueryBudget:
     return budget
 
 
-def _validate_growth_budget(budget: CompilationBudget) -> None:
-    if budget.max_axes > 8 or budget.max_total_steps > 48 or budget.max_ray_steps > 16:
+def _validate_growth_budget(budget: CompilationBudget, limits: tuple[int, int, int]) -> None:
+    max_axes, max_total_steps, max_ray_steps = limits
+    if budget.max_axes > max_axes or budget.max_total_steps > max_total_steps or budget.max_ray_steps > max_ray_steps:
         reject(DC1_BUDGET_EXCEEDED, "growth budget exceeds DC1 maximum")
 
 
@@ -584,4 +621,4 @@ def _optional_rfc3339(value: object, label: str) -> str | None:
     return text
 
 
-__all__ = ["compile_growth", "compile_query", "validate_compiled_growth_proposal"]
+__all__ = ["compile_growth", "compile_growth_legacy_reopen", "compile_query", "validate_compiled_growth_proposal"]

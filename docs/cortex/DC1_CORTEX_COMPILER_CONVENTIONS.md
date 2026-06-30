@@ -22,6 +22,11 @@ Query budget keys are `max_axes`, `max_charts`, `max_layers`, and
 IDs. DC1 checks only existence and duplicates; it does not read those records as
 basis and does not judge conflicts.
 
+Legacy reopen compatibility is read-only. If an older accepted proposal and its
+receipt snapshot both omit `possible_conflict_refs`, the store may create an
+in-memory validation view with empty conflict refs and return
+`legacy_dc1_read_only` admission. New submissions still must include the field.
+
 `provisional_llm_generalization` remains provisional-only metadata for later
 Field stages. DC1 does not upgrade it into truth, stable state, or confirmed
 memory.

@@ -43,3 +43,13 @@ budget:
 
 Old Query budget keys such as `max_total_steps` and `max_ray_steps` are not
 accepted for Query Probes.
+
+Stored proposal admission is one of:
+
+- `current_dc1_1`: produced by current strict submissions.
+- `legacy_dc1_read_only`: pre-DC1.1 durable Growth artifacts that omit
+  `possible_conflict_refs` in both proposal and receipt snapshot and pass the
+  legacy structural reopen validator.
+
+Legacy admission is in-memory metadata only. It must not be written back into
+proposal JSON, receipt JSON, Evidence, Ledger, Field, Recall, or runtime state.

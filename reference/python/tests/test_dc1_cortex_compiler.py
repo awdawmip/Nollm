@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from nollm.dream_geometry.cortex import DC1Rejection, compile_query, payload_fingerprint
+from hashlib import sha256
+
+from nollm.dream_geometry.cortex import ADMISSION_CURRENT_DC1_1, ADMISSION_LEGACY_DC1_READ_ONLY, DC1Rejection, compile_query, payload_fingerprint
 from nollm.dream_geometry.cortex.store import CortexStore, open_store as open_cortex_store
 from nollm.dream_geometry.evidence import RevisionEdge, RevisionThread
 from nollm.dream_geometry.protocol.contracts import RevisionRelation
@@ -329,6 +331,135 @@ def test_dc1_evidence_root_unchanged_by_growth_write(tmp_path) -> None:
     assert _tree_digest(evidence_root) == before
 
 
+def test_dc1_1r_t501_to_t507_legacy_reopen_read_only_admission(tmp_path) -> None:
+    evidence = _fixture_store(tmp_path / "evidence")
+    cortex_root = tmp_path / "legacy-cortex"
+    proposal_payload, receipt_payload = _legacy_artifact_payloads()
+    _write_cortex_format(cortex_root)
+    _write_cortex_artifact(cortex_root, "compiled_growth_proposals", proposal_payload["proposal_id"], proposal_payload)
+    _write_cortex_artifact(cortex_root, "compilation_receipts", receipt_payload["receipt_id"], receipt_payload)
+    before_cortex = _tree_digest(cortex_root)
+    before_evidence = _tree_digest(tmp_path / "evidence")
+
+    store = open_cortex_store(cortex_root, evidence)
+    view = store.stored_growth_proposal("gp_legacy_dc1_v1")
+
+    assert view.admission == ADMISSION_LEGACY_DC1_READ_ONLY
+    assert store.proposal_admission("gp_legacy_dc1_v1") == ADMISSION_LEGACY_DC1_READ_ONLY
+    assert view.proposal.budget.max_total_steps == 49
+    assert view.proposal.budget.max_ray_steps == 17
+    assert view.proposal.possible_conflict_refs == ()
+    assert _tree_digest(cortex_root) == before_cortex
+    assert _tree_digest(tmp_path / "evidence") == before_evidence
+    assert receipt_payload["normalized_payload_fingerprint"] == payload_fingerprint(proposal_payload)
+
+    current_root = tmp_path / "current-cortex"
+    current = open_cortex_store(current_root, evidence)
+    current.compile_growth(_growth_payload())
+    current_reopened = open_cortex_store(current_root, evidence)
+    assert current_reopened.proposal_admission("gp_kunming_growth_v1") == ADMISSION_CURRENT_DC1_1
+
+    excessive = _growth_payload()
+    excessive["proposal_id"] = "gp_current_excess"
+    excessive["budget"]["max_total_steps"] = 49
+    assert "DC1_BUDGET_EXCEEDED" in _codes(lambda: current.compile_growth(excessive))
+
+
+def test_dc1_1r_t510_to_t519_legacy_negative_boundaries(tmp_path) -> None:
+    evidence = _fixture_store(tmp_path / "evidence")
+
+    missing_conflicts = _growth_payload()
+    del missing_conflicts["possible_conflict_refs"]
+    assert "DC1_MISSING_REQUIRED_FIELD" in _codes(lambda: open_cortex_store(tmp_path / "current", evidence).compile_growth(missing_conflicts))
+
+    def expect_legacy_reject(name: str, mutate_proposal=None, mutate_receipt=None, code: str = "DC1_ON_DISK_CONTRACT_VIOLATION") -> None:
+        root = tmp_path / name
+        proposal_payload, receipt_payload = _legacy_artifact_payloads()
+        _write_cortex_format(root)
+        if mutate_proposal is not None:
+            mutate_proposal(proposal_payload)
+        if mutate_receipt is not None:
+            mutate_receipt(receipt_payload)
+        _write_cortex_artifact(root, "compiled_growth_proposals", proposal_payload["proposal_id"], proposal_payload)
+        _write_cortex_artifact(root, "compilation_receipts", receipt_payload["receipt_id"], receipt_payload)
+        assert code in _codes(lambda: open_cortex_store(root, evidence))
+
+    expect_legacy_reject(
+        "only-proposal-legacy",
+        mutate_receipt=lambda receipt: (
+            receipt["input_snapshot"].__setitem__("possible_conflict_refs", []),
+            receipt.__setitem__("submitted_payload_fingerprint", payload_fingerprint(receipt["input_snapshot"])),
+        ),
+        code="DC1_RECEIPT_PROPOSAL_MISMATCH",
+    )
+    expect_legacy_reject(
+        "fingerprint-mismatch",
+        mutate_receipt=lambda receipt: receipt["input_snapshot"].__setitem__("forbidden_inferences", ["changed"]),
+        code="DC1_RECEIPT_INPUT_SNAPSHOT_MISMATCH",
+    )
+    expect_legacy_reject(
+        "bad-span",
+        mutate_proposal=lambda proposal: (
+            proposal["axes"][0]["ray"][0].__setitem__("expression", "城市"),
+            proposal["axes"][0]["ray"][0]["basis_refs"][0].__setitem__("quoted_text", "城市"),
+            _sync_legacy_receipt_normalized_marker(proposal),
+        ),
+        code="DC1_INVALID_TEXT_SPAN",
+    )
+    expect_legacy_reject(
+        "bad-subject",
+        mutate_proposal=lambda proposal: proposal.__setitem__("subject_shard_id", "interpretation:city-note"),
+        code="DC1_SUBJECT_NOT_DREAM_SHARD",
+    )
+    expect_legacy_reject(
+        "relative-growth",
+        mutate_proposal=lambda proposal: proposal["axes"][0].__setitem__("axis_id", "relative_time"),
+        code="DC1_GROWTH_RELATIVE_TIME_FORBIDDEN",
+    )
+    expect_legacy_reject(
+        "bad-predecessor",
+        mutate_proposal=lambda proposal: proposal["axes"][2]["ray"][1]["basis_refs"][1].__setitem__("input_step_id", "step_legacy_kunming"),
+        code="DC1_INVALID_PREDECESSOR",
+    )
+    expect_legacy_reject(
+        "bad-provisional",
+        mutate_proposal=lambda proposal: proposal["axes"][3]["ray"][2].__setitem__("rationale", None),
+        code="DC1_PROVISIONAL_RATIONALE_REQUIRED",
+    )
+    expect_legacy_reject(
+        "unknown-field",
+        mutate_proposal=lambda proposal: proposal.__setitem__("unknown", "bad"),
+        code="DC1_ON_DISK_CONTRACT_VIOLATION",
+    )
+    expect_legacy_reject(
+        "bad-kind",
+        mutate_receipt=lambda receipt: receipt.__setitem__("kind", "query"),
+        code="DC1_RECEIPT_KIND_INVALID",
+    )
+
+    root = tmp_path / "missing-receipt"
+    proposal_payload, _ = _legacy_artifact_payloads()
+    _write_cortex_format(root)
+    _write_cortex_artifact(root, "compiled_growth_proposals", proposal_payload["proposal_id"], proposal_payload)
+    assert "DC1_RECEIPT_PROPOSAL_MISMATCH" in _codes(lambda: open_cortex_store(root, evidence))
+
+    root = tmp_path / "duplicate-receipt"
+    proposal_payload, receipt_payload = _legacy_artifact_payloads()
+    _write_cortex_format(root)
+    second_receipt = dict(receipt_payload)
+    second_receipt["receipt_id"] = "cr_legacy_dc1_duplicate"
+    _write_cortex_artifact(root, "compiled_growth_proposals", proposal_payload["proposal_id"], proposal_payload)
+    _write_cortex_artifact(root, "compilation_receipts", receipt_payload["receipt_id"], receipt_payload)
+    _write_cortex_artifact(root, "compilation_receipts", second_receipt["receipt_id"], second_receipt)
+    assert "DC1_ON_DISK_CONTRACT_VIOLATION" in _codes(lambda: open_cortex_store(root, evidence))
+
+    current = open_cortex_store(tmp_path / "current-rule", evidence)
+    inconsistent = _growth_payload()
+    inconsistent["proposal_id"] = "gp_current_rule_bad"
+    inconsistent["axes"][2]["ray"][2]["basis_refs"][0]["rule_version"] = "v2"
+    assert "DC1_RULE_IDENTITY_INCONSISTENT" in _codes(lambda: current.compile_growth(inconsistent))
+
+
 def _tree_digest(root: Path) -> tuple[tuple[str, str], ...]:
     return tuple(sorted((str(path.relative_to(root)), path.read_text(encoding="utf-8")) for path in root.rglob("*") if path.is_file()))
 
@@ -345,3 +476,95 @@ def _sync_receipt_normalized_fingerprint(receipt_path: Path, proposal_payload: d
     receipt = _read_json(receipt_path)
     receipt["normalized_payload_fingerprint"] = payload_fingerprint(proposal_payload)
     _write_json(receipt_path, receipt)
+
+
+def _write_cortex_artifact(root: Path, bucket: str, record_id: str, payload: dict) -> None:
+    path = root / bucket / (sha256(record_id.encode("utf-8")).hexdigest() + ".json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(path, payload)
+
+
+def _write_cortex_format(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    _write_json(root / "format.json", {"format_version": "dc1.v1", "store_kind": "cortex_compiler"})
+
+
+def _legacy_artifact_payloads() -> tuple[dict, dict]:
+    input_snapshot = {
+        "contract_version": "dc1.v1",
+        "proposal_id": "gp_legacy_dc1_v1",
+        "subject_shard_id": "shard:rain",
+        "submitted_at": "2026-06-29T08:30:00+08:00",
+        "budget": {"max_axes": 4, "max_total_steps": 49, "max_ray_steps": 17},
+        "do_not_infer": ["legacy record has no possible_conflict_refs field"],
+        "forbidden_inferences": ["do not infer current weather"],
+        "axes": [
+            {"axis_id": "location", "ray": [{"step_id": "step_legacy_kunming", "expression": "昆明", "basis": "explicit_in_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:rain", "start_char": 0, "end_char": 2, "quoted_text": "昆明"}]}]},
+            {"axis_id": "relation", "ray": [{"step_id": "step_legacy_city", "expression": "城市", "basis": "backed_by_other_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:city", "start_char": 9, "end_char": 11, "quoted_text": "城市"}]}]},
+            {
+                "axis_id": "absolute_time",
+                "ray": [
+                    {"step_id": "step_legacy_day", "expression": "2026年6月29日", "basis": "explicit_in_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:rain", "start_char": 3, "end_char": 13, "quoted_text": "2026年6月29日"}]},
+                    {"step_id": "step_legacy_month", "expression": "2026年6月", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date to month", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_legacy_day"}]},
+                    {"step_id": "step_legacy_year", "expression": "2026年", "basis": "deterministic_projection", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_date_projection", "rule_version": "v1", "rule_label": "date to year", "source_ref": "project:dc1"}, {"ref_type": "step", "input_step_id": "step_legacy_month"}]},
+                ],
+            },
+            {
+                "axis_id": "phenomenon",
+                "ray": [
+                    {"step_id": "step_legacy_rain", "expression": "下雨", "basis": "explicit_in_shard", "basis_refs": [{"ref_type": "text_span", "record_id": "shard:rain", "start_char": 13, "end_char": 15, "quoted_text": "下雨"}]},
+                    {"step_id": "step_legacy_precip", "expression": "降雨", "basis": "source_backed_rule", "basis_refs": [{"ref_type": "rule", "rule_id": "rule_weather_vocab", "rule_version": "v1", "rule_label": "weather vocabulary mapping", "source_ref": "project:weather"}]},
+                    {"step_id": "step_legacy_weather", "expression": "天气现象", "basis": "provisional_llm_generalization", "basis_refs": [{"ref_type": "step", "input_step_id": "step_legacy_precip"}], "rationale": "legacy caller supplied candidate generalization"},
+                ],
+            },
+        ],
+    }
+    proposal_payload = {
+        "record_type": "compiled_growth_proposal",
+        "contract_version": "dc1.v1",
+        "proposal_id": input_snapshot["proposal_id"],
+        "subject_shard_id": input_snapshot["subject_shard_id"],
+        "axes": _compiled_axes_from_submission(input_snapshot["axes"]),
+        "budget": input_snapshot["budget"],
+        "do_not_infer": input_snapshot["do_not_infer"],
+        "forbidden_inferences": input_snapshot["forbidden_inferences"],
+        "submitted_at": input_snapshot["submitted_at"],
+        "provisional_only_present": True,
+    }
+    receipt_payload = {
+        "record_type": "compilation_receipt",
+        "contract_version": "dc1.v1",
+        "receipt_id": "cr_legacy_dc1_v1",
+        "kind": "growth",
+        "proposal_id": input_snapshot["proposal_id"],
+        "decision": "accepted",
+        "reason_codes": [],
+        "submitted_payload_fingerprint": payload_fingerprint(input_snapshot),
+        "normalized_payload_fingerprint": payload_fingerprint(proposal_payload),
+        "submitted_at": input_snapshot["submitted_at"],
+        "input_snapshot": input_snapshot,
+    }
+    return proposal_payload, receipt_payload
+
+
+def _sync_legacy_receipt_normalized_marker(proposal: dict) -> None:
+    _ = proposal
+
+
+def _compiled_axes_from_submission(axes: list[dict]) -> list[dict]:
+    compiled_axes = []
+    for axis in axes:
+        compiled_ray = []
+        for step in axis["ray"]:
+            compiled_ray.append(
+                {
+                    "step_id": step["step_id"],
+                    "expression": step["expression"],
+                    "basis": step["basis"],
+                    "basis_refs": step["basis_refs"],
+                    "rationale": step.get("rationale"),
+                    "provisional_only": step["basis"] == "provisional_llm_generalization",
+                }
+            )
+        compiled_axes.append({"axis_id": axis["axis_id"], "ray": compiled_ray})
+    return compiled_axes
