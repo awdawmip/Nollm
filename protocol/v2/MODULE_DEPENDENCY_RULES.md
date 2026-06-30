@@ -11,7 +11,7 @@ Allowed edges:
 ```text
 evidence -> protocol
 geometry -> protocol
-cortex -> protocol
+cortex -> protocol, evidence
 field -> protocol, evidence, geometry
 recall -> protocol, evidence, geometry, field, cortex
 adapters -> protocol, evidence, cortex, recall
@@ -57,3 +57,15 @@ validation/de1 -> protocol, evidence
 Evidence may use Python standard-library file and JSON helpers for its
 file-first store. Evidence must not import geometry, field, cortex, recall,
 adapters, V1 modules, OpenClaw, runtime, databases, or vector search.
+
+DC1 active implementation subset:
+
+```text
+cortex -> protocol, evidence
+validation/dc1 -> protocol, evidence, cortex
+```
+
+Cortex may use the DE1 public read surface to resolve DreamShard subjects and
+exact text-span support. Cortex must not write Evidence, Ledger, Geometry,
+Field, Recall, Adapter, V1, OpenClaw, runtime, database, network, or subprocess
+state.

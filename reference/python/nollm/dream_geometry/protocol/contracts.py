@@ -187,7 +187,7 @@ OBJECT_OWNERSHIP: tuple[ObjectOwnership, ...] = (
     ObjectOwnership(ObjectKind.revision_thread, ModuleName.evidence, True, True, "Durable explicit revision relation thread."),
     ObjectOwnership(ObjectKind.usage_state_transition, ModuleName.evidence, True, True, "Durable usage-state transition."),
     ObjectOwnership(ObjectKind.ledger_event, ModuleName.evidence, True, True, "Durable audit event."),
-    ObjectOwnership(ObjectKind.growth_proposal, ModuleName.cortex, False, False, "Cortex candidate, not fact confirmation."),
+    ObjectOwnership(ObjectKind.growth_proposal, ModuleName.cortex, True, False, "Cortex compiled proposal, not fact confirmation."),
     ObjectOwnership(ObjectKind.query_probe, ModuleName.cortex, False, False, "Temporary read-side object."),
     ObjectOwnership(ObjectKind.local_chart, ModuleName.geometry, False, False, "Geometry-owned local chart."),
     ObjectOwnership(ObjectKind.chart_transform, ModuleName.geometry, False, False, "Verified transform candidate state belongs to geometry."),

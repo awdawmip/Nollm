@@ -7,7 +7,8 @@ Object sovereignty is module-owned:
 - `revision_thread`: evidence, durable, externally visible.
 - `usage_state_transition`: evidence, durable, externally visible.
 - `ledger_event`: evidence, durable, externally visible.
-- `growth_proposal`: cortex.
+- `compiled_growth_proposal`: cortex, durable only within the Cortex compiler store.
+- `compilation_receipt`: cortex, durable only within the Cortex compiler store.
 - `query_probe`: cortex, not durable.
 - `local_chart`: geometry.
 - `chart_transform`: geometry.

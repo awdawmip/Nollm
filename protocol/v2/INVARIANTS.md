@@ -37,5 +37,8 @@
 - I-V2-024: Evidence persistence is file-first and must not depend on Geometry, Field, Cortex, Recall, Adapter, V1, OpenClaw, runtime, database, or vector search.
 - I-V2-025: Relative-time expressions are preserved as expressions with optional reference instants; Evidence must not interpret them as absolute event facts.
   - DE1.1 clarification: durable record IDs are globally unique within a store root so revision and usage-state references cannot resolve to multiple epistemic object types.
+- I-V2-026: DC1 Growth Proposals are Cortex-owned proposals, not DreamShards, truth claims, Field placements, or Recall results.
+- I-V2-027: DC1 Query Probes are ephemeral and must not be persisted as Cortex, Evidence, Ledger, Field, Recall, or runtime history.
+- I-V2-028: Every accepted DC1 Growth Step has a strict basis reference with exact quote, rule identity, or adjacent predecessor locality as required by its basis kind.
 
 Pure geometry acceptance comes before semantics and runtime.

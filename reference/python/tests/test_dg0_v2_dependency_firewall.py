@@ -228,7 +228,7 @@ def test_documented_dependency_matrix_matches_executable_rules() -> None:
     expected = {
         "evidence -> protocol",
         "geometry -> protocol",
-        "cortex -> protocol",
+        "cortex -> protocol, evidence",
         "field -> protocol, evidence, geometry",
         "recall -> protocol, evidence, geometry, field, cortex",
         "adapters -> protocol, evidence, cortex, recall",

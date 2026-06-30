@@ -12,6 +12,7 @@ ALLOWED_DEPENDENCIES: frozenset[tuple[ModuleName, ModuleName]] = frozenset(
         (ModuleName.evidence, ModuleName.protocol),
         (ModuleName.geometry, ModuleName.protocol),
         (ModuleName.cortex, ModuleName.protocol),
+        (ModuleName.cortex, ModuleName.evidence),
         (ModuleName.field, ModuleName.protocol),
         (ModuleName.field, ModuleName.evidence),
         (ModuleName.field, ModuleName.geometry),
