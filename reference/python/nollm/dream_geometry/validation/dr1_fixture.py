@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from nollm.dream_geometry.cortex.types import AxisRay, CompilationBudget, CompiledGrowthProposal, CompiledQueryProbe, GrowthStep, QueryBudget, TextSpanRef
+from nollm.dream_geometry.cortex.types import AxisRay, CompilationBudget, CompilationDecision, CompilationReceipt, CompiledGrowthProposal, CompiledQueryProbe, GrowthStep, QueryBudget, TextSpanRef, payload_fingerprint
 from nollm.dream_geometry.evidence import DreamShard, InterpretationRecord, OriginDescriptor, RevisionEdge, RevisionThread, TemporalContext, UsageStateTransition, open_store
 from nollm.dream_geometry.field.types import CoarseCover, CoverPolicy, GravityContribution, GravitySnapshot, GrowthTrace, cell_ref_key
 from nollm.dream_geometry.geometry.chart import make_hex_cell
@@ -54,13 +54,16 @@ def build_fixture(tmp_path, *, usage_state: UsageState = UsageState.active):
     store.put_revision_thread(revision)
 
     proposal = _proposal()
+    receipt = _receipt(proposal)
     traces = _traces(proposal)
     cover = _cover(traces)
+    policy = CoverPolicy()
     coarse_chart = LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0))
     fine_chart = LocalChart("dr1:fine", 1, 0.5, 0.0, Vec2(0, 0))
     coarse_cell = make_hex_cell(coarse_chart, AxialCoord(0, 0))
     fine_targets = tuple(make_hex_cell(fine_chart, axial) for axial in disk(AxialCoord(0, 0), 2))
     coverage_down = (compute_distribution(coarse_cell, fine_targets, CoverageDirection.coarse_to_fine),)
+    coverage_up = tuple(compute_distribution(trace.cell, (cover.support_cell,), CoverageDirection.fine_to_coarse) for trace in traces)
     gravity = GravitySnapshot(
         "gravity:dr1",
         cover.chart_fingerprint,
@@ -70,11 +73,13 @@ def build_fixture(tmp_path, *, usage_state: UsageState = UsageState.active):
         "1",
     )
     universe = RecallUniverse(
-        (ProposalReadRecord(proposal, ProposalAdmission.current_accepted, "fixture:proposal"),),
+        (ProposalReadRecord(proposal, ProposalAdmission.current_accepted, "fixture:proposal", receipt),),
         traces,
         (cover,),
+        coverage_up=coverage_up,
         coverage_down=coverage_down,
         gravity_snapshot=gravity,
+        cover_policy_records=(policy,),
         interpretation_records=(interpretation,),
         revision_threads=(revision,),
     )
@@ -82,7 +87,28 @@ def build_fixture(tmp_path, *, usage_state: UsageState = UsageState.active):
 
 
 def relative_time_resolution() -> RuntimeTimeResolution:
-    return RuntimeTimeResolution((ResolvedRelativeSpan("relative_time", "yesterday", "absolute_time", "2026-06-29", "2026-06-30T08:00:00+08:00", "caller_runtime"),), True)
+    return RuntimeTimeResolution(
+        (
+            ResolvedRelativeSpan(
+                "relative_time",
+                "yesterday",
+                "absolute_time",
+                "2026-06-29",
+                "2026-06-30T08:00:00+08:00",
+                "caller_runtime",
+                "q:time",
+                20,
+                29,
+                "yesterday",
+                "caller_runtime",
+                "1",
+            ),
+        ),
+        True,
+        "caller_runtime",
+        "1",
+        "2026-06-30T08:00:00+08:00",
+    )
 
 
 def query_probe(*, relative_time: bool = True, one_axis: bool = False) -> CompiledQueryProbe:
@@ -99,7 +125,7 @@ def query_probe(*, relative_time: bool = True, one_axis: bool = False) -> Compil
 
 
 def with_legacy_proposal_only(universe: RecallUniverse) -> RecallUniverse:
-    records = tuple(ProposalReadRecord(record.proposal, ProposalAdmission.legacy_dc1_read_only, record.source_ref) for record in universe.proposal_records)
+    records = tuple(ProposalReadRecord(record.proposal, ProposalAdmission.legacy_dc1_read_only, record.source_ref, record.receipt) for record in universe.proposal_records)
     return replace(universe, proposal_records=records)
 
 
@@ -121,6 +147,21 @@ def _proposal() -> CompiledGrowthProposal:
         for axis, expression in (("location", "Kunming"), ("phenomenon", "rain"), ("absolute_time", "2026-06-29"))
     )
     return CompiledGrowthProposal("proposal:rain", "shard:rain", axes, CompilationBudget(4, 8, 4), (), (), (), "2026-06-30T08:00:00+08:00")
+
+
+def _receipt(proposal: CompiledGrowthProposal) -> CompilationReceipt:
+    fingerprint = payload_fingerprint(proposal)
+    return CompilationReceipt(
+        "receipt:proposal:rain",
+        "growth",
+        proposal.proposal_id,
+        CompilationDecision.accepted,
+        (),
+        fingerprint,
+        fingerprint,
+        proposal.submitted_at,
+        {"fixture": "dr1"},
+    )
 
 
 def _traces(proposal: CompiledGrowthProposal) -> tuple[GrowthTrace, ...]:

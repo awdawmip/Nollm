@@ -20,6 +20,7 @@ Object sovereignty is module-owned:
 - `recall_digest`: recall, not durable, externally visible as an ephemeral read result.
 - `recall_universe`: recall call boundary, finite and explicit, not durable.
 - `runtime_time_resolution`: recall call boundary, caller-supplied relative-time resolution, not durable.
+- `validated_recall_universe`: recall-local validation view, not durable.
 
 Evidence, Trace, and Cover are not interchangeable. Trace and Cover never erase or replace Evidence.
 Gravity and compaction are internal Field views. They never authorize external query parameters, anchors, ledger writes, or replacement of original Evidence / Trace inputs.
@@ -30,4 +31,6 @@ claim truth, authentication, or Field placement.
 
 DR1 Recall records only ephemeral digests. It may qualify evidence and report
 coverage residuals, but it never owns DreamShard content, proposal content, field
-state, geometry rules, gravity state, adapter state, or runtime history.
+state, geometry rules, gravity state, adapter state, runtime history, query
+history, or traversal history. `RuntimeTimeResolution` and
+`ValidatedRecallUniverse` are call-local views only.

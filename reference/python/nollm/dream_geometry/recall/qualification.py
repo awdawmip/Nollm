@@ -17,8 +17,8 @@ def qualify_shard(store: MemorySubstrateStore, shard_id: str, policy: RecallPoli
         return EvidenceQualification(
             shard_id,
             usage.value,
-            "primary_tentative" if policy.include_tentative else "excluded_tentative",
-            policy.include_tentative,
+            "primary_tentative" if policy.include_tentative_primary else "excluded_tentative",
+            policy.include_tentative_primary,
             ("DR1_EVIDENCE_TENTATIVE",),
         )
     if usage is UsageState.retired:

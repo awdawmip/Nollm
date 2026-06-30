@@ -43,7 +43,7 @@ def query_atoms(probe: CompiledQueryProbe, runtime_time: RuntimeTimeResolution |
                     span.resolved_expression,
                     "runtime_resolved_relative",
                     True,
-                    f"{span.query_axis_id}:{span.query_expression}",
+                    span.source_step_id or f"{span.query_axis_id}:{span.query_expression}",
                 )
             )
     return tuple(atoms)

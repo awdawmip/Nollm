@@ -17,11 +17,14 @@ from .types import (
     RecallPolicy,
     RecallResultItem,
     RecallUniverse,
+    RecallValidationError,
     ResolvedRelativeSpan,
     RuntimeTimeResolution,
     TraceSemanticProjection,
     TraversalRecord,
+    ValidatedRecallUniverse,
 )
+from .universe import validate_recall_universe
 
 __all__ = [
     "EvidenceQualification",
@@ -33,9 +36,12 @@ __all__ = [
     "RecallPolicy",
     "RecallResultItem",
     "RecallUniverse",
+    "RecallValidationError",
     "ResolvedRelativeSpan",
     "RuntimeTimeResolution",
     "TraceSemanticProjection",
     "TraversalRecord",
+    "ValidatedRecallUniverse",
     "resolve_recall",
+    "validate_recall_universe",
 ]

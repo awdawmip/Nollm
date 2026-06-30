@@ -10,7 +10,8 @@ an explicit finite `RecallUniverse`.
 - `RecallUniverse`: explicit finite proposal, trace, cover, coverage, gravity,
   interpretation, and revision objects supplied by the caller.
 - `RuntimeTimeResolution`: caller-supplied resolution for relative-time query
-  atoms. Missing or incomplete relative-time resolution defers recall.
+  atoms. Missing or incomplete relative-time resolution defers recall; fabricated,
+  duplicate, extra, or non-query spans are rejected.
 - DE1 evidence store read API: used only to read DreamShard content and
   UsageState.
 
@@ -20,7 +21,9 @@ The output is an ephemeral `RecallDigest`.
 
 The digest may contain:
 
-- qualified DreamShard evidence references;
+- `outcome`: `resolved`, `insufficient_evidence`, `deferred`,
+  `budget_exhausted`, or `rejected`;
+- partitioned `primary_evidence` and `contextual_evidence`;
 - exact projection references to proposal steps and accepted traces;
 - directed coverage traversal diagnostics;
 - residual mass diagnostics;
@@ -35,7 +38,7 @@ Geometry, Field, Adapter, runtime, or ledger state.
 Recall seeding is structural:
 
 - Query atoms must come from `explicit_in_query` steps or caller-supplied
-  relative-time resolution.
+  relative-time resolution bound exactly to the original query `TextSpanRef`.
 - Stored support must bind back to a current accepted DC1 proposal step by exact
   axis, basis, and basis reference identity.
 - Accepted traces may seed recall only through stable or crystallized covers
@@ -62,10 +65,32 @@ content, determine truth, or change usage state.
 
 `K_up` and `K_down` direction is preserved exactly. Residual mass and residual
 reasons are carried into traversal diagnostics instead of being inferred away.
+Wrong-direction distributions reject the universe.
+
+DR1 traversal is finite and budget-bound. It executes explicit supplied
+`fine_to_coarse` distributions before cover intersection and explicit supplied
+`coarse_to_fine` distributions before evidence fallback. Budget truncation is
+reported as `budget_exhausted` or a structured diagnostic, never as an unmarked
+successful recall.
 
 Gravity may be used only as a deterministic tie-break among already eligible
-structural candidates. It is not an external selector, query parameter, anchor,
-index, or evidence source.
+structural candidates with equal core scores within fixed machine epsilon. It is
+not a score bonus, external selector, query parameter, anchor, index, or evidence
+source.
+
+## Universe Validation
+
+DR1 validates the finite `RecallUniverse` before seed or traversal:
+
+- current proposals require accepted growth receipts and normalized payload
+  fingerprints matching the supplied proposal;
+- proposal, trace, cover, and compaction IDs must be unique;
+- traces must resolve to readable DreamShards and uniquely bind current proposal
+  steps;
+- covers must match their support traces, support shards, support keys, axes,
+  DG2 structural floors, and supplied CoverPolicy identity;
+- compactions must expose complete member expansion manifests;
+- `K_up` must be `fine_to_coarse` and `K_down` must be `coarse_to_fine`.
 
 ## Legacy Compatibility
 

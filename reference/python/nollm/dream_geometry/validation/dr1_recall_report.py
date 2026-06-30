@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import platform
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 
+from nollm.dream_geometry.cortex.types import QueryBudget
 from nollm.dream_geometry.protocol.contracts import UsageState
 from nollm.dream_geometry.recall import RecallDigestStatus, RecallPolicy, resolve_recall
-from nollm.dream_geometry.validation.dr1_fixture import build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only
+from nollm.dream_geometry.validation.dr1_fixture import build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only, with_wrong_down_direction
 
 
 def build_report() -> str:
@@ -19,9 +21,15 @@ def build_report() -> str:
         resolved = resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution())
         deferred = resolve_recall(query_probe(), universe, store)
         legacy = resolve_recall(query_probe(), with_legacy_proposal_only(universe), store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_legacy_context=True))
+        wrong_direction = resolve_recall(query_probe(), with_wrong_down_direction(universe), store, runtime_time=relative_time_resolution())
+        budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
+        budget = resolve_recall(budget_probe, universe, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+        retired_store, _, retired_universe = build_fixture(root / "retired", usage_state=UsageState.retired)
+        retired = resolve_recall(query_probe(), retired_universe, retired_store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_retired_context=True))
         evidence_snapshot = (store.read_ledger(), store.state_projection())
-        resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution())
+        rerun = resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution())
         unchanged = evidence_snapshot == (store.read_ledger(), store.state_projection())
+        deterministic = resolved == rerun
 
     lines = [
         "# DR1 Recall Resolver Baseline Report",
@@ -34,28 +42,51 @@ def build_report() -> str:
         "- contract_version: `dr1.v1`",
         "- fixture_data: `synthetic_only`",
         "- third_party_dependencies: `none`",
+        "- commit: recorded in delivery receipt; report does not call Git or shell.",
         "",
         "## Fixture Results",
         "",
         "| fixture | result |",
         "|---|---|",
-        f"| exact projection resolves digest | {'pass' if resolved.status is RecallDigestStatus.resolved and resolved.items else 'fail'} |",
+        f"| exact projection resolves digest | {'pass' if resolved.status is RecallDigestStatus.resolved and resolved.primary_evidence else 'fail'} |",
         f"| digest is ephemeral | {'pass' if resolved.ephemeral and resolved.metadata.get('storage') == 'ephemeral' else 'fail'} |",
         f"| relative time defers without runtime resolution | {'pass' if deferred.status is RecallDigestStatus.deferred else 'fail'} |",
-        f"| directed coverage residuals reported | {'pass' if resolved.traversal_records else 'fail'} |",
-        f"| DreamShard active evidence qualified primary | {'pass' if resolved.items[0].qualification.tier == 'primary_active' else 'fail'} |",
+        f"| wrong K_down direction rejected | {'pass' if wrong_direction.status is RecallDigestStatus.rejected else 'fail'} |",
+        f"| budget exhaustion explicit | {'pass' if budget.status is RecallDigestStatus.budget_exhausted else 'fail'} |",
+        f"| K_up and K_down traversal records reported | {'pass' if {record.phase for record in resolved.traversal_records} >= {'up', 'down'} else 'fail'} |",
+        f"| DreamShard active evidence qualified primary | {'pass' if resolved.primary_evidence[0].qualification.tier == 'primary_active' else 'fail'} |",
+        f"| retired evidence partitioned as context by policy | {'pass' if retired.contextual_evidence and retired.contextual_evidence[0].qualification.tier == 'context_retired' else 'fail'} |",
         f"| legacy proposal context does not seed | {'pass' if not legacy.items and 'DR1_LEGACY_PROPOSALS_CONTEXT_ONLY' in legacy.warnings else 'fail'} |",
+        f"| deterministic rerun comparison | {'pass' if deterministic else 'fail'} |",
         f"| evidence store unchanged after recall | {'pass' if unchanged else 'fail'} |",
         "",
-        "## Known Limits",
+        "## Traversal Summary",
         "",
-        "- DR1 consumes explicit finite universes only; it does not discover candidates from runtime state.",
-        "- DR1 does not perform NLP, semantic search, vector similarity, geometry recall, automatic placement, or automatic context composition.",
-        "- Relative time is supplied by the caller; missing relative-time resolution defers recall.",
-        "- Gravity is a tie-break over already eligible candidates, not a query selector or evidence source.",
-        "- Interpretation and revision records are context identifiers, not truth overrides.",
-        "- Legacy DC1 proposal records are context-only and cannot seed recall under the DR1 foundation.",
+        "| phase | mass_in | mass_out | residual | reason |",
+        "|---|---:|---:|---:|---|",
     ]
+    for record in resolved.traversal_records:
+        lines.append(f"| {record.phase} | {record.mass_in:.6f} | {record.mass_out:.6f} | {record.residual_mass:.6f} | {record.reason_code} |")
+    lines.extend(
+        [
+            "",
+            "## Evidence Summary",
+            "",
+            f"- primary_evidence: `{tuple(item.shard_id for item in resolved.primary_evidence)}`",
+            f"- contextual_evidence: `{tuple(item.shard_id for item in resolved.contextual_evidence)}`",
+            f"- gravity_guidance_applied: `{resolved.gravity_guidance_applied}`",
+            f"- unresolved_probe_mass: `{resolved.unresolved_residual_mass:.6f}`",
+            "",
+            "## Known Limits",
+            "",
+            "- DR1 consumes explicit finite universes only; it does not discover candidates from runtime state.",
+            "- DR1 does not perform NLP, semantic search, vector similarity, geometry recall, automatic placement, or automatic context composition.",
+            "- Relative time is supplied by the caller; missing relative-time resolution defers recall.",
+            "- Gravity is a tie-break over already eligible equal-core-score candidates, not a query selector or evidence source.",
+            "- Interpretation and revision records are context identifiers, not truth overrides.",
+            "- Legacy DC1 proposal records are context-only and cannot seed recall under the DR1 foundation.",
+        ]
+    )
     return "\n".join(lines) + "\n"
 
 

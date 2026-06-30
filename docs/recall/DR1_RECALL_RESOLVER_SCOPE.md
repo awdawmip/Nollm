@@ -14,10 +14,15 @@ context composition.
 The implemented foundation covers:
 
 - exact query atom projection;
-- caller-supplied relative-time resolution deferral and inclusion;
+- caller-supplied relative-time resolution deferral, strict span binding, and rejection of fabricated spans;
+- strict finite RecallUniverse validation, including current proposal receipts and cover policy identity;
 - stable cover seeding from accepted trace support;
-- directed coverage residual diagnostics;
-- DreamShard usage-state qualification;
+- executed finite `K_up` / `K_down` traversal with residual diagnostics;
+- budget exhaustion outcomes and structured traversal discards;
+- DreamShard usage-state qualification with primary/context evidence partitions;
 - interpretation and revision context identifiers;
-- internal gravity tie-break metadata;
+- internal gravity tie-break metadata only for equal-core-score candidates;
 - legacy DC1 read-only context exclusion from seeding.
+
+DR1.1 closes DR1. DR1 is sealed after this closure; further DR1.x hardening is
+not authorized without a new task pack.
