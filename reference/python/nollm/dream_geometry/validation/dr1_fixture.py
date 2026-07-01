@@ -131,6 +131,62 @@ def with_wrong_down_direction(universe: RecallUniverse) -> RecallUniverse:
     return replace(universe, coverage_down=(wrong,))
 
 
+def add_synthetic_cover(
+    store,
+    proposal: CompiledGrowthProposal,
+    universe: RecallUniverse,
+    *,
+    cover_id: str,
+    shard_id: str,
+    proposal_id: str,
+    trace_prefix: str,
+    expressions: dict[str, str] | None = None,
+    cell=None,
+    usage_state: UsageState = UsageState.active,
+) -> RecallUniverse:
+    base_shard = store.get_dream_shard("shard:rain")
+    shard = replace(base_shard, shard_id=shard_id, content=f"Synthetic DR1 shard {shard_id}.")
+    store.put_dream_shard(shard)
+    if usage_state is not UsageState.tentative:
+        store.record_usage_transition(UsageStateTransition("state:" + shard_id + ":" + usage_state.value, shard_id, UsageState.tentative, usage_state, ("reason:fixture",), "2026-06-30T08:03:00+08:00"))
+    expressions = expressions or {axis.axis_id: axis.ray[0].expression for axis in proposal.axes}
+    axes = []
+    for axis in proposal.axes:
+        expression = expressions.get(axis.axis_id, axis.ray[0].expression)
+        ref = TextSpanRef(shard_id, 0, len(expression), expression)
+        step = replace(axis.ray[0], expression=expression, basis_refs=(ref,))
+        axes.append(AxisRay(axis.axis_id, (step,)))
+    synthetic_proposal = replace(proposal, proposal_id=proposal_id, subject_shard_id=shard_id, axes=tuple(axes))
+    receipt = _receipt(synthetic_proposal)
+    synthetic_cell = cell if cell is not None else universe.traces[0].cell
+    traces = tuple(replace(trace, trace_id=f"{trace_prefix}:{trace.axis}", origin_shard_id=shard_id, proposal_id=proposal_id, cell=synthetic_cell) for trace in _traces(synthetic_proposal))
+    cover = replace(
+        _cover(traces),
+        cover_id=cover_id,
+        chart_fingerprint=synthetic_cell.chart_fingerprint,
+        support_cell=synthetic_cell,
+        support_trace_ids=tuple(trace.trace_id for trace in traces),
+        support_shard_ids=(shard_id,),
+        support_keys=tuple(trace.support_key for trace in traces),
+        axes_present=tuple(trace.axis for trace in traces),
+    )
+    up = universe.coverage_up
+    down = universe.coverage_down
+    source_ref = cell_ref_key(synthetic_cell)
+    if not any(cell_ref_key(distribution.source_cell) == source_ref for distribution in up):
+        up = up + (compute_distribution(synthetic_cell, (synthetic_cell,), CoverageDirection.fine_to_coarse),)
+    if not any(cell_ref_key(distribution.source_cell) == source_ref for distribution in down):
+        down = down + (compute_distribution(synthetic_cell, (synthetic_cell,), CoverageDirection.coarse_to_fine),)
+    return replace(
+        universe,
+        proposal_records=universe.proposal_records + (ProposalReadRecord(synthetic_proposal, ProposalAdmission.current_accepted, "fixture:" + proposal_id, receipt),),
+        traces=universe.traces + traces,
+        covers=universe.covers + (cover,),
+        coverage_up=up,
+        coverage_down=down,
+    )
+
+
 def _proposal() -> CompiledGrowthProposal:
     refs = {
         "location": TextSpanRef("shard:rain", 0, 7, "Kunming"),
@@ -214,4 +270,4 @@ def _cover(traces: tuple[GrowthTrace, ...]) -> CoarseCover:
     )
 
 
-__all__ = ["build_fixture", "query_probe", "relative_time_resolution", "with_legacy_proposal_only", "with_wrong_down_direction"]
+__all__ = ["add_synthetic_cover", "build_fixture", "query_probe", "relative_time_resolution", "with_legacy_proposal_only", "with_wrong_down_direction"]

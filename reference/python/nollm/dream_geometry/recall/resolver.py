@@ -31,6 +31,14 @@ from .universe import validate_recall_universe
 
 
 GRAVITY_TIE_EPSILON = 1e-12
+PATH_MASS_TIE_EPSILON = 1e-12
+
+
+@dataclass(frozen=True)
+class _SeedCandidate:
+    cover: CoarseCover
+    matched: tuple[tuple[GrowthTrace, TraceSemanticProjection], ...]
+    matched_axes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -95,65 +103,82 @@ def resolve_recall(
             discarded.append("DR1_K_DOWN_REQUIRED")
         return _digest(probe.probe_id, RecallDigestStatus.insufficient_evidence, (), (), (), tuple(warnings), tuple(discarded), 0.0, False)
 
-    result_items: list[RecallResultItem] = []
-    traversal: list[TraversalRecord] = []
     eligible_covers = _eligible_covers(universe.covers, discarded)
-    if len(eligible_covers) > policy.max_seed_covers:
-        eligible_covers = eligible_covers[: policy.max_seed_covers]
-        discarded.append("DR1_BUDGET_MAX_SEED_COVERS")
-    budget_exhausted = False
+    seed_candidates: list[_SeedCandidate] = []
+    required_axes = len({atom.axis_id for atom in atoms if atom.required})
+    minimum_axes = max(2, min(policy.min_required_axis_matches, required_axes))
     for cover in eligible_covers:
         support_traces = tuple(trace for trace in universe.traces if trace.trace_id in cover.support_trace_ids)
         matched = _matched_support(atoms, support_traces, projections)
         matched_axes = tuple(sorted({projection.axis_id for _, projection in matched}))
-        required_axes = len({atom.axis_id for atom in atoms if atom.required})
-        minimum_axes = max(2, min(policy.min_required_axis_matches, required_axes))
         if len(matched_axes) < max(1, minimum_axes):
             discarded.append(f"{cover.cover_id}:DR1_INSUFFICIENT_EXACT_AXIS_MATCH")
             continue
-        routes, records, budget_reason = _execute_traversal(cover, matched, universe, probe, policy)
-        if budget_reason is not None:
-            discarded.append(budget_reason)
-            budget_exhausted = True
-            continue
+        seed_candidates.append(_SeedCandidate(cover, matched, matched_axes))
+
+    selected_seeds = tuple(seed_candidates)
+    budget_exhausted = False
+    if len(seed_candidates) > policy.max_seed_covers:
+        selected_seeds = tuple(seed_candidates[: policy.max_seed_covers])
+        discarded.append("DR1_BUDGET_MAX_SEED_COVERS")
+        budget_exhausted = True
+
+    route_candidates: list[_Route] = []
+    for candidate in selected_seeds:
+        routes = _route_candidates_for_cover(candidate.cover, candidate.matched, universe)
         if not routes:
-            discarded.append(f"{cover.cover_id}:DR1_K_UP_DOWN_PATH_MISSING")
+            discarded.append(f"{candidate.cover.cover_id}:DR1_K_UP_DOWN_PATH_MISSING")
             continue
         route_axes = tuple(sorted({route.projection.axis_id for route in routes}))
         if len(route_axes) < max(1, minimum_axes):
-            discarded.append(f"{cover.cover_id}:DR1_INSUFFICIENT_EXECUTABLE_AXIS_MATCH")
+            discarded.append(f"{candidate.cover.cover_id}:DR1_INSUFFICIENT_EXECUTABLE_AXIS_MATCH")
             continue
-        traversal.extend(records)
-        routes_by_shard = {route.trace.origin_shard_id: tuple(item for item in routes if item.trace.origin_shard_id == route.trace.origin_shard_id) for route in routes}
-        for shard_id in sorted(routes_by_shard):
-            try:
-                qualification = qualify_shard(evidence_store, shard_id, policy)
-            except Exception:
-                discarded.append(f"{shard_id}:DR1_TRACE_ORIGIN_SHARD_MISSING")
-                continue
-            context_ids = _context_ids(shard_id, universe, evidence_store, policy)
-            if not qualification.included_as_evidence and not _include_context(qualification.usage_state, policy):
-                discarded.append(f"{shard_id}:DR1_USAGE_STATE_EXCLUDED")
-                continue
-            shard_routes = routes_by_shard[shard_id]
-            trace_ids = tuple(sorted({route.trace.trace_id for route in shard_routes}))
-            projection_refs = tuple(sorted({route.projection.step_id for route in shard_routes}))
-            shard_axes = tuple(sorted({route.projection.axis_id for route in shard_routes}))
-            score = _core_score(cover, shard_axes)
-            result_items.append(
-                RecallResultItem(
-                    shard_id,
-                    cover.cover_id,
-                    trace_ids,
-                    shard_axes,
-                    score,
-                    qualification,
-                    projection_refs,
-                    context_ids,
-                    sum(route.path_mass for route in shard_routes),
-                    tuple(sorted(f"{route.trace.trace_id}->{cover.cover_id}->{route.target_cell_ref}" for route in shard_routes)),
+        route_candidates.extend(routes)
+
+    deduped_routes, dedup_discarded = _dedupe_routes(tuple(route_candidates))
+    discarded.extend(dedup_discarded)
+    traversal = list(_traversal_records_for_routes(deduped_routes))
+    global_budget_reason = _check_global_route_budget(deduped_routes, probe, policy) if deduped_routes else None
+    if global_budget_reason is not None:
+        discarded.append(global_budget_reason)
+        budget_exhausted = True
+
+    result_items: list[RecallResultItem] = []
+    if global_budget_reason is None:
+        routes_by_cover = {route.cover.cover_id: tuple(item for item in deduped_routes if item.cover.cover_id == route.cover.cover_id) for route in deduped_routes}
+        for cover_id in sorted(routes_by_cover):
+            cover_routes = routes_by_cover[cover_id]
+            routes_by_shard = {route.trace.origin_shard_id: tuple(item for item in cover_routes if item.trace.origin_shard_id == route.trace.origin_shard_id) for route in cover_routes}
+            for shard_id in sorted(routes_by_shard):
+                try:
+                    qualification = qualify_shard(evidence_store, shard_id, policy)
+                except Exception:
+                    discarded.append(f"{shard_id}:DR1_TRACE_ORIGIN_SHARD_MISSING")
+                    continue
+                context_ids = _context_ids(shard_id, universe, evidence_store, policy)
+                if not qualification.included_as_evidence and not _include_context(qualification.usage_state, policy):
+                    discarded.append(f"{shard_id}:DR1_USAGE_STATE_EXCLUDED")
+                    continue
+                shard_routes = routes_by_shard[shard_id]
+                trace_ids = tuple(sorted({route.trace.trace_id for route in shard_routes}))
+                projection_refs = tuple(sorted({route.projection.step_id for route in shard_routes}))
+                shard_axes = tuple(sorted({route.projection.axis_id for route in shard_routes}))
+                cover = shard_routes[0].cover
+                score = _core_score(cover, shard_axes)
+                result_items.append(
+                    RecallResultItem(
+                        shard_id,
+                        cover.cover_id,
+                        trace_ids,
+                        shard_axes,
+                        score,
+                        qualification,
+                        projection_refs,
+                        context_ids,
+                        sum(route.path_mass for route in shard_routes),
+                        tuple(sorted(f"{route.trace.trace_id}->{cover.cover_id}->{route.target_cell_ref}" for route in shard_routes)),
+                    )
                 )
-            )
 
     sorted_items, gravity_applied, gravity_warning = _sort_with_gravity(result_items, universe)
     if gravity_warning:
@@ -291,22 +316,19 @@ def _score_groups(items: tuple[RecallResultItem, ...]) -> tuple[tuple[tuple[str,
     return tuple(groups)
 
 
-def _execute_traversal(
+def _route_candidates_for_cover(
     cover: CoarseCover,
     matched: tuple[tuple[GrowthTrace, TraceSemanticProjection], ...],
     universe: RecallUniverse,
-    probe: CompiledQueryProbe,
-    policy: RecallPolicy,
-) -> tuple[tuple[_Route, ...], tuple[TraversalRecord, ...], str | None]:
-    records: list[TraversalRecord] = []
-    routes_by_key: dict[tuple[str, str, str], _Route] = {}
+) -> tuple[_Route, ...]:
+    routes: list[_Route] = []
     cover_ref = cell_ref_key(cover.support_cell)
     up_by_source = {cell_ref_key(distribution.source_cell): distribution for distribution in universe.coverage_up}
     down_by_source = {cell_ref_key(distribution.source_cell): distribution for distribution in universe.coverage_down}
     down_distribution = down_by_source.get(cover_ref)
     if down_distribution is None:
-        return (), (), None
-    for trace, _ in matched:
+        return ()
+    for trace, projection in sorted(matched, key=lambda item: item[0].trace_id):
         trace_ref = cell_ref_key(trace.cell)
         up_distribution = up_by_source.get(trace_ref)
         if up_distribution is None:
@@ -318,27 +340,44 @@ def _execute_traversal(
         m_up = float(trace.mass) * float(up_weight)
         m_down = float(down_weight)
         path_mass = m_up * m_down
-        projection = next(projection for candidate, projection in matched if candidate.trace_id == trace.trace_id)
-        route = _Route(trace, projection, cover, m_up, m_down, path_mass, up_distribution, down_distribution, trace_ref)
-        key = (trace.origin_shard_id, trace.axis, trace_ref)
-        if key not in routes_by_key or route.path_mass > routes_by_key[key].path_mass:
-            routes_by_key[key] = route
-    routes = tuple(sorted(routes_by_key.values(), key=lambda item: (item.trace.origin_shard_id, item.projection.axis_id, item.trace.trace_id)))
-    if not routes:
-        return (), (), None
-    budget_reason = _check_route_budget(routes, probe, policy)
-    if budget_reason is not None:
-        return (), (), budget_reason
+        routes.append(_Route(trace, projection, cover, m_up, m_down, path_mass, up_distribution, down_distribution, trace_ref))
+    return tuple(sorted(routes, key=_route_sort_key))
+
+
+def _dedupe_routes(routes: tuple[_Route, ...]) -> tuple[tuple[_Route, ...], tuple[str, ...]]:
+    winners: dict[tuple[str, str, str], _Route] = {}
+    discarded: list[str] = []
+    for route in sorted(routes, key=_route_sort_key):
+        key = _route_identity_key(route)
+        current = winners.get(key)
+        if current is None:
+            winners[key] = route
+            continue
+        if route.path_mass > current.path_mass + PATH_MASS_TIE_EPSILON:
+            discarded.append(f"{current.trace.trace_id}->{current.cover.cover_id}:DR1_ROUTE_DEDUPED_GLOBAL")
+            winners[key] = route
+            continue
+        if abs(route.path_mass - current.path_mass) <= PATH_MASS_TIE_EPSILON and _route_sort_key(route) < _route_sort_key(current):
+            discarded.append(f"{current.trace.trace_id}->{current.cover.cover_id}:DR1_ROUTE_DEDUPED_GLOBAL")
+            winners[key] = route
+            continue
+        discarded.append(f"{route.trace.trace_id}->{route.cover.cover_id}:DR1_ROUTE_DEDUPED_GLOBAL")
+    return tuple(sorted(winners.values(), key=_route_sort_key)), tuple(discarded)
+
+
+def _traversal_records_for_routes(routes: tuple[_Route, ...]) -> tuple[TraversalRecord, ...]:
+    records: list[TraversalRecord] = []
     for route in routes:
+        cover_ref = cell_ref_key(route.cover.support_cell)
         up_mass_out = sum(kernel.weight * route.trace.mass for kernel in route.up_distribution.kernels)
         up_residual = route.up_distribution.residual.mass * route.trace.mass
         records.append(
             TraversalRecord(
                 "up",
-                cover.cover_id,
+                route.cover.cover_id,
                 cell_ref_key(route.trace.cell),
                 route.up_distribution.direction.value,
-                tuple(cell_ref_key(kernel.target_cell) for kernel in route.up_distribution.kernels),
+                tuple(sorted(cell_ref_key(kernel.target_cell) for kernel in route.up_distribution.kernels)),
                 up_residual,
                 tuple(reason.value for reason in route.up_distribution.residual.reasons),
                 route.trace.mass,
@@ -351,11 +390,11 @@ def _execute_traversal(
                 "DR1_K_UP_EXECUTED",
             )
         )
-        down_target_refs = tuple(cell_ref_key(kernel.target_cell) for kernel in route.down_distribution.kernels)
+        down_target_refs = tuple(sorted(cell_ref_key(kernel.target_cell) for kernel in route.down_distribution.kernels))
         records.append(
             TraversalRecord(
                 "down",
-                cover.cover_id,
+                route.cover.cover_id,
                 cover_ref,
                 route.down_distribution.direction.value,
                 down_target_refs,
@@ -371,32 +410,42 @@ def _execute_traversal(
                 "DR1_K_DOWN_EXECUTED",
             )
         )
-    return routes, tuple(records), None
+    return tuple(records)
 
 
-def _check_route_budget(routes: tuple[_Route, ...], probe: CompiledQueryProbe, policy: RecallPolicy) -> str | None:
+def _check_global_route_budget(routes: tuple[_Route, ...], probe: CompiledQueryProbe, policy: RecallPolicy) -> str | None:
     cells_by_layer: dict[int, set[str]] = {}
-    chart_ids: set[str] = set()
-    lateral_hops = 0
+    chart_fingerprints: set[object] = set()
+    lateral_edges: set[tuple[str, object, object]] = set()
     for route in routes:
         route_cells = (route.trace.cell, route.cover.support_cell) + tuple(kernel.target_cell for kernel in route.down_distribution.kernels if cell_ref_key(kernel.target_cell) == route.target_cell_ref)
         for cell in route_cells:
             layer = getattr(cell.chart_fingerprint, "layer_index", 0)
             cells_by_layer.setdefault(layer, set()).add(cell_ref_key(cell))
-            chart_ids.add(getattr(cell.cell_ref, "chart_id"))
+            chart_fingerprints.add(cell.chart_fingerprint)
         if route.trace.cell.chart_fingerprint != route.cover.support_cell.chart_fingerprint:
-            lateral_hops += 1
+            lateral_edges.add((route.up_distribution.direction.value, route.trace.cell.chart_fingerprint, route.cover.support_cell.chart_fingerprint))
         if route.cover.support_cell.chart_fingerprint != route.trace.cell.chart_fingerprint:
-            lateral_hops += 1
+            lateral_edges.add((route.down_distribution.direction.value, route.cover.support_cell.chart_fingerprint, route.trace.cell.chart_fingerprint))
     if any(len(cells) > probe.budget.max_cells_per_layer for cells in cells_by_layer.values()):
         return "DR1_BUDGET_MAX_CELLS_PER_LAYER"
     if len(cells_by_layer) > probe.budget.max_layers:
         return "DR1_BUDGET_MAX_LAYERS"
-    if len(chart_ids) > probe.budget.max_charts:
+    if len(chart_fingerprints) > probe.budget.max_charts:
         return "DR1_BUDGET_MAX_CHARTS"
-    if lateral_hops > policy.max_lateral_hops or (lateral_hops and not policy.allow_verified_chart_hops):
+    if lateral_edges and not policy.allow_verified_chart_hops:
+        return "DR1_BUDGET_MAX_LATERAL_HOPS"
+    if len(lateral_edges) > policy.max_lateral_hops:
         return "DR1_BUDGET_MAX_LATERAL_HOPS"
     return None
+
+
+def _route_identity_key(route: _Route) -> tuple[str, str, str]:
+    return (route.trace.origin_shard_id, route.trace.axis, cell_ref_key(route.trace.cell))
+
+
+def _route_sort_key(route: _Route) -> tuple[str, str, str, str, str]:
+    return (route.cover.cover_id, route.trace.trace_id, route.trace.origin_shard_id, route.trace.axis, route.target_cell_ref)
 
 
 def _validate_policy_for_probe(policy: RecallPolicy, probe: CompiledQueryProbe) -> None:

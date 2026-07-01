@@ -73,6 +73,18 @@ DR1 traversal is finite and budget-bound. It executes explicit supplied
 reported as `budget_exhausted` or a structured diagnostic, never as an unmarked
 successful recall.
 
+Seed-cover budget is applied only after exact required query atoms have formed
+structural seed candidates. Stable or crystallized covers that never become
+exact-match candidates may be diagnosed, but they do not consume
+`max_seed_covers` and do not by themselves exhaust recall.
+
+Traversal budget accounting is digest-global over the selected executable route
+set after global route identity deduplication. `max_cells_per_layer`,
+`max_layers`, and `max_charts` count the union of selected route cells, layers,
+and chart fingerprints for the whole digest. `max_lateral_hops` counts unique
+executed direct cross-chart coverage graph edges; repeated use of the same
+`K_up` or `K_down` edge by multiple traces or axes counts once.
+
 Gravity may be used only as a deterministic tie-break among already eligible
 structural candidates with equal core scores within fixed machine epsilon. It is
 not a score bonus, external selector, query parameter, anchor, index, or evidence

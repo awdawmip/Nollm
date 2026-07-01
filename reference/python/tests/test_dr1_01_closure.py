@@ -12,7 +12,29 @@ from nollm.dream_geometry.protocol.contracts import CoverState, UsageState
 from nollm.dream_geometry.recall import RecallDigestStatus, RecallPolicy, ResolvedRelativeSpan, RuntimeTimeResolution, resolve_recall, validate_recall_universe
 from nollm.dream_geometry.recall.types import RecallValidationError
 
-from fixtures.dr1_recall.fixture import build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only, with_wrong_down_direction
+from fixtures.dr1_recall.fixture import add_synthetic_cover, build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only, with_wrong_down_direction
+
+
+def _with_higher_duplicate_route_cover(universe):
+    base_cover = universe.covers[0]
+    source_cell = universe.traces[0].cell
+    alt_cell = make_hex_cell(LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(3, 0))
+    alt_cover = replace(base_cover, cover_id="cover:zz-higher", chart_fingerprint=alt_cell.chart_fingerprint, support_cell=alt_cell)
+    up = universe.coverage_up[0]
+    low_kernel = replace(up.kernels[0], weight=0.25)
+    high_kernel = replace(up.kernels[0], target_cell=alt_cell, weight=0.75)
+    split_up = replace(up, kernels=(low_kernel, high_kernel), residual=CoverageResidual(0.0, (ResidualReason.numeric_tolerance,)), total_mass=1.0, partition_size=2)
+    down = universe.coverage_down[0]
+    high_down_kernel = replace(down.kernels[0], source_cell=alt_cell, target_cell=source_cell, weight=1.0)
+    high_down = CoverageDistribution(
+        alt_cell,
+        CoverageDirection.coarse_to_fine,
+        (high_down_kernel,),
+        CoverageResidual(0.0, (ResidualReason.numeric_tolerance,)),
+        1.0,
+        1,
+    )
+    return replace(universe, covers=universe.covers + (alt_cover,), coverage_up=(split_up,), coverage_down=universe.coverage_down + (high_down,), gravity_snapshot=None)
 
 
 def test_t_dr1_101_wrong_k_down_direction_rejected(tmp_path) -> None:
@@ -84,14 +106,16 @@ def test_t_dr1_109_cover_policy_and_support_inconsistency_rejected(tmp_path) -> 
 
 
 def test_t_dr1_111_gravity_only_breaks_true_ties(tmp_path) -> None:
-    store, _, universe = build_fixture(tmp_path)
+    store, proposal, universe = build_fixture(tmp_path)
     base = universe.covers[0]
-    low = replace(base, cover_id="cover:low")
-    high = replace(base, cover_id="cover:high", mass=base.mass + 0.01)
+    universe = replace(universe, covers=(replace(base, cover_id="cover:a"),))
+    universe = add_synthetic_cover(store, proposal, universe, cover_id="cover:b", shard_id="shard:rain-b", proposal_id="proposal:rain-b", trace_prefix="trace:rain-b")
+    low = replace(universe.covers[0], cover_id="cover:low")
+    high = replace(universe.covers[1], cover_id="cover:high", mass=universe.covers[1].mass + 0.01)
     non_tie = resolve_recall(query_probe(), replace(universe, covers=(low, high)), store, runtime_time=relative_time_resolution())
     assert [item.cover_id for item in non_tie.primary_evidence][:2] == ["cover:high", "cover:low"]
-    tie_a = replace(base, cover_id="cover:a")
-    tie_b = replace(base, cover_id="cover:b")
+    tie_a = replace(universe.covers[0], cover_id="cover:a")
+    tie_b = replace(universe.covers[1], cover_id="cover:b")
     ignored_gravity = replace(universe.gravity_snapshot, input_cover_ids=("cover:rain",), contributions=(replace(universe.gravity_snapshot.contributions[0], cover_id="cover:b", potential=1000.0),))
     ignored = resolve_recall(query_probe(), replace(universe, covers=(tie_a, tie_b), gravity_snapshot=ignored_gravity), store, runtime_time=relative_time_resolution())
     assert ignored.gravity_guidance_applied is False
@@ -100,6 +124,33 @@ def test_t_dr1_111_gravity_only_breaks_true_ties(tmp_path) -> None:
     tied = resolve_recall(query_probe(), replace(universe, covers=(tie_a, tie_b), gravity_snapshot=gravity), store, runtime_time=relative_time_resolution())
     assert [item.cover_id for item in tied.primary_evidence][:2] == ["cover:b", "cover:a"]
     assert tied.gravity_guidance_applied is True
+
+
+def test_t_501_unrelated_stable_cover_does_not_consume_seed_budget(tmp_path) -> None:
+    store, proposal, universe = build_fixture(tmp_path)
+    unrelated = add_synthetic_cover(
+        store,
+        proposal,
+        universe,
+        cover_id="cover:aaa-unrelated",
+        shard_id="shard:unrelated",
+        proposal_id="proposal:unrelated",
+        trace_prefix="trace:unrelated",
+        expressions={"location": "Dali", "phenomenon": "snow", "absolute_time": "2026-01-01"},
+    )
+    digest = resolve_recall(query_probe(), unrelated, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+    assert digest.status is RecallDigestStatus.resolved
+    assert digest.primary_evidence[0].cover_id == "cover:rain"
+    assert "DR1_BUDGET_MAX_SEED_COVERS" not in digest.discarded
+
+
+def test_t_502_exact_seed_candidates_exhaust_seed_budget(tmp_path) -> None:
+    store, proposal, universe = build_fixture(tmp_path)
+    two_candidates = add_synthetic_cover(store, proposal, universe, cover_id="cover:aaa-exact", shard_id="shard:exact", proposal_id="proposal:exact", trace_prefix="trace:exact")
+    digest = resolve_recall(query_probe(), two_candidates, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+    assert digest.status is RecallDigestStatus.budget_exhausted
+    assert "DR1_BUDGET_MAX_SEED_COVERS" in digest.discarded
+    assert digest.primary_evidence
 
 
 def test_e_401_k_down_must_reach_trace_cell(tmp_path) -> None:
@@ -174,9 +225,56 @@ def test_e_407_verified_cross_chart_route_is_budget_bound(tmp_path) -> None:
         VerifiedChartLink(universe.covers[0].support_cell.chart_fingerprint, fine_cell.chart_fingerprint, _Verified()),
     )
     cross = replace(universe, traces=traces, coverage_up=(up,), coverage_down=(down,), verified_chart_links=links)
+    resolved = resolve_recall(query_probe(), cross, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_lateral_hops=2))
+    assert resolved.status is RecallDigestStatus.resolved
+    assert resolved.primary_evidence
     digest = resolve_recall(query_probe(), cross, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(allow_verified_chart_hops=False))
     assert digest.status is RecallDigestStatus.budget_exhausted
     assert "DR1_BUDGET_MAX_LATERAL_HOPS" in digest.discarded
+    capped = resolve_recall(query_probe(), cross, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_lateral_hops=1))
+    assert capped.status is RecallDigestStatus.budget_exhausted
+    assert "DR1_BUDGET_MAX_LATERAL_HOPS" in capped.discarded
+
+
+def test_t_504_global_route_identity_keeps_max_path_mass(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    duplicate_routes = _with_higher_duplicate_route_cover(universe)
+    digest = resolve_recall(query_probe(), duplicate_routes, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
+    assert digest.status is RecallDigestStatus.resolved
+    assert digest.primary_evidence[0].cover_id == "cover:zz-higher"
+    assert round(digest.primary_evidence[0].path_mass, 6) == 2.25
+    assert all("cover:rain" not in route_ref for item in digest.primary_evidence for route_ref in item.route_refs)
+    assert any("DR1_ROUTE_DEDUPED_GLOBAL" in item for item in digest.discarded)
+
+
+def test_t_505_global_cell_budget_applies_across_selected_covers(tmp_path) -> None:
+    store, proposal, universe = build_fixture(tmp_path)
+    second_cell = make_hex_cell(LocalChart("dr1:second", 0, 1.0, 0.0, Vec2(4, 0)), AxialCoord(0, 0))
+    two_cells = add_synthetic_cover(store, proposal, universe, cover_id="cover:second-cell", shard_id="shard:second-cell", proposal_id="proposal:second-cell", trace_prefix="trace:second-cell", cell=second_cell)
+    probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
+    digest = resolve_recall(probe, two_cells, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
+    assert digest.status is RecallDigestStatus.budget_exhausted
+    assert "DR1_BUDGET_MAX_CELLS_PER_LAYER" in digest.discarded
+    assert digest.primary_evidence == ()
+
+
+def test_t_506_global_accounting_is_permutation_deterministic(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    duplicate_routes = _with_higher_duplicate_route_cover(universe)
+    digest = resolve_recall(query_probe(), duplicate_routes, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
+    permuted_up = replace(duplicate_routes.coverage_up[0], kernels=tuple(reversed(duplicate_routes.coverage_up[0].kernels)))
+    permuted = replace(
+        duplicate_routes,
+        traces=tuple(reversed(duplicate_routes.traces)),
+        covers=tuple(reversed(duplicate_routes.covers)),
+        coverage_up=(permuted_up,),
+        coverage_down=tuple(reversed(duplicate_routes.coverage_down)),
+    )
+    again = resolve_recall(query_probe(), permuted, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
+    assert digest.digest_id == again.digest_id
+    assert digest.primary_evidence == again.primary_evidence
+    assert digest.traversal_records == again.traversal_records
+    assert digest.discarded == again.discarded
 
 
 def test_e_414_ghost_interpretation_context_rejected(tmp_path) -> None:

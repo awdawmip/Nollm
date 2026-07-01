@@ -9,21 +9,38 @@ from dataclasses import replace
 from pathlib import Path
 
 from nollm.dream_geometry.cortex.types import QueryBudget
+from nollm.dream_geometry.geometry.chart import make_hex_cell
+from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
 from nollm.dream_geometry.protocol.contracts import UsageState
 from nollm.dream_geometry.recall import RecallDigestStatus, RecallPolicy, resolve_recall
-from nollm.dream_geometry.validation.dr1_fixture import build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only, with_wrong_down_direction
+from nollm.dream_geometry.validation.dr1_fixture import add_synthetic_cover, build_fixture, query_probe, relative_time_resolution, with_legacy_proposal_only, with_wrong_down_direction
 
 
 def build_report() -> str:
     with tempfile.TemporaryDirectory(prefix="dr1-report-") as directory:
         root = Path(directory)
-        store, _, universe = build_fixture(root, usage_state=UsageState.active)
+        store, proposal, universe = build_fixture(root, usage_state=UsageState.active)
         resolved = resolve_recall(query_probe(), universe, store, runtime_time=relative_time_resolution())
         deferred = resolve_recall(query_probe(), universe, store)
         legacy = resolve_recall(query_probe(), with_legacy_proposal_only(universe), store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_legacy_context=True))
         wrong_direction = resolve_recall(query_probe(), with_wrong_down_direction(universe), store, runtime_time=relative_time_resolution())
         budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 0))
         budget = resolve_recall(budget_probe, universe, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+        unrelated = add_synthetic_cover(
+            store,
+            proposal,
+            universe,
+            cover_id="cover:aaa-unrelated",
+            shard_id="shard:report-unrelated",
+            proposal_id="proposal:report-unrelated",
+            trace_prefix="trace:report-unrelated",
+            expressions={"location": "Dali", "phenomenon": "snow", "absolute_time": "2026-01-01"},
+        )
+        seed_budget = resolve_recall(query_probe(), unrelated, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+        second_cell = make_hex_cell(LocalChart("dr1:report-second", 0, 1.0, 0.0, Vec2(4, 0)), AxialCoord(0, 0))
+        global_cells = add_synthetic_cover(store, proposal, universe, cover_id="cover:report-second-cell", shard_id="shard:report-second-cell", proposal_id="proposal:report-second-cell", trace_prefix="trace:report-second-cell", cell=second_cell)
+        global_budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
+        global_budget = resolve_recall(global_budget_probe, global_cells, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
         retired_store, _, retired_universe = build_fixture(root / "retired", usage_state=UsageState.retired)
         retired = resolve_recall(query_probe(), retired_universe, retired_store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_retired_context=True))
         evidence_snapshot = (store.read_ledger(), store.state_projection())
@@ -53,6 +70,8 @@ def build_report() -> str:
         f"| relative time defers without runtime resolution | {'pass' if deferred.status is RecallDigestStatus.deferred else 'fail'} |",
         f"| wrong K_down direction rejected | {'pass' if wrong_direction.status is RecallDigestStatus.rejected else 'fail'} |",
         f"| budget exhaustion explicit | {'pass' if budget.status is RecallDigestStatus.budget_exhausted else 'fail'} |",
+        f"| unrelated stable cover does not consume seed budget | {'pass' if seed_budget.status is RecallDigestStatus.resolved and 'DR1_BUDGET_MAX_SEED_COVERS' not in seed_budget.discarded else 'fail'} |",
+        f"| digest-global selected route cell budget enforced | {'pass' if global_budget.status is RecallDigestStatus.budget_exhausted and 'DR1_BUDGET_MAX_CELLS_PER_LAYER' in global_budget.discarded else 'fail'} |",
         f"| K_up and K_down traversal records reported | {'pass' if {record.phase for record in resolved.traversal_records} >= {'up', 'down'} else 'fail'} |",
         f"| DreamShard active evidence qualified primary | {'pass' if resolved.primary_evidence[0].qualification.tier == 'primary_active' else 'fail'} |",
         f"| retired evidence partitioned as context by policy | {'pass' if retired.contextual_evidence and retired.contextual_evidence[0].qualification.tier == 'context_retired' else 'fail'} |",
@@ -81,6 +100,8 @@ def build_report() -> str:
             "",
             "- DR1 consumes explicit finite universes only; it does not discover candidates from runtime state.",
             "- DR1 does not perform NLP, semantic search, vector similarity, geometry recall, automatic placement, or automatic context composition.",
+            "- Seed cover budget applies only after exact-match candidate formation; unrelated stable covers do not consume it.",
+            "- Traversal budgets are digest-global over selected route identities, unique cells/layers/charts, and unique executed direct cross-chart coverage edges.",
             "- Relative time is supplied by the caller; missing relative-time resolution defers recall.",
             "- Gravity is a tie-break over already eligible equal-core-score candidates, not a query selector or evidence source.",
             "- Interpretation and revision records are context identifiers, not truth overrides.",
