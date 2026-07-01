@@ -230,9 +230,10 @@ def test_documented_dependency_matrix_matches_executable_rules() -> None:
         "geometry -> protocol",
         "cortex -> protocol, evidence",
         "field -> protocol, evidence, geometry",
+        "admission -> protocol, evidence, geometry, field, cortex",
         "recall -> protocol, evidence, geometry, field, cortex",
         "adapters -> protocol, evidence, cortex, recall",
-        "validation -> protocol, evidence, geometry, field, cortex, recall, adapters",
+        "validation -> protocol, evidence, geometry, field, cortex, admission, recall, adapters",
     }
     docs = "\n".join(
         [

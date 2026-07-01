@@ -13,6 +13,11 @@ ALLOWED_DEPENDENCIES: frozenset[tuple[ModuleName, ModuleName]] = frozenset(
         (ModuleName.geometry, ModuleName.protocol),
         (ModuleName.cortex, ModuleName.protocol),
         (ModuleName.cortex, ModuleName.evidence),
+        (ModuleName.admission, ModuleName.protocol),
+        (ModuleName.admission, ModuleName.evidence),
+        (ModuleName.admission, ModuleName.cortex),
+        (ModuleName.admission, ModuleName.geometry),
+        (ModuleName.admission, ModuleName.field),
         (ModuleName.field, ModuleName.protocol),
         (ModuleName.field, ModuleName.evidence),
         (ModuleName.field, ModuleName.geometry),
@@ -30,6 +35,7 @@ ALLOWED_DEPENDENCIES: frozenset[tuple[ModuleName, ModuleName]] = frozenset(
         (ModuleName.validation, ModuleName.geometry),
         (ModuleName.validation, ModuleName.field),
         (ModuleName.validation, ModuleName.cortex),
+        (ModuleName.validation, ModuleName.admission),
         (ModuleName.validation, ModuleName.recall),
         (ModuleName.validation, ModuleName.adapters),
     }
@@ -42,6 +48,12 @@ FORBIDDEN_DEPENDENCIES: tuple[DependencyRule, ...] = (
     DependencyRule(ModuleName.field, ModuleName.adapters, False, "Field must not depend on adapters."),
     DependencyRule(ModuleName.evidence, ModuleName.geometry, False, "Evidence persistence must not decide geometry."),
     DependencyRule(ModuleName.cortex, ModuleName.field, False, "Cortex submits proposals rather than mutating Field."),
+    DependencyRule(ModuleName.evidence, ModuleName.admission, False, "Evidence must not depend on admission orchestration."),
+    DependencyRule(ModuleName.cortex, ModuleName.admission, False, "Cortex must not depend on admission orchestration."),
+    DependencyRule(ModuleName.geometry, ModuleName.admission, False, "Geometry must not depend on admission orchestration."),
+    DependencyRule(ModuleName.field, ModuleName.admission, False, "Field must not depend on admission orchestration."),
+    DependencyRule(ModuleName.recall, ModuleName.admission, False, "Recall must not depend on admission orchestration."),
+    DependencyRule(ModuleName.adapters, ModuleName.admission, False, "Adapters must not depend on admission orchestration in DA1."),
     DependencyRule(ModuleName.adapters, ModuleName.geometry, False, "Adapters must not call geometry internals in DG0."),
 )
 

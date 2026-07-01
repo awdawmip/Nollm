@@ -66,6 +66,7 @@ class ModuleName(Enum):
     geometry = "geometry"
     field = "field"
     cortex = "cortex"
+    admission = "admission"
     recall = "recall"
     adapters = "adapters"
     validation = "validation"
@@ -86,6 +87,7 @@ class ObjectKind(Enum):
     growth_trace = "growth_trace"
     coarse_cover = "coarse_cover"
     gravity_snapshot = "gravity_snapshot"
+    admission_record = "admission_record"
     recall_digest = "recall_digest"
     ledger_event = "ledger_event"
 
@@ -195,6 +197,7 @@ OBJECT_OWNERSHIP: tuple[ObjectOwnership, ...] = (
     ObjectOwnership(ObjectKind.growth_trace, ModuleName.field, False, False, "Field trace derived from evidence-backed proposal."),
     ObjectOwnership(ObjectKind.coarse_cover, ModuleName.field, False, False, "Field cover, not evidence ownership."),
     ObjectOwnership(ObjectKind.gravity_snapshot, ModuleName.field, False, False, "Internal Field/Core potential only."),
+    ObjectOwnership(ObjectKind.admission_record, ModuleName.admission, True, False, "Durable DA1 replay manifest, not Evidence, Trace, Cover, or Gravity."),
     ObjectOwnership(ObjectKind.recall_digest, ModuleName.recall, False, True, "Read result with evidence fallback."),
 )
 
@@ -210,6 +213,13 @@ INVARIANTS: tuple[Invariant, ...] = (
     Invariant("I-V2-008", "Validation must not enter production paths or write production state.", ModuleName.validation),
     Invariant("I-V2-009", "Adapter must not define, recompute, or bypass Geometry or Field rules.", ModuleName.adapters),
     Invariant("I-V2-010", "V1 legacy and V2 must remain import-isolated during DG0.", ModuleName.protocol),
+)
+
+
+DA1_ADMISSION_INVARIANTS: tuple[Invariant, ...] = (
+    Invariant("I-V2-DA1-001", "AdmissionRecord is the only durable DA1 object and must not persist Trace, Cover, Gravity, Field snapshots, or DreamShard content.", ModuleName.admission),
+    Invariant("I-V2-DA1-002", "DA1 preflight must complete through public DE1, DC1, DG1, and DG2 APIs before any durable write.", ModuleName.admission),
+    Invariant("I-V2-DA1-003", "DA1 admits only current DC1 accepted proposals with explicit single-step placements and deterministic replay fingerprints.", ModuleName.admission),
 )
 
 
@@ -254,6 +264,7 @@ DR1_RECALL_RESOLVER_INVARIANTS: tuple[Invariant, ...] = (
 __all__ = [
     "ChartTransformState",
     "CoverState",
+    "DA1_ADMISSION_INVARIANTS",
     "DE1_MEMORY_SUBSTRATE_INVARIANTS",
     "DR1_RECALL_RESOLVER_INVARIANTS",
     "DG2_FIELD_INVARIANTS",

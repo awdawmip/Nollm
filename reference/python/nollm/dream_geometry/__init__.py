@@ -11,6 +11,7 @@ __all__ = [
     "geometry",
     "field",
     "cortex",
+    "admission",
     "recall",
     "adapters",
     "validation",

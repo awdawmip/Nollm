@@ -5,6 +5,7 @@ from nollm.dream_geometry.protocol import contracts
 from nollm.dream_geometry.protocol.contracts import (
     ChartTransformState,
     CoverState,
+    DA1_ADMISSION_INVARIANTS,
     DE1_MEMORY_SUBSTRATE_INVARIANTS,
     GrowthBasis,
     INVARIANTS,
@@ -39,7 +40,7 @@ def test_required_enum_values_are_stable() -> None:
     assert enum_values(TraceState) == ["proposed", "accepted", "suppressed", "superseded", "archived"]
     assert enum_values(CoverState) == ["candidate", "stable", "crystallized", "deprecated", "conflicted"]
     assert enum_values(KernelDirection) == ["fine_to_coarse", "coarse_to_fine"]
-    assert enum_values(ModuleName) == ["protocol", "evidence", "geometry", "field", "cortex", "recall", "adapters", "validation"]
+    assert enum_values(ModuleName) == ["protocol", "evidence", "geometry", "field", "cortex", "admission", "recall", "adapters", "validation"]
     assert enum_values(ObjectKind) == [
         "dream_shard",
         "interpretation_record",
@@ -53,6 +54,7 @@ def test_required_enum_values_are_stable() -> None:
         "growth_trace",
         "coarse_cover",
         "gravity_snapshot",
+        "admission_record",
         "recall_digest",
         "ledger_event",
     ]
@@ -87,6 +89,7 @@ def test_object_ownership_mapping_is_complete() -> None:
     assert ownership[ObjectKind.growth_trace].owner is ModuleName.field
     assert ownership[ObjectKind.coarse_cover].owner is ModuleName.field
     assert ownership[ObjectKind.gravity_snapshot].owner is ModuleName.field
+    assert ownership[ObjectKind.admission_record].owner is ModuleName.admission
     assert ownership[ObjectKind.recall_digest].owner is ModuleName.recall
 
     assert ownership[ObjectKind.query_probe].durable is False
@@ -95,6 +98,8 @@ def test_object_ownership_mapping_is_complete() -> None:
     assert ownership[ObjectKind.revision_thread].durable is True
     assert ownership[ObjectKind.usage_state_transition].durable is True
     assert ownership[ObjectKind.ledger_event].durable is True
+    assert ownership[ObjectKind.admission_record].durable is True
+    assert ownership[ObjectKind.admission_record].externally_visible is False
     assert ownership[ObjectKind.gravity_snapshot].externally_visible is False
     assert ownership[ObjectKind.coverage_kernel].externally_visible is False
 
@@ -112,6 +117,9 @@ def test_invariant_ids_are_complete_unique_and_layered() -> None:
     assert invariants["I-V2-008"].enforcement_layer is ModuleName.validation
     assert invariants["I-V2-009"].enforcement_layer is ModuleName.adapters
     assert invariants["I-V2-010"].enforcement_layer is ModuleName.protocol
+    da1 = {item.identifier: item for item in DA1_ADMISSION_INVARIANTS}
+    assert list(da1) == ["I-V2-DA1-001", "I-V2-DA1-002", "I-V2-DA1-003"]
+    assert all(item.enforcement_layer is ModuleName.admission for item in da1.values())
     de1 = {item.identifier: item for item in DE1_MEMORY_SUBSTRATE_INVARIANTS}
     assert list(de1) == [f"I-V2-{index:03d}" for index in range(19, 26)]
     assert all(item.enforcement_layer is ModuleName.evidence for item in de1.values())

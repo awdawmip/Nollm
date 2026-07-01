@@ -13,6 +13,7 @@ The V2 namespace is `nollm.dream_geometry`. It is parallel to existing V1 and D-
 | `geometry` | Chart, hex, transform, overlap, `K_up` / `K_down`, cycle residual, anti-resonance metrics. | Natural language, OpenClaw, fact truth, real memory writes. |
 | `field` | Growth Trace, Coarse Cover, internal gravity, compression, merge, split. | Growth Proposal generation, external gravity exposure, Evidence replacement. |
 | `cortex` | Candidate Growth Proposal and Query Probe compilation. | Fact confirmation, direct placement, direct Field mutation, final recall. |
+| `admission` | Deterministic write-side preflight, public API orchestration, and narrow AdmissionRecord replay manifest. | Natural language understanding, automatic placement, recall, runtime, Field persistence, or upstream owner mutation. |
 | `recall` | Probe propagation, evidence fallback, state/time/revision filtering, Recall Digest. | LLM calls, Evidence writes, direct OpenClaw reads. |
 | `adapters` | Thin CLI, JSON, OpenClaw, and receipt adaptation after core validation exists. | Defining math, bypassing ledger, recomputing geometry internals, runtime reverse dependency. |
 | `validation` | Read-only fixtures, property tests, metrics, reports. | Production recall path, production state mutation. |
@@ -26,9 +27,10 @@ evidence -> protocol
 geometry -> protocol
 cortex -> protocol
 field -> protocol, evidence, geometry
+admission -> protocol, evidence, geometry, field, cortex
 recall -> protocol, evidence, geometry, field, cortex
 adapters -> protocol, evidence, cortex, recall
-validation -> protocol, evidence, geometry, field, cortex, recall, adapters
+validation -> protocol, evidence, geometry, field, cortex, admission, recall, adapters
 ```
 
 Production modules must not import `validation`. V1 and OpenClaw runtime modules must not import `nollm.dream_geometry` during DG0. V2 must not import V1 runtime, OpenClaw, sidecar, native memory, subprocess runners, or legacy recall.

@@ -13,9 +13,10 @@ evidence -> protocol
 geometry -> protocol
 cortex -> protocol, evidence
 field -> protocol, evidence, geometry
+admission -> protocol, evidence, geometry, field, cortex
 recall -> protocol, evidence, geometry, field, cortex
 adapters -> protocol, evidence, cortex, recall
-validation -> protocol, evidence, geometry, field, cortex, recall, adapters
+validation -> protocol, evidence, geometry, field, cortex, admission, recall, adapters
 ```
 
 Protocol is the foundation/service layer, so production modules import protocol contracts. The arrows above are import edges, not visual foundation arrows.
@@ -30,6 +31,7 @@ Forbidden edges include:
 - `field -> OpenClaw`
 - `evidence -> geometry`
 - `cortex -> field`
+- `evidence/cortex/geometry/field/recall/adapters -> admission`
 - `adapters -> geometry internals`
 - V1/OpenClaw runtime -> V2 during DG0
 - V2 -> V1 runtime/OpenClaw during DG0
@@ -70,6 +72,17 @@ exact text-span support. Cortex must not write Evidence, Ledger, Geometry,
 Field, Recall, Adapter, V1, OpenClaw, runtime, database, network, or subprocess
 state.
 
+DA1 active implementation subset:
+
+```text
+admission -> protocol, evidence, geometry, field, cortex
+validation/da1 -> protocol, evidence, geometry, field, cortex, admission
+```
+
+Admission may orchestrate public DE1, DC1, DG1, and DG2 APIs to preflight and
+commit one narrow AdmissionRecord. Evidence, Cortex, Geometry, Field, Recall,
+and Adapters must not import admission.
+
 DI1 active implementation subset:
 
 ```text
@@ -85,7 +98,7 @@ surface.
 DX1 active validation subset:
 
 ```text
-validation/dx1 -> protocol, evidence, geometry, field, cortex, recall, adapters
+validation/dx1 -> protocol, evidence, geometry, field, cortex, admission, recall, adapters
 ```
 
 DX1 validation code may import sealed public APIs to construct a synthetic

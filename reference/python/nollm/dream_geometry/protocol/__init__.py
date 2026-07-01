@@ -9,6 +9,7 @@ card I/O, memory I/O, or adapter registration.
 from .contracts import (
     ChartTransformState,
     CoverState,
+    DA1_ADMISSION_INVARIANTS,
     DE1_MEMORY_SUBSTRATE_INVARIANTS,
     DG2_FIELD_INVARIANTS,
     DependencyRule,
@@ -34,6 +35,7 @@ __all__ = [
     "FORBIDDEN_DEPENDENCIES",
     "ChartTransformState",
     "CoverState",
+    "DA1_ADMISSION_INVARIANTS",
     "DE1_MEMORY_SUBSTRATE_INVARIANTS",
     "DG2_FIELD_INVARIANTS",
     "DependencyRule",

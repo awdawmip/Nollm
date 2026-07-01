@@ -10,6 +10,9 @@
 - I-V2-008: Validation must not enter production paths or write production state.
 - I-V2-009: Adapter must not define, recompute, or bypass Geometry / Field rules.
 - I-V2-010: V1 legacy and V2 are import-isolated during DG0.
+- I-V2-DA1-001: AdmissionRecord is the only durable DA1 object and must not persist Trace, Cover, Gravity, Field snapshots, or DreamShard content.
+- I-V2-DA1-002: DA1 preflight must complete through public DE1, DC1, DG1, and DG2 APIs before any durable write.
+- I-V2-DA1-003: DA1 admits only current DC1 accepted proposals with explicit single-step placements and deterministic replay fingerprints.
 - I-V2-011: Field propagates only through supplied, DG1-confirmed directed coverage distributions; it must not create nearest-center parent links.
 - I-V2-012: Every propagation conserves parent trace mass after explicit residual accounting.
   - DG2.1 clarification: `accounting_error` is only floating summation error; it is not a sink for unclassified positive kernel mass.
