@@ -11,6 +11,7 @@ from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import (
     build_dx1_cycle,
     build_dx1_deferred_cycle,
     build_dx1_retired_cycle,
+    tree_manifest,
 )
 
 
@@ -85,13 +86,25 @@ def test_x011_s04_retired_usage_is_context_not_active_primary(tmp_path) -> None:
     assert retired["usage_state"] == "retired"
 
 
-def test_deferred_and_mismatch_do_not_change_manifests(tmp_path) -> None:
-    fixture = build_dx1_cycle(tmp_path)
-    before = fixture.before_recall_manifests
-    IntegrationShell().handle(replace(fixture.invocation, request_id="req_a"), fixture.integration_context)
-    IntegrationShell().handle(replace(fixture.invocation, request_id="req_b"), replace(fixture.integration_context, runtime_time=None))
-    IntegrationShell().handle(fixture.mismatch_invocation, fixture.integration_context)
-    from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import tree_manifest
+def test_s01_s02_s03_s04_s06_do_not_change_manifests(tmp_path) -> None:
+    shell = IntegrationShell()
+    scenarios = (
+        ("S01", build_dx1_cycle(tmp_path / "s01"), lambda fixture: (fixture.invocation, fixture.integration_context)),
+        ("S02", build_dx1_deferred_cycle(tmp_path / "s02"), lambda fixture: (fixture.invocation, fixture.integration_context)),
+        ("S03", build_dx1_cycle(tmp_path / "s03"), lambda fixture: (fixture.mismatch_invocation, fixture.integration_context)),
+        ("S04", build_dx1_retired_cycle(tmp_path / "s04"), lambda fixture: (fixture.invocation, fixture.integration_context)),
+    )
+    for scenario, fixture, select_call in scenarios:
+        invocation, context = select_call(fixture)
+        shell.handle(invocation, context)
+        _assert_manifest_unchanged(scenario, fixture)
 
-    assert tree_manifest(tmp_path / "evidence") == before["evidence"]
-    assert tree_manifest(tmp_path / "cortex") == before["cortex"]
+    fixture = build_dx1_cycle(tmp_path / "s06")
+    shell.handle(replace(fixture.invocation, request_id="req_dx1_s06_a"), fixture.integration_context)
+    shell.handle(replace(fixture.invocation, request_id="req_dx1_s06_b"), fixture.integration_context)
+    _assert_manifest_unchanged("S06", fixture)
+
+
+def _assert_manifest_unchanged(scenario: str, fixture) -> None:
+    assert tree_manifest(fixture.root / "evidence") == fixture.before_recall_manifests["evidence"], scenario + " evidence"
+    assert tree_manifest(fixture.root / "cortex") == fixture.before_recall_manifests["cortex"], scenario + " cortex"

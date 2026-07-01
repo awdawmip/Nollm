@@ -29,6 +29,27 @@ from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import (
 
 
 BASE_SEALED_COMMIT = "76a4d1ba8b97043ea2c673ca64ab6f816be18a12"
+PUBLIC_SELECTION_BASIS = [
+    "exact_structural_projection",
+    "eligible_stable_cover",
+    "final_multi_axis_evidence_gate",
+]
+FORBIDDEN_PUBLIC_TOKENS = (
+    r"C:\dx1-private",
+    "/dx1-private",
+    "synthetic-private-role",
+    "trace:",
+    "cover:",
+    "cell",
+    "chart",
+    "kernel",
+    "path_mass",
+    "mass",
+    "score",
+    "gravity",
+    "potential",
+    "coverage",
+)
 
 
 def canonical_fingerprint(mapping: dict) -> str:
@@ -65,6 +86,7 @@ def build_report() -> str:
 
     primary = resolved["result"]["primary_evidence"]
     contextual_retired = retired["result"]["contextual_evidence"]
+    s05_result = public_envelope_boundary_pass(resolved)
     lines = [
         "# DX1 Synthetic Memory Cycle Baseline Report",
         "",
@@ -95,7 +117,7 @@ def build_report() -> str:
         f"| S02 missing runtime relative-time resolution defers without evidence | {'pass' if deferred['ok'] and deferred['result']['status'] == 'deferred' and not deferred['result']['primary_evidence'] else 'fail'} |",
         f"| S03 exact mismatch does not recall target | {'pass' if mismatch['ok'] and mismatch['result']['status'] != 'resolved' and not mismatch['result']['primary_evidence'] else 'fail'} |",
         f"| S04 retired target is context only | {'pass' if retired['ok'] and not retired['result']['primary_evidence'] and any(item['shard_id'] == TARGET_SHARD_ID for item in contextual_retired) else 'fail'} |",
-        f"| S05 public envelope hides internal geometry and private provenance | `covered by test_dx1_synthetic_memory_cycle_boundaries.py` |",
+        f"| S05 public envelope hides internal geometry and private provenance | {'pass' if s05_result else 'fail'} |",
         f"| S06 same input rerun has stable public mapping and no persistence | {'pass' if canonical_mapping(resolved) == canonical_mapping(rerun) and fixture.before_recall_manifests == after_manifests else 'fail'} |",
         f"| S07 input permutation keeps public mapping | {'pass' if canonical_mapping(resolved) == canonical_mapping(permuted_response) else 'fail'} |",
         "",
@@ -163,6 +185,22 @@ def _max_positive_kernel_count(distributions) -> int:
     return max((sum(1 for kernel in distribution.kernels if kernel.weight > 0.0) for distribution in distributions), default=0)
 
 
+def public_envelope_boundary_pass(mapping: dict) -> bool:
+    primary = mapping.get("result", {}).get("primary_evidence", [])
+    if not primary or primary[0].get("selection_basis") != PUBLIC_SELECTION_BASIS:
+        return False
+    rendered = json.dumps(_without_body_text(mapping), sort_keys=True).lower()
+    return all(token.lower() not in rendered for token in FORBIDDEN_PUBLIC_TOKENS)
+
+
+def _without_body_text(value):
+    if isinstance(value, dict):
+        return {key: _without_body_text(item) for key, item in value.items() if key not in {"content", "statement"}}
+    if isinstance(value, list):
+        return [_without_body_text(item) for item in value]
+    return value
+
+
 def default_output_path() -> Path:
     return Path(__file__).resolve().parents[5] / "docs" / "validation" / "DX1_SYNTHETIC_MEMORY_CYCLE_BASELINE_REPORT.md"
 
@@ -184,4 +222,13 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-__all__ = ["build_report", "canonical_fingerprint", "default_output_path", "main", "write_report"]
+__all__ = [
+    "FORBIDDEN_PUBLIC_TOKENS",
+    "PUBLIC_SELECTION_BASIS",
+    "build_report",
+    "canonical_fingerprint",
+    "default_output_path",
+    "main",
+    "public_envelope_boundary_pass",
+    "write_report",
+]

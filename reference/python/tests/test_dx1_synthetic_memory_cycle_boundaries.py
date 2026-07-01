@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from nollm.dream_geometry.adapters import IntegrationShell
+from nollm.dream_geometry.validation.dx1_synthetic_cycle_report import public_envelope_boundary_pass
 from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import build_dx1_cycle
 
 
@@ -51,6 +52,22 @@ def test_x012_s05_public_envelope_hides_provenance_and_internal_geometry(tmp_pat
     rendered = json.dumps(_without_content(response), sort_keys=True).lower()
     for token in FORBIDDEN_PUBLIC:
         assert token.lower() not in rendered
+    assert public_envelope_boundary_pass(response) is True
+
+
+def test_s05_report_witness_checks_public_metadata_not_body_text(tmp_path) -> None:
+    fixture = build_dx1_cycle(tmp_path)
+    response = IntegrationShell().handle(fixture.invocation, fixture.integration_context).to_mapping()
+    assert public_envelope_boundary_pass(response) is True
+
+    leaked = json.loads(json.dumps(response))
+    leaked["result"]["primary_evidence"][0]["selection_basis"].append("cover:synthetic-leak")
+    assert public_envelope_boundary_pass(leaked) is False
+
+    body_only = json.loads(json.dumps(response))
+    body_only["result"]["primary_evidence"][0]["content"] = "Body text may contain cover: and chart tokens without becoming metadata."
+    body_only["result"]["primary_evidence"][0]["interpretation_context"][0]["statement"] = "Statement text may contain gravity and mass tokens."
+    assert public_envelope_boundary_pass(body_only) is True
 
 
 def test_x015_scope_sealed_implementation_paths_are_unmodified() -> None:
