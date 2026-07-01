@@ -172,6 +172,7 @@ class RecallResultItem:
     context_record_ids: tuple[str, ...]
     path_mass: float = 0.0
     route_refs: tuple[str, ...] = ()
+    cover_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

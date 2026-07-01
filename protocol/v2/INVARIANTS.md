@@ -54,5 +54,6 @@
 - I-V2-038: Runtime relative-time projection must bind exactly to the original QueryProbe span and must not be fabricated, duplicated, extrapolated, persisted, or calendar-resolved by DR1.
 - I-V2-039: DR1 budgets are explicit stopping rules; budget exhaustion must be reported as an outcome or structured diagnostic, not hidden inside a resolved digest.
   - DR1.1S clarification: seed-cover budget applies after exact-match seed candidate formation, and traversal cells, layers, charts, route identities, and direct cross-chart coverage edges are accounted digest-globally over selected executable routes.
+  - DR1.1T clarification: exact-match seed budget counts support families, and final evidence is aggregated by DreamShard before the post-dedup multi-axis gate is applied.
 
 Pure geometry acceptance comes before semantics and runtime.

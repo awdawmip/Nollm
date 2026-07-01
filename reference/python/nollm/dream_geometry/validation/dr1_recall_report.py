@@ -41,6 +41,9 @@ def build_report() -> str:
         global_cells = add_synthetic_cover(store, proposal, universe, cover_id="cover:report-second-cell", shard_id="shard:report-second-cell", proposal_id="proposal:report-second-cell", trace_prefix="trace:report-second-cell", cell=second_cell)
         global_budget_probe = replace(query_probe(), budget=QueryBudget(4, 8, 4, 1))
         global_budget = resolve_recall(global_budget_probe, global_cells, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=2))
+        family_cover = replace(universe.covers[0], cover_id="cover:report-family-alt")
+        same_family = replace(universe, covers=universe.covers + (family_cover,), gravity_snapshot=None)
+        family_digest = resolve_recall(query_probe(), same_family, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
         retired_store, _, retired_universe = build_fixture(root / "retired", usage_state=UsageState.retired)
         retired = resolve_recall(query_probe(), retired_universe, retired_store, runtime_time=relative_time_resolution(), policy=RecallPolicy(include_retired_context=True))
         evidence_snapshot = (store.read_ledger(), store.state_projection())
@@ -71,6 +74,7 @@ def build_report() -> str:
         f"| wrong K_down direction rejected | {'pass' if wrong_direction.status is RecallDigestStatus.rejected else 'fail'} |",
         f"| budget exhaustion explicit | {'pass' if budget.status is RecallDigestStatus.budget_exhausted else 'fail'} |",
         f"| unrelated stable cover does not consume seed budget | {'pass' if seed_budget.status is RecallDigestStatus.resolved and 'DR1_BUDGET_MAX_SEED_COVERS' not in seed_budget.discarded else 'fail'} |",
+        f"| same support seed family aggregates one shard evidence | {'pass' if family_digest.status is RecallDigestStatus.resolved and len(family_digest.primary_evidence) == 1 and family_digest.primary_evidence[0].matched_axes == ('absolute_time', 'location', 'phenomenon') else 'fail'} |",
         f"| digest-global selected route cell budget enforced | {'pass' if global_budget.status is RecallDigestStatus.budget_exhausted and 'DR1_BUDGET_MAX_CELLS_PER_LAYER' in global_budget.discarded else 'fail'} |",
         f"| K_up and K_down traversal records reported | {'pass' if {record.phase for record in resolved.traversal_records} >= {'up', 'down'} else 'fail'} |",
         f"| DreamShard active evidence qualified primary | {'pass' if resolved.primary_evidence[0].qualification.tier == 'primary_active' else 'fail'} |",
@@ -101,6 +105,8 @@ def build_report() -> str:
             "- DR1 consumes explicit finite universes only; it does not discover candidates from runtime state.",
             "- DR1 does not perform NLP, semantic search, vector similarity, geometry recall, automatic placement, or automatic context composition.",
             "- Seed cover budget applies only after exact-match candidate formation; unrelated stable covers do not consume it.",
+            "- Equivalent seed covers with the same support traces, support shards, and matched axes form one seed family.",
+            "- Final evidence units are aggregated by DreamShard after global route dedup; multi-axis gates are checked on that final shard unit.",
             "- Traversal budgets are digest-global over selected route identities, unique cells/layers/charts, and unique executed direct cross-chart coverage edges.",
             "- Relative time is supplied by the caller; missing relative-time resolution defers recall.",
             "- Gravity is a tie-break over already eligible equal-core-score candidates, not a query selector or evidence source.",

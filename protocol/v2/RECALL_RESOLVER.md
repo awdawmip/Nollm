@@ -78,12 +78,25 @@ structural seed candidates. Stable or crystallized covers that never become
 exact-match candidates may be diagnosed, but they do not consume
 `max_seed_covers` and do not by themselves exhaust recall.
 
+Exact-match seed budget counts seed families, not physical cover instances. A
+seed family is identified by its support traces, support shards, and matched
+required axes; multiple covers in the same family are alternative geometry
+routes for the same evidence support and may all contribute route candidates
+before global route deduplication.
+
 Traversal budget accounting is digest-global over the selected executable route
 set after global route identity deduplication. `max_cells_per_layer`,
 `max_layers`, and `max_charts` count the union of selected route cells, layers,
 and chart fingerprints for the whole digest. `max_lateral_hops` counts unique
 executed direct cross-chart coverage graph edges; repeated use of the same
 `K_up` or `K_down` edge by multiple traces or axes counts once.
+
+After global route deduplication and budget accounting, primary/context evidence
+is aggregated by DreamShard identity. Within one shard evidence unit, duplicate
+routes for the same required axis are reduced to one maximum-mass route, while
+distinct required axes may accumulate. The minimum exact-axis gate is checked on
+the final shard evidence unit; different shards cannot be combined to satisfy a
+multi-axis evidence requirement.
 
 Gravity may be used only as a deterministic tie-break among already eligible
 structural candidates with equal core scores within fixed machine epsilon. It is

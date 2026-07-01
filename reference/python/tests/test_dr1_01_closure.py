@@ -37,6 +37,66 @@ def _with_higher_duplicate_route_cover(universe):
     return replace(universe, covers=universe.covers + (alt_cover,), coverage_up=(split_up,), coverage_down=universe.coverage_down + (high_down,), gravity_snapshot=None)
 
 
+def _distribution(template, source_cell, target_weights, direction):
+    kernels = tuple(replace(template, source_cell=source_cell, target_cell=target, direction=direction, weight=weight) for target, weight in target_weights)
+    residual = max(0.0, 1.0 - sum(weight for _, weight in target_weights))
+    return CoverageDistribution(
+        source_cell,
+        direction,
+        kernels,
+        CoverageResidual(residual, (ResidualReason.numeric_tolerance,) if residual == 0.0 else (ResidualReason.outside_supplied_partition,)),
+        1.0,
+        len(kernels),
+    )
+
+
+def _split_axis_winning_family(universe):
+    chart = LocalChart("dr1:family", 0, 1.0, 0.0, Vec2(0, 0))
+    trace_cells = {
+        "location": make_hex_cell(chart, AxialCoord(0, 0)),
+        "phenomenon": make_hex_cell(chart, AxialCoord(3, 0)),
+        "absolute_time": make_hex_cell(chart, AxialCoord(6, 0)),
+    }
+    cover_cells = {
+        "cover:f0": make_hex_cell(chart, AxialCoord(0, 3)),
+        "cover:f1": make_hex_cell(chart, AxialCoord(3, 3)),
+        "cover:f2": make_hex_cell(chart, AxialCoord(6, 3)),
+    }
+    traces = tuple(replace(trace, cell=trace_cells[trace.axis]) for trace in universe.traces)
+    base_cover = universe.covers[0]
+    covers = tuple(
+        replace(base_cover, cover_id=cover_id, chart_fingerprint=cell.chart_fingerprint, support_cell=cell)
+        for cover_id, cell in cover_cells.items()
+    )
+    up_template = universe.coverage_up[0].kernels[0]
+    down_template = universe.coverage_down[0].kernels[0]
+    weights_by_axis = {
+        "location": (0.8, 0.1, 0.1),
+        "phenomenon": (0.1, 0.8, 0.1),
+        "absolute_time": (0.1, 0.1, 0.8),
+    }
+    coverage_up = []
+    for trace in traces:
+        coverage_up.append(
+            _distribution(
+                up_template,
+                trace.cell,
+                tuple((cover.support_cell, weight) for cover, weight in zip(covers, weights_by_axis[trace.axis])),
+                CoverageDirection.fine_to_coarse,
+            )
+        )
+    coverage_down = tuple(
+        _distribution(
+            down_template,
+            cover.support_cell,
+            tuple((trace.cell, 1.0 / len(traces)) for trace in traces),
+            CoverageDirection.coarse_to_fine,
+        )
+        for cover in covers
+    )
+    return replace(universe, traces=traces, covers=covers, coverage_up=tuple(coverage_up), coverage_down=coverage_down, gravity_snapshot=None)
+
+
 def test_t_dr1_101_wrong_k_down_direction_rejected(tmp_path) -> None:
     store, _, universe = build_fixture(tmp_path)
     digest = resolve_recall(query_probe(), with_wrong_down_direction(universe), store, runtime_time=relative_time_resolution())
@@ -146,11 +206,42 @@ def test_t_501_unrelated_stable_cover_does_not_consume_seed_budget(tmp_path) -> 
 
 def test_t_502_exact_seed_candidates_exhaust_seed_budget(tmp_path) -> None:
     store, proposal, universe = build_fixture(tmp_path)
-    two_candidates = add_synthetic_cover(store, proposal, universe, cover_id="cover:aaa-exact", shard_id="shard:exact", proposal_id="proposal:exact", trace_prefix="trace:exact")
+    second_cell = make_hex_cell(LocalChart("dr1:seed-budget", 0, 1.0, 0.0, Vec2(4, 0)), AxialCoord(0, 0))
+    two_candidates = add_synthetic_cover(store, proposal, universe, cover_id="cover:aaa-exact", shard_id="shard:exact", proposal_id="proposal:exact", trace_prefix="trace:exact", cell=second_cell)
     digest = resolve_recall(query_probe(), two_candidates, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
     assert digest.status is RecallDigestStatus.budget_exhausted
     assert "DR1_BUDGET_MAX_SEED_COVERS" in digest.discarded
     assert digest.primary_evidence
+
+
+def test_f_601_same_seed_family_aggregates_shard_level_evidence(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    family = _split_axis_winning_family(universe)
+    digest = resolve_recall(query_probe(), family, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+    assert digest.status is RecallDigestStatus.resolved
+    assert len(digest.primary_evidence) == 1
+    item = digest.primary_evidence[0]
+    assert item.shard_id == "shard:rain"
+    assert item.matched_axes == ("absolute_time", "location", "phenomenon")
+    assert item.cover_ids == ("cover:f0", "cover:f1", "cover:f2")
+    assert item.cover_id == "cover:f0"
+    assert len(item.route_refs) == 3
+    assert any("cover:f0" in route_ref for route_ref in item.route_refs)
+    assert any("cover:f1" in route_ref for route_ref in item.route_refs)
+    assert any("cover:f2" in route_ref for route_ref in item.route_refs)
+    assert "DR1_BUDGET_MAX_SEED_COVERS" not in digest.discarded
+
+
+def test_f_602_seed_family_aggregation_is_permutation_deterministic(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    family = _split_axis_winning_family(universe)
+    digest = resolve_recall(query_probe(), family, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+    permuted_up = tuple(replace(distribution, kernels=tuple(reversed(distribution.kernels))) for distribution in reversed(family.coverage_up))
+    permuted = replace(family, traces=tuple(reversed(family.traces)), covers=tuple(reversed(family.covers)), coverage_up=permuted_up, coverage_down=tuple(reversed(family.coverage_down)))
+    again = resolve_recall(query_probe(), permuted, store, runtime_time=relative_time_resolution(), policy=RecallPolicy(max_seed_covers=1))
+    assert digest.digest_id == again.digest_id
+    assert digest.primary_evidence == again.primary_evidence
+    assert digest.discarded == again.discarded
 
 
 def test_e_401_k_down_must_reach_trace_cell(tmp_path) -> None:
@@ -245,6 +336,63 @@ def test_t_504_global_route_identity_keeps_max_path_mass(tmp_path) -> None:
     assert round(digest.primary_evidence[0].path_mass, 6) == 2.25
     assert all("cover:rain" not in route_ref for item in digest.primary_evidence for route_ref in item.route_refs)
     assert any("DR1_ROUTE_DEDUPED_GLOBAL" in item for item in digest.discarded)
+
+
+def test_f_603_same_shard_same_axis_different_cells_keep_max_axis_route(tmp_path) -> None:
+    store, _, universe = build_fixture(tmp_path)
+    chart = LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0))
+    second_cell = make_hex_cell(chart, AxialCoord(3, 0))
+    duplicate = replace(universe.traces[0], trace_id="trace:location:second-cell", cell=second_cell, support_key="support:location:second-cell")
+    cover = replace(
+        universe.covers[0],
+        support_trace_ids=universe.covers[0].support_trace_ids + (duplicate.trace_id,),
+        support_keys=tuple(sorted(universe.covers[0].support_keys + (duplicate.support_key,))),
+    )
+    up_template = universe.coverage_up[0].kernels[0]
+    down_template = universe.coverage_down[0].kernels[0]
+    second_up = _distribution(up_template, second_cell, ((cover.support_cell, 0.5),), CoverageDirection.fine_to_coarse)
+    down = _distribution(
+        down_template,
+        cover.support_cell,
+        ((universe.traces[0].cell, 0.6), (second_cell, 0.4)),
+        CoverageDirection.coarse_to_fine,
+    )
+    duplicate_universe = replace(universe, traces=universe.traces + (duplicate,), covers=(cover,), coverage_up=universe.coverage_up + (second_up,), coverage_down=(down,))
+    digest = resolve_recall(query_probe(), duplicate_universe, store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.resolved
+    assert "trace:location:second-cell" not in digest.primary_evidence[0].trace_ids
+    assert any("DR1_AXIS_ROUTE_DEDUPED" in item for item in digest.discarded)
+
+
+def test_f_607_single_axis_different_shards_do_not_form_multi_axis_evidence(tmp_path) -> None:
+    store, proposal, universe = build_fixture(tmp_path)
+    second_cell = make_hex_cell(LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(3, 0))
+    with_second = add_synthetic_cover(store, proposal, universe, cover_id="cover:unused-second", shard_id="shard:single-axis", proposal_id="proposal:single-axis", trace_prefix="trace:single-axis", cell=second_cell)
+    base_location = with_second.traces[0]
+    second_phenomenon = next(trace for trace in with_second.traces if trace.origin_shard_id == "shard:single-axis" and trace.axis == "phenomenon")
+    support_cell = make_hex_cell(LocalChart("dr1:coarse", 0, 1.0, 0.0, Vec2(0, 0)), AxialCoord(6, 0))
+    mixed_cover = replace(
+        with_second.covers[0],
+        cover_id="cover:mixed-single-axis",
+        chart_fingerprint=support_cell.chart_fingerprint,
+        support_cell=support_cell,
+        support_trace_ids=(base_location.trace_id, second_phenomenon.trace_id),
+        support_shard_ids=tuple(sorted((base_location.origin_shard_id, second_phenomenon.origin_shard_id))),
+        support_keys=tuple(sorted((base_location.support_key, second_phenomenon.support_key))),
+        axes_present=tuple(sorted((base_location.axis, second_phenomenon.axis))),
+    )
+    up_template = universe.coverage_up[0].kernels[0]
+    down_template = universe.coverage_down[0].kernels[0]
+    coverage_up = (
+        _distribution(up_template, base_location.cell, ((support_cell, 1.0),), CoverageDirection.fine_to_coarse),
+        _distribution(up_template, second_phenomenon.cell, ((support_cell, 1.0),), CoverageDirection.fine_to_coarse),
+    )
+    coverage_down = (_distribution(down_template, support_cell, ((base_location.cell, 0.5), (second_phenomenon.cell, 0.5)), CoverageDirection.coarse_to_fine),)
+    mixed = replace(with_second, traces=(base_location, second_phenomenon), covers=(mixed_cover,), coverage_up=coverage_up, coverage_down=coverage_down, gravity_snapshot=None)
+    digest = resolve_recall(query_probe(), mixed, store, runtime_time=relative_time_resolution())
+    assert digest.status is RecallDigestStatus.insufficient_evidence
+    assert digest.primary_evidence == ()
+    assert sum("DR1_INSUFFICIENT_POST_DEDUP_AXIS_MATCH" in item for item in digest.discarded) == 2
 
 
 def test_t_505_global_cell_budget_applies_across_selected_covers(tmp_path) -> None:

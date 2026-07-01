@@ -42,6 +42,12 @@ class _SeedCandidate:
 
 
 @dataclass(frozen=True)
+class _SeedFamily:
+    identity: tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]
+    candidates: tuple[_SeedCandidate, ...]
+
+
+@dataclass(frozen=True)
 class _Route:
     trace: GrowthTrace
     projection: TraceSemanticProjection
@@ -52,6 +58,15 @@ class _Route:
     up_distribution: CoverageDistribution
     down_distribution: CoverageDistribution
     target_cell_ref: str
+
+
+@dataclass(frozen=True)
+class _EvidenceUnit:
+    shard_id: str
+    routes: tuple[_Route, ...]
+    representative_cover: CoarseCover
+    cover_ids: tuple[str, ...]
+    path_mass: float
 
 
 def resolve_recall(
@@ -116,24 +131,28 @@ def resolve_recall(
             continue
         seed_candidates.append(_SeedCandidate(cover, matched, matched_axes))
 
-    selected_seeds = tuple(seed_candidates)
+    seed_families = _seed_families(tuple(seed_candidates))
+    selected_families = seed_families
     budget_exhausted = False
-    if len(seed_candidates) > policy.max_seed_covers:
-        selected_seeds = tuple(seed_candidates[: policy.max_seed_covers])
+    if len(seed_families) > policy.max_seed_covers:
+        selected_families = seed_families[: policy.max_seed_covers]
         discarded.append("DR1_BUDGET_MAX_SEED_COVERS")
         budget_exhausted = True
 
     route_candidates: list[_Route] = []
-    for candidate in selected_seeds:
-        routes = _route_candidates_for_cover(candidate.cover, candidate.matched, universe)
-        if not routes:
-            discarded.append(f"{candidate.cover.cover_id}:DR1_K_UP_DOWN_PATH_MISSING")
-            continue
-        route_axes = tuple(sorted({route.projection.axis_id for route in routes}))
+    for family in selected_families:
+        family_routes: list[_Route] = []
+        for candidate in family.candidates:
+            routes = _route_candidates_for_cover(candidate.cover, candidate.matched, universe)
+            if not routes:
+                discarded.append(f"{candidate.cover.cover_id}:DR1_K_UP_DOWN_PATH_MISSING")
+                continue
+            family_routes.extend(routes)
+        route_axes = tuple(sorted({route.projection.axis_id for route in family_routes}))
         if len(route_axes) < max(1, minimum_axes):
-            discarded.append(f"{candidate.cover.cover_id}:DR1_INSUFFICIENT_EXECUTABLE_AXIS_MATCH")
+            discarded.append(f"{family.identity}:DR1_INSUFFICIENT_EXECUTABLE_AXIS_MATCH")
             continue
-        route_candidates.extend(routes)
+        route_candidates.extend(family_routes)
 
     deduped_routes, dedup_discarded = _dedupe_routes(tuple(route_candidates))
     discarded.extend(dedup_discarded)
@@ -145,40 +164,35 @@ def resolve_recall(
 
     result_items: list[RecallResultItem] = []
     if global_budget_reason is None:
-        routes_by_cover = {route.cover.cover_id: tuple(item for item in deduped_routes if item.cover.cover_id == route.cover.cover_id) for route in deduped_routes}
-        for cover_id in sorted(routes_by_cover):
-            cover_routes = routes_by_cover[cover_id]
-            routes_by_shard = {route.trace.origin_shard_id: tuple(item for item in cover_routes if item.trace.origin_shard_id == route.trace.origin_shard_id) for route in cover_routes}
-            for shard_id in sorted(routes_by_shard):
-                try:
-                    qualification = qualify_shard(evidence_store, shard_id, policy)
-                except Exception:
-                    discarded.append(f"{shard_id}:DR1_TRACE_ORIGIN_SHARD_MISSING")
-                    continue
-                context_ids = _context_ids(shard_id, universe, evidence_store, policy)
-                if not qualification.included_as_evidence and not _include_context(qualification.usage_state, policy):
-                    discarded.append(f"{shard_id}:DR1_USAGE_STATE_EXCLUDED")
-                    continue
-                shard_routes = routes_by_shard[shard_id]
-                trace_ids = tuple(sorted({route.trace.trace_id for route in shard_routes}))
-                projection_refs = tuple(sorted({route.projection.step_id for route in shard_routes}))
-                shard_axes = tuple(sorted({route.projection.axis_id for route in shard_routes}))
-                cover = shard_routes[0].cover
-                score = _core_score(cover, shard_axes)
-                result_items.append(
-                    RecallResultItem(
-                        shard_id,
-                        cover.cover_id,
-                        trace_ids,
-                        shard_axes,
-                        score,
-                        qualification,
-                        projection_refs,
-                        context_ids,
-                        sum(route.path_mass for route in shard_routes),
-                        tuple(sorted(f"{route.trace.trace_id}->{cover.cover_id}->{route.target_cell_ref}" for route in shard_routes)),
-                    )
+        for unit in _evidence_units(deduped_routes, minimum_axes, discarded):
+            try:
+                qualification = qualify_shard(evidence_store, unit.shard_id, policy)
+            except Exception:
+                discarded.append(f"{unit.shard_id}:DR1_TRACE_ORIGIN_SHARD_MISSING")
+                continue
+            context_ids = _context_ids(unit.shard_id, universe, evidence_store, policy)
+            if not qualification.included_as_evidence and not _include_context(qualification.usage_state, policy):
+                discarded.append(f"{unit.shard_id}:DR1_USAGE_STATE_EXCLUDED")
+                continue
+            trace_ids = tuple(sorted({route.trace.trace_id for route in unit.routes}))
+            projection_refs = tuple(sorted({route.projection.step_id for route in unit.routes}))
+            shard_axes = tuple(sorted({route.projection.axis_id for route in unit.routes}))
+            score = _core_score(unit.representative_cover, shard_axes)
+            result_items.append(
+                RecallResultItem(
+                    unit.shard_id,
+                    unit.representative_cover.cover_id,
+                    trace_ids,
+                    shard_axes,
+                    score,
+                    qualification,
+                    projection_refs,
+                    context_ids,
+                    unit.path_mass,
+                    tuple(sorted(f"{route.trace.trace_id}->{route.cover.cover_id}->{route.target_cell_ref}" for route in unit.routes)),
+                    unit.cover_ids,
                 )
+            )
 
     sorted_items, gravity_applied, gravity_warning = _sort_with_gravity(result_items, universe)
     if gravity_warning:
@@ -234,6 +248,73 @@ def _matched_support(
         if (projection.axis_id, projection.expression) in atom_keys:
             matches.append((trace, projection))
     return tuple(matches)
+
+
+def _seed_families(candidates: tuple[_SeedCandidate, ...]) -> tuple[_SeedFamily, ...]:
+    grouped: dict[tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]], list[_SeedCandidate]] = {}
+    for candidate in sorted(candidates, key=lambda item: item.cover.cover_id):
+        identity = (
+            tuple(sorted(candidate.cover.support_trace_ids)),
+            tuple(sorted(candidate.cover.support_shard_ids)),
+            tuple(sorted(candidate.matched_axes)),
+        )
+        grouped.setdefault(identity, []).append(candidate)
+    return tuple(_SeedFamily(identity, tuple(items)) for identity, items in sorted(grouped.items(), key=lambda item: item[0]))
+
+
+def _evidence_units(routes: tuple[_Route, ...], minimum_axes: int, discarded: list[str]) -> tuple[_EvidenceUnit, ...]:
+    routes_by_shard: dict[str, list[_Route]] = {}
+    for route in routes:
+        routes_by_shard.setdefault(route.trace.origin_shard_id, []).append(route)
+    units: list[_EvidenceUnit] = []
+    for shard_id in sorted(routes_by_shard):
+        winners = _axis_winning_routes(tuple(routes_by_shard[shard_id]), discarded)
+        axes = tuple(sorted({route.projection.axis_id for route in winners}))
+        if len(axes) < max(1, minimum_axes):
+            discarded.append(f"{shard_id}:DR1_INSUFFICIENT_POST_DEDUP_AXIS_MATCH")
+            continue
+        path_mass = sum(route.path_mass for route in winners)
+        representative = _representative_cover(winners)
+        units.append(
+            _EvidenceUnit(
+                shard_id,
+                tuple(sorted(winners, key=_route_sort_key)),
+                representative,
+                tuple(sorted({route.cover.cover_id for route in winners})),
+                path_mass,
+            )
+        )
+    return tuple(sorted(units, key=lambda item: item.shard_id))
+
+
+def _axis_winning_routes(routes: tuple[_Route, ...], discarded: list[str]) -> tuple[_Route, ...]:
+    winners: dict[str, _Route] = {}
+    for route in sorted(routes, key=_route_sort_key):
+        axis = route.projection.axis_id
+        current = winners.get(axis)
+        if current is None:
+            winners[axis] = route
+            continue
+        if route.path_mass > current.path_mass + PATH_MASS_TIE_EPSILON:
+            discarded.append(f"{current.trace.trace_id}->{current.cover.cover_id}:DR1_AXIS_ROUTE_DEDUPED")
+            winners[axis] = route
+            continue
+        if abs(route.path_mass - current.path_mass) <= PATH_MASS_TIE_EPSILON and _route_sort_key(route) < _route_sort_key(current):
+            discarded.append(f"{current.trace.trace_id}->{current.cover.cover_id}:DR1_AXIS_ROUTE_DEDUPED")
+            winners[axis] = route
+            continue
+        discarded.append(f"{route.trace.trace_id}->{route.cover.cover_id}:DR1_AXIS_ROUTE_DEDUPED")
+    return tuple(sorted(winners.values(), key=_route_sort_key))
+
+
+def _representative_cover(routes: tuple[_Route, ...]) -> CoarseCover:
+    mass_by_cover: dict[str, float] = {}
+    cover_by_id: dict[str, CoarseCover] = {}
+    for route in routes:
+        mass_by_cover[route.cover.cover_id] = mass_by_cover.get(route.cover.cover_id, 0.0) + route.path_mass
+        cover_by_id[route.cover.cover_id] = route.cover
+    cover_id = sorted(mass_by_cover, key=lambda item: (-mass_by_cover[item], item))[0]
+    return cover_by_id[cover_id]
 
 
 def _gravity_potential(cover: CoarseCover, universe: RecallUniverse) -> float:
