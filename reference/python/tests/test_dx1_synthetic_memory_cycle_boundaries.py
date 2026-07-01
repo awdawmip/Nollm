@@ -4,11 +4,14 @@ import ast
 import json
 from pathlib import Path
 
+import pytest
+
 from nollm.dream_geometry.adapters import IntegrationShell
 from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import build_dx1_cycle
 
 
 ROOT = Path(__file__).resolve().parents[3]
+DI1_SEALED_BASE = "76a4d1ba8b97043ea2c673ca64ab6f816be18a12"
 VALIDATION_FILE = ROOT / "reference" / "python" / "nollm" / "dream_geometry" / "validation" / "dx1_synthetic_cycle_fixture.py"
 FORBIDDEN_PUBLIC = (
     r"C:\dx1-private",
@@ -44,6 +47,7 @@ def test_x012_s05_public_envelope_hides_provenance_and_internal_geometry(tmp_pat
         "source_time_expression_state": "present_redacted",
         "locale_hint_state": "present_redacted",
     }
+    assert target["selection_basis"] == ["exact_structural_projection", "eligible_stable_cover", "final_multi_axis_evidence_gate"]
     rendered = json.dumps(_without_content(response), sort_keys=True).lower()
     for token in FORBIDDEN_PUBLIC:
         assert token.lower() not in rendered
@@ -52,11 +56,15 @@ def test_x012_s05_public_envelope_hides_provenance_and_internal_geometry(tmp_pat
 def test_x015_scope_sealed_implementation_paths_are_unmodified() -> None:
     from subprocess_harness import run_subprocess
 
+    inside = run_subprocess(["git", "rev-parse", "--is-inside-work-tree"], cwd=ROOT, timeout_seconds=10)
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        pytest.skip("DX1 scope witness requires a Git checkout")
     result = run_subprocess(
         [
             "git",
             "diff",
             "--name-only",
+            f"{DI1_SEALED_BASE}..HEAD",
             "--",
             "reference/python/nollm/dream_geometry/geometry",
             "reference/python/nollm/dream_geometry/field",
@@ -89,7 +97,7 @@ def test_dx1_validation_does_not_construct_sealed_output_dataclasses_directly() 
 
 def _without_content(value):
     if isinstance(value, dict):
-        return {key: _without_content(item) for key, item in value.items() if key not in {"content", "statement", "selection_basis"}}
+        return {key: _without_content(item) for key, item in value.items() if key not in {"content", "statement"}}
     if isinstance(value, list):
         return [_without_content(item) for item in value]
     return value

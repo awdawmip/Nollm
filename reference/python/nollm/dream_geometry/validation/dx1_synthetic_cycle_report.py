@@ -15,6 +15,7 @@ if str(REFERENCE_PYTHON) not in sys.path:
     sys.path.insert(0, str(REFERENCE_PYTHON))
 
 from nollm.dream_geometry.adapters import IntegrationShell
+from nollm.dream_geometry.protocol.contracts import CoverState
 from nollm.dream_geometry.recall import resolve_recall
 from nollm.dream_geometry.recall.universe import validate_recall_universe
 from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import (
@@ -25,6 +26,9 @@ from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import (
     canonical_mapping,
     tree_manifest,
 )
+
+
+BASE_SEALED_COMMIT = "76a4d1ba8b97043ea2c673ca64ab6f816be18a12"
 
 
 def canonical_fingerprint(mapping: dict) -> str:
@@ -48,12 +52,16 @@ def build_report() -> str:
         resolved = shell.handle(fixture.invocation, fixture.integration_context).to_mapping()
         rerun = shell.handle(fixture.invocation, fixture.integration_context).to_mapping()
         mismatch = shell.handle(fixture.mismatch_invocation, fixture.integration_context).to_mapping()
-        deferred = shell.handle(build_dx1_deferred_cycle(root / "deferred").invocation, build_dx1_deferred_cycle(root / "deferred2").integration_context).to_mapping()
+        deferred_fixture = build_dx1_deferred_cycle(root / "deferred")
+        deferred = shell.handle(deferred_fixture.invocation, deferred_fixture.integration_context).to_mapping()
         retired_fixture = build_dx1_retired_cycle(root / "retired")
         retired = shell.handle(retired_fixture.invocation, retired_fixture.integration_context).to_mapping()
         permuted = build_dx1_cycle(root / "permuted", permuted=True)
         permuted_response = shell.handle(permuted.invocation, permuted.integration_context).to_mapping()
         after_manifests = {"evidence": tree_manifest(fixture.root / "evidence"), "cortex": tree_manifest(fixture.root / "cortex")}
+        stable_cover_count = sum(1 for cover in fixture.recall_universe.covers if cover.state is CoverState.stable)
+        max_up_targets = _max_positive_kernel_count(fixture.recall_universe.coverage_up)
+        max_down_targets = _max_positive_kernel_count(fixture.recall_universe.coverage_down)
 
     primary = resolved["result"]["primary_evidence"]
     contextual_retired = retired["result"]["contextual_evidence"]
@@ -65,9 +73,9 @@ def build_report() -> str:
         "## Execution",
         "",
         f"- Python: `{platform.python_version()}`",
-        "- baseline_commit: `recorded in delivery receipt`",
+        f"- base_sealed_commit: `{BASE_SEALED_COMMIT}`",
         "- contract: `dx1.synthetic_memory_cycle.v1`",
-        "- fixture_data: `synthetic_only`",
+        "- fixture_data: `synthetic_only / explicit_finite / no_llm`",
         "- third_party_dependencies: `none`",
         "",
         "## Real Public API Chain",
@@ -91,6 +99,37 @@ def build_report() -> str:
         f"| S06 same input rerun has stable public mapping and no persistence | {'pass' if canonical_mapping(resolved) == canonical_mapping(rerun) and fixture.before_recall_manifests == after_manifests else 'fail'} |",
         f"| S07 input permutation keeps public mapping | {'pass' if canonical_mapping(resolved) == canonical_mapping(permuted_response) else 'fail'} |",
         "",
+        "## Coverage And Traversal Witness",
+        "",
+        f"- K_up distributions present: `{'pass' if fixture.recall_universe.coverage_up else 'fail'}`",
+        f"- K_down distributions present: `{'pass' if fixture.recall_universe.coverage_down else 'fail'}`",
+        f"- non_trivial_multi_target_K_up_max_positive_kernels: `{max_up_targets}`",
+        f"- non_trivial_multi_target_K_down_max_positive_kernels: `{max_down_targets}`",
+        f"- traversal_records_present: `{'pass' if digest.traversal_records else 'fail'}`",
+        f"- stable_cover_count: `{stable_cover_count}`",
+        f"- gravity_snapshot_constructed: `{'pass' if fixture.gravity_snapshot.contributions else 'fail'}`",
+        "- gravity_scope: `internal fixture fact only; not present in public envelope`",
+        "",
+        "## Relative-Time Boundary",
+        "",
+        "- host_mapping: `yesterday -> 2026-06-29`",
+        f"- resolved_status_with_mapping: `{resolved['result']['status']}`",
+        f"- deferred_status_without_mapping: `{deferred['result']['status']}`",
+        "",
+        "## Public Output Checked Categories",
+        "",
+        "- `selection_basis` fixed allowlist",
+        "- origin state labels",
+        "- temporal context state labels",
+        "- usage state and tier",
+        "- warnings and discarded diagnostics",
+        "- all non-content keys and scalar/list metadata",
+        "",
+        "## Persistence Witness",
+        "",
+        f"- evidence_tree_unchanged_after_recall: `{'pass' if fixture.before_recall_manifests['evidence'] == after_manifests['evidence'] else 'fail'}`",
+        f"- cortex_tree_unchanged_after_recall: `{'pass' if fixture.before_recall_manifests['cortex'] == after_manifests['cortex'] else 'fail'}`",
+        "",
         "## Deterministic Fingerprints",
         "",
         f"- resolved_public_envelope: `{canonical_fingerprint(resolved)}`",
@@ -98,6 +137,17 @@ def build_report() -> str:
         f"- deferred_public_envelope: `{canonical_fingerprint(deferred)}`",
         f"- digest_status: `{digest.status.value}`",
         f"- traversal_records: `{len(digest.traversal_records)}`",
+        f"- same_input_public_mapping_stable: `{'pass' if canonical_mapping(resolved) == canonical_mapping(rerun) else 'fail'}`",
+        f"- permuted_public_mapping_stable: `{'pass' if canonical_mapping(resolved) == canonical_mapping(permuted_response) else 'fail'}`",
+        "",
+        "## Explicitly Not Covered",
+        "",
+        "- Trace compaction.",
+        "- Cover crystallization.",
+        "- Global window admission.",
+        "- Runtime, CLI, OpenClaw, HTTP, network, database, cache, session, or real memory integration.",
+        "- LLM, NLP, embedding, semantic search, synonym expansion, or anchor retrieval.",
+        "- Performance, scale, or PB-class benchmark behavior.",
         "",
         "## Boundary Statement",
         "",
@@ -107,6 +157,10 @@ def build_report() -> str:
         "- DX1 does not expose Gravity, scores, mass, cells, charts, covers, traces, kernels, or route paths through the public DI1 envelope.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def _max_positive_kernel_count(distributions) -> int:
+    return max((sum(1 for kernel in distribution.kernels if kernel.weight > 0.0) for distribution in distributions), default=0)
 
 
 def default_output_path() -> Path:

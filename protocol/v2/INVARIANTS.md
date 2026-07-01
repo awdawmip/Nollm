@@ -70,5 +70,6 @@
 - DX1-I3: DX1 must exercise sealed public APIs end to end instead of constructing sealed module outputs to bypass their owners.
 - DX1-I4: DX1 public validation output must remain the DI1 Public Recall Envelope and must not expose Gravity, score, mass, chart, cell, cover, trace, kernel, route, path, filesystem, store root, or private provenance internals.
 - DX1-I5: DX1 must stop at validation acceptance; it does not authorize DX1.x runtime, adapter, memory, or production integration work.
+- DX1.1-I6: DX1 validation witnesses must compare sealed implementation paths over the sealed baseline-to-current commit range, and S07 must permute inputs before owner APIs compute derived artifacts.
 
 Pure geometry acceptance comes before semantics and runtime.

@@ -33,6 +33,7 @@ from nollm.dream_geometry.field import (
     propagate_trace,
     seed_to_trace,
 )
+from nollm.dream_geometry.field.types import cell_ref_key
 from nollm.dream_geometry.geometry.chart import make_hex_cell
 from nollm.dream_geometry.geometry.coverage import CoverageDirection, compute_distribution
 from nollm.dream_geometry.geometry.transform import SimilarityTransform, TransformWitness, validate_transform
@@ -75,6 +76,9 @@ class DX1CycleFixture:
     policy: RecallPolicy
     before_recall_manifests: dict[str, tuple[tuple[str, str], ...]]
     gravity_snapshot: GravitySnapshot
+    coverage_up_input_orders: tuple[tuple[str, tuple[str, ...]], ...]
+    coverage_down_input_orders: tuple[tuple[str, tuple[str, ...]], ...]
+    context_input_orders: dict[str, tuple[str, ...]]
 
 
 def build_dx1_cycle(root: Path, *, permuted: bool = False, retired_target: bool = False) -> DX1CycleFixture:
@@ -89,7 +93,7 @@ def build_dx1_cycle(root: Path, *, permuted: bool = False, retired_target: bool 
     cortex = open_cortex_store(cortex_root, evidence)
     query = compile_query(_query_payload("Kunming rain yesterday?", "rain", "probe_dx1_kunming_rain_yesterday"))
     mismatch = compile_query(_query_payload("Kunming snow yesterday?", "snow", "probe_dx1_kunming_snow_yesterday"))
-    universe, gravity = _build_universe(evidence, cortex, growth_results, permuted=permuted)
+    universe, gravity, up_orders, down_orders, context_orders = _build_universe(evidence, cortex, growth_results, permuted=permuted)
     runtime_time = _runtime_time()
     policy = RecallPolicy(min_required_axis_matches=3, max_lateral_hops=2, include_retired_context=retired_target)
     context = IntegrationReadContext(evidence, universe, runtime_time, policy)
@@ -112,6 +116,9 @@ def build_dx1_cycle(root: Path, *, permuted: bool = False, retired_target: bool 
         policy,
         {"evidence": tree_manifest(evidence_root), "cortex": tree_manifest(cortex_root)},
         gravity,
+        up_orders,
+        down_orders,
+        context_orders,
     )
 
 
@@ -184,11 +191,30 @@ def _write_evidence(store: MemorySubstrateStore, *, retired_target: bool, permut
         UsageState.tentative,
     )
     store.put_interpretation(interpretation)
+    distractor_interpretation = InterpretationRecord(
+        "interpretation:dx1:distractor-note",
+        "shard:dx1:kunming-clear-2026-06-29",
+        InterpretationKind.classification,
+        "Synthetic distractor weather-observation classification.",
+        InterpretationAuthoringMode.llm_proposed,
+        ("basis:dx1:distractor",),
+        (),
+        UsageState.tentative,
+    )
+    store.put_interpretation(distractor_interpretation)
     store.put_revision_thread(
         RevisionThread(
             "revision:dx1:weather-note",
             (TARGET_SHARD_ID, interpretation.interpretation_id),
             (RevisionEdge(interpretation.interpretation_id, TARGET_SHARD_ID, RevisionRelation.clarifies, ()),),
+            (),
+        )
+    )
+    store.put_revision_thread(
+        RevisionThread(
+            "revision:dx1:distractor-note",
+            ("shard:dx1:kunming-clear-2026-06-29", distractor_interpretation.interpretation_id),
+            (RevisionEdge(distractor_interpretation.interpretation_id, "shard:dx1:kunming-clear-2026-06-29", RevisionRelation.clarifies, ()),),
             (),
         )
     )
@@ -201,7 +227,13 @@ def _compile_growth(cortex: CortexStore, *, permuted: bool):
     return tuple(cortex.compile_growth(payload) for payload in payloads)
 
 
-def _build_universe(evidence: MemorySubstrateStore, cortex: CortexStore, growth_results, *, permuted: bool) -> tuple[RecallUniverse, GravitySnapshot]:
+def _build_universe(
+    evidence: MemorySubstrateStore,
+    cortex: CortexStore,
+    growth_results,
+    *,
+    permuted: bool,
+) -> tuple[RecallUniverse, GravitySnapshot, tuple[tuple[str, tuple[str, ...]], ...], tuple[tuple[str, tuple[str, ...]], ...], dict[str, tuple[str, ...]]]:
     fine_chart = LocalChart("dx1:fine", 1, 2 ** (-0.25), pi / 8, Vec2(0, 0))
     coarse_chart = LocalChart("dx1:coarse", 0, 1.0, 0.0, Vec2(0, 0))
     validation = validate_transform(
@@ -210,27 +242,30 @@ def _build_universe(evidence: MemorySubstrateStore, cortex: CortexStore, growth_
         1.0,
     )
     coords = {
-        TARGET_SHARD_ID: AxialCoord(0, 0),
+        TARGET_SHARD_ID: AxialCoord(-3, -1),
         "shard:dx1:kunming-clear-2026-06-29": AxialCoord(4, 0),
         "shard:dx1:beijing-rain-2026-06-29": AxialCoord(0, 4),
     }
     traces = []
     propagated_traces = []
     coverage_up = []
-    coverage_down = []
-    links = []
-    coarse_cells_by_shard = {}
+    links = [
+        VerifiedChartLink(fine_chart.geometry_fingerprint, coarse_chart.geometry_fingerprint, validation),
+        VerifiedChartLink(coarse_chart.geometry_fingerprint, fine_chart.geometry_fingerprint, validation),
+    ]
+    coarse_cells_by_ref = {}
+    fine_cells_by_shard = {}
+    up_orders = []
     for result in growth_results:
         proposal = result.proposal
         fine_cell = make_hex_cell(fine_chart, coords[proposal.subject_shard_id])
-        coarse_cell = make_hex_cell(coarse_chart, coords[proposal.subject_shard_id])
-        up = compute_distribution(fine_cell, (coarse_cell,), CoverageDirection.fine_to_coarse)
-        down = compute_distribution(coarse_cell, (fine_cell,), CoverageDirection.coarse_to_fine)
-        coarse_cells_by_shard[proposal.subject_shard_id] = coarse_cell
+        coarse_targets = _coarse_target_partition(coarse_chart, proposal.subject_shard_id, permuted=permuted)
+        for coarse_cell in coarse_targets:
+            coarse_cells_by_ref[_cell_key(coarse_cell)] = coarse_cell
+        up = compute_distribution(fine_cell, coarse_targets, CoverageDirection.fine_to_coarse)
+        fine_cells_by_shard[proposal.subject_shard_id] = fine_cell
+        up_orders.append((_cell_key(fine_cell), tuple(_cell_key(cell) for cell in coarse_targets)))
         coverage_up.append(up)
-        coverage_down.append(down)
-        links.append(VerifiedChartLink(fine_cell.chart_fingerprint, coarse_cell.chart_fingerprint, validation))
-        links.append(VerifiedChartLink(coarse_cell.chart_fingerprint, fine_cell.chart_fingerprint, validation))
         for axis in proposal.axes:
             step = axis.ray[0]
             seed = TraceSeed(
@@ -251,11 +286,23 @@ def _build_universe(evidence: MemorySubstrateStore, cortex: CortexStore, growth_
             )
             trace = seed_to_trace(seed)
             traces.append(trace)
-            propagated_traces.extend(propagate_trace(trace, up, links[-2]).derived_traces)
+            propagated_traces.extend(propagate_trace(trace, up, links[0]).derived_traces)
     seed_trace_ids_by_key = {(trace.origin_shard_id, trace.axis, trace.support_key): trace.trace_id for trace in traces}
     dg2_covers = build_local_covers(tuple(propagated_traces), CoverPolicy())
     gravity = calculate_gravity_snapshot(dg2_covers)
-    covers = tuple(_bind_cover_hex_cell(cover, coarse_cells_by_shard, seed_trace_ids_by_key) for cover in dg2_covers)
+    covers = tuple(_bind_cover_hex_cell(cover, coarse_cells_by_ref, seed_trace_ids_by_key) for cover in dg2_covers)
+    coverage_down = []
+    down_orders = []
+    seen_down_sources = set()
+    for cover in covers:
+        source_ref = _cell_key(cover.support_cell)
+        if source_ref in seen_down_sources:
+            continue
+        seen_down_sources.add(source_ref)
+        shard_id = cover.support_shard_ids[0]
+        fine_targets = _fine_target_partition(fine_chart, coords[shard_id], permuted=permuted)
+        down_orders.append((source_ref, tuple(_cell_key(cell) for cell in fine_targets)))
+        coverage_down.append(compute_distribution(cover.support_cell, fine_targets, CoverageDirection.coarse_to_fine))
     receipts = {result.receipt.proposal_id: result.receipt for result in growth_results}
     records = []
     for result in growth_results:
@@ -269,6 +316,27 @@ def _build_universe(evidence: MemorySubstrateStore, cortex: CortexStore, growth_
         covers = tuple(reversed(covers))
         coverage_up = list(reversed(coverage_up))
         coverage_down = list(reversed(coverage_down))
+        interpretation_records = (
+            evidence.get_interpretation("interpretation:dx1:distractor-note"),
+            evidence.get_interpretation("interpretation:dx1:weather-note"),
+        )
+        revision_threads = (
+            evidence.get_revision_thread("revision:dx1:distractor-note"),
+            evidence.get_revision_thread("revision:dx1:weather-note"),
+        )
+    else:
+        interpretation_records = (
+            evidence.get_interpretation("interpretation:dx1:weather-note"),
+            evidence.get_interpretation("interpretation:dx1:distractor-note"),
+        )
+        revision_threads = (
+            evidence.get_revision_thread("revision:dx1:weather-note"),
+            evidence.get_revision_thread("revision:dx1:distractor-note"),
+        )
+    context_orders = {
+        "interpretation_records": tuple(record.interpretation_id for record in interpretation_records),
+        "revision_threads": tuple(thread.thread_id for thread in revision_threads),
+    }
     universe = RecallUniverse(
         tuple(records),
         tuple(traces),
@@ -278,22 +346,50 @@ def _build_universe(evidence: MemorySubstrateStore, cortex: CortexStore, growth_
         verified_chart_links=tuple(links),
         gravity_snapshot=gravity,
         cover_policy_records=(CoverPolicy(),),
-        interpretation_records=(evidence.get_interpretation("interpretation:dx1:weather-note"),),
-        revision_threads=(evidence.get_revision_thread("revision:dx1:weather-note"),),
+        interpretation_records=interpretation_records,
+        revision_threads=revision_threads,
     )
-    return universe, gravity
+    return universe, gravity, tuple(up_orders), tuple(down_orders), context_orders
 
 
-def _bind_cover_hex_cell(cover, cells_by_shard: dict[str, object], seed_trace_ids_by_key: dict[tuple[str, str, str], str]):
+def _bind_cover_hex_cell(cover, cells_by_ref: dict[str, object], seed_trace_ids_by_key: dict[tuple[str, str, str], str]):
     if len(cover.support_shard_ids) != 1:
         return cover
     shard_id = cover.support_shard_ids[0]
-    cell = cells_by_shard[shard_id]
+    cell = cells_by_ref[_cell_key(cover.support_cell)]
     support_trace_ids = tuple(
         seed_trace_ids_by_key[(shard_id, axis, support_key)]
         for axis, support_key in zip(cover.axes_present, cover.support_keys)
     )
     return replace(cover, chart_fingerprint=cell.chart_fingerprint, support_cell=cell, support_trace_ids=support_trace_ids)
+
+
+def _coarse_target_partition(chart: LocalChart, shard_id: str, *, permuted: bool) -> tuple[object, ...]:
+    if shard_id == TARGET_SHARD_ID:
+        coords = (AxialCoord(-2, -2), AxialCoord(-2, -1), AxialCoord(-1, -2))
+    elif shard_id == "shard:dx1:kunming-clear-2026-06-29":
+        coords = (AxialCoord(3, 0), AxialCoord(4, 0), AxialCoord(4, -1))
+    else:
+        coords = (AxialCoord(0, 3), AxialCoord(0, 4), AxialCoord(1, 3))
+    if permuted:
+        coords = tuple(reversed(coords))
+    return tuple(make_hex_cell(chart, coord) for coord in coords)
+
+
+def _fine_target_partition(chart: LocalChart, source_coord: AxialCoord, *, permuted: bool) -> tuple[object, ...]:
+    coords = tuple(
+        AxialCoord(source_coord.q + dq, source_coord.r + dr)
+        for dq, dr in ((-2, 1), (-1, 0), (-1, 1), (0, 0), (0, 1), (1, 0))
+    )
+    if permuted:
+        coords = tuple(reversed(coords))
+    return tuple(make_hex_cell(chart, coord) for coord in coords)
+
+
+def _cell_key(cell: object) -> str:
+    if hasattr(cell, "cell_ref"):
+        return cell_ref_key(cell)
+    return f"{cell.chart_id}:{cell.axial.q}:{cell.axial.r}"
 
 
 def _runtime_time() -> RuntimeTimeResolution:

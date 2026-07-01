@@ -57,6 +57,16 @@ DX1 baseline validation covers:
 - S06: same input rerun is deterministic and does not persist recall output;
 - S07: input permutation does not change the public recall mapping.
 
+## Validation Witness Closure
+
+DX1 validation witness must compare sealed implementation paths across the
+sealed baseline-to-current commit range, not only the local working tree.
+
+S07 input-order validation must permute inputs before owner APIs compute their
+derived artifacts, including coverage candidate target order and contextual
+record tuple order. Reversing only already-computed output lists is not a
+complete witness.
+
 ## Non-Goals
 
 DX1 is not a runtime, CLI, OpenClaw adapter, memory provider, database, cache,
