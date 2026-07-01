@@ -151,9 +151,9 @@ def _origin_view(shard: DreamShard) -> dict[str, Any]:
     payload = canonical_payload(shard.origin)
     return {
         "kind": payload["kind"],
-        "reference": payload["reference"],
-        "context_reference": payload["context_reference"],
-        "role_label": payload["role_label"],
+        "reference_state": _free_text_state(payload["reference"]),
+        "context_reference_state": _free_text_state(payload["context_reference"]),
+        "role_state": _free_text_state(payload["role_label"]),
     }
 
 
@@ -161,9 +161,9 @@ def _temporal_view(shard: DreamShard) -> dict[str, Any]:
     payload = canonical_payload(shard.temporal_context)
     return {
         "captured_at": payload["captured_at"],
-        "source_time_expression": payload["source_time_expression"],
         "reference_instant": payload["reference_instant"],
-        "locale_hint": payload["locale_hint"],
+        "source_time_expression_state": _free_text_state(payload["source_time_expression"]),
+        "locale_hint_state": _free_text_state(payload["locale_hint"]),
     }
 
 
@@ -181,6 +181,10 @@ def _status_value(status: RecallDigestStatus | object) -> str:
 
 def _enum_value(value: object) -> str:
     return getattr(value, "value", str(value))
+
+
+def _free_text_state(value: object) -> str:
+    return "absent" if value is None else "present_redacted"
 
 
 __all__ = ["PUBLIC_SELECTION_BASIS", "PublicViewError", "public_recall_envelope"]

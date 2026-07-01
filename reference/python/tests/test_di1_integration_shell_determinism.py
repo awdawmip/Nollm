@@ -32,6 +32,19 @@ def test_t_725_universe_tuple_permutation_keeps_public_mapping_aligned_with_dr1(
     shell = IntegrationShell()
     first = shell.handle(invocation, context).to_mapping()
     second = shell.handle(invocation, replace(context, recall_universe=permuted)).to_mapping()
+    primary = first["result"]["primary_evidence"][0]
+    assert primary["origin"] == {
+        "kind": "user_utterance",
+        "reference_state": "present_redacted",
+        "context_reference_state": "present_redacted",
+        "role_state": "present_redacted",
+    }
+    assert primary["temporal_context"] == {
+        "captured_at": "2026-06-30T08:00:00+08:00",
+        "reference_instant": "2026-06-30T08:00:00+08:00",
+        "source_time_expression_state": "present_redacted",
+        "locale_hint_state": "present_redacted",
+    }
     assert canonical(first) == canonical(second)
 
 

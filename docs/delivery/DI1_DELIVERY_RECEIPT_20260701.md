@@ -145,4 +145,3 @@ Confirmed:
   or rewrite calendar spans.
 - No network, CLI, OpenClaw, runtime, database, cache, session, write path,
   real memory hook, or global window admission was implemented.
-

@@ -54,13 +54,45 @@ may contain:
 - Interpretation and Revision records as contextual views only;
 - sanitized warnings and discarded diagnostics.
 
-The public envelope must not expose internal tie-break state, structure
+The public envelope must not expose raw `OriginDescriptor.reference`,
+`OriginDescriptor.context_reference`, `OriginDescriptor.role_label`,
+`TemporalContext.source_time_expression`, or `TemporalContext.locale_hint`.
+These free-text provenance fields are projected as deterministic state labels:
+
+```json
+{
+  "origin": {
+    "kind": "user_utterance",
+    "reference_state": "absent | present_redacted",
+    "context_reference_state": "absent | present_redacted",
+    "role_state": "absent | present_redacted"
+  },
+  "temporal_context": {
+    "captured_at": "RFC3339 string | null",
+    "reference_instant": "RFC3339 string | null",
+    "source_time_expression_state": "absent | present_redacted",
+    "locale_hint_state": "absent | present_redacted"
+  }
+}
+```
+
+`kind`, `captured_at`, and `reference_instant` may remain public because they
+are discrete enum or DE1-validated RFC3339 values. Free-text provenance is not
+hashed, truncated, basename-extracted, classified by string pattern, or restored
+because it looks harmless.
+
+The public envelope must also not expose internal tie-break state, structure
 metrics, traversal identifiers, cell or chart references, cover or trace
 identifiers, kernel identifiers, route details, filesystem locations, store
 roots, Python exception types, traceback text, or object representations.
 
 Interpretation context must not replace DreamShard content. Revision context
 must not assert truth, falsity, or a unique current fact.
+
+DE1 `basis_refs` and `context_refs` are path-safe record references. They are
+not DI1 filesystem provenance fields. Any future public/private provenance
+classification for those references requires a separate task; DI1.1 does not
+invent source ontology or string classification rules.
 
 ## Determinism And Side Effects
 
@@ -69,3 +101,6 @@ mapping. DI1 must not read the system clock, environment, network, subprocesses,
 runtime state, databases, caches, sessions, or global memory. DI1 owns no
 durable object.
 
+This projection is not a security sandbox, permission system, signature model,
+source authenticity judgment, privacy classifier, or content redaction system.
+DreamShard content and selected Interpretation statements remain verbatim.

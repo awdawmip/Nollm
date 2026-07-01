@@ -63,5 +63,7 @@
 - DI1-I6: Public output never exposes internal tie-break state, structure metrics, traversal identifiers, cell/chart/cover/trace/kernel internals, filesystem locations, or store roots.
 - DI1-I7: Same typed invocation and context yields canonical-equivalent public mapping.
 - DI1-I8: DI1 has no durable object, request history, cache, or implicit global universe.
+- DI1.1-I9: Public origin and temporal context project free-text provenance as absent/present_redacted state only; raw DE1 provenance strings never cross the DI1 public boundary.
+- DI1.1-I10: Public provenance projection is not content scanning, source truth classification, a permission model, or a security sandbox.
 
 Pure geometry acceptance comes before semantics and runtime.

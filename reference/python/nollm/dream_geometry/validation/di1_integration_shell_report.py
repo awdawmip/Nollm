@@ -6,8 +6,13 @@ import argparse
 import hashlib
 import json
 import platform
+import sys
 import tempfile
 from pathlib import Path
+
+REFERENCE_PYTHON = Path(__file__).resolve().parents[3]
+if str(REFERENCE_PYTHON) not in sys.path:
+    sys.path.insert(0, str(REFERENCE_PYTHON))
 
 from nollm.dream_geometry.adapters import CapabilitiesInvocation, IntegrationShell
 from nollm.dream_geometry.validation.di1_integration_fixture import build_deferred_context, build_di1_context
@@ -30,6 +35,7 @@ def build_report() -> str:
         ledger_before = len(store.read_ledger())
         shell.handle(invocation, context)
         ledger_after = len(store.read_ledger())
+        primary = resolved["result"]["primary_evidence"][0]
     allowed_result_fields = sorted(resolved["result"].keys())
     lines = [
         "# DI1 Integration Shell Baseline Report",
@@ -53,7 +59,10 @@ def build_report() -> str:
         "",
         f"- result_fields: `{tuple(allowed_result_fields)}`",
         "- evidence_fields: `evidence_kind, shard_id, content, usage_state, tier, matched_axis_ids, selection_basis, origin, temporal_context, interpretation_context, revision_context`",
-        "- hidden_internal_categories: `internal tie-break data, structure metrics, traversal identifiers, cell or chart references, cover or trace identifiers, filesystem locations`",
+        "- origin_schema: `kind, reference_state, context_reference_state, role_state`",
+        "- temporal_context_schema: `captured_at, reference_instant, source_time_expression_state, locale_hint_state`",
+        "- hidden_internal_categories: `raw free-text origin/time metadata, internal tie-break data, structure metrics, traversal identifiers, cell or chart references, cover or trace identifiers, filesystem locations`",
+        "- public_provenance_projection: `None -> absent; non-None free text -> present_redacted`",
         "",
         "## Fixture Results",
         "",
@@ -65,6 +74,11 @@ def build_report() -> str:
         f"| deferred relative-time status preserved | {'pass' if deferred['ok'] and deferred['result']['status'] == 'deferred' else 'fail'} |",
         f"| deterministic mapping fingerprint stable | {'pass' if canonical_fingerprint(resolved) == canonical_fingerprint(rerun) else 'fail'} |",
         f"| no ledger writes | {'pass' if ledger_before == ledger_after else 'fail'} |",
+        f"| P-801 origin free-text states redacted | {'pass' if primary['origin']['reference_state'] == 'present_redacted' and primary['origin']['context_reference_state'] == 'present_redacted' and primary['origin']['role_state'] == 'present_redacted' else 'fail'} |",
+        f"| P-802 temporal free-text states redacted | {'pass' if primary['temporal_context']['source_time_expression_state'] == 'present_redacted' and primary['temporal_context']['locale_hint_state'] == 'present_redacted' else 'fail'} |",
+        f"| P-803 absent schema covered by focused tests | `see test_di1_integration_shell_public_view.py` |",
+        f"| P-804 fixture output schema stable | {'pass' if primary['origin']['kind'] == 'user_utterance' and primary['temporal_context']['captured_at'] == '2026-06-30T08:00:00+08:00' else 'fail'} |",
+        f"| P-805 forbidden metadata scan covered | `see test_di1_integration_shell_public_view.py` |",
         "",
         "## Deterministic Fingerprints",
         "",
@@ -76,6 +90,8 @@ def build_report() -> str:
         "- No JSON input codec, HTTP, CLI, OpenClaw, runtime hook, network, database, cache, session, or write path.",
         "- No Query compilation, RecallUniverse construction, global window admission, semantic search, embedding, or memory scanning.",
         "- No public exposure of internal Field, Geometry, traversal, or tie-break internals.",
+        "- No security sandbox, permission system, source truth classification, privacy ontology, content scanning, or provenance authenticity judgment.",
+        "- DreamShard.content and Interpretation.statement remain verbatim when selected by sealed DR1.",
     ]
     return "\n".join(lines) + "\n"
 
