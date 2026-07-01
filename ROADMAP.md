@@ -52,6 +52,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - DE1: Memory Substrate / Epistemic Core for Dream Shards, externally supplied interpretations, revision threads, usage state, and ledger history.
 - DC1: Accepted and sealed Cortex Compiler Foundation at `19d516681301ee9213b7591fd36f9775ebb5207e`.
 - DR1: Recall Resolver Foundation is the next permitted phase; it must consume sealed DE1/DC1/DG1/DG2 structures without reopening them.
+- DX1: End-to-End Synthetic Memory Cycle Validation is accepted and sealed after DX1.1R final witness record closure; it remains validation-only and does not authorize runtime, OpenClaw, real memory, global window admission, LLM/NLP, or performance work.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.
