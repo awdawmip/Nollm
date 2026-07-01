@@ -65,5 +65,10 @@
 - DI1-I8: DI1 has no durable object, request history, cache, or implicit global universe.
 - DI1.1-I9: Public origin and temporal context project free-text provenance as absent/present_redacted state only; raw DE1 provenance strings never cross the DI1 public boundary.
 - DI1.1-I10: Public provenance projection is not content scanning, source truth classification, a permission model, or a security sandbox.
+- DX1-I1: DX1 is validation-only and must not modify sealed production Geometry, Field, Evidence, Cortex, Recall, or Adapter modules.
+- DX1-I2: DX1 synthetic fixtures may use only explicit temporary synthetic memory material and must not read real memory, OpenClaw state, runtime state, sessions, caches, databases, network resources, or global windows.
+- DX1-I3: DX1 must exercise sealed public APIs end to end instead of constructing sealed module outputs to bypass their owners.
+- DX1-I4: DX1 public validation output must remain the DI1 Public Recall Envelope and must not expose Gravity, score, mass, chart, cell, cover, trace, kernel, route, path, filesystem, store root, or private provenance internals.
+- DX1-I5: DX1 must stop at validation acceptance; it does not authorize DX1.x runtime, adapter, memory, or production integration work.
 
 Pure geometry acceptance comes before semantics and runtime.

@@ -46,3 +46,12 @@ DI1 does not take ownership of `RecallDigest`, `DreamShard`, Trace, Cover,
 GravitySnapshot, QueryProbe, RecallUniverse, RuntimeTimeResolution, or
 RecallPolicy. It converts sealed read results into a public envelope and then
 returns them to the caller.
+
+DX1 adds only validation-owned temporary artifacts:
+
+- `dx1_synthetic_cycle_fixture`: validation, temporary, synthetic only.
+- `dx1_synthetic_cycle_report`: validation, derived report, rebuildable.
+
+DX1 does not own production Evidence, Cortex, Geometry, Field, Recall, Adapter,
+runtime, OpenClaw, real memory, cache, database, or session state. It may hold
+call-local references to sealed objects only to validate the public API chain.

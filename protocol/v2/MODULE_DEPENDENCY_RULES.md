@@ -81,3 +81,14 @@ Adapters must not import geometry, field, recall internals, cortex compiler
 internals, V1 modules, OpenClaw, runtime, databases, network, subprocesses, or
 memory providers. DI1 may call only the public DR1 facade and DE1 public read
 surface.
+
+DX1 active validation subset:
+
+```text
+validation/dx1 -> protocol, evidence, geometry, field, cortex, recall, adapters
+```
+
+DX1 validation code may import sealed public APIs to construct a synthetic
+end-to-end fixture. No production module may import DX1 validation code.
+DX1 must not add dependency edges to OpenClaw, V1 runtime, CLI surfaces,
+network, databases, caches, sessions, or memory providers.
