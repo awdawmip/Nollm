@@ -55,5 +55,13 @@
 - I-V2-039: DR1 budgets are explicit stopping rules; budget exhaustion must be reported as an outcome or structured diagnostic, not hidden inside a resolved digest.
   - DR1.1S clarification: seed-cover budget applies after exact-match seed candidate formation, and traversal cells, layers, charts, route identities, and direct cross-chart coverage edges are accounted digest-globally over selected executable routes.
   - DR1.1T clarification: exact-match seed budget counts support families, and final evidence is aggregated by DreamShard before the post-dedup multi-axis gate is applied.
+- DI1-I1: DI1 never mutates upstream stores or sealed objects.
+- DI1-I2: Only a DC1 `CompiledQueryProbe` can enter a recall invocation.
+- DI1-I3: A host, not DI1, owns `RecallUniverse`, `RuntimeTimeResolution`, and `RecallPolicy` selection.
+- DI1-I4: DI1 only materializes DreamShard content selected by DR1.
+- DI1-I5: Interpretation and Revision are contextual; neither replaces DreamShard evidence.
+- DI1-I6: Public output never exposes internal tie-break state, structure metrics, traversal identifiers, cell/chart/cover/trace/kernel internals, filesystem locations, or store roots.
+- DI1-I7: Same typed invocation and context yields canonical-equivalent public mapping.
+- DI1-I8: DI1 has no durable object, request history, cache, or implicit global universe.
 
 Pure geometry acceptance comes before semantics and runtime.

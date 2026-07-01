@@ -69,3 +69,15 @@ Cortex may use the DE1 public read surface to resolve DreamShard subjects and
 exact text-span support. Cortex must not write Evidence, Ledger, Geometry,
 Field, Recall, Adapter, V1, OpenClaw, runtime, database, network, or subprocess
 state.
+
+DI1 active implementation subset:
+
+```text
+adapters -> protocol, evidence(public), cortex(public types), recall(public facade)
+validation/di1 -> protocol, evidence, cortex, recall, adapters
+```
+
+Adapters must not import geometry, field, recall internals, cortex compiler
+internals, V1 modules, OpenClaw, runtime, databases, network, subprocesses, or
+memory providers. DI1 may call only the public DR1 facade and DE1 public read
+surface.

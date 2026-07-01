@@ -34,3 +34,15 @@ coverage residuals, but it never owns DreamShard content, proposal content, fiel
 state, geometry rules, gravity state, adapter state, runtime history, query
 history, or traversal history. `RuntimeTimeResolution` and
 `ValidatedRecallUniverse` are call-local views only.
+
+DI1 adds only call-local adapter objects:
+
+- `integration_read_context`: adapters, call-local, not durable, host-owned values.
+- `integration_invocation`: adapters, call-local, not durable.
+- `integration_response`: adapters, call-local, externally visible.
+- `public_recall_envelope`: adapters, call-local, externally visible.
+
+DI1 does not take ownership of `RecallDigest`, `DreamShard`, Trace, Cover,
+GravitySnapshot, QueryProbe, RecallUniverse, RuntimeTimeResolution, or
+RecallPolicy. It converts sealed read results into a public envelope and then
+returns them to the caller.
