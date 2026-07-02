@@ -28,7 +28,7 @@ def main() -> int:
 
 def build_report() -> str:
     commit = _git("rev-parse HEAD")
-    command = "python validation/df1/run_df1_baseline.py --output " + str(REPO_ROOT / "validation" / "df1" / "DF1_BASELINE_REPORT.md")
+    command = "python validation/df1/run_df1_baseline.py --output validation/df1/DF1_BASELINE_REPORT.md"
     with tempfile.TemporaryDirectory(prefix="df1-baseline-") as temp:
         root = Path(temp)
         evidence, cortex, admission, orchestrator = build_baseline(root)

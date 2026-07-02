@@ -1,10 +1,10 @@
 # DF1 Baseline Report
 
-- current_commit: `0807ba597afa6062f0a9a3aadb8a10cf8caafe55`
+- current_commit: `06ced9dcb7820fbc1cc39ffbdef5ce551d4af537`
 - python_version: `3.14.6`
-- command: `python validation/df1/run_df1_baseline.py --output C:\Users\chaos\nollm\validation\df1\DF1_BASELINE_REPORT.md`
+- command: `python validation/df1/run_df1_baseline.py --output validation/df1/DF1_BASELINE_REPORT.md`
 - admission_manifest: `adm_df1_alpha`, `adm_df1_beta`, `adm_df1_gamma`
-- snapshot_semantic_fingerprint: `sha256:605124dab0744a160c3fa4948c2768e9c2c22401e49216944712149ee5f74dee`
+- snapshot_semantic_fingerprint: `sha256:7ccb88f101b4c712f9bbb05e9fae08cd1d84788e5b29c59a1ad5cb6dae44ac7c`
 - geometry_profile_id: `da1_sealed_default_v1`
 - field_policy_identity: `da1_sealed_default_v1|dg2_cover_policy:cover_policy:v2:a2d647c2e140e8629ddf4fa1352e8bda|dg2_gravity_policy:1`
 - canonical_trace_count: `12`
@@ -47,6 +47,11 @@
 - F-001 DR1 validator accepts universe view: `pass`
 - F-002 resolve is not called: `pass`
 - F-003 universe provenance traces to admissions: `pass`
+- T-101 real DA1 replay required: `pass`
+- T-102 K_down returns to original fine source: `pass`
+- T-103 policy downgrade rejects: `pass`
+- T-104 coverage source conflict rejects: `pass`
+- T-105 multi-gravity-chart input rejects structurally: `pass`
 
 ## Boundary Statement
 
