@@ -13,7 +13,10 @@ In scope:
 - explicit conflict rejection for changed admission payloads and reused
   proposals;
 - read-only replay from AdmissionRecord plus DE1/DC1 and sealed geometry/field
-  APIs.
+  APIs;
+- DA1.1 Replay & Record Closure for cross-chart link replay manifests,
+  mandatory non-empty-store replay validation, plan fingerprint closure,
+  RFC3339 `recorded_at` validation, and zero-kernel placement rejection.
 
 Out of scope:
 
@@ -23,3 +26,7 @@ Out of scope:
   compaction, or Field snapshot persistence;
 - any modification to sealed DE1, DC1, DG1, DG2, DR1, DI1, or DX1 production
   implementation modules.
+
+DA1.1 does not open DA1.2. Multi-step rays, automatic placement, global Field
+persistence, Query, Recall, DI1, runtime, OpenClaw, security systems, network,
+database, cache, and concurrency remain deferred.

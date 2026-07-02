@@ -36,6 +36,7 @@ from .errors import (
     DA1_CORTEX_PREVIEW_COMMIT_MISMATCH,
     DA1_DUPLICATE_PLACEMENT,
     DA1_INVALID_FINE_TO_COARSE_PARTITION,
+    DA1_INVALID_RECORDED_AT,
     DA1_LEGACY_PROPOSAL_NOT_ADMISSIBLE,
     DA1_MULTI_STEP_RAY_DEFERRED,
     DA1_PLACEMENT_AXIS_MISMATCH,
@@ -67,6 +68,11 @@ from .types import (
     receipt_from_record,
     request_fingerprint,
 )
+
+
+@dataclass(frozen=True)
+class ReplayTransformValidation:
+    state_recommendation: str = "verified"
 
 
 @dataclass(frozen=True)
@@ -102,6 +108,7 @@ class MemoryAdmissionOrchestrator:
         self.admission_store = admission_store
 
     def preflight(self, request: AdmissionRequest) -> PreflightResult:
+        _validate_recorded_at(request.recorded_at)
         req_fp = request_fingerprint(request)
         if self.admission_store.has_admission_record(request.admission_id):
             existing = self.admission_store.get_admission_record(request.admission_id)
@@ -205,6 +212,8 @@ class MemoryAdmissionOrchestrator:
                     placement.fine_to_coarse_targets,
                     CoverageDirection.fine_to_coarse,
                 )
+                if not distribution.kernels:
+                    reject(DA1_INVALID_FINE_TO_COARSE_PARTITION, "fine_to_coarse partition materializes no positive target")
                 seed = TraceSeed(
                     _trace_seed_id(proposal.proposal_id, axis.axis_id, step.step_id, placement),
                     proposal.subject_shard_id,
@@ -268,13 +277,15 @@ class MemoryAdmissionOrchestrator:
 def placement_plan_from_payload(payload: dict[str, Any]) -> AdmissionPlacementPlan:
     placements = []
     for item in payload["axis_placements"]:
+        source = _cell_from_replay_payload(item["source_cell"])
+        targets = tuple(_cell_from_replay_payload(cell) for cell in item["fine_to_coarse_targets"])
         placements.append(
             AxisPlacement(
                 item["axis_id"],
                 item["step_id"],
-                _cell_from_replay_payload(item["source_cell"]),
-                tuple(_cell_from_replay_payload(cell) for cell in item["fine_to_coarse_targets"]),
-                None,
+                source,
+                targets,
+                _chart_link_from_payload(item["verified_chart_link"], source, targets),
             )
         )
     return AdmissionPlacementPlan(payload["plan_id"], tuple(placements))
@@ -282,6 +293,38 @@ def placement_plan_from_payload(payload: dict[str, Any]) -> AdmissionPlacementPl
 
 def _cell_from_replay_payload(payload: dict[str, Any]):
     return make_hex_cell(chart_from_payload(payload["chart"]), axial_from_payload(payload))
+
+
+def _chart_link_from_payload(payload: dict[str, Any] | None, source_cell, target_cells: tuple) -> object | None:
+    target_fps = {cell.chart_fingerprint for cell in target_cells}
+    if len(target_fps) != 1:
+        reject(DA1_INVALID_FINE_TO_COARSE_PARTITION, "target partition must share one chart fingerprint")
+    target_fp = next(iter(target_fps))
+    source_fp = source_cell.chart_fingerprint
+    if source_fp == target_fp:
+        if payload is not None:
+            reject(DA1_UNVERIFIED_CROSS_CHART_LINK, "same-chart replay manifest must not include chart link")
+        return None
+    if not isinstance(payload, dict):
+        reject(DA1_UNVERIFIED_CROSS_CHART_LINK, "cross-chart replay manifest requires chart link")
+    expected_keys = {"source_chart_fingerprint", "target_chart_fingerprint", "direction", "verified"}
+    if set(payload) != expected_keys or payload["verified"] is not True or payload["direction"] != "source_to_target":
+        reject(DA1_UNVERIFIED_CROSS_CHART_LINK, "invalid chart link replay manifest")
+    expected_source = fingerprint(payload["source_chart_fingerprint"])
+    expected_target = fingerprint(payload["target_chart_fingerprint"])
+    actual_source = fingerprint(_chart_payload_for_compare(source_fp))
+    actual_target = fingerprint(_chart_payload_for_compare(target_fp))
+    if expected_source != actual_source or expected_target != actual_target:
+        reject(DA1_UNVERIFIED_CROSS_CHART_LINK, "chart link replay fingerprint mismatch")
+    from nollm.dream_geometry.field import VerifiedChartLink
+
+    return VerifiedChartLink(source_fp, target_fp, ReplayTransformValidation())
+
+
+def _chart_payload_for_compare(chart_fingerprint: object) -> dict[str, Any]:
+    from nollm.dream_geometry.field.types import chart_fingerprint_payload
+
+    return chart_fingerprint_payload(chart_fingerprint)
 
 
 def _basis(value: object) -> GrowthBasis:
@@ -314,6 +357,19 @@ def _trace_seed_id(proposal_id: str, axis_id: str, step_id: str, placement: Axis
             + FIELD_PROFILE_ID
         ).encode("utf-8")
     ).hexdigest()[:32]
+
+
+def _validate_recorded_at(value: str | None) -> None:
+    if value is None:
+        return
+    from datetime import datetime
+
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        reject(DA1_INVALID_RECORDED_AT, "recorded_at must be RFC3339 with timezone")
+    if parsed.tzinfo is None:
+        reject(DA1_INVALID_RECORDED_AT, "recorded_at must include timezone")
 
 
 __all__ = ["MemoryAdmissionOrchestrator", "OverlayEvidenceReader", "PreflightResult", "placement_plan_from_payload"]

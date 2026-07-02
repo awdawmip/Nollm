@@ -30,3 +30,20 @@ cover id, trace id, path, or gravity potential internals.
 Replay uses the `AdmissionRecord`, DE1, DC1, DG1, and DG2 public APIs to rebuild
 the admission-local projection and compare the stored fingerprint and ID sets.
 Mismatch rejects; DA1 never repairs or overwrites owner data during replay.
+
+DA1.1 replay closure rules:
+
+- Cross-chart placement records store only a minimal canonical link manifest:
+  source chart geometry fingerprint, target chart geometry fingerprint,
+  `direction: source_to_target`, and `verified: true`.
+- Same-chart placement records must keep `verified_chart_link` as `null`.
+- Replay reconstructs a DG2 `VerifiedChartLink` from that manifest and rejects
+  missing, reversed, unverified, or fingerprint-mismatched links.
+- Non-empty admission stores must not open through a public path unless replay
+  validation is supplied and executed.
+- `placement_plan_fingerprint` must equal the canonical fingerprint of
+  `placement_plan_payload` on every on-disk read.
+- `recorded_at` is `null` or an RFC3339 timestamp with timezone; DA1 never
+  fills it from the system clock.
+- Every axis placement must materialize at least one positive DG1 K_up kernel.
+  Full-residual zero-kernel partitions reject before any durable write.

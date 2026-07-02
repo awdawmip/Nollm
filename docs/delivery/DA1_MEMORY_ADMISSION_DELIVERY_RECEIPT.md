@@ -151,3 +151,100 @@ commit. The final delivery message records:
 - `git bundle verify` result;
 - `git bundle list-heads` result;
 - SHA-256 file hash.
+
+## DA1.1 Replay And Record Closure Addendum
+
+Date: 2026-07-02
+
+DA1 audit base HEAD: `45d851ae7913a94441847fa06cc8b6eaa0524c10`
+
+DA1.1 final implementation HEAD: the commit containing this addendum. The exact
+post-commit hash is recorded in the final delivery message because embedding a
+commit hash in the same commit would be self-referential.
+
+DA1.1 scope:
+
+- replayable cross-chart link manifests;
+- mandatory replay validation for non-empty admission-store reopen;
+- on-disk `placement_plan_fingerprint` closure;
+- RFC3339 `recorded_at` validation;
+- zero-kernel K_up partition rejection.
+
+No sealed DE1, DC1, DG1, DG2, DR1, DI1, DX1, Recall, Adapter, V1 runtime,
+OpenClaw, CLI, examples, integration, network, database, cache, or concurrency
+implementation path was modified.
+
+DA1.1 changed paths:
+
+- `reference/python/nollm/dream_geometry/admission/`
+- `reference/python/tests/test_da1_memory_admission.py`
+- `protocol/v2/DA1_MEMORY_ADMISSION_CONTRACT.md`
+- `docs/admission/DA1_MEMORY_ADMISSION_SCOPE.md`
+- `docs/delivery/DA1_MEMORY_ADMISSION_DELIVERY_RECEIPT.md`
+
+DA1.1 validation results:
+
+- From `reference/python`:
+  `python -m pytest -q tests/test_da1_memory_admission.py`
+  result: `15 passed in 5.27s`.
+- From `reference/python`:
+  `python -m pytest -q tests/test_da1_report_regeneration.py tests/test_dg0_v2_protocol_contracts.py tests/test_dg0_v2_dependency_firewall.py`
+  result: `15 passed in 5.12s`.
+- From `reference/python`:
+  `python -m pytest -q tests/test_da1_memory_admission.py tests/test_da1_report_regeneration.py tests/test_dg0_v2_dependency_firewall.py tests/test_dg0_v2_module_boundaries.py tests/test_dg0_v2_protocol_contracts.py tests/test_de1_memory_substrate.py tests/test_dc1_cortex_compiler.py tests/test_dg1_coverage_kernels.py tests/test_dg2_trace_propagation.py tests/test_dg2_cover_lifecycle.py tests/test_dx1_synthetic_memory_cycle.py tests/test_dx1_synthetic_memory_cycle_boundaries.py tests/test_dx1_synthetic_memory_cycle_determinism.py tests/test_package_hygiene_script.py`
+  result: `131 passed in 15.36s`.
+- From `reference/python`:
+  `python3 run_tests.py`
+  result: `1169 passed, 183 subtests passed in 542.53s`.
+- From repository root:
+  `python reference/python/scripts/check_package_hygiene.py`
+  result: `PASS package hygiene`.
+- From repository root:
+  `git diff --check 5ae58b3149605053bc247ed3e2be62ff95bbba12..HEAD`
+  result: exit code 0.
+- From `reference/python`:
+  `python3 -m nollm.cli validate ../../examples/openclaw`
+  result: `PASS`.
+- From `reference/python`:
+  `python3 -m nollm.cli audit ../../examples/openclaw`
+  result: validation pass, `issue_count: 0`, `recall_digest_count: 1`.
+- From `reference/python`:
+  `python3 -m nollm.cli audit-check ../../examples/openclaw --against ../../examples/audit_reports/openclaw_audit.json`
+  result: `drift_count: 0`, `matches: true`.
+- From `reference/python`:
+  `python -m nollm.dream_geometry.validation.da1_memory_admission_report --output <temp>` plus normalized text comparison against `docs/validation/DA1_MEMORY_ADMISSION_BASELINE_REPORT.md`
+  result: `DA1 report comparison PASS`.
+- From repository root:
+  `git diff --name-only 45d851ae7913a94441847fa06cc8b6eaa0524c10..HEAD -- reference/python/nollm/dream_geometry/geometry reference/python/nollm/dream_geometry/field reference/python/nollm/dream_geometry/evidence reference/python/nollm/dream_geometry/cortex reference/python/nollm/dream_geometry/recall reference/python/nollm/dream_geometry/adapters`
+  result: empty output.
+
+DA1.1 fixed-audit scenario coverage:
+
+- R01 valid same-chart admission: pass.
+- R02 valid cross-chart admission with correct verified link: pass; public reopen
+  with replay validator reconstructs link and preserves projection fingerprint,
+  source trace IDs, derived trace IDs, residual IDs, and cover IDs.
+- R03 invalid cross-chart link missing/reversed/tampered: pass.
+- R04 default public reopen of non-empty store cannot skip replay validation:
+  pass; tampered projection fingerprint rejects.
+- R05 tampered `placement_plan_fingerprint`: pass.
+- R06 tampered link manifest verified/direction/fingerprint fields: pass.
+- R07 invalid `recorded_at`: pass; preflight rejects before durable writes.
+- R08 valid RFC3339 `recorded_at`: pass; record preserves value.
+- R09 zero-overlap target partition: pass; rejects before durable writes.
+- R10 positive materialized target with residual: pass.
+- R11 existing DA1 A01-A20: pass.
+- R12 report regeneration: pass.
+- R13 static dependency, sealed range, package hygiene, and diff check: pass.
+
+Deferred work remains unchanged from DA1:
+
+- Multi-step AxisRay admission.
+- Multi-admission global Field aggregation and durable Field state.
+- Field compaction admission-level replay.
+- Cross-process concurrency, multi-writer locking, cross-directory atomic transactions, and crash recovery.
+- Automatic placement, global window admission, PB-scale indexing, and performance optimization.
+- LLM-generated DreamShard or Growth proposal inputs.
+- Query, Recall, DI1, runtime, CLI, OpenClaw, network, database, or cache integration.
+- More complex Evidence revision/current temporal filtering.
+- Manual crystallization workflow.

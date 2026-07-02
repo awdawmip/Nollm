@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from hashlib import sha256
 import json
@@ -11,7 +12,7 @@ from typing import Any
 from nollm.dream_geometry.cortex import CompilationReceipt, CompiledGrowthProposal, canonical_payload as cortex_payload
 from nollm.dream_geometry.evidence import DreamShard, canonical_payload as evidence_payload
 from nollm.dream_geometry.field import CoarseCover, GravitySnapshot, GrowthTrace, TraceResidual, VerifiedChartLink
-from nollm.dream_geometry.field.types import cell_payload, cell_ref_key, float_token
+from nollm.dream_geometry.field.types import cell_payload, cell_ref_key, chart_fingerprint_payload, float_token
 from nollm.dream_geometry.geometry import HexCell
 from nollm.dream_geometry.geometry.types import AxialCoord, LocalChart, Vec2
 from nollm.dream_geometry.protocol.contracts import CoverState
@@ -140,8 +141,11 @@ class AdmissionRecord:
             _require_id(value, label)
         if self.field_profile_id != FIELD_PROFILE_ID:
             raise ValueError("unsupported field profile")
+        _require_optional_rfc3339(self.recorded_at, "recorded_at")
         _require_contract(self.contract_version)
         _require_contract(self.format_version)
+        if self.placement_plan_fingerprint != fingerprint(self.placement_plan_payload):
+            raise ValueError("placement_plan_fingerprint mismatch")
         object.__setattr__(self, "source_trace_ids", tuple(sorted(self.source_trace_ids)))
         object.__setattr__(self, "derived_trace_ids", tuple(sorted(self.derived_trace_ids)))
         object.__setattr__(self, "residual_ids", tuple(sorted(self.residual_ids)))
@@ -325,8 +329,9 @@ def _chart_link_payload(link: VerifiedChartLink | None) -> dict[str, Any] | None
     if link is None:
         return None
     return {
-        "source_chart_fingerprint": str(link.source_chart_fingerprint),
-        "target_chart_fingerprint": str(link.target_chart_fingerprint),
+        "source_chart_fingerprint": chart_fingerprint_payload(link.source_chart_fingerprint),
+        "target_chart_fingerprint": chart_fingerprint_payload(link.target_chart_fingerprint),
+        "direction": "source_to_target",
         "verified": True,
     }
 
@@ -367,6 +372,17 @@ def _require_id(value: str, label: str) -> None:
         raise ValueError(f"{label} must be non-empty string")
     if any(char in value for char in ("/", "\\", "\x00")):
         raise ValueError(f"{label} must be path-safe")
+
+
+def _require_optional_rfc3339(value: str | None, label: str) -> None:
+    if value is None:
+        return
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{label} must be RFC3339") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{label} must include timezone")
 
 
 def chart_from_payload(payload: dict[str, Any]) -> LocalChart:

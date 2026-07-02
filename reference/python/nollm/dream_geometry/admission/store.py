@@ -109,9 +109,12 @@ class AdmissionStore:
         _atomic_write_text(self._format_path, rendered)
 
     def _validate_store(self, replay_validator: Callable[[AdmissionRecord], None] | None) -> None:
+        record_paths = tuple(sorted(self.records_dir.glob("*.json")))
+        if record_paths and replay_validator is None:
+            reject(DA1_REPLAY_PROJECTION_MISMATCH, "non-empty admission store requires replay validation")
         seen_admissions: set[str] = set()
         seen_proposals: set[str] = set()
-        for path in sorted(self.records_dir.glob("*.json")):
+        for path in record_paths:
             record = _record_from_payload(_read_json(path))
             if path != self._record_path(record.admission_id):
                 reject(DA1_ADMISSION_ID_PAYLOAD_CONFLICT, "record filename does not match admission_id")
@@ -141,44 +144,51 @@ def open_store(
 
 
 def _record_from_payload(payload: dict) -> AdmissionRecord:
-    expected_keys = set(canonical_payload(AdmissionRecord(
-        admission_id=payload["admission_id"],
-        subject_shard_id=payload["subject_shard_id"],
-        proposal_id=payload["proposal_id"],
-        compilation_receipt_id=payload["compilation_receipt_id"],
-        recorded_at=payload["recorded_at"],
-        request_fingerprint=payload["request_fingerprint"],
-        placement_plan_payload=payload["placement_plan_payload"],
-        placement_plan_fingerprint=payload["placement_plan_fingerprint"],
-        projection_fingerprint=payload["projection_fingerprint"],
-        source_trace_ids=tuple(payload["source_trace_ids"]),
-        derived_trace_ids=tuple(payload["derived_trace_ids"]),
-        residual_ids=tuple(payload["residual_ids"]),
-        cover_ids=tuple(payload["cover_ids"]),
-        cover_state_counts=dict(payload["cover_state_counts"]),
-    )).keys())
+    expected_keys = {
+        "record_type",
+        "contract_version",
+        "format_version",
+        "admission_id",
+        "subject_shard_id",
+        "proposal_id",
+        "compilation_receipt_id",
+        "recorded_at",
+        "request_fingerprint",
+        "placement_plan_payload",
+        "placement_plan_fingerprint",
+        "field_profile_id",
+        "projection_fingerprint",
+        "source_trace_ids",
+        "derived_trace_ids",
+        "residual_ids",
+        "cover_ids",
+        "cover_state_counts",
+    }
     if set(payload) != expected_keys:
         reject(DA1_ADMISSION_ID_PAYLOAD_CONFLICT, "AdmissionRecord field mismatch")
-    record = AdmissionRecord(
-        payload["admission_id"],
-        payload["subject_shard_id"],
-        payload["proposal_id"],
-        payload["compilation_receipt_id"],
-        payload["recorded_at"],
-        payload["request_fingerprint"],
-        payload["placement_plan_payload"],
-        payload["placement_plan_fingerprint"],
-        payload["projection_fingerprint"],
-        tuple(payload["source_trace_ids"]),
-        tuple(payload["derived_trace_ids"]),
-        tuple(payload["residual_ids"]),
-        tuple(payload["cover_ids"]),
-        dict(payload["cover_state_counts"]),
-        payload["field_profile_id"],
-        payload["record_type"],
-        payload["contract_version"],
-        payload["format_version"],
-    )
+    try:
+        record = AdmissionRecord(
+            payload["admission_id"],
+            payload["subject_shard_id"],
+            payload["proposal_id"],
+            payload["compilation_receipt_id"],
+            payload["recorded_at"],
+            payload["request_fingerprint"],
+            payload["placement_plan_payload"],
+            payload["placement_plan_fingerprint"],
+            payload["projection_fingerprint"],
+            tuple(payload["source_trace_ids"]),
+            tuple(payload["derived_trace_ids"]),
+            tuple(payload["residual_ids"]),
+            tuple(payload["cover_ids"]),
+            dict(payload["cover_state_counts"]),
+            payload["field_profile_id"],
+            payload["record_type"],
+            payload["contract_version"],
+            payload["format_version"],
+        )
+    except Exception as exc:
+        reject(DA1_ADMISSION_ID_PAYLOAD_CONFLICT, f"invalid AdmissionRecord payload: {exc}")
     if payload != json.loads(canonical_json(record)):
         reject(DA1_ADMISSION_ID_PAYLOAD_CONFLICT, "AdmissionRecord canonical payload mismatch")
     return record

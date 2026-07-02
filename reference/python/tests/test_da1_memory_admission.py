@@ -18,6 +18,8 @@ from nollm.dream_geometry.admission.errors import (
     DA1_ADMISSION_RECORD_COMMIT_FAILED,
     DA1_CORTEX_COMMIT_FAILED,
     DA1_INTERNAL_FIELD_DETAIL_EXPOSED,
+    DA1_INVALID_FINE_TO_COARSE_PARTITION,
+    DA1_INVALID_RECORDED_AT,
     DA1_MULTI_STEP_RAY_DEFERRED,
     DA1_PLACEMENT_AXIS_MISMATCH,
     DA1_PLACEMENT_STEP_MISMATCH,
@@ -25,9 +27,12 @@ from nollm.dream_geometry.admission.errors import (
     DA1_REPLAY_PROJECTION_MISMATCH,
     DA1_UNVERIFIED_CROSS_CHART_LINK,
 )
+from nollm.dream_geometry.admission.types import fingerprint
 from nollm.dream_geometry.cortex import open_store as open_cortex_store
 from nollm.dream_geometry.evidence import open_store as open_evidence_store
+from nollm.dream_geometry.field import VerifiedChartLink
 from nollm.dream_geometry.geometry import AxialCoord, LocalChart, Vec2, make_hex_cell
+from nollm.dream_geometry.geometry.transform import SimilarityTransform, TransformWitness, validate_transform
 from nollm.dream_geometry.protocol.contracts import CoverState
 from tests.fixtures.da1.fixture import ADMISSION_ID, PROPOSAL_ID, build_environment, build_request, tree_manifest
 
@@ -245,3 +250,125 @@ def test_a19_a20_reopen_replay_and_tamper_rejection(tmp_path) -> None:
     with pytest.raises(DA1Rejection) as mismatch:
         open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
     assert mismatch.value.reason_codes == (DA1_REPLAY_PROJECTION_MISMATCH,)
+
+
+def test_r02_cross_chart_replay_round_trip_with_public_reopen(tmp_path) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    request = _cross_chart_request()
+    receipt = orchestrator.admit(request)
+    reopened = open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+    record = reopened.get_admission_record(ADMISSION_ID)
+    projection = MemoryAdmissionOrchestrator(evidence, cortex, reopened).replay_record(record)
+
+    assert receipt.outcome is AdmissionOutcome.committed
+    assert projection.projection_fingerprint == record.projection_fingerprint
+    assert tuple(trace.trace_id for trace in projection.source_traces) == record.source_trace_ids
+    assert tuple(trace.trace_id for trace in projection.derived_traces) == record.derived_trace_ids
+    assert tuple(residual.residual_id for residual in projection.residuals) == record.residual_ids
+    assert tuple(cover.cover_id for cover in projection.covers) == record.cover_ids
+
+
+def test_r03_r06_cross_chart_link_manifest_tampering_rejects(tmp_path) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    orchestrator.admit(_cross_chart_request())
+    record_path = next((tmp_path / "admission" / "records").glob("*.json"))
+    payload = json.loads(record_path.read_text(encoding="utf-8"))
+    link = payload["placement_plan_payload"]["axis_placements"][0]["verified_chart_link"]
+    link["verified"] = False
+    payload["placement_plan_fingerprint"] = fingerprint(payload["placement_plan_payload"])
+    record_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True), encoding="utf-8")
+
+    with pytest.raises(DA1Rejection) as error:
+        open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+    assert error.value.reason_codes == (DA1_UNVERIFIED_CROSS_CHART_LINK,)
+
+
+def test_r04_default_reopen_cannot_skip_replay_on_non_empty_store(tmp_path) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    orchestrator.admit(build_request())
+    record_path = next((tmp_path / "admission" / "records").glob("*.json"))
+    payload = json.loads(record_path.read_text(encoding="utf-8"))
+    payload["projection_fingerprint"] = "sha256:" + "1" * 64
+    record_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True), encoding="utf-8")
+
+    with pytest.raises(DA1Rejection) as error:
+        open_admission_store(tmp_path / "admission", evidence, cortex)
+    assert error.value.reason_codes == (DA1_REPLAY_PROJECTION_MISMATCH,)
+
+
+def test_r05_placement_plan_fingerprint_tamper_rejects(tmp_path) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    orchestrator.admit(build_request())
+    record_path = next((tmp_path / "admission" / "records").glob("*.json"))
+    payload = json.loads(record_path.read_text(encoding="utf-8"))
+    payload["placement_plan_fingerprint"] = "sha256:" + "2" * 64
+    record_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True), encoding="utf-8")
+
+    with pytest.raises(DA1Rejection) as error:
+        open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+    assert error.value.reason_codes == (DA1_ADMISSION_ID_PAYLOAD_CONFLICT,)
+
+
+def test_r07_r08_recorded_at_contract_and_zero_write(tmp_path) -> None:
+    _evidence, _cortex, _admission, orchestrator = build_environment(tmp_path)
+    before = {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")}
+    with pytest.raises(DA1Rejection) as error:
+        orchestrator.admit(replace(build_request(), recorded_at="not-an-rfc3339-time"))
+    assert error.value.reason_codes == (DA1_INVALID_RECORDED_AT,)
+    assert {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")} == before
+
+    receipt = orchestrator.admit(replace(build_request(), recorded_at="2026-07-01T12:34:56+00:00"))
+    assert receipt.outcome is AdmissionOutcome.committed
+    record_path = next((tmp_path / "admission" / "records").glob("*.json"))
+    assert json.loads(record_path.read_text(encoding="utf-8"))["recorded_at"] == "2026-07-01T12:34:56+00:00"
+
+
+def test_r09_zero_overlap_target_rejects_with_zero_write(tmp_path) -> None:
+    _evidence, _cortex, _admission, orchestrator = build_environment(tmp_path)
+    request = build_request()
+    chart = LocalChart("da1:chart", 0, 1.0, 0.0, Vec2(0.0, 0.0))
+    source = make_hex_cell(chart, AxialCoord(0, 0))
+    far = make_hex_cell(chart, AxialCoord(20, 20))
+    placements = tuple(replace(item, source_cell=source, fine_to_coarse_targets=(far,)) for item in request.placement_plan.axis_placements)
+    bad = replace(request, placement_plan=AdmissionPlacementPlan("apl_da1_synthetic_weather", placements))
+    before = {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")}
+
+    with pytest.raises(DA1Rejection) as error:
+        orchestrator.admit(bad)
+    assert error.value.reason_codes == (DA1_INVALID_FINE_TO_COARSE_PARTITION,)
+    assert {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")} == before
+
+
+def test_r10_positive_target_with_residual_is_admissible(tmp_path) -> None:
+    _evidence, _cortex, _admission, orchestrator = build_environment(tmp_path)
+    request = _cross_chart_request(target_translation=Vec2(0.7, 0.0))
+    receipt = orchestrator.admit(request)
+    record = _admission.get_admission_record(ADMISSION_ID)
+    projection = orchestrator.replay_record(record)
+
+    assert receipt.outcome is AdmissionOutcome.committed
+    assert projection.derived_traces
+    assert any(residual.mass > 0.0 for residual in projection.residuals)
+
+
+def _cross_chart_request(target_translation: Vec2 = Vec2(0.0, 0.0)):
+    request = build_request()
+    source_chart = LocalChart("da1:fine", 0, 1.0, 0.0, Vec2(0.0, 0.0))
+    target_chart = LocalChart("da1:coarse", 0, 1.0, 0.0, target_translation)
+    source = make_hex_cell(source_chart, AxialCoord(0, 0))
+    target = make_hex_cell(target_chart, AxialCoord(0, 0))
+    link = VerifiedChartLink(source.chart_fingerprint, target.chart_fingerprint, _verified_transform())
+    placements = tuple(replace(item, source_cell=source, fine_to_coarse_targets=(target,), verified_chart_link=link) for item in request.placement_plan.axis_placements)
+    return replace(request, placement_plan=AdmissionPlacementPlan("apl_da1_synthetic_weather", placements))
+
+
+def _verified_transform():
+    return validate_transform(
+        SimilarityTransform(1.0, 0.0, Vec2(0.0, 0.0)),
+        (
+            TransformWitness(Vec2(0.0, 0.0), Vec2(0.0, 0.0)),
+            TransformWitness(Vec2(1.0, 0.0), Vec2(1.0, 0.0)),
+            TransformWitness(Vec2(0.0, 1.0), Vec2(0.0, 1.0)),
+        ),
+        1.0,
+    )
