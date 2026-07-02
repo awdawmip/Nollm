@@ -1,7 +1,7 @@
 # CX1 Capture / Deferred / Visibility Synthetic Validation Report
 
 - baseline_head: `3e2d96afa8ff503614907c73c3d1aac56b028bd5`
-- validation_head: `3e2d96afa8ff503614907c73c3d1aac56b028bd5`
+- validation_head: `a7158885e7683fa79b76fa0c6e98373adeddeb95`
 - command: `python validation/cx1/run_cx1_synthetic_validation.py --output docs/validation/CX1_CAPTURE_DEFERRED_VISIBILITY_SYNTHETIC_REPORT.md`
 - public_objects_used: `CaptureIngress`, `CapturePolicy`, `CaptureVisibility`, `CaptureStateStore`, `MemorySubstrateStore`
 - formal_paths_used: `none`
