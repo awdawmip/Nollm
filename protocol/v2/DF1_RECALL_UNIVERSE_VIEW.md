@@ -16,3 +16,7 @@ The view normalizes replayed trace basis references only at the read boundary so
 DR1 can bind the trace back to the exact accepted DC1 proposal step. The
 underlying `FiniteFieldSnapshot` retains the original DA1 replayed trace values
 and admission provenance.
+
+For cross-chart PlacementPlan bindings, the universe view carries the verified
+forward chart link and the corresponding reverse read-link needed for
+`K_down` validation. This does not create a new durable transform record.

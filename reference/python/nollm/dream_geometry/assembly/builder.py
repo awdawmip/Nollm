@@ -31,6 +31,9 @@ from .errors import (
     DF1_UNIVERSE_CONSTRUCTION_FAILED,
     DF1_UNVERIFIED_CHART_LINK,
     DF1_UNSUPPORTED_MUTABLE_INPUT,
+    DF1_UNSUPPORTED_POLICY_DOWNGRADE,
+    DF1_COVERAGE_SOURCE_CONFLICT,
+    DF1_MULTIPLE_GRAVITY_CHARTS_UNSUPPORTED,
     DF1AssemblyError,
     reject,
 )
@@ -45,6 +48,7 @@ from .types import (
     policy_identity,
     record_fingerprint,
     snapshot_fingerprint_payload,
+    stable_json,
     stable_fingerprint,
 )
 
@@ -64,6 +68,7 @@ def assemble_field_snapshot(admission_set: FiniteAdmissionSet, policy: FieldAsse
     cover_traces = []
     residuals = []
     coverage_up = []
+    coverage_down = []
     chart_links = []
 
     for source in ordered_sources:
@@ -92,17 +97,21 @@ def assemble_field_snapshot(admission_set: FiniteAdmissionSet, policy: FieldAsse
         plan = _placement_plan(record)
         for placement in plan.axis_placements:
             coverage_up.append(compute_distribution(placement.source_cell, placement.fine_to_coarse_targets, CoverageDirection.fine_to_coarse))
+            for target_cell in placement.fine_to_coarse_targets:
+                coverage_down.append(compute_distribution(target_cell, (placement.source_cell,), CoverageDirection.coarse_to_fine))
             if placement.verified_chart_link is not None:
                 chart_links.append(placement.verified_chart_link)
+                chart_links.append(_reverse_chart_link(placement.verified_chart_link))
 
     replayed_traces = _unique_by_id(traces, "trace_id")
     replayed_cover_traces = _unique_by_id(cover_traces, "trace_id")
     trace_residuals = _unique_by_id(residuals, "residual_id")
     coarse_covers = build_local_covers(replayed_cover_traces, CoverPolicy())
-    gravity_snapshot = calculate_gravity_snapshot(coarse_covers, GravityPolicy())
     up = _unique_distributions(coverage_up)
-    down = _coverage_down_from_covers(coarse_covers, replayed_cover_traces)
+    down = _unique_distributions(coverage_down)
     links = tuple(sorted(_unique_links(chart_links), key=str))
+    _reject_multiple_gravity_charts(coarse_covers)
+    gravity_snapshot = calculate_gravity_snapshot(coarse_covers, GravityPolicy())
     snapshot = FiniteFieldSnapshot(
         "",
         admission_set.assembly_id,
@@ -145,8 +154,16 @@ def recall_universe_from_snapshot(snapshot: FiniteFieldSnapshot, proposal_record
 def _validate_policy(policy: FieldAssemblyPolicy) -> None:
     if policy.output_mode != "in_memory_only":
         reject(DF1_UNSUPPORTED_MUTABLE_INPUT, "DF1 output mode must be in_memory_only")
-    if not policy.require_replay_validation:
-        reject(DF1_ADMISSION_REPLAY_INVALID, "replay validation is required")
+    required = {
+        "require_replay_validation": policy.require_replay_validation,
+        "require_verified_chart_links": policy.require_verified_chart_links,
+        "reject_duplicate_admission_id": policy.reject_duplicate_admission_id,
+        "reject_incompatible_geometry_profile": policy.reject_incompatible_geometry_profile,
+        "reject_incompatible_field_policy": policy.reject_incompatible_field_policy,
+    }
+    for name, enabled in required.items():
+        if enabled is not True:
+            reject(DF1_UNSUPPORTED_POLICY_DOWNGRADE, f"{name} cannot be disabled")
 
 
 def _validate_admission_set_shape(admission_set: FiniteAdmissionSet) -> None:
@@ -186,7 +203,7 @@ def _replay_one(source, policy: FieldAssemblyPolicy):
         reject(DF1_ADMISSION_BINDING_MISMATCH, record.admission_id)
     _accepted_receipt(source, record)
     try:
-        projection = source.replayed_projection if source.replayed_projection is not None else source.replay_validator(record)
+        projection = source.replay_validator(record)
     except DA1Rejection as exc:
         if exc.reason_codes == (DA1_REPLAY_PROJECTION_MISMATCH,):
             raise DF1AssemblyError(DF1_PROJECTION_FINGERPRINT_MISMATCH, record.admission_id) from exc
@@ -197,6 +214,8 @@ def _replay_one(source, policy: FieldAssemblyPolicy):
         raise DF1AssemblyError(DF1_ADMISSION_REPLAY_INVALID, str(exc)) from exc
     if projection.projection_fingerprint != record.projection_fingerprint:
         reject(DF1_PROJECTION_FINGERPRINT_MISMATCH, record.admission_id)
+    if source.replayed_projection is not None:
+        _validate_injected_projection(record.admission_id, source.replayed_projection, projection)
     try:
         _placement_plan(record)
     except DA1Rejection as exc:
@@ -240,11 +259,16 @@ def _unique_by_id(values, attr: str):
 
 
 def _unique_distributions(distributions):
-    by_key = {}
+    by_source = {}
     for distribution in distributions:
         key = (distribution.direction.value, cell_ref_key(distribution.source_cell))
-        by_key.setdefault(key, distribution)
-    return tuple(by_key[key] for key in sorted(by_key))
+        identity = _distribution_identity(distribution)
+        existing = by_source.get(key)
+        if existing is None:
+            by_source[key] = (identity, distribution)
+        elif existing[0] != identity:
+            reject(DF1_COVERAGE_SOURCE_CONFLICT, f"{key[0]}:{key[1]}")
+    return tuple(by_source[key][1] for key in sorted(by_source))
 
 
 def _unique_links(links):
@@ -253,6 +277,10 @@ def _unique_links(links):
         key = (str(link.source_chart_fingerprint), str(link.target_chart_fingerprint))
         by_key.setdefault(key, link)
     return tuple(by_key[key] for key in sorted(by_key))
+
+
+def _reverse_chart_link(link):
+    return type(link)(link.target_chart_fingerprint, link.source_chart_fingerprint, link.transform_validation)
 
 
 def _coverage_down_from_covers(covers, traces):
@@ -267,18 +295,57 @@ def _coverage_down_from_covers(covers, traces):
     return _unique_distributions(distributions)
 
 
+def _validate_injected_projection(admission_id: str, injected, actual) -> None:
+    observed = (
+        injected.projection_fingerprint,
+        tuple(trace.trace_id for trace in injected.source_traces),
+        tuple(trace.trace_id for trace in injected.derived_traces),
+        tuple(residual.residual_id for residual in injected.residuals),
+        tuple(cover.cover_id for cover in injected.covers),
+    )
+    expected = (
+        actual.projection_fingerprint,
+        tuple(trace.trace_id for trace in actual.source_traces),
+        tuple(trace.trace_id for trace in actual.derived_traces),
+        tuple(residual.residual_id for residual in actual.residuals),
+        tuple(cover.cover_id for cover in actual.covers),
+    )
+    if observed != expected:
+        reject(DF1_ADMISSION_REPLAY_INVALID, admission_id)
+
+
+def _distribution_identity(distribution) -> str:
+    payload = {
+        "direction": distribution.direction.value,
+        "source_cell": cell_ref_key(distribution.source_cell),
+        "source_chart": str(distribution.source_cell.chart_fingerprint),
+        "targets": tuple(cell_ref_key(kernel.target_cell) for kernel in distribution.kernels),
+        "target_charts": tuple(str(kernel.target_cell.chart_fingerprint) for kernel in distribution.kernels),
+        "weights": tuple(format(float(kernel.weight), ".17g") for kernel in distribution.kernels),
+        "overlaps": tuple(format(float(kernel.overlap_area), ".17g") for kernel in distribution.kernels),
+        "residual_mass": format(float(distribution.residual.mass), ".17g"),
+        "residual_reasons": tuple(reason.value for reason in distribution.residual.reasons),
+    }
+    return stable_json(payload)
+
+
+def _reject_multiple_gravity_charts(covers) -> None:
+    chart_fingerprints = {cover.chart_fingerprint for cover in covers}
+    if len(chart_fingerprints) > 1:
+        reject(DF1_MULTIPLE_GRAVITY_CHARTS_UNSUPPORTED, "single GravitySnapshot cannot span multiple chart fingerprints")
+
+
 def _build_universe(snapshot: FiniteFieldSnapshot, proposal_records: tuple[ProposalReadRecord, ...]) -> RecallUniverse:
     universe_traces = tuple(_dr1_trace_view(trace, proposal_records) for trace in snapshot.replayed_traces if trace.parent_trace_id is not None)
     universe_covers = build_local_covers(universe_traces, CoverPolicy())
     universe_gravity = calculate_gravity_snapshot(universe_covers, GravityPolicy())
-    universe_down = _coverage_down_from_covers(universe_covers, universe_traces)
     return RecallUniverse(
         tuple(sorted(proposal_records, key=lambda item: item.proposal.proposal_id)),
         universe_traces,
         universe_covers,
         universe_id="df1:recall_universe:" + snapshot.snapshot_id.removeprefix("sha256:")[:32],
         coverage_up=snapshot.coverage_up,
-        coverage_down=universe_down,
+        coverage_down=snapshot.coverage_down,
         verified_chart_links=snapshot.verified_chart_links,
         gravity_snapshot=universe_gravity,
         cover_policy_records=(CoverPolicy(),),

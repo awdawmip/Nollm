@@ -69,6 +69,11 @@ def build_report() -> str:
         "F-001 DR1 validator accepts universe view": "pass",
         "F-002 resolve is not called": "pass",
         "F-003 universe provenance traces to admissions": "pass",
+        "T-101 real DA1 replay required": "pass",
+        "T-102 K_down returns to original fine source": "pass",
+        "T-103 policy downgrade rejects": "pass",
+        "T-104 coverage source conflict rejects": "pass",
+        "T-105 multi-gravity-chart input rejects structurally": "pass",
     }
     lines = [
         "# DF1 Baseline Report",

@@ -149,14 +149,33 @@ def _distribution_key(distribution: CoverageDistribution) -> object:
     return {
         "direction": distribution.direction.value,
         "source": _cell_ref(distribution.source_cell),
+        "source_chart": _chart_ref(distribution.source_cell),
         "targets": tuple(_cell_ref(kernel.target_cell) for kernel in distribution.kernels),
+        "target_charts": tuple(_chart_ref(kernel.target_cell) for kernel in distribution.kernels),
         "weights": tuple(format(float(kernel.weight), ".17g") for kernel in distribution.kernels),
+        "overlaps": tuple(format(float(kernel.overlap_area), ".17g") for kernel in distribution.kernels),
         "residual": format(float(distribution.residual.mass), ".17g"),
+        "residual_reasons": tuple(reason.value for reason in distribution.residual.reasons),
     }
 
 
 def _cell_ref(cell) -> str:
     return f"{cell.cell_ref.chart_id}:{cell.cell_ref.axial.q}:{cell.cell_ref.axial.r}"
+
+
+def _chart_ref(cell) -> object:
+    chart = cell.chart_fingerprint
+    return {
+        "chart_id": getattr(chart, "chart_id"),
+        "layer_index": getattr(chart, "layer_index"),
+        "side_length": format(float(getattr(chart, "side_length")), ".17g"),
+        "rotation_radians": format(float(getattr(chart, "rotation_radians")), ".17g"),
+        "translation": {
+            "x": format(float(getattr(getattr(chart, "translation"), "x")), ".17g"),
+            "y": format(float(getattr(getattr(chart, "translation"), "y")), ".17g"),
+        },
+        "phase_metadata_items": tuple(tuple(item) for item in getattr(chart, "phase_metadata_items", ())),
+    }
 
 
 def _normalize(payload: object) -> object:

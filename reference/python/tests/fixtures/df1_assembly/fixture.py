@@ -116,6 +116,28 @@ def build_request(admission_id: str, shard_id: str, proposal_id: str, content: s
     )
 
 
+def build_custom_request(
+    admission_id: str,
+    shard_id: str,
+    proposal_id: str,
+    content: str,
+    *,
+    source_q: int = 0,
+    source_r: int = 0,
+    target_chart_id: str = "df1:coarse",
+    target_translation: Vec2 = Vec2(0.0, 0.0),
+    cross_chart: bool = True,
+) -> AdmissionRequest:
+    request = build_request(admission_id, shard_id, proposal_id, content, cross_chart=cross_chart)
+    source_chart = LocalChart("df1:fine", 0, 1.0, 0.0, Vec2(0.0, 0.0))
+    target_chart = LocalChart(target_chart_id, 0, 1.0, 0.0, target_translation) if cross_chart else source_chart
+    source = make_hex_cell(source_chart, AxialCoord(source_q, source_r))
+    target = make_hex_cell(target_chart, AxialCoord(0, 0))
+    link = VerifiedChartLink(source.chart_fingerprint, target.chart_fingerprint, verified_transform()) if cross_chart else None
+    placements = tuple(replace(placement, source_cell=source, fine_to_coarse_targets=(target,), verified_chart_link=link) for placement in request.placement_plan.axis_placements)
+    return replace(request, placement_plan=AdmissionPlacementPlan("apl_" + admission_id.removeprefix("adm_"), placements))
+
+
 def verified_transform():
     return validate_transform(
         SimilarityTransform(1.0, 0.0, Vec2(0.0, 0.0)),
