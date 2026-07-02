@@ -30,3 +30,8 @@ Out of scope:
 DA1.1 does not open DA1.2. Multi-step rays, automatic placement, global Field
 persistence, Query, Recall, DI1, runtime, OpenClaw, security systems, network,
 database, cache, and concurrency remain deferred.
+
+DA1.1R closes only the `recorded_at` timestamp profile. It accepts `None` or
+`YYYY-MM-DDTHH:MM:SS[.fraction](Z|+HH:MM|-HH:MM)` and preserves accepted text
+exactly. It does not introduce time inference, clock filling, locale handling,
+timezone databases, relative time resolution, or runtime integration.

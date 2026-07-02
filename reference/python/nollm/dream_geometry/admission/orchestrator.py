@@ -67,6 +67,7 @@ from .types import (
     projection_fingerprint_payload,
     receipt_from_record,
     request_fingerprint,
+    validate_rfc3339_timestamp,
 )
 
 
@@ -360,16 +361,10 @@ def _trace_seed_id(proposal_id: str, axis_id: str, step_id: str, placement: Axis
 
 
 def _validate_recorded_at(value: str | None) -> None:
-    if value is None:
-        return
-    from datetime import datetime
-
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        validate_rfc3339_timestamp(value)
     except ValueError:
         reject(DA1_INVALID_RECORDED_AT, "recorded_at must be RFC3339 with timezone")
-    if parsed.tzinfo is None:
-        reject(DA1_INVALID_RECORDED_AT, "recorded_at must include timezone")
 
 
 __all__ = ["MemoryAdmissionOrchestrator", "OverlayEvidenceReader", "PreflightResult", "placement_plan_from_payload"]

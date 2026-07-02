@@ -309,18 +309,76 @@ def test_r05_placement_plan_fingerprint_tamper_rejects(tmp_path) -> None:
     assert error.value.reason_codes == (DA1_ADMISSION_ID_PAYLOAD_CONFLICT,)
 
 
-def test_r07_r08_recorded_at_contract_and_zero_write(tmp_path) -> None:
+@pytest.mark.parametrize(
+    "recorded_at",
+    (
+        "2026-07-01 12:34:56+00:00",
+        "2026-07-01T12:34:56+0000",
+        "20260701T123456+00:00",
+    ),
+)
+def test_t01_non_rfc3339_request_times_reject_with_zero_write(tmp_path, recorded_at: str) -> None:
     _evidence, _cortex, _admission, orchestrator = build_environment(tmp_path)
     before = {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")}
+
     with pytest.raises(DA1Rejection) as error:
-        orchestrator.admit(replace(build_request(), recorded_at="not-an-rfc3339-time"))
+        orchestrator.admit(replace(build_request(), recorded_at=recorded_at))
+
     assert error.value.reason_codes == (DA1_INVALID_RECORDED_AT,)
     assert {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission")} == before
 
-    receipt = orchestrator.admit(replace(build_request(), recorded_at="2026-07-01T12:34:56+00:00"))
+
+@pytest.mark.parametrize(
+    "recorded_at",
+    (
+        "2026-07-01T12:34:56+00:00",
+        "2026-07-01T12:34:56Z",
+        "2026-07-01T12:34:56.123456+00:00",
+    ),
+)
+def test_t02_valid_rfc3339_times_are_preserved(tmp_path, recorded_at: str) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    receipt = orchestrator.admit(replace(build_request(), recorded_at=recorded_at))
+    reopened = open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+    record = reopened.get_admission_record(ADMISSION_ID)
+
     assert receipt.outcome is AdmissionOutcome.committed
+    assert record.recorded_at == recorded_at
+    assert json.loads(next((tmp_path / "admission" / "records").glob("*.json")).read_text(encoding="utf-8"))["recorded_at"] == recorded_at
+
+
+@pytest.mark.parametrize(
+    "recorded_at",
+    (
+        "2026-07-01 12:34:56+00:00",
+        "2026-07-01T12:34:56+0000",
+        "20260701T123456+00:00",
+    ),
+)
+def test_t03_non_rfc3339_on_disk_recorded_at_rejects_without_writeback(tmp_path, recorded_at: str) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    orchestrator.admit(build_request())
     record_path = next((tmp_path / "admission" / "records").glob("*.json"))
-    assert json.loads(record_path.read_text(encoding="utf-8"))["recorded_at"] == "2026-07-01T12:34:56+00:00"
+    payload = json.loads(record_path.read_text(encoding="utf-8"))
+    payload["recorded_at"] = recorded_at
+    tampered = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    record_path.write_text(tampered, encoding="utf-8")
+
+    with pytest.raises(DA1Rejection) as error:
+        open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+
+    assert error.value.reason_codes == (DA1_INVALID_RECORDED_AT,)
+    assert record_path.read_text(encoding="utf-8") == tampered
+
+
+def test_t04_none_recorded_at_admission_and_replay(tmp_path) -> None:
+    evidence, cortex, _admission, orchestrator = build_environment(tmp_path)
+    receipt = orchestrator.admit(replace(build_request(), recorded_at=None))
+    reopened = open_admission_store(tmp_path / "admission", evidence, cortex, orchestrator.validate_replay_record)
+    record = reopened.get_admission_record(ADMISSION_ID)
+
+    assert receipt.outcome is AdmissionOutcome.committed
+    assert record.recorded_at is None
 
 
 def test_r09_zero_overlap_target_rejects_with_zero_write(tmp_path) -> None:

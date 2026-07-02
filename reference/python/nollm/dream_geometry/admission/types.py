@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 from hashlib import sha256
 import json
+import re
 from typing import Any
 
 from nollm.dream_geometry.cortex import CompilationReceipt, CompiledGrowthProposal, canonical_payload as cortex_payload
@@ -20,6 +21,9 @@ from nollm.dream_geometry.protocol.contracts import CoverState
 
 CONTRACT_VERSION = "da1.v1"
 FIELD_PROFILE_ID = "da1_sealed_default_v1"
+RFC3339_TIMESTAMP_PATTERN = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$"
+)
 
 
 class AdmissionOutcome(Enum):
@@ -141,7 +145,7 @@ class AdmissionRecord:
             _require_id(value, label)
         if self.field_profile_id != FIELD_PROFILE_ID:
             raise ValueError("unsupported field profile")
-        _require_optional_rfc3339(self.recorded_at, "recorded_at")
+        validate_rfc3339_timestamp(self.recorded_at)
         _require_contract(self.contract_version)
         _require_contract(self.format_version)
         if self.placement_plan_fingerprint != fingerprint(self.placement_plan_payload):
@@ -374,15 +378,17 @@ def _require_id(value: str, label: str) -> None:
         raise ValueError(f"{label} must be path-safe")
 
 
-def _require_optional_rfc3339(value: str | None, label: str) -> None:
+def validate_rfc3339_timestamp(value: str | None) -> None:
     if value is None:
         return
+    if not isinstance(value, str) or not RFC3339_TIMESTAMP_PATTERN.fullmatch(value):
+        raise ValueError("recorded_at must match DA1 RFC3339 timestamp profile")
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ValueError(f"{label} must be RFC3339") from exc
+        raise ValueError("recorded_at must be a valid RFC3339 timestamp") from exc
     if parsed.tzinfo is None:
-        raise ValueError(f"{label} must include timezone")
+        raise ValueError("recorded_at must include timezone")
 
 
 def chart_from_payload(payload: dict[str, Any]) -> LocalChart:
@@ -419,4 +425,5 @@ __all__ = [
     "receipt_from_record",
     "request_fingerprint",
     "stable_json",
+    "validate_rfc3339_timestamp",
 ]

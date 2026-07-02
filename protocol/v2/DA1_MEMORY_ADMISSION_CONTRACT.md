@@ -47,3 +47,17 @@ DA1.1 replay closure rules:
   fills it from the system clock.
 - Every axis placement must materialize at least one positive DG1 K_up kernel.
   Full-residual zero-kernel partitions reject before any durable write.
+
+DA1.1R timestamp profile:
+
+```text
+null
+YYYY-MM-DDTHH:MM:SS[.fraction](Z|+HH:MM|-HH:MM)
+```
+
+The date must be extended form, the separator must be uppercase `T`, seconds
+are required, fractional seconds require at least one digit after `.`, and the
+offset must be `Z` or coloned `+HH:MM` / `-HH:MM`. DA1 rejects space-separated
+ISO text, basic ISO date/time text, uncoloned offsets, naive timestamps,
+relative time, locale text, and any value rejected by Python calendar parsing.
+Accepted text is preserved exactly.

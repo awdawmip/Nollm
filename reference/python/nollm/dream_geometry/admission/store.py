@@ -15,11 +15,12 @@ from .errors import (
     DA1_ADMISSION_ID_PAYLOAD_CONFLICT,
     DA1_ADMISSION_RECORD_REFERENCE_MISSING,
     DA1_INVALID_ROOT_CONFIGURATION,
+    DA1_INVALID_RECORDED_AT,
     DA1_PROPOSAL_ALREADY_ADMITTED,
     DA1_REPLAY_PROJECTION_MISMATCH,
     reject,
 )
-from .types import CONTRACT_VERSION, AdmissionRecord, canonical_json, canonical_payload
+from .types import CONTRACT_VERSION, AdmissionRecord, canonical_json, validate_rfc3339_timestamp
 
 
 @dataclass(frozen=True)
@@ -166,6 +167,10 @@ def _record_from_payload(payload: dict) -> AdmissionRecord:
     }
     if set(payload) != expected_keys:
         reject(DA1_ADMISSION_ID_PAYLOAD_CONFLICT, "AdmissionRecord field mismatch")
+    try:
+        validate_rfc3339_timestamp(payload["recorded_at"])
+    except ValueError as exc:
+        reject(DA1_INVALID_RECORDED_AT, f"invalid AdmissionRecord recorded_at: {exc}")
     try:
         record = AdmissionRecord(
             payload["admission_id"],
