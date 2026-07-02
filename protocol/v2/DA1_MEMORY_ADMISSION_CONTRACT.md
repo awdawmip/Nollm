@@ -57,7 +57,8 @@ YYYY-MM-DDTHH:MM:SS[.fraction](Z|+HH:MM|-HH:MM)
 
 The date must be extended form, the separator must be uppercase `T`, seconds
 are required, fractional seconds require at least one digit after `.`, and the
-offset must be `Z` or coloned `+HH:MM` / `-HH:MM`. DA1 rejects space-separated
-ISO text, basic ISO date/time text, uncoloned offsets, naive timestamps,
-relative time, locale text, and any value rejected by Python calendar parsing.
-Accepted text is preserved exactly.
+offset must be `Z` or coloned `+HH:MM` / `-HH:MM` with `HH` in `00..23` and
+`MM` in `00..59`. DA1 rejects space-separated ISO text, basic ISO date/time
+text, uncoloned offsets, out-of-range offsets, naive timestamps, relative time,
+locale text, and any value rejected by Python calendar parsing. Accepted text
+is preserved exactly.

@@ -33,5 +33,7 @@ database, cache, and concurrency remain deferred.
 
 DA1.1R closes only the `recorded_at` timestamp profile. It accepts `None` or
 `YYYY-MM-DDTHH:MM:SS[.fraction](Z|+HH:MM|-HH:MM)` and preserves accepted text
-exactly. It does not introduce time inference, clock filling, locale handling,
-timezone databases, relative time resolution, or runtime integration.
+exactly. DA1.1S closes the numeric offset range so offset hours are `00..23`
+and offset minutes are `00..59`. It does not introduce time inference, clock
+filling, locale handling, timezone databases, relative time resolution, or
+runtime integration.

@@ -315,6 +315,11 @@ def test_r05_placement_plan_fingerprint_tamper_rejects(tmp_path) -> None:
         "2026-07-01 12:34:56+00:00",
         "2026-07-01T12:34:56+0000",
         "20260701T123456+00:00",
+        "2026-07-01T12:34:56+00:60",
+        "2026-07-01T12:34:56+01:60",
+        "2026-07-01T12:34:56-00:60",
+        "2026-07-01T12:34:56+00:99",
+        "2026-07-01T12:34:56+24:00",
     ),
 )
 def test_t01_non_rfc3339_request_times_reject_with_zero_write(tmp_path, recorded_at: str) -> None:
@@ -333,7 +338,9 @@ def test_t01_non_rfc3339_request_times_reject_with_zero_write(tmp_path, recorded
     (
         "2026-07-01T12:34:56+00:00",
         "2026-07-01T12:34:56Z",
+        "2026-07-01T12:34:56-07:30",
         "2026-07-01T12:34:56.123456+00:00",
+        "2026-07-01T12:34:56+23:59",
     ),
 )
 def test_t02_valid_rfc3339_times_are_preserved(tmp_path, recorded_at: str) -> None:
@@ -353,6 +360,11 @@ def test_t02_valid_rfc3339_times_are_preserved(tmp_path, recorded_at: str) -> No
         "2026-07-01 12:34:56+00:00",
         "2026-07-01T12:34:56+0000",
         "20260701T123456+00:00",
+        "2026-07-01T12:34:56+00:60",
+        "2026-07-01T12:34:56+01:60",
+        "2026-07-01T12:34:56-00:60",
+        "2026-07-01T12:34:56+00:99",
+        "2026-07-01T12:34:56+24:00",
     ),
 )
 def test_t03_non_rfc3339_on_disk_recorded_at_rejects_without_writeback(tmp_path, recorded_at: str) -> None:
