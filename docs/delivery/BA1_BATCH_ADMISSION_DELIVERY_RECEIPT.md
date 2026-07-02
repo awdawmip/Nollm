@@ -11,6 +11,9 @@ Scope completed:
 - Added serial canonical `member_id` ordering and independent DA1 delegation.
 - Added commit interruption reporting with completed member receipts and retry
   through DA1 idempotency.
+- Added BA1-C1 correction closure for duplicate promotion decision ids,
+  duplicate DA1 compiled proposal ids, duplicate placement plan ids, and
+  structured lower-layer preflight normalization.
 - Added synthetic BA1 fixtures, tests, report runner, baseline report, protocol
   note, scope note, and roadmap status.
 
@@ -29,7 +32,7 @@ Boundary:
 Validation completed before delivery:
 
 - `python -m pytest -q tests/test_ba1_batch_admission_coordinator.py tests/test_ba1_batch_admission_report_regeneration.py tests/test_ci1_capture_ingress.py tests/test_ci1_capture_policy.py tests/test_ci1_capture_visibility.py tests/test_cx1_capture_deferred_visibility_validation.py tests/test_da1_memory_admission.py tests/test_df1_field_snapshot_assembly.py`:
-  98 passed.
+  102 passed.
 - `python validation/ba1/run_ba1_batch_admission.py --output docs/validation/BA1_BATCH_ADMISSION_BASELINE_REPORT.md`:
   pass.
 - `python reference/python/scripts/check_package_hygiene.py`:
@@ -44,6 +47,8 @@ Commit references:
 - Baseline: `1f5a66dcd639f944b1aa522a0e8ddb7a0ef3edec`
 - Commit A: `4d8d6626f4b429ceae20bbe715e9add6295c00d9`
 - Commit B / bundle HEAD: filled by final delivery response.
+- Commit C / BA1-C1 implementation: filled by final delivery response.
+- Commit D / BA1-C1 closure docs: filled by final delivery response.
 
 Full test runner:
 

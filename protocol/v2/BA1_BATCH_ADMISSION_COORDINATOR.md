@@ -41,15 +41,21 @@ BA1 first validates the whole batch before any DA1 commit:
 
 - window is `ready_for_selection` and not closed;
 - shared geometry profile matches DA1 `FIELD_PROFILE_ID`;
-- member, candidate, admission, and shard identities are unique;
+- member, candidate, promotion decision, admission, placement plan, and shard
+  identities are unique;
 - each candidate is read only by explicit `candidate_id`;
 - each candidate's shard is read from DE1 by explicit `candidate.shard_id`;
 - each decision matches the candidate and shard;
 - each host DA1 request contains the exact DE1 DreamShard;
 - `window.member_shard_ids` equals the actual member shard set;
-- DA1 `preflight(...)` accepts every sanitized request.
+- DA1 `preflight(...)` accepts every sanitized request;
+- compiled proposal identities returned by DA1 preflight are unique across the
+  batch.
 
-Any preflight failure rejects the batch before any DA1 `admit(...)` call.
+Any preflight failure rejects the batch before any DA1 `admit(...)` call. BA1
+normalizes structured lower-layer preflight failures into `BA1Rejection` with
+`BA1_MEMBER_PREFLIGHT_REJECTED` while preserving structured reason codes when
+the lower layer exposes them.
 
 ## Commit
 

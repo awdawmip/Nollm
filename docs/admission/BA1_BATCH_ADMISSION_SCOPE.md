@@ -25,3 +25,8 @@ BA1 is not a queue, folder, parent node, global Field, recall surface, runtime
 workflow, or persistent batch store. It only coordinates host-selected
 `DeferredAdmissionCandidate` values into complete, independent DA1
 `AdmissionRequest` values after all-member zero-write preflight.
+
+BA1-C1 closes batch identity preflight for promotion decision ids, DA1 compiled
+proposal ids, and placement plan ids before the first DA1 commit. Structured
+lower-layer preflight failures are reported as BA1 rejections, not leaked as raw
+lower-layer exceptions.
