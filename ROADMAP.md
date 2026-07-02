@@ -53,7 +53,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - DC1: Accepted and sealed Cortex Compiler Foundation at `19d516681301ee9213b7591fd36f9775ebb5207e`.
 - DR1: Recall Resolver Foundation is the next permitted phase; it must consume sealed DE1/DC1/DG1/DG2 structures without reopening them.
 - DX1: End-to-End Synthetic Memory Cycle Validation is accepted and sealed after DX1.1R final witness record closure; it remains validation-only and does not authorize runtime, OpenClaw, real memory, global window admission, LLM/NLP, or performance work.
-- DA1: Memory Admission / Write Orchestrator Foundation adds deterministic host-supplied write-side preflight, ordered DE1/DC1/AdmissionRecord commit, idempotent retry, and read-only replay for a narrow AdmissionRecord. It does not authorize LLM/NLP, automatic placement, Query, Recall, DI1, OpenClaw, runtime, global Field persistence, database, cache, network, or concurrency work.
+- DA1: Memory Admission / Write Orchestrator Foundation is accepted and sealed after DA1.1R Strict RFC3339 Closure at implementation commit `314324a2a16a0afb4dd032354bbd43c6924df426`. It adds deterministic host-supplied write-side preflight, ordered DE1/DC1/AdmissionRecord commit, idempotent retry, strict replay records, and read-only replay for a narrow AdmissionRecord. It does not authorize LLM/NLP, automatic placement, Query, Recall, DI1, OpenClaw, runtime, global Field persistence, database, cache, network, concurrency, or further DA1.x work.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.

@@ -248,3 +248,87 @@ Deferred work remains unchanged from DA1:
 - Query, Recall, DI1, runtime, CLI, OpenClaw, network, database, or cache integration.
 - More complex Evidence revision/current temporal filtering.
 - Manual crystallization workflow.
+
+## DA1.1R Strict RFC3339 Closure And Final Acceptance
+
+Date: 2026-07-02
+
+DA1 base HEAD: `45d851ae7913a94441847fa06cc8b6eaa0524c10`
+
+DA1.1 prior HEAD: `e937982159278e343bd17f5ce511534d876bfc99`
+
+Commit A implementation HEAD: `314324a2a16a0afb4dd032354bbd43c6924df426`
+
+Commit B delivery-record / bundle HEAD: the commit containing this final
+acceptance record. The exact post-commit hash is recorded in the final delivery
+message because embedding a commit hash in the same commit would be
+self-referential.
+
+DA1.1R scope:
+
+- strict `recorded_at` DA1 RFC3339 timestamp profile;
+- one reusable validator shared by request preflight and on-disk record parse;
+- no time inference, clock filling, timezone database, locale handling,
+  relative-time parsing, runtime integration, or security system.
+
+DA1.1R changed implementation/test/protocol paths in Commit A:
+
+- `reference/python/nollm/dream_geometry/admission/orchestrator.py`
+- `reference/python/nollm/dream_geometry/admission/store.py`
+- `reference/python/nollm/dream_geometry/admission/types.py`
+- `reference/python/tests/test_da1_memory_admission.py`
+- `protocol/v2/DA1_MEMORY_ADMISSION_CONTRACT.md`
+- `docs/admission/DA1_MEMORY_ADMISSION_SCOPE.md`
+
+Commit B changed only:
+
+- `docs/delivery/DA1_MEMORY_ADMISSION_DELIVERY_RECEIPT.md`
+- `ROADMAP.md`
+
+DA1.1R validation results:
+
+- From `reference/python`:
+  `python -m pytest -q tests/test_da1_memory_admission.py tests/test_da1_report_regeneration.py`
+  result: `25 passed in 9.57s`.
+- From `reference/python`:
+  `python -m pytest -q tests/test_da1_memory_admission.py tests/test_da1_report_regeneration.py tests/test_dg0_v2_dependency_firewall.py tests/test_dg0_v2_module_boundaries.py tests/test_dg0_v2_protocol_contracts.py tests/test_de1_memory_substrate.py tests/test_dc1_cortex_compiler.py tests/test_dg1_coverage_kernels.py tests/test_dg2_trace_propagation.py tests/test_dg2_cover_lifecycle.py tests/test_dx1_synthetic_memory_cycle.py tests/test_dx1_synthetic_memory_cycle_boundaries.py tests/test_dx1_synthetic_memory_cycle_determinism.py tests/test_package_hygiene_script.py`
+  result: `140 passed in 23.68s`.
+- From `reference/python`:
+  `python3 run_tests.py`
+  result: `1178 passed, 183 subtests passed in 613.49s`.
+- From repository root:
+  `python reference/python/scripts/check_package_hygiene.py`
+  result: `PASS package hygiene`.
+- From repository root:
+  `git diff --check 5ae58b3149605053bc247ed3e2be62ff95bbba12..HEAD`
+  result: exit code 0.
+
+DA1.1R fixed-audit scenario coverage:
+
+- T01 three non-RFC3339 ISO-like request times: pass. The values
+  `2026-07-01 12:34:56+00:00`, `2026-07-01T12:34:56+0000`, and
+  `20260701T123456+00:00` each reject with `DA1_INVALID_RECORDED_AT`, and
+  Evidence, Cortex, and Admission tree manifests remain unchanged.
+- T02 valid RFC3339 offset, `Z`, and fractional timestamps: pass. The values
+  `2026-07-01T12:34:56+00:00`, `2026-07-01T12:34:56Z`, and
+  `2026-07-01T12:34:56.123456+00:00` admit, replay, and remain text-preserved
+  in `AdmissionRecord.recorded_at`.
+- T03 three non-RFC3339 on-disk `recorded_at` tamper cases: pass. Public reopen
+  with a valid replay validator rejects with `DA1_INVALID_RECORDED_AT` and does
+  not write back or migrate the record file.
+- T04 `None` recorded_at: pass. Admission and replay succeed.
+- T05 existing DA1 R01-R10: pass.
+- T06 original DA1 A01-A20: pass.
+- T07 DA1 report regeneration: pass.
+- T08 sealed range, dependency, hygiene, and diff checks: pass.
+
+Sealed implementation diff:
+
+- From repository root:
+  `git diff --name-only e937982159278e343bd17f5ce511534d876bfc99..314324a2a16a0afb4dd032354bbd43c6924df426 -- reference/python/nollm/dream_geometry/geometry reference/python/nollm/dream_geometry/field reference/python/nollm/dream_geometry/evidence reference/python/nollm/dream_geometry/cortex reference/python/nollm/dream_geometry/recall reference/python/nollm/dream_geometry/adapters`
+  result: empty output.
+
+DA1 = Accepted and sealed after DA1.1R Strict RFC3339 Closure. This acceptance
+opens no DA1.2, DA1.x, automatic placement, global Field, Query, Recall, DI1,
+OpenClaw, runtime, CLI, network, database, cache, concurrency, or security
+system work.
