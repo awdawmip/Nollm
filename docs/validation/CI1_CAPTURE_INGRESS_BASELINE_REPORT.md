@@ -1,7 +1,7 @@
 # CI1 Capture Ingress Baseline Report
 
 - baseline_head: `e9437360eb93b8b80448b3671100bc5851a47ce9`
-- validation_implementation_commit: `a30c657188bdea65e312d81340a7c18c4768399c`
+- validation_implementation_commit: `c089d17a96ed994bc47f368284757baa68c47021`
 - command: `python validation/ci1/run_ci1_baseline.py --output docs/validation/CI1_CAPTURE_INGRESS_BASELINE_REPORT.md`
 - ci1_public_objects: `CaptureRequest`, `CapturePolicy`, `CaptureReceipt`, `DeferredAdmissionCandidate`, `CaptureVisibility`
 - modes: `ephemeral`, `captured`, `persistent`; `none`, `minimal`, `replayable rejected`; `off`, `on_failure`, `verbose`
