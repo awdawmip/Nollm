@@ -337,8 +337,9 @@ def _reject_multiple_gravity_charts(covers) -> None:
 
 def _build_universe(snapshot: FiniteFieldSnapshot, proposal_records: tuple[ProposalReadRecord, ...]) -> RecallUniverse:
     universe_traces = tuple(_dr1_trace_view(trace, proposal_records) for trace in snapshot.replayed_traces if trace.parent_trace_id is not None)
-    universe_covers = build_local_covers(universe_traces, CoverPolicy())
-    universe_gravity = calculate_gravity_snapshot(universe_covers, GravityPolicy())
+    local_covers = build_local_covers(universe_traces, CoverPolicy())
+    universe_gravity = calculate_gravity_snapshot(local_covers, GravityPolicy())
+    universe_covers = _bind_recall_cover_cells(local_covers, universe_traces)
     return RecallUniverse(
         tuple(sorted(proposal_records, key=lambda item: item.proposal.proposal_id)),
         universe_traces,
@@ -350,6 +351,22 @@ def _build_universe(snapshot: FiniteFieldSnapshot, proposal_records: tuple[Propo
         gravity_snapshot=universe_gravity,
         cover_policy_records=(CoverPolicy(),),
     )
+
+
+def _bind_recall_cover_cells(covers, traces):
+    cells_by_trace_id = {trace.trace_id: trace.cell for trace in traces}
+    bound = []
+    for cover in covers:
+        support_cells = tuple(cells_by_trace_id[trace_id] for trace_id in cover.support_trace_ids if trace_id in cells_by_trace_id)
+        matching = tuple(
+            cell
+            for cell in support_cells
+            if cell.cell_ref == cover.support_cell and cell.chart_fingerprint == cover.chart_fingerprint
+        )
+        if not matching or len({cell.cell_ref for cell in matching}) != 1 or len({cell.chart_fingerprint for cell in matching}) != 1:
+            raise DF1AssemblyError(DF1_UNIVERSE_CONSTRUCTION_FAILED, f"cover_cell_binding_failed:{cover.cover_id}")
+        bound.append(replace(cover, support_cell=matching[0]))
+    return tuple(bound)
 
 
 def _dr1_trace_view(trace, proposal_records: tuple[ProposalReadRecord, ...]):
