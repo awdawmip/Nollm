@@ -1,7 +1,7 @@
 # BA1 Batch Admission Coordinator Baseline Report
 
 - baseline_head: `1f5a66dcd639f944b1aa522a0e8ddb7a0ef3edec`
-- validation_head: `1f5a66dcd639f944b1aa522a0e8ddb7a0ef3edec`
+- validation_head: `4d8d6626f4b429ceae20bbe715e9add6295c00d9`
 - command: `python validation/ba1/run_ba1_batch_admission.py --output docs/validation/BA1_BATCH_ADMISSION_BASELINE_REPORT.md`
 - public_objects_used: `BatchAdmissionCoordinator`, `CaptureStateStore`, `MemorySubstrateStore`, `MemoryAdmissionOrchestrator`
 - formal_paths_called_by_BA1: `DA1 preflight`, `DA1 admit`
