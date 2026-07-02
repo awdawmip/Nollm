@@ -4,6 +4,8 @@ from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 
+import pytest
+
 from nollm.dream_geometry.capture import (
     CandidateTrigger,
     CaptureDiagnostics,
@@ -16,6 +18,7 @@ from nollm.dream_geometry.capture import (
     DeferredCandidateRequest,
     PromotionMode,
     VisibilityScope,
+    CaptureError,
 )
 from nollm.dream_geometry.evidence import open_store
 from nollm.dream_geometry.protocol.contracts import OriginKind
@@ -118,6 +121,70 @@ def test_c107_idempotency_and_capture_identity_conflict(tmp_path) -> None:
     assert len(evidence.read_ledger()) == before["ledger_count"]
 
 
+def test_ci1_1_t02_full_receipt_idempotency_for_none_and_minimal_lineage(tmp_path) -> None:
+    for diagnostics in (CaptureDiagnostics.on_failure, CaptureDiagnostics.off):
+        root = tmp_path / diagnostics.value
+        evidence = open_store(root / "evidence")
+        ingress = CaptureIngress(root / "ci1")
+        policy = replace(_policy(), policy_id="cp_retry_" + diagnostics.value, diagnostics=diagnostics)
+        first = ingress.capture(_request("cap_retry_" + diagnostics.value), policy, evidence)
+        before = {"evidence": tree_manifest(root / "evidence"), "ci1": tree_manifest(root / "ci1")}
+
+        assert ingress.capture(_request("cap_retry_" + diagnostics.value), policy, evidence) == first
+        assert ingress.capture(_request("cap_retry_" + diagnostics.value), policy, evidence) == first
+        assert len(evidence.read_ledger()) == 1
+        assert {"evidence": tree_manifest(root / "evidence"), "ci1": tree_manifest(root / "ci1")} == before
+
+    minimal_root = tmp_path / "minimal"
+    evidence = open_store(minimal_root / "evidence")
+    ingress = CaptureIngress(minimal_root / "ci1")
+    policy = replace(_policy(), policy_id="cp_retry_minimal", lineage=CaptureLineage.minimal)
+    first = ingress.capture(_request("cap_retry_minimal"), policy, evidence)
+    before = {"evidence": tree_manifest(minimal_root / "evidence"), "ci1": tree_manifest(minimal_root / "ci1")}
+    assert ingress.capture(_request("cap_retry_minimal"), policy, evidence) == first
+    assert len(evidence.read_ledger()) == 1
+    assert {"evidence": tree_manifest(minimal_root / "evidence"), "ci1": tree_manifest(minimal_root / "ci1")} == before
+
+
+def test_ci1_1_t03_candidate_local_failures_are_not_public_candidates(monkeypatch, tmp_path) -> None:
+    for failpoint in ("visibility", "candidate", "identity", "diagnostic"):
+        root = tmp_path / failpoint
+        evidence = open_store(root / "evidence")
+        ingress = CaptureIngress(root / "ci1")
+        request = _deferred_request("cap_fail_" + failpoint)
+        policy = _deferred_policy("cp_fail_" + failpoint, verbose=failpoint == "diagnostic")
+
+        if failpoint == "visibility":
+            monkeypatch.setattr(ingress.state_store, "append_visibility", _fail)
+        elif failpoint == "candidate":
+            monkeypatch.setattr(ingress.state_store, "put_candidate", _fail)
+        elif failpoint == "identity":
+            monkeypatch.setattr(ingress.state_store, "put_capture_identity", _fail)
+        else:
+            monkeypatch.setattr(ingress.state_store, "put_diagnostic", _fail)
+
+        try:
+            ingress.capture(request, policy, evidence)
+            raise AssertionError("expected commit failure")
+        except CaptureError as exc:
+            assert exc.code == "CI1_COMMIT_FAILED"
+
+        shard_id = "shard:ci1:" + sha256(request.capture_id.encode("utf-8")).hexdigest()[:32]
+        assert evidence.get_dream_shard(shard_id).content == request.content
+        assert len(evidence.read_ledger()) == 1
+        with pytest.raises(CaptureError):
+            ingress.state_store.get_receipt_by_capture_id(request.capture_id)
+        for candidate_id in _candidate_ids(root / "ci1"):
+            with pytest.raises(CaptureError):
+                ingress.state_store.get_candidate(candidate_id)
+
+        retry = CaptureIngress(root / "ci1").capture(request, policy, evidence)
+        assert retry.status is CaptureStatus.deferred
+        assert len(evidence.read_ledger()) == 1
+        assert retry.deferred_candidate_id is not None
+        assert CaptureIngress(root / "ci1").state_store.get_candidate(retry.deferred_candidate_id).shard_id == retry.shard_id
+
+
 def _request(capture_id: str = "cap_default") -> object:
     return __import__("nollm.dream_geometry.capture", fromlist=["CaptureRequest"]).CaptureRequest(
         capture_id,
@@ -137,6 +204,38 @@ def _policy() -> CapturePolicy:
         diagnostics=CaptureDiagnostics.on_failure,
         allowed_visibility_scopes=(VisibilityScope.session_window,),
     )
+
+
+def _deferred_request(capture_id: str):
+    return replace(
+        _request(capture_id),
+        deferred_candidate_request=DeferredCandidateRequest(True, (CandidateTrigger.explicit_pin,)),
+        diagnostic_retention_until="2026-07-03T00:00:00Z",
+    )
+
+
+def _deferred_policy(policy_id: str, *, verbose: bool = False) -> CapturePolicy:
+    return CapturePolicy(
+        policy_id,
+        persistence=CapturePersistence.persistent,
+        lineage=CaptureLineage.minimal,
+        diagnostics=CaptureDiagnostics.verbose if verbose else CaptureDiagnostics.on_failure,
+        allowed_visibility_scopes=(VisibilityScope.session_window,),
+        promotion_mode=PromotionMode.manual,
+    )
+
+
+def _fail(*_args, **_kwargs):
+    raise RuntimeError("synthetic ci1 commit failure")
+
+
+def _candidate_ids(root: Path) -> tuple[str, ...]:
+    candidate_root = root / "candidates"
+    if not candidate_root.exists():
+        return ()
+    import json
+
+    return tuple(json.loads(path.read_text(encoding="utf-8"))["candidate_id"] for path in sorted(candidate_root.glob("*.json")))
 
 
 def tree_manifest(root: Path) -> tuple[tuple[str, str], ...]:

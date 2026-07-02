@@ -38,6 +38,44 @@ def test_c104_replayable_rejected_before_successful_writes(tmp_path) -> None:
     assert "Host supplied raw capture." not in json.dumps(_diagnostic_payloads(tmp_path / "ci1"))
 
 
+@pytest.mark.parametrize("scope", (VisibilityScope.session_window, VisibilityScope.source_window, VisibilityScope.persistent_explicit))
+def test_ci1_1_t01_ephemeral_rejects_non_current_turn_scope(tmp_path, scope: VisibilityScope) -> None:
+    evidence = open_store(tmp_path / "evidence")
+    request = replace(_request("cap_ephemeral_bad"), requested_visibility_scope=scope)
+    policy = CapturePolicy(
+        "cp_ephemeral_bad",
+        persistence=CapturePersistence.ephemeral,
+        lineage=CaptureLineage.none,
+        diagnostics=CaptureDiagnostics.off,
+        allowed_visibility_scopes=(scope,),
+    )
+    receipt = CaptureIngress(tmp_path / "ci1").capture(request, policy, evidence)
+
+    assert receipt.status is CaptureStatus.rejected
+    assert receipt.error is not None
+    assert receipt.error.code == "CI1_VISIBILITY_SCOPE_FORBIDDEN"
+    assert len(evidence.read_ledger()) == 0
+    assert not (tmp_path / "ci1").exists()
+
+
+def test_ci1_1_t01_ephemeral_current_turn_remains_zero_landing(tmp_path) -> None:
+    evidence = open_store(tmp_path / "evidence")
+    before = list(evidence.read_ledger())
+    request = replace(_request("cap_ephemeral_ok"), requested_visibility_scope=VisibilityScope.current_turn)
+    policy = CapturePolicy(
+        "cp_ephemeral_ok",
+        persistence=CapturePersistence.ephemeral,
+        lineage=CaptureLineage.none,
+        diagnostics=CaptureDiagnostics.off,
+        allowed_visibility_scopes=(VisibilityScope.current_turn,),
+    )
+    receipt = CaptureIngress(tmp_path / "ci1").capture(request, policy, evidence)
+
+    assert receipt.status is CaptureStatus.ephemeral
+    assert evidence.read_ledger() == tuple(before)
+    assert not (tmp_path / "ci1").exists()
+
+
 def test_c105_three_diagnostics_modes(tmp_path) -> None:
     request = _request("cap_diag")
     off = CaptureIngress(tmp_path / "off")

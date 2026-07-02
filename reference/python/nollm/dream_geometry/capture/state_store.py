@@ -46,15 +46,19 @@ class CaptureStateStore:
             raise CaptureError(CI1_NOT_FOUND, "receipt_not_found")
         return receipt_from_payload(json.loads(self._receipt_path(identity["receipt_id"]).read_text(encoding="utf-8")))
 
-    def put_candidate(self, candidate: DeferredAdmissionCandidate) -> None:
+    def put_candidate(self, candidate: DeferredAdmissionCandidate, capture_id: str) -> None:
         self.ensure()
-        self._atomic_write(self._candidate_path(candidate.candidate_id), candidate_payload(candidate))
+        self._atomic_write(self._candidate_path(candidate.candidate_id), candidate_payload(candidate, capture_id))
 
     def get_candidate(self, candidate_id: str) -> DeferredAdmissionCandidate:
         path = self._candidate_path(candidate_id)
         if not path.exists():
             raise CaptureError(CI1_NOT_FOUND, "candidate_not_found")
-        return candidate_from_payload(json.loads(path.read_text(encoding="utf-8")))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        identity = self.read_capture_identity(payload.get("capture_id", ""))
+        if identity is None or identity.get("status") != "deferred" or identity.get("candidate_id") != candidate_id:
+            raise CaptureError(CI1_NOT_FOUND, "candidate_not_published")
+        return candidate_from_payload(payload)
 
     def append_visibility(self, scope: VisibilityScope, context_refs: tuple[str, ...], capture_id: str, shard_id: str, order_key: str) -> None:
         if scope is VisibilityScope.persistent_explicit:
@@ -163,9 +167,10 @@ def receipt_from_payload(payload: dict[str, Any]) -> CaptureReceipt:
     )
 
 
-def candidate_payload(candidate: DeferredAdmissionCandidate) -> dict[str, Any]:
+def candidate_payload(candidate: DeferredAdmissionCandidate, capture_id: str) -> dict[str, Any]:
     return {
         "record_type": "deferred_admission_candidate",
+        "capture_id": capture_id,
         "candidate_id": candidate.candidate_id,
         "shard_id": candidate.shard_id,
         "status": candidate.status.value,

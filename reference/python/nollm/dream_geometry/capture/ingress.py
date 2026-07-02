@@ -53,15 +53,15 @@ class CaptureIngress:
             if identity.get("durable_receipt") is True:
                 return self.state_store.get_receipt_by_capture_id(request.capture_id)
             return CaptureReceipt(
-                receipt_id,
-                request.capture_id,
+                identity["receipt_id"],
+                identity["capture_id"],
                 CaptureStatus(identity["status"]),
                 identity["shard_id"],
-                request.recorded_at,
-                policy_fp,
-                request.requested_visibility_scope,
+                identity["recorded_at"],
+                identity["policy_fingerprint"],
+                VisibilityScope(identity["visibility_scope"]),
                 identity["candidate_id"],
-                None,
+                identity["minimal_ledger_event_id"],
             )
 
         if policy.persistence is CapturePersistence.ephemeral:
@@ -77,7 +77,7 @@ class CaptureIngress:
         )
         try:
             write_result = evidence_store.put_dream_shard(shard)
-            ledger_event_id = write_result.ledger_event_id
+            ledger_event_id = write_result.ledger_event_id or _ledger_event_id_for(evidence_store, shard_id)
             self.state_store.append_visibility(request.requested_visibility_scope, request.context_refs, request.capture_id, shard_id, request.capture_id)
             candidate = None
             status = CaptureStatus.captured
@@ -91,10 +91,13 @@ class CaptureIngress:
                     policy_fp,
                     tuple(sorted(request.context_refs)),
                 )
-                self.state_store.put_candidate(candidate)
+                self.state_store.put_candidate(candidate, request.capture_id)
                 status = CaptureStatus.deferred
             durable_receipt = policy.lineage is CaptureLineage.minimal
             receipt = CaptureReceipt(receipt_id, request.capture_id, status, shard_id, request.recorded_at, policy_fp, request.requested_visibility_scope, candidate_id, ledger_event_id)
+            self._diagnostic(policy, request, receipt, success=True)
+            if durable_receipt:
+                self.state_store.put_receipt(receipt)
             self.state_store.put_capture_identity(
                 {
                     "capture_id": request.capture_id,
@@ -105,11 +108,11 @@ class CaptureIngress:
                     "status": status.value,
                     "shard_id": shard_id,
                     "candidate_id": candidate_id,
+                    "recorded_at": request.recorded_at,
+                    "visibility_scope": request.requested_visibility_scope.value,
+                    "minimal_ledger_event_id": ledger_event_id,
                 }
             )
-            if durable_receipt:
-                self.state_store.put_receipt(receipt)
-            self._diagnostic(policy, request, receipt, success=True)
             return receipt
         except Exception as exc:
             error = CaptureError(CI1_COMMIT_FAILED, "commit_failed")
@@ -146,6 +149,13 @@ class CaptureIngress:
 
 def _id(prefix: str, value: str) -> str:
     return prefix + ":" + sha256(value.encode("utf-8")).hexdigest()[:32]
+
+
+def _ledger_event_id_for(evidence_store: MemorySubstrateStore, shard_id: str) -> str | None:
+    for event in evidence_store.read_ledger():
+        if event.record_id == shard_id:
+            return event.event_id
+    return None
 
 
 __all__ = ["CaptureIngress"]

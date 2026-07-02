@@ -87,6 +87,10 @@ def validate_request_policy_pair(request: CaptureRequest, policy: CapturePolicy)
     if request.requested_visibility_scope not in policy.allowed_visibility_scopes:
         raise CaptureError(CI1_VISIBILITY_SCOPE_FORBIDDEN, "visibility_scope_not_allowed")
     if policy.persistence is CapturePersistence.ephemeral:
+        if set(policy.allowed_visibility_scopes) != {VisibilityScope.current_turn}:
+            raise CaptureError(CI1_VISIBILITY_SCOPE_FORBIDDEN, "ephemeral_visibility_must_be_current_turn")
+        if request.requested_visibility_scope is not VisibilityScope.current_turn:
+            raise CaptureError(CI1_VISIBILITY_SCOPE_FORBIDDEN, "ephemeral_visibility_must_be_current_turn")
         if policy.lineage is not CaptureLineage.none or policy.diagnostics is not CaptureDiagnostics.off:
             raise CaptureError(CI1_INVALID_POLICY, "ephemeral_requires_no_durable_controls")
         if request.deferred_candidate_request.requested:

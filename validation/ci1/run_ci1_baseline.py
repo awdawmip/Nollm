@@ -16,6 +16,7 @@ if str(PY_ROOT) not in sys.path:
 from nollm.dream_geometry.capture import (  # noqa: E402
     CandidateTrigger,
     CaptureDiagnostics,
+    CaptureError,
     CaptureIngress,
     CaptureLineage,
     CaptureOrigin,
@@ -70,6 +71,29 @@ def build_report() -> str:
             evidence,
         )
         ephemeral_zero_write = before_evidence == tree_manifest(root / "evidence") and before_ci1 == tree_manifest(root / "ephemeral_ci1")
+        ephemeral_scope_closed = all(
+            CaptureIngress(root / ("bad_ephemeral_" + scope.value)).capture(
+                replace(_request("cap_bad_" + scope.value, "Bad ephemeral.", ("turn:bad",), scope), requested_visibility_scope=scope),
+                CapturePolicy(
+                    "cp_bad_" + scope.value,
+                    persistence=CapturePersistence.ephemeral,
+                    lineage=CaptureLineage.none,
+                    diagnostics=CaptureDiagnostics.off,
+                    allowed_visibility_scopes=(scope,),
+                ),
+                evidence,
+            ).status
+            is CaptureStatus.rejected
+            for scope in (VisibilityScope.session_window, VisibilityScope.source_window, VisibilityScope.persistent_explicit)
+        )
+        retry_request = _request("cap_retry", "Retry capture.", ("session:retry",), VisibilityScope.session_window)
+        retry_policy = _policy("cp_retry")
+        retry_ingress = CaptureIngress(root / "retry_ci1")
+        retry_evidence = open_store(root / "retry_evidence")
+        retry_first = retry_ingress.capture(retry_request, retry_policy, retry_evidence)
+        retry_second = retry_ingress.capture(retry_request, retry_policy, retry_evidence)
+        retry_third = retry_ingress.capture(retry_request, retry_policy, retry_evidence)
+        full_receipt_idempotency = retry_first == retry_second == retry_third and len(retry_evidence.read_ledger()) == 1
         deferred_request = replace(
             _request("cap_deferred", "Deferred capture.", ("source:baseline",), VisibilityScope.source_window),
             deferred_candidate_request=DeferredCandidateRequest(True, (CandidateTrigger.explicit_pin,)),
@@ -90,6 +114,7 @@ def build_report() -> str:
         session_ids = visibility.session_window_ids("session:baseline")
         source_ids = visibility.source_window_ids("source:baseline")
         isolation = _capture_import_isolated()
+        failure_candidate_invisible = _local_failure_candidate_invisible(root / "failure")
     lines = [
         "# CI1 Capture Ingress Baseline Report",
         "",
@@ -103,6 +128,9 @@ def build_report() -> str:
         f"- default_write_counts: `{default_counts}`",
         f"- ephemeral_status: `{ephemeral.status.value}`",
         f"- ephemeral_tree_diff: `{'pass' if ephemeral_zero_write else 'fail'}`",
+        f"- ci1_1_ephemeral_scope_closure: `{'pass' if ephemeral_scope_closed else 'fail'}`",
+        f"- ci1_1_full_receipt_idempotency: `{'pass' if full_receipt_idempotency else 'fail'}`",
+        f"- ci1_1_local_failure_candidate_invisibility: `{'pass' if failure_candidate_invisible else 'fail'}`",
         f"- deferred_status: `{deferred.status.value}`",
         f"- deferred_candidate_id: `{deferred.deferred_candidate_id}`",
         f"- session_window_ids: `{session_ids}`",
@@ -123,10 +151,15 @@ def build_report() -> str:
         f"- C1-09 unadmitted isolation: `{'pass' if isolation else 'fail'}`",
         "- C1-10 sealed range and hygiene: `checked by delivery validation command`",
         "- C1-11 report regeneration: `pass`",
+        f"- CI1.1-T01 ephemeral scope closure: `{'pass' if ephemeral_scope_closed else 'fail'}`",
+        f"- CI1.1-T02 full receipt idempotency: `{'pass' if full_receipt_idempotency else 'fail'}`",
+        f"- CI1.1-T03 local failure candidate invisibility: `{'pass' if failure_candidate_invisible else 'fail'}`",
         "",
         "## Known Non-Goals",
         "",
         "CI1 does not implement LLM/NLP, summaries, embeddings, semantic search, GrowthProposal, PlacementPlan, geometry, field, admission replay, DF1 assembly, recall, adapters, runtime, OpenClaw, CLI, network, database, cache, background workers, global discovery, automatic admission, or real memory integration.",
+        "",
+        "CI1.1 does not claim global transaction, crash recovery, background cleanup, or DE1 rollback. It only ensures normal local CI1 commit failures do not publish a successful receipt or publicly readable deferred candidate.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -162,6 +195,66 @@ def _capture_import_isolated() -> bool:
                 if any(f"nollm.dream_geometry.{name}" in stripped for name in forbidden):
                     return False
     return True
+
+
+def _local_failure_candidate_invisible(root: Path) -> bool:
+    for failpoint in ("visibility", "candidate", "identity", "diagnostic"):
+        case = root / failpoint
+        evidence = open_store(case / "evidence")
+        ingress = CaptureIngress(case / "ci1")
+        request = replace(
+            _request("cap_fail_" + failpoint, "Failure capture.", ("session:failure",), VisibilityScope.session_window),
+            deferred_candidate_request=DeferredCandidateRequest(True, (CandidateTrigger.explicit_pin,)),
+            diagnostic_retention_until="2026-07-03T00:00:00Z",
+        )
+        policy = CapturePolicy(
+            "cp_fail_" + failpoint,
+            persistence=CapturePersistence.persistent,
+            lineage=CaptureLineage.minimal,
+            diagnostics=CaptureDiagnostics.verbose if failpoint == "diagnostic" else CaptureDiagnostics.on_failure,
+            allowed_visibility_scopes=(VisibilityScope.session_window,),
+            promotion_mode=PromotionMode.manual,
+        )
+        if failpoint == "visibility":
+            ingress.state_store.append_visibility = _fail  # type: ignore[method-assign]
+        elif failpoint == "candidate":
+            ingress.state_store.put_candidate = _fail  # type: ignore[method-assign]
+        elif failpoint == "identity":
+            ingress.state_store.put_capture_identity = _fail  # type: ignore[method-assign]
+        else:
+            ingress.state_store.put_diagnostic = _fail  # type: ignore[method-assign]
+        try:
+            ingress.capture(request, policy, evidence)
+            return False
+        except CaptureError as exc:
+            if exc.code != "CI1_COMMIT_FAILED":
+                return False
+        shard_id = "shard:ci1:" + sha256(request.capture_id.encode("utf-8")).hexdigest()[:32]
+        if evidence.get_dream_shard(shard_id).content != request.content or len(evidence.read_ledger()) != 1:
+            return False
+        for candidate_id in _candidate_ids(case / "ci1"):
+            try:
+                ingress.state_store.get_candidate(candidate_id)
+                return False
+            except CaptureError:
+                pass
+        retry = CaptureIngress(case / "ci1").capture(request, policy, evidence)
+        if retry.status is not CaptureStatus.deferred or len(evidence.read_ledger()) != 1:
+            return False
+    return True
+
+
+def _candidate_ids(root: Path) -> tuple[str, ...]:
+    candidate_root = root / "candidates"
+    if not candidate_root.exists():
+        return ()
+    import json
+
+    return tuple(json.loads(path.read_text(encoding="utf-8"))["candidate_id"] for path in sorted(candidate_root.glob("*.json")))
+
+
+def _fail(*_args, **_kwargs):
+    raise RuntimeError("synthetic ci1 commit failure")
 
 
 def _git(args: str) -> str:
