@@ -22,7 +22,10 @@ from .errors import (
     BA1_DECISION_NOT_PROMOTE,
     BA1_DUPLICATE_ADMISSION,
     BA1_DUPLICATE_CANDIDATE,
+    BA1_DUPLICATE_DECISION,
     BA1_DUPLICATE_MEMBER,
+    BA1_DUPLICATE_PLACEMENT_PLAN,
+    BA1_DUPLICATE_PROPOSAL,
     BA1_DUPLICATE_SHARD,
     BA1_EVIDENCE_UNAVAILABLE,
     BA1_GEOMETRY_PROFILE_MISMATCH,
@@ -89,8 +92,14 @@ class BatchAdmissionCoordinator:
                 member_preflight = self.admission_orchestrator.preflight(sanitized)
             except DA1Rejection as exc:
                 raise BA1Rejection((BA1_MEMBER_PREFLIGHT_REJECTED, *exc.reason_codes), f"DA1 preflight rejected member {member.member_id}: {exc.detail}") from exc
+            except Exception as exc:
+                raise BA1Rejection(
+                    (BA1_MEMBER_PREFLIGHT_REJECTED, *_structured_reason_codes(exc)),
+                    f"member preflight rejected: {member.member_id}",
+                ) from exc
             prepared.append(PreparedBatchMember(member, candidate, shard, sanitized, member_preflight))
             actual_shards.append(shard.shard_id)
+        _reject_duplicates(tuple(item.preflight.proposal.proposal_id for item in prepared), BA1_DUPLICATE_PROPOSAL, "proposal_id")
         if tuple(sorted(actual_shards)) != request.window.member_shard_ids:
             reject(BA1_WINDOW_MEMBER_SET_MISMATCH, "window member_shard_ids do not match member candidates")
         return tuple(prepared)
@@ -121,8 +130,10 @@ def _validate_batch_shape(request: BatchAdmissionRequest) -> None:
     members = request.members
     _reject_duplicates(tuple(member.member_id for member in members), BA1_DUPLICATE_MEMBER, "member_id")
     _reject_duplicates(tuple(member.candidate_id for member in members), BA1_DUPLICATE_CANDIDATE, "candidate_id")
+    _reject_duplicates(tuple(member.promotion_decision.decision_id for member in members), BA1_DUPLICATE_DECISION, "decision_id")
     _reject_duplicates(tuple(member.admission_request.admission_id for member in members), BA1_DUPLICATE_ADMISSION, "admission_id")
     _reject_duplicates(tuple(member.admission_request.dream_shard.shard_id for member in members), BA1_DUPLICATE_SHARD, "shard_id")
+    _reject_duplicates(tuple(member.admission_request.placement_plan.plan_id for member in members), BA1_DUPLICATE_PLACEMENT_PLAN, "placement_plan_id")
     for member in members:
         decision = member.promotion_decision
         if decision.decision is not PromotionDecisionKind.promote:
@@ -150,6 +161,13 @@ def _canonical_members(request: BatchAdmissionRequest) -> tuple[BatchAdmissionMe
 def _reject_duplicates(values: tuple[str, ...], code: str, label: str) -> None:
     if len(set(values)) != len(values):
         reject(code, f"duplicate {label}")
+
+
+def _structured_reason_codes(exc: Exception) -> tuple[str, ...]:
+    reason_codes = getattr(exc, "reason_codes", ())
+    if not isinstance(reason_codes, tuple):
+        return ()
+    return tuple(code for code in reason_codes if isinstance(code, str))
 
 
 __all__ = ["BatchAdmissionCoordinator", "PreparedBatchMember"]

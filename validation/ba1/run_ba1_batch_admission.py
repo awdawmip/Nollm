@@ -15,6 +15,10 @@ if str(PY_ROOT) not in sys.path:
 
 from nollm.dream_geometry.admission import AdmissionOutcome, AdmissionPlacementPlan, MemoryAdmissionOrchestrator  # noqa: E402
 from nollm.dream_geometry.batch_admission import (  # noqa: E402
+    BA1_DUPLICATE_DECISION,
+    BA1_DUPLICATE_PLACEMENT_PLAN,
+    BA1_DUPLICATE_PROPOSAL,
+    BA1_MEMBER_PREFLIGHT_REJECTED,
     BA1CommitInterrupted,
     BA1Rejection,
     BatchAdmissionCoordinator,
@@ -31,6 +35,10 @@ def build_report() -> str:
         retry = _retry(root / "retry")
         interruption = _interruption(root / "interruption")
         isolation = _isolation(root / "isolation")
+        duplicate_decision = _duplicate_decision(root / "duplicate_decision")
+        duplicate_proposal = _duplicate_proposal(root / "duplicate_proposal")
+        duplicate_placement_plan = _duplicate_placement_plan(root / "duplicate_placement_plan")
+        lower_preflight = _lower_preflight_normalized(root / "lower_preflight")
         boundary = _dependency_boundary()
     lines = [
         "# BA1 Batch Admission Coordinator Baseline Report",
@@ -50,6 +58,10 @@ def build_report() -> str:
         f"- ba1_05_commit_interruption_recovery: `{'pass' if interruption else 'fail'}`",
         f"- ba1_06_candidate_state_isolation: `{'pass' if isolation else 'fail'}`",
         f"- ba1_07_dependency_boundary: `{'pass' if boundary else 'fail'}`",
+        f"- ba1_c1_duplicate_decision_identity: `{'pass' if duplicate_decision else 'fail'}`",
+        f"- ba1_c1_duplicate_compiled_proposal_identity: `{'pass' if duplicate_proposal else 'fail'}`",
+        f"- ba1_c1_duplicate_placement_plan_identity: `{'pass' if duplicate_placement_plan else 'fail'}`",
+        f"- ba1_c1_lower_preflight_normalization: `{'pass' if lower_preflight else 'fail'}`",
         "",
         "## Acceptance Matrix",
         "",
@@ -60,6 +72,10 @@ def build_report() -> str:
         f"- BA1-05 commit interruption reports completed members: `{'pass' if interruption else 'fail'}`",
         f"- BA1-06 no candidate mutation or evidence crossing: `{'pass' if isolation else 'fail'}`",
         f"- BA1-07 no direct forbidden dependencies or discovery: `{'pass' if boundary else 'fail'}`",
+        f"- BA1-C1 duplicate promotion decision identity rejects before commit: `{'pass' if duplicate_decision else 'fail'}`",
+        f"- BA1-C1 duplicate compiled proposal identity rejects before commit: `{'pass' if duplicate_proposal else 'fail'}`",
+        f"- BA1-C1 duplicate placement plan identity rejects before commit: `{'pass' if duplicate_placement_plan else 'fail'}`",
+        f"- BA1-C1 lower-layer preflight rejection normalization: `{'pass' if lower_preflight else 'fail'}`",
         "",
         "## Known Non-Goals",
         "",
@@ -161,6 +177,83 @@ def _isolation(root: Path) -> bool:
         return False
     except BA1Rejection:
         return tree_manifest(root / "capture") == before_capture
+
+
+def _state_manifest(root: Path) -> dict[str, dict[str, str]]:
+    return {name: tree_manifest(root / name) for name in ("evidence", "cortex", "admission", "capture")}
+
+
+def _duplicate_decision(root: Path) -> bool:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(root)
+    bad_members = list(request.members)
+    bad_members[1] = replace(
+        bad_members[1],
+        promotion_decision=replace(
+            bad_members[1].promotion_decision,
+            decision_id=bad_members[0].promotion_decision.decision_id,
+        ),
+    )
+    before = _state_manifest(root)
+    try:
+        coordinator.submit(batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids))
+        return False
+    except BA1Rejection as exc:
+        return BA1_DUPLICATE_DECISION in exc.reason_codes and len(admission.records()) == 0 and _state_manifest(root) == before
+
+
+def _duplicate_proposal(root: Path) -> bool:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(root)
+    bad_members = list(request.members)
+    growth_submission = dict(bad_members[1].admission_request.growth_submission)
+    growth_submission["proposal_id"] = bad_members[0].admission_request.growth_submission["proposal_id"]
+    bad_members[1] = replace(
+        bad_members[1],
+        admission_request=replace(bad_members[1].admission_request, growth_submission=growth_submission),
+    )
+    before = _state_manifest(root)
+    try:
+        coordinator.submit(batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids))
+        return False
+    except BA1Rejection as exc:
+        return BA1_DUPLICATE_PROPOSAL in exc.reason_codes and len(admission.records()) == 0 and _state_manifest(root) == before
+
+
+def _duplicate_placement_plan(root: Path) -> bool:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(root)
+    bad_members = list(request.members)
+    bad_plan = AdmissionPlacementPlan(
+        bad_members[0].admission_request.placement_plan.plan_id,
+        bad_members[1].admission_request.placement_plan.axis_placements,
+    )
+    bad_members[1] = replace(
+        bad_members[1],
+        admission_request=replace(bad_members[1].admission_request, placement_plan=bad_plan),
+    )
+    before = _state_manifest(root)
+    try:
+        coordinator.submit(batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids))
+        return False
+    except BA1Rejection as exc:
+        return BA1_DUPLICATE_PLACEMENT_PLAN in exc.reason_codes and len(admission.records()) == 0 and _state_manifest(root) == before
+
+
+def _lower_preflight_normalized(root: Path) -> bool:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(root)
+    bad_member = replace(
+        request.members[0],
+        admission_request=replace(request.members[0].admission_request, growth_submission={}),
+    )
+    before = _state_manifest(root)
+    try:
+        coordinator.submit(batch_request((bad_member,), member_shard_ids=(request.members[0].admission_request.dream_shard.shard_id,)))
+        return False
+    except BA1Rejection as exc:
+        return (
+            BA1_MEMBER_PREFLIGHT_REJECTED in exc.reason_codes
+            and "DC1_MISSING_REQUIRED_FIELD" in exc.reason_codes
+            and len(admission.records()) == 0
+            and _state_manifest(root) == before
+        )
 
 
 def _dependency_boundary() -> bool:

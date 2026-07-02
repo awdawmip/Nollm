@@ -13,6 +13,9 @@ from nollm.dream_geometry.batch_admission import (
     BA1_DECISION_MEMBER_MISMATCH,
     BA1_DUPLICATE_ADMISSION,
     BA1_DUPLICATE_CANDIDATE,
+    BA1_DUPLICATE_DECISION,
+    BA1_DUPLICATE_PLACEMENT_PLAN,
+    BA1_DUPLICATE_PROPOSAL,
     BA1_MEMBER_PREFLIGHT_REJECTED,
     BA1_REQUEST_SHARD_MISMATCH,
     BA1CommitInterrupted,
@@ -23,6 +26,10 @@ from nollm.dream_geometry.capture import CaptureIngress
 from nollm.dream_geometry.cortex import open_store as open_cortex_store
 from nollm.dream_geometry.admission import MemoryAdmissionOrchestrator, open_store as open_admission_store
 from tests.fixtures.ba1.fixture import build_ba1_environment, batch_request, tree_manifest
+
+
+def _state_manifest(root: Path) -> dict[str, dict[str, str]]:
+    return {name: tree_manifest(root / name) for name in ("evidence", "cortex", "admission", "capture")}
 
 
 def test_ba101_two_deferred_candidates_admit_independently_and_keep_capture_state(tmp_path) -> None:
@@ -103,6 +110,87 @@ def test_ba103_preflight_rejections_are_zero_da1_commit(tmp_path, case: str, exp
     if expected == BA1_MEMBER_PREFLIGHT_REJECTED:
         assert DA1_PLACEMENT_AXIS_MISMATCH in error.value.reason_codes
     assert {name: tree_manifest(tmp_path / name) for name in ("evidence", "cortex", "admission", "capture")} == before
+    assert len(admission.records()) == 0
+
+
+def test_ba1_c1_t01_duplicate_decision_id_is_zero_commit_rejection(tmp_path) -> None:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(tmp_path)
+    bad_members = list(request.members)
+    bad_members[1] = replace(
+        bad_members[1],
+        promotion_decision=replace(
+            bad_members[1].promotion_decision,
+            decision_id=bad_members[0].promotion_decision.decision_id,
+        ),
+    )
+    bad = batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids)
+    before = _state_manifest(tmp_path)
+
+    with pytest.raises(BA1Rejection) as error:
+        coordinator.submit(bad)
+
+    assert BA1_DUPLICATE_DECISION in error.value.reason_codes
+    assert _state_manifest(tmp_path) == before
+    assert len(admission.records()) == 0
+
+
+def test_ba1_c1_t02_duplicate_compiled_proposal_id_is_zero_commit_rejection(tmp_path) -> None:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(tmp_path)
+    bad_members = list(request.members)
+    growth_submission = dict(bad_members[1].admission_request.growth_submission)
+    growth_submission["proposal_id"] = bad_members[0].admission_request.growth_submission["proposal_id"]
+    bad_members[1] = replace(
+        bad_members[1],
+        admission_request=replace(bad_members[1].admission_request, growth_submission=growth_submission),
+    )
+    bad = batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids)
+    before = _state_manifest(tmp_path)
+
+    with pytest.raises(BA1Rejection) as error:
+        coordinator.submit(bad)
+
+    assert BA1_DUPLICATE_PROPOSAL in error.value.reason_codes
+    assert _state_manifest(tmp_path) == before
+    assert len(admission.records()) == 0
+
+
+def test_ba1_c1_t03_duplicate_placement_plan_id_is_zero_commit_rejection(tmp_path) -> None:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(tmp_path)
+    bad_members = list(request.members)
+    bad_plan = AdmissionPlacementPlan(
+        bad_members[0].admission_request.placement_plan.plan_id,
+        bad_members[1].admission_request.placement_plan.axis_placements,
+    )
+    bad_members[1] = replace(
+        bad_members[1],
+        admission_request=replace(bad_members[1].admission_request, placement_plan=bad_plan),
+    )
+    bad = batch_request(tuple(bad_members), member_shard_ids=request.window.member_shard_ids)
+    before = _state_manifest(tmp_path)
+
+    with pytest.raises(BA1Rejection) as error:
+        coordinator.submit(bad)
+
+    assert BA1_DUPLICATE_PLACEMENT_PLAN in error.value.reason_codes
+    assert _state_manifest(tmp_path) == before
+    assert len(admission.records()) == 0
+
+
+def test_ba1_c1_t04_malformed_lower_preflight_is_normalized(tmp_path) -> None:
+    _evidence, _cortex, admission, _capture_state, coordinator, request = build_ba1_environment(tmp_path)
+    bad_member = replace(
+        request.members[0],
+        admission_request=replace(request.members[0].admission_request, growth_submission={}),
+    )
+    bad = batch_request((bad_member,), member_shard_ids=(request.members[0].admission_request.dream_shard.shard_id,))
+    before = _state_manifest(tmp_path)
+
+    with pytest.raises(BA1Rejection) as error:
+        coordinator.submit(bad)
+
+    assert BA1_MEMBER_PREFLIGHT_REJECTED in error.value.reason_codes
+    assert "DC1_MISSING_REQUIRED_FIELD" in error.value.reason_codes
+    assert _state_manifest(tmp_path) == before
     assert len(admission.records()) == 0
 
 
