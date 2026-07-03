@@ -10,6 +10,8 @@ selection mechanism.
   parameter matrix, default phase samples, and layer phase policies.
 - Coverage distributions are produced by DG1 `compute_distribution`; GPR1 does
   not implement polygon overlap or coverage kernels.
+- Coverage sampling spans every legal base layer for the requested gap:
+  `base_layers(gap) = range(0, 17 - gap)`.
 - Metrics are finite-window diagnostics for branching, effective count,
   residual mass, quantized overlap entropy, nesting tendency, phase recurrence,
   and rotation recurrence modulo 60 degrees.
@@ -19,6 +21,10 @@ selection mechanism.
 ## Limits
 
 - Finite-window metrics are not all-plane global proofs.
+- Source radius 0 is a single axial source point along each legal base layer,
+  not spatial full-domain coverage.
+- Gap 16 has one legal base layer and its entropy/nesting values are a
+  single-pair finite-window degeneration.
 - Float64 tolerance is not exact algebraic-number proof.
 - Phase policies remain diagnostic and are not global translation policy.
 - No admission, field, recall, runtime, OpenClaw, LLM/NLP, embedding, semantic
