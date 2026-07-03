@@ -63,7 +63,8 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - GPR1: Geometry Profile / Parameter-Regime Synthetic Validation is accepted and sealed after GPR1-C1 multilayer coverage diagnostic closure. It samples each legal base layer in the finite 0..16 window for coverage metrics without selecting a new production profile or modifying sealed production geometry.
 - GVR1: Finite Translation-Variation / Coverage-Robustness Synthetic Validation is accepted and sealed. It validates finite source translation sensitivity for engineering baseline B without changing production geometry or runtime paths.
 - GAT1: Finite Chart-Atlas Transition / Groupoid Synthetic Validation is accepted and sealed at baseline `7c3ef9d3a83f87a0dccfa7e9018692be9cdc69af`.
-- GSC1: Finite Sparse-Shard / Scale-Coverage Synthetic Validation is implemented as a pure validation asset for finite sparse occupancy labels over sealed DG1 coverage kernels; final acceptance pending.
+- GSC1: Finite Sparse-Shard / Scale-Coverage Synthetic Validation is accepted and sealed at baseline `f850599995e75b0a5c74fa9267202958a6369bdd`.
+- GCM1: Finite Sparse-Collision / Trace-Compaction Non-Conflation Synthetic Validation is implemented as a pure validation asset over one sealed GSC1 collision witness and DG2 trace compaction; final acceptance pending.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.
