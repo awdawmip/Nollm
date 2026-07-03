@@ -20,6 +20,8 @@ Same axial label correspondence is a validation fixture only. It is not a physic
 
 GAT1 reports finite pair residuals, cycle residuals, scale-ratio error, rotation-delta error, inverse point error, composition point error, and negative-control states. These are diagnostic values over a fixed finite test window, not production profile selectors.
 
+For Markdown report reproducibility, finite diagnostics whose absolute value is at or below `GAT1_REPORTING_NOISE_FLOOR = 1e-12` are rendered as `≤1.000000e-12`. This is a presentation bound, not a DG1 tolerance or acceptance threshold; raw validation continues to use sealed DG1 `DEFAULT_TOLERANCE` and the original float64 values.
+
 ## Non-Claims
 
 GAT1 does not establish global atlas connectivity, global groupoid consistency, exact algebraic proof, semantic identity, physical identity, runtime traversal, or cross-chart recall.

@@ -5,9 +5,10 @@
 GAT1 implements finite chart-atlas transition / groupoid synthetic validation for sealed baseline B.
 
 - input baseline: `ffe76e4ed574209e05ef3f8e35440aa50c0cd234`
-- branch: `codex/gat1-chart-atlas-transition-groupoid-validation`
-- implementation commit: `35be550affbda7d0340f991b573d002394ed1432`
-- bundle name: `nollm_gat1_chart_atlas_transition_groupoid_validation_20260703.bundle`
+- branch: `codex/gat1-c1-report-reproducibility-closure`
+- implementation commit: `f2ea194fe4338eb067f568011c6b8978ab57d584`
+- closure: GAT1-C1 report reproducibility
+- bundle name: `nollm_gat1_c1_report_reproducibility_closure_20260703.bundle`
 - status: implemented; final acceptance pending
 
 ## Implemented Assets
@@ -20,6 +21,10 @@ GAT1 implements finite chart-atlas transition / groupoid synthetic validation fo
 - `docs/validation/GAT1_CHART_GROUPOID_SCOPE.md`
 - `protocol/v2/GAT1_CHART_GROUPOID_VALIDATION.md`
 - `ROADMAP.md`
+
+## GAT1-C1 Closure
+
+GAT1-C1 adds `GAT1_REPORTING_NOISE_FLOOR = 1e-12` and a deterministic report renderer. Diagnostics at or below the reporting floor are displayed as `≤1.000000e-12`; values above it remain rendered as concrete scientific-notation values. This does not change raw DG1 transform calculations, GAT1 validation states, or acceptance thresholds.
 
 ## Boundary
 

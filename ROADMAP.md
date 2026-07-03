@@ -62,7 +62,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - DX2: Multi-Admission Assembly-to-Recall Synthetic Validation is accepted and sealed at baseline `5e5110a0b1c4f08e9b5cce1b4864f7d403a35cee`. It validates CI1 capture/deferred input, BA1 host-explicit A/B admission, DA1 replay, DF1 explicit finite assembly, DR1 recall, and DI1 public envelope boundaries without modifying sealed production implementation.
 - GPR1: Geometry Profile / Parameter-Regime Synthetic Validation is accepted and sealed after GPR1-C1 multilayer coverage diagnostic closure. It samples each legal base layer in the finite 0..16 window for coverage metrics without selecting a new production profile or modifying sealed production geometry.
 - GVR1: Finite Translation-Variation / Coverage-Robustness Synthetic Validation is accepted and sealed. It validates finite source translation sensitivity for engineering baseline B without changing production geometry or runtime paths.
-- GAT1: Finite Chart-Atlas Transition / Groupoid Synthetic Validation is implemented; final acceptance pending.
+- GAT1: Finite Chart-Atlas Transition / Groupoid Synthetic Validation is implemented after GAT1-C1 report reproducibility closure; final acceptance pending.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.
