@@ -357,15 +357,13 @@ def _bind_recall_cover_cells(covers, traces):
     cells_by_trace_id = {trace.trace_id: trace.cell for trace in traces}
     bound = []
     for cover in covers:
-        support_cells = tuple(cells_by_trace_id[trace_id] for trace_id in cover.support_trace_ids if trace_id in cells_by_trace_id)
-        matching = tuple(
-            cell
-            for cell in support_cells
-            if cell.cell_ref == cover.support_cell and cell.chart_fingerprint == cover.chart_fingerprint
-        )
-        if not matching or len({cell.cell_ref for cell in matching}) != 1 or len({cell.chart_fingerprint for cell in matching}) != 1:
+        try:
+            support_cells = tuple(cells_by_trace_id[trace_id] for trace_id in cover.support_trace_ids)
+        except KeyError as exc:
+            raise DF1AssemblyError(DF1_UNIVERSE_CONSTRUCTION_FAILED, f"cover_cell_binding_failed:{cover.cover_id}") from exc
+        if not support_cells or any(cell.cell_ref != cover.support_cell or cell.chart_fingerprint != cover.chart_fingerprint for cell in support_cells):
             raise DF1AssemblyError(DF1_UNIVERSE_CONSTRUCTION_FAILED, f"cover_cell_binding_failed:{cover.cover_id}")
-        bound.append(replace(cover, support_cell=matching[0]))
+        bound.append(replace(cover, support_cell=support_cells[0]))
     return tuple(bound)
 
 

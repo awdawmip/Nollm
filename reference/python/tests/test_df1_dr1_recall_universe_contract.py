@@ -9,7 +9,7 @@ from nollm.dream_geometry.assembly import assemble_field_snapshot, recall_univer
 from nollm.dream_geometry.assembly.builder import _bind_recall_cover_cells
 from nollm.dream_geometry.assembly.errors import DF1_UNIVERSE_CONSTRUCTION_FAILED, DF1AssemblyError
 from nollm.dream_geometry.cortex import compile_query
-from nollm.dream_geometry.geometry.types import CellRef, HexCell
+from nollm.dream_geometry.geometry.types import AxialCoord, CellRef, HexCell
 from nollm.dream_geometry.recall import RecallDigestStatus, RecallPolicy, resolve_recall
 from tests.fixtures.df1_assembly.fixture import build_df1_environment, finite_set, tree_manifest
 
@@ -85,10 +85,30 @@ def test_rc1_05_cover_binding_inconsistency_fails_closed_without_writes(tmp_path
     result = assemble_field_snapshot(finite_set(evidence, cortex, admission, orchestrator, ("adm_df1_alpha",)))
     before = _state_manifest(tmp_path)
     raw_cover = result.snapshot.coarse_covers[0]
-    incomplete_traces = tuple(trace for trace in result.universe.traces if trace.trace_id not in raw_cover.support_trace_ids)
+    assert len(raw_cover.support_trace_ids) >= 2
+    incomplete_traces = tuple(trace for trace in result.universe.traces if trace.trace_id != raw_cover.support_trace_ids[0])
 
     with pytest.raises(DF1AssemblyError) as error:
         _bind_recall_cover_cells((raw_cover,), incomplete_traces)
+
+    assert error.value.reason_code == DF1_UNIVERSE_CONSTRUCTION_FAILED
+    assert "cover_cell_binding_failed:" + raw_cover.cover_id == error.value.detail
+    assert _state_manifest(tmp_path) == before
+
+
+def test_rc1_c1_partial_support_trace_identity_mismatch_fails_closed_without_writes(tmp_path) -> None:
+    evidence, cortex, admission, orchestrator = build_df1_environment(tmp_path)
+    result = assemble_field_snapshot(finite_set(evidence, cortex, admission, orchestrator, ("adm_df1_alpha",)))
+    before = _state_manifest(tmp_path)
+    raw_cover = result.snapshot.coarse_covers[0]
+    assert len(raw_cover.support_trace_ids) >= 2
+    mismatch_source = next(trace for trace in result.universe.traces if trace.trace_id == raw_cover.support_trace_ids[0])
+    mismatched_ref = replace(mismatch_source.cell.cell_ref, axial=AxialCoord(mismatch_source.cell.cell_ref.axial.q + 1, mismatch_source.cell.cell_ref.axial.r))
+    mismatched = replace(mismatch_source, cell=replace(mismatch_source.cell, cell_ref=mismatched_ref))
+    traces = tuple(mismatched if trace.trace_id == mismatch_source.trace_id else trace for trace in result.universe.traces)
+
+    with pytest.raises(DF1AssemblyError) as error:
+        _bind_recall_cover_cells((raw_cover,), traces)
 
     assert error.value.reason_code == DF1_UNIVERSE_CONSTRUCTION_FAILED
     assert "cover_cell_binding_failed:" + raw_cover.cover_id == error.value.detail
