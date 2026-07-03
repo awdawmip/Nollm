@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from validation.dx2.run_dx2_multi_admission_assembly_recall import build_report
 
@@ -13,4 +17,3 @@ def test_dx2_report_regenerates_to_committed_baseline() -> None:
 
 def _normalize(value: str) -> str:
     return re.sub(r"- validation_head: `[^`]+`", "- validation_head: `<normalized>`", value).strip()
-
