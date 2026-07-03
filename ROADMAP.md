@@ -65,7 +65,8 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - GAT1: Finite Chart-Atlas Transition / Groupoid Synthetic Validation is accepted and sealed at baseline `7c3ef9d3a83f87a0dccfa7e9018692be9cdc69af`.
 - GSC1: Finite Sparse-Shard / Scale-Coverage Synthetic Validation is accepted and sealed at baseline `f850599995e75b0a5c74fa9267202958a6369bdd`.
 - GCM1: Finite Sparse-Collision / Trace-Compaction Non-Conflation Synthetic Validation is accepted and sealed at baseline `2ce5c13f48c2478010acb73c4a612678e7830b10`.
-- GRA1: Finite Rotation-Scale Resonance / Phase-Drift Separation Synthetic Validation is implemented as a pure geometry validation asset for production ParameterSet B; final acceptance pending.
+- GRA1: Finite Rotation-Scale Resonance / Phase-Drift Separation Synthetic Validation is accepted and sealed at baseline `1c9b1f0498051cd62b66cfad2fa05a6071778ab3`.
+- GRC1: Finite Resonance-Conditioned Coverage / Non-Hierarchy Synthetic Validation is implemented as a pure geometry validation asset comparing center alignment with DG1 coverage; final acceptance pending.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.
