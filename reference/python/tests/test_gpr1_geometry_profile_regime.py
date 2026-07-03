@@ -13,9 +13,12 @@ from tests.fixtures.gpr1.fixture import (
     BASELINE_COMMIT,
     LAYER_GAPS,
     all_finite,
+    base_layers_for,
     baseline_b_formula_payload,
     build_metric_rows,
     canonical_metric_payload,
+    distributions_for,
+    distributions_for_base_layer,
     experiment_window_payload,
     parameter_by_id,
     parameter_payload,
@@ -56,7 +59,10 @@ def test_gpr1_02_finite_coverage_window_metrics_are_finite_and_reproducible() ->
 
     assert first == second
     assert len(rows) == len(PARAMETER_MATRIX) * len(LAYER_GAPS) * len(DEFAULT_PHASE_SAMPLES) * len(LAYER_PHASE_POLICIES)
-    assert all(row.distribution_count == 1 for row in rows)
+    assert all(row.distribution_count == 17 - row.gap for row in rows)
+    assert {row.gap: row.distribution_count for row in rows if row.parameter_id == "B" and row.phase_label == "(0,0)" and row.phase_policy == "constant_local"} == {1: 16, 2: 15, 4: 13, 8: 9, 16: 1}
+    assert all(row.distribution_count > 1 for row in rows if row.gap < 16)
+    assert all(row.distribution_count == 1 for row in rows if row.gap == 16)
     assert all(all_finite(row) for row in rows)
     assert all(row.branching_max >= 1 for row in rows)
     assert all(0.0 <= row.residual_mean <= 1.0 for row in rows)
@@ -77,6 +83,35 @@ def test_gpr1_03_baseline_b_rotation_phase_and_overlap_diagnostics_are_separated
     constant = phase_score_for(schedule, 8, DEFAULT_PHASE_SAMPLES[0], LAYER_PHASE_POLICIES[0])
     drift = phase_score_for(schedule, 8, DEFAULT_PHASE_SAMPLES[0], LAYER_PHASE_POLICIES[1])
     assert constant != drift
+
+
+def test_gpr1_c1_02_layer_drift_control_base_layer_variation_enters_coverage_summary() -> None:
+    baseline = parameter_by_id("B")
+    schedule = ScaleRotationSchedule(baseline)
+    phase = next(item for item in DEFAULT_PHASE_SAMPLES if item.phase_q == 0.5 and item.phase_r == 0.0)
+    policy = next(item for item in LAYER_PHASE_POLICIES if item.policy_id == "layer_drift_control")
+    base0 = distributions_for_base_layer(schedule, 2, phase, policy, 0)[0]
+    base1 = distributions_for_base_layer(schedule, 2, phase, policy, 1)[0]
+    all_distributions = distributions_for(schedule, 2, phase, policy)
+    row = next(row for row in build_metric_rows() if row.parameter_id == "B" and row.gap == 2 and row.phase_label == "(0.5,0)" and row.phase_policy == "layer_drift_control")
+
+    assert len(base_layers_for(2)) == 15
+    assert len(base0.kernels) == 4
+    assert len(base1.kernels) == 3
+    assert max(kernel.weight for kernel in base0.kernels) != max(kernel.weight for kernel in base1.kernels)
+    assert len(all_distributions) == 15
+    assert row.distribution_count == 15
+    assert row.branching_mean != len(base0.kernels)
+    assert row.max_mass >= max(kernel.weight for kernel in base0.kernels)
+
+
+def test_gpr1_c1_03_entropy_and_nesting_inputs_are_multilayer_except_gap_16() -> None:
+    rows = build_metric_rows()
+
+    assert all(row.distribution_count > 1 for row in rows if row.gap < 16)
+    assert all(row.distribution_count == 1 for row in rows if row.gap == 16)
+    assert any(row.overlap_entropy > 0.0 for row in rows if row.gap < 16 and row.phase_policy == "layer_drift_control")
+    assert any(row.nesting_tendency not in {0.0, 1.0} for row in rows if row.gap < 16)
 
 
 def test_gpr1_04_control_matrix_reports_without_selecting_a_new_profile() -> None:

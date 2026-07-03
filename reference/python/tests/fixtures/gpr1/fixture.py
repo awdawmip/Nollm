@@ -157,7 +157,19 @@ def row_payload(row: GPR1MetricRow) -> dict[str, Any]:
 
 
 def distributions_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSchedule, policy: LayerPhasePolicy) -> tuple[CoverageDistribution, ...]:
-    base_layer = 0
+    distributions = []
+    for base_layer in base_layers_for(gap):
+        distributions.extend(distributions_for_base_layer(schedule, gap, phase, policy, base_layer))
+    return tuple(distributions)
+
+
+def distributions_for_base_layer(
+    schedule: ScaleRotationSchedule,
+    gap: int,
+    phase: PhaseSchedule,
+    policy: LayerPhasePolicy,
+    base_layer: int,
+) -> tuple[CoverageDistribution, ...]:
     source_layer = base_layer + gap
     source_phase = policy.phase_for_layer(phase, source_layer)
     target_phase = policy.phase_for_layer(phase, base_layer)
@@ -172,13 +184,19 @@ def distributions_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSch
     return tuple(distributions)
 
 
+def base_layers_for(gap: int) -> tuple[int, ...]:
+    if gap not in LAYER_GAPS:
+        raise ValueError("gap must be one of LAYER_GAPS")
+    return tuple(range(LAYER_RANGE[0], LAYER_RANGE[-1] + 1 - gap))
+
+
 def phase_score_for(schedule: ScaleRotationSchedule, gap: int, phase: PhaseSchedule, policy: LayerPhasePolicy) -> float:
     phases = tuple(
         relative_phase(
             schedule.chart_for_layer(base_layer, policy.phase_for_layer(phase, base_layer)),
             schedule.chart_for_layer(base_layer + gap, policy.phase_for_layer(phase, base_layer + gap)),
         )
-        for base_layer in range(LAYER_RANGE[0], LAYER_RANGE[-1] + 1 - gap)
+        for base_layer in base_layers_for(gap)
     )
     return phase_recurrence_score(phases)
 
@@ -187,6 +205,8 @@ def experiment_window_payload() -> dict[str, Any]:
     return {
         "layer_range": (LAYER_RANGE[0], LAYER_RANGE[-1]),
         "layer_gaps": LAYER_GAPS,
+        "base_layer_rule": "base_layers(gap)=range(0, 17-gap)",
+        "base_layer_counts": tuple((gap, len(base_layers_for(gap))) for gap in LAYER_GAPS),
         "source_axial_disk_radius": SOURCE_RADIUS,
         "target_neighborhood_radius": TARGET_RADIUS,
         "phase_samples": tuple((phase.phase_q, phase.phase_r) for phase in DEFAULT_PHASE_SAMPLES),
