@@ -24,6 +24,7 @@ from tests.fixtures.gat1.fixture import (
     experiment_window_payload,
     fit_pair,
     negative_control_payload,
+    render_report_metric,
     state_dirs,
     witness_points,
     witnesses_for,
@@ -119,6 +120,28 @@ def test_gat1_06_same_axial_label_fixture_is_not_overlap_or_atlas_state() -> Non
     assert len(witnesses) == 4
     assert "overlap" not in json.dumps(canonical_payload(), sort_keys=True).lower()
     assert "atlas merge" not in json.dumps(canonical_payload(), sort_keys=True).lower()
+
+
+def test_gat1_c1_01_reporting_noise_floor_uses_bound_not_zero() -> None:
+    assert render_report_metric(1.1102230246251565e-16) == "\u22641.000000e-12"
+    assert render_report_metric(9.930136612989092e-16) == "\u22641.000000e-12"
+    assert render_report_metric(-9.930136612989092e-16) == "\u22641.000000e-12"
+    assert render_report_metric(1.1102230246251565e-16) != "0.000000e+00"
+
+
+def test_gat1_c1_02_report_renderer_preserves_values_above_floor() -> None:
+    assert render_report_metric(1.0001e-12) == "1.000100e-12"
+    assert render_report_metric(-1.0001e-12) == "-1.000100e-12"
+
+
+def test_gat1_c1_03_raw_validation_values_and_states_remain_separate_from_reporting() -> None:
+    checks = build_cycle_checks()
+    assert checks
+    assert any(0.0 < check.cycle.max_residual <= 1e-12 for check in checks)
+    assert all(check.cycle.state_recommendation == "verified" for check in checks)
+    assert all(pair.validation.state_recommendation == "verified" for check in checks for pair in check.pair_checks)
+    assert any(render_report_metric(check.cycle.max_residual) == "\u22641.000000e-12" for check in checks)
+    assert all(isinstance(check.cycle.max_residual, float) for check in checks)
 
 
 def _assert_no_forbidden_imports(path: Path) -> None:

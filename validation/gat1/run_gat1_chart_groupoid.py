@@ -18,6 +18,7 @@ from tests.fixtures.gat1.fixture import (
     max_rotation_error,
     max_scale_error,
     negative_control_payload,
+    render_report_metric,
 )
 
 
@@ -44,6 +45,7 @@ def build_report() -> str:
         f"- cycle count: `{window['cycle_count']}`",
         f"- reference scale rule: `{window['reference_scale_rule']}`",
         f"- tolerance: `{window['tolerance']}`",
+        "- report metric rendering: values with absolute value at or below `GAT1_REPORTING_NOISE_FLOOR = 1.000000e-12` are shown as `\u22641.000000e-12`; raw validation still uses sealed DG1 tolerance and real float64 values.",
         "",
         "## Pair And Cycle Summary",
         "",
@@ -60,13 +62,13 @@ def build_report() -> str:
                     check.phase_policy,
                     check.cycle.state_recommendation,
                     check.cycle.witness_geometry_status,
-                    _num(check.cycle.max_residual),
-                    _num(check.cycle.rms_residual),
-                    _num(check.cycle.linear_identity_error),
-                    _num(check.cycle.translation_identity_error),
-                    _num(max(pair.validation.residual.max_residual for pair in check.pair_checks)),
-                    _num(max(pair.scale_error for pair in check.pair_checks)),
-                    _num(max(pair.rotation_error for pair in check.pair_checks)),
+                    render_report_metric(check.cycle.max_residual),
+                    render_report_metric(check.cycle.rms_residual),
+                    render_report_metric(check.cycle.linear_identity_error),
+                    render_report_metric(check.cycle.translation_identity_error),
+                    render_report_metric(max(pair.validation.residual.max_residual for pair in check.pair_checks)),
+                    render_report_metric(max(pair.scale_error for pair in check.pair_checks)),
+                    render_report_metric(max(pair.rotation_error for pair in check.pair_checks)),
                 ]
             )
             + " |"
@@ -78,10 +80,10 @@ def build_report() -> str:
             "",
             f"- cycles checked: `{len(checks)}`",
             f"- directed pair validations checked: `{len(checks) * 3}`",
-            f"- max pair residual: `{_num(max_pair_residual(checks))}`",
-            f"- max cycle residual: `{_num(max_cycle_residual(checks))}`",
-            f"- max scale-ratio error: `{_num(max_scale_error(checks))}`",
-            f"- max rotation-delta error: `{_num(max_rotation_error(checks))}`",
+            f"- max pair residual: `{render_report_metric(max_pair_residual(checks))}`",
+            f"- max cycle residual: `{render_report_metric(max_cycle_residual(checks))}`",
+            f"- max scale-ratio error: `{render_report_metric(max_scale_error(checks))}`",
+            f"- max rotation-delta error: `{render_report_metric(max_rotation_error(checks))}`",
             "",
             "## Negative Controls",
             "",
@@ -97,6 +99,7 @@ def build_report() -> str:
             "- Each synthetic pair uses four fixed same-label axial witnesses; fit uses the first two witness pairs and validation uses all four.",
             "- All 32 finite cycles are computed from real pair fits, inverse checks, pair composition checks, and DG1 `cycle_residual(...)`.",
             "- Scale ratio and rotation delta consistency are finite checks against the source and target chart geometry.",
+            "- Report metric rendering uses a fixed presentation noise floor only for Markdown text; it is not an acceptance threshold.",
             "- Negative controls do not verify.",
             "",
             "## Reasonable Interpretation",
@@ -132,10 +135,6 @@ def main() -> int:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(build_report(), encoding="utf-8")
     return 0
-
-
-def _num(value: float) -> str:
-    return format(float(value), ".6e")
 
 
 if __name__ == "__main__":

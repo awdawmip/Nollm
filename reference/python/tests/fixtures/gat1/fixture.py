@@ -29,6 +29,7 @@ LAYER_RANGE = tuple(range(0, 17))
 CHART_LAYER_TRIPLES = ((0, 1, 2), (0, 4, 8), (1, 5, 13), (0, 8, 16))
 WITNESS_AXIALS = (AxialCoord(0, 0), AxialCoord(1, 0), AxialCoord(0, 1), AxialCoord(1, -1))
 TOLERANCE = DEFAULT_TOLERANCE
+GAT1_REPORTING_NOISE_FLOOR = 1e-12
 
 
 @dataclass(frozen=True, slots=True)
@@ -293,6 +294,14 @@ def all_finite(check: CycleCheck) -> bool:
             )
         )
     return all(isfinite(value) for value in values)
+
+
+def render_report_metric(value: float) -> str:
+    if not isfinite(value):
+        raise ValueError("report metric must be finite")
+    if abs(value) <= GAT1_REPORTING_NOISE_FLOOR:
+        return f"\u2264{GAT1_REPORTING_NOISE_FLOOR:.6e}"
+    return format(float(value), ".6e")
 
 
 def _float(value: float) -> str:
