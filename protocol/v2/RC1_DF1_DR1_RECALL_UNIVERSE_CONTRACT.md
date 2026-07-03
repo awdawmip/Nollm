@@ -24,9 +24,14 @@ universe_cover.support_cell.cell_ref == snapshot_cover.support_cell
 universe_cover.support_cell.chart_fingerprint == snapshot_cover.chart_fingerprint
 ```
 
-DF1 must fail closed if a recall cover cannot bind to one of its own support
-trace cells. It must not rebuild geometry, guess cells, persist a field, or
-return a partial universe.
+DF1 must bind against the complete support set. Every id in
+`cover.support_trace_ids` must resolve to a trace from the same replay set, and
+every resolved support trace cell must match the cover's `CellRef` and
+`chart_fingerprint`. A matching subset is not sufficient.
+
+DF1 must fail closed if a recall cover cannot bind all of its own support trace
+cells. It must not filter missing traces, ignore mismatched traces, rebuild
+geometry, guess cells, persist a field, or return a partial universe.
 
 RC1 does not change DR1 policy, DG2 cover semantics, or FieldSnapshot
 fingerprints.
