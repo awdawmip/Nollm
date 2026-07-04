@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import replace
+from hashlib import sha256
 import os
 from pathlib import Path
 
@@ -15,7 +16,9 @@ from nollm.dream_geometry.adapters.snapshot_compaction import (
     validate_snapshot_compaction_projection,
 )
 from nollm.dream_geometry.assembly.types import snapshot_fingerprint_payload, stable_fingerprint
-from tests.fixtures.dg6.fixture import empty_snapshot, isolated_duplicate_snapshot, single_trace_snapshot
+from nollm.dream_geometry.field.types import stable_json
+from tests.fixtures.dg6.fixture import empty_snapshot, isolated_duplicate_snapshot, isolated_stress_snapshot, single_trace_snapshot
+from tests.fixtures.dx2.fixture import build_dx2_cycle
 
 
 def test_dg6_06_snapshot_id_drift_is_rejected() -> None:
@@ -197,6 +200,95 @@ def test_dg6_c1_05_error_paths_do_not_write_to_empty_cwd(tmp_path) -> None:
     assert _recursive_listing(tmp_path) == before == ()
 
 
+@pytest.mark.parametrize(
+    "trace_ids",
+    (
+        (7,),
+        ("trace-a", 7),
+        (["legacy-id"],),
+        ({"legacy": "id"},),
+        ("",),
+        (None,),
+    ),
+)
+def test_dg6_c2_01_trace_identity_shape_errors_are_structured_across_public_paths(trace_ids) -> None:
+    valid = isolated_duplicate_snapshot()
+    projection = project_snapshot_compaction(valid)
+    source = isolated_duplicate_snapshot() if len(trace_ids) == 2 else single_trace_snapshot()
+    malformed = _snapshot_with_resealed_trace_ids(source, trace_ids)
+
+    errors = []
+    for fn, args in (
+        (project_snapshot_compaction, (malformed,)),
+        (validate_snapshot_compaction_projection, (malformed, projection)),
+        (expand_snapshot_compaction_projection, (malformed, projection)),
+    ):
+        with pytest.raises(DG6AdapterError) as error:
+            fn(*args)
+        errors.append(error.value)
+
+    assert {error.reason_code for error in errors} == {"DG6_INVALID_SNAPSHOT"}
+    for error in errors:
+        assert not any(token in str(error) for token in ("AttributeError", "TypeError", "ValueError", "KeyError"))
+
+
+def test_dg6_c2_02_trace_identity_failures_are_not_snapshot_fingerprint_drift() -> None:
+    malformed = _snapshot_with_resealed_trace_ids(single_trace_snapshot(), ("",))
+    assert malformed.snapshot_id == stable_fingerprint(snapshot_fingerprint_payload(malformed))
+
+    with pytest.raises(DG6AdapterError) as error:
+        project_snapshot_compaction(malformed)
+    assert error.value.reason_code == "DG6_INVALID_SNAPSHOT"
+
+
+def test_dg6_c2_03_trace_identity_error_paths_do_not_write_to_empty_cwd(tmp_path) -> None:
+    valid = isolated_duplicate_snapshot()
+    projection = project_snapshot_compaction(valid)
+    mixed = _snapshot_with_resealed_trace_ids(isolated_duplicate_snapshot(), ("trace-a", 7))
+    unhashable = _snapshot_with_resealed_trace_ids(single_trace_snapshot(), (["legacy-id"],))
+    empty = _snapshot_with_resealed_trace_ids(single_trace_snapshot(), ("",))
+    none = _snapshot_with_resealed_trace_ids(single_trace_snapshot(), (None,))
+
+    original = Path.cwd()
+    before = _recursive_listing(tmp_path)
+    try:
+        os.chdir(tmp_path)
+        for malformed in (mixed, unhashable):
+            with pytest.raises(DG6AdapterError):
+                project_snapshot_compaction(malformed)
+        for malformed in (empty, none):
+            _assert_validate_and_expand_structured(malformed, projection, "DG6_INVALID_SNAPSHOT")
+    finally:
+        os.chdir(original)
+    assert _recursive_listing(tmp_path) == before == ()
+
+
+def test_dg6_c2_04_valid_projection_summary_values_remain_stable(tmp_path) -> None:
+    snapshots = (
+        ("empty", empty_snapshot()),
+        ("duplicate", isolated_duplicate_snapshot()),
+        ("stress", isolated_stress_snapshot(1000)),
+        ("dx2", build_dx2_cycle(tmp_path).assembly.snapshot),
+    )
+    summary = []
+    for label, snapshot in snapshots:
+        projection = project_snapshot_compaction(snapshot)
+        expanded = expand_snapshot_compaction_projection(snapshot, projection)
+        summary.append(
+            {
+                "label": label,
+                "projection_id": projection.projection_id,
+                "projection_fingerprint": projection.projection_fingerprint,
+                "plan_fingerprint": projection.compression_plan.plan_fingerprint,
+                "view_fingerprint": projection.compacted_trace_view.view_fingerprint,
+                "expanded_trace_ids": tuple(trace.trace_id for trace in expanded),
+            }
+        )
+
+    digest = sha256(stable_json(tuple(summary)).encode("utf-8")).hexdigest()
+    assert digest == "d1039169b1913d1aecb983149928f2ea8e7e2a1f462627b0bfb8f8f3ce1463a0"
+
+
 def test_dg6_15_adapter_import_boundary_excludes_forbidden_modules() -> None:
     root = Path("reference/python/nollm/dream_geometry/adapters/snapshot_compaction")
     forbidden = ("evidence", "capture", "cortex", "admission", "recall", "runtime", "openclaw", "database", "cache")
@@ -229,3 +321,14 @@ def _assert_validate_and_expand_structured(snapshot, projection, reason: str) ->
 
 def _recursive_listing(root: Path) -> tuple[str, ...]:
     return tuple(sorted(str(path.relative_to(root)) for path in root.rglob("*")))
+
+
+def _snapshot_with_resealed_trace_ids(snapshot, trace_ids):
+    # DG6-C2 simulates stale internal replay objects; this is not an external attack fixture.
+    mutated_traces = []
+    for trace, trace_id in zip(snapshot.replayed_traces, trace_ids, strict=True):
+        mutated = replace(trace)
+        object.__setattr__(mutated, "trace_id", trace_id)
+        mutated_traces.append(mutated)
+    malformed = replace(snapshot, replayed_traces=tuple(mutated_traces))
+    return replace(malformed, snapshot_id=stable_fingerprint(snapshot_fingerprint_payload(malformed)))

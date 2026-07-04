@@ -13,6 +13,7 @@ from .errors import DG6AdapterError
 from .fingerprint import projection_fingerprint_for, projection_id_for, projection_identity_payload, projection_payload
 from .types import SnapshotCompactionAdapterPolicy, SnapshotCompactionProjection
 from .validation import (
+    _canonical_replayed_trace_ids,
     snapshot_fingerprint,
     trace_manifest,
     validate_policy,
@@ -67,6 +68,7 @@ def expand_snapshot_compaction_projection(
 ) -> tuple[GrowthTrace, ...]:
     projection = validate_snapshot_compaction_projection(snapshot, projection)
     traces = snapshot.replayed_traces
+    _canonical_replayed_trace_ids(traces)
     trace_index = {trace.trace_id: trace for trace in traces}
     try:
         expanded = expand_compression_plan(projection.compression_plan, trace_index)
@@ -81,6 +83,7 @@ def expand_snapshot_compaction_projection(
 
 def _build_projection(snapshot: FiniteFieldSnapshot, policy: SnapshotCompactionAdapterPolicy) -> SnapshotCompactionProjection:
     traces = snapshot.replayed_traces
+    _canonical_replayed_trace_ids(traces)
     try:
         plan = plan_trace_compaction(traces)
     except CompressionPlanningError as exc:

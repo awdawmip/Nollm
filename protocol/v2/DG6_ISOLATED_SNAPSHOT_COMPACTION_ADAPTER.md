@@ -11,3 +11,5 @@ DG6 does not modify Evidence, Capture, Cortex, Admission, Assembly, Field, Compr
 Failures are exposed as structured `DG6AdapterError.reason_code` values.
 
 Malformed projection manifest shapes, including non-tuple source trace fields, non-string trace ids, malformed fingerprint pairs, or fingerprint ids that do not match source trace ids, fail closed with DG6 structured reason codes. Malformed replayed trace enum fields surfaced by DG5 planning or view construction are translated at the DG6 boundary as invalid snapshot input. These translations do not change valid projection identity or DG5 bound-plan semantics.
+
+DG6-C2 adds a replay trace identity preflight at the snapshot-to-manifest boundary. Before canonical sorting, duplicate checks, trace-index construction, DG5 planning, view building, or expansion, DG6 requires every `snapshot.replayed_traces[*].trace_id` to be a non-empty string. Stale internal replay objects with int, mixed-type, list, dict, empty, or `None` trace identities fail closed with `DG6_INVALID_SNAPSHOT` across project, validate, and expand public paths, after DF1 snapshot identity has been independently checked.

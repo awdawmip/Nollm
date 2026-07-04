@@ -33,11 +33,7 @@ def validate_snapshot(snapshot: FiniteFieldSnapshot) -> FiniteFieldSnapshot:
     if snapshot.snapshot_id != expected:
         raise DG6AdapterError("DG6_SNAPSHOT_FINGERPRINT_MISMATCH", "snapshot_id does not match DF1 fingerprint payload")
     traces = _snapshot_traces(snapshot)
-    trace_ids = tuple(trace.trace_id for trace in traces)
-    if tuple(sorted(trace_ids)) != trace_ids:
-        raise DG6AdapterError("DG6_INVALID_SNAPSHOT", "snapshot replayed traces must be canonical by trace_id")
-    if len(set(trace_ids)) != len(trace_ids):
-        raise DG6AdapterError("DG6_DUPLICATE_TRACE_ID", "snapshot replayed traces contain duplicate trace_id")
+    _canonical_replayed_trace_ids(traces)
     return snapshot
 
 
@@ -49,12 +45,28 @@ def snapshot_fingerprint(snapshot: FiniteFieldSnapshot) -> str:
 
 
 def trace_manifest(traces: tuple[GrowthTrace, ...], trace_fingerprints: tuple[tuple[str, str], ...]) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
-    trace_ids = tuple(trace.trace_id for trace in traces)
-    if tuple(sorted(trace_ids)) != trace_ids:
-        raise DG6AdapterError("DG6_SOURCE_TRACE_MANIFEST_MISMATCH", "source trace ids must be canonical")
+    trace_ids = _canonical_replayed_trace_ids(traces)
     if tuple(trace_id for trace_id, _ in trace_fingerprints) != trace_ids:
         raise DG6AdapterError("DG6_SOURCE_TRACE_MANIFEST_MISMATCH", "source trace fingerprints must match trace ids")
     return trace_ids, trace_fingerprints
+
+
+def _canonical_replayed_trace_ids(traces: tuple[GrowthTrace, ...]) -> tuple[str, ...]:
+    trace_ids: list[str] = []
+    for trace in traces:
+        try:
+            trace_id = trace.trace_id
+        except (AttributeError, TypeError, ValueError, KeyError) as exc:
+            raise DG6AdapterError("DG6_INVALID_SNAPSHOT", str(exc)) from exc
+        if not isinstance(trace_id, str) or trace_id == "":
+            raise DG6AdapterError("DG6_INVALID_SNAPSHOT", "snapshot replayed trace_id must be non-empty string")
+        trace_ids.append(trace_id)
+    trace_id_tuple = tuple(trace_ids)
+    if tuple(sorted(trace_id_tuple)) != trace_id_tuple:
+        raise DG6AdapterError("DG6_INVALID_SNAPSHOT", "snapshot replayed traces must be canonical by trace_id")
+    if len(set(trace_id_tuple)) != len(trace_id_tuple):
+        raise DG6AdapterError("DG6_DUPLICATE_TRACE_ID", "snapshot replayed traces contain duplicate trace_id")
+    return trace_id_tuple
 
 
 def validate_projection_shape(projection: SnapshotCompactionProjection) -> SnapshotCompactionProjection:
