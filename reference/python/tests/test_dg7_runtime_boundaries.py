@@ -88,6 +88,34 @@ def test_dg7_13_invalid_explicit_set_is_structured_without_traceback(tmp_path) -
     assert "Traceback" not in payload
 
 
+def test_dg7_c1_04_c_absence_only_accepts_filenotfound() -> None:
+    from nollm.dream_geometry.validation.dg7.runner import DG7RuntimeVerificationError, _assert_admission_absent, error_mapping
+
+    _assert_admission_absent(_AdmissionLookup(FileNotFoundError("adm_dg7_c")), "adm_dg7_c")
+
+    for exc in (RuntimeError("store unavailable"), ValueError("bad payload")):
+        with pytest_raises_dg7_admission_rejected() as captured:
+            _assert_admission_absent(_AdmissionLookup(exc), "adm_dg7_c")
+        payload = json.dumps(error_mapping(captured.reason_code, str(captured)), sort_keys=True)
+        assert "DG7_ADMISSION_REJECTED" in payload
+        assert not any(token in payload for token in ("Traceback", "RuntimeError", "ValueError", "nollm.dream_geometry"))
+
+
+def test_dg7_c1_05_delivery_and_roadmap_facts_are_closed() -> None:
+    roadmap = Path("ROADMAP.md").read_text(encoding="utf-8")
+    delivery = Path("docs/delivery/DG7_DELIVERY_RECEIPT.md").read_text(encoding="utf-8")
+
+    assert "DG5: Evidence-preserving trace compaction capability is accepted at `5e91504d0f3961be9631856a8853a58ca6bd1921`" in roadmap
+    assert "DG6: Isolated snapshot compaction adapter is accepted at `47eca074045cede79d19b897ff4cae48dca23ab6`" in roadmap
+    assert "DG7: Explicit reference runtime positive verification is implemented" in roadmap
+    assert "DG5: Evidence-preserving trace compaction capability is implemented as a finite, view-only CompressionPlan / CompactedTraceView with lossless expansion; final acceptance pending." not in roadmap
+    assert "DG6 implemented; final acceptance pending." not in roadmap
+    assert "main = origin/main = `47eca074045cede79d19b897ff4cae48dca23ab6` after fast-forward" in delivery
+    assert "It does not implement production runtime integration, OpenClaw" in delivery
+    assert "automatic memory" not in delivery
+    assert "performance optimization" not in delivery
+
+
 def test_dg7_14_runner_and_validation_package_exclude_forbidden_imports() -> None:
     roots = [Path("reference/python/nollm/dream_geometry/validation/dg7"), Path("reference/python/scripts/run_dg7_reference_runtime.py")]
     forbidden = ("integrations.openclaw", "requests", "urllib", "socket", "subprocess", "openclaw", "legacy", "memory_core")
@@ -119,3 +147,29 @@ def _run_cli(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 def _tree_manifest(root: Path) -> tuple[str, ...]:
     return tuple(sorted(path.relative_to(root).as_posix() for path in root.rglob("*")))
+
+
+class pytest_raises_dg7_admission_rejected:
+    def __enter__(self):
+        from nollm.dream_geometry.validation.dg7.runner import DG7RuntimeVerificationError
+
+        self._error_type = DG7RuntimeVerificationError
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        assert exc_type is self._error_type
+        assert exc.reason_code == "DG7_ADMISSION_REJECTED"
+        self.reason_code = exc.reason_code
+        self.message = str(exc)
+        return True
+
+    def __str__(self) -> str:
+        return self.message
+
+
+class _AdmissionLookup:
+    def __init__(self, exc: Exception):
+        self.exc = exc
+
+    def get_admission_record(self, _admission_id: str):
+        raise self.exc

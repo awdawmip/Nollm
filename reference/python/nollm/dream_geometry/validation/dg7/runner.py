@@ -143,17 +143,17 @@ def _execute(work_root: Path, scenario) -> RuntimePositiveVerificationReceipt:
         raise DG7RuntimeVerificationError("DG7_ADMISSION_REJECTED", _stable_message(exc)) from exc
     if d_receipt.admission_id != "adm_dg7_d":
         raise DG7RuntimeVerificationError("DG7_ADMISSION_REJECTED", "D admission id mismatch")
-    try:
-        admission.get_admission_record("adm_dg7_c")
-        raise DG7RuntimeVerificationError("DG7_ADMISSION_REJECTED", "C unexpectedly has AdmissionRecord")
-    except DG7RuntimeVerificationError:
-        raise
-    except Exception:
-        pass
+    _assert_admission_absent(admission, "adm_dg7_c")
 
     reopened_admission = open_admission_store(work_root / "admission", evidence, cortex, orchestrator.validate_replay_record)
     reopened_orchestrator = MemoryAdmissionOrchestrator(evidence, cortex, reopened_admission)
-    admission_ids = tuple(item.admission_receipt.admission_id for item in ba1_receipt.member_receipts)
+    observed_admission_ids = tuple(item.admission_receipt.admission_id for item in ba1_receipt.member_receipts)
+    admission_ids = _validated_explicit_assembly_ids(
+        scenario.explicit_assembly_admission_ids,
+        observed_admission_ids,
+        c_admission_id="adm_dg7_c",
+        d_admission_id=d_receipt.admission_id,
+    )
     try:
         assembly = assemble_field_snapshot(FiniteAdmissionSet("dg7_explicit_a_b_set", _admission_sources(evidence, cortex, reopened_admission, reopened_orchestrator, admission_ids)))
     except Exception as exc:
@@ -245,6 +245,38 @@ def _admission_sources(evidence, cortex, admission, orchestrator, admission_ids:
         record = admission.get_admission_record(admission_id)
         sources.append(AdmissionReplaySource(record, evidence, cortex, orchestrator.replay_record, receipts[record.compilation_receipt_id], None))
     return tuple(sources)
+
+
+def _validated_explicit_assembly_ids(
+    declared_ids: object,
+    observed_ids: tuple[str, ...],
+    *,
+    c_admission_id: str,
+    d_admission_id: str,
+) -> tuple[str, ...]:
+    if not isinstance(declared_ids, tuple) or not declared_ids:
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "explicit assembly declaration must be a non-empty tuple")
+    if not all(isinstance(item, str) and item for item in declared_ids):
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "explicit assembly declaration ids must be non-empty strings")
+    if len(set(declared_ids)) != len(declared_ids):
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "explicit assembly declaration ids must be unique")
+    if c_admission_id in declared_ids:
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "captured-only C cannot be in explicit assembly declaration")
+    if d_admission_id in declared_ids:
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "admitted-unassembled D cannot be in explicit assembly declaration")
+    if observed_ids != declared_ids:
+        raise DG7RuntimeVerificationError("DG7_ASSEMBLY_REJECTED", "BA1 admission receipts do not match the explicit assembly declaration")
+    return declared_ids
+
+
+def _assert_admission_absent(admission, admission_id: str) -> None:
+    try:
+        admission.get_admission_record(admission_id)
+    except FileNotFoundError:
+        return
+    except Exception as exc:
+        raise DG7RuntimeVerificationError("DG7_ADMISSION_REJECTED", "failed to confirm captured-only admission absence") from exc
+    raise DG7RuntimeVerificationError("DG7_ADMISSION_REJECTED", "C unexpectedly has AdmissionRecord")
 
 
 def _load_scenario(scenario_id: str):

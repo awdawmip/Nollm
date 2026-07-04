@@ -70,8 +70,8 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - GKD1: Finite Bidirectional Coverage-Kernel / Directional Non-Inversion Synthetic Validation is accepted and sealed at baseline `f2629ba08aeec0a7179e640536a35dd720ab28a1`.
 - GKC1: Finite Directed-Kernel Composition / Non-Identity Synthetic Validation is accepted and sealed at baseline `c98d8d96412551ff96ca4e4c4a9dcbc70f2497df`.
 - GEO1: Finite Geometry Evidence Consolidation / Production-Freeze Gate is accepted on main at `b16133fdc7599dc2e4a91e6bfd66438ffa61bfe2` with GEO1-C1 canonical evidence hash and accepted-baseline anchor closure completed.
-- DG5: Evidence-preserving trace compaction capability is implemented as a finite, view-only CompressionPlan / CompactedTraceView with lossless expansion; final acceptance pending.
-- DG6 implemented; final acceptance pending.
+- DG5: Evidence-preserving trace compaction capability is accepted at `5e91504d0f3961be9631856a8853a58ca6bd1921` as a finite, view-only CompressionPlan / CompactedTraceView with lossless expansion.
+- DG6: Isolated snapshot compaction adapter is accepted at `47eca074045cede79d19b897ff4cae48dca23ab6` after DG6-C2 replay trace identity preflight closure.
 - DG7: Explicit reference runtime positive verification is implemented as a validation-only local Python runner over explicit CI1->BA1->DA1->DF1->DG6->DR1->DI1 host input; final acceptance pending.
 
 W2/OpenClaw runtime work is historical background for this route, not the current V2 mainline and not a DG0 prerequisite.
