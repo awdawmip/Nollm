@@ -18,7 +18,8 @@
 | mixed | 5 | 2 | 3 | 4 | 1 | true |
 | stress | 1000 | 400 | 600 | 800 | 200 | true |
 
-- non-conflation passthrough count: `603`
+- independent passthrough trace count: `301`
+- non-conflation witness trace count: `302`
 - mixed plan fingerprint: `ba8ce3dd35466f4875047e6641102f4fea4b077c51629e7b384b65635c0fd38a`
 - mixed view fingerprint: `8eb498029e160c97d5f754685ba98aa80826a4588d785aa5540fa481c3233e0c`
 - stress plan fingerprint: `baf44d03dc7c76c8e2cdf5c6831954d23c91c50c4aa12493d6ac6439adce7538`

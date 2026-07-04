@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from nollm.dream_geometry.field.compaction import expand_compaction
+from nollm.dream_geometry.field.compaction import compact_traces, expand_compaction
 from nollm.dream_geometry.field.types import GrowthTrace, stable_id
 
 from .errors import CompressionPlanningError
@@ -16,6 +16,7 @@ from .validation import validate_compression_plan
 def build_compacted_trace_view(plan: CompressionPlan, trace_index: Mapping[str, GrowthTrace]) -> CompactedTraceView:
     validate_compression_plan(plan)
     _validate_trace_index_exact(plan, trace_index)
+    _validate_plan_bound_to_trace_index(plan, trace_index)
     entries = []
     trace_fingerprints = dict(plan.input_trace_fingerprints)
     for compaction in plan.compactions:
@@ -60,6 +61,7 @@ def expand_compression_plan(
 ) -> tuple[GrowthTrace, ...]:
     validate_compression_plan(plan)
     _validate_trace_index_exact(plan, trace_index)
+    _validate_plan_bound_to_trace_index(plan, trace_index)
     expanded: dict[str, GrowthTrace] = {}
     for compaction in plan.compactions:
         for trace in _expand_verified(compaction, trace_index):
@@ -90,6 +92,20 @@ def _validate_trace_index_exact(plan: CompressionPlan, trace_index: Mapping[str,
             raise CompressionPlanningError("DG5_EXPANSION_TRACE_FINGERPRINT_MISMATCH", f"fingerprint mismatch: {trace_id}")
 
 
+def _validate_plan_bound_to_trace_index(plan: CompressionPlan, trace_index: Mapping[str, GrowthTrace]) -> None:
+    ordered_traces = tuple(trace_index[trace_id] for trace_id in plan.input_trace_ids)
+    try:
+        expected_compactions = compact_traces(ordered_traces)
+    except ValueError as exc:
+        raise CompressionPlanningError("DG5_PLAN_MANIFEST_INVALID", str(exc)) from exc
+    expected_compacted_ids = {trace_id for compaction in expected_compactions for trace_id in compaction.member_trace_ids}
+    expected_passthrough = tuple(trace_id for trace_id in plan.input_trace_ids if trace_id not in expected_compacted_ids)
+    if plan.compactions != expected_compactions:
+        raise CompressionPlanningError("DG5_PLAN_MANIFEST_INVALID", "plan compactions do not match sealed DG2 output")
+    if plan.passthrough_trace_ids != expected_passthrough:
+        raise CompressionPlanningError("DG5_PLAN_MANIFEST_INVALID", "plan passthrough ids do not match sealed DG2 output")
+
+
 def _expand_verified(compaction, trace_index: Mapping[str, GrowthTrace]) -> tuple[GrowthTrace, ...]:
     try:
         expanded = expand_compaction(compaction, dict(trace_index))
@@ -100,4 +116,3 @@ def _expand_verified(compaction, trace_index: Mapping[str, GrowthTrace]) -> tupl
     if tuple(trace.trace_id for trace in expanded) != compaction.expansion_manifest:
         raise CompressionPlanningError("DG5_EXPANSION_MANIFEST_MISMATCH", "DG2 expansion order mismatch")
     return expanded
-

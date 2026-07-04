@@ -119,4 +119,3 @@ def view_fingerprint(plan: CompressionPlan, entries: tuple[CompactedTraceEntry, 
 
 def _sha256_payload(payload: object) -> str:
     return sha256(stable_json(payload).encode("utf-8")).hexdigest()
-

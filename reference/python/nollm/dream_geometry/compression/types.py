@@ -62,4 +62,3 @@ class CompactedTraceView:
     entry_count: int
     source_trace_count: int
     view_fingerprint: str
-

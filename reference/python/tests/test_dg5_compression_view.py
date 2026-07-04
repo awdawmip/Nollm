@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from nollm.dream_geometry.compression import plan_trace_compaction
 from nollm.dream_geometry.compression.fingerprint import trace_fingerprint
 from nollm.dream_geometry.compression.view import build_compacted_trace_view, expand_compression_plan
-from tests.fixtures.dg5.fixture import state_dirs, stress_fixture, trace_index
+from tests.fixtures.dg5.fixture import stress_fixture, trace_index
 
 
 def test_dg5_16_finite_stress_fixture_reports_real_counts() -> None:
@@ -31,11 +32,19 @@ def test_dg5_17_stress_expansion_preserves_each_trace_fingerprint() -> None:
 
 
 def test_dg5_18_no_durable_state_dirs_created(tmp_path: Path) -> None:
-    before = state_dirs(tmp_path)
+    before = _recursive_listing(tmp_path)
+    current = Path.cwd()
     traces = stress_fixture(20)
-    plan = plan_trace_compaction(traces)
-    _ = build_compacted_trace_view(plan, trace_index(traces))
-    _ = expand_compression_plan(plan, trace_index(traces))
-    after = state_dirs(tmp_path)
-    assert before == after == {name: False for name in ("evidence", "capture", "field", "admission", "assembly", "recall", "atlas", "state")}
+    try:
+        os.chdir(tmp_path)
+        plan = plan_trace_compaction(traces)
+        _ = build_compacted_trace_view(plan, trace_index(traces))
+        _ = expand_compression_plan(plan, trace_index(traces))
+    finally:
+        os.chdir(current)
+    after = _recursive_listing(tmp_path)
+    assert before == after == ()
 
+
+def _recursive_listing(root: Path) -> tuple[str, ...]:
+    return tuple(sorted(str(path.relative_to(root)) for path in root.rglob("*")))

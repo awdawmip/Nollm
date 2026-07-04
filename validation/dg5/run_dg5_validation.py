@@ -21,7 +21,10 @@ def build_report() -> str:
     stress_plan = plan_trace_compaction(stress)
     stress_view = build_compacted_trace_view(stress_plan, trace_index(stress))
     stress_expanded = expand_compression_plan(stress_plan, trace_index(stress))
-    non_conflation_count = len(stress_plan.passthrough_trace_ids) + len(mixed_plan.passthrough_trace_ids)
+    independent_passthrough_count = sum(1 for trace_id in mixed_plan.passthrough_trace_ids if trace_id.startswith("pass-"))
+    independent_passthrough_count += sum(1 for trace_id in stress_plan.passthrough_trace_ids if trace_id.startswith("pass-"))
+    non_conflation_witness_count = sum(1 for trace_id in mixed_plan.passthrough_trace_ids if trace_id in {"collision-a", "same-cell-distinct"})
+    non_conflation_witness_count += sum(1 for trace_id in stress_plan.passthrough_trace_ids if trace_id.startswith("near-"))
     lines = [
         "# DG5 Evidence-Preserving Trace Compaction Validation Report",
         "",
@@ -43,7 +46,8 @@ def build_report() -> str:
         f"| mixed | {mixed_plan.input_trace_count} | {mixed_plan.compacted_member_count} | {len(mixed_plan.passthrough_trace_ids)} | {mixed_view.entry_count} | {mixed_plan.estimated_view_entry_reduction} | {str(len(mixed_expanded) == mixed_plan.input_trace_count).lower()} |",
         f"| stress | {stress_plan.input_trace_count} | {stress_plan.compacted_member_count} | {len(stress_plan.passthrough_trace_ids)} | {stress_view.entry_count} | {stress_plan.estimated_view_entry_reduction} | {str(len(stress_expanded) == stress_plan.input_trace_count).lower()} |",
         "",
-        f"- non-conflation passthrough count: `{non_conflation_count}`",
+        f"- independent passthrough trace count: `{independent_passthrough_count}`",
+        f"- non-conflation witness trace count: `{non_conflation_witness_count}`",
         f"- mixed plan fingerprint: `{mixed_plan.plan_fingerprint}`",
         f"- mixed view fingerprint: `{mixed_view.view_fingerprint}`",
         f"- stress plan fingerprint: `{stress_plan.plan_fingerprint}`",

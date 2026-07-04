@@ -60,6 +60,7 @@ def test_dg5_05_input_permutation_is_deterministic() -> None:
     first_view = build_compacted_trace_view(first, trace_index(traces))
     second_view = build_compacted_trace_view(second, trace_index(traces))
     assert first_view.view_fingerprint == second_view.view_fingerprint
+    assert first_view.entries == second_view.entries
 
 
 def test_dg5_06_repeated_planning_is_deterministic() -> None:
@@ -79,6 +80,12 @@ def test_dg5_08_same_cell_different_payload_does_not_compact() -> None:
     assert plan_trace_compaction((base, distinct)).compactions == ()
 
 
+def test_dg5_08b_derivation_kind_difference_does_not_compact() -> None:
+    base = trace("base")
+    distinct = replace(base, trace_id="distinct", derivation_kind="other-derivation")
+    assert plan_trace_compaction((base, distinct)).compactions == ()
+
+
 def test_dg5_09_duplicate_trace_id_is_structured_error() -> None:
     base = trace("same")
     with pytest.raises(CompressionPlanningError) as exc:
@@ -92,4 +99,3 @@ def test_dg5_10_invalid_policy_is_rejected() -> None:
     assert exc.value.reason_code == "DG5_INVALID_POLICY"
     with pytest.raises(CompressionPlanningError):
         CompressionPolicy(require_exact_transport_identity=False)
-
