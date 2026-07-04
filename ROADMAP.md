@@ -69,7 +69,7 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - GRC1: Finite Resonance-Conditioned Coverage / Non-Hierarchy Synthetic Validation is accepted and sealed at baseline `39b673fbba829f1c3285e9496b5af9c9890bf0af`.
 - GKD1: Finite Bidirectional Coverage-Kernel / Directional Non-Inversion Synthetic Validation is accepted and sealed at baseline `f2629ba08aeec0a7179e640536a35dd720ab28a1`.
 - GKC1: Finite Directed-Kernel Composition / Non-Identity Synthetic Validation is accepted and sealed at baseline `c98d8d96412551ff96ca4e4c4a9dcbc70f2497df`.
-- GEO1: Finite Geometry Evidence Consolidation / Production-Freeze Gate is implemented as deterministic evidence ledger and HOLD/OPEN freeze decision; final acceptance pending.
+- GEO1: Finite Geometry Evidence Consolidation / Production-Freeze Gate is implemented as deterministic evidence ledger and HOLD/OPEN freeze decision; GEO1-C1 canonical evidence hash and accepted-baseline anchor closure completed, final acceptance pending.
 - DG5: Compression, revision, anti-resonance, and scale experiments.
 - DG6: Isolated adapter integration.
 - DG7: Runtime positive verification only after DG0-DG6 acceptance.

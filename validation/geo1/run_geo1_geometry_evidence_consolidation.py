@@ -43,7 +43,7 @@ PHASE_EVIDENCE: tuple[PhaseEvidence, ...] = (
     PhaseEvidence(
         "GPR1",
         "Geometry Profile / Parameter-Regime",
-        "5e5110a0b1c4f08e9b5cce1b4864f7d403a35cee",
+        "c48ceba98e5d5197d16f91c3bad507b2ceaed242",
         "Parameter matrix A-E, layer range 0..16, gaps 1/2/4/8/16, four phase samples, two layer phase policies, radius-4 target neighborhood.",
         "docs/validation/GPR1_GEOMETRY_PROFILE_REGIME_BASELINE_REPORT.md",
         "docs/validation/GPR1_GEOMETRY_PROFILE_REGIME_SCOPE.md",
@@ -52,7 +52,7 @@ PHASE_EVIDENCE: tuple[PhaseEvidence, ...] = (
     PhaseEvidence(
         "GVR1",
         "Translation-Variation / Coverage-Robustness",
-        "c48ceba98e5d5197d16f91c3bad507b2ceaed242",
+        "ffe76e4ed574209e05ef3f8e35440aa50c0cd234",
         "Parameter B, layer range 0..16, gaps 1/2/4/8/16, seven source offsets, four phase samples, two layer phase policies, radius-4 target neighborhood.",
         "docs/validation/GVR1_TRANSLATION_VARIATION_BASELINE_REPORT.md",
         "docs/validation/GVR1_TRANSLATION_VARIATION_SCOPE.md",
@@ -218,9 +218,14 @@ FINDINGS: tuple[Finding, ...] = (
 )
 
 
-def file_sha256(relative_path: str) -> str:
+def canonical_text_bytes(text: str) -> bytes:
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+
+
+def canonical_file_sha256(relative_path: str) -> str:
     path = ROOT / relative_path
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    text = path.read_text(encoding="utf-8")
+    return hashlib.sha256(canonical_text_bytes(text)).hexdigest()
 
 
 def read_text(relative_path: str) -> str:
@@ -239,11 +244,11 @@ def evidence_rows() -> tuple[dict[str, str], ...]:
                 "accepted_baseline": item.accepted_baseline,
                 "window_summary": item.window_summary,
                 "report_path": item.report_path,
-                "report_sha256": file_sha256(item.report_path),
+                "report_sha256": canonical_file_sha256(item.report_path),
                 "scope_path": item.scope_path,
-                "scope_sha256": file_sha256(item.scope_path),
+                "scope_sha256": canonical_file_sha256(item.scope_path),
                 "protocol_path": item.protocol_path,
-                "protocol_sha256": file_sha256(item.protocol_path),
+                "protocol_sha256": canonical_file_sha256(item.protocol_path),
             }
         )
     return tuple(rows)
@@ -269,11 +274,12 @@ def build_ledger() -> str:
         f"- production freeze baseline: `{PRODUCTION_FREEZE_BASELINE}`",
         "- ledger kind: deterministic consolidation of sealed finite geometry evidence",
         "- source policy: explicit nine-phase whitelist only; no repository scan or experiment discovery",
+        "- hash policy: canonical SHA-256 over UTF-8 text after CRLF and CR are normalized to LF",
         "- boundary: this ledger is an audit consolidation, not a new geometry source of truth",
         "",
         "## Source Evidence Whitelist",
         "",
-        "| phase id | title | accepted baseline commit | source report path | source report SHA-256 | scope path | scope SHA-256 | protocol path | protocol SHA-256 | experiment-window summary |",
+        "| phase id | title | accepted baseline commit | source report path | source report canonical SHA-256 (UTF-8, LF-normalized) | scope path | scope canonical SHA-256 (UTF-8, LF-normalized) | protocol path | protocol canonical SHA-256 (UTF-8, LF-normalized) | experiment-window summary |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in rows:
