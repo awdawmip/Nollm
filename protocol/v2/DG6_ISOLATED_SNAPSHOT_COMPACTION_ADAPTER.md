@@ -9,3 +9,5 @@ DG6 does not accept caller-provided compression plans, compacted views, trace in
 DG6 does not modify Evidence, Capture, Cortex, Admission, Assembly, Field, Compression, Recall, Integration, Geometry, CLI, OpenClaw, network, database, cache, LLM, NLP, embeddings, or semantic search.
 
 Failures are exposed as structured `DG6AdapterError.reason_code` values.
+
+Malformed projection manifest shapes, including non-tuple source trace fields, non-string trace ids, malformed fingerprint pairs, or fingerprint ids that do not match source trace ids, fail closed with DG6 structured reason codes. Malformed replayed trace enum fields surfaced by DG5 planning or view construction are translated at the DG6 boundary as invalid snapshot input. These translations do not change valid projection identity or DG5 bound-plan semantics.

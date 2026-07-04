@@ -85,11 +85,15 @@ def _build_projection(snapshot: FiniteFieldSnapshot, policy: SnapshotCompactionA
         plan = plan_trace_compaction(traces)
     except CompressionPlanningError as exc:
         raise wrap_dg5("DG6_DG5_PLAN_INVALID", exc) from exc
+    except (AttributeError, TypeError, ValueError, KeyError) as exc:
+        raise DG6AdapterError("DG6_INVALID_SNAPSHOT", str(exc)) from exc
     trace_index = {trace.trace_id: trace for trace in traces}
     try:
         view = build_compacted_trace_view(plan, trace_index)
     except CompressionPlanningError as exc:
         raise wrap_dg5("DG6_DG5_VIEW_INVALID", exc) from exc
+    except (AttributeError, TypeError, ValueError, KeyError) as exc:
+        raise DG6AdapterError("DG6_INVALID_SNAPSHOT", str(exc)) from exc
     source_trace_ids, source_trace_fingerprints = trace_manifest(traces, plan.input_trace_fingerprints)
     source_snapshot_fingerprint = snapshot_fingerprint(snapshot)
     partial = SnapshotCompactionProjection(

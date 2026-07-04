@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import replace
+import os
 from pathlib import Path
 
 import pytest
@@ -132,6 +133,70 @@ def test_dg6_14_public_failures_do_not_leak_attribute_or_key_errors() -> None:
     assert "KeyError" not in str(error.value)
 
 
+@pytest.mark.parametrize(
+    "field,value,reason",
+    (
+        ("source_trace_ids", None, "DG6_PROJECTION_MANIFEST_INVALID"),
+        ("source_trace_ids", ("trace-a", 7), "DG6_PROJECTION_MANIFEST_INVALID"),
+        ("source_trace_fingerprints", None, "DG6_PROJECTION_MANIFEST_INVALID"),
+    ),
+)
+def test_dg6_c1_01_projection_manifest_non_tuple_and_mixed_types_are_structured(field: str, value, reason: str) -> None:
+    snapshot = isolated_duplicate_snapshot()
+    projection = project_snapshot_compaction(snapshot)
+    tampered = replace(projection, **{field: value})
+
+    _assert_validate_and_expand_structured(snapshot, tampered, reason)
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "wrong",
+        (("only-one-element",),),
+        (("trace-a", 7),),
+        ((7, "fingerprint"),),
+    ),
+)
+def test_dg6_c1_02_fingerprint_pair_shape_errors_are_structured(value) -> None:
+    snapshot = isolated_duplicate_snapshot()
+    projection = project_snapshot_compaction(snapshot)
+    tampered = replace(projection, source_trace_fingerprints=value)
+
+    _assert_validate_and_expand_structured(snapshot, tampered, "DG6_PROJECTION_MANIFEST_INVALID")
+
+
+@pytest.mark.parametrize("field", ("basis", "state"))
+def test_dg6_c1_03_malformed_trace_enum_is_structured_project_rejection(field: str) -> None:
+    snapshot = single_trace_snapshot()
+    malformed_trace = replace(snapshot.replayed_traces[0], **{field: "bad"})
+    malformed = replace(snapshot, replayed_traces=(malformed_trace,))
+
+    with pytest.raises(DG6AdapterError) as error:
+        project_snapshot_compaction(malformed)
+    assert error.value.reason_code == "DG6_INVALID_SNAPSHOT"
+    assert "AttributeError" not in str(error.value)
+
+
+def test_dg6_c1_05_error_paths_do_not_write_to_empty_cwd(tmp_path) -> None:
+    original = Path.cwd()
+    before = _recursive_listing(tmp_path)
+    try:
+        os.chdir(tmp_path)
+        snapshot = single_trace_snapshot()
+        malformed_trace = replace(snapshot.replayed_traces[0], basis="bad")
+        with pytest.raises(DG6AdapterError):
+            project_snapshot_compaction(replace(snapshot, replayed_traces=(malformed_trace,)))
+
+        valid = isolated_duplicate_snapshot()
+        projection = project_snapshot_compaction(valid)
+        tampered = replace(projection, source_trace_fingerprints="wrong")
+        _assert_validate_and_expand_structured(valid, tampered, "DG6_PROJECTION_MANIFEST_INVALID")
+    finally:
+        os.chdir(original)
+    assert _recursive_listing(tmp_path) == before == ()
+
+
 def test_dg6_15_adapter_import_boundary_excludes_forbidden_modules() -> None:
     root = Path("reference/python/nollm/dream_geometry/adapters/snapshot_compaction")
     forbidden = ("evidence", "capture", "cortex", "admission", "recall", "runtime", "openclaw", "database", "cache")
@@ -152,3 +217,15 @@ def test_dg6_17_projection_has_no_recall_storage_or_runtime_fields() -> None:
     projection = project_snapshot_compaction(isolated_duplicate_snapshot())
     forbidden = {"recall_universe", "recall_result", "rank", "priority", "truth", "trust", "semantic_score", "storage_path", "cache_key", "runtime_handle", "field_mutation", "apply_result"}
     assert forbidden.isdisjoint(projection.__dataclass_fields__)
+
+
+def _assert_validate_and_expand_structured(snapshot, projection, reason: str) -> None:
+    for fn in (validate_snapshot_compaction_projection, expand_snapshot_compaction_projection):
+        with pytest.raises(DG6AdapterError) as error:
+            fn(snapshot, projection)
+        assert error.value.reason_code == reason
+        assert not any(token in str(error.value) for token in ("AttributeError", "TypeError", "ValueError", "KeyError"))
+
+
+def _recursive_listing(root: Path) -> tuple[str, ...]:
+    return tuple(sorted(str(path.relative_to(root)) for path in root.rglob("*")))
