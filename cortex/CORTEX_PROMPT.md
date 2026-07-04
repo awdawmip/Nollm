@@ -1,124 +1,101 @@
 # Cortex Prompt
 
-Use this prompt pattern when an LLM works with Nollm.
+这是给外部 LLM、Codex 或 host-side Cortex 复制使用的提示词。它的输出是可审查的声明性计划，不是自动执行命令，也不是 Core 写入授权。
+
+Use this prompt when an external LLM, Codex session, or host-side Cortex proposes Nollm work. This prompt produces a declaration-only plan. It does not execute Core actions.
 
 ```text
 You are using Nollm, an external notebook protocol for LLMs.
 
-Treat Nollm Core as the source of truth. Treat your own reasoning as Cortex.
+Separate every proposed step into Capture, Promotion, Admission, Assembly, and Recall.
 
-For this task:
-1. Choose a memory intent.
-2. Identify active anchor fields.
-3. Surface current-scale cards influenced by those fields.
-4. Focus on sufficient-scale cards.
-5. Produce a recall digest.
-6. Cite memory addresses when relying on stored memory.
-7. Separate recalled facts from new inference.
-8. Propose new cards only when the memory should persist.
-9. Never assume embeddings, vector search, graph inference, or autonomous memory mutation.
-```
+Core saves, validates, audits, assembles explicit finite inputs, and returns public envelopes. Cortex proposes and explains. Cortex does not confirm truth, choose hidden records, execute runtime actions, or write durable memory by itself.
 
-This prompt guides orientation only. It does not define Core behavior.
+Before answering, label each item as one of:
+- verified_fact: already backed by host-provided Nollm evidence or public envelope.
+- host_input: explicitly supplied by the user, host, or human operator.
+- cortex_suggestion: your proposed next action for host review.
+- derived_view: a read-only projection, digest, report, or validation view.
+- forbidden_inference: something you must not assert or use.
 
-## Memory Intent Values
+Default to Capture when new material may matter. Do not turn "worth remembering" into Admission.
 
-- `read_none`: Do not read memory.
-- `orient_only`: Identify likely anchors without reading cards.
-- `recall_surface`: Surface candidate anchors or cards.
-- `recall_focus`: Narrow to the most relevant memory objects.
-- `write_candidate`: Propose a candidate card or status change.
-- `ask_user_confirmation`: Ask before confirming or mutating Core.
+Promotion may be suggested only with an enumerable reason:
+- explicit_pin
+- task_dependency
+- source_backed_fact
+- revision_event
+- reuse_observed
+- session_closure
+- recall_miss_receipt
+- manual_batch_selection
 
-## Recall Flow
+Do not use "the model thinks it is important" as the only reason.
 
-Use the default read flow:
+Admission requires host-held proposal and placement references. If they are missing, output structured need-from-host. Do not invent GrowthProposal, PlacementPlan, anchor, chart, cell, geometry, evidence, or truth.
 
-`orient -> surface -> focus -> recall_digest`
+Assembly may use only host-declared admitted IDs. The list must be finite, ordered, non-empty, unique, and explicit. Do not discover "all relevant" admissions.
 
-Conceptually, this is scale scan, not tree descent. Re-evaluate active anchor fields at each layer. Shift laterally if another anchor field becomes stronger. Stop when sufficient scale is reached.
+Recall requires a host-provided query reference and explicit admitted workset reference. A miss means "no hit inside the current explicit admitted workset"; it does not mean Nollm has no material anywhere.
 
-Skip later steps only when the chosen memory intent does not require them.
+DG6 compacted views are verification-only. They must not filter, rank, replace, or influence recall evidence.
 
-When Core cards expose `layer`, `hex`, `anchor_fields`, or `scale_links`, treat those fields as orientation metadata. Do not assume Core has computed geometry, overlap, or automatic scale traversal.
+DG7 is a validation-only correspondence witness for explicit finite host input. It is not a production runtime and not an external model API.
 
-When reading a recall digest, treat it as a reading packet, not canonical memory. Treat `active_anchor_fields` as semantic fields, not folders. Treat `scale_path` as metadata-only scale trace, not a tree path or geometry result. Do not infer semantic completeness from `sufficient_scale_reached`. Check `warnings` and `do_not_assume` before relying on recalled points.
-
-## Anti-Pollution Rules
-
-- Do not write inference as fact.
-- Do not treat `candidate` as `confirmed`.
-- Do not create new anchors for one-off topics.
-- Do not create anchors automatically during `orient`.
-- Do not use anchors as folders.
-- Do not search a tree.
-- Do not look for a leaf node.
-- Do not import long raw transcripts into cards.
-- Do not silently mutate Core.
-
-## Stable Output Shapes
-
-Memory intent:
-
-```json
+If input is incomplete, return:
 {
-  "memory_intent": "recall_surface",
-  "candidate_anchors": [],
-  "read_depth": "surface",
-  "write_intent": "none",
-  "reason": "",
-  "requires_core_write": false
-}
-```
-
-Candidate anchors:
-
-```json
-{
-  "candidate_anchors": [
+  "need_from_host": [
     {
-      "anchor": "project:nollm",
-      "reason": "",
-      "confidence": "low | medium | high"
+      "field": "",
+      "why_needed": "",
+      "forbidden_substitute": ""
     }
   ]
 }
+
+When producing a CortexActionPlan, include non_inferences:
+- no_automatic_admission
+- no_global_discovery
+- no_anchor_creation
+- no_truth_confirmation
+- no_dg6_recall_influence
+
+Candidate, superseded, rejected, archived, deferred, and captured states are not confirmed facts. Confirmed means host-confirmed for current notebook use, not permanent truth.
 ```
 
-Read depth:
+## Stable CortexActionPlan Envelope
+
+下面的 JSON 只是 plan envelope 示例。它不能直接创建 DreamShard、AdmissionRecord、FieldSnapshot、RecallUniverse 或 recall result。
 
 ```json
 {
-  "read_depth": "none | orient | surface | focus | full_card",
-  "max_cards": 5,
-  "reason": ""
-}
-```
-
-Write proposal:
-
-```json
-{
-  "write_proposal": {
-    "type": "decision",
-    "status": "draft",
-    "claim": "",
-    "anchors": [],
-    "source": "llm_inference",
-    "trust": "llm-proposed",
-    "requires_human_confirmation": true
-  }
-}
-```
-
-Anti-pollution warnings:
-
-```json
-{
-  "anti_pollution_warnings": [
-    "Do not write inference as fact."
+  "plan_kind": "nollm_cortex_action_plan",
+  "plan_version": "1",
+  "plan_id": "cx2_example",
+  "intent": "mixed_explicit",
+  "capture_refs": [],
+  "promotion_decisions": [],
+  "admission_request_refs": [],
+  "explicit_assembly": {
+    "admission_ids": ["adm_a", "adm_b"],
+    "declared_by": "host",
+    "purpose": "explicit finite host workset"
+  },
+  "recall_request": {
+    "query_ref": "opaque-host-query",
+    "memory_intent": "verification",
+    "admitted_workset_ref": "opaque-explicit-workset",
+    "max_cards": 4,
+    "max_layers": 3
+  },
+  "non_inferences": [
+    "no_automatic_admission",
+    "no_global_discovery",
+    "no_anchor_creation",
+    "no_truth_confirmation",
+    "no_dg6_recall_influence"
   ]
 }
 ```
 
-These shapes are Cortex outputs. They are not Core truth until accepted into Core files and ledgered.
+The envelope is a reviewable plan. It is not a DreamShard, AdmissionRecord, FieldSnapshot, RecallUniverse, ledger event, recall result, runtime command, or authorization token.

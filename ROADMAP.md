@@ -72,7 +72,8 @@ The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_
 - GEO1: Finite Geometry Evidence Consolidation / Production-Freeze Gate is accepted on main at `b16133fdc7599dc2e4a91e6bfd66438ffa61bfe2` with GEO1-C1 canonical evidence hash and accepted-baseline anchor closure completed.
 - DG5: Evidence-preserving trace compaction capability is accepted at `5e91504d0f3961be9631856a8853a58ca6bd1921` as a finite, view-only CompressionPlan / CompactedTraceView with lossless expansion.
 - DG6: Isolated snapshot compaction adapter is accepted at `47eca074045cede79d19b897ff4cae48dca23ab6` after DG6-C2 replay trace identity preflight closure.
-- DG7: Explicit reference runtime positive verification is implemented as a validation-only local Python runner over explicit CI1->BA1->DA1->DF1->DG6->DR1->DI1 host input; final acceptance pending.
+- DG7: Explicit reference runtime positive verification is implemented and accepted at `5275d4d6bcb49d2c405296872f331eb6a579b7e1` after DG7-C1 explicit assembly declaration binding and delivery evidence closure.
+- CX2: External Cortex Integration / Conformance Pack is implemented as a validation-only declaration protocol, prompt/policy pack, synthetic fixture validator, and reproducible conformance report; final acceptance pending.
 
 W2/OpenClaw runtime work is historical background for this route, not the current V2 mainline and not a DG0 prerequisite.
 
