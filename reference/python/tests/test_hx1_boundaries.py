@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from nollm.dream_geometry.host_execution import HX1ExecutionError, HostExecutionContext, execute_host_plan
+from nollm.dream_geometry.host_execution import HX1ExecutionError, HostExecutionContext, HostPlanBindings, execute_host_plan
 
 from test_hx1_trusted_host_bridge import hx1_fixture
 
@@ -42,3 +43,51 @@ def test_hx1_public_errors_do_not_expose_trace_or_paths(tmp_path) -> None:
     rendered = str(error.value)
     for forbidden in ("Traceback", "AttributeError", "KeyError", "TypeError", "ValueError", "nollm.dream_geometry"):
         assert forbidden not in rendered
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    (
+        ("recorded_at", None),
+        ("batch_window_id", None),
+        ("batch_policy_id", None),
+        ("batch_source_ref", None),
+        ("finite_set_id", None),
+        ("enable_dg6_verification", "false"),
+    ),
+)
+def test_hx1_c2_invalid_context_fields_reject_before_write(tmp_path, field, value) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    context = replace(fixture["context"], **{field: value})
+    _assert_context_zero_write(fixture["plan"], fixture["bindings"], context, tmp_path / "work")
+
+
+def test_hx1_c2_declared_dg6_requires_enabled_context_before_write(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    context = replace(fixture["context"], enable_dg6_verification=False)
+    _assert_context_zero_write(fixture["plan"], fixture["bindings"], context, tmp_path / "work")
+
+
+def test_hx1_c2_dg6_enablement_controls_projection_without_recall_influence(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "with_dg6")
+    receipt = execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+    assert receipt.dg6_projection_id
+
+    no_dg6_fixture = hx1_fixture(tmp_path / "without_dg6")
+    plan = replace(no_dg6_fixture["plan"], derived_views=())
+    bindings = replace(no_dg6_fixture["bindings"], dg6_binding=None)
+    context = replace(no_dg6_fixture["context"], enable_dg6_verification=False)
+    receipt = execute_host_plan(plan, bindings, context)
+    assert receipt.status == "completed"
+    assert receipt.dg6_projection_id is None
+    assert receipt.recall_public_envelope is not None
+
+
+def _assert_context_zero_write(plan, bindings: HostPlanBindings, context, work_root) -> None:
+    with pytest.raises(HX1ExecutionError) as error:
+        execute_host_plan(plan, bindings, context)
+    assert error.value.reason_code == "HX1_INVALID_CONTEXT"
+    assert type(error.value) is HX1ExecutionError
+    for forbidden in ("Traceback", "AttributeError", "TypeError", "KeyError", "ValueError", "nollm.dream_geometry", "\\"):
+        assert forbidden not in str(error.value)
+    assert not work_root.exists() or list(work_root.iterdir()) == []

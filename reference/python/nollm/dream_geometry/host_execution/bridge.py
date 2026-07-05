@@ -115,7 +115,7 @@ def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, pl
 
         try:
             before = _run_recall(plan, bindings, context, evidence, assembly)
-            if bindings.dg6_binding is not None:
+            if context.enable_dg6_verification and bindings.dg6_binding is not None:
                 projection = project_snapshot_compaction(assembly.snapshot)
                 validate_snapshot_compaction_projection(assembly.snapshot, projection)
                 if tuple(expand_snapshot_compaction_projection(assembly.snapshot, projection)) != assembly.snapshot.replayed_traces:

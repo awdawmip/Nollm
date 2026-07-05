@@ -5,16 +5,20 @@ HX1 adds a trusted internal staged execution bridge under `reference/python/noll
 Delivered behavior:
 
 - CX2 plan validation plus exact host binding preflight.
+- Nested host public value preflight before fingerprinting, work-root creation, or staged execution.
+- Context semantic validation for batch ids, finite set id, timestamp, and DG6 enablement.
 - CI1 capture execution with explicit capture bindings.
 - BA1/DA1 admission for explicit candidates and requests.
 - DF1 finite explicit assembly with admitted-but-unassembled exclusion.
 - DG6 verification-only projection non-influence check.
+- DG6 projection gated by explicit plan declaration, exact binding, and enabled context.
 - DR1/DI1 read-only recall over the finite universe.
 - Structured completed, partial, and rejected receipts.
 - Same plan, same bindings, same context, and same owned work-root idempotent receipt reopen.
 - Fail-closed reopen when a plan id is reused with different effective inputs.
 - Exact same-call mixed admission ids equal explicit assembly ids.
 - Pre-existing admitted-but-unassembled D control rather than same-call hidden admission.
+- No-DG6 plans can complete with DG6 disabled and no projection id.
 
 Not delivered:
 
