@@ -1,0 +1,43 @@
+# HX1 Trusted Host Staged Execution Report
+
+## Scope
+
+HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes a trusted internal staged workflow over one finite work-root. It is not OpenClaw, an external API, an agent runtime, automatic memory, global discovery, semantic search, cache, database, network, LLM, NLP, or daemon work.
+
+## Scenario Inventory
+
+- HX1-01 mixed explicit A/B/C/D: completed
+- HX1-02 capture-only: covered by pytest
+- HX1-03 admission-only: covered by pytest
+- HX1-05 zero-write preflight rejection: covered by pytest
+- HX1-06 partial outcome after capture: covered by pytest
+- HX1-07 idempotent reopen: completed
+- HX1-08 DG6 strict non-influence: completed by before/after DI1 equality guard
+
+## Results
+
+- completed outcome count: 1
+- partial outcome count: covered by pytest
+- rejected outcome count: covered by pytest
+- receipt status: completed
+- completed stages: capture, admission, assembly, recall
+- admission receipt ids: adm_hx1_a, adm_hx1_b, adm_hx1_d
+- explicit assembly ids: adm_hx1_a, adm_hx1_b
+- snapshot source ids: adm_hx1_a, adm_hx1_b
+- C captured/deferred isolation: not present in snapshot or recall envelope
+- D admitted/unassembled isolation: not present in snapshot or recall envelope
+- DG6 projection id: snapshot_compaction_projection:dg6:92a6f5e9940140f695e104aa3826bc15
+- recall envelope status: resolved
+- idempotent reopen: canonical mapping identical
+- forbidden output directories: none
+- canonical receipt fingerprint: sha256:b89a45d736162edd03972e749edc4e79349ad0bcd81a253efa972bb0b113709a
+- canonical receipt sha256: fa2d4a0a013282f5d6f266f787daf4ab6056dac152c912daf640d94c596d742b
+
+## Commands
+
+- `python -m pytest -q reference/python/tests/test_hx1_trusted_host_bridge.py reference/python/tests/test_hx1_host_binding_preflight.py reference/python/tests/test_hx1_staged_outcomes.py reference/python/tests/test_hx1_receipt_regeneration.py reference/python/tests/test_hx1_boundaries.py`
+- `python validation/hx1/run_hx1_validation.py --output validation/hx1/HX1_TRUSTED_HOST_STAGED_EXECUTION_REPORT.md`
+
+## Non-Goals
+
+HX1 does not implement OpenClaw, runtime integration, network service, LLM/NLP calls, embeddings, vector search, automatic admission, GrowthProposal generation, PlacementPlan generation, global admission discovery, cache, database, session manager, daemon, or durable global field persistence.
