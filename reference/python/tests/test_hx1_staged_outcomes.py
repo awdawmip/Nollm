@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 
 from nollm.dream_geometry.validation.cx2.types import AdmissionRequestRef, CortexActionPlan, PromotionDecision
-from nollm.dream_geometry.host_execution import HostPlanBindings, execute_host_plan, receipt_to_mapping
+from nollm.dream_geometry.host_execution import HX1ExecutionError, HostPlanBindings, execute_host_plan, receipt_to_mapping
+from nollm.dream_geometry.host_execution.bridge import _validate_runtime_admission_ids
 
 from test_hx1_trusted_host_bridge import (
     NON_INFERENCES,
@@ -56,9 +57,21 @@ def test_hx1_06_capture_is_preserved_after_admission_failure(tmp_path) -> None:
     assert mapping["status"] == "partial"
     assert mapping["failed_stage"] == "admission"
     assert mapping["completed_stages"] == ["capture"]
-    assert len(mapping["capture_receipt_views"]) == 4
+    assert len(mapping["capture_receipt_views"]) == 3
+    assert mapping["execution_input_fingerprint"].startswith("sha256:")
     assert mapping["snapshot_id"] is None
     assert mapping["recall_public_envelope"] is None
+
+
+def test_hx1_c1_runtime_admission_tuple_guard_rejects_before_assembly(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    try:
+        _validate_runtime_admission_ids(fixture["plan"], ("adm_hx1_b", "adm_hx1_a"))
+    except HX1ExecutionError as error:
+        assert error.reason_code == "HX1_ADMISSION_STATE_MISMATCH"
+        assert error.failed_stage == "admission"
+    else:
+        raise AssertionError("runtime admission tuple mismatch unexpectedly passed")
 
 
 def _admission_only_plan(label: str) -> CortexActionPlan:

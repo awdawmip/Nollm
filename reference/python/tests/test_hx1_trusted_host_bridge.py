@@ -4,6 +4,7 @@ from dataclasses import replace
 from hashlib import sha256
 import json
 
+from nollm.dream_geometry.admission import MemoryAdmissionOrchestrator, open_store as open_admission_store
 from nollm.dream_geometry.adapters import RecallInvocation
 from nollm.dream_geometry.admission import AdmissionPlacementPlan, AdmissionRequest, AxisPlacement
 from nollm.dream_geometry.capture import (
@@ -20,7 +21,9 @@ from nollm.dream_geometry.capture import (
 )
 from nollm.dream_geometry.capture.policy import policy_fingerprint
 from nollm.dream_geometry.cortex import compile_query
+from nollm.dream_geometry.cortex import open_store as open_cortex_store
 from nollm.dream_geometry.evidence import DreamShard, OriginDescriptor, TemporalContext
+from nollm.dream_geometry.evidence import open_store as open_evidence_store
 from nollm.dream_geometry.geometry import AxialCoord, LocalChart, Vec2, make_hex_cell
 from nollm.dream_geometry.host_execution import (
     HostAdmissionBinding,
@@ -57,6 +60,7 @@ NON_INFERENCES = (
 
 
 def test_hx1_01_mixed_explicit_real_chain_isolates_c_and_d(tmp_path) -> None:
+    setup_preexisting_d(tmp_path / "work")
     fixture = hx1_fixture(tmp_path / "work")
     receipt = execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
     mapping = receipt_to_mapping(receipt)
@@ -64,20 +68,23 @@ def test_hx1_01_mixed_explicit_real_chain_isolates_c_and_d(tmp_path) -> None:
 
     assert mapping["status"] == "completed"
     assert mapping["completed_stages"] == ["capture", "admission", "assembly", "recall"]
-    assert mapping["admission_receipt_ids"] == ["adm_hx1_a", "adm_hx1_b", "adm_hx1_d"]
+    assert mapping["admission_receipt_ids"] == ["adm_hx1_a", "adm_hx1_b"]
     assert mapping["explicit_assembly_admission_ids"] == ["adm_hx1_a", "adm_hx1_b"]
     assert mapping["snapshot_source_admission_ids"] == ["adm_hx1_a", "adm_hx1_b"]
+    assert mapping["execution_input_fingerprint"].startswith("sha256:")
     assert mapping["dg6_projection_id"]
     assert mapping["recall_public_envelope"]["status"] == "resolved"
     assert "hx1 captured control" not in rendered
     assert "hx1 admitted but excluded" not in rendered
+    assert _admission_record_exists(tmp_path / "work", "adm_hx1_d")
+    assert not _admission_record_exists(tmp_path / "work", "adm_hx1_c")
     _assert_no_forbidden_dirs(tmp_path / "work")
 
 
 def hx1_fixture(work_root):
-    labels = ("a", "b", "c", "d")
+    labels = ("a", "b", "c")
     capture_bindings = tuple(HostCaptureBinding(f"cap_hx1_{label}", *_capture(label)) for label in labels)
-    admission_bindings = tuple(_admission_binding(label) for label in ("a", "b", "d"))
+    admission_bindings = tuple(_admission_binding(label) for label in ("a", "b"))
     plan = CortexActionPlan(
         "nollm_cortex_action_plan",
         "1",
@@ -93,7 +100,7 @@ def hx1_fixture(work_root):
                 ("explicit_pin", "manual_batch_selection"),
                 "human_operator",
             )
-            for label in ("a", "b", "d")
+            for label in ("a", "b")
         ),
         admission_request_refs=tuple(
             AdmissionRequestRef(
@@ -103,7 +110,7 @@ def hx1_fixture(work_root):
                 f"gp_hx1_{label}",
                 f"apl_hx1_{label}",
             )
-            for label in ("a", "b", "d")
+            for label in ("a", "b")
         ),
         explicit_assembly=ExplicitAssembly(("adm_hx1_a", "adm_hx1_b"), "host", "explicit finite host workset"),
         recall_request=RecallRequest("query:hx1:kunming-rain", "verification", "workset:hx1:a-b", 4, 2),
@@ -119,17 +126,53 @@ def hx1_fixture(work_root):
     return {"plan": plan, "bindings": bindings, "context": HostExecutionContext(work_root, RECORDED_AT)}
 
 
-def capture_only_fixture(work_root):
-    request, policy = _capture("e")
+def setup_preexisting_d(work_root):
+    plan, bindings, context = capture_only_fixture(work_root, "d", plan_id="cx2_hx1_capture_d")
+    execute_host_plan(plan, bindings, context)
+    admission_plan = admission_only_plan("d", plan_id="cx2_hx1_admission_d")
+    execute_host_plan(admission_plan, HostPlanBindings(admission_bindings=(_admission_binding("d"),)), context)
+
+
+def capture_only_fixture(work_root, label: str = "e", *, plan_id: str = "cx2_hx1_capture_only"):
+    request, policy = _capture(label)
     plan = CortexActionPlan(
         "nollm_cortex_action_plan",
         "1",
-        "cx2_hx1_capture_only",
+        plan_id,
         "capture_only",
-        capture_refs=(CaptureRef("cap_hx1_e", "shard_hx1_e", "captured", "candidate", "tentative", "source_window"),),
+        capture_refs=(CaptureRef(f"cap_hx1_{label}", f"shard_hx1_{label}", "captured", "candidate", "tentative", "source_window"),),
         non_inferences=NON_INFERENCES,
     )
-    return plan, HostPlanBindings((HostCaptureBinding("cap_hx1_e", request, policy),)), HostExecutionContext(work_root, RECORDED_AT)
+    return plan, HostPlanBindings((HostCaptureBinding(f"cap_hx1_{label}", request, policy),)), HostExecutionContext(work_root, RECORDED_AT)
+
+
+def admission_only_plan(label: str, *, plan_id: str | None = None) -> CortexActionPlan:
+    return CortexActionPlan(
+        "nollm_cortex_action_plan",
+        "1",
+        plan_id or f"cx2_hx1_admission_{label}",
+        "admission",
+        promotion_decisions=(
+            PromotionDecision(
+                f"pmd_hx1_{label}",
+                f"dac_hx1_{label}",
+                f"shard_hx1_{label}",
+                "promote",
+                ("explicit_pin", "manual_batch_selection"),
+                "human_operator",
+            ),
+        ),
+        admission_request_refs=(
+            AdmissionRequestRef(
+                f"admreq_hx1_{label}",
+                f"pmd_hx1_{label}",
+                f"shard_hx1_{label}",
+                f"gp_hx1_{label}",
+                f"apl_hx1_{label}",
+            ),
+        ),
+        non_inferences=NON_INFERENCES,
+    )
 
 
 def _capture(label: str):
@@ -292,4 +335,21 @@ def _assert_no_forbidden_dirs(work_root) -> None:
         assert not (work_root / name).exists()
 
 
-__all__ = ["capture_only_fixture", "hx1_fixture", "replace"]
+def _admission_record_exists(work_root, admission_id: str) -> bool:
+    evidence = open_evidence_store(work_root / "evidence")
+    cortex = open_cortex_store(work_root / "cortex", evidence)
+    replay_only = MemoryAdmissionOrchestrator(evidence, cortex, _ReplayValidatedReferences())
+    admission = open_admission_store(work_root / "admission", evidence, cortex, replay_only.validate_replay_record)
+    try:
+        admission.get_admission_record(admission_id)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+class _ReplayValidatedReferences:
+    def validate_record_references(self, record) -> None:
+        return None
+
+
+__all__ = ["admission_only_plan", "capture_only_fixture", "hx1_fixture", "replace", "setup_preexisting_d"]

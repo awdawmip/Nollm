@@ -91,6 +91,7 @@ class HostExecutionReceipt:
     recall_public_envelope: dict[str, Any] | None
     partial_outcome_message: str | None
     work_root_marker_id: str
+    execution_input_fingerprint: str
     output_fingerprint: str
 
 

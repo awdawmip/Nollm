@@ -11,7 +11,10 @@ Delivered behavior:
 - DG6 verification-only projection non-influence check.
 - DR1/DI1 read-only recall over the finite universe.
 - Structured completed, partial, and rejected receipts.
-- Same plan and same owned work-root idempotent receipt reopen.
+- Same plan, same bindings, same context, and same owned work-root idempotent receipt reopen.
+- Fail-closed reopen when a plan id is reused with different effective inputs.
+- Exact same-call mixed admission ids equal explicit assembly ids.
+- Pre-existing admitted-but-unassembled D control rather than same-call hidden admission.
 
 Not delivered:
 

@@ -13,11 +13,12 @@ sys.path.insert(0, str(PYTHON_ROOT))
 sys.path.insert(0, str(TEST_ROOT))
 
 from nollm.dream_geometry.host_execution import execute_host_plan, receipt_to_mapping  # noqa: E402
-from test_hx1_trusted_host_bridge import hx1_fixture  # noqa: E402
+from test_hx1_trusted_host_bridge import hx1_fixture, setup_preexisting_d  # noqa: E402
 
 
 def main() -> int:
     work_root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(tempfile.mkdtemp(prefix="hx1_bridge_")) / "work"
+    setup_preexisting_d(work_root)
     fixture = hx1_fixture(work_root)
     receipt = execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
     print(json.dumps(receipt_to_mapping(receipt), sort_keys=True, indent=2))

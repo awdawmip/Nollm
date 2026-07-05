@@ -6,8 +6,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from nollm.dream_geometry.batch_admission import PromotionDecider, PromotionDecisionKind
-from nollm.dream_geometry.capture import VisibilityScope
+from nollm.dream_geometry.adapters import RecallInvocation
+from nollm.dream_geometry.admission import AdmissionRequest
+from nollm.dream_geometry.batch_admission import PromotionDecider, PromotionDecision as BA1PromotionDecision
+from nollm.dream_geometry.batch_admission import PromotionDecisionKind
+from nollm.dream_geometry.capture import CapturePolicy, CaptureRequest, VisibilityScope
 from nollm.dream_geometry.validation.cx2 import validate_cortex_action_plan
 from nollm.dream_geometry.validation.cx2.types import (
     AdmissionRequestRef,
@@ -20,25 +23,44 @@ from nollm.dream_geometry.validation.cx2.types import (
 )
 
 from .errors import HX1ExecutionError, stable_message
-from .types import HostAdmissionBinding, HostExecutionContext, HostPlanBindings
+from .types import HostAdmissionBinding, HostCaptureBinding, HostDG6VerificationBinding, HostExecutionContext, HostPlanBindings, HostRecallBinding
 
 
 FORBIDDEN_WORK_DIRS = ("field", "assembly", "recall", "cache", "database", "global-field")
 
 
 def preflight_host_plan(plan: CortexActionPlan | Mapping[str, Any], bindings: HostPlanBindings, context: HostExecutionContext):
+    _precheck_mixed_explicit_assembly(plan)
     try:
         summary = validate_cortex_action_plan(plan)
     except Exception as exc:
         raise HX1ExecutionError("HX1_INVALID_PLAN", stable_message(exc)) from exc
-    normalized = plan if isinstance(plan, CortexActionPlan) else _coerced_plan(plan)
-    _validate_context(context)
-    _validate_binding_shape(bindings)
-    _validate_capture_bindings(normalized, bindings)
-    _validate_admission_bindings(normalized, bindings)
-    _validate_recall_bindings(normalized, bindings)
-    _validate_dg6_bindings(normalized, bindings)
+    try:
+        normalized = plan if isinstance(plan, CortexActionPlan) else _coerced_plan(plan)
+        _validate_context(context)
+        _validate_binding_shape(bindings)
+        _validate_capture_bindings(normalized, bindings)
+        _validate_admission_bindings(normalized, bindings)
+        _validate_recall_bindings(normalized, bindings)
+        _validate_dg6_bindings(normalized, bindings)
+    except HX1ExecutionError:
+        raise
+    except Exception as exc:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", stable_message(exc)) from exc
     return summary, normalized
+
+
+def _precheck_mixed_explicit_assembly(plan: CortexActionPlan | Mapping[str, Any]) -> None:
+    try:
+        intent = plan.intent if isinstance(plan, CortexActionPlan) else plan.get("intent")
+        if intent != "mixed_explicit":
+            return
+        assembly = plan.explicit_assembly if isinstance(plan, CortexActionPlan) else plan.get("explicit_assembly")
+        ids = assembly.admission_ids if isinstance(assembly, ExplicitAssembly) else tuple(assembly.get("admission_ids", ()))
+    except Exception:
+        return
+    if not ids or len(set(ids)) != len(ids):
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "explicit assembly ids must be unique")
 
 
 def _coerced_plan(plan: Mapping[str, Any]) -> CortexActionPlan:
@@ -81,11 +103,47 @@ def _validate_binding_shape(bindings: HostPlanBindings) -> None:
     if not isinstance(bindings, HostPlanBindings):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "host bindings must be HostPlanBindings")
     for collection, cls, label in (
-        (bindings.capture_bindings, object, "capture bindings"),
+        (bindings.capture_bindings, HostCaptureBinding, "capture bindings"),
         (bindings.admission_bindings, HostAdmissionBinding, "admission bindings"),
     ):
         if not isinstance(collection, tuple):
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", f"{label} must be immutable tuples")
+        if any(not isinstance(binding, cls) for binding in collection):
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", f"{label} must contain structured host binding values")
+    if bindings.recall_binding is not None and not isinstance(bindings.recall_binding, HostRecallBinding):
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "recall binding must be HostRecallBinding")
+    if bindings.dg6_binding is not None and not isinstance(bindings.dg6_binding, HostDG6VerificationBinding):
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "DG6 binding must be HostDG6VerificationBinding")
+    for binding in bindings.capture_bindings:
+        _require_non_empty(binding.capture_id, "capture binding id")
+        if not isinstance(binding.request, CaptureRequest) or not isinstance(binding.policy, CapturePolicy):
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "capture binding request/policy type mismatch")
+    for binding in bindings.admission_bindings:
+        for value, label in (
+            (binding.request_id, "request_id"),
+            (binding.decision_id, "decision_id"),
+            (binding.candidate_id, "candidate_id"),
+            (binding.admission_id, "admission_id"),
+            (binding.member_id, "member_id"),
+            (binding.proposal_ref, "proposal_ref"),
+            (binding.placement_plan_ref, "placement_plan_ref"),
+        ):
+            _require_non_empty(value, label)
+        if binding.actual_candidate_id is not None:
+            _require_non_empty(binding.actual_candidate_id, "actual_candidate_id")
+        if binding.declared_shard_id is not None:
+            _require_non_empty(binding.declared_shard_id, "declared_shard_id")
+        if not isinstance(binding.decision, BA1PromotionDecision) or not isinstance(binding.request, AdmissionRequest):
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "admission binding decision/request type mismatch")
+    if bindings.recall_binding is not None:
+        _require_non_empty(bindings.recall_binding.query_ref, "query_ref")
+        _require_non_empty(bindings.recall_binding.admitted_workset_ref, "admitted_workset_ref")
+        if not isinstance(bindings.recall_binding.invocation, RecallInvocation):
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "recall binding invocation type mismatch")
+    if bindings.dg6_binding is not None:
+        _require_non_empty(bindings.dg6_binding.view_ref, "view_ref")
+        if bindings.dg6_binding.verification_only is not True:
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "DG6 binding must be verification-only")
     _reject_duplicate([binding.capture_id for binding in bindings.capture_bindings], "capture binding keys")
     _reject_duplicate([binding.request_id for binding in bindings.admission_bindings], "admission binding keys")
     _reject_duplicate([binding.admission_id for binding in bindings.admission_bindings], "bound admission ids")
@@ -103,7 +161,7 @@ def _validate_capture_bindings(plan: CortexActionPlan, bindings: HostPlanBinding
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", "capture request id must match plan capture id")
         if ref.visibility_scope != binding.request.requested_visibility_scope.value:
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", "capture visibility scope must match host request")
-        if ref.persistence_state == "ephemeral" and binding.request.visibility_scope is not VisibilityScope.current_turn:
+        if ref.persistence_state == "ephemeral" and binding.request.requested_visibility_scope is not VisibilityScope.current_turn:
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", "ephemeral capture must use current_turn visibility")
 
 
@@ -135,7 +193,9 @@ def _validate_admission_bindings(plan: CortexActionPlan, bindings: HostPlanBindi
         declared = plan.explicit_assembly.admission_ids
         if not declared or len(set(declared)) != len(declared):
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", "explicit assembly ids must be unique")
-        if not _ordered_subsequence(declared, bound):
+        if plan.intent == "mixed_explicit" and bound != declared:
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "mixed explicit admission bindings must exactly equal explicit assembly ids")
+        if plan.intent != "mixed_explicit" and not _ordered_subsequence(declared, bound):
             raise HX1ExecutionError("HX1_INVALID_BINDINGS", "explicit assembly ids must be an ordered subset of bound admission ids")
 
 
@@ -187,6 +247,11 @@ def _validate_dg6_bindings(plan: CortexActionPlan, bindings: HostPlanBindings) -
 def _reject_duplicate(values: list[str], label: str) -> None:
     if len(values) != len(set(values)):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", f"{label} must be unique")
+
+
+def _require_non_empty(value: object, label: str) -> None:
+    if not isinstance(value, str) or not value:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", f"{label} must be non-empty string")
 
 
 def _ordered_subsequence(expected: tuple[str, ...], actual: tuple[str, ...]) -> bool:

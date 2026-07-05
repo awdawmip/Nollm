@@ -21,7 +21,14 @@ State separation:
 
 - Capture success is not admission success.
 - Admission success is not inclusion in this assembly.
+- For `mixed_explicit`, same-call admission receipt ids must exactly equal `ExplicitAssembly.admission_ids` in order.
+- Admitted-but-unassembled controls, such as D in validation, must be pre-existing host setup and not same-call hidden admissions.
 - DG6 projection is not recall input.
 - Recall miss is not global memory absence.
+
+Receipt reopen:
+
+- `execution_input_fingerprint` binds the normalized plan, explicit host bindings, and execution context.
+- Reusing a plan id with changed bindings, query refs, policies, context, or DG6 refs fails closed with `HX1_REOPEN_MISMATCH`.
 
 HX1 is not OpenClaw integration, an external API, a daemon, automatic memory, automatic admission, semantic search, vector search, cache, database, network, LLM/NLP, or global discovery.

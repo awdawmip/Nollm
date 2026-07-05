@@ -20,7 +20,7 @@ from nollm.dream_geometry.recall import RecallDigestStatus, resolve_recall
 
 from .bindings import FORBIDDEN_WORK_DIRS, preflight_host_plan
 from .errors import HX1ExecutionError, stable_message
-from .serialization import canonical_json, receipt_to_mapping, stable_fingerprint
+from .serialization import canonical_json, execution_input_fingerprint, receipt_to_mapping, stable_fingerprint
 from .types import CaptureReceiptView, HostExecutionContext, HostExecutionReceipt, HostPlanBindings
 
 
@@ -31,13 +31,26 @@ RECEIPT_KIND = "nollm_hx1_host_execution_receipt"
 
 def execute_host_plan(plan, bindings: HostPlanBindings, context: HostExecutionContext) -> HostExecutionReceipt:
     summary, normalized = preflight_host_plan(plan, bindings, context)
+    input_fingerprint = execution_input_fingerprint(normalized, bindings, context)
     work_root = _prepare_work_root(Path(context.work_root), summary.plan_id)
     cached = _receipt_path(work_root, summary.plan_id)
     if cached.exists():
-        return _receipt_from_mapping(json.loads(cached.read_text(encoding="utf-8")))
+        try:
+            receipt = _receipt_from_mapping(json.loads(cached.read_text(encoding="utf-8")))
+        except Exception as exc:
+            raise HX1ExecutionError(
+                "HX1_REOPEN_MISMATCH",
+                "owned work root already contains a receipt for a different execution input",
+            ) from exc
+        if receipt.execution_input_fingerprint != input_fingerprint:
+            raise HX1ExecutionError(
+                "HX1_REOPEN_MISMATCH",
+                "owned work root already contains a receipt for a different execution input",
+            )
+        return receipt
 
     try:
-        receipt = _execute(normalized, bindings, context, summary.plan_id, work_root)
+        receipt = _execute(normalized, bindings, context, summary.plan_id, work_root, input_fingerprint)
     except HX1ExecutionError:
         raise
     except Exception as exc:
@@ -50,12 +63,11 @@ def execute_host_plan(plan, bindings: HostPlanBindings, context: HostExecutionCo
     return receipt
 
 
-def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, plan_id: str, work_root: Path) -> HostExecutionReceipt:
+def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, plan_id: str, work_root: Path, input_fingerprint: str) -> HostExecutionReceipt:
     evidence = open_evidence_store(work_root / "evidence")
     capture = CaptureIngress(work_root / "capture")
     cortex = open_cortex_store(work_root / "cortex", evidence)
-    admission = open_admission_store(work_root / "admission", evidence, cortex)
-    orchestrator = MemoryAdmissionOrchestrator(evidence, cortex, admission)
+    admission, orchestrator = _open_admission_and_orchestrator(work_root / "admission", evidence, cortex)
     coordinator = BatchAdmissionCoordinator(capture.state_store, evidence, orchestrator)
 
     completed: list[str] = []
@@ -74,22 +86,23 @@ def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, pl
         except Exception as exc:
             raise HX1ExecutionError("HX1_CAPTURE_REJECTED", stable_message(exc), failed_stage="capture") from exc
         if plan.intent == "capture_only":
-            return _final_receipt(plan, "completed", tuple(completed), None, tuple(capture_views), (), (), None, (), None, None, None)
+            return _final_receipt(plan, input_fingerprint, "completed", tuple(completed), None, tuple(capture_views), (), (), None, (), None, None, None)
 
     if plan.intent in {"admission", "mixed_explicit"}:
         try:
             admission_ids = _run_admission_stage(plan, bindings, context, capture, coordinator)
+            _validate_runtime_admission_ids(plan, admission_ids)
             completed.append("admission")
         except HX1ExecutionError as exc:
             if completed:
-                return _final_receipt(plan, "partial", tuple(completed), "admission", tuple(capture_views), (), _assembly_ids(plan), None, (), None, None, str(exc))
+                return _final_receipt(plan, input_fingerprint, "partial", tuple(completed), "admission", tuple(capture_views), admission_ids, _assembly_ids(plan), None, (), None, None, str(exc))
             raise
         except Exception as exc:
             if completed:
-                return _final_receipt(plan, "partial", tuple(completed), "admission", tuple(capture_views), (), _assembly_ids(plan), None, (), None, None, "admission stage rejected after capture")
+                return _final_receipt(plan, input_fingerprint, "partial", tuple(completed), "admission", tuple(capture_views), admission_ids, _assembly_ids(plan), None, (), None, None, "admission stage rejected after capture")
             raise HX1ExecutionError("HX1_ADMISSION_REJECTED", stable_message(exc), failed_stage="admission") from exc
         if plan.intent == "admission":
-            return _final_receipt(plan, "completed", tuple(completed), None, tuple(capture_views), admission_ids, (), None, (), None, None, None)
+            return _final_receipt(plan, input_fingerprint, "completed", tuple(completed), None, tuple(capture_views), admission_ids, (), None, (), None, None, None)
 
     if plan.intent in {"recall", "mixed_explicit"}:
         try:
@@ -97,7 +110,7 @@ def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, pl
             completed.append("assembly")
         except Exception as exc:
             if completed:
-                return _final_receipt(plan, "partial", tuple(completed), "assembly", tuple(capture_views), admission_ids, _assembly_ids(plan), None, (), None, None, "assembly stage rejected after admission")
+                return _final_receipt(plan, input_fingerprint, "partial", tuple(completed), "assembly", tuple(capture_views), admission_ids, _assembly_ids(plan), None, (), None, None, "assembly stage rejected after admission")
             raise HX1ExecutionError("HX1_ASSEMBLY_REJECTED", stable_message(exc), failed_stage="assembly") from exc
 
         try:
@@ -114,10 +127,10 @@ def _execute(plan, bindings: HostPlanBindings, context: HostExecutionContext, pl
             recall_envelope = after
             completed.append("recall")
         except HX1ExecutionError as exc:
-            return _final_receipt(plan, "partial", tuple(completed), exc.failed_stage or "recall", tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, None, str(exc))
+            return _final_receipt(plan, input_fingerprint, "partial", tuple(completed), exc.failed_stage or "recall", tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, None, str(exc))
         except Exception as exc:
-            return _final_receipt(plan, "partial", tuple(completed), "recall", tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, None, "recall stage rejected after assembly")
-        return _final_receipt(plan, "completed", tuple(completed), None, tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, recall_envelope, None)
+            return _final_receipt(plan, input_fingerprint, "partial", tuple(completed), "recall", tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, None, "recall stage rejected after assembly")
+        return _final_receipt(plan, input_fingerprint, "completed", tuple(completed), None, tuple(capture_views), admission_ids, _assembly_ids(plan), assembly.snapshot.snapshot_id, assembly.snapshot.source_admission_ids, dg6_projection_id, recall_envelope, None)
 
     raise HX1ExecutionError("HX1_UNSUPPORTED_INTENT", "unsupported HX1 plan intent")
 
@@ -170,6 +183,29 @@ def _run_admission_stage(plan, bindings: HostPlanBindings, context: HostExecutio
     return tuple(member.admission_receipt.admission_id for member in receipt.member_receipts)
 
 
+def _open_admission_and_orchestrator(admission_root: Path, evidence, cortex):
+    if (admission_root / "records").exists() and any((admission_root / "records").glob("*.json")):
+        replay_only = MemoryAdmissionOrchestrator(evidence, cortex, _ReplayValidatedReferences())
+        admission = open_admission_store(admission_root, evidence, cortex, replay_only.validate_replay_record)
+    else:
+        admission = open_admission_store(admission_root, evidence, cortex)
+    return admission, MemoryAdmissionOrchestrator(evidence, cortex, admission)
+
+
+class _ReplayValidatedReferences:
+    def validate_record_references(self, record) -> None:
+        return None
+
+
+def _validate_runtime_admission_ids(plan, actual_admission_ids: tuple[str, ...]) -> None:
+    if plan.intent == "mixed_explicit" and actual_admission_ids != _assembly_ids(plan):
+        raise HX1ExecutionError(
+            "HX1_ADMISSION_STATE_MISMATCH",
+            "mixed explicit actual admission ids must exactly equal explicit assembly ids",
+            failed_stage="admission",
+        )
+
+
 def _run_assembly_stage(plan, bindings: HostPlanBindings, context: HostExecutionContext, evidence, cortex, admission, orchestrator):
     ids = _assembly_ids(plan)
     sources = _admission_sources(evidence, cortex, admission, orchestrator, ids)
@@ -208,7 +244,7 @@ def _assembly_ids(plan) -> tuple[str, ...]:
     return () if plan.explicit_assembly is None else plan.explicit_assembly.admission_ids
 
 
-def _final_receipt(plan, status, completed, failed, capture_views, admission_ids, explicit_ids, snapshot_id, snapshot_ids, dg6_id, recall_envelope, partial_message) -> HostExecutionReceipt:
+def _final_receipt(plan, input_fingerprint, status, completed, failed, capture_views, admission_ids, explicit_ids, snapshot_id, snapshot_ids, dg6_id, recall_envelope, partial_message) -> HostExecutionReceipt:
     partial = HostExecutionReceipt(
         RECEIPT_KIND,
         plan.plan_id,
@@ -225,6 +261,7 @@ def _final_receipt(plan, status, completed, failed, capture_views, admission_ids
         recall_envelope,
         partial_message,
         "hx1:" + plan.plan_id,
+        input_fingerprint,
         "",
     )
     return replace(partial, output_fingerprint=stable_fingerprint(partial))
@@ -267,6 +304,7 @@ def _receipt_from_mapping(payload: dict[str, Any]) -> HostExecutionReceipt:
         payload["recall_public_envelope"],
         payload["partial_outcome_message"],
         payload["work_root_marker_id"],
+        payload["execution_input_fingerprint"],
         payload["output_fingerprint"],
     )
 

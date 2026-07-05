@@ -6,7 +6,7 @@ HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes 
 
 ## Scenario Inventory
 
-- HX1-01 mixed explicit A/B/C/D: completed
+- HX1-01 mixed explicit A/B/C with pre-existing admitted D: completed
 - HX1-02 capture-only: covered by pytest
 - HX1-03 admission-only: covered by pytest
 - HX1-05 zero-write preflight rejection: covered by pytest
@@ -21,17 +21,18 @@ HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes 
 - rejected outcome count: covered by pytest
 - receipt status: completed
 - completed stages: capture, admission, assembly, recall
-- admission receipt ids: adm_hx1_a, adm_hx1_b, adm_hx1_d
+- admission receipt ids: adm_hx1_a, adm_hx1_b
 - explicit assembly ids: adm_hx1_a, adm_hx1_b
 - snapshot source ids: adm_hx1_a, adm_hx1_b
 - C captured/deferred isolation: not present in snapshot or recall envelope
-- D admitted/unassembled isolation: not present in snapshot or recall envelope
+- D pre-existing admitted/unassembled isolation: D was admitted before Stage M and is not present in Stage M admission receipts, snapshot, or recall envelope
 - DG6 projection id: snapshot_compaction_projection:dg6:92a6f5e9940140f695e104aa3826bc15
 - recall envelope status: resolved
 - idempotent reopen: canonical mapping identical
 - forbidden output directories: none
-- canonical receipt fingerprint: sha256:b89a45d736162edd03972e749edc4e79349ad0bcd81a253efa972bb0b113709a
-- canonical receipt sha256: fa2d4a0a013282f5d6f266f787daf4ab6056dac152c912daf640d94c596d742b
+- canonical receipt fingerprint: sha256:2d615ac52742a290baa66d0a6253d922ba97c90d497e51806bd1f90caea792f3
+- execution input fingerprint: sha256:4a02d743804d388cefb592f043ced40a854f0c8aba195a20eb09999070565a94
+- canonical receipt sha256: 21b8d8f7b56a0764121e197c7b771b75a889f7a4076447f32c133675c6203076
 
 ## Commands
 

@@ -16,7 +16,7 @@ sys.path.insert(0, str(PYTHON_ROOT))
 sys.path.insert(0, str(TEST_ROOT))
 
 from nollm.dream_geometry.host_execution import execute_host_plan, receipt_to_mapping  # noqa: E402
-from test_hx1_trusted_host_bridge import hx1_fixture  # noqa: E402
+from test_hx1_trusted_host_bridge import hx1_fixture, setup_preexisting_d  # noqa: E402
 
 
 def main() -> int:
@@ -26,7 +26,9 @@ def main() -> int:
     output = Path(args.output)
 
     with tempfile.TemporaryDirectory(prefix="hx1_validation_") as temp:
-        fixture = hx1_fixture(Path(temp) / "work")
+        work = Path(temp) / "work"
+        setup_preexisting_d(work)
+        fixture = hx1_fixture(work)
         first = receipt_to_mapping(execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"]))
         second = receipt_to_mapping(execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"]))
         if first != second:
@@ -52,7 +54,7 @@ HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes 
 
 ## Scenario Inventory
 
-- HX1-01 mixed explicit A/B/C/D: completed
+- HX1-01 mixed explicit A/B/C with pre-existing admitted D: completed
 - HX1-02 capture-only: covered by pytest
 - HX1-03 admission-only: covered by pytest
 - HX1-05 zero-write preflight rejection: covered by pytest
@@ -71,12 +73,13 @@ HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes 
 - explicit assembly ids: {", ".join(receipt["explicit_assembly_admission_ids"])}
 - snapshot source ids: {", ".join(receipt["snapshot_source_admission_ids"])}
 - C captured/deferred isolation: not present in snapshot or recall envelope
-- D admitted/unassembled isolation: not present in snapshot or recall envelope
+- D pre-existing admitted/unassembled isolation: D was admitted before Stage M and is not present in Stage M admission receipts, snapshot, or recall envelope
 - DG6 projection id: {receipt["dg6_projection_id"]}
 - recall envelope status: {receipt["recall_public_envelope"]["status"]}
 - idempotent reopen: canonical mapping identical
 - forbidden output directories: {", ".join(forbidden_dirs) if forbidden_dirs else "none"}
 - canonical receipt fingerprint: {receipt["output_fingerprint"]}
+- execution input fingerprint: {receipt["execution_input_fingerprint"]}
 - canonical receipt sha256: {receipt_sha}
 
 ## Commands
