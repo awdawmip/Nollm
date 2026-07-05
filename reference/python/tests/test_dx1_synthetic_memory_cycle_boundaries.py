@@ -4,15 +4,29 @@ import ast
 import json
 from pathlib import Path
 
-import pytest
-
 from nollm.dream_geometry.adapters import IntegrationShell
 from nollm.dream_geometry.validation.dx1_synthetic_cycle_report import public_envelope_boundary_pass
 from nollm.dream_geometry.validation.dx1_synthetic_cycle_fixture import build_dx1_cycle
+from subprocess_harness import run_subprocess
 
 
 ROOT = Path(__file__).resolve().parents[3]
 DI1_SEALED_BASE = "76a4d1ba8b97043ea2c673ca64ab6f816be18a12"
+DI1_SEALED_ADAPTER_DIR = "reference/python/nollm/dream_geometry/adapters"
+DI1_SEALED_ADAPTER_FILES = (
+    "reference/python/nollm/dream_geometry/adapters/__init__.py",
+    "reference/python/nollm/dream_geometry/adapters/errors.py",
+    "reference/python/nollm/dream_geometry/adapters/integration_shell.py",
+    "reference/python/nollm/dream_geometry/adapters/public_recall_view.py",
+    "reference/python/nollm/dream_geometry/adapters/types.py",
+)
+DX1_SEALED_IMPLEMENTATION_DIRS = (
+    "reference/python/nollm/dream_geometry/geometry",
+    "reference/python/nollm/dream_geometry/field",
+    "reference/python/nollm/dream_geometry/evidence",
+    "reference/python/nollm/dream_geometry/cortex",
+    "reference/python/nollm/dream_geometry/recall",
+)
 VALIDATION_FILE = ROOT / "reference" / "python" / "nollm" / "dream_geometry" / "validation" / "dx1_synthetic_cycle_fixture.py"
 FORBIDDEN_PUBLIC = (
     r"C:\dx1-private",
@@ -71,30 +85,39 @@ def test_s05_report_witness_checks_public_metadata_not_body_text(tmp_path) -> No
 
 
 def test_x015_scope_sealed_implementation_paths_are_unmodified() -> None:
-    from subprocess_harness import run_subprocess
+    diff_output = _sealed_scope_diff(DX1_SEALED_IMPLEMENTATION_DIRS + _di1_sealed_adapter_paths())
+    _assert_no_sealed_scope_diff(diff_output)
 
-    inside = run_subprocess(["git", "rev-parse", "--is-inside-work-tree"], cwd=ROOT, timeout_seconds=10)
-    if inside.returncode != 0 or inside.stdout.strip() != "true":
-        pytest.skip("DX1 scope witness requires a Git checkout")
-    result = run_subprocess(
-        [
-            "git",
-            "diff",
-            "--name-only",
-            f"{DI1_SEALED_BASE}..HEAD",
-            "--",
-            "reference/python/nollm/dream_geometry/geometry",
-            "reference/python/nollm/dream_geometry/field",
-            "reference/python/nollm/dream_geometry/evidence",
-            "reference/python/nollm/dream_geometry/cortex",
-            "reference/python/nollm/dream_geometry/recall",
-            "reference/python/nollm/dream_geometry/adapters",
-        ],
-        cwd=ROOT,
-        timeout_seconds=10,
-    )
-    assert result.returncode == 0
-    assert result.stdout.strip() == ""
+
+def test_dx1_c1_di1_adapter_base_tree_is_exact() -> None:
+    assert _di1_sealed_adapter_paths() == DI1_SEALED_ADAPTER_FILES
+
+
+def test_dx1_c1_snapshot_compaction_is_outside_di1_adapter_scope() -> None:
+    sealed_paths = _di1_sealed_adapter_paths()
+    assert all("/snapshot_compaction/" not in path for path in sealed_paths)
+    diff_output = _sealed_scope_diff(sealed_paths)
+    _assert_no_sealed_scope_diff(diff_output)
+
+
+def test_dx1_c1_original_adapter_diff_output_is_rejected() -> None:
+    for path in DI1_SEALED_ADAPTER_FILES:
+        try:
+            _assert_no_sealed_scope_diff(path)
+        except AssertionError as exc:
+            assert path in str(exc)
+        else:
+            raise AssertionError(f"scope witness accepted simulated DI1 adapter change: {path}")
+
+
+def test_dx1_c1_adapters_init_change_would_fail_scope_witness() -> None:
+    changed_path = "reference/python/nollm/dream_geometry/adapters/__init__.py"
+    try:
+        _assert_no_sealed_scope_diff(changed_path)
+    except AssertionError as exc:
+        assert changed_path in str(exc)
+    else:
+        raise AssertionError("scope witness accepted simulated DI1 adapters/__init__.py change")
 
 
 def test_dx1_validation_does_not_construct_sealed_output_dataclasses_directly() -> None:
@@ -118,3 +141,34 @@ def _without_content(value):
     if isinstance(value, list):
         return [_without_content(item) for item in value]
     return value
+
+
+def _di1_sealed_adapter_paths() -> tuple[str, ...]:
+    inside = run_subprocess(["git", "rev-parse", "--is-inside-work-tree"], cwd=ROOT, timeout_seconds=10)
+    assert inside.returncode == 0
+    assert inside.stdout.strip() == "true"
+    result = run_subprocess(
+        ["git", "ls-tree", "-r", "--name-only", DI1_SEALED_BASE, "--", DI1_SEALED_ADAPTER_DIR],
+        cwd=ROOT,
+        timeout_seconds=10,
+    )
+    assert result.returncode == 0
+    paths = tuple(sorted(line.strip().replace("\\", "/") for line in result.stdout.splitlines() if line.strip()))
+    assert paths == DI1_SEALED_ADAPTER_FILES
+    assert all(path.endswith(".py") for path in paths)
+    return paths
+
+
+def _sealed_scope_diff(paths: tuple[str, ...]) -> str:
+    result = run_subprocess(
+        ["git", "diff", "--name-only", f"{DI1_SEALED_BASE}..HEAD", "--", *paths],
+        cwd=ROOT,
+        timeout_seconds=10,
+    )
+    assert result.returncode == 0
+    return result.stdout.strip()
+
+
+def _assert_no_sealed_scope_diff(diff_output: str) -> None:
+    changed_paths = [line.strip().replace("\\", "/") for line in diff_output.splitlines() if line.strip()]
+    assert changed_paths == [], "sealed implementation paths changed:\n" + "\n".join(changed_paths)

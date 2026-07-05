@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
+import math
 import os
 import shutil
 import signal
@@ -261,6 +262,7 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
     timed_out = False
     try:
         add_worktree(repo_root, worktree, plan["git_head"])
+        source_checkout_mirror = mirror_source_checkout_bytes(repo_root, worktree)
         runtime_fixture_copy = copy_runtime_fixtures(repo_root, worktree)
         collection_cwd = pytest_cwd(worktree)
         command = [sys.executable, "-m", "pytest", "-q", "--junitxml", str(junit), *shard["node_ids"]]
@@ -296,6 +298,7 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "worktree_path": str(worktree),
         "worktree_cleanup": cleanup_result,
         "runtime_fixture_copy": runtime_fixture_copy,
+        "source_checkout_mirror": source_checkout_mirror,
     }
     write_json(existing_path, receipt)
     return receipt
@@ -318,25 +321,91 @@ def assign_shards(node_ids: list[str], target_node_count: int, max_shards: int) 
 
     shards: list[list[str]] = []
     current: list[str] = []
+    current_weight = 0
+    target_weight = target
+    if max_shards > 0 and len(node_ids) >= target * 4:
+        total_weight = sum(node_cost(node_id) for node_id in node_ids)
+        target_weight = max(1, min(target, math.ceil(total_weight / max_shards)))
     for chunk in chunks:
-        if current and len(current) + len(chunk) > target:
+        chunk_weight = sum(node_cost(node_id) for node_id in chunk)
+        if current and current_weight + chunk_weight > target_weight:
             shards.append(current)
             current = []
+            current_weight = 0
         current.extend(chunk)
+        current_weight += chunk_weight
     if current:
         shards.append(current)
     if len(shards) == 1 and len(shards[0]) > 1:
         mid = (len(shards[0]) + 1) // 2
         shards = [shards[0][:mid], shards[0][mid:]]
+    if max_shards > 0 and len(node_ids) >= target * 4:
+        shards = split_largest_shards(shards, max_shards)
     while max_shards > 0 and len(shards) > max_shards:
-        merged: list[list[str]] = []
-        for index in range(0, len(shards), 2):
-            if index + 1 < len(shards):
-                merged.append(shards[index] + shards[index + 1])
-            else:
-                merged.append(shards[index])
-        shards = merged
+        merge_at = min(range(len(shards) - 1), key=lambda index: shard_cost(shards[index]) + shard_cost(shards[index + 1]))
+        shards[merge_at : merge_at + 2] = [shards[merge_at] + shards[merge_at + 1]]
     return [{"shard_id": f"s{index:03d}", "node_ids": nodes} for index, nodes in enumerate(shards, start=1)]
+
+
+def split_largest_shards(shards: list[list[str]], max_shards: int) -> list[list[str]]:
+    result = [list(shard) for shard in shards]
+    while len(result) < max_shards:
+        index = max(range(len(result)), key=lambda item: shard_cost(result[item]))
+        left, right = split_shard_at_file_boundary(result[index])
+        if not left or not right:
+            break
+        result[index : index + 1] = [left, right]
+    return result
+
+
+def split_shard_at_file_boundary(nodes: list[str]) -> tuple[list[str], list[str]]:
+    if len(nodes) < 2:
+        return nodes, []
+    chunks: list[list[str]] = []
+    current_file = ""
+    current_nodes: list[str] = []
+    for node_id in nodes:
+        file_part = node_id.split("::", 1)[0]
+        if current_nodes and file_part != current_file:
+            chunks.append(current_nodes)
+            current_nodes = []
+        current_file = file_part
+        current_nodes.append(node_id)
+    if current_nodes:
+        chunks.append(current_nodes)
+    if len(chunks) == 1:
+        mid = (len(nodes) + 1) // 2
+        return nodes[:mid], nodes[mid:]
+    midpoint = shard_cost(nodes) / 2
+    left: list[str] = []
+    right: list[str] = []
+    left_weight = 0
+    for chunk in chunks:
+        chunk_weight = shard_cost(chunk)
+        if not right and left_weight + chunk_weight <= midpoint:
+            left.extend(chunk)
+            left_weight += chunk_weight
+        else:
+            right.extend(chunk)
+    if not left:
+        left = chunks[0]
+        right = [node for chunk in chunks[1:] for node in chunk]
+    return left, right
+
+
+def shard_cost(nodes: list[str]) -> int:
+    return sum(node_cost(node_id) for node_id in nodes)
+
+
+def node_cost(node_id: str) -> int:
+    file_name = Path(node_id.split("::", 1)[0]).name
+    if file_name.startswith(("test_g", "test_geometry", "test_gravity")):
+        return 5
+    if file_name.startswith("test_mt1_"):
+        return 3
+    if "report_regeneration" in file_name or "engineering_rc_archive" in file_name:
+        return 2
+    return 1
 
 
 def split_large_chunk(nodes: list[str], target: int) -> list[list[str]]:
@@ -425,6 +494,28 @@ def add_worktree(repo_root: Path, worktree: Path, head: str) -> None:
     result = subprocess.run(["git", "worktree", "add", "--detach", str(worktree), head], cwd=repo_root, text=True, capture_output=True)
     if result.returncode != 0:
         raise MatrixError("worktree_add_failed", "git worktree add failed", {"stderr_tail": tail(result.stderr)})
+
+
+def mirror_source_checkout_bytes(repo_root: Path, worktree: Path) -> dict[str, Any]:
+    mirrored: list[str] = []
+    for relative in tracked_file_paths(repo_root):
+        source = repo_root / relative
+        target = worktree / relative
+        if not source.is_file() or not target.is_file():
+            continue
+        source_bytes = source.read_bytes()
+        if target.read_bytes() == source_bytes:
+            continue
+        target.write_bytes(source_bytes)
+        mirrored.append(relative.replace("\\", "/"))
+    return {"copied_count": len(mirrored), "paths": mirrored}
+
+
+def tracked_file_paths(repo_root: Path) -> list[str]:
+    result = subprocess.run(["git", "ls-files", "-z"], cwd=repo_root, capture_output=True)
+    if result.returncode != 0:
+        raise MatrixError("git_failed", "git command failed", {"args": ("ls-files", "-z"), "stderr_tail": tail(result.stderr.decode("utf-8", errors="replace"))})
+    return [item.decode("utf-8", errors="surrogateescape") for item in result.stdout.split(b"\0") if item]
 
 
 def copy_runtime_fixtures(repo_root: Path, worktree: Path) -> str:

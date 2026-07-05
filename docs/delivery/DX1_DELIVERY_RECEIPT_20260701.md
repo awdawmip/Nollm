@@ -77,6 +77,25 @@ Run from repository root unless otherwise noted.
 - `git status --short`
   result before Commit B edits: clean.
 
+## DX1-C1 Scope Witness Correction
+
+DX1-C1 corrects the adapter path expression used by the sealed implementation
+witness. The DI1 sealed baseline tree contains exactly five IntegrationShell
+adapter files:
+
+- `reference/python/nollm/dream_geometry/adapters/__init__.py`
+- `reference/python/nollm/dream_geometry/adapters/errors.py`
+- `reference/python/nollm/dream_geometry/adapters/integration_shell.py`
+- `reference/python/nollm/dream_geometry/adapters/public_recall_view.py`
+- `reference/python/nollm/dream_geometry/adapters/types.py`
+
+The corrected witness derives this file list from the DI1 baseline tree and
+diffs those files alongside sealed Geometry, Field, Evidence, Cortex, and
+Recall directories. It does not freeze the future `adapters/` namespace.
+Any change to the original DI1 adapter files still fails the DX1 witness.
+Later adapter subpackages, including `snapshot_compaction`, are outside DX1
+certification and remain governed by DG0/DG6 validation and the TQ1 matrix.
+
 Full `python run_tests.py` was not required by the DX1.1R task pack and was
 not rerun for Commit A. The previous DX1.1 delivery had completed the full
 runner; this receipt does not restate that as fresh DX1.1R evidence.

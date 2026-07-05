@@ -61,6 +61,20 @@ DX1 baseline validation covers:
 
 DX1 validation witness must compare sealed implementation paths across the
 sealed baseline-to-current commit range, not only the local working tree.
+For adapters, that witness protects the exact DI1 IntegrationShell adapter
+files present in the DI1 sealed baseline tree:
+
+- `reference/python/nollm/dream_geometry/adapters/__init__.py`
+- `reference/python/nollm/dream_geometry/adapters/errors.py`
+- `reference/python/nollm/dream_geometry/adapters/integration_shell.py`
+- `reference/python/nollm/dream_geometry/adapters/public_recall_view.py`
+- `reference/python/nollm/dream_geometry/adapters/types.py`
+
+The adapter witness must derive this list from the DI1 baseline tree and fail
+if it drifts. It must not freeze the later `adapters/` parent namespace as a
+proxy for DI1 implementation ownership. Later adapter subpackages are outside
+DX1 certification and remain governed by their own phase tests and dependency
+firewalls.
 
 S07 input-order validation must permute inputs before owner APIs compute their
 derived artifacts, including coverage candidate target order and contextual

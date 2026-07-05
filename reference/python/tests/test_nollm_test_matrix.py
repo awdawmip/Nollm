@@ -63,6 +63,16 @@ def test_tq1_large_file_splits_by_contiguous_node_segments() -> None:
     assert [shard["node_ids"] for shard in shards] == [nodes[0:2], nodes[2:4], nodes[4:5]]
 
 
+def test_tq1_assign_shards_uses_max_shards_for_large_matrix() -> None:
+    matrix = load_matrix()
+    nodes = [f"tests/test_{index // 4:03d}.py::test_{index}" for index in range(48)]
+
+    shards = matrix.assign_shards(nodes, target_node_count=12, max_shards=8)
+
+    assert len(shards) == 8
+    assert [node for shard in shards for node in shard["node_ids"]] == nodes
+
+
 def test_tq1_run_shard_rejects_head_drift(tmp_path: Path) -> None:
     repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
     receipts = tmp_path / "receipts"
@@ -245,6 +255,25 @@ def test_tq1_delivery_bundle_convention_is_documented() -> None:
 
     assert "C:\\Users\\chaos\\<bundle-name>.bundle" in rendered
     assert "Do not place delivery bundles inside the repository or under repo/out" in rendered
+
+
+def test_tq1_worktree_mirror_preserves_source_checkout_bytes(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    source = repo / "docs" / "signed.md"
+    target = worktree / "docs" / "signed.md"
+    source.parent.mkdir(parents=True)
+    target.parent.mkdir(parents=True)
+    source.write_bytes(b"line one\r\nline two\r\n")
+    target.write_bytes(b"line one\nline two\n")
+
+    monkeypatch.setattr(matrix, "tracked_file_paths", lambda repo_root: ["docs/signed.md"])
+
+    result = matrix.mirror_source_checkout_bytes(repo, worktree)
+
+    assert result == {"copied_count": 1, "paths": ["docs/signed.md"]}
+    assert target.read_bytes() == source.read_bytes()
 
 
 def _matrix(args: list[str], *, cwd: Path, timeout_seconds: int = 60):
