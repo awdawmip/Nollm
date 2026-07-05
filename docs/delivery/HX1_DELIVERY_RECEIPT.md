@@ -8,7 +8,7 @@ Delivered behavior:
 - Nested host public value preflight before fingerprinting, work-root creation, or staged execution.
 - Canonical preflight for AdmissionPlacementPlan, DreamShard, and CompiledQueryProbe values before fingerprinting.
 - Context semantic validation for batch ids, finite set id, timestamp, and DG6 enablement.
-- Repository root and repository descendant work-root rejection.
+- Source-module repository root and caller-cwd repository root descendant work-root rejection.
 - CI1 capture execution with explicit capture bindings.
 - BA1/DA1 admission for explicit candidates and requests.
 - DF1 finite explicit assembly with admitted-but-unassembled exclusion.
@@ -23,6 +23,7 @@ Delivered behavior:
 - Pre-existing admitted-but-unassembled D control rather than same-call hidden admission.
 - No-DG6 plans can complete with DG6 disabled and no projection id.
 - Undeclared DG6 host bindings are rejected instead of becoming implicit projection work.
+- Work-root containment is independent of caller cwd and uses pathlib-only `.git` ancestor detection.
 
 Not delivered:
 

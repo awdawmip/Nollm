@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 import shutil
+import subprocess
 
 import pytest
 
+import nollm.dream_geometry.host_execution.bindings as hx1_bindings
 from nollm.dream_geometry.host_execution import HX1ExecutionError, HostDG6VerificationBinding, HostExecutionContext, HostPlanBindings, execute_host_plan
 
-from test_hx1_trusted_host_bridge import hx1_fixture
+from test_hx1_trusted_host_bridge import hx1_fixture, setup_preexisting_d
 
 
 def test_hx1_rejects_repo_root_work_root_before_write() -> None:
@@ -42,7 +44,7 @@ def test_hx1_public_errors_do_not_expose_trace_or_paths(tmp_path) -> None:
     with pytest.raises(HX1ExecutionError) as error:
         execute_host_plan(fixture["plan"], fixture["bindings"], context)
     rendered = str(error.value)
-    for forbidden in ("Traceback", "AttributeError", "KeyError", "TypeError", "ValueError", "nollm.dream_geometry"):
+    for forbidden in ("Traceback", "AttributeError", "KeyError", "TypeError", "ValueError", "AssertionError", "nollm.dream_geometry", "\\"):
         assert forbidden not in rendered
 
 
@@ -113,12 +115,87 @@ def test_hx1_c3_rejects_repository_descendant_work_root_before_write() -> None:
     try:
         with pytest.raises(HX1ExecutionError) as error:
             execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
-        assert error.value.reason_code == "HX1_WORK_ROOT_REJECTED"
-        assert type(error.value) is HX1ExecutionError
+        _assert_work_root_rejected(error.value)
         assert not probe.exists()
+        _assert_git_status_empty(repo_root, probe)
     finally:
         if probe.exists():
             shutil.rmtree(probe)
+
+
+def test_hx1_c4_external_cwd_rejects_source_repo_descendant_before_write(tmp_path, monkeypatch) -> None:
+    repo_root = _repo_root()
+    probe = repo_root / ".hx1_c4_external_cwd_probe"
+    if probe.exists():
+        shutil.rmtree(probe)
+    external_cwd = tmp_path / "external_cwd"
+    external_cwd.mkdir()
+    fixture = hx1_fixture(probe)
+    try:
+        monkeypatch.chdir(external_cwd)
+        with pytest.raises(HX1ExecutionError) as error:
+            execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+        _assert_work_root_rejected(error.value)
+        assert not probe.exists()
+        _assert_git_status_empty(repo_root, probe)
+    finally:
+        monkeypatch.chdir(repo_root)
+        if probe.exists():
+            shutil.rmtree(probe)
+
+
+def test_hx1_c4_external_cwd_rejects_source_repo_root_before_write(tmp_path, monkeypatch) -> None:
+    repo_root = _repo_root()
+    marker = repo_root / ".hx1_host_execution_root.json"
+    external_cwd = tmp_path / "external_cwd"
+    external_cwd.mkdir()
+    fixture = hx1_fixture(repo_root)
+    try:
+        monkeypatch.chdir(external_cwd)
+        with pytest.raises(HX1ExecutionError) as error:
+            execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+        _assert_work_root_rejected(error.value)
+        assert not marker.exists()
+    finally:
+        monkeypatch.chdir(repo_root)
+
+
+def test_hx1_c4_external_cwd_allows_external_temporary_root(tmp_path, monkeypatch) -> None:
+    repo_root = _repo_root()
+    external_cwd = tmp_path / "external_cwd"
+    work_root = tmp_path / "owned_work_root"
+    external_cwd.mkdir()
+    probe = repo_root / ".hx1_c4_external_temp_probe"
+    if probe.exists():
+        shutil.rmtree(probe)
+    try:
+        monkeypatch.chdir(external_cwd)
+        setup_preexisting_d(work_root)
+        fixture = hx1_fixture(work_root)
+        receipt = execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+        assert receipt.status == "completed"
+        _assert_no_forbidden_dirs(work_root)
+        assert not probe.exists()
+        _assert_git_status_empty(repo_root, probe)
+    finally:
+        monkeypatch.chdir(repo_root)
+        if probe.exists():
+            shutil.rmtree(probe)
+
+
+def test_hx1_c4_repository_root_detection_accepts_git_file_marker(tmp_path) -> None:
+    fake_repo = tmp_path / "fake_worktree"
+    nested = fake_repo / "package" / "module.py"
+    nested.parent.mkdir(parents=True)
+    nested.write_text("# fake module\n", encoding="utf-8")
+    (fake_repo / ".git").write_text("gitdir: ../actual.git/worktrees/fake\n", encoding="utf-8")
+    assert hx1_bindings._nearest_repository_root(nested) == fake_repo
+
+
+def test_hx1_c4_repository_root_detection_has_no_non_git_fallback(tmp_path) -> None:
+    outside = tmp_path / "not_a_repo" / "child"
+    outside.mkdir(parents=True)
+    assert hx1_bindings._nearest_repository_root(outside) is None
 
 
 def _assert_context_zero_write(plan, bindings: HostPlanBindings, context, work_root) -> None:
@@ -137,3 +214,29 @@ def _repo_root() -> Path:
         if (candidate / ".git").exists():
             return candidate
     return current
+
+
+def _assert_work_root_rejected(error: HX1ExecutionError) -> None:
+    assert error.reason_code == "HX1_WORK_ROOT_REJECTED"
+    assert type(error) is HX1ExecutionError
+    assert "protected repository roots" in str(error)
+    for forbidden in ("Traceback", "AttributeError", "TypeError", "KeyError", "ValueError", "AssertionError", "nollm.dream_geometry", "\\"):
+        assert forbidden not in str(error)
+
+
+def _assert_no_forbidden_dirs(work_root: Path) -> None:
+    for name in ("field", "assembly", "recall", "cache", "database", "global-field"):
+        assert not (work_root / name).exists()
+
+
+def _assert_git_status_empty(repo_root: Path, path: Path) -> None:
+    relative = path.relative_to(repo_root).as_posix()
+    result = subprocess.run(
+        ["git", "status", "--short", "--", relative],
+        cwd=repo_root,
+        text=True,
+        capture_output=True,
+        timeout=10,
+        check=True,
+    )
+    assert result.stdout == ""

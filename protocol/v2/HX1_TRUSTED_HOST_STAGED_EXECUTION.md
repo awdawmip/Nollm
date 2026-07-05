@@ -38,7 +38,9 @@ Receipt reopen:
 
 Work-root ownership:
 
-- The work root must be outside the source repository root and all repository descendants.
+- The work root must be outside protected repository roots and all protected repository descendants.
+- Protected roots are detected with pathlib only from the HX1 source module path and from the caller current working directory.
+- If an installed package or non-repository cwd has no `.git` ancestor, that missing root is ignored rather than rejecting all roots.
 - Repository root, repository descendants, ordinary files, forbidden output directories, and foreign HX1 markers are rejected before stage execution.
 
 Preflight error partition:

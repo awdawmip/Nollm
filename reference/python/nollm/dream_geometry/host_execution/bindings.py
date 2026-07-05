@@ -109,13 +109,13 @@ def _validate_context(context: HostExecutionContext) -> None:
         work_root = Path(context.work_root)
     except (TypeError, ValueError) as exc:
         raise HX1ExecutionError("HX1_INVALID_CONTEXT", "work root is invalid") from exc
-    repo_root = _repository_root(Path.cwd())
     try:
         resolved = work_root.resolve()
     except (OSError, RuntimeError, ValueError) as exc:
         raise HX1ExecutionError("HX1_INVALID_CONTEXT", "work root is invalid") from exc
-    if _is_relative_to(resolved, repo_root):
-        raise HX1ExecutionError("HX1_WORK_ROOT_REJECTED", "work root must be an explicit owned directory outside repo root")
+    for repo_root in _protected_repository_roots():
+        if _is_relative_to(resolved, repo_root):
+            raise HX1ExecutionError("HX1_WORK_ROOT_REJECTED", "work root must be an explicit owned directory outside protected repository roots")
     if work_root.exists() and not work_root.is_dir():
         raise HX1ExecutionError("HX1_WORK_ROOT_REJECTED", "work root must be a directory")
     for name in FORBIDDEN_WORK_DIRS:
@@ -424,12 +424,25 @@ def _ordered_subsequence(expected: tuple[str, ...], actual: tuple[str, ...]) -> 
     return cursor == len(expected)
 
 
-def _repository_root(start: Path) -> Path:
+def _nearest_repository_root(start: Path) -> Path | None:
     current = start.resolve()
+    if not current.is_dir():
+        current = current.parent
     for candidate in (current, *current.parents):
-        if (candidate / ".git").exists():
+        marker = candidate / ".git"
+        if marker.is_dir() or marker.is_file():
             return candidate
-    return current
+    return None
+
+
+def _protected_repository_roots() -> tuple[Path, ...]:
+    roots: list[Path] = []
+    source_root = _nearest_repository_root(Path(__file__).resolve())
+    cwd_root = _nearest_repository_root(Path.cwd().resolve())
+    for root in (source_root, cwd_root):
+        if root is not None and root not in roots:
+            roots.append(root)
+    return tuple(roots)
 
 
 def _is_relative_to(path: Path, parent: Path) -> bool:

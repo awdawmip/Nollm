@@ -13,7 +13,7 @@ The bridge is intentionally host-controlled. Opaque CX2 refs are never resolved 
 
 Preflight is the only place where untrusted host objects are accepted. It validates CX2 plan shape before binding comparisons, then validates the canonical nested public values used by fingerprinting and staged calls. Bad plan declarations fail as `HX1_INVALID_PLAN`; malformed host public values fail as `HX1_INVALID_BINDINGS`; malformed context fields or DG6 enablement contradictions fail as `HX1_INVALID_CONTEXT`.
 
-The work-root may contain only lower-layer side effects from evidence, capture, cortex, and admission stores plus HX1 marker/receipt files. It must be outside the source repository root and all repository descendants. HX1 does not create field, assembly, recall, cache, database, or global-field directories.
+The work-root may contain only lower-layer side effects from evidence, capture, cortex, and admission stores plus HX1 marker/receipt files. It must be outside protected repository roots and their descendants. HX1 detects the source repository from the HX1 module path, not from the caller cwd, and also protects the caller cwd repository when one exists. Detection uses pathlib only; it does not call git, subprocess, shell, network, or environment discovery. HX1 does not create field, assembly, recall, cache, database, or global-field directories.
 
 Partial outcomes are explicit. If capture succeeds and admission later fails, the capture receipts and deferred candidates remain, the receipt status is `partial`, and no rollback is attempted.
 
