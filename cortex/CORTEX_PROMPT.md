@@ -67,12 +67,15 @@ Candidate, superseded, rejected, archived, deferred, and captured states are not
 
 下面的 JSON 只是 plan envelope 示例。它不能直接创建 DreamShard、AdmissionRecord、FieldSnapshot、RecallUniverse 或 recall result。
 
+这是 valid recall-plan 示例，表示 host 已经明确给出 finite admitted workset。它不表示 assembly 或 recall 已经执行。
+
+<!-- cx2-plan:start stable_recall -->
 ```json
 {
   "plan_kind": "nollm_cortex_action_plan",
   "plan_version": "1",
-  "plan_id": "cx2_example",
-  "intent": "mixed_explicit",
+  "plan_id": "cx2_example_recall",
+  "intent": "recall",
   "capture_refs": [],
   "promotion_decisions": [],
   "admission_request_refs": [],
@@ -97,5 +100,6 @@ Candidate, superseded, rejected, archived, deferred, and captured states are not
   ]
 }
 ```
+<!-- cx2-plan:end -->
 
 The envelope is a reviewable plan. It is not a DreamShard, AdmissionRecord, FieldSnapshot, RecallUniverse, ledger event, recall result, runtime command, or authorization token.

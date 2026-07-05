@@ -60,6 +60,7 @@ Opaque references are host-held pointers. They are not global query keys.
 
 - Capture、Admission、Usage、Visibility 四类状态必须分开表达，不能互相代替。
 - Promotion 只能给出可枚举原因和来源；`cortex_suggestion` 只是建议来源，不是 host 确认。
+- 被 admission request 引用的 promote decision 必须来自 `host_rule`、`user` 或 `human_operator`；`cortex_suggestion` 不能直接绑定 admission request。
 - Assembly 的 admission IDs 必须由 host/user/human operator 明确给出，不能由 Cortex 自动发现。
 - Recall 必须绑定显式 admitted workset；未命中只表示当前 workset 内未命中。
 - DG6 只能作为 view-only 验证语境；DG7 只能作为显式有限链 correspondence witness。

@@ -62,18 +62,24 @@ FORBIDDEN_AUTOMATION_VALUES = frozenset(
 def validate_cortex_action_plan(plan: CortexActionPlan | Mapping[str, Any]) -> CortexActionPlanSummary:
     """Validate a declaration-only Cortex plan and return a canonical summary."""
 
-    _reject_forbidden_payload(plan)
-    normalized = _coerce_plan(plan)
-    _validate_identity(normalized)
-    _validate_capture_refs(normalized.capture_refs)
-    promoted_decisions = _validate_promotion_decisions(normalized.promotion_decisions)
-    _validate_admission_requests(normalized.admission_request_refs, promoted_decisions)
-    assembly_ids = _validate_explicit_assembly(normalized.explicit_assembly)
-    _validate_recall_request(normalized.recall_request)
-    _validate_derived_views(normalized.derived_views)
-    _validate_non_inferences(normalized.non_inferences)
-    _validate_intent_specific(normalized)
-    _validate_duplicate_ids(normalized)
+    try:
+        _reject_forbidden_payload(plan)
+        normalized = _coerce_plan(plan)
+        _validate_plan_shape(normalized)
+        _validate_identity(normalized)
+        _validate_capture_refs(normalized.capture_refs)
+        promoted_decisions = _validate_promotion_decisions(normalized.promotion_decisions)
+        _validate_admission_requests(normalized.admission_request_refs, promoted_decisions)
+        assembly_ids = _validate_explicit_assembly(normalized.explicit_assembly)
+        _validate_recall_request(normalized.recall_request)
+        _validate_derived_views(normalized.derived_views)
+        _validate_non_inferences(normalized.non_inferences)
+        _validate_intent_specific(normalized)
+        _validate_duplicate_ids(normalized)
+    except CX2PlanValidationError:
+        raise
+    except (TypeError, AttributeError, KeyError, IndexError, ValueError, AssertionError) as exc:
+        _fail("CX2_INVALID_PLAN", "plan input shape is invalid")
 
     return CortexActionPlanSummary(
         plan_id=normalized.plan_id,
@@ -100,21 +106,39 @@ def _coerce_plan(value: CortexActionPlan | Mapping[str, Any]) -> CortexActionPla
         plan_version=str(value.get("plan_version", "")),
         plan_id=str(value.get("plan_id", "")),
         intent=str(value.get("intent", "")),
-        capture_refs=tuple(_coerce_item(item, CaptureRef, CAPTURE_FIELDS, "CX2_INVALID_PLAN") for item in value.get("capture_refs", ())),
+        capture_refs=tuple(
+            _coerce_item(item, CaptureRef, CAPTURE_FIELDS, "CX2_INVALID_PLAN")
+            for item in _collection(value, "capture_refs", "CX2_INVALID_PLAN", "capture refs must be an immutable tuple of CaptureRef values")
+        ),
         promotion_decisions=tuple(
             _coerce_item(item, PromotionDecision, PROMOTION_FIELDS, "CX2_INVALID_PROMOTION")
-            for item in value.get("promotion_decisions", ())
+            for item in _collection(
+                value,
+                "promotion_decisions",
+                "CX2_INVALID_PROMOTION",
+                "promotion decisions must be an immutable tuple of PromotionDecision values",
+            )
         ),
         admission_request_refs=tuple(
             _coerce_item(item, AdmissionRequestRef, ADMISSION_FIELDS, "CX2_INVALID_ADMISSION_REQUEST")
-            for item in value.get("admission_request_refs", ())
+            for item in _collection(
+                value,
+                "admission_request_refs",
+                "CX2_INVALID_ADMISSION_REQUEST",
+                "admission request refs must be an immutable tuple of AdmissionRequestRef values",
+            )
         ),
         explicit_assembly=_coerce_optional_item(
             value.get("explicit_assembly"), ExplicitAssembly, ASSEMBLY_FIELDS, "CX2_INVALID_EXPLICIT_ASSEMBLY"
         ),
         recall_request=_coerce_optional_item(value.get("recall_request"), RecallRequest, RECALL_FIELDS, "CX2_INVALID_RECALL_REQUEST"),
-        derived_views=tuple(_coerce_item(item, DerivedViewRef, VIEW_FIELDS, "CX2_FORBIDDEN_DG6_INFERENCE") for item in value.get("derived_views", ())),
-        non_inferences=tuple(str(item) for item in value.get("non_inferences", ())),
+        derived_views=tuple(
+            _coerce_item(item, DerivedViewRef, VIEW_FIELDS, "CX2_FORBIDDEN_DG6_INFERENCE")
+            for item in _collection(value, "derived_views", "CX2_INVALID_PLAN", "derived views must be an immutable tuple of DerivedViewRef values")
+        ),
+        non_inferences=tuple(
+            _string_collection(value, "non_inferences", "CX2_INVALID_PLAN", "non-inferences must be an immutable tuple of strings")
+        ),
     )
 
 
@@ -127,10 +151,16 @@ def _coerce_item(value: object, cls: type, fields: frozenset[str], reason_code: 
     kwargs = {field: value.get(field) for field in fields}
     if cls in (CaptureRef, PromotionDecision, AdmissionRequestRef, DerivedViewRef):
         kwargs = {key: "" if item is None else item for key, item in kwargs.items()}
+    if cls is CaptureRef and value.get("shard_id") is None:
+        kwargs["shard_id"] = None
     if cls is PromotionDecision:
-        kwargs["reasons"] = tuple(str(item) for item in value.get("reasons", ()))
+        kwargs["reasons"] = tuple(
+            _string_collection(value, "reasons", "CX2_INVALID_PROMOTION", "promotion reasons must be an immutable tuple of strings")
+        )
     if cls is ExplicitAssembly:
-        kwargs["admission_ids"] = tuple(str(item) for item in value.get("admission_ids", ()))
+        kwargs["admission_ids"] = tuple(
+            _string_collection(value, "admission_ids", "CX2_INVALID_EXPLICIT_ASSEMBLY", "explicit assembly admission ids must be an immutable tuple of strings")
+        )
         kwargs["declared_by"] = "" if value.get("declared_by") is None else value.get("declared_by")
         kwargs["purpose"] = "" if value.get("purpose") is None else value.get("purpose")
     if cls is RecallRequest:
@@ -145,6 +175,58 @@ def _coerce_optional_item(value: object, cls: type, fields: frozenset[str], reas
     return _coerce_item(value, cls, fields, reason_code)
 
 
+def _collection(value: Mapping[str, Any], field: str, reason_code: str, message: str) -> tuple[object, ...] | list[object]:
+    item = value.get(field, ())
+    if not isinstance(item, (tuple, list)):
+        _fail(reason_code, message)
+    return item
+
+
+def _string_collection(value: Mapping[str, Any], field: str, reason_code: str, message: str) -> tuple[str, ...]:
+    item = value.get(field, ())
+    if not isinstance(item, (tuple, list)):
+        _fail(reason_code, message)
+    if any(not isinstance(entry, str) for entry in item):
+        _fail(reason_code, message)
+    return tuple(item)
+
+
+def _validate_plan_shape(plan: CortexActionPlan) -> None:
+    _validate_typed_tuple(plan.capture_refs, CaptureRef, "CX2_INVALID_PLAN", "capture refs must be an immutable tuple of CaptureRef values")
+    _validate_typed_tuple(
+        plan.promotion_decisions,
+        PromotionDecision,
+        "CX2_INVALID_PROMOTION",
+        "promotion decisions must be an immutable tuple of PromotionDecision values",
+    )
+    _validate_typed_tuple(
+        plan.admission_request_refs,
+        AdmissionRequestRef,
+        "CX2_INVALID_ADMISSION_REQUEST",
+        "admission request refs must be an immutable tuple of AdmissionRequestRef values",
+    )
+    _validate_typed_tuple(plan.derived_views, DerivedViewRef, "CX2_INVALID_PLAN", "derived views must be an immutable tuple of DerivedViewRef values")
+    _validate_typed_tuple(plan.non_inferences, str, "CX2_INVALID_PLAN", "non-inferences must be an immutable tuple of strings")
+    if plan.explicit_assembly is not None and not isinstance(plan.explicit_assembly, ExplicitAssembly):
+        _fail("CX2_INVALID_EXPLICIT_ASSEMBLY", "explicit assembly must be ExplicitAssembly or None")
+    if plan.recall_request is not None and not isinstance(plan.recall_request, RecallRequest):
+        _fail("CX2_INVALID_RECALL_REQUEST", "recall request must be RecallRequest or None")
+    for decision in plan.promotion_decisions:
+        _validate_typed_tuple(decision.reasons, str, "CX2_INVALID_PROMOTION", "promotion reasons must be an immutable tuple of strings")
+    if plan.explicit_assembly is not None:
+        _validate_typed_tuple(
+            plan.explicit_assembly.admission_ids,
+            str,
+            "CX2_INVALID_EXPLICIT_ASSEMBLY",
+            "explicit assembly admission ids must be an immutable tuple of strings",
+        )
+
+
+def _validate_typed_tuple(value: object, item_type: type, reason_code: str, message: str) -> None:
+    if not isinstance(value, tuple) or any(not isinstance(item, item_type) for item in value):
+        _fail(reason_code, message)
+
+
 def _validate_identity(plan: CortexActionPlan) -> None:
     if plan.plan_kind != "nollm_cortex_action_plan" or plan.plan_version != "1":
         _fail("CX2_INVALID_PLAN", "plan kind and version must be nollm_cortex_action_plan v1")
@@ -152,9 +234,6 @@ def _validate_identity(plan: CortexActionPlan) -> None:
         _fail("CX2_INVALID_PLAN", "plan id must be a non-empty cx2_ identifier")
     if plan.intent not in _enum_values(PlanIntent):
         _fail("CX2_INVALID_PLAN", "plan intent is not supported")
-    for name in ("capture_refs", "promotion_decisions", "admission_request_refs", "derived_views", "non_inferences"):
-        if not isinstance(getattr(plan, name), tuple):
-            _fail("CX2_INVALID_PLAN", "plan collections must be immutable tuples")
 
 
 def _validate_capture_refs(captures: tuple[CaptureRef, ...]) -> None:
@@ -171,6 +250,13 @@ def _validate_capture_refs(captures: tuple[CaptureRef, ...]) -> None:
             _fail("CX2_INVALID_STATE_SEPARATION", "capture usage state is invalid")
         if capture.visibility_scope not in _enum_values(VisibilityScope):
             _fail("CX2_INVALID_STATE_SEPARATION", "capture visibility scope is invalid")
+        if capture.persistence_state == PersistenceState.EPHEMERAL.value and (
+            capture.shard_id is not None
+            or capture.admission_state != AdmissionState.NONE.value
+            or capture.usage_state != UsageState.TENTATIVE.value
+            or capture.visibility_scope != VisibilityScope.CURRENT_TURN.value
+        ):
+            _fail("CX2_INVALID_STATE_SEPARATION", "ephemeral capture must be current-turn tentative and unadmitted")
 
 
 def _validate_promotion_decisions(decisions: tuple[PromotionDecision, ...]) -> dict[str, PromotionDecision]:
@@ -192,6 +278,7 @@ def _validate_promotion_decisions(decisions: tuple[PromotionDecision, ...]) -> d
 
 
 def _validate_admission_requests(requests: tuple[AdmissionRequestRef, ...], decisions: dict[str, PromotionDecision]) -> None:
+    referenced_decisions: set[str] = set()
     for request in requests:
         if not _is_id(request.request_id, "admreq_") or not _is_id(request.shard_id, "shard_"):
             _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request must bind admreq_ and shard_ ids")
@@ -200,6 +287,11 @@ def _validate_admission_requests(requests: tuple[AdmissionRequestRef, ...], deci
             _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request references an unknown promotion decision")
         if decision.decision != PromotionDecisionValue.PROMOTE.value:
             _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request can reference only promote decisions")
+        if request.decision_id in referenced_decisions:
+            _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request decision refs must be unique within a plan")
+        referenced_decisions.add(request.decision_id)
+        if decision.decided_by == DecisionSource.CORTEX_SUGGESTION.value:
+            _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request requires a host, user, or human_operator promote decision")
         if request.shard_id != decision.shard_id:
             _fail("CX2_INVALID_ADMISSION_REQUEST", "admission request shard must match its promotion decision")
         if not _non_empty(request.proposal_ref) or not _non_empty(request.placement_plan_ref):
@@ -228,16 +320,18 @@ def _validate_recall_request(request: RecallRequest | None) -> None:
         _fail("CX2_FORBIDDEN_AUTOMATION", "recall workset must not be global discovery or captured pool")
     if request.memory_intent not in _enum_values(MemoryIntent):
         _fail("CX2_INVALID_RECALL_REQUEST", "recall memory intent is invalid")
-    if not isinstance(request.max_cards, int) or not isinstance(request.max_layers, int) or request.max_cards <= 0 or request.max_layers <= 0:
-        _fail("CX2_INVALID_RECALL_REQUEST", "recall budgets must be positive integers")
+    if type(request.max_cards) is not int or type(request.max_layers) is not int or request.max_cards <= 0 or request.max_layers <= 0:
+        _fail("CX2_INVALID_RECALL_REQUEST", "recall budgets must be positive non-boolean integers")
 
 
 def _validate_derived_views(views: tuple[DerivedViewRef, ...]) -> None:
     for view in views:
-        if view.view_kind == "dg6_compacted_view" and view.usage != "verification_only":
+        if view.view_kind != "dg6_compacted_view":
+            _fail("CX2_FORBIDDEN_DG6_INFERENCE", "CX2 v1 allows only dg6_compacted_view derived views")
+        if not _non_empty(view.view_ref):
+            _fail("CX2_FORBIDDEN_DG6_INFERENCE", "DG6 verification view must have a non-empty opaque reference")
+        if view.usage != "verification_only":
             _fail("CX2_FORBIDDEN_DG6_INFERENCE", "DG6 view may be used only for verification-only conformance language")
-        if view.usage in {"recall_filter", "recall_rank", "recall_source", "replace_evidence"}:
-            _fail("CX2_FORBIDDEN_DG6_INFERENCE", "derived view must not filter, rank, replace, or influence recall")
 
 
 def _validate_non_inferences(non_inferences: tuple[str, ...]) -> None:

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from hashlib import sha256
+import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
+
+from nollm.dream_geometry.validation.cx2.validator import validate_cortex_action_plan
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 REPORT_RUNNER = REPO_ROOT / "validation/cx2/run_cx2_conformance.py"
@@ -57,6 +61,26 @@ def test_cx2_report_runner_writes_only_explicit_output_path(tmp_path) -> None:
         assert not (tmp_path / forbidden).exists()
 
 
+def test_cx2_c1_06_documented_plan_examples_parse_and_validate() -> None:
+    prompt_plans = _marked_plan_json_blocks(REPO_ROOT / "cortex/CORTEX_PROMPT.md")
+    bridge_plans = _marked_plan_json_blocks(REPO_ROOT / "docs/integration/CX2_JSON_BRIDGE_EXAMPLES.md")
+
+    assert set(prompt_plans) == {"stable_recall"}
+    assert set(bridge_plans) == {"capture_only", "mixed_explicit"}
+
+    assert validate_cortex_action_plan(prompt_plans["stable_recall"]).intent == "recall"
+    assert validate_cortex_action_plan(bridge_plans["capture_only"]).intent == "capture_only"
+    mixed = validate_cortex_action_plan(bridge_plans["mixed_explicit"])
+    assert mixed.intent == "mixed_explicit"
+    assert mixed.capture_ref_count == 2
+    assert mixed.admission_request_count == 2
+
+    bridge_text = (REPO_ROOT / "docs/integration/CX2_JSON_BRIDGE_EXAMPLES.md").read_text(encoding="utf-8")
+    assert '"kind": "nollm_cx2_cortex_action_plan_summary"' in bridge_text
+    assert '"kind": "nollm_cx2_cortex_action_plan_error"' in bridge_text
+    assert "not a Core execution result" in bridge_text
+
+
 def _run_report(output: Path) -> str:
     result = subprocess.run(
         [sys.executable, str(REPORT_RUNNER), "--output", str(output)],
@@ -74,3 +98,12 @@ def _run_report(output: Path) -> str:
 
 def _tree_manifest(root: Path) -> tuple[str, ...]:
     return tuple(sorted(path.relative_to(root).as_posix() for path in root.rglob("*")))
+
+
+def _marked_plan_json_blocks(path: Path) -> dict[str, dict]:
+    text = path.read_text(encoding="utf-8")
+    pattern = re.compile(r"<!-- cx2-plan:start ([a-z_]+) -->\s*```json\s*(.*?)\s*```\s*<!-- cx2-plan:end -->", re.DOTALL)
+    blocks: dict[str, dict] = {}
+    for name, raw_json in pattern.findall(text):
+        blocks[name] = json.loads(raw_json)
+    return blocks

@@ -4,7 +4,15 @@ import ast
 from pathlib import Path
 
 from nollm.dream_geometry.validation.cx2.fixtures import dg7_correspondence_fixture, valid_explicit_admission_and_recall_plan
-from nollm.dream_geometry.validation.cx2.types import CX2PlanValidationError, DerivedViewRef, ExplicitAssembly, RecallRequest
+from nollm.dream_geometry.validation.cx2.types import (
+    AdmissionRequestRef,
+    CaptureRef,
+    CX2PlanValidationError,
+    DerivedViewRef,
+    ExplicitAssembly,
+    PromotionDecision,
+    RecallRequest,
+)
 from nollm.dream_geometry.validation.cx2.validator import validate_cortex_action_plan
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -40,6 +48,93 @@ def test_cx2_rejects_dg6_recall_influence() -> None:
     for usage in ("recall_filter", "recall_rank", "recall_source", "replace_evidence"):
         with raises_cx2("CX2_FORBIDDEN_DG6_INFERENCE"):
             validate_cortex_action_plan(plan.__class__(**{**_plan_dict(plan), "derived_views": (DerivedViewRef("dg6_compacted_view", "opaque-dg6", usage),)}))
+
+
+def test_cx2_c1_03_capture_ephemeral_consistency() -> None:
+    valid = {
+        "plan_kind": "nollm_cortex_action_plan",
+        "plan_version": "1",
+        "plan_id": "cx2_ephemeral_valid",
+        "intent": "capture_only",
+        "capture_refs": [
+            {
+                "capture_id": "cap_ephemeral_valid",
+                "shard_id": None,
+                "persistence_state": "ephemeral",
+                "admission_state": "none",
+                "usage_state": "tentative",
+                "visibility_scope": "current_turn",
+            }
+        ],
+        "non_inferences": _non_inferences(),
+    }
+    assert validate_cortex_action_plan(valid).capture_ref_count == 1
+
+    invalid_captures = (
+        CaptureRef("cap_ephemeral_admitted", None, "ephemeral", "admitted", "tentative", "current_turn"),
+        CaptureRef("cap_ephemeral_visibility", None, "ephemeral", "none", "tentative", "persistent_explicit"),
+        CaptureRef("cap_ephemeral_shard", "shard_ephemeral", "ephemeral", "none", "tentative", "current_turn"),
+        CaptureRef("cap_ephemeral_deferred", None, "ephemeral", "deferred", "tentative", "current_turn"),
+        CaptureRef("cap_ephemeral_candidate", None, "ephemeral", "candidate", "tentative", "current_turn"),
+        CaptureRef("cap_ephemeral_promotion", None, "ephemeral", "promotion_requested", "tentative", "current_turn"),
+        CaptureRef("cap_ephemeral_do_not", None, "ephemeral", "do_not_admit", "tentative", "current_turn"),
+    )
+    for capture in invalid_captures:
+        with raises_cx2("CX2_INVALID_STATE_SEPARATION"):
+            validate_cortex_action_plan(valid_explicit_admission_and_recall_plan().__class__(
+                plan_kind="nollm_cortex_action_plan",
+                plan_version="1",
+                plan_id=f"cx2_{capture.capture_id}",
+                intent="capture_only",
+                capture_refs=(capture,),
+                non_inferences=tuple(_non_inferences()),
+            ))
+
+
+def test_cx2_c1_04_admission_decision_binding() -> None:
+    plan = valid_explicit_admission_and_recall_plan()
+    duplicate_request = AdmissionRequestRef(
+        "admreq_valid_02c",
+        plan.admission_request_refs[0].decision_id,
+        plan.admission_request_refs[0].shard_id,
+        "opaque-host-proposal-c",
+        "opaque-host-placement-c",
+    )
+
+    with raises_cx2("CX2_INVALID_ADMISSION_REQUEST"):
+        validate_cortex_action_plan(plan.__class__(**{**_plan_dict(plan), "admission_request_refs": (*plan.admission_request_refs, duplicate_request)}))
+
+    cortex_suggestion = PromotionDecision("pmd_cortex_suggestion", "dac_cortex_suggestion", "shard_cortex_suggestion", "promote", ("explicit_pin",), "cortex_suggestion")
+    cortex_request = AdmissionRequestRef("admreq_cortex_suggestion", "pmd_cortex_suggestion", "shard_cortex_suggestion", "opaque-proposal", "opaque-placement")
+    with raises_cx2("CX2_INVALID_ADMISSION_REQUEST"):
+        validate_cortex_action_plan(plan.__class__(**{**_plan_dict(plan), "promotion_decisions": (cortex_suggestion,), "admission_request_refs": (cortex_request,)}))
+
+    for decided_by in ("host_rule", "user", "human_operator"):
+        decision = PromotionDecision(f"pmd_{decided_by}", f"dac_{decided_by}", f"shard_{decided_by}", "promote", ("explicit_pin",), decided_by)
+        request = AdmissionRequestRef(f"admreq_{decided_by}", f"pmd_{decided_by}", f"shard_{decided_by}", "opaque-proposal", "opaque-placement")
+        assert validate_cortex_action_plan(
+            plan.__class__(**{**_plan_dict(plan), "promotion_decisions": (decision,), "admission_request_refs": (request,)})
+        ).admission_request_count == 1
+
+
+def test_cx2_c1_05_derived_view_and_budget_validation() -> None:
+    plan = valid_explicit_admission_and_recall_plan()
+
+    for view in (
+        DerivedViewRef("dg6_compacted_view", "", "verification_only"),
+        DerivedViewRef("future_magic_view", "opaque-view", "verification_only"),
+        DerivedViewRef("dg6_compacted_view", "opaque-view", "recall_filter"),
+        DerivedViewRef("dg6_compacted_view", "opaque-view", "unexpected_usage"),
+    ):
+        with raises_cx2("CX2_FORBIDDEN_DG6_INFERENCE"):
+            validate_cortex_action_plan(plan.__class__(**{**_plan_dict(plan), "derived_views": (view,)}))
+
+    for request in (
+        RecallRequest("opaque-query", "verification", "explicit-finite-workset", True, 1),
+        RecallRequest("opaque-query", "verification", "explicit-finite-workset", 1, True),
+    ):
+        with raises_cx2("CX2_INVALID_RECALL_REQUEST"):
+            validate_cortex_action_plan(plan.__class__(**{**_plan_dict(plan), "recall_request": request}))
 
 
 def test_cx2_dg7_correspondence_fixture_is_read_only_language() -> None:
@@ -117,3 +212,13 @@ def _plan_dict(plan):
         "derived_views": plan.derived_views,
         "non_inferences": plan.non_inferences,
     }
+
+
+def _non_inferences() -> list[str]:
+    return [
+        "no_automatic_admission",
+        "no_global_discovery",
+        "no_anchor_creation",
+        "no_truth_confirmation",
+        "no_dg6_recall_influence",
+    ]

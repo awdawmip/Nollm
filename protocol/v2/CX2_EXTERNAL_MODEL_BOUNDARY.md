@@ -27,6 +27,8 @@ The host, user, or human operator owns:
 - explicit assembly admission IDs;
 - query refs, finite admitted workset refs, and recall budgets.
 
+`cortex_suggestion` may appear as a suggestion provenance label. It is not final promotion authority and cannot be used as the decision source for an admission request in the same plan.
+
 ## Forbidden Model Behavior
 
 The external model must not:
