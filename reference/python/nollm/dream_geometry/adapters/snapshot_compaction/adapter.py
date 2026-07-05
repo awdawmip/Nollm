@@ -7,7 +7,6 @@ from dataclasses import replace
 from nollm.dream_geometry.assembly.types import FiniteFieldSnapshot
 from nollm.dream_geometry.compression import CompressionPlanningError, expand_compression_plan, plan_trace_compaction
 from nollm.dream_geometry.compression.view import build_compacted_trace_view
-from nollm.dream_geometry.field.types import GrowthTrace
 
 from .errors import DG6AdapterError
 from .fingerprint import projection_fingerprint_for, projection_id_for, projection_identity_payload, projection_payload
@@ -65,7 +64,7 @@ def validate_snapshot_compaction_projection(
 def expand_snapshot_compaction_projection(
     snapshot: FiniteFieldSnapshot,
     projection: SnapshotCompactionProjection,
-) -> tuple[GrowthTrace, ...]:
+) -> tuple[object, ...]:
     projection = validate_snapshot_compaction_projection(snapshot, projection)
     traces = snapshot.replayed_traces
     _canonical_replayed_trace_ids(traces)

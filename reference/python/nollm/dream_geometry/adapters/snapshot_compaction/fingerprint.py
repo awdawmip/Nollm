@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from hashlib import sha256
-
-from nollm.dream_geometry.field.types import stable_id, stable_json
+from math import isfinite
 
 from .types import SnapshotCompactionAdapterPolicy, SnapshotCompactionProjection
 
@@ -64,3 +64,27 @@ def projection_id_for(payload: object) -> str:
 
 def projection_fingerprint_for(payload: object) -> str:
     return sha256(stable_json(payload).encode("utf-8")).hexdigest()
+
+
+def stable_id(prefix: str, payload: object) -> str:
+    return f"{prefix}:{sha256(stable_json(payload).encode('utf-8')).hexdigest()[:32]}"
+
+
+def stable_json(payload: object) -> str:
+    return json.dumps(_normalize(payload), sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def _normalize(payload: object) -> object:
+    if hasattr(payload, "value"):
+        return getattr(payload, "value")
+    if isinstance(payload, float):
+        if not isfinite(payload):
+            raise ValueError("finite float required")
+        return format(payload, ".17g")
+    if isinstance(payload, (str, int, bool)) or payload is None:
+        return payload
+    if isinstance(payload, tuple | list):
+        return [_normalize(item) for item in payload]
+    if isinstance(payload, dict):
+        return {str(key): _normalize(value) for key, value in payload.items()}
+    return str(payload)

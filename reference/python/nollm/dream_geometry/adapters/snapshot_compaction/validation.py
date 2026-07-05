@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from nollm.dream_geometry.assembly.types import FiniteFieldSnapshot, snapshot_fingerprint_payload, stable_fingerprint
 from nollm.dream_geometry.compression import CompressionPlanningError
-from nollm.dream_geometry.field.types import GrowthTrace
 
 from .errors import DG6AdapterError
 from .types import SnapshotCompactionAdapterPolicy, SnapshotCompactionProjection
+
+
+class _TraceIdentityView(Protocol):
+    trace_id: object
 
 
 def validate_policy(policy: SnapshotCompactionAdapterPolicy) -> SnapshotCompactionAdapterPolicy:
@@ -44,14 +49,14 @@ def snapshot_fingerprint(snapshot: FiniteFieldSnapshot) -> str:
         raise DG6AdapterError("DG6_INVALID_SNAPSHOT", str(exc)) from exc
 
 
-def trace_manifest(traces: tuple[GrowthTrace, ...], trace_fingerprints: tuple[tuple[str, str], ...]) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
+def trace_manifest(traces: tuple[_TraceIdentityView, ...], trace_fingerprints: tuple[tuple[str, str], ...]) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
     trace_ids = _canonical_replayed_trace_ids(traces)
     if tuple(trace_id for trace_id, _ in trace_fingerprints) != trace_ids:
         raise DG6AdapterError("DG6_SOURCE_TRACE_MANIFEST_MISMATCH", "source trace fingerprints must match trace ids")
     return trace_ids, trace_fingerprints
 
 
-def _canonical_replayed_trace_ids(traces: tuple[GrowthTrace, ...]) -> tuple[str, ...]:
+def _canonical_replayed_trace_ids(traces: tuple[_TraceIdentityView, ...]) -> tuple[str, ...]:
     trace_ids: list[str] = []
     for trace in traces:
         try:
@@ -91,7 +96,7 @@ def wrap_dg5(reason_code: str, exc: CompressionPlanningError) -> DG6AdapterError
     return DG6AdapterError(reason_code, f"{exc.reason_code}: {exc}")
 
 
-def _snapshot_traces(snapshot: FiniteFieldSnapshot) -> tuple[GrowthTrace, ...]:
+def _snapshot_traces(snapshot: FiniteFieldSnapshot) -> tuple[_TraceIdentityView, ...]:
     try:
         traces = snapshot.replayed_traces
     except AttributeError as exc:

@@ -254,12 +254,14 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
     stdout_path = receipt_root / "logs" / f"{shard_id}.stdout.txt"
     stderr_path = receipt_root / "logs" / f"{shard_id}.stderr.txt"
     cleanup_result = "not_started"
+    runtime_fixture_copy = "not_present"
     started = time.monotonic()
     status = "failed"
     returncode = -1
     timed_out = False
     try:
         add_worktree(repo_root, worktree, plan["git_head"])
+        runtime_fixture_copy = copy_runtime_fixtures(repo_root, worktree)
         collection_cwd = pytest_cwd(worktree)
         command = [sys.executable, "-m", "pytest", "-q", "--junitxml", str(junit), *shard["node_ids"]]
         returncode, timed_out = run_process(command, cwd=collection_cwd, env=pytest_env(worktree), timeout_seconds=timeout_seconds, stdout_path=stdout_path, stderr_path=stderr_path)
@@ -293,6 +295,7 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "stderr_tail": read_tail(stderr_path),
         "worktree_path": str(worktree),
         "worktree_cleanup": cleanup_result,
+        "runtime_fixture_copy": runtime_fixture_copy,
     }
     write_json(existing_path, receipt)
     return receipt
@@ -424,6 +427,18 @@ def add_worktree(repo_root: Path, worktree: Path, head: str) -> None:
         raise MatrixError("worktree_add_failed", "git worktree add failed", {"stderr_tail": tail(result.stderr)})
 
 
+def copy_runtime_fixtures(repo_root: Path, worktree: Path) -> str:
+    source = repo_root / "out" / "nollm_runtime"
+    if not source.exists():
+        return "not_present"
+    target = worktree / "out" / "nollm_runtime"
+    if target.exists():
+        shutil.rmtree(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target)
+    return "copied"
+
+
 def remove_worktree(repo_root: Path, worktree: Path) -> str:
     if not worktree.exists():
         return "removed"
@@ -505,8 +520,7 @@ def parse_junit_tests(path: Path) -> int | None:
 
 
 def pytest_cwd(repo_root: Path) -> Path:
-    reference = repo_root / "reference" / "python"
-    return reference if reference.exists() else repo_root
+    return repo_root
 
 
 def pytest_env(repo_root: Path) -> dict[str, str]:
