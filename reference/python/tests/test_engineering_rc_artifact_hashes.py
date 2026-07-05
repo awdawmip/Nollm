@@ -10,6 +10,8 @@ from nollm.engineering_rc_export import (
     HASH_MANIFEST_PATH,
     HASH_SCHEMA,
     build_engineering_rc_artifact_hash_manifest,
+    build_engineering_rc_export_check,
+    canonical_rc_artifact_bytes,
 )
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -43,10 +45,34 @@ def test_hash_manifest_sha256_and_size_match_current_files() -> None:
     manifest = _committed_hash_manifest()
 
     for item in manifest["artifacts"]:
-        target = ROOT / item["path"]
-        data = target.read_bytes()
+        data = canonical_rc_artifact_bytes(ROOT, item["path"])
         assert item["size_bytes"] == len(data)
         assert item["sha256"] == __import__("hashlib").sha256(data).hexdigest()
+
+
+def test_rch1_roadmap_manifest_uses_canonical_lf_bytes() -> None:
+    path = "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md"
+    manifest = _committed_hash_manifest()
+    item = next(record for record in manifest["artifacts"] if record["path"] == path)
+    data = canonical_rc_artifact_bytes(ROOT, path)
+
+    assert b"\r\n" not in data
+    assert item["size_bytes"] == len(data)
+    assert item["sha256"] == __import__("hashlib").sha256(data).hexdigest()
+
+
+def test_rch1_crlf_checkout_invariance_for_manifest_and_checker(tmp_path: Path) -> None:
+    repo = _copy_hash_fixture(tmp_path)
+    path = "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md"
+    target = repo / path
+    lf_text = target.read_text(encoding="utf-8").replace("\r\n", "\n")
+    lf_manifest = build_engineering_rc_artifact_hash_manifest(repo)
+    target.write_bytes(lf_text.replace("\n", "\r\n").encode("utf-8"))
+    crlf_manifest = build_engineering_rc_artifact_hash_manifest(repo)
+    report = build_engineering_rc_export_check(repo)
+
+    assert crlf_manifest == lf_manifest
+    assert report["ok"] is True, report["failures"]
 
 
 def test_checker_fails_on_corrupted_file_in_temp_copy(tmp_path: Path) -> None:
@@ -68,6 +94,30 @@ def test_checker_fails_on_corrupted_file_in_temp_copy(tmp_path: Path) -> None:
     assert "hash_manifest_size_mismatch:docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md" in report[
         "failures"
     ]
+
+
+def test_rch1_bare_cr_artifact_is_rejected(tmp_path: Path) -> None:
+    repo = _copy_hash_fixture(tmp_path)
+    path = "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md"
+    (repo / path).write_bytes(b"line one\rline two\n")
+
+    report = build_engineering_rc_export_check(repo)
+
+    assert report["ok"] is False
+    assert f"bare_cr_in_rc_artifact:{path}" in report["failures"]
+
+
+def test_rch1_unsupported_canonical_suffix_is_rejected(tmp_path: Path) -> None:
+    binary = tmp_path / "repo" / "docs" / "artifact.bin"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"\x00\x01")
+
+    try:
+        canonical_rc_artifact_bytes(tmp_path / "repo", "docs/artifact.bin")
+    except ValueError as exc:
+        assert str(exc) == "unsupported_rc_artifact_suffix:docs/artifact.bin"
+    else:
+        raise AssertionError("unsupported RC artifact suffix was accepted")
 
 
 def test_ignored_local_paths_are_excluded_even_when_present(tmp_path: Path) -> None:

@@ -43,3 +43,20 @@ TQ1-C2 closes the remaining matrix-proof gaps:
 The final TQ1-C2 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c2`; earlier C1 receipts are
 not final closure evidence.
+
+## RCH1 Canonical RC Artifact Bytes
+
+RCH1 preserves the TQ1-C2 clean-source, plan-owned fixture, and owned-worktree
+rules. It does not restore tracked source byte mirroring.
+
+The TQ1-C2 detached matrix exposed that the Engineering RC hash manifest had
+recorded host checkout CRLF bytes for
+`docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md` instead of the
+committed LF release content. RCH1 changes RC manifest and archive handling to
+canonical release bytes for governed text artifacts: CRLF is normalized to LF,
+bare CR is rejected, archive entries are written with the same canonical bytes,
+and substantive content changes still change size and hash.
+
+The final RCH1/TQ1-C2 matrix must use fresh receipts under
+`C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c2-rch1`; earlier C2 stopped
+receipts are not final closure evidence.

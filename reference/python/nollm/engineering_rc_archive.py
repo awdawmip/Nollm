@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Mapping, Sequence
 import zipfile
 
-from nollm.engineering_rc_export import HASH_MANIFEST_PATH, EXPORT_MANIFEST_PATH
+from nollm.engineering_rc_export import HASH_MANIFEST_PATH, EXPORT_MANIFEST_PATH, canonical_rc_artifact_bytes
 
 SCHEMA = "nollm.engineering_rc_archive.v1"
 FIXED_ZIP_TIMESTAMP = (2026, 6, 18, 0, 0, 0)
@@ -29,8 +29,11 @@ def build_engineering_rc_export_archive(
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED) as archive:
         for path, record in expected.items():
-            source = repo_root / path
-            data = source.read_bytes()
+            try:
+                data = canonical_rc_artifact_bytes(repo_root, path)
+            except ValueError as exc:
+                failures.append(str(exc))
+                continue
             if len(data) != record["size_bytes"]:
                 failures.append(f"source_size_mismatch:{path}")
             if hashlib.sha256(data).hexdigest() != record["sha256"]:

@@ -10,6 +10,7 @@ SCHEMA = "nollm.engineering_rc_export_check.v1"
 HASH_SCHEMA = "nollm.engineering_gravity_rc_artifact_hashes.v1"
 HASH_MANIFEST_PATH = "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_ARTIFACT_HASHES_20260618.json"
 EXPORT_MANIFEST_PATH = "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.json"
+CANONICAL_TEXT_SUFFIXES = (".md", ".json", ".py")
 
 REQUIRED_RELEASE_FILES = (
     "docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md",
@@ -198,13 +199,23 @@ def _command_test_paths() -> list[str]:
 
 
 def _artifact_record(repo_root: Path, path: str) -> dict[str, object]:
-    target = repo_root / path
-    data = target.read_bytes()
+    data = canonical_rc_artifact_bytes(repo_root, path)
     return {
         "path": path,
         "size_bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
     }
+
+
+def canonical_rc_artifact_bytes(repo_root: Path, path: str) -> bytes:
+    if not path.endswith(CANONICAL_TEXT_SUFFIXES):
+        raise ValueError(f"unsupported_rc_artifact_suffix:{path}")
+    target = Path(repo_root).resolve() / path
+    data = target.read_bytes()
+    normalized = data.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        raise ValueError(f"bare_cr_in_rc_artifact:{path}")
+    return normalized
 
 
 def _read_hash_manifest(path: Path, failures: list[str]) -> Mapping[str, object]:
@@ -259,7 +270,11 @@ def _check_hash_manifest(
         if not target.exists():
             failures.append(f"hash_manifest_missing_file:{path}")
             continue
-        expected_record = _artifact_record(repo_root, path)
+        try:
+            expected_record = _artifact_record(repo_root, path)
+        except ValueError as exc:
+            failures.append(str(exc))
+            continue
         if item.get("size_bytes") != expected_record["size_bytes"]:
             failures.append(f"hash_manifest_size_mismatch:{path}")
         if item.get("sha256") != expected_record["sha256"]:
@@ -361,6 +376,7 @@ __all__ = [
     "SCHEMA",
     "build_engineering_rc_artifact_hash_manifest",
     "build_engineering_rc_export_check",
+    "canonical_rc_artifact_bytes",
     "engineering_rc_export_check_json",
     "write_engineering_rc_artifact_hash_manifest",
     "write_engineering_rc_export_check",

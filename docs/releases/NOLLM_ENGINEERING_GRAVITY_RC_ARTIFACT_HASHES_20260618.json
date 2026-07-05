@@ -73,8 +73,8 @@
     },
     {
       "path": "docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md",
-      "sha256": "5ac526a4f2eb265588b440da9322587725e2a8eabeeb9e950c88749e59c0cd5f",
-      "size_bytes": 6575
+      "sha256": "44fa031d57b265ac7dbc352aa1dc25f53819bf45b84efccebb76312f676d592e",
+      "size_bytes": 6257
     },
     {
       "path": "out/nollm_runtime/g_series_engineering_closure_report.json",
@@ -133,13 +133,13 @@
     },
     {
       "path": "reference/python/nollm/engineering_rc_archive.py",
-      "sha256": "222326fd56b11e30bee8b2a89cfb38cafd76cc659c193bcdede3e63b1262c30f",
-      "size_bytes": 8472
+      "sha256": "c814b49fc698c0811da9d7799a356c5c8db776610e23879a6d153e00787f5c45",
+      "size_bytes": 8614
     },
     {
       "path": "reference/python/nollm/engineering_rc_export.py",
-      "sha256": "cd19c9ff591dc822f6a29f80721924cb2ecc647a9da58bd675d03c29e4fc5461",
-      "size_bytes": 14499
+      "sha256": "e7c51934bd668dab382379acf5ff86da3aab92a3f23698064029735a67f46a24",
+      "size_bytes": 15111
     },
     {
       "path": "reference/python/nollm/engineering_rc_final_smoke.py",
@@ -233,13 +233,13 @@
     },
     {
       "path": "reference/python/tests/test_engineering_rc_archive.py",
-      "sha256": "52579708e56a4b259bcad6316c73de22dceadbda1fd90c30c3874fdcd43dba7a",
-      "size_bytes": 3795
+      "sha256": "cd54ea79d17cf53267ee191b2f6d35030978c8cfb9d6afc80f2f4414b94d7b99",
+      "size_bytes": 5820
     },
     {
       "path": "reference/python/tests/test_engineering_rc_artifact_hashes.py",
-      "sha256": "04ddeed9311f483f674b37115b32ab25b2f7e80eb6bc1510d9a138708483d965",
-      "size_bytes": 5196
+      "sha256": "2984392538a9a03808df1bd66afe8ec0b724fea6592fb540afd115f83813c91e",
+      "size_bytes": 7265
     },
     {
       "path": "reference/python/tests/test_engineering_rc_export.py",
