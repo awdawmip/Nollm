@@ -29,7 +29,12 @@ Dream diagnostics:
 
 Broad profile:
 
-- `full`: the existing full test runner.
+- `full`: the existing legacy single-process full test runner.
+
+These profiles are curated diagnostics from the engineering RC period. They are
+not a current complete-suite proof for the full repository after later Dream
+Geometry, HX1, and TQ1 additions. Use the TQ1 bounded complete test matrix for
+delivery-grade proof that every fresh pytest node id ran exactly once.
 
 Shard reports are runtime artifacts under `out/nollm_runtime/test_shards/`.
 Timeouts are diagnostic failures. A timeout means a shard needs triage; it does

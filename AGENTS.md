@@ -395,7 +395,14 @@ python3 -m nollm.cli validate ../../examples/openclaw
 python3 -m nollm.cli audit ../../examples/openclaw
 ```
 
-Use `python3 run_tests.py` as the canonical test command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, runs every test file in deterministic order, and applies a hard timeout to each group.
+Use `python3 run_tests.py` as a legacy single-process diagnostic command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` and delegates to pytest in one process.
+
+For delivery-grade complete-suite verification after TQ1, use the bounded complete test matrix instead of treating single-process `run_tests.py` as the only full-suite proof. The matrix receipts and worktrees must be outside the repository under:
+
+```text
+C:\Users\chaos\nollm_test_runs\<git-commit>\
+C:\Users\chaos\nollm_test_worktrees\<git-commit>\
+```
 
 When relevant to the phase, also run:
 
@@ -466,6 +473,16 @@ protocol/
 ```
 
 not in local-only agent instruction files.
+
+## Delivery bundle convention
+
+For Nollm delivery bundles on the project owner's Windows workspace, create the final complete-history `.bundle` outside the repository at:
+
+```text
+C:\Users\chaos\<bundle-name>.bundle
+```
+
+Do not place delivery bundles inside the repository or under repo/out.
 
 ## Nollm V1 Route Lock
 

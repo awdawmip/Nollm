@@ -92,5 +92,8 @@ The generated archive is a local release artifact and should not be committed.
 
 Test shard profiles are documented in
 `docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_TEST_SHARDS_20260619.md`.
+Those RC shard profiles are curated diagnostics. They are not the current
+complete-suite delivery gate; use the TQ1 bounded complete test matrix when a
+delivery requires exact fresh pytest collection coverage.
 The one-command final smoke gate is documented in
 `docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FINAL_SMOKE_20260619.md`.

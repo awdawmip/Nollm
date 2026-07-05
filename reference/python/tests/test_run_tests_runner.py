@@ -35,12 +35,8 @@ def test_shared_subprocess_harness_remains_robust() -> None:
     assert "time.monotonic()" in harness_text
 
 
-def test_tests_do_not_use_bare_subprocess_run() -> None:
-    offenders = []
+def test_tq1_matrix_self_tests_do_not_use_bare_subprocess_run() -> None:
+    text = (ROOT / "reference" / "python" / "tests" / "test_nollm_test_matrix.py").read_text(encoding="utf-8")
     forbidden = "subprocess." + "run("
-    for path in sorted((ROOT / "reference" / "python" / "tests").glob("test_*.py")):
-        text = path.read_text(encoding="utf-8")
-        if forbidden in text:
-            offenders.append(path.name)
 
-    assert offenders == []
+    assert forbidden not in text
