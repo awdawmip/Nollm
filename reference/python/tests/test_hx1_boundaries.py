@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+import shutil
 
 import pytest
 
-from nollm.dream_geometry.host_execution import HX1ExecutionError, HostExecutionContext, HostPlanBindings, execute_host_plan
+from nollm.dream_geometry.host_execution import HX1ExecutionError, HostDG6VerificationBinding, HostExecutionContext, HostPlanBindings, execute_host_plan
 
 from test_hx1_trusted_host_bridge import hx1_fixture
 
@@ -83,6 +84,43 @@ def test_hx1_c2_dg6_enablement_controls_projection_without_recall_influence(tmp_
     assert receipt.recall_public_envelope is not None
 
 
+def test_hx1_c3_undeclared_dg6_binding_rejects_before_write(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    plan = replace(fixture["plan"], derived_views=())
+    bindings = replace(fixture["bindings"], dg6_binding=HostDG6VerificationBinding("view:hx1:rogue"))
+    with pytest.raises(HX1ExecutionError) as error:
+        execute_host_plan(plan, bindings, fixture["context"])
+    assert error.value.reason_code == "HX1_INVALID_BINDINGS"
+    assert type(error.value) is HX1ExecutionError
+    for forbidden in ("Traceback", "AttributeError", "TypeError", "KeyError", "ValueError", "nollm.dream_geometry", "\\"):
+        assert forbidden not in str(error.value)
+    assert not (tmp_path / "work").exists() or list((tmp_path / "work").iterdir()) == []
+
+
+@pytest.mark.parametrize("work_root", (None, 123))
+def test_hx1_c3_invalid_work_root_context_type_rejects_before_write(tmp_path, work_root) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    context = replace(fixture["context"], work_root=work_root)
+    _assert_context_zero_write(fixture["plan"], fixture["bindings"], context, tmp_path / "work")
+
+
+def test_hx1_c3_rejects_repository_descendant_work_root_before_write() -> None:
+    repo_root = _repo_root()
+    probe = repo_root / ".hx1_c3_repo_child_probe"
+    if probe.exists():
+        shutil.rmtree(probe)
+    fixture = hx1_fixture(probe)
+    try:
+        with pytest.raises(HX1ExecutionError) as error:
+            execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+        assert error.value.reason_code == "HX1_WORK_ROOT_REJECTED"
+        assert type(error.value) is HX1ExecutionError
+        assert not probe.exists()
+    finally:
+        if probe.exists():
+            shutil.rmtree(probe)
+
+
 def _assert_context_zero_write(plan, bindings: HostPlanBindings, context, work_root) -> None:
     with pytest.raises(HX1ExecutionError) as error:
         execute_host_plan(plan, bindings, context)
@@ -91,3 +129,11 @@ def _assert_context_zero_write(plan, bindings: HostPlanBindings, context, work_r
     for forbidden in ("Traceback", "AttributeError", "TypeError", "KeyError", "ValueError", "nollm.dream_geometry", "\\"):
         assert forbidden not in str(error.value)
     assert not work_root.exists() or list(work_root.iterdir()) == []
+
+
+def _repo_root() -> Path:
+    current = Path.cwd().resolve()
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return current

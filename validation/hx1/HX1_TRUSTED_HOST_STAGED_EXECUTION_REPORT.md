@@ -30,9 +30,9 @@ HX1 validates one CX2 CortexActionPlan plus host explicit bindings and executes 
 - recall envelope status: resolved
 - idempotent reopen: canonical mapping identical
 - forbidden output directories: none
-- canonical receipt fingerprint: sha256:2d615ac52742a290baa66d0a6253d922ba97c90d497e51806bd1f90caea792f3
-- execution input fingerprint: sha256:4a02d743804d388cefb592f043ced40a854f0c8aba195a20eb09999070565a94
-- canonical receipt sha256: 21b8d8f7b56a0764121e197c7b771b75a889f7a4076447f32c133675c6203076
+- canonical receipt fingerprint: sha256:f2cc85deaf6d3a7f0766d31107d58f6632e177257ba1838eb1bc8b0d336a865c
+- execution input fingerprint: sha256:f3eb313a3322e30bbc27041ad8ad5352fec18c3f227325b689e2ad8a64a4cf93
+- canonical receipt sha256: 2c198c47308612c0427070facc098f16835aa56eedf53b72f53bb7771c859070
 
 ## Commands
 

@@ -8,6 +8,8 @@ from typing import Any
 
 from nollm.dream_geometry.adapters import RecallInvocation
 from nollm.dream_geometry.admission import AdmissionPlacementPlan, AdmissionRequest
+from nollm.dream_geometry.admission import fingerprint as admission_fingerprint
+from nollm.dream_geometry.admission import placement_plan_payload
 from nollm.dream_geometry.batch_admission import PromotionDecider, PromotionDecision as BA1PromotionDecision
 from nollm.dream_geometry.batch_admission import PromotionDecisionKind, PromotionReason
 from nollm.dream_geometry.capture import (
@@ -24,7 +26,11 @@ from nollm.dream_geometry.capture import (
     VisibilityScope,
 )
 from nollm.dream_geometry.cortex import CompiledQueryProbe
+from nollm.dream_geometry.cortex import canonical_payload as cortex_payload
+from nollm.dream_geometry.cortex import payload_fingerprint as cortex_fingerprint
 from nollm.dream_geometry.evidence import DreamShard
+from nollm.dream_geometry.evidence import canonical_payload as evidence_payload
+from nollm.dream_geometry.evidence import payload_key as evidence_payload_key
 from nollm.dream_geometry.protocol.contracts import OriginKind
 from nollm.dream_geometry.validation.cx2 import validate_cortex_action_plan
 from nollm.dream_geometry.validation.cx2.types import (
@@ -99,13 +105,16 @@ def _validate_context(context: HostExecutionContext) -> None:
         _require_context_non_empty(value, label)
     if type(context.enable_dg6_verification) is not bool:
         raise HX1ExecutionError("HX1_INVALID_CONTEXT", "enable_dg6_verification must be boolean")
-    work_root = Path(context.work_root)
-    cwd = Path.cwd().resolve()
+    try:
+        work_root = Path(context.work_root)
+    except (TypeError, ValueError) as exc:
+        raise HX1ExecutionError("HX1_INVALID_CONTEXT", "work root is invalid") from exc
+    repo_root = _repository_root(Path.cwd())
     try:
         resolved = work_root.resolve()
-    except Exception as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         raise HX1ExecutionError("HX1_INVALID_CONTEXT", "work root is invalid") from exc
-    if resolved == cwd or (resolved / ".git").exists():
+    if _is_relative_to(resolved, repo_root):
         raise HX1ExecutionError("HX1_WORK_ROOT_REJECTED", "work root must be an explicit owned directory outside repo root")
     if work_root.exists() and not work_root.is_dir():
         raise HX1ExecutionError("HX1_WORK_ROOT_REJECTED", "work root must be a directory")
@@ -115,7 +124,7 @@ def _validate_context(context: HostExecutionContext) -> None:
 
 
 def _validate_context_semantics(plan: CortexActionPlan, bindings: HostPlanBindings, context: HostExecutionContext) -> None:
-    if (plan.derived_views or bindings.dg6_binding is not None) and context.enable_dg6_verification is not True:
+    if plan.derived_views and context.enable_dg6_verification is not True:
         raise HX1ExecutionError("HX1_INVALID_CONTEXT", "DG6 verification must be enabled when a DG6 view is declared")
 
 
@@ -262,6 +271,8 @@ def _validate_recall_bindings(plan: CortexActionPlan, bindings: HostPlanBindings
 
 def _validate_dg6_bindings(plan: CortexActionPlan, bindings: HostPlanBindings) -> None:
     if not plan.derived_views:
+        if bindings.dg6_binding is not None:
+            raise HX1ExecutionError("HX1_INVALID_BINDINGS", "DG6 binding is not declared by plan")
         return
     if bindings.dg6_binding is None:
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "DG6 view binding is required when declared")
@@ -354,11 +365,13 @@ def _validate_admission_request_value(request: AdmissionRequest) -> None:
     if not isinstance(request.dream_shard, DreamShard):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "admission dream_shard must be structured")
     _require_non_empty(request.dream_shard.shard_id, "dream_shard shard_id")
+    _validate_dream_shard_canonical(request.dream_shard)
     if not isinstance(request.growth_submission, Mapping):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "growth_submission must be mapping")
     if not isinstance(request.placement_plan, AdmissionPlacementPlan):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "placement_plan must be structured")
     _require_non_empty(request.placement_plan.plan_id, "placement plan id")
+    _validate_placement_plan_canonical(request.placement_plan)
 
 
 def _validate_recall_invocation_value(invocation: RecallInvocation) -> None:
@@ -367,6 +380,33 @@ def _validate_recall_invocation_value(invocation: RecallInvocation) -> None:
     if not isinstance(invocation.query_probe, CompiledQueryProbe):
         raise HX1ExecutionError("HX1_INVALID_BINDINGS", "recall query probe must be structured")
     _require_non_empty(invocation.query_probe.probe_id, "compiled probe id")
+    if not isinstance(invocation.query_probe.query_text, str):
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "compiled query text must be structured")
+    _validate_query_probe_canonical(invocation.query_probe)
+
+
+def _validate_dream_shard_canonical(shard: DreamShard) -> None:
+    try:
+        evidence_payload(shard)
+        evidence_payload_key(shard)
+    except (AttributeError, TypeError, KeyError, ValueError) as exc:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "dream shard cannot be canonically fingerprinted") from exc
+
+
+def _validate_placement_plan_canonical(plan: AdmissionPlacementPlan) -> None:
+    if not isinstance(plan.axis_placements, tuple) or not plan.axis_placements:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "placement plan axis placements must be structured")
+    try:
+        admission_fingerprint(placement_plan_payload(plan))
+    except (AttributeError, TypeError, KeyError, ValueError) as exc:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "placement plan cannot be canonically fingerprinted") from exc
+
+
+def _validate_query_probe_canonical(probe: CompiledQueryProbe) -> None:
+    try:
+        cortex_fingerprint(cortex_payload(probe))
+    except (AttributeError, TypeError, KeyError, ValueError) as exc:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "compiled query probe cannot be canonically fingerprinted") from exc
 
 
 def _validate_string_tuple(values: object, label: str, *, allow_empty: bool = False) -> None:
@@ -382,6 +422,22 @@ def _ordered_subsequence(expected: tuple[str, ...], actual: tuple[str, ...]) -> 
         if cursor < len(expected) and expected[cursor] == value:
             cursor += 1
     return cursor == len(expected)
+
+
+def _repository_root(start: Path) -> Path:
+    current = start.resolve()
+    for candidate in (current, *current.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return current
+
+
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+    except ValueError:
+        return False
+    return True
 
 
 __all__ = ["FORBIDDEN_WORK_DIRS", "preflight_host_plan"]

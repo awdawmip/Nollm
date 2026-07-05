@@ -31,7 +31,10 @@ RECEIPT_KIND = "nollm_hx1_host_execution_receipt"
 
 def execute_host_plan(plan, bindings: HostPlanBindings, context: HostExecutionContext) -> HostExecutionReceipt:
     summary, normalized = preflight_host_plan(plan, bindings, context)
-    input_fingerprint = execution_input_fingerprint(normalized, bindings, context)
+    try:
+        input_fingerprint = execution_input_fingerprint(normalized, bindings, context)
+    except (AttributeError, TypeError, KeyError, ValueError) as exc:
+        raise HX1ExecutionError("HX1_INVALID_BINDINGS", "host execution inputs cannot be canonically fingerprinted") from exc
     work_root = _prepare_work_root(Path(context.work_root), summary.plan_id)
     cached = _receipt_path(work_root, summary.plan_id)
     if cached.exists():

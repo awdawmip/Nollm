@@ -78,6 +78,29 @@ def test_hx1_c1_same_plan_id_changed_dg6_view_reopen_mismatch(tmp_path) -> None:
     _assert_reopen_mismatch(plan, bindings, fixture["context"], tmp_path / "work", before_tree)
 
 
+def test_hx1_c3_same_plan_id_changed_dream_shard_content_reopen_mismatch(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+    before_tree = _tree_manifest(tmp_path / "work")
+    first = fixture["bindings"].admission_bindings[0]
+    changed_shard = replace(first.request.dream_shard, content=first.request.dream_shard.content + " changed")
+    changed_request = replace(first.request, dream_shard=changed_shard)
+    bindings = replace(fixture["bindings"], admission_bindings=(replace(first, request=changed_request),) + fixture["bindings"].admission_bindings[1:])
+    _assert_reopen_mismatch(fixture["plan"], bindings, fixture["context"], tmp_path / "work", before_tree)
+
+
+def test_hx1_c3_same_plan_id_changed_dream_shard_origin_reopen_mismatch(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    execute_host_plan(fixture["plan"], fixture["bindings"], fixture["context"])
+    before_tree = _tree_manifest(tmp_path / "work")
+    first = fixture["bindings"].admission_bindings[0]
+    changed_origin = replace(first.request.dream_shard.origin, role_label="changed-role")
+    changed_shard = replace(first.request.dream_shard, origin=changed_origin)
+    changed_request = replace(first.request, dream_shard=changed_shard)
+    bindings = replace(fixture["bindings"], admission_bindings=(replace(first, request=changed_request),) + fixture["bindings"].admission_bindings[1:])
+    _assert_reopen_mismatch(fixture["plan"], bindings, fixture["context"], tmp_path / "work", before_tree)
+
+
 def _assert_reopen_mismatch(plan, bindings, context, work_root, before_tree) -> None:
     with pytest.raises(HX1ExecutionError) as error:
         execute_host_plan(plan, bindings, context)

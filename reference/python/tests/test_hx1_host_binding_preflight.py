@@ -160,6 +160,41 @@ def test_hx1_c2_malformed_admission_and_recall_nested_values_are_structured_zero
     _assert_zero_write(fixture["plan"], bad_recall, fixture["context"], tmp_path / "work")
 
 
+@pytest.mark.parametrize("axis_placements", (("bad",), ()))
+def test_hx1_c3_malformed_placement_plan_canonical_values_are_structured_zero_write(tmp_path, axis_placements) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    first = fixture["bindings"].admission_bindings[0]
+    bad_plan = _with_field(first.request.placement_plan, "axis_placements", axis_placements)
+    bad_request = replace(first.request, placement_plan=bad_plan)
+    bad_bindings = replace(fixture["bindings"], admission_bindings=(replace(first, request=bad_request),) + fixture["bindings"].admission_bindings[1:])
+    _assert_zero_write(fixture["plan"], bad_bindings, fixture["context"], tmp_path / "work")
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    (
+        ("axes", ("bad",)),
+        ("budget", "bad"),
+        ("query_text", None),
+    ),
+)
+def test_hx1_c3_malformed_query_probe_canonical_values_are_structured_zero_write(tmp_path, field, value) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    bad_probe = _with_field(fixture["bindings"].recall_binding.invocation.query_probe, field, value)
+    bad_invocation = replace(fixture["bindings"].recall_binding.invocation, query_probe=bad_probe)
+    bad_recall = replace(fixture["bindings"], recall_binding=replace(fixture["bindings"].recall_binding, invocation=bad_invocation))
+    _assert_zero_write(fixture["plan"], bad_recall, fixture["context"], tmp_path / "work")
+
+
+def test_hx1_c3_malformed_dream_shard_canonical_values_are_structured_zero_write(tmp_path) -> None:
+    fixture = hx1_fixture(tmp_path / "work")
+    first = fixture["bindings"].admission_bindings[0]
+    bad_shard = _with_field(first.request.dream_shard, "origin", None)
+    bad_request = replace(first.request, dream_shard=bad_shard)
+    bad_bindings = replace(fixture["bindings"], admission_bindings=(replace(first, request=bad_request),) + fixture["bindings"].admission_bindings[1:])
+    _assert_zero_write(fixture["plan"], bad_bindings, fixture["context"], tmp_path / "work")
+
+
 def _with_field(value, field: str, replacement):
     updated = copy(value)
     object.__setattr__(updated, field, replacement)

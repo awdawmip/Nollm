@@ -13,6 +13,7 @@ from nollm.dream_geometry.admission import fingerprint as admission_fingerprint
 from nollm.dream_geometry.admission import placement_plan_payload
 from nollm.dream_geometry.capture.policy import policy_fingerprint
 from nollm.dream_geometry.cortex import canonical_payload as cortex_payload
+from nollm.dream_geometry.evidence import payload_key as evidence_payload_key
 
 
 def canonical_json(value: object) -> str:
@@ -98,6 +99,7 @@ def _admission_binding_payload(binding: object) -> dict[str, Any]:
         "admission_request": {
             "admission_id": request.admission_id,
             "subject_shard_id": request.dream_shard.shard_id,
+            "dream_shard_payload_fingerprint": evidence_payload_key(request.dream_shard),
             "growth_submission_sha256": _sha256_json(request.growth_submission),
             "placement_plan_id": request.placement_plan.plan_id,
             "placement_plan_fingerprint": admission_fingerprint(placement_plan_payload(request.placement_plan)),

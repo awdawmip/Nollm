@@ -10,7 +10,7 @@ Inputs:
 
 Stages:
 
-1. Preflight validates CX2, binding exactness, nested host public values, context semantics, work-root isolation, and no unsupported DG6 influence.
+1. Preflight validates CX2, binding exactness, canonical nested host public values, context semantics, work-root isolation, and no unsupported DG6 influence.
 2. Capture calls CI1 `CaptureIngress` only for declared capture refs.
 3. Admission calls BA1 and DA1 only for declared promotion/admission refs.
 4. Assembly calls DF1 only for `ExplicitAssembly.admission_ids`.
@@ -27,12 +27,19 @@ State separation:
 - DG6 projection runs only when the plan declares a DG6 verification view, the host supplies the exact verification-only binding, and `HostExecutionContext.enable_dg6_verification` is `True`.
 - A declared DG6 view with DG6 disabled is rejected before fingerprinting, work-root creation, or stage execution.
 - A plan with no DG6 declaration may run with DG6 disabled and produces no DG6 projection.
+- A DG6 host binding without a plan declaration is rejected before work-root creation.
 - Recall miss is not global memory absence.
 
 Receipt reopen:
 
-- `execution_input_fingerprint` binds the normalized plan, explicit host bindings, and execution context.
+- `execution_input_fingerprint` binds the normalized plan, explicit host bindings, complete canonical DreamShard payload fingerprints, and execution context.
 - Reusing a plan id with changed bindings, query refs, policies, context, or DG6 refs fails closed with `HX1_REOPEN_MISMATCH`.
+- Reusing a plan id with changed DreamShard content, origin, temporal context, context refs, or initial usage state fails closed with `HX1_REOPEN_MISMATCH`.
+
+Work-root ownership:
+
+- The work root must be outside the source repository root and all repository descendants.
+- Repository root, repository descendants, ordinary files, forbidden output directories, and foreign HX1 markers are rejected before stage execution.
 
 Preflight error partition:
 
