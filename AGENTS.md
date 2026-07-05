@@ -400,9 +400,15 @@ Use `python3 run_tests.py` as a legacy single-process diagnostic command so ambi
 For delivery-grade complete-suite verification after TQ1, use the bounded complete test matrix instead of treating single-process `run_tests.py` as the only full-suite proof. The matrix receipts and worktrees must be outside the repository under:
 
 ```text
-C:\Users\chaos\nollm_test_runs\<git-commit>\
-C:\Users\chaos\nollm_test_worktrees\<git-commit>\
+C:\Users\chaos\nollm_test_runs\<git-commit>\<matrix-id>\
+C:\Users\chaos\nollm_test_worktrees\<git-commit>\<matrix-id>\
 ```
+
+The matrix plan must start from a clean git checkout. Ignored
+`out/nollm_runtime` inputs are frozen once under the external receipt root and
+fingerprinted; shard worktrees must not mirror tracked source checkout bytes or
+copy live source runtime fixtures after planning. Cleanup is limited to
+matrix-owned worktrees with matching markers.
 
 When relevant to the phase, also run:
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import math
 import os
@@ -21,6 +22,8 @@ sys.dont_write_bytecode = True
 SCHEMA = "nollm.test_matrix.v1"
 RECEIPT_SCHEMA = "nollm.test_matrix.shard_receipt.v1"
 MARKER = ".nollm_test_matrix_root.json"
+WORKTREE_MARKER = ".nollm_test_matrix_worktree_root.json"
+RUNTIME_SNAPSHOT_RELATIVE = "inputs/runtime_fixture"
 TAIL_CHARS = 12000
 POLL_INTERVAL_SECONDS = 0.1
 KILL_WAIT_SECONDS = 5.0
@@ -87,33 +90,45 @@ def command_plan(args: argparse.Namespace) -> int:
     head = git_stdout(repo_root, "rev-parse", "HEAD")
     receipt_root = resolve_receipt_root(args.receipt_root, head)
     status = git_status(repo_root)
+    if status != "":
+        raise MatrixError("source_not_clean", "matrix plan requires a clean tracked source checkout")
     nodes = collect_node_ids(repo_root)
     if not nodes:
         raise MatrixError("collection_empty", "pytest collection produced no node ids")
     shards = assign_shards(nodes, args.target_node_count, args.max_shards)
-    plan = {
-        "schema": SCHEMA,
-        "matrix_id": "default",
-        "git_head": head,
-        "collection_fingerprint": fingerprint(nodes),
-        "manifest_fingerprint": fingerprint({"head": head, "nodes": nodes, "shards": shards}),
-        "collected_count": len(nodes),
-        "target_node_count": args.target_node_count,
-        "max_shards": args.max_shards,
-        "clean_status_before": status,
-        "node_ids": nodes,
-        "shards": [
-            {
-                "shard_id": item["shard_id"],
-                "node_ids": item["node_ids"],
-                "node_count": len(item["node_ids"]),
-                "selection_fingerprint": fingerprint(item["node_ids"]),
-            }
-            for item in shards
-        ],
-    }
-    write_json(receipt_root / MARKER, {"schema": "nollm.test_matrix.root.v1", "git_head": head, "matrix_id": "default"})
-    write_json(plan_path(receipt_root), plan)
+    if receipt_root.exists():
+        shutil.rmtree(receipt_root)
+    try:
+        runtime_fixture = snapshot_runtime_fixture(repo_root, receipt_root)
+        matrix_id = matrix_id_from_receipt_root(receipt_root)
+        plan = {
+            "schema": SCHEMA,
+            "matrix_id": matrix_id,
+            "git_head": head,
+            "collection_fingerprint": fingerprint(nodes),
+            "manifest_fingerprint": fingerprint({"head": head, "nodes": nodes, "shards": shards}),
+            "collected_count": len(nodes),
+            "target_node_count": args.target_node_count,
+            "max_shards": args.max_shards,
+            "clean_status_before": "",
+            "runtime_fixture": runtime_fixture,
+            "node_ids": nodes,
+            "shards": [
+                {
+                    "shard_id": item["shard_id"],
+                    "node_ids": item["node_ids"],
+                    "node_count": len(item["node_ids"]),
+                    "selection_fingerprint": fingerprint(item["node_ids"]),
+                }
+                for item in shards
+            ],
+        }
+        write_json(receipt_root / MARKER, root_marker_payload(plan, receipt_root))
+        write_json(plan_path(receipt_root), plan)
+    except Exception:
+        if receipt_root.exists():
+            shutil.rmtree(receipt_root)
+        raise
     print(f"PLAN_OK head={head} collected={len(nodes)} shards={len(shards)} receipt_root={receipt_root}")
     return 0
 
@@ -132,8 +147,11 @@ def command_run_shard(args: argparse.Namespace) -> int:
     worktree_root = resolve_worktree_root(args.worktree_root, head)
     plan = load_plan(receipt_root)
     assert_source_matches_plan(repo_root, plan)
+    assert_receipt_root_marker(receipt_root, plan)
+    assert_runtime_fixture_snapshot_matches_plan(receipt_root, plan)
     current_nodes = collect_node_ids(repo_root)
     assert_collection_matches(plan, current_nodes)
+    ensure_worktree_root_marker(worktree_root, receipt_root, plan)
 
     if args.all:
         selected = [shard["shard_id"] for shard in plan["shards"]]
@@ -163,6 +181,9 @@ def command_verify(args: argparse.Namespace) -> int:
     worktree_root = resolve_worktree_root(args.worktree_root, head)
     plan = load_plan(receipt_root)
     assert_source_matches_plan(repo_root, plan)
+    assert_receipt_root_marker(receipt_root, plan)
+    assert_runtime_fixture_snapshot_matches_plan(receipt_root, plan)
+    assert_worktree_root_marker(worktree_root, receipt_root, plan)
     current_nodes = collect_node_ids(repo_root)
     assert_collection_matches(plan, current_nodes)
 
@@ -189,7 +210,7 @@ def command_verify(args: argparse.Namespace) -> int:
             seen[node_id] = shard["shard_id"]
     missing = [node_id for node_id in current_nodes if node_id not in seen]
     extra = [node_id for node_id in seen if node_id not in set(current_nodes)]
-    leftovers = list_worktree_leftovers(worktree_root)
+    leftovers = list_worktree_leftovers(matrix_worktree_root(worktree_root, plan))
     if failures or missing or duplicates or extra or leftovers:
         raise MatrixError(
             "verify_failed",
@@ -209,6 +230,8 @@ def command_verify(args: argparse.Namespace) -> int:
     print(f"passed={len(plan['shards'])}")
     print(f"collection_fingerprint={plan['collection_fingerprint']}")
     print(f"matrix_fingerprint={plan['manifest_fingerprint']}")
+    print(f"runtime_fixture_manifest_fingerprint={plan['runtime_fixture']['manifest_fingerprint']}")
+    print(f"runtime_fixture_tree_fingerprint={plan['runtime_fixture']['tree_fingerprint'] or 'absent'}")
     print(f"receipt_root={receipt_root}")
     return 0
 
@@ -219,8 +242,9 @@ def command_cleanup(args: argparse.Namespace) -> int:
     worktree_root = resolve_worktree_root(args.worktree_root, head)
     removed: list[str] = []
     plan = load_plan(receipt_root)
+    assert_worktree_root_marker(worktree_root, receipt_root, plan)
     for shard in plan["shards"]:
-        worktree = worktree_root / shard["shard_id"]
+        worktree = matrix_worktree_root(worktree_root, plan) / shard["shard_id"]
         if worktree.exists():
             remove_worktree(resolve_repo_root(args.repo_root), worktree)
             removed.append(str(worktree))
@@ -249,33 +273,47 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
     receipt_root.mkdir(parents=True, exist_ok=True)
     (receipt_root / "junit").mkdir(parents=True, exist_ok=True)
     (receipt_root / "logs").mkdir(parents=True, exist_ok=True)
-    worktree_root.mkdir(parents=True, exist_ok=True)
-    worktree = worktree_root / shard_id
+    owned_worktree_root = matrix_worktree_root(worktree_root, plan)
+    owned_worktree_root.mkdir(parents=True, exist_ok=True)
+    worktree = owned_worktree_root / shard_id
     junit = receipt_root / "junit" / f"{shard_id}.xml"
     stdout_path = receipt_root / "logs" / f"{shard_id}.stdout.txt"
     stderr_path = receipt_root / "logs" / f"{shard_id}.stderr.txt"
     cleanup_result = "not_started"
-    runtime_fixture_copy = "not_present"
+    worktree_created_by_this_call = False
+    reason = None
+    runtime_fixture = plan["runtime_fixture"]
     started = time.monotonic()
     status = "failed"
     returncode = -1
     timed_out = False
+    junit_reported_tests = None
     try:
+        if worktree.exists():
+            reason = "worktree_exists"
+            cleanup_result = "not_owned"
+            returncode = 1
+            raise MatrixError("worktree_exists", "shard worktree already exists", {"worktree": str(worktree)})
         add_worktree(repo_root, worktree, plan["git_head"])
-        source_checkout_mirror = mirror_source_checkout_bytes(repo_root, worktree)
-        runtime_fixture_copy = copy_runtime_fixtures(repo_root, worktree)
+        worktree_created_by_this_call = True
+        copy_runtime_fixture_snapshot(receipt_root, worktree, plan)
         collection_cwd = pytest_cwd(worktree)
         command = [sys.executable, "-m", "pytest", "-q", "--junitxml", str(junit), *shard["node_ids"]]
         returncode, timed_out = run_process(command, cwd=collection_cwd, env=pytest_env(worktree), timeout_seconds=timeout_seconds, stdout_path=stdout_path, stderr_path=stderr_path)
-        tests = parse_junit_tests(junit) if junit.exists() else None
+        junit_reported_tests = parse_junit_tests(junit) if junit.exists() else None
         if timed_out:
             status = "timed_out"
-        elif returncode == 0 and tests is not None and tests >= len(shard["node_ids"]):
+            reason = "timeout"
+        elif returncode == 0 and junit_reported_tests is not None:
             status = "passed"
         else:
             status = "failed"
+            reason = "pytest_failed"
+    except MatrixError as exc:
+        reason = reason or exc.payload["reason"]
     finally:
-        cleanup_result = remove_worktree(repo_root, worktree)
+        if worktree_created_by_this_call:
+            cleanup_result = remove_worktree(repo_root, worktree)
     duration = round(time.monotonic() - started, 3)
     receipt = {
         "schema": RECEIPT_SCHEMA,
@@ -288,17 +326,21 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "selected_node_ids": shard["node_ids"],
         "selected_count": len(shard["node_ids"]),
         "junit_path": str(junit),
-        "junit_tests": parse_junit_tests(junit) if junit.exists() else None,
+        "junit_tests": len(shard["node_ids"]) if status == "passed" and junit_reported_tests is not None else None,
+        "junit_reported_tests": junit_reported_tests,
         "returncode": returncode,
+        "reason": reason,
         "timed_out": timed_out,
         "timeout_seconds": timeout_seconds,
         "duration_seconds": duration,
         "stdout_tail": read_tail(stdout_path),
         "stderr_tail": read_tail(stderr_path),
         "worktree_path": str(worktree),
+        "worktree_created_by_this_call": worktree_created_by_this_call,
         "worktree_cleanup": cleanup_result,
-        "runtime_fixture_copy": runtime_fixture_copy,
-        "source_checkout_mirror": source_checkout_mirror,
+        "runtime_fixture_state": runtime_fixture["state"],
+        "runtime_fixture_manifest_fingerprint": runtime_fixture["manifest_fingerprint"],
+        "runtime_fixture_tree_fingerprint": runtime_fixture["tree_fingerprint"],
     }
     write_json(existing_path, receipt)
     return receipt
@@ -471,10 +513,23 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
             return f"{key}_mismatch"
     if receipt.get("selected_node_ids") != shard["node_ids"]:
         return "selected_node_ids_mismatch"
-    if receipt.get("junit_tests") is None or receipt.get("junit_tests") < len(shard["node_ids"]):
+    if receipt.get("selected_count") != len(shard["node_ids"]):
+        return "selected_count_mismatch"
+    if receipt.get("junit_tests") != len(shard["node_ids"]):
         return "junit_count_mismatch"
+    if receipt.get("returncode") != 0:
+        return "returncode_mismatch"
     if receipt.get("timed_out") is not False:
         return "timed_out"
+    runtime_fixture = plan["runtime_fixture"]
+    if receipt.get("runtime_fixture_state") != runtime_fixture["state"]:
+        return "runtime_fixture_state_mismatch"
+    if receipt.get("runtime_fixture_manifest_fingerprint") != runtime_fixture["manifest_fingerprint"]:
+        return "runtime_fixture_manifest_fingerprint_mismatch"
+    if receipt.get("runtime_fixture_tree_fingerprint") != runtime_fixture["tree_fingerprint"]:
+        return "runtime_fixture_tree_fingerprint_mismatch"
+    if receipt.get("worktree_created_by_this_call") is not True:
+        return "worktree_not_owned"
     if receipt.get("worktree_cleanup") != "removed":
         return "worktree_cleanup_failed"
     return None
@@ -488,46 +543,150 @@ def find_shard(plan: dict[str, Any], shard_id: str) -> dict[str, Any]:
 
 
 def add_worktree(repo_root: Path, worktree: Path, head: str) -> None:
-    if worktree.exists():
-        raise MatrixError("worktree_exists", "shard worktree already exists", {"worktree": str(worktree)})
     worktree.parent.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(["git", "worktree", "add", "--detach", str(worktree), head], cwd=repo_root, text=True, capture_output=True)
     if result.returncode != 0:
         raise MatrixError("worktree_add_failed", "git worktree add failed", {"stderr_tail": tail(result.stderr)})
 
 
-def mirror_source_checkout_bytes(repo_root: Path, worktree: Path) -> dict[str, Any]:
-    mirrored: list[str] = []
-    for relative in tracked_file_paths(repo_root):
-        source = repo_root / relative
-        target = worktree / relative
-        if not source.is_file() or not target.is_file():
-            continue
-        source_bytes = source.read_bytes()
-        if target.read_bytes() == source_bytes:
-            continue
-        target.write_bytes(source_bytes)
-        mirrored.append(relative.replace("\\", "/"))
-    return {"copied_count": len(mirrored), "paths": mirrored}
-
-
-def tracked_file_paths(repo_root: Path) -> list[str]:
-    result = subprocess.run(["git", "ls-files", "-z"], cwd=repo_root, capture_output=True)
-    if result.returncode != 0:
-        raise MatrixError("git_failed", "git command failed", {"args": ("ls-files", "-z"), "stderr_tail": tail(result.stderr.decode("utf-8", errors="replace"))})
-    return [item.decode("utf-8", errors="surrogateescape") for item in result.stdout.split(b"\0") if item]
-
-
-def copy_runtime_fixtures(repo_root: Path, worktree: Path) -> str:
-    source = repo_root / "out" / "nollm_runtime"
-    if not source.exists():
-        return "not_present"
+def copy_runtime_fixture_snapshot(receipt_root: Path, worktree: Path, plan: dict[str, Any]) -> None:
+    runtime_fixture = plan["runtime_fixture"]
+    if runtime_fixture["state"] == "absent":
+        return
+    source = receipt_root / runtime_fixture["snapshot_relative_path"]
     target = worktree / "out" / "nollm_runtime"
     if target.exists():
         shutil.rmtree(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source, target)
-    return "copied"
+
+
+def snapshot_runtime_fixture(repo_root: Path, receipt_root: Path) -> dict[str, Any]:
+    source = repo_root / "out" / "nollm_runtime"
+    if not source.exists():
+        manifest = runtime_manifest_payload("absent", [])
+        return {
+            "state": "absent",
+            "source_kind": "ignored_runtime_baseline",
+            "snapshot_relative_path": None,
+            "tree_fingerprint": None,
+            "file_count": 0,
+            "manifest_fingerprint": fingerprint(manifest),
+        }
+    if not source.is_dir() or source.is_symlink():
+        raise MatrixError("fixture_snapshot_rejected", "runtime fixture source is not a regular directory")
+    reject_unsupported_runtime_entries(source)
+    target = receipt_root / RUNTIME_SNAPSHOT_RELATIVE
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target, symlinks=False)
+    entries = build_runtime_manifest_entries(target)
+    manifest = runtime_manifest_payload("present", entries)
+    write_json(receipt_root / "inputs" / "runtime_fixture_manifest.json", manifest)
+    return {
+        "state": "present",
+        "source_kind": "ignored_runtime_baseline",
+        "snapshot_relative_path": RUNTIME_SNAPSHOT_RELATIVE,
+        "tree_fingerprint": fingerprint(entries),
+        "file_count": len(entries),
+        "manifest_fingerprint": fingerprint(manifest),
+    }
+
+
+def assert_runtime_fixture_snapshot_matches_plan(receipt_root: Path, plan: dict[str, Any]) -> None:
+    runtime_fixture = plan["runtime_fixture"]
+    relative = runtime_fixture.get("snapshot_relative_path")
+    target = receipt_root / relative if relative else None
+    if runtime_fixture["state"] == "absent":
+        manifest = runtime_manifest_payload("absent", [])
+        if fingerprint(manifest) != runtime_fixture["manifest_fingerprint"]:
+            raise MatrixError("fixture_snapshot_drift", "absent runtime fixture manifest drifted")
+        return
+    if target is None or not target.exists():
+        raise MatrixError("fixture_snapshot_drift", "runtime fixture snapshot is missing")
+    entries = build_runtime_manifest_entries(target)
+    manifest = runtime_manifest_payload("present", entries)
+    if fingerprint(entries) != runtime_fixture["tree_fingerprint"] or fingerprint(manifest) != runtime_fixture["manifest_fingerprint"]:
+        raise MatrixError("fixture_snapshot_drift", "runtime fixture snapshot drifted")
+
+
+def build_runtime_manifest_entries(root: Path) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    for path in sorted(root.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            if path.is_dir() and not path.is_symlink():
+                continue
+            raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains unsupported filesystem entry")
+        relative = path.relative_to(root).as_posix()
+        if relative.startswith("../") or relative == ".." or "\\" in relative:
+            raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains invalid relative path")
+        data = path.read_bytes()
+        entries.append({"path": relative, "size_bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+    return entries
+
+
+def reject_unsupported_runtime_entries(root: Path) -> None:
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains unsupported filesystem entry")
+        if path.is_dir() or path.is_file():
+            continue
+        raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains unsupported filesystem entry")
+
+
+def runtime_manifest_payload(state: str, entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"schema": "nollm.test_matrix.runtime_fixture_manifest.v1", "state": state, "files": entries}
+
+
+def matrix_id_from_receipt_root(receipt_root: Path) -> str:
+    return receipt_root.name or "default"
+
+
+def matrix_worktree_root(worktree_root: Path, plan: dict[str, Any]) -> Path:
+    return worktree_root / plan["matrix_id"]
+
+
+def root_marker_payload(plan: dict[str, Any], receipt_root: Path) -> dict[str, Any]:
+    return {
+        "schema": "nollm.test_matrix.root.v1",
+        "git_head": plan["git_head"],
+        "matrix_id": plan["matrix_id"],
+        "manifest_fingerprint": plan["manifest_fingerprint"],
+        "receipt_root": str(receipt_root.resolve()),
+    }
+
+
+def ensure_worktree_root_marker(worktree_root: Path, receipt_root: Path, plan: dict[str, Any]) -> None:
+    root = matrix_worktree_root(worktree_root, plan)
+    root.mkdir(parents=True, exist_ok=True)
+    marker = root / WORKTREE_MARKER
+    payload = root_marker_payload(plan, receipt_root)
+    if marker.exists():
+        assert_marker_payload(marker, payload, "worktree_root_marker_mismatch")
+        return
+    write_json(marker, payload)
+
+
+def assert_worktree_root_marker(worktree_root: Path, receipt_root: Path, plan: dict[str, Any]) -> None:
+    marker = matrix_worktree_root(worktree_root, plan) / WORKTREE_MARKER
+    if not marker.exists():
+        raise MatrixError("cleanup_refused", "matrix worktree root marker missing")
+    assert_marker_payload(marker, root_marker_payload(plan, receipt_root), "worktree_root_marker_mismatch")
+
+
+def assert_receipt_root_marker(receipt_root: Path, plan: dict[str, Any]) -> None:
+    marker = receipt_root / MARKER
+    if not marker.exists():
+        raise MatrixError("receipt_root_marker_missing", "matrix receipt root marker missing")
+    assert_marker_payload(marker, root_marker_payload(plan, receipt_root), "receipt_root_marker_mismatch")
+
+
+def assert_marker_payload(marker: Path, expected: dict[str, Any], reason: str) -> None:
+    try:
+        actual = json.loads(marker.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        raise MatrixError(reason, "matrix root marker is malformed")
+    if actual != expected:
+        raise MatrixError(reason, "matrix root marker does not match plan")
 
 
 def remove_worktree(repo_root: Path, worktree: Path) -> str:
