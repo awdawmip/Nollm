@@ -111,6 +111,8 @@ def decode_admission_payload(payload: dict[str, Any]) -> GatewayAdmissionRequest
     )
     if window.status != "ready_for_selection" or window.shared_geometry_profile_ref != FIELD_PROFILE_ID:
         raise HAGError(HAG_INVALID_REQUEST, "request was rejected")
+    if len(window.source_window_refs) != 1 or window.opened_at != submitted_at or window.closed_at is not None:
+        raise HAGError(HAG_INVALID_REQUEST, "request was rejected")
 
     raw_members = payload.get("members")
     if not isinstance(raw_members, list) or not raw_members:

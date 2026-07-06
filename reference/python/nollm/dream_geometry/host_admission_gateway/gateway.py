@@ -60,9 +60,12 @@ def admit_from_text(workspace: Path, text: str) -> dict[str, Any]:
 def admit(workspace: Path, decoded: GatewayAdmissionRequest) -> dict[str, Any]:
     workspace = Path(workspace).resolve()
     _require_owned_workspace(workspace)
+    actuals = _resolve_actual_identities(workspace, decoded)
     evidence = open_evidence_store(workspace / "evidence")
-    plan = _plan(decoded)
-    bindings = _bindings(decoded, evidence)
+    shards = _read_actual_shards(evidence, actuals)
+    projections = _derive_projections(decoded)
+    plan = _plan(decoded, projections)
+    bindings = _bindings(decoded, projections, shards)
     context = HostExecutionContext(
         workspace,
         decoded.submitted_at,
@@ -82,13 +85,18 @@ def admit(workspace: Path, decoded: GatewayAdmissionRequest) -> dict[str, Any]:
     return {
         "window_id": decoded.window.window_id,
         "request_fingerprint": fingerprint(decoded.raw_payload),
-        "admission_ids": [member.admission.admission_id for member in decoded.members],
+        "admission_ids": list(mapping["admission_receipt_ids"]),
         "members": [
             {
                 "member_id": member.member_id,
                 "candidate_id": member.candidate_id,
                 "shard_id": member.admission.shard_id,
                 "admission_id": member.admission.admission_id,
+                "cx2_projection": {
+                    "projection_version": "1",
+                    "candidate_ref": projections[member.member_id]["candidate_ref"],
+                    "shard_ref": projections[member.member_id]["shard_ref"],
+                },
             }
             for member in decoded.members
         ],
@@ -102,7 +110,7 @@ def admit(workspace: Path, decoded: GatewayAdmissionRequest) -> dict[str, Any]:
     }
 
 
-def _plan(decoded: GatewayAdmissionRequest) -> dict[str, Any]:
+def _plan(decoded: GatewayAdmissionRequest, projections: dict[str, dict[str, str]]) -> dict[str, Any]:
     return {
         "plan_kind": "nollm_cortex_action_plan",
         "plan_version": "1",
@@ -112,8 +120,8 @@ def _plan(decoded: GatewayAdmissionRequest) -> dict[str, Any]:
         "promotion_decisions": tuple(
             {
                 "decision_id": member.promotion_decision.decision_id,
-                "candidate_id": _cx2_candidate_ref(member),
-                "shard_id": member.admission.shard_id,
+                "candidate_id": projections[member.member_id]["candidate_ref"],
+                "shard_id": projections[member.member_id]["shard_ref"],
                 "decision": "promote",
                 "reasons": member.promotion_decision.reasons,
                 "decided_by": member.promotion_decision.decided_by,
@@ -124,7 +132,7 @@ def _plan(decoded: GatewayAdmissionRequest) -> dict[str, Any]:
             {
                 "request_id": _admission_request_ref(member),
                 "decision_id": member.promotion_decision.decision_id,
-                "shard_id": member.admission.shard_id,
+                "shard_id": projections[member.member_id]["shard_ref"],
                 "proposal_ref": str(member.admission.growth_submission.get("proposal_id", "")),
                 "placement_plan_ref": str(member.admission.placement_plan.get("plan_id", "")),
             }
@@ -137,20 +145,40 @@ def _plan(decoded: GatewayAdmissionRequest) -> dict[str, Any]:
     }
 
 
-def _bindings(decoded: GatewayAdmissionRequest, evidence) -> HostPlanBindings:
-    bindings = []
-    capture_state = CaptureStateStore(Path(evidence.root).parent / "capture")
+def _resolve_actual_identities(workspace: Path, decoded: GatewayAdmissionRequest) -> dict[str, object]:
+    capture_state = CaptureStateStore(workspace / "capture")
+    actuals: dict[str, object] = {}
     for member in decoded.members:
         try:
             candidate = capture_state.get_candidate(member.candidate_id)
         except Exception as exc:
             raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected") from exc
-        if candidate.status is not CandidateStatus.deferred:
+        if candidate.status is not CandidateStatus.deferred or candidate.candidate_id != member.candidate_id:
             raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected")
+        if candidate.shard_id != member.admission.shard_id:
+            raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected")
+        actuals[member.member_id] = candidate
+    return actuals
+
+
+def _read_actual_shards(evidence, actuals: dict[str, object]) -> dict[str, object]:
+    shards: dict[str, object] = {}
+    for member_id, candidate in actuals.items():
         try:
             shard = evidence.get_dream_shard(candidate.shard_id)
         except Exception as exc:
             raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected") from exc
+        if shard.shard_id != candidate.shard_id:
+            raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected")
+        shards[member_id] = shard
+    return shards
+
+
+def _bindings(decoded: GatewayAdmissionRequest, projections: dict[str, dict[str, str]], shards: dict[str, object]) -> HostPlanBindings:
+    bindings = []
+    for member in decoded.members:
+        projection = projections[member.member_id]
+        shard = shards[member.member_id]
         admission_request = AdmissionRequest(
             member.admission.admission_id,
             shard,
@@ -162,7 +190,7 @@ def _bindings(decoded: GatewayAdmissionRequest, evidence) -> HostPlanBindings:
             HostAdmissionBinding(
                 _admission_request_ref(member),
                 member.promotion_decision.decision_id,
-                _cx2_candidate_ref(member),
+                projection["candidate_ref"],
                 member.admission.admission_id,
                 member.member_id,
                 PromotionDecision(
@@ -179,7 +207,7 @@ def _bindings(decoded: GatewayAdmissionRequest, evidence) -> HostPlanBindings:
                 str(member.admission.growth_submission.get("proposal_id", "")),
                 str(member.admission.placement_plan.get("plan_id", "")),
                 member.candidate_id,
-                member.admission.shard_id,
+                projection["shard_ref"],
             )
         )
     return HostPlanBindings(admission_bindings=tuple(bindings))
@@ -213,8 +241,40 @@ def _admission_request_ref(member: GatewayMember) -> str:
     return "admreq_" + _safe_suffix(member.member_id + ":" + member.admission.admission_id)
 
 
-def _cx2_candidate_ref(member: GatewayMember) -> str:
-    return "dac_" + _safe_suffix(member.candidate_id)
+def _derive_projections(decoded: GatewayAdmissionRequest) -> dict[str, dict[str, str]]:
+    projections = {}
+    candidate_refs: set[str] = set()
+    shard_refs: set[str] = set()
+    for member in decoded.members:
+        projection = _projection_for(member.candidate_id, member.admission.shard_id)
+        if projection["candidate_ref"] in candidate_refs or projection["shard_ref"] in shard_refs:
+            raise HAGError(HAG_ADMISSION_REJECTED, "admission was rejected")
+        candidate_refs.add(projection["candidate_ref"])
+        shard_refs.add(projection["shard_ref"])
+        projections[member.member_id] = projection
+    return projections
+
+
+def _projection_for(actual_candidate_id: str, actual_shard_id: str) -> dict[str, str]:
+    candidate_payload = {
+        "projection_kind": "hag1_cx2_candidate_ref",
+        "projection_version": "1",
+        "actual_candidate_id": actual_candidate_id,
+    }
+    shard_payload = {
+        "projection_kind": "hag1_cx2_shard_ref",
+        "projection_version": "1",
+        "actual_candidate_id": actual_candidate_id,
+        "actual_shard_id": actual_shard_id,
+    }
+    return {
+        "candidate_ref": "dac_" + _safe_suffix(_canonical_projection_json(candidate_payload)),
+        "shard_ref": "shard_" + _safe_suffix(_canonical_projection_json(shard_payload)),
+    }
+
+
+def _canonical_projection_json(payload: dict[str, str]) -> str:
+    return json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
 
 
 def _safe_suffix(value: str) -> str:
