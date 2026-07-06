@@ -22,7 +22,7 @@ $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
 $env:PYTHONPATH = "$PWD/reference/python"
 
 $head = git rev-parse HEAD
-$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c4"
+$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c5"
 $worktreeRoot = "C:\Users\chaos\nollm_test_worktrees\$head"
 
 python reference/python/scripts/run_nollm_test_matrix.py plan --repo-root . --receipt-root $receiptRoot --target-node-count 120 --max-shards 24
@@ -46,10 +46,10 @@ Receipts and JUnit XML are external runtime artifacts under:
 C:\Users\chaos\nollm_test_runs\<git-commit>\
 ```
 
-For final TQ1-C4 delivery evidence, use:
+For final TQ1-C5 delivery evidence, use:
 
 ```text
-C:\Users\chaos\nollm_test_runs\<git-commit>\tq1-c4\
+C:\Users\chaos\nollm_test_runs\<git-commit>\tq1-c5\
 ```
 
 Shard worktrees are external runtime artifacts under:
@@ -95,12 +95,16 @@ Verification fails if:
 - fresh collection fingerprint differs from the plan;
 - the plan-owned runtime fixture snapshot is missing or drifted;
 - receipt-root or worktree-root markers do not match the plan;
+- the `receipts/` directory inventory is not exactly the planned shard JSON set;
 - any collected node id is missing or duplicated;
-- any shard receipt is missing, stale, timed out, malformed, failed, or has an exact selected-count/JUnit mismatch against the actual JUnit `<testcase>` proof count while requiring suite `tests` attributes to be parseable integers;
+- any shard receipt is missing, stale, timed out, malformed, failed, has a schema or shard identity mismatch, or has an exact selected-count/JUnit mismatch against the actual JUnit `<testcase>` proof count while requiring suite `tests` attributes to be parseable integers;
 - a shard worktree was not created by the current call or lacks the exact per-shard marker;
 - the copied runtime fixture target is not attested against the plan snapshot;
 - shard worktree cleanup failed;
 - matrix-owned worktree leftovers remain.
+
+`FULL_MATRIX_OK` is emitted only after this exact inventory and receipt-content
+proof succeeds. Its output includes `receipt_json_count=<planned-shard-count>`.
 
 The matrix is not Nollm recall, runtime, storage, OpenClaw, network, LLM/NLP, embedding, daemon, cache, database, or automatic admission infrastructure.
 

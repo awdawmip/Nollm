@@ -90,3 +90,27 @@ TQ1-C4 closes the final matrix-proof semantics:
 The final TQ1-C4 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c4`; earlier C3 receipts are
 not final closure evidence.
+
+## TQ1-C5 Malformed JUnit And Receipt Inventory Closure
+
+TQ1-C5 closes the final receipt-proof semantics:
+
+- JUnit structural failures, including missing or illegal suite `tests`
+  attributes, missing testcase structure, XML parse errors, Unicode errors, and
+  JUnit read errors, produce failed shard receipts with
+  `reason=junit_missing_or_malformed` and `failure_stage=junit_parse`.
+- Plain operational failures are mapped by active stage; `worktree_add`
+  failures use `worktree_add_failed` and cannot be reported as
+  `pytest_start_failed`.
+- Passed receipts must match the receipt schema, planned shard identity,
+  selected nodes, fingerprints, JUnit count, runtime fixture attestations,
+  worktree ownership flags, removed cleanup state, and null failure fields.
+- `verify` rejects any missing planned receipt, extra receipt JSON, non-JSON
+  file, directory, symlink, or special entry under `receipts/` before reading
+  receipt contents.
+- `FULL_MATRIX_OK` is printed only after exact receipt inventory succeeds and
+  includes `receipt_json_count=<planned-shard-count>`.
+
+The final TQ1-C5 matrix must use fresh receipts under
+`C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c5`; earlier C4 receipts are
+not final closure evidence.

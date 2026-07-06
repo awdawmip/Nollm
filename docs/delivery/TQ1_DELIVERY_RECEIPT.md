@@ -13,7 +13,8 @@ Delivered:
 - Matrix-owned worktree root markers, per-shard worktree ownership markers, and non-destructive handling of pre-existing worktrees.
 - Failure-atomic cleanup: cleanup failure is recorded as a failed receipt and cannot be reported as passed.
 - Structured failure receipts for worktree existence, worktree add failure, fixture copy failure, fixture target mismatch, pytest startup failure, pytest failure, malformed JUnit, timeout, and cleanup state.
-- Successful receipts bind to the actual JUnit `<testcase>` proof count and reject malformed suite `tests` attributes.
+- Successful receipts bind to the receipt schema, shard identity, actual JUnit `<testcase>` proof count, and no-failure cleanup state, and reject malformed suite `tests` attributes.
+- Verify proves that `receipts/` contains exactly the planned shard JSON files, rejects extra directories/files or missing receipts without deletion, and reports `receipt_json_count`.
 - `tools/run_nollm_test_matrix.ps1` with defaults under `C:\Users\chaos`.
 - Documentation for the complete matrix gate and delivery bundle directory convention.
 

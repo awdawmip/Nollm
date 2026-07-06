@@ -8,11 +8,13 @@ Complete test verification means:
 For one clean git commit, one pytest collection fingerprint, and one
 plan-owned ignored-runtime fixture snapshot, every collected node id is
 assigned to exactly one shard, every shard completes successfully in a
-matrix-owned isolated worktree, and verify proves no missing, duplicate,
-stale, timed-out, malformed, failed, unowned, or drifted receipt exists.
-Successful shard receipts bind to the actual JUnit `<testcase>` proof count,
-with suite `tests` attributes parsed and rejected when malformed, not to a
-planned count echoed by the runner.
+matrix-owned isolated worktree, and verify proves the receipt directory
+inventory is exactly the planned shard JSON set with no missing, duplicate,
+stale, extra, timed-out, malformed, failed, unowned, or drifted receipt.
+Successful shard receipts bind to the receipt schema, shard identity, actual
+JUnit `<testcase>` proof count, and no-failure cleanup state, with suite
+`tests` attributes parsed and rejected when malformed, not to a planned count
+echoed by the runner.
 ```
 
 The canonical commands are:
@@ -40,6 +42,15 @@ the detached worktree and starts pytest only if the target manifest and tree
 fingerprints exactly match the plan-owned snapshot. Fixture-copy, pytest
 startup, malformed JUnit, and other defined operational failures must leave a
 structured shard receipt with failure stage, reason, worktree path, ownership
-facts, and cleanup state.
+facts, and cleanup state. Plain operational exceptions are mapped by their
+active stage, for example `worktree_add_failed`, `fixture_snapshot_copy_failed`,
+`pytest_start_failed`, and `junit_missing_or_malformed`; a worktree-add failure
+is not reported as pytest startup failure.
+
+`verify` must reject malformed receipt inventories before reading individual
+receipt contents. Extra JSON files, non-JSON files, directories, symlinks,
+special files, and missing planned receipts are verification failures and are
+not deleted or adopted. A successful verify output includes
+`receipt_json_count=<planned-shard-count>`.
 
 The protocol does not change Nollm production behavior and does not introduce runtime, OpenClaw, network, LLM/NLP, database, cache, daemon, global discovery, or automatic admission behavior.

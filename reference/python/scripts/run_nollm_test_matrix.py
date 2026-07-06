@@ -28,6 +28,7 @@ RUNTIME_SNAPSHOT_RELATIVE = "inputs/runtime_fixture"
 TAIL_CHARS = 12000
 POLL_INTERVAL_SECONDS = 0.1
 KILL_WAIT_SECONDS = 5.0
+JUNIT_PARSE_ERRORS = (ET.ParseError, ValueError, KeyError, TypeError, UnicodeError, OSError)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,25 +192,24 @@ def command_verify(args: argparse.Namespace) -> int:
 
     seen: dict[str, str] = {}
     duplicates: list[str] = []
-    failures: list[dict[str, Any]] = []
-    for shard in plan["shards"]:
-        path = receipt_path(receipt_root, shard["shard_id"])
-        if not path.exists():
-            failures.append({"shard_id": shard["shard_id"], "reason": "missing_receipt"})
-            continue
-        try:
-            receipt = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            failures.append({"shard_id": shard["shard_id"], "reason": "malformed_receipt"})
-            continue
-        issue = validate_success_receipt(plan, shard, receipt)
-        if issue is not None:
-            failures.append({"shard_id": shard["shard_id"], "reason": issue})
-            continue
-        for node_id in receipt["selected_node_ids"]:
-            if node_id in seen:
-                duplicates.append(node_id)
-            seen[node_id] = shard["shard_id"]
+    failures = receipt_inventory_failures(receipt_root, plan)
+    receipt_json_count = len(plan["shards"]) if not failures else 0
+    if not failures:
+        for shard in plan["shards"]:
+            path = receipt_path(receipt_root, shard["shard_id"])
+            try:
+                receipt = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                failures.append({"shard_id": shard["shard_id"], "reason": "malformed_receipt"})
+                continue
+            issue = validate_success_receipt(plan, shard, receipt)
+            if issue is not None:
+                failures.append({"shard_id": shard["shard_id"], "reason": issue})
+                continue
+            for node_id in receipt["selected_node_ids"]:
+                if node_id in seen:
+                    duplicates.append(node_id)
+                seen[node_id] = shard["shard_id"]
     missing = [node_id for node_id in current_nodes if node_id not in seen]
     extra = [node_id for node_id in seen if node_id not in set(current_nodes)]
     leftovers = list_worktree_leftovers(matrix_worktree_root(worktree_root, plan))
@@ -230,6 +230,7 @@ def command_verify(args: argparse.Namespace) -> int:
     print(f"collected={len(current_nodes)}")
     print(f"shards={len(plan['shards'])}")
     print(f"passed={len(plan['shards'])}")
+    print(f"receipt_json_count={receipt_json_count}")
     print(f"collection_fingerprint={plan['collection_fingerprint']}")
     print(f"matrix_fingerprint={plan['manifest_fingerprint']}")
     print(f"runtime_fixture_manifest_fingerprint={plan['runtime_fixture']['manifest_fingerprint']}")
@@ -333,10 +334,11 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         try:
             current_stage = "junit_parse"
             junit_reported_tests = parse_junit_tests(junit) if junit.exists() else None
-        except (ET.ParseError, ValueError):
+        except JUNIT_PARSE_ERRORS:
             junit_reported_tests = None
             status = "failed"
             reason = "junit_missing_or_malformed"
+            returncode = 1 if returncode == 0 else returncode
             raise MatrixError("junit_missing_or_malformed", "JUnit XML is missing or malformed")
         if timed_out:
             status = "timed_out"
@@ -364,8 +366,8 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         status = "failed"
         returncode = 1
         failure_stage = failure_stage or current_stage
-    except subprocess.SubprocessError:
-        reason = reason or "pytest_start_failed"
+    except subprocess.SubprocessError as exc:
+        reason = reason or operational_reason_from_exception(exc, current_stage)
         status = "failed"
         returncode = 1
         failure_stage = failure_stage or current_stage
@@ -581,6 +583,10 @@ def assert_collection_matches(plan: dict[str, Any], nodes: list[str]) -> None:
 
 
 def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receipt: dict[str, Any]) -> str | None:
+    if receipt.get("schema") != RECEIPT_SCHEMA:
+        return "receipt_schema_mismatch"
+    if receipt.get("shard_id") != shard["shard_id"]:
+        return "receipt_identity_mismatch"
     if receipt.get("status") != "passed":
         return f"status_{receipt.get('status')}"
     checks = {
@@ -629,8 +635,14 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
         return "worktree_cleanup_failed"
     if receipt.get("worktree_cleanup_error") is not None:
         return "worktree_cleanup_failed"
+    if receipt.get("worktree_cleanup_stage") is not None:
+        return "worktree_cleanup_failed"
     if receipt.get("failure_stage") is not None:
         return "failure_stage_present"
+    if receipt.get("reason") is not None:
+        return "reason_present"
+    if receipt.get("primary_reason") is not None:
+        return "primary_reason_present"
     if receipt.get("receipt_persisted") is not True:
         return "receipt_not_persisted"
     return None
@@ -925,11 +937,42 @@ def run_process(command: list[str], *, cwd: Path, env: dict[str, str], timeout_s
 
 
 def operational_reason_from_exception(exc: BaseException, stage: str) -> str:
-    if stage == "fixture_snapshot_copy" or isinstance(exc, shutil.Error):
+    stage_reasons = {
+        "worktree_add": "worktree_add_failed",
+        "worktree_marker_write": "worktree_marker_write_failed",
+        "fixture_snapshot_copy": "fixture_snapshot_copy_failed",
+        "pytest_start": "pytest_start_failed",
+        "junit_parse": "junit_missing_or_malformed",
+        "cleanup": "cleanup_failed",
+    }
+    if stage in stage_reasons:
+        return stage_reasons[stage]
+    if isinstance(exc, shutil.Error):
         return "fixture_snapshot_copy_failed"
-    if stage == "worktree_marker_write":
-        return "worktree_marker_write_failed"
     return "pytest_start_failed"
+
+
+def receipt_inventory_failures(receipt_root: Path, plan: dict[str, Any]) -> list[dict[str, Any]]:
+    receipts_dir = receipt_root / "receipts"
+    expected_names = {f"{shard['shard_id']}.json" for shard in plan["shards"]}
+    if not receipts_dir.exists() or not receipts_dir.is_dir() or receipts_dir.is_symlink():
+        return [{"reason": "receipt_inventory_malformed", "path": str(receipts_dir)}]
+    actual_names: set[str] = set()
+    extra_entries: list[str] = []
+    for entry in sorted(receipts_dir.iterdir(), key=lambda item: item.name):
+        if entry.is_symlink() or not entry.is_file():
+            extra_entries.append(entry.name)
+            continue
+        if entry.name not in expected_names:
+            extra_entries.append(entry.name)
+            continue
+        actual_names.add(entry.name)
+    failures: list[dict[str, Any]] = []
+    for name in sorted(expected_names - actual_names):
+        failures.append({"shard_id": name.removesuffix(".json"), "reason": "missing_receipt", "receipt": name})
+    if extra_entries:
+        failures.append({"reason": "extra_receipt_entries", "entries": extra_entries})
+    return failures
 
 
 def wait_with_deadline(process: subprocess.Popen[str], timeout_seconds: float) -> bool:
@@ -968,17 +1011,15 @@ def wait_for_exit(process: subprocess.Popen[str]) -> None:
 
 def parse_junit_tests(path: Path) -> int | None:
     root = ET.parse(path).getroot()
-    for suite in ([root] if root.tag == "testsuite" else root.findall("testsuite")):
+    suites = [root] if root.tag == "testsuite" else root.findall("testsuite")
+    if not suites:
+        raise ValueError("junit_testsuite_missing")
+    for suite in suites:
         int(suite.attrib["tests"])
     testcases = root.findall(".//testcase")
-    if testcases:
-        return len(testcases)
-    if root.tag == "testsuite":
-        return int(root.attrib["tests"])
-    total = 0
-    for suite in root.findall("testsuite"):
-        total += int(suite.attrib.get("tests", "0"))
-    return total
+    if not testcases:
+        raise ValueError("junit_testcase_missing")
+    return len(testcases)
 
 
 def pytest_cwd(repo_root: Path) -> Path:
