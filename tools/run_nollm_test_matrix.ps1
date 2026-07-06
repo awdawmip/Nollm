@@ -12,7 +12,7 @@ $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
 $env:PYTHONPATH = Join-Path $RepoRoot "reference/python"
 
 $head = git -C $RepoRoot rev-parse HEAD
-$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c2"
+$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c3"
 $worktreeRoot = "C:\Users\chaos\nollm_test_worktrees\$head"
 
 New-Item -ItemType Directory -Force "C:\Users\chaos" | Out-Null

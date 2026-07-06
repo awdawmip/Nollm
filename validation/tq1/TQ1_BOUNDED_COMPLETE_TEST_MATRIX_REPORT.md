@@ -9,8 +9,9 @@ Validated behavior:
 - Plan rejects dirty source status before collection or receipt-root creation.
 - Ignored `out/nollm_runtime`, when present, is snapshotted once under the receipt root and bound by manifest and tree fingerprints.
 - Shards run in matrix-owned detached git worktrees and copy only the plan-owned runtime fixture snapshot.
-- Receipts record status, fingerprints, selected node ids, exact JUnit proof fields, stdout/stderr tails, timeout state, runtime fixture fingerprints, ownership state, and cleanup state.
-- Verify rejects source drift, collection drift, runtime snapshot drift, missing or stale receipts, timeout receipts, malformed receipts, duplicate/missing node ids, exact JUnit mismatches, unowned worktrees, and worktree leftovers.
+- Each copied runtime fixture target is re-hashed inside the detached worktree before pytest starts.
+- Receipts record status, fingerprints, selected node ids, actual JUnit proof fields, stdout/stderr tails, timeout state, runtime fixture fingerprints, copied-target fingerprints, ownership state, and cleanup state.
+- Verify rejects source drift, collection drift, runtime snapshot drift, missing or stale receipts, timeout receipts, malformed receipts, duplicate/missing node ids, exact actual-JUnit testcase proof mismatches, unowned worktrees, unattested fixture copies, and worktree leftovers.
 - Runtime receipts and worktrees are outside the repository.
 
 Validation results are recorded in the delivery response for the final TQ1 commit.
@@ -60,3 +61,17 @@ and substantive content changes still change size and hash.
 The final RCH1/TQ1-C2 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c2-rch1`; earlier C2 stopped
 receipts are not final closure evidence.
+
+## TQ1-C3 Receipt Truthfulness And Ownership Closure
+
+TQ1-C3 closes the remaining complete-matrix proof gaps:
+
+- Passed receipts bind `junit_tests` and `junit_reported_tests` to the actual JUnit `<testcase>` proof count and reject malformed suite `tests` attributes.
+- A successful shard requires return code 0, no timeout, and actual JUnit count equal to the selected node id count.
+- Fixture copy, pytest startup, malformed JUnit, fixture drift, and fixture target mismatch leave structured failed receipts instead of missing receipt evidence.
+- Every shard worktree has an exact per-shard ownership marker; cleanup preflights every existing shard path and refuses with zero deletions on missing, malformed, mismatched, or unplanned paths.
+- Every shard receipt records copied runtime fixture target fingerprints and `fixture_copy_verified=true` only after the copied target matches the plan-owned snapshot.
+
+The final TQ1-C3 matrix must use fresh receipts under
+`C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c3`; earlier C2/RCH1 receipts
+are not final closure evidence.

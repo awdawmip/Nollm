@@ -137,7 +137,9 @@ def test_tq1_success_receipt_verifies_and_leaves_source_clean(tmp_path: Path) ->
     receipt = json.loads((receipts / "receipts" / "s001.json").read_text(encoding="utf-8"))
     assert "source_checkout_mirror" not in receipt
     assert receipt["worktree_created_by_this_call"] is True
+    assert receipt["worktree_marker_written"] is True
     assert receipt["runtime_fixture_state"] == "absent"
+    assert receipt["fixture_copy_verified"] is True
     assert "runtime_fixture_tree_fingerprint=absent" in verify.stdout
 
 
@@ -212,6 +214,92 @@ def test_tq1_junit_count_mismatch_is_not_success(tmp_path: Path) -> None:
     assert matrix.validate_success_receipt(plan, shard, receipt) == "junit_count_mismatch"
 
 
+def test_tq1_c3_actual_junit_count_mismatch_writes_failed_receipt(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    def fake_run_process(command, *, cwd, env, timeout_seconds, stdout_path, stderr_path):
+        stdout_path.write_text("", encoding="utf-8")
+        stderr_path.write_text("", encoding="utf-8")
+        Path(command[5]).write_text('<testsuite tests="0"></testsuite>', encoding="utf-8")
+        return 0, False
+
+    monkeypatch.setattr(matrix, "run_process", fake_run_process)
+    receipt = matrix.run_one_shard(repo, receipts, worktrees, plan, "s001", 10.0, False)
+
+    assert receipt["status"] == "failed"
+    assert receipt["reason"] == "junit_count_mismatch"
+    assert receipt["junit_tests"] == 0
+    assert receipt["junit_reported_tests"] == 0
+    assert matrix.validate_success_receipt(plan, plan["shards"][0], receipt) == "status_failed"
+
+
+def test_tq1_c3_fixture_copy_error_writes_receipt_and_cleans_owned_worktree(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    def fail_copy(receipt_root, worktree, plan):
+        raise OSError("copy failed")
+
+    monkeypatch.setattr(matrix, "copy_runtime_fixture_snapshot", fail_copy)
+    receipt = matrix.run_one_shard(repo, receipts, worktrees, plan, "s001", 10.0, False)
+
+    assert receipt["status"] == "failed"
+    assert receipt["reason"] == "fixture_snapshot_copy_failed"
+    assert receipt["worktree_cleanup"] == "removed"
+    assert (receipts / "receipts" / "s001.json").exists()
+
+
+def test_tq1_c3_pytest_start_error_writes_receipt(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    def fail_start(*args, **kwargs):
+        raise OSError("pytest start failed")
+
+    monkeypatch.setattr(matrix, "run_process", fail_start)
+    receipt = matrix.run_one_shard(repo, receipts, worktrees, plan, "s001", 10.0, False)
+
+    assert receipt["status"] == "failed"
+    assert receipt["reason"] == "pytest_start_failed"
+    assert (receipts / "receipts" / "s001.json").exists()
+
+
+def test_tq1_c3_malformed_junit_writes_failed_receipt(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    def fake_run_process(command, *, cwd, env, timeout_seconds, stdout_path, stderr_path):
+        stdout_path.write_text("", encoding="utf-8")
+        stderr_path.write_text("", encoding="utf-8")
+        Path(command[5]).write_text('<testsuite tests="not-an-int"></testsuite>', encoding="utf-8")
+        return 0, False
+
+    monkeypatch.setattr(matrix, "run_process", fake_run_process)
+    receipt = matrix.run_one_shard(repo, receipts, worktrees, plan, "s001", 10.0, False)
+
+    assert receipt["status"] == "failed"
+    assert receipt["reason"] == "junit_missing_or_malformed"
+    assert receipt["junit_tests"] is None
+    assert (receipts / "receipts" / "s001.json").exists()
+
+
 def test_tq1_plan_owned_runtime_snapshot_ignores_later_source_changes(tmp_path: Path) -> None:
     repo = _tiny_repo(
         tmp_path,
@@ -256,6 +344,33 @@ def test_tq1_verify_rejects_runtime_snapshot_drift(tmp_path: Path) -> None:
 
     assert verify.returncode != 0
     assert "fixture_snapshot_drift" in verify.stderr
+
+
+def test_tq1_c3_runtime_snapshot_drift_writes_receipt_before_pytest(tmp_path: Path, monkeypatch) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(
+        tmp_path,
+        {
+            ".gitignore": "out/\n",
+            "tests/test_runtime.py": "def test_runtime():\n    assert True\n",
+        },
+    )
+    _write(repo / "out" / "nollm_runtime" / "seed.txt", "A")
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    _write(receipts / "inputs" / "runtime_fixture" / "seed.txt", "B")
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    def fail_if_started(*args, **kwargs):
+        raise AssertionError("pytest must not start after fixture drift")
+
+    monkeypatch.setattr(matrix, "run_process", fail_if_started)
+    receipt = matrix.run_one_shard(repo, receipts, worktrees, plan, "s001", 10.0, False)
+
+    assert receipt["status"] == "failed"
+    assert receipt["reason"] == "fixture_snapshot_drift"
+    assert receipt["fixture_copy_verified"] is False
 
 
 def test_tq1_absent_runtime_fixture_state_is_stable(tmp_path: Path) -> None:
@@ -331,6 +446,44 @@ def test_tq1_preexisting_worktree_is_not_deleted_and_writes_receipt(tmp_path: Pa
         assert str(shard_path).replace("\\", "/") in _git_out(repo, "worktree", "list")
     finally:
         _git(repo, "worktree", "remove", "--force", str(shard_path))
+
+
+def test_tq1_c3_cleanup_refuses_expected_shard_path_without_matching_marker(tmp_path: Path) -> None:
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    assert _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", "s001"], cwd=repo).returncode == 0
+    shard_path = worktrees / receipts.name / "s001"
+    _git(repo, "worktree", "add", "--detach", str(shard_path), "HEAD")
+    try:
+        result = _matrix(["cleanup", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+        assert result.returncode != 0
+        assert "cleanup_refused" in result.stderr
+        assert shard_path.exists()
+        assert str(shard_path).replace("\\", "/") in _git_out(repo, "worktree", "list")
+    finally:
+        _git(repo, "worktree", "remove", "--force", str(shard_path))
+
+
+def test_tq1_c3_cleanup_removes_owned_leftover_with_exact_shard_marker(tmp_path: Path) -> None:
+    matrix = load_matrix()
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+    shard = plan["shards"][0]
+    matrix.ensure_worktree_root_marker(worktrees, receipts.resolve(), plan)
+    shard_path = worktrees / receipts.name / "s001"
+    _git(repo, "worktree", "add", "--detach", str(shard_path), "HEAD")
+    matrix.write_shard_worktree_marker(shard_path, receipts.resolve(), plan, shard)
+
+    result = _matrix(["cleanup", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode == 0, result.stderr
+    assert not shard_path.exists()
 
 
 def test_tq1_add_worktree_failure_writes_receipt(tmp_path: Path, monkeypatch) -> None:

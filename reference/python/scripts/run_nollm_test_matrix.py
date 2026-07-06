@@ -23,6 +23,7 @@ SCHEMA = "nollm.test_matrix.v1"
 RECEIPT_SCHEMA = "nollm.test_matrix.shard_receipt.v1"
 MARKER = ".nollm_test_matrix_root.json"
 WORKTREE_MARKER = ".nollm_test_matrix_worktree_root.json"
+SHARD_WORKTREE_MARKER = ".nollm_test_matrix_worktree.json"
 RUNTIME_SNAPSHOT_RELATIVE = "inputs/runtime_fixture"
 TAIL_CHARS = 12000
 POLL_INTERVAL_SECONDS = 0.1
@@ -243,11 +244,23 @@ def command_cleanup(args: argparse.Namespace) -> int:
     removed: list[str] = []
     plan = load_plan(receipt_root)
     assert_worktree_root_marker(worktree_root, receipt_root, plan)
+    removable: list[Path] = []
+    matrix_root = matrix_worktree_root(worktree_root, plan)
+    planned_shard_ids = {shard["shard_id"] for shard in plan["shards"]}
+    if matrix_root.exists():
+        unexpected = [path for path in sorted(matrix_root.iterdir()) if path.is_dir() and path.name not in planned_shard_ids]
+        if unexpected:
+            raise MatrixError("cleanup_refused", "matrix worktree root contains unplanned directories", {"paths": [str(path) for path in unexpected]})
     for shard in plan["shards"]:
-        worktree = matrix_worktree_root(worktree_root, plan) / shard["shard_id"]
+        worktree = matrix_root / shard["shard_id"]
         if worktree.exists():
-            remove_worktree(resolve_repo_root(args.repo_root), worktree)
-            removed.append(str(worktree))
+            assert_shard_worktree_marker(worktree, receipt_root, plan, shard)
+            removable.append(worktree)
+    for worktree in removable:
+        result = remove_worktree(resolve_repo_root(args.repo_root), worktree)
+        if result != "removed":
+            raise MatrixError("cleanup_failed", "could not remove matrix-owned shard worktree", {"worktree": str(worktree)})
+        removed.append(str(worktree))
     if args.remove_receipts:
         marker = receipt_root / MARKER
         if not marker.exists():
@@ -280,41 +293,73 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
     stdout_path = receipt_root / "logs" / f"{shard_id}.stdout.txt"
     stderr_path = receipt_root / "logs" / f"{shard_id}.stderr.txt"
     cleanup_result = "not_started"
+    cleanup_error = None
     worktree_created_by_this_call = False
+    worktree_marker_written = False
     reason = None
     runtime_fixture = plan["runtime_fixture"]
+    copied_runtime_fixture: dict[str, Any] | None = None
     started = time.monotonic()
     status = "failed"
     returncode = -1
     timed_out = False
     junit_reported_tests = None
+    current_stage = "not_started"
     try:
         if worktree.exists():
             reason = "worktree_exists"
             cleanup_result = "not_owned"
             returncode = 1
             raise MatrixError("worktree_exists", "shard worktree already exists", {"worktree": str(worktree)})
+        current_stage = "worktree_add"
         add_worktree(repo_root, worktree, plan["git_head"])
+        current_stage = "worktree_marker_write"
+        write_shard_worktree_marker(worktree, receipt_root, plan, shard)
+        worktree_marker_written = True
         worktree_created_by_this_call = True
-        copy_runtime_fixture_snapshot(receipt_root, worktree, plan)
+        current_stage = "fixture_snapshot_copy"
+        copied_runtime_fixture = copy_runtime_fixture_snapshot(receipt_root, worktree, plan)
         collection_cwd = pytest_cwd(worktree)
         command = [sys.executable, "-m", "pytest", "-q", "--junitxml", str(junit), *shard["node_ids"]]
+        current_stage = "pytest_start"
         returncode, timed_out = run_process(command, cwd=collection_cwd, env=pytest_env(worktree), timeout_seconds=timeout_seconds, stdout_path=stdout_path, stderr_path=stderr_path)
-        junit_reported_tests = parse_junit_tests(junit) if junit.exists() else None
+        try:
+            current_stage = "junit_parse"
+            junit_reported_tests = parse_junit_tests(junit) if junit.exists() else None
+        except (ET.ParseError, ValueError):
+            junit_reported_tests = None
+            status = "failed"
+            reason = "junit_missing_or_malformed"
+            raise MatrixError("junit_missing_or_malformed", "JUnit XML is missing or malformed")
         if timed_out:
             status = "timed_out"
             reason = "timeout"
-        elif returncode == 0 and junit_reported_tests is not None:
+        elif returncode == 0 and junit_reported_tests == len(shard["node_ids"]):
             status = "passed"
+        elif returncode == 0 and junit_reported_tests is None:
+            status = "failed"
+            reason = "junit_missing_or_malformed"
+        elif returncode == 0:
+            status = "failed"
+            reason = "junit_count_mismatch"
         else:
             status = "failed"
             reason = "pytest_failed"
     except MatrixError as exc:
         reason = reason or exc.payload["reason"]
+    except (OSError, shutil.Error) as exc:
+        reason = reason or operational_reason_from_exception(exc, current_stage)
+        status = "failed"
+        returncode = 1
+    except subprocess.SubprocessError:
+        reason = reason or "pytest_start_failed"
+        status = "failed"
+        returncode = 1
     finally:
         if worktree_created_by_this_call:
-            cleanup_result = remove_worktree(repo_root, worktree)
+            cleanup_result, cleanup_error = remove_owned_shard_worktree(repo_root, worktree, receipt_root, plan, shard)
     duration = round(time.monotonic() - started, 3)
+    copied_runtime_fixture = copied_runtime_fixture or empty_copied_runtime_fixture(runtime_fixture)
     receipt = {
         "schema": RECEIPT_SCHEMA,
         "status": status,
@@ -326,7 +371,7 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "selected_node_ids": shard["node_ids"],
         "selected_count": len(shard["node_ids"]),
         "junit_path": str(junit),
-        "junit_tests": len(shard["node_ids"]) if status == "passed" and junit_reported_tests is not None else None,
+        "junit_tests": junit_reported_tests,
         "junit_reported_tests": junit_reported_tests,
         "returncode": returncode,
         "reason": reason,
@@ -337,10 +382,16 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "stderr_tail": read_tail(stderr_path),
         "worktree_path": str(worktree),
         "worktree_created_by_this_call": worktree_created_by_this_call,
+        "worktree_marker_written": worktree_marker_written,
         "worktree_cleanup": cleanup_result,
+        "worktree_cleanup_error": cleanup_error,
         "runtime_fixture_state": runtime_fixture["state"],
         "runtime_fixture_manifest_fingerprint": runtime_fixture["manifest_fingerprint"],
         "runtime_fixture_tree_fingerprint": runtime_fixture["tree_fingerprint"],
+        "copied_runtime_fixture_state": copied_runtime_fixture["state"],
+        "copied_runtime_fixture_manifest_fingerprint": copied_runtime_fixture["manifest_fingerprint"],
+        "copied_runtime_fixture_tree_fingerprint": copied_runtime_fixture["tree_fingerprint"],
+        "fixture_copy_verified": copied_runtime_fixture["verified"],
     }
     write_json(existing_path, receipt)
     return receipt
@@ -517,6 +568,8 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
         return "selected_count_mismatch"
     if receipt.get("junit_tests") != len(shard["node_ids"]):
         return "junit_count_mismatch"
+    if receipt.get("junit_reported_tests") != len(shard["node_ids"]):
+        return "junit_count_mismatch"
     if receipt.get("returncode") != 0:
         return "returncode_mismatch"
     if receipt.get("timed_out") is not False:
@@ -528,8 +581,18 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
         return "runtime_fixture_manifest_fingerprint_mismatch"
     if receipt.get("runtime_fixture_tree_fingerprint") != runtime_fixture["tree_fingerprint"]:
         return "runtime_fixture_tree_fingerprint_mismatch"
+    if receipt.get("copied_runtime_fixture_state") != runtime_fixture["state"]:
+        return "copied_runtime_fixture_state_mismatch"
+    if receipt.get("copied_runtime_fixture_manifest_fingerprint") != runtime_fixture["manifest_fingerprint"]:
+        return "copied_runtime_fixture_manifest_fingerprint_mismatch"
+    if receipt.get("copied_runtime_fixture_tree_fingerprint") != runtime_fixture["tree_fingerprint"]:
+        return "copied_runtime_fixture_tree_fingerprint_mismatch"
+    if receipt.get("fixture_copy_verified") is not True:
+        return "fixture_copy_not_verified"
     if receipt.get("worktree_created_by_this_call") is not True:
         return "worktree_not_owned"
+    if receipt.get("worktree_marker_written") is not True:
+        return "worktree_marker_missing"
     if receipt.get("worktree_cleanup") != "removed":
         return "worktree_cleanup_failed"
     return None
@@ -549,16 +612,45 @@ def add_worktree(repo_root: Path, worktree: Path, head: str) -> None:
         raise MatrixError("worktree_add_failed", "git worktree add failed", {"stderr_tail": tail(result.stderr)})
 
 
-def copy_runtime_fixture_snapshot(receipt_root: Path, worktree: Path, plan: dict[str, Any]) -> None:
+def copy_runtime_fixture_snapshot(receipt_root: Path, worktree: Path, plan: dict[str, Any]) -> dict[str, Any]:
     runtime_fixture = plan["runtime_fixture"]
-    if runtime_fixture["state"] == "absent":
-        return
-    source = receipt_root / runtime_fixture["snapshot_relative_path"]
+    assert_runtime_fixture_snapshot_matches_plan(receipt_root, plan)
     target = worktree / "out" / "nollm_runtime"
+    if runtime_fixture["state"] == "absent":
+        if target.exists():
+            raise MatrixError("fixture_snapshot_target_mismatch", "runtime fixture target exists for absent plan fixture")
+        return {
+            "state": "absent",
+            "tree_fingerprint": None,
+            "manifest_fingerprint": runtime_fixture["manifest_fingerprint"],
+            "verified": True,
+        }
+    source = receipt_root / runtime_fixture["snapshot_relative_path"]
     if target.exists():
         shutil.rmtree(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source, target)
+    entries = build_runtime_manifest_entries(target)
+    manifest = runtime_manifest_payload("present", entries)
+    copied = {
+        "state": "present",
+        "tree_fingerprint": fingerprint(entries),
+        "manifest_fingerprint": fingerprint(manifest),
+        "verified": False,
+    }
+    if copied["tree_fingerprint"] != runtime_fixture["tree_fingerprint"] or copied["manifest_fingerprint"] != runtime_fixture["manifest_fingerprint"]:
+        raise MatrixError("fixture_snapshot_target_mismatch", "runtime fixture copy target does not match plan snapshot", copied)
+    copied["verified"] = True
+    return copied
+
+
+def empty_copied_runtime_fixture(runtime_fixture: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "state": runtime_fixture["state"],
+        "tree_fingerprint": None,
+        "manifest_fingerprint": None,
+        "verified": False,
+    }
 
 
 def snapshot_runtime_fixture(repo_root: Path, receipt_root: Path) -> dict[str, Any]:
@@ -655,6 +747,24 @@ def root_marker_payload(plan: dict[str, Any], receipt_root: Path) -> dict[str, A
     }
 
 
+def shard_worktree_marker_payload(plan: dict[str, Any], shard: dict[str, Any], receipt_root: Path) -> dict[str, Any]:
+    return {
+        "schema": "nollm.test_matrix.worktree.v1",
+        "git_head": plan["git_head"],
+        "matrix_id": plan["matrix_id"],
+        "shard_id": shard["shard_id"],
+        "manifest_fingerprint": plan["manifest_fingerprint"],
+        "receipt_root": str(receipt_root.resolve()),
+    }
+
+
+def write_shard_worktree_marker(worktree: Path, receipt_root: Path, plan: dict[str, Any], shard: dict[str, Any]) -> None:
+    try:
+        write_json(worktree / SHARD_WORKTREE_MARKER, shard_worktree_marker_payload(plan, shard, receipt_root))
+    except OSError as exc:
+        raise MatrixError("worktree_marker_write_failed", "could not write shard worktree marker", {"message": stable_error(exc)})
+
+
 def ensure_worktree_root_marker(worktree_root: Path, receipt_root: Path, plan: dict[str, Any]) -> None:
     root = matrix_worktree_root(worktree_root, plan)
     root.mkdir(parents=True, exist_ok=True)
@@ -671,6 +781,13 @@ def assert_worktree_root_marker(worktree_root: Path, receipt_root: Path, plan: d
     if not marker.exists():
         raise MatrixError("cleanup_refused", "matrix worktree root marker missing")
     assert_marker_payload(marker, root_marker_payload(plan, receipt_root), "worktree_root_marker_mismatch")
+
+
+def assert_shard_worktree_marker(worktree: Path, receipt_root: Path, plan: dict[str, Any], shard: dict[str, Any]) -> None:
+    marker = worktree / SHARD_WORKTREE_MARKER
+    if not marker.exists():
+        raise MatrixError("cleanup_refused", "shard worktree marker missing", {"worktree": str(worktree)})
+    assert_marker_payload(marker, shard_worktree_marker_payload(plan, shard, receipt_root), "cleanup_refused")
 
 
 def assert_receipt_root_marker(receipt_root: Path, plan: dict[str, Any]) -> None:
@@ -698,6 +815,15 @@ def remove_worktree(repo_root: Path, worktree: Path) -> str:
     return "failed"
 
 
+def remove_owned_shard_worktree(repo_root: Path, worktree: Path, receipt_root: Path, plan: dict[str, Any], shard: dict[str, Any]) -> tuple[str, str | None]:
+    try:
+        assert_shard_worktree_marker(worktree, receipt_root, plan, shard)
+    except MatrixError as exc:
+        return "cleanup_refused", exc.payload["reason"]
+    result = remove_worktree(repo_root, worktree)
+    return result, None if result == "removed" else "cleanup_failed"
+
+
 def list_worktree_leftovers(worktree_root: Path) -> list[Path]:
     if not worktree_root.exists():
         return []
@@ -720,6 +846,14 @@ def run_process(command: list[str], *, cwd: Path, env: dict[str, str], timeout_s
         )
         timed_out = wait_with_deadline(process, timeout_seconds)
     return int(process.returncode if process.returncode is not None else -1), timed_out
+
+
+def operational_reason_from_exception(exc: BaseException, stage: str) -> str:
+    if stage == "fixture_snapshot_copy" or isinstance(exc, shutil.Error):
+        return "fixture_snapshot_copy_failed"
+    if stage == "worktree_marker_write":
+        return "worktree_marker_write_failed"
+    return "pytest_start_failed"
 
 
 def wait_with_deadline(process: subprocess.Popen[str], timeout_seconds: float) -> bool:
@@ -757,12 +891,14 @@ def wait_for_exit(process: subprocess.Popen[str]) -> None:
 
 
 def parse_junit_tests(path: Path) -> int | None:
-    try:
-        root = ET.parse(path).getroot()
-    except ET.ParseError:
-        return None
+    root = ET.parse(path).getroot()
+    for suite in ([root] if root.tag == "testsuite" else root.findall("testsuite")):
+        int(suite.attrib["tests"])
+    testcases = root.findall(".//testcase")
+    if testcases:
+        return len(testcases)
     if root.tag == "testsuite":
-        return int(root.attrib.get("tests", "-1"))
+        return int(root.attrib["tests"])
     total = 0
     for suite in root.findall("testsuite"):
         total += int(suite.attrib.get("tests", "0"))

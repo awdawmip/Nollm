@@ -8,15 +8,16 @@ Delivered:
 - Per-shard detached git worktree execution.
 - Clean-source plan rejection before collection or receipt-root creation.
 - Plan-owned ignored `out/nollm_runtime` snapshot manifests and fingerprints.
-- Runtime fixture copy from the frozen receipt-root snapshot, not live source `out`.
-- Matrix-owned worktree root markers and non-destructive handling of pre-existing worktrees.
-- Structured failure receipts for worktree existence, worktree add failure, pytest failure, timeout, and cleanup state.
+- Runtime fixture copy from the frozen receipt-root snapshot, not live source `out`, with copied-target fingerprint attestation before pytest starts.
+- Matrix-owned worktree root markers, per-shard worktree ownership markers, and non-destructive handling of pre-existing worktrees.
+- Structured failure receipts for worktree existence, worktree add failure, fixture copy failure, fixture target mismatch, pytest startup failure, pytest failure, malformed JUnit, timeout, and cleanup state.
+- Successful receipts bind to the actual JUnit `<testcase>` proof count and reject malformed suite `tests` attributes.
 - `tools/run_nollm_test_matrix.ps1` with defaults under `C:\Users\chaos`.
 - Documentation for the complete matrix gate and delivery bundle directory convention.
 
 Not delivered:
 
-- Production Nollm module changes.
+- Nollm Core/Cortex/Geometry/Admission/Recall production behavior changes. RCH1 only changed Engineering RC release artifact verification / archive tooling.
 - OpenClaw, runtime, network, LLM/NLP, embedding, cache, database, daemon, global discovery, or automatic admission integration.
 - Replacement of `run_tests.py`; it remains a legacy single-process diagnostic command.
 - Any tracked source byte mirroring into detached shard worktrees.
