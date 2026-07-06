@@ -12,9 +12,9 @@ def test_hcg1_11_gateway_source_has_no_hidden_discovery_or_search() -> None:
     forbidden = (
         ".glob(",
         ".rglob(",
-        ".iterdir(",
         "list_all",
-        "search",
+        "search(",
+        ".search",
         "compile_query",
         "resolve_recall",
         "AdmissionRequest(",

@@ -27,13 +27,18 @@ admitted record. A visibility read is not recall.
 
 The capture command receives:
 
+- `kind` = `nollm_hcg_capture_request`;
+- `version` = `1`;
 - `request_id`;
-- `capture_request`;
-- `capture_policy`.
+- `capture`;
+- `policy`.
 
 Unknown fields, duplicate JSON object keys, malformed JSON, missing required
 fields, ephemeral persistence, and `current_turn` visibility are rejected before
 capture execution.
+
+The legacy candidate shape using `capture_request` and `capture_policy` is not
+part of the public HCG1 v1 wire contract and is rejected.
 
 The workspace is never read from the JSON request. The CLI `--workspace` value
 is the only work root input.
@@ -42,6 +47,8 @@ is the only work root input.
 
 The read command receives:
 
+- `kind` = `nollm_hcg_read_request`;
+- `version` = `1`;
 - `request_id`;
 - `selector`.
 
@@ -60,5 +67,7 @@ Capture uses HX1 owned work roots. Read requires a valid HX1 owned-root marker
 and rejects arbitrary paths or isolated stores.
 
 HCG1 removes HX1 scaffolding for stages not executed by the capture-only path,
-leaving durable state only for the HX1 marker/receipt, CI1 capture state, and
-DE1 evidence.
+but only when the path did not exist before the current call and still exactly
+matches the minimal empty HX1 capture-only scaffold. HCG1 never deletes,
+truncates, renames, or recursively cleans pre-existing `admission/` or
+`cortex/` contents.

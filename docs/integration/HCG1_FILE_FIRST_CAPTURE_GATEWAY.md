@@ -20,8 +20,11 @@ global captured-pool discovery.
 ## Capture
 
 The capture request must provide a CI1-shaped `CaptureRequest` and
-`CapturePolicy`. HCG1 maps those values into a capture-only CX2 plan and calls
-HX1 `execute_host_plan`.
+`CapturePolicy` under the canonical HCG1 v1 public names `capture` and
+`policy`, with top-level `kind`, `version`, and `request_id`. HCG1 maps those
+values into a capture-only CX2 plan and calls HX1 `execute_host_plan`.
+
+The older candidate shape `capture_request` plus `capture_policy` is rejected.
 
 The capture path accepts `captured` and `persistent` policies with
 `session_window`, `source_window`, or `persistent_explicit` visibility. HCG1 v1
@@ -35,6 +38,8 @@ Read requests are selector-only:
 - `session_window` reads by explicit `context_ref`;
 - `source_window` reads by explicit `context_ref`;
 - `persistent_explicit` reads by explicit `shard_ids`.
+
+Read requests also require `kind=nollm_hcg_read_request` and `version=1`.
 
 HCG1 read is not semantic recall. It does not accept query text, embeddings,
 keywords, admission IDs, field policy, recall policy, limits, runtime values,
@@ -50,3 +55,10 @@ Failures are stable JSON envelopes:
 
 The envelope intentionally does not expose Python tracebacks, module paths, or
 workspace paths.
+
+## Workspace Preservation
+
+HCG1 never deletes pre-existing `admission/` or `cortex/` contents in an owned
+workspace. If HX1 creates minimal empty capture-only scaffold during the current
+call, HCG1 may remove only that newly created scaffold after verifying its exact
+minimal shape. Unexpected or pre-existing contents are preserved.

@@ -23,6 +23,11 @@ Validation covered:
 - HCG1-10 sanitized single-envelope error output;
 - HCG1-11 source-level absence of hidden discovery/search/recall paths;
 - HCG1-12 no registration on V1 CLI or OpenClaw/tool surfaces.
+- HCG1-C1 canonical `kind/version/capture/policy` wire contract;
+- HCG1-C1 legacy `capture_request/capture_policy` rejection;
+- HCG1-C1 canonical read `result.shards` output;
+- HCG1-C1 preservation of pre-existing `admission/keep.txt` and
+  `cortex/keep.txt` bytes across success, reopen, and drift rejection.
 
 Fixed gate status will be recorded in the delivery receipt after the full HCG1
 gate set and final matrix complete.

@@ -24,7 +24,11 @@ from .errors import HCGError, HCG_INVALID_JSON, HCG_INVALID_REQUEST, HCG_UNSUPPO
 from .types import GatewayCaptureRequest, GatewayReadRequest
 
 
-CAPTURE_TOP_FIELDS = frozenset({"request_id", "capture_request", "capture_policy"})
+CAPTURE_KIND = "nollm_hcg_capture_request"
+READ_KIND = "nollm_hcg_read_request"
+WIRE_VERSION = "1"
+
+CAPTURE_TOP_FIELDS = frozenset({"kind", "version", "request_id", "capture", "policy"})
 CAPTURE_REQUEST_FIELDS = frozenset(
     {
         "capture_id",
@@ -51,17 +55,37 @@ POLICY_FIELDS = frozenset(
         "promotion_mode",
     }
 )
-READ_TOP_FIELDS = frozenset({"request_id", "selector"})
+READ_TOP_FIELDS = frozenset({"kind", "version", "request_id", "selector"})
 READ_SELECTOR_FIELDS = frozenset({"scope", "context_ref", "shard_ids"})
 FORBIDDEN_READ_SELECTOR_FIELDS = frozenset(
     {
         "query_text",
+        "query",
+        "keyword",
         "semantic_query",
         "embedding",
+        "similarity",
         "nearest",
-        "admission_ids",
+        "offset",
+        "cursor",
+        "sort",
+        "rank",
+        "recent",
+        "all",
+        "scan",
+        "search",
+        "anchor",
+        "chart",
+        "cell",
+        "cover",
+        "trace",
+        "route",
+        "geometry",
+        "admission_id",
         "field_policy",
+        "field_snapshot",
         "recall_policy",
+        "recall_budget",
         "limit",
         "runtime",
         "session",
@@ -85,11 +109,13 @@ def load_json_text(text: str) -> dict[str, Any]:
 
 def decode_capture_payload(payload: dict[str, Any]) -> GatewayCaptureRequest:
     _exact_fields(payload, CAPTURE_TOP_FIELDS)
+    _require_literal(payload, "kind", CAPTURE_KIND)
+    _require_literal(payload, "version", WIRE_VERSION)
     request_id = _required_string(payload, "request_id")
-    request_payload = _required_object(payload, "capture_request")
-    policy_payload = _required_object(payload, "capture_policy")
-    _exact_fields(request_payload, CAPTURE_REQUEST_FIELDS, optional={"diagnostic_retention_until"})
-    _exact_fields(policy_payload, POLICY_FIELDS, optional={"policy_version", "retention_class", "promotion_mode"})
+    request_payload = _required_object(payload, "capture")
+    policy_payload = _required_object(payload, "policy")
+    _exact_fields(request_payload, CAPTURE_REQUEST_FIELDS)
+    _exact_fields(policy_payload, POLICY_FIELDS)
 
     origin_payload = _required_object(request_payload, "origin")
     _exact_fields(origin_payload, ORIGIN_FIELDS, optional={"reference", "context_reference", "role_label"})
@@ -138,6 +164,8 @@ def decode_capture_payload(payload: dict[str, Any]) -> GatewayCaptureRequest:
 
 def decode_read_payload(payload: dict[str, Any]) -> GatewayReadRequest:
     _exact_fields(payload, READ_TOP_FIELDS)
+    _require_literal(payload, "kind", READ_KIND)
+    _require_literal(payload, "version", WIRE_VERSION)
     request_id = _required_string(payload, "request_id")
     selector = _required_object(payload, "selector")
     unknown_forbidden = FORBIDDEN_READ_SELECTOR_FIELDS.intersection(selector)
@@ -186,6 +214,11 @@ def _required_string(payload: dict[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value:
         raise HCGError(HCG_INVALID_REQUEST, "request shape is invalid")
     return value
+
+
+def _require_literal(payload: dict[str, Any], key: str, expected: str) -> None:
+    if payload.get(key) != expected:
+        raise HCGError(HCG_INVALID_REQUEST, "request shape is invalid")
 
 
 def _optional_string(payload: dict[str, Any], key: str) -> str | None:

@@ -76,6 +76,7 @@ def capture(workspace: Path, decoded) -> dict[str, Any]:
     workspace = Path(workspace).resolve()
     if decoded.capture_policy.persistence.value == "ephemeral" or decoded.capture_request.requested_visibility_scope is VisibilityScope.current_turn:
         raise HCGError(HCG_UNSUPPORTED_CAPTURE_MODE, "capture mode is not supported by HCG1")
+    scaffolds_before = _scaffold_prestate(workspace)
     plan = CortexActionPlan(
         "nollm_cortex_action_plan",
         "1",
@@ -107,7 +108,7 @@ def capture(workspace: Path, decoded) -> dict[str, Any]:
     mapping = receipt_to_mapping(receipt)
     if mapping["status"] != "completed":
         raise HCGError(HCG_CAPTURE_REJECTED, "capture was rejected")
-    _remove_unexecuted_stage_scaffolding(workspace)
+    _cleanup_new_minimal_scaffolding(workspace, scaffolds_before)
     identity = CaptureStateStore(workspace / "capture").read_capture_identity(decoded.capture_request.capture_id)
     if identity is None:
         raise HCGError(HCG_CAPTURE_REJECTED, "capture was rejected")
@@ -122,17 +123,14 @@ def capture(workspace: Path, decoded) -> dict[str, Any]:
             "visibility_scope": identity["visibility_scope"],
             "deferred_candidate_id": identity["candidate_id"],
             "minimal_ledger_event_id": identity["minimal_ledger_event_id"],
-            "request_fingerprint": request_fingerprint(decoded.capture_request),
         },
         "host_execution": {
             "plan_id": mapping["plan_id"],
             "status": mapping["status"],
             "completed_stages": mapping["completed_stages"],
-            "work_root_marker_id": mapping["work_root_marker_id"],
             "execution_input_fingerprint": mapping["execution_input_fingerprint"],
             "output_fingerprint": mapping["output_fingerprint"],
         },
-        "policy_fingerprint": policy_fingerprint(decoded.capture_policy),
     }
 
 
@@ -155,9 +153,7 @@ def read(workspace: Path, decoded) -> dict[str, Any]:
         raise HCGError(HCG_READ_REJECTED, "read was rejected") from exc
     return {
         "scope": decoded.scope,
-        "context_ref": decoded.context_ref,
-        "shard_ids": tuple(shard.shard_id for shard in shards),
-        "dream_shards": tuple(_shard_payload(shard) for shard in shards),
+        "shards": tuple(_shard_payload(shard) for shard in shards),
     }
 
 
@@ -206,14 +202,69 @@ def _first_context(context_refs: tuple[str, ...]) -> str:
 
 
 def _shard_payload(shard: DreamShard) -> dict[str, Any]:
-    return canonical_payload(shard)
+    return {
+        "shard_id": shard.shard_id,
+        "content": shard.content,
+        "origin": {
+            "kind": shard.origin.kind.value,
+            "reference": shard.origin.reference,
+            "context_reference": shard.origin.context_reference,
+            "role_label": shard.origin.role_label,
+        },
+        "recorded_at": shard.temporal_context.captured_at,
+        "context_refs": shard.context_refs,
+        "usage_state": shard.initial_usage_state.value,
+    }
 
 
-def _remove_unexecuted_stage_scaffolding(workspace: Path) -> None:
+def _scaffold_prestate(workspace: Path) -> dict[str, bool]:
+    return {name: (workspace / name).exists() for name in ("admission", "cortex")}
+
+
+def _cleanup_new_minimal_scaffolding(workspace: Path, existed_before: dict[str, bool]) -> None:
     for name in ("admission", "cortex"):
         path = workspace / name
-        if path.exists() and path.is_dir():
+        if existed_before.get(name, True):
+            continue
+        if name == "admission" and _is_minimal_admission_scaffold(path):
             shutil.rmtree(path)
+        elif name == "cortex" and _is_minimal_cortex_scaffold(path):
+            shutil.rmtree(path)
+
+
+def _is_minimal_admission_scaffold(path: Path) -> bool:
+    records = path / "records"
+    return (
+        path.is_dir()
+        and (path / "format.json").is_file()
+        and records.is_dir()
+        and not any(records.iterdir())
+        and _dir_names(path) == {"records"}
+        and _file_names(path) == {"format.json"}
+    )
+
+
+def _is_minimal_cortex_scaffold(path: Path) -> bool:
+    receipts = path / "compilation_receipts"
+    proposals = path / "compiled_growth_proposals"
+    return (
+        path.is_dir()
+        and (path / "format.json").is_file()
+        and receipts.is_dir()
+        and proposals.is_dir()
+        and not any(receipts.iterdir())
+        and not any(proposals.iterdir())
+        and _dir_names(path) == {"compilation_receipts", "compiled_growth_proposals"}
+        and _file_names(path) == {"format.json"}
+    )
+
+
+def _dir_names(path: Path) -> set[str]:
+    return {child.name for child in path.iterdir() if child.is_dir()}
+
+
+def _file_names(path: Path) -> set[str]:
+    return {child.name for child in path.iterdir() if child.is_file()}
 
 
 __all__ = ["capture", "capture_from_text", "read", "read_from_text"]

@@ -2,6 +2,15 @@
 
 Delivery scope: local file-first Host Capture Gateway.
 
+HCG1-C1 closure scope:
+
+- canonical JSON v1 capture/read contract with top-level `kind` and `version`;
+- canonical public names `capture`, `policy`, and read `result.shards`;
+- rejection of legacy `capture_request` / `capture_policy` request shape;
+- non-destructive preservation of pre-existing `admission/` and `cortex/`
+  workspace contents;
+- cleanup only for newly created, exactly minimal HX1 capture-only scaffold.
+
 Implemented paths:
 
 - `reference/python/nollm/dream_geometry/host_capture_gateway/**`;

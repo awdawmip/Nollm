@@ -16,6 +16,7 @@ def ok_envelope(operation: str, request_id: str, result: dict[str, Any]) -> dict
         "operation": operation,
         "request_id": request_id,
         "result": result,
+        "warnings": [],
     }
 
 

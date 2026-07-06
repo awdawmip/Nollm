@@ -26,8 +26,10 @@ def test_hcg1_01_capture_and_source_window_read_are_file_first(tmp_path) -> None
     read = _read_payload("hcg1_01_read", {"scope": "source_window", "context_ref": "source:hcg1:alpha"})
     read_result = _run_gateway(tmp_path, "read", workspace, read)
     assert read_result["ok"] is True
-    assert read_result["result"]["shard_ids"] == [receipt["shard_id"]]
-    assert read_result["result"]["dream_shards"][0]["content"] == "HCG1 source-window alpha."
+    assert [shard["shard_id"] for shard in read_result["result"]["shards"]] == [receipt["shard_id"]]
+    assert read_result["result"]["shards"][0]["content"] == "HCG1 source-window alpha."
+    assert "dream_shards" not in read_result["result"]
+    assert "shard_ids" not in read_result["result"]
     _assert_no_stage_side_effects(workspace)
 
 
@@ -70,8 +72,8 @@ def test_hcg1_03_persistent_explicit_reads_selected_shards_with_public_dedupe(tm
     read = _read_payload("hcg1_03_read", {"scope": "persistent_explicit", "shard_ids": [shard_id, shard_id]})
     read_result = _run_gateway(tmp_path, "read", workspace, read)
     assert read_result["ok"] is True
-    assert read_result["result"]["shard_ids"] == [shard_id]
-    assert read_result["result"]["dream_shards"][0]["content"] == "HCG1 persistent explicit gamma."
+    assert [shard["shard_id"] for shard in read_result["result"]["shards"]] == [shard_id]
+    assert read_result["result"]["shards"][0]["content"] == "HCG1 persistent explicit gamma."
 
 
 def test_hcg1_04_context_windows_are_isolated_and_do_not_fallback(tmp_path) -> None:
@@ -82,10 +84,10 @@ def test_hcg1_04_context_windows_are_isolated_and_do_not_fallback(tmp_path) -> N
     read_a = _run_gateway(tmp_path, "read", workspace, _read_payload("hcg1_04_read_a", {"scope": "source_window", "context_ref": "source:hcg1:a"}))
     read_missing = _run_gateway(tmp_path, "read", workspace, _read_payload("hcg1_04_read_missing", {"scope": "source_window", "context_ref": "source:hcg1:missing"}))
 
-    assert read_a["result"]["shard_ids"] == [first["result"]["capture_receipt"]["shard_id"]]
-    assert second["result"]["capture_receipt"]["shard_id"] not in read_a["result"]["shard_ids"]
+    assert [shard["shard_id"] for shard in read_a["result"]["shards"]] == [first["result"]["capture_receipt"]["shard_id"]]
+    assert second["result"]["capture_receipt"]["shard_id"] not in [shard["shard_id"] for shard in read_a["result"]["shards"]]
     assert read_missing["ok"] is True
-    assert read_missing["result"]["shard_ids"] == []
+    assert read_missing["result"]["shards"] == []
 
 
 def test_hcg1_05_same_request_reopen_is_deterministic_and_read_only(tmp_path) -> None:
@@ -116,6 +118,35 @@ def test_hcg1_06_same_request_id_drift_is_rejected_before_write(tmp_path) -> Non
     assert (workspace / "evidence" / "ledger" / "events.jsonl").read_text(encoding="utf-8") == ledger_before
 
 
+def test_hcg1_c1_05_preexisting_admission_and_cortex_bytes_are_preserved(tmp_path) -> None:
+    workspace = tmp_path / "workspace"
+    first = _capture_payload("hcg1_c1_keep_first", "cap_hcg1_c1_keep_first", "HCG1 preserve first.", "source:hcg1:keep")
+    assert _run_gateway(tmp_path, "capture", workspace, first)["ok"] is True
+
+    admission_keep = workspace / "admission" / "keep.txt"
+    cortex_keep = workspace / "cortex" / "keep.txt"
+    admission_keep.parent.mkdir()
+    cortex_keep.parent.mkdir()
+    admission_bytes = b"admission sentinel bytes"
+    cortex_bytes = b"cortex sentinel bytes"
+    admission_keep.write_bytes(admission_bytes)
+    cortex_keep.write_bytes(cortex_bytes)
+
+    second = _capture_payload("hcg1_c1_keep_second", "cap_hcg1_c1_keep_second", "HCG1 preserve second.", "source:hcg1:keep")
+    assert _run_gateway(tmp_path, "capture", workspace, second)["ok"] is True
+    assert admission_keep.read_bytes() == admission_bytes
+    assert cortex_keep.read_bytes() == cortex_bytes
+
+    assert _run_gateway(tmp_path, "capture", workspace, second)["ok"] is True
+    assert admission_keep.read_bytes() == admission_bytes
+    assert cortex_keep.read_bytes() == cortex_bytes
+
+    drift = _capture_payload("hcg1_c1_keep_second", "cap_hcg1_c1_keep_second", "HCG1 preserve drift.", "source:hcg1:keep")
+    assert _run_gateway(tmp_path, "capture", workspace, drift, expect_success=False)["error"]["code"] == "HCG_REOPEN_MISMATCH"
+    assert admission_keep.read_bytes() == admission_bytes
+    assert cortex_keep.read_bytes() == cortex_bytes
+
+
 def _run_gateway(tmp_path: Path, command: str, workspace: Path, payload: dict, *, expect_success: bool = True) -> dict:
     request_path = tmp_path / (payload["request_id"] + "_" + command + ".json")
     request_path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
@@ -134,6 +165,8 @@ def _run_gateway(tmp_path: Path, command: str, workspace: Path, payload: dict, *
     result = json.loads(completed.stdout)
     assert completed.returncode == (0 if expect_success else 2)
     assert result["ok"] is expect_success
+    if expect_success:
+        assert result["warnings"] == []
     return result
 
 
@@ -152,8 +185,10 @@ def _capture_payload(
     promotion_mode: str = "disabled",
 ) -> dict:
     return {
+        "kind": "nollm_hcg_capture_request",
+        "version": "1",
         "request_id": request_id,
-        "capture_request": {
+        "capture": {
             "capture_id": capture_id,
             "content": content,
             "origin": {
@@ -166,9 +201,11 @@ def _capture_payload(
             "context_refs": [context_ref],
             "requested_visibility_scope": visibility,
             "deferred_candidate_request": {"requested": requested, "trigger_refs": triggers or []},
+            "diagnostic_retention_until": None,
         },
-        "capture_policy": {
+        "policy": {
             "policy_id": "cp_" + request_id,
+            "policy_version": "1",
             "persistence": persistence,
             "lineage": "minimal",
             "diagnostics": "on_failure",
@@ -180,7 +217,7 @@ def _capture_payload(
 
 
 def _read_payload(request_id: str, selector: dict) -> dict:
-    return {"request_id": request_id, "selector": selector}
+    return {"kind": "nollm_hcg_read_request", "version": "1", "request_id": request_id, "selector": selector}
 
 
 def _assert_no_stage_side_effects(workspace: Path) -> None:

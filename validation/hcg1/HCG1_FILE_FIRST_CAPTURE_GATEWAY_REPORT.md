@@ -11,6 +11,10 @@ Validated behavior:
   `CaptureVisibility`;
 - strict request decoding and unsupported mode rejection;
 - deterministic reopen and drift rejection;
+- canonical `kind/version/capture/policy` wire contract and legacy candidate
+  shape rejection;
+- canonical read output through `result.shards`;
+- preservation of pre-existing `admission/` and `cortex/` bytes;
 - no V1 CLI, OpenClaw, runtime, network, database, cache, field, assembly, or
   recall integration.
 
