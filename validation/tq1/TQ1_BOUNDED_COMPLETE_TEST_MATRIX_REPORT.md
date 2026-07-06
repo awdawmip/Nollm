@@ -75,3 +75,18 @@ TQ1-C3 closes the remaining complete-matrix proof gaps:
 The final TQ1-C3 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c3`; earlier C2/RCH1 receipts
 are not final closure evidence.
+
+## TQ1-C4 Failure Atomicity And Evidence Closure
+
+TQ1-C4 closes the final matrix-proof semantics:
+
+- Receipt roots are non-reusable matrix instances; `plan` refuses an existing root and never overwrites prior evidence.
+- Shard receipts separate `worktree_add_succeeded`, `worktree_marker_written`, and `worktree_created_by_this_call`.
+- Every defined operational failure records `failure_stage`, `reason`, shard identity, git head, worktree path, and cleanup state.
+- Cleanup failure, cleanup refusal, or cleanup `OSError` cannot produce a passed receipt.
+- Cleanup binds the receipt-root marker, worktree-root marker, and exact per-shard marker before deletion.
+- Final matrix evidence remains external under `C:\Users\chaos\nollm_test_runs` and is not copied into Git or the delivery bundle.
+
+The final TQ1-C4 matrix must use fresh receipts under
+`C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c4`; earlier C3 receipts are
+not final closure evidence.

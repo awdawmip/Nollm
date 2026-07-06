@@ -404,11 +404,14 @@ C:\Users\chaos\nollm_test_runs\<git-commit>\<matrix-id>\
 C:\Users\chaos\nollm_test_worktrees\<git-commit>\<matrix-id>\
 ```
 
-The matrix plan must start from a clean git checkout. Ignored
+The matrix plan must start from a clean git checkout. The external receipt root
+is a non-reusable matrix instance: do not delete or overwrite it to rerun a
+plan; choose a fresh root. Ignored
 `out/nollm_runtime` inputs are frozen once under the external receipt root and
 fingerprinted; shard worktrees must not mirror tracked source checkout bytes or
 copy live source runtime fixtures after planning. Cleanup is limited to
-matrix-owned worktrees with matching markers.
+matrix-owned worktrees with matching receipt-root, worktree-root, and per-shard
+markers, and cleanup failure is a failed shard receipt.
 
 When relevant to the phase, also run:
 

@@ -24,18 +24,22 @@ The canonical commands are:
 - `cleanup`: remove matrix-owned external worktrees and optionally receipts.
 
 `plan` must reject dirty source status before collection and before creating
-receipt roots. If `out/nollm_runtime` exists, `plan` snapshots it once under
-the receipt root and records canonical file hashes. `run-shard` must copy only
+receipt roots. It must also reject any existing receipt root; a receipt root is
+a non-reusable matrix-instance boundary and is never overwritten or adopted. If
+`out/nollm_runtime` exists, `plan` snapshots it once under the receipt root and
+records canonical file hashes. `run-shard` must copy only
 that snapshot, never live source `out/nollm_runtime` and never tracked source
 checkout bytes. Worktree cleanup is allowed only for shard worktrees created by
 the current matrix call and rooted under matching root and per-shard ownership
 markers. Cleanup refuses with zero deletions when any existing shard path lacks
 the exact per-shard marker, has a mismatched marker, or is outside the plan.
+Cleanup failure is a failed shard receipt, even when pytest and JUnit succeeded.
 
 After each runtime fixture copy, `run-shard` re-hashes the copied target inside
 the detached worktree and starts pytest only if the target manifest and tree
 fingerprints exactly match the plan-owned snapshot. Fixture-copy, pytest
 startup, malformed JUnit, and other defined operational failures must leave a
-structured shard receipt.
+structured shard receipt with failure stage, reason, worktree path, ownership
+facts, and cleanup state.
 
 The protocol does not change Nollm production behavior and does not introduce runtime, OpenClaw, network, LLM/NLP, database, cache, daemon, global discovery, or automatic admission behavior.

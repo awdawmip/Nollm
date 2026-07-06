@@ -22,7 +22,7 @@ $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
 $env:PYTHONPATH = "$PWD/reference/python"
 
 $head = git rev-parse HEAD
-$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c3"
+$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c4"
 $worktreeRoot = "C:\Users\chaos\nollm_test_worktrees\$head"
 
 python reference/python/scripts/run_nollm_test_matrix.py plan --repo-root . --receipt-root $receiptRoot --target-node-count 120 --max-shards 24
@@ -46,10 +46,10 @@ Receipts and JUnit XML are external runtime artifacts under:
 C:\Users\chaos\nollm_test_runs\<git-commit>\
 ```
 
-For final TQ1-C3 delivery evidence, use:
+For final TQ1-C4 delivery evidence, use:
 
 ```text
-C:\Users\chaos\nollm_test_runs\<git-commit>\tq1-c3\
+C:\Users\chaos\nollm_test_runs\<git-commit>\tq1-c4\
 ```
 
 Shard worktrees are external runtime artifacts under:
@@ -62,6 +62,8 @@ The source repository must be clean before `plan`. Dirty tracked or untracked
 source status is rejected before collection, receipt-root creation, and
 worktree creation. The runner does not mirror tracked source bytes into shard
 worktrees and does not use `git reset --hard` or `git clean` to hide pollution.
+The receipt root is a single matrix-instance boundary: `plan` refuses any
+existing receipt root and never deletes, overwrites, or adopts prior evidence.
 
 If `out/nollm_runtime` exists, `plan` copies it once into
 `<receipt-root>/inputs/runtime_fixture/` and records a canonical file manifest,
@@ -78,9 +80,11 @@ Each shard worktree has its own ownership marker:
 <worktree-root>\<matrix-id>\<shard-id>\.nollm_test_matrix_worktree.json
 ```
 
-Cleanup first verifies the root marker and every existing planned shard marker.
-Any missing, malformed, mismatched, or unplanned worktree directory makes
-cleanup refuse with zero deletions.
+Cleanup first verifies the receipt-root marker, worktree-root marker, and every
+existing planned shard marker. Any missing, malformed, mismatched, or unplanned
+worktree directory makes cleanup refuse with zero deletions. Cleanup failure is
+never a successful shard receipt; a shard whose pytest/JUnit work succeeded but
+whose cleanup failed is recorded as failed.
 
 ## Verification Rules
 
@@ -99,6 +103,10 @@ Verification fails if:
 - matrix-owned worktree leftovers remain.
 
 The matrix is not Nollm recall, runtime, storage, OpenClaw, network, LLM/NLP, embedding, daemon, cache, database, or automatic admission infrastructure.
+
+Final matrix receipt roots, JUnit XML, logs, and runtime fixture manifests are
+external audit evidence. They must be preserved for review, not committed to
+Git, copied into repo/out, or treated as bundle contents.
 
 ## Delivery Bundle Convention
 
