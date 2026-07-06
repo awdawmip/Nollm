@@ -16,6 +16,7 @@ Historical source files, examples, reports, and protocol drafts may remain in
 the repository for auditability. Their presence does not make them active API,
 active runtime, active architecture, or an allowed dependency source for V2
 Core work.
+Physical presence is not active status.
 
 ## OpenClaw Boundary
 

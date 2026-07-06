@@ -111,12 +111,13 @@ def test_module_docstrings_state_allowed_and_forbidden_roles() -> None:
         assert "Forbidden:" in doc
 
 
-def test_required_dg0_documents_exist_and_governance_mentions_v2_priority() -> None:
+def test_required_v2_canonical_documents_exist_and_governance_prioritizes_v2() -> None:
     required = [
         "docs/architecture/NOLLM_V2_MODULE_BOUNDARIES_DG0.md",
         "docs/architecture/NOLLM_V2_MIGRATION_BOUNDARY_DG0.md",
         "docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_ATLAS_COVERAGE_KERNELS_20260629.md",
         "protocol/v2/CONSTITUTION.md",
+        "protocol/v2/LAYER_CONSTITUTION.md",
         "protocol/v2/MODULE_DEPENDENCY_RULES.md",
         "protocol/v2/OBJECT_OWNERSHIP.md",
         "protocol/v2/INVARIANTS.md",
@@ -125,13 +126,23 @@ def test_required_dg0_documents_exist_and_governance_mentions_v2_priority() -> N
     for relative in required:
         assert (REPO_ROOT / relative).is_file(), relative
 
-    governance = "\n".join(
+    layer = (REPO_ROOT / "protocol" / "v2" / "LAYER_CONSTITUTION.md").read_text(encoding="utf-8")
+    legacy = (REPO_ROOT / "protocol" / "v2" / "LEGACY_BOUNDARY.md").read_text(encoding="utf-8")
+    root_governance = "\n".join(
         [
+            (REPO_ROOT / "README.md").read_text(encoding="utf-8"),
             (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8"),
             (REPO_ROOT / "ARCHITECTURE.md").read_text(encoding="utf-8"),
             (REPO_ROOT / "ROADMAP.md").read_text(encoding="utf-8"),
         ]
     )
-    assert "Dream Geometry V2 Route Lock" in governance
-    assert "V2 amendment" in governance
-    assert "parallel, not yet integrated" in governance
+    assert "V2 is the only active architecture" in layer
+    assert "L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0" in layer
+    assert "Capture, Admission, and Assembly are business paths, not layers" in layer
+    assert "V1, MT1, and pre-V2 prototype material is retired history" in legacy
+    assert "Physical presence is not active status" in legacy
+    assert "Core does not import adapters or terminals" in root_governance
+    assert "Dream Geometry V2 Route Lock" not in root_governance
+    assert "Nollm V1 Route Lock" not in root_governance
+    assert "nollm.cli" not in root_governance
+    assert "examples/openclaw" not in root_governance

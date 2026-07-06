@@ -2,7 +2,7 @@
 
 ## Scope
 
-This receipt records the fixed V2L0-C1R validation gate definition.
+This receipt records the fixed V2L0-C2 validation gate definition.
 
 ## Gate
 
@@ -16,6 +16,9 @@ python -m pytest -q `
   reference/python/tests/test_v2l0_source_reclassification.py `
   reference/python/tests/test_v1_route_lock.py `
   reference/python/tests/test_v1_docs_consistency.py `
+  reference/python/tests/test_dg0_v2_module_boundaries.py `
+  reference/python/tests/test_dg7_runtime_boundaries.py `
+  reference/python/tests/test_geometry.py `
   reference/python/tests/test_architecture_language.py `
   reference/python/tests/test_terminology.py `
   reference/python/tests/test_repository_hygiene.py `

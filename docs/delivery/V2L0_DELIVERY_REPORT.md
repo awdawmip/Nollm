@@ -19,6 +19,8 @@ NOLLM_V2L0_LAYER_CONSTITUTION_AND_SOURCE_RECLASSIFICATION_TASK_20260707.md
 - Reclassified V1, MT1, pre-V2 prototypes, and OpenClaw as retired or frozen
   migration material.
 - Added V2L0-specific tests for constitution and source classification.
+- Migrated V1 route-lock and matrix legacy-governance tests toward canonical
+  V2 boundary documents rather than root-level legacy wording.
 
 ## Taskbook Record
 
@@ -62,3 +64,15 @@ external delivery receipt / acceptance audit
 
 The Git tree must not prewrite the final bundle SHA-256 because the bundle is
 created after the final code head and evidence ref are fixed.
+
+Pre-C2 evidence:
+
+```text
+V2L0-C1R candidate head: 242bf0d74c149309b66fa7e0ca97e6adfd36b6a1
+C1R fixed gate: 38 passed
+C1R public V2 regression: 109 passed
+```
+
+Pre-C2 evidence is retained only as candidate evidence. Final C2 delivery must
+be based on final-head fresh fixed gate, public regression, matrix, capsule, and
+bundle verification.

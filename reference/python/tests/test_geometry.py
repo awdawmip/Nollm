@@ -361,20 +361,34 @@ class GeometryBoundaryTests(unittest.TestCase):
         }
         self.assertTrue(imported_modules.isdisjoint(forbidden))
 
-    def test_policy_docs_allow_only_d1_pure_polygon_overlap(self) -> None:
+    def test_v2_geometry_policy_is_pure_deterministic_and_terminal_independent(self) -> None:
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
-        d1_doc = (ROOT / "docs" / "geometry" / "D1_PURE_GEOMETRY_KERNEL.md").read_text(
-            encoding="utf-8"
-        )
-        honeycomb = (ROOT / "protocol" / "HONEYCOMB_FIELD.md").read_text(encoding="utf-8")
+        layer = (ROOT / "protocol" / "v2" / "LAYER_CONSTITUTION.md").read_text(encoding="utf-8")
+        dependency_rules = (ROOT / "protocol" / "v2" / "MODULE_DEPENDENCY_RULES.md").read_text(encoding="utf-8")
 
-        combined = "\n".join([agents, d1_doc, honeycomb])
-        self.assertIn("Pure polygon overlap is permitted only inside the D1 geometry kernel", agents)
-        self.assertIn("Pure polygon overlap is allowed only inside the D1 geometry kernel", honeycomb)
-        self.assertIn("D1 is not recall. D1 is not placement.", d1_doc)
-        self.assertIn("geometry recall", combined)
-        self.assertIn("automatic card placement", combined)
-        self.assertIn("parent-child ownership", combined)
+        self.assertIn("DG1 Geometry Kernel is an L2 Deterministic Domain Service", layer)
+        self.assertIn("local charts", layer)
+        self.assertIn("regular-hex and axial transforms", layer)
+        self.assertIn("coverage-kernel overlap", layer)
+        self.assertIn("residual diagnostics", layer)
+        self.assertIn("Geometry constrains placement and reading; geometry does not replace fact", layer)
+        for phrase in (
+            "natural-language understanding",
+            "Evidence write or mutation",
+            "fact determination",
+            "trust determination",
+            "candidate discovery",
+            "promotion decision",
+            "admission placement invention",
+            "recall ranking",
+            "adapter import",
+            "terminal import",
+            "OpenClaw import",
+        ):
+            self.assertIn(phrase, layer)
+        self.assertIn("geometry -> adapters", dependency_rules)
+        self.assertIn("geometry -> OpenClaw", dependency_rules)
+        self.assertNotIn("Pure polygon overlap is permitted only inside the D1 geometry kernel", agents)
 
 
 def _distance(a: tuple[float, float], b: tuple[float, float]) -> float:

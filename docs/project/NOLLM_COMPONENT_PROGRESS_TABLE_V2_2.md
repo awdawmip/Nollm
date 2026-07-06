@@ -5,6 +5,9 @@
 | V2 layer constitution | L0 | V2L0 in progress | Establishes active Core-to-Terminal dependency direction. |
 | Evidence identity kernels | L1 | accepted components present | Preserve evidence identity and projection boundaries. |
 | Geometry and field services | L2 | accepted components present | Deterministic domain services only. |
+| DG5 | L2 validation | sealed / validation | Evidence-preserving trace compaction; does not replace original evidence or facts. |
+| DG6 | L2 validation | sealed / validation | Isolated verification-only snapshot-compaction projection; does not enter core recall or fact path. |
+| DG7 | L2 validation | sealed / validation | Explicit reference-runtime positive verification; not production runtime, daemon, network service, or terminal integration. |
 | Capture / Admission / Assembly workflows | L3 | accepted components present | Core workflows; no terminal or adapter ownership of facts. |
 | HX1 | L4 | accepted asset | Trusted host staged execution bridge and preflight binding. |
 | CX2 | L4 | accepted asset | External cortex conformance and public envelope boundary. |

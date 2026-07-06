@@ -101,13 +101,22 @@ def test_dg7_c1_04_c_absence_only_accepts_filenotfound() -> None:
         assert not any(token in payload for token in ("Traceback", "RuntimeError", "ValueError", "nollm.dream_geometry"))
 
 
-def test_dg7_c1_05_delivery_and_roadmap_facts_are_closed() -> None:
+def test_dg5_dg6_dg7_are_classified_in_component_progress_not_as_runtime() -> None:
     roadmap = Path("ROADMAP.md").read_text(encoding="utf-8")
+    progress = Path("docs/project/NOLLM_COMPONENT_PROGRESS_TABLE_V2_2.md").read_text(encoding="utf-8")
     delivery = Path("docs/delivery/DG7_DELIVERY_RECEIPT.md").read_text(encoding="utf-8")
 
-    assert "DG5: Evidence-preserving trace compaction capability is accepted at `5e91504d0f3961be9631856a8853a58ca6bd1921`" in roadmap
-    assert "DG6: Isolated snapshot compaction adapter is accepted at `47eca074045cede79d19b897ff4cae48dca23ab6`" in roadmap
-    assert "DG7: Explicit reference runtime positive verification is implemented" in roadmap
+    assert "DG5" in progress
+    assert "Evidence-preserving trace compaction" in progress
+    assert "does not replace original evidence or facts" in progress
+    assert "DG6" in progress
+    assert "Isolated verification-only snapshot-compaction projection" in progress
+    assert "does not enter core recall or fact path" in progress
+    assert "DG7" in progress
+    assert "Explicit reference-runtime positive verification" in progress
+    assert "not production runtime, daemon, network service, or terminal integration" in progress
+    assert "production runtime" not in roadmap.lower()
+    assert "core recall" not in roadmap.lower()
     assert "DG5: Evidence-preserving trace compaction capability is implemented as a finite, view-only CompressionPlan / CompactedTraceView with lossless expansion; final acceptance pending." not in roadmap
     assert "DG6 implemented; final acceptance pending." not in roadmap
     assert "main = origin/main = `47eca074045cede79d19b897ff4cae48dca23ab6` after fast-forward" in delivery

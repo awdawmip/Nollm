@@ -24,6 +24,23 @@ L2 owns deterministic domain services such as geometry, field, evidence
 preserving compaction, and finite verification kernels. L2 services may use L1
 identity contracts and L0 protocol terms only.
 
+DG1 Geometry Kernel is an L2 Deterministic Domain Service. Its role is
+structured geometric computation: local charts, regular-hex and axial transforms, coverage-kernel overlap, phase metrics, residual diagnostics, and
+bounded deterministic geometry reports.
+Geometry constrains placement and reading; geometry does not replace fact.
+
+DG1 does not perform natural-language understanding.
+DG1 does not perform Evidence write or mutation.
+DG1 does not perform fact determination.
+DG1 does not perform trust determination.
+DG1 does not perform candidate discovery.
+DG1 does not perform promotion decision.
+DG1 does not perform admission placement invention.
+DG1 does not perform recall ranking.
+DG1 does not perform adapter import.
+DG1 does not perform terminal import.
+DG1 does not perform OpenClaw import.
+
 ### L3 Core Workflow
 
 L3 owns Core workflows for Capture, Admission, Assembly, and Recall. L3
