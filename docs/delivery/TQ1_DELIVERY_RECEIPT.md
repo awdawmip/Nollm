@@ -13,8 +13,11 @@ Delivered:
 - Matrix-owned worktree root markers, per-shard worktree ownership markers, and non-destructive handling of pre-existing worktrees.
 - Failure-atomic cleanup: cleanup failure is recorded as a failed receipt and cannot be reported as passed.
 - Structured failure receipts for worktree existence, worktree add failure, fixture copy failure, fixture target mismatch, pytest startup failure, pytest failure, malformed JUnit, timeout, and cleanup state.
-- Successful receipts bind to the receipt schema, shard identity, actual JUnit `<testcase>` proof count, and no-failure cleanup state, and reject malformed suite `tests` attributes.
+- Successful receipts bind to the receipt schema, shard identity, actual JUnit `<testcase>` proof count, raw JUnit relative path, raw JUnit SHA-256, raw JUnit size, and no-failure cleanup state, and reject malformed suite `tests` attributes.
 - Verify proves that `receipts/` contains exactly the planned shard JSON files, rejects extra directories/files or missing receipts without deletion, and reports `receipt_json_count`.
+- Verify proves that `junit/` contains exactly the planned shard XML files, reparses and hashes each raw JUnit file, rejects JUnit deletion/tampering/extra entries without deletion, and reports `junit_xml_count`.
+- Verify treats a present `inputs/runtime_fixture_manifest.json` as frozen input evidence and rejects deletion, malformed JSON, non-regular paths, or manifest/snapshot mismatch.
+- `package_nollm_tq1_delivery_evidence.py` builds and verifies the parentless TQ1-C6 Delivery Evidence Capsule ref for the single final bundle.
 - `tools/run_nollm_test_matrix.ps1` with defaults under `C:\Users\chaos`.
 - Documentation for the complete matrix gate and delivery bundle directory convention.
 
@@ -25,10 +28,10 @@ Not delivered:
 - Replacement of `run_tests.py`; it remains a legacy single-process diagnostic command.
 - Any tracked source byte mirroring into detached shard worktrees.
 - Deletion of pre-existing or non-owned worktrees.
-- Git-bundled matrix receipts; final matrix evidence remains external under `C:\Users\chaos\nollm_test_runs`.
+- A second evidence bundle, ZIP, TAR, or sidecar delivery directory. TQ1-C6 final delivery uses one complete-history Git bundle that contains both the code ref and the Delivery Evidence Capsule ref.
 
-Future Nollm delivery bundles must be written outside the repository at:
+TQ1-C6 final delivery bundles must be written outside the repository at:
 
 ```text
-C:\Users\chaos\<bundle-name>.bundle
+C:\Users\chaos\nollm_tq1_c6_single_bundle_evidence_closure_20260706_<short-head>.bundle
 ```

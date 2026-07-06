@@ -164,6 +164,11 @@ def test_tq1_success_receipt_verifies_and_leaves_source_clean(tmp_path: Path) ->
     assert receipt["fixture_copy_verified"] is True
     assert "runtime_fixture_tree_fingerprint=absent" in verify.stdout
     assert "receipt_json_count=2" in verify.stdout
+    assert "junit_xml_count=2" in verify.stdout
+    assert receipt["junit_relative_path"] == "junit/s001.xml"
+    assert isinstance(receipt["junit_sha256"], str)
+    assert len(receipt["junit_sha256"]) == 64
+    assert receipt["junit_size_bytes"] > 0
 
 
 def test_tq1_c4_cleanup_return_failure_makes_failed_receipt(tmp_path: Path, monkeypatch) -> None:
@@ -299,7 +304,11 @@ def test_tq1_junit_count_mismatch_is_not_success(tmp_path: Path) -> None:
         "selection_fingerprint": "sha256:s",
         "selected_node_ids": shard["node_ids"],
         "selected_count": len(shard["node_ids"]),
+        "junit_relative_path": "junit/s001.xml",
+        "junit_sha256": "0" * 64,
+        "junit_size_bytes": 1,
         "junit_tests": 1,
+        "junit_reported_tests": 1,
         "timed_out": False,
         "worktree_cleanup": "removed",
     }
@@ -531,6 +540,131 @@ def test_tq1_c5_verify_rejects_extra_receipt_directory_and_non_json_without_dele
     assert "FULL_MATRIX_OK" not in result.stdout
     assert extra_dir.exists()
     assert extra_file.exists()
+
+
+def test_tq1_c6_verify_rejects_missing_junit_evidence(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, _receipt_path = _successful_single_shard_matrix(tmp_path)
+    junit = receipts / "junit" / "s001.xml"
+    junit.unlink()
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "junit_missing" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+    assert not junit.exists()
+
+
+def test_tq1_c6_verify_rejects_junit_content_hash_or_size_mismatch(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, _receipt_path = _successful_single_shard_matrix(tmp_path)
+    junit = receipts / "junit" / "s001.xml"
+    junit.write_text('<testsuite tests="1"><testcase classname="x" name="changed"/></testsuite>', encoding="utf-8")
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "junit_evidence_" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+
+
+def test_tq1_c6_verify_rejects_malformed_junit_evidence_without_raw_escape(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, _receipt_path = _successful_single_shard_matrix(tmp_path)
+    receipt_path = receipts / "receipts" / "s001.json"
+    junit = receipts / "junit" / "s001.xml"
+    junit.write_text("<testsuite><testcase classname='x' name='y'/></testsuite>", encoding="utf-8")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["junit_sha256"] = _sha256(junit)
+    receipt["junit_size_bytes"] = junit.stat().st_size
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "junit_evidence_malformed" in result.stderr
+    assert "KeyError" not in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+
+
+def test_tq1_c6_verify_rejects_extra_junit_entries_without_deleting(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, _receipt_path = _successful_single_shard_matrix(tmp_path)
+    extra_xml = receipts / "junit" / "s999.xml"
+    extra_txt = receipts / "junit" / "notes.txt"
+    extra_dir = receipts / "junit" / "extra_dir"
+    extra_xml.write_text("<testsuite tests='0'></testsuite>", encoding="utf-8")
+    extra_txt.write_text("not junit\n", encoding="utf-8")
+    extra_dir.mkdir()
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "extra_junit_entries" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+    assert extra_xml.exists()
+    assert extra_txt.exists()
+    assert extra_dir.exists()
+
+
+def test_tq1_c6_success_receipt_junit_evidence_tampering_is_rejected(tmp_path: Path) -> None:
+    matrix, repo, receipts, worktrees, plan, shard, receipt_path = _successful_single_shard_matrix(tmp_path)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["junit_relative_path"] = "junit/not-s001.xml"
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert matrix.validate_success_receipt(plan, shard, receipt) == "junit_evidence_path_mismatch"
+    assert result.returncode != 0
+    assert "junit_evidence_path_mismatch" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+
+
+def test_tq1_c6_verify_rejects_missing_runtime_fixture_manifest(tmp_path: Path) -> None:
+    repo, receipts, worktrees = _successful_fixture_present_matrix(tmp_path)
+    manifest = receipts / "inputs" / "runtime_fixture_manifest.json"
+    manifest.unlink()
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "runtime_fixture_manifest_missing" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+
+
+def test_tq1_c6_verify_rejects_runtime_fixture_manifest_mismatch(tmp_path: Path) -> None:
+    repo, receipts, worktrees = _successful_fixture_present_matrix(tmp_path)
+    manifest = receipts / "inputs" / "runtime_fixture_manifest.json"
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["files"][0]["sha256"] = "0" * 64
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "runtime_fixture_manifest_mismatch" in result.stderr
+    assert "FULL_MATRIX_OK" not in result.stdout
+
+
+def test_tq1_c6_fixture_present_success_verifies_junit_and_manifest(tmp_path: Path) -> None:
+    repo, receipts, worktrees = _successful_fixture_present_matrix(tmp_path)
+
+    verify = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+    receipt = json.loads((receipts / "receipts" / "s001.json").read_text(encoding="utf-8"))
+
+    assert verify.returncode == 0, verify.stderr
+    assert "FULL_MATRIX_OK" in verify.stdout
+    assert "junit_xml_count=1" in verify.stdout
+    assert "runtime_fixture_tree_fingerprint=sha256:" in verify.stdout
+    assert receipt["junit_sha256"] == _sha256(receipts / "junit" / "s001.xml")
+
+
+def test_tq1_c6_fixture_absent_success_does_not_require_present_manifest(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, _receipt_path = _successful_single_shard_matrix(tmp_path)
+
+    verify = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+
+    assert verify.returncode == 0, verify.stderr
+    assert "runtime_fixture_tree_fingerprint=absent" in verify.stdout
+    assert not (receipts / "inputs" / "runtime_fixture_manifest.json").exists()
 
 
 def test_tq1_c4_marker_write_failure_records_add_and_cleanup(tmp_path: Path, monkeypatch) -> None:
@@ -890,6 +1024,31 @@ def _successful_single_shard_matrix(tmp_path: Path):
     plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
     shard = plan["shards"][0]
     return matrix, repo, receipts, worktrees, plan, shard, receipts / "receipts" / "s001.json"
+
+
+def _successful_fixture_present_matrix(tmp_path: Path):
+    repo = _tiny_repo(
+        tmp_path,
+        {
+            ".gitignore": "out/\n",
+            "tests/test_runtime.py": "from pathlib import Path\n\ndef test_runtime_seed():\n    assert Path('out/nollm_runtime/seed.txt').read_text(encoding='utf-8') == 'A'\n",
+        },
+    )
+    _write(repo / "out" / "nollm_runtime" / "seed.txt", "A")
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts), "--target-node-count", "1"], cwd=repo).returncode == 0
+    run = _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", "s001"], cwd=repo)
+    assert run.returncode == 0, run.stderr
+    verify = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
+    assert verify.returncode == 0, verify.stderr
+    return repo, receipts, worktrees
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _tiny_repo(tmp_path: Path, files: dict[str, str]) -> Path:

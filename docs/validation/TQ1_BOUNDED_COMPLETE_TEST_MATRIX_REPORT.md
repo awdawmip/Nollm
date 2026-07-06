@@ -114,3 +114,31 @@ TQ1-C5 closes the final receipt-proof semantics:
 The final TQ1-C5 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c5`; earlier C4 receipts are
 not final closure evidence.
+
+## TQ1-C6 JUnit, Frozen Input, And Single-Bundle Evidence Closure
+
+TQ1-C6 closes the final evidence transport and raw-proof semantics:
+
+- Successful receipts bind the exact `junit/<shard>.xml` relative path,
+  SHA-256, size, reparsed testcase count, schema, shard identity, fingerprints,
+  runtime fixture attestations, worktree ownership, removed cleanup state, and
+  null failure fields.
+- `verify` rejects missing, extra, malformed, edited, or unbound JUnit XML
+  before `FULL_MATRIX_OK`; raw JUnit files are primary proof, not disposable
+  logs or receipt-only summaries.
+- When a runtime fixture is present, `verify` reparses
+  `inputs/runtime_fixture_manifest.json` and proves it equals the canonical
+  manifest regenerated from the frozen snapshot tree.
+- The final successful output includes both `receipt_json_count` and
+  `junit_xml_count`.
+- `package_nollm_tq1_delivery_evidence.py` creates a parentless Delivery
+  Evidence Capsule ref at `refs/nollm-delivery/tq1-c6/<final-code-head>` using
+  a temporary Git index, without changing the code branch or source index.
+- The final TQ1-C6 delivery is a single complete-history Git bundle containing
+  the code ref and the evidence ref; the capsule contains raw matrix plan,
+  root marker, all receipts, all JUnit XML, frozen fixture evidence, gate logs,
+  manifests, inventories, and true `FULL_MATRIX_OK` output.
+
+The final TQ1-C6 matrix must use fresh receipts under
+`C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c6`; earlier C5 receipts are
+not final closure evidence.

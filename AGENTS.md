@@ -454,6 +454,22 @@ When adding examples, keep path semantics clear and runnable from the documented
 
 This file is intended as local agent guidance unless the project owner explicitly decides to publish it.
 
+## TQ1 delivery evidence
+
+TQ1-C6 final delivery uses one complete-history Git bundle outside the
+repository. That bundle must include both the final code ref and the parentless
+Delivery Evidence Capsule ref:
+
+```text
+refs/nollm-delivery/tq1-c6/<final-code-head>
+```
+
+Do not treat an external receipt root path as sufficient final delivery after
+TQ1-C6. Operational receipts, JUnit XML, frozen runtime fixture evidence, gate
+logs, manifests, inventory, and `FULL_MATRIX_OK` output must be sealed into the
+capsule ref with byte-level inventory verification, without adding a second
+code-branch commit for evidence.
+
 Before uploading to GitHub, exclude local/private/dev artifacts such as:
 
 ```text

@@ -193,7 +193,9 @@ def command_verify(args: argparse.Namespace) -> int:
     seen: dict[str, str] = {}
     duplicates: list[str] = []
     failures = receipt_inventory_failures(receipt_root, plan)
+    failures.extend(junit_inventory_failures(receipt_root, plan))
     receipt_json_count = len(plan["shards"]) if not failures else 0
+    junit_xml_count = len(plan["shards"]) if not failures else 0
     if not failures:
         for shard in plan["shards"]:
             path = receipt_path(receipt_root, shard["shard_id"])
@@ -203,6 +205,10 @@ def command_verify(args: argparse.Namespace) -> int:
                 failures.append({"shard_id": shard["shard_id"], "reason": "malformed_receipt"})
                 continue
             issue = validate_success_receipt(plan, shard, receipt)
+            if issue is not None:
+                failures.append({"shard_id": shard["shard_id"], "reason": issue})
+                continue
+            issue = validate_junit_evidence(receipt_root, shard, receipt)
             if issue is not None:
                 failures.append({"shard_id": shard["shard_id"], "reason": issue})
                 continue
@@ -231,6 +237,7 @@ def command_verify(args: argparse.Namespace) -> int:
     print(f"shards={len(plan['shards'])}")
     print(f"passed={len(plan['shards'])}")
     print(f"receipt_json_count={receipt_json_count}")
+    print(f"junit_xml_count={junit_xml_count}")
     print(f"collection_fingerprint={plan['collection_fingerprint']}")
     print(f"matrix_fingerprint={plan['manifest_fingerprint']}")
     print(f"runtime_fixture_manifest_fingerprint={plan['runtime_fixture']['manifest_fingerprint']}")
@@ -311,6 +318,9 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
     returncode = -1
     timed_out = False
     junit_reported_tests = None
+    junit_relative_path = f"junit/{shard_id}.xml"
+    junit_sha256 = None
+    junit_size_bytes = None
     current_stage = "worktree_preflight"
     try:
         if worktree.exists():
@@ -334,8 +344,13 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         try:
             current_stage = "junit_parse"
             junit_reported_tests = parse_junit_tests(junit) if junit.exists() else None
+            if junit_reported_tests is not None:
+                junit_sha256 = file_sha256(junit)
+                junit_size_bytes = junit.stat().st_size
         except JUNIT_PARSE_ERRORS:
             junit_reported_tests = None
+            junit_sha256 = None
+            junit_size_bytes = None
             status = "failed"
             reason = "junit_missing_or_malformed"
             returncode = 1 if returncode == 0 else returncode
@@ -398,6 +413,9 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "selected_node_ids": shard["node_ids"],
         "selected_count": len(shard["node_ids"]),
         "junit_path": str(junit),
+        "junit_relative_path": junit_relative_path,
+        "junit_sha256": junit_sha256,
+        "junit_size_bytes": junit_size_bytes,
         "junit_tests": junit_reported_tests,
         "junit_reported_tests": junit_reported_tests,
         "returncode": returncode,
@@ -602,6 +620,14 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
         return "selected_node_ids_mismatch"
     if receipt.get("selected_count") != len(shard["node_ids"]):
         return "selected_count_mismatch"
+    if receipt.get("junit_relative_path") != f"junit/{shard['shard_id']}.xml":
+        return "junit_evidence_path_mismatch"
+    junit_sha256 = receipt.get("junit_sha256")
+    if not isinstance(junit_sha256, str) or not is_lower_sha256_hex(junit_sha256):
+        return "junit_evidence_hash_mismatch"
+    junit_size_bytes = receipt.get("junit_size_bytes")
+    if not isinstance(junit_size_bytes, int) or junit_size_bytes < 0:
+        return "junit_evidence_size_mismatch"
     if receipt.get("junit_tests") != len(shard["node_ids"]):
         return "junit_count_mismatch"
     if receipt.get("junit_reported_tests") != len(shard["node_ids"]):
@@ -749,6 +775,17 @@ def assert_runtime_fixture_snapshot_matches_plan(receipt_root: Path, plan: dict[
     manifest = runtime_manifest_payload("present", entries)
     if fingerprint(entries) != runtime_fixture["tree_fingerprint"] or fingerprint(manifest) != runtime_fixture["manifest_fingerprint"]:
         raise MatrixError("fixture_snapshot_drift", "runtime fixture snapshot drifted")
+    manifest_path = receipt_root / "inputs" / "runtime_fixture_manifest.json"
+    if not manifest_path.exists():
+        raise MatrixError("runtime_fixture_manifest_missing", "runtime fixture manifest is missing")
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise MatrixError("runtime_fixture_manifest_not_regular", "runtime fixture manifest is not a regular file")
+    try:
+        recorded_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeError, OSError) as exc:
+        raise MatrixError("runtime_fixture_manifest_malformed", "runtime fixture manifest is malformed", {"message": stable_error(exc)})
+    if recorded_manifest != manifest:
+        raise MatrixError("runtime_fixture_manifest_mismatch", "runtime fixture manifest does not match frozen snapshot")
 
 
 def build_runtime_manifest_entries(root: Path) -> list[dict[str, Any]]:
@@ -975,6 +1012,54 @@ def receipt_inventory_failures(receipt_root: Path, plan: dict[str, Any]) -> list
     return failures
 
 
+def junit_inventory_failures(receipt_root: Path, plan: dict[str, Any]) -> list[dict[str, Any]]:
+    junit_dir = receipt_root / "junit"
+    expected_names = {f"{shard['shard_id']}.xml" for shard in plan["shards"]}
+    if not junit_dir.exists() or not junit_dir.is_dir() or junit_dir.is_symlink():
+        return [{"reason": "junit_inventory_malformed", "path": str(junit_dir)}]
+    actual_names: set[str] = set()
+    extra_entries: list[str] = []
+    for entry in sorted(junit_dir.iterdir(), key=lambda item: item.name):
+        if entry.is_symlink() or not entry.is_file():
+            extra_entries.append(entry.name)
+            continue
+        if entry.name not in expected_names:
+            extra_entries.append(entry.name)
+            continue
+        actual_names.add(entry.name)
+    failures: list[dict[str, Any]] = []
+    for name in sorted(expected_names - actual_names):
+        failures.append({"shard_id": name.removesuffix(".xml"), "reason": "junit_missing", "junit": name})
+    if extra_entries:
+        failures.append({"reason": "extra_junit_entries", "entries": extra_entries})
+    return failures
+
+
+def validate_junit_evidence(receipt_root: Path, shard: dict[str, Any], receipt: dict[str, Any]) -> str | None:
+    expected_relative = f"junit/{shard['shard_id']}.xml"
+    if receipt.get("junit_relative_path") != expected_relative:
+        return "junit_evidence_path_mismatch"
+    junit_path = receipt_root / expected_relative
+    if not junit_path.exists() or junit_path.is_symlink() or not junit_path.is_file():
+        return "junit_missing"
+    try:
+        size_bytes = junit_path.stat().st_size
+        actual_sha256 = file_sha256(junit_path)
+    except OSError:
+        return "junit_evidence_malformed"
+    if receipt.get("junit_size_bytes") != size_bytes:
+        return "junit_evidence_size_mismatch"
+    if receipt.get("junit_sha256") != actual_sha256:
+        return "junit_evidence_hash_mismatch"
+    try:
+        actual_tests = parse_junit_tests(junit_path)
+    except JUNIT_PARSE_ERRORS:
+        return "junit_evidence_malformed"
+    if actual_tests != len(shard["node_ids"]) or receipt.get("junit_tests") != actual_tests or receipt.get("junit_reported_tests") != actual_tests:
+        return "junit_evidence_count_mismatch"
+    return None
+
+
 def wait_with_deadline(process: subprocess.Popen[str], timeout_seconds: float) -> bool:
     deadline = time.monotonic() + max(0.0, timeout_seconds)
     while process.poll() is None:
@@ -1124,6 +1209,14 @@ def fingerprint(value: Any) -> str:
 
     data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def is_lower_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
 
 
 def tail(text: str) -> str:

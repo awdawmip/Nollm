@@ -12,9 +12,10 @@ matrix-owned isolated worktree, and verify proves the receipt directory
 inventory is exactly the planned shard JSON set with no missing, duplicate,
 stale, extra, timed-out, malformed, failed, unowned, or drifted receipt.
 Successful shard receipts bind to the receipt schema, shard identity, actual
-JUnit `<testcase>` proof count, and no-failure cleanup state, with suite
-`tests` attributes parsed and rejected when malformed, not to a planned count
-echoed by the runner.
+JUnit `<testcase>` proof count, raw JUnit relative path, raw JUnit SHA-256,
+raw JUnit size, and no-failure cleanup state, with suite `tests` attributes
+parsed and rejected when malformed, not to a planned count echoed by the
+runner.
 ```
 
 The canonical commands are:
@@ -52,5 +53,24 @@ receipt contents. Extra JSON files, non-JSON files, directories, symlinks,
 special files, and missing planned receipts are verification failures and are
 not deleted or adopted. A successful verify output includes
 `receipt_json_count=<planned-shard-count>`.
+
+`verify` must also reject malformed JUnit inventories before accepting
+successful receipts. The `junit/` directory must contain exactly the planned
+`sNNN.xml` files; each file is read, hashed, sized, reparsed, and compared to
+the success receipt's JUnit evidence fields and selected node count. Deleting,
+replacing, or editing a JUnit XML file after shard execution prevents
+`FULL_MATRIX_OK`.
+
+When a runtime fixture is present, the frozen
+`inputs/runtime_fixture_manifest.json` file is primary input evidence. Verify
+rebuilds the canonical manifest from the frozen snapshot tree and rejects a
+missing, malformed, non-regular, or mismatched manifest even when the receipt
+fields still claim success.
+
+TQ1-C6 delivery uses one complete-history Git bundle containing both the final
+code ref and a parentless Delivery Evidence Capsule ref:
+`refs/nollm-delivery/tq1-c6/<final-code-head>`. The capsule carries the raw
+final matrix plan, root marker, all receipts, all JUnit XML, frozen runtime
+fixture evidence, gate logs, manifest, inventory, and `FULL_MATRIX_OK` output.
 
 The protocol does not change Nollm production behavior and does not introduce runtime, OpenClaw, network, LLM/NLP, database, cache, daemon, global discovery, or automatic admission behavior.
