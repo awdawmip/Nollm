@@ -34,7 +34,31 @@ baseline, accepted unpromoted HAG1-C1R boundary, no remote operations, no
 production implementation edits, V2 as the only active architecture, OpenClaw
 as frozen migration asset, and V1/MT1/pre-V2 prototypes as retired history.
 
-## Evidence
+## Final Evidence Lookup
 
-Final commit, matrix evidence ref, bundle path, and bundle verification are
-reported with the delivery response.
+Final code head:
+
+```text
+<finalHead>
+```
+
+Final evidence ref:
+
+```text
+refs/nollm-delivery/tq1-c7r/<finalHead>
+```
+
+Authoritative final matrix facts:
+
+```text
+parentless evidence capsule
+```
+
+Bundle filename and SHA-256:
+
+```text
+external delivery receipt / acceptance audit
+```
+
+The Git tree must not prewrite the final bundle SHA-256 because the bundle is
+created after the final code head and evidence ref are fixed.

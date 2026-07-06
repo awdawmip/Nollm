@@ -1,7 +1,14 @@
 # V2 Legacy Boundary
 
-V2 is the active Nollm architecture. V1, MT1, and pre-V2 prototype material is
-retired history unless a later task explicitly authorizes migration work.
+V2 is the only active architecture. `protocol/v2` is the only active protocol
+root. V1, MT1, and pre-V2 prototype material is retired history unless a later
+task explicitly authorizes migration work.
+
+Allowed dependency direction:
+
+```text
+L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
+```
 
 ## Physical Presence Is Not Active
 
@@ -19,7 +26,7 @@ treated as the current Nollm runtime.
 
 ## Adapter and Terminal Boundary
 
-HCG is an accepted L5 File Capture Adapter. HAG1-C1R is an accepted but
+HCG1 is an accepted L5 File Capture Adapter. HAG1-C1R is an accepted but
 unpromoted L5 File Admission Adapter candidate. Adapter source may translate
 host inputs through L4 contracts; it may not own Core facts.
 

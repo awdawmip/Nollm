@@ -45,7 +45,7 @@ DC1.
 ### L5 Host Adapter Family
 
 L5 owns host-specific adapters that translate explicit host inputs into L4
-contracts. HCG is an accepted L5 File Capture Adapter.
+contracts. HCG1 is an accepted L5 File Capture Adapter.
 HAG1-C1R is an accepted but unpromoted L5 File Admission Adapter. HAG1-C1R remains a candidate at
 `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`.
 
@@ -121,5 +121,5 @@ V2 protocol documents are the active compatibility surface. Historical V1, MT1,
 and pre-V2 prototype material may remain in the repository as retired history.
 Physical presence is not active API status.
 
-OpenClaw is a frozen migration asset for future L5/L6 work. It is not an active
-Core dependency or current runtime path.
+OpenClaw legacy is a frozen L5/L6 migration asset for future adapter or terminal
+work. It is not an active Core dependency or current runtime path.

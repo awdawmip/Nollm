@@ -35,27 +35,33 @@ IGNORED_SUFFIXES = {
 
 
 class TerminologyTests(unittest.TestCase):
-    def test_openclaw_example_exists_and_obsolete_namespace_is_absent(self) -> None:
+    def test_openclaw_is_classified_as_migration_asset_and_obsolete_namespace_is_absent(self) -> None:
         forbidden_terms = forbidden_terms_from_contract()
 
-        self.assertTrue((ROOT / "examples" / "openclaw").is_dir())
+        openclaw_boundary = ROOT / "docs" / "history" / "OPENCLAW_V2_MIGRATION_ASSET_BOUNDARY.md"
+        layer_constitution = ROOT / "protocol" / "v2" / "LAYER_CONSTITUTION.md"
+        self.assertTrue(openclaw_boundary.is_file())
+        self.assertTrue(layer_constitution.is_file())
         self.assertFalse((ROOT / "examples" / ("lob" + "ster")).exists())
 
-        openclaw_hits = []
         docs_or_protocol_hits = []
         forbidden_hits = collect_forbidden_hits(text_files(ROOT), forbidden_terms)
+        boundary_text = openclaw_boundary.read_text(encoding="utf-8")
+        constitution_text = layer_constitution.read_text(encoding="utf-8")
+
+        self.assertIn("OpenClaw legacy is a frozen L5/L6 migration asset", boundary_text)
+        self.assertIn("not the current Nollm runtime path", boundary_text)
+        self.assertIn("L5 Host Adapter or L6 Terminal", constitution_text + "\n" + boundary_text)
 
         for path in text_files(ROOT):
             text = path.read_text(encoding="utf-8", errors="ignore")
             lower_text = text.lower()
             if "openclaw" in lower_text:
-                openclaw_hits.append(path)
                 if is_doc_or_protocol(path):
                     docs_or_protocol_hits.append(path)
             if "protocol/terminology.md" in lower_text and is_doc_or_protocol(path):
                 docs_or_protocol_hits.append(path)
 
-        self.assertTrue(openclaw_hits, "expected at least one OpenClaw/openclaw example")
         self.assertTrue(docs_or_protocol_hits, "expected documentation to mention OpenClaw or terminology")
         self.assertEqual(forbidden_hits, [])
 

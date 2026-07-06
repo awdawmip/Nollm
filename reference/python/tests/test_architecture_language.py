@@ -24,7 +24,7 @@ class ArchitectureLanguageTests(unittest.TestCase):
             "Core does not import adapters or terminals",
             "Adapters translate",
             "Terminals present",
-            "OpenClaw is a frozen migration asset",
+            "OpenClaw legacy is a frozen L5/L6 migration asset",
         ]:
             self.assertIn(phrase, corpus)
 

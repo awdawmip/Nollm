@@ -1,7 +1,7 @@
 # OpenClaw V2 Migration Asset Boundary
 
-OpenClaw material is preserved as a frozen migration asset for possible future
-L5 Host Adapter or L6 Terminal work.
+OpenClaw legacy is a frozen L5/L6 migration asset. OpenClaw material is
+preserved for possible future L5 Host Adapter or L6 Terminal work.
 
 ## Current Status
 

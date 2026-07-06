@@ -6,13 +6,11 @@ from conftest import cleanup_generated_python_artifacts
 
 
 ROOT = Path(__file__).resolve().parents[3]
-ALLOWED_RECALL_FIXTURES = {
-    "examples/openclaw/recalls/sample_recall_digest.json",
-    "examples/openclaw/recalls/sample_recall_digest.md",
-}
 REQUIRED_FIXTURES = {
-    "examples/audit_reports/openclaw_audit.json",
-    *ALLOWED_RECALL_FIXTURES,
+    "protocol/v2/LAYER_CONSTITUTION.md",
+    "docs/project/NOLLM_SOURCE_TOPOLOGY_V2.md",
+    "docs/history/V1_RETIREMENT_RECORD.md",
+    "docs/history/OPENCLAW_V2_MIGRATION_ASSET_BOUNDARY.md",
 }
 FIXTURE_EXTENSIONS = {".json", ".jsonl", ".md", ".yaml", ".yml"}
 
@@ -27,7 +25,6 @@ def test_repository_tree_has_no_generated_artifacts() -> None:
         path
         for pattern in ("examples/openclaw/recalls/recall_*.json", "examples/openclaw/recalls/recall_*.md")
         for path in relative_paths(ROOT.glob(pattern))
-        if path not in ALLOWED_RECALL_FIXTURES
     )
 
     assert sorted(generated) == []
@@ -60,6 +57,11 @@ def test_canonical_test_command_is_documented() -> None:
         text = path.read_text(encoding="utf-8")
         assert "python3 run_tests.py" in text or "python run_tests.py" in text
         assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" in text
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "legacy-inclusive repository diagnostic" in readme
+    assert "not the primary V2 component acceptance gate" in readme
+    assert "TQ1 matrix" in readme
+    assert "parentless evidence capsule" in readme
 
 
 def relative_paths(paths) -> list[str]:

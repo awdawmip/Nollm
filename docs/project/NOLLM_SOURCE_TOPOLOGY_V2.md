@@ -22,7 +22,7 @@ This topology classifies repository source by active V2 layer role.
 
 ## Adapter Source
 
-- HCG is accepted as an L5 File Capture Adapter.
+- HCG1 is accepted as an L5 File Capture Adapter.
 - HAG1-C1R is accepted but unpromoted as an L5 File Admission Adapter candidate
   at `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`.
 

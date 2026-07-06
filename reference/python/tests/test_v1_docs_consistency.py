@@ -4,32 +4,27 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-
-MAJOR_DOCS = (
+ROOT_DOCS = (
     ROOT / "README.md",
     ROOT / "ARCHITECTURE.md",
     ROOT / "ROADMAP.md",
+    ROOT / "AGENTS.md",
 )
-
-STABLE_ACTIONS = (
+BOUNDARY_DOCS = (
+    ROOT / "protocol" / "v2" / "LAYER_CONSTITUTION.md",
+    ROOT / "protocol" / "v2" / "LEGACY_BOUNDARY.md",
+    ROOT / "docs" / "history" / "V1_RETIREMENT_RECORD.md",
+    ROOT / "docs" / "history" / "OPENCLAW_V2_MIGRATION_ASSET_BOUNDARY.md",
+)
+ACTIVE_NAVIGATION_FORBIDDEN = (
+    "Nollm V1 Route Lock",
+    "Stable historical V1 tool actions",
     "nollm.validate",
     "nollm.orient",
-    "nollm.recall",
-    "nollm.read_card",
-    "nollm.inspect",
-    "nollm.review",
-    "nollm.annotate",
-    "nollm.annotations",
-    "nollm.ledger",
-    "nollm.history",
-    "nollm.audit",
-)
-
-INTERNAL_ACTIONS = (
     "nollm.surface",
     "nollm.focus",
-    "nollm.write_card",
-    "nollm.update_status",
+    "nollm.cli",
+    "examples/openclaw",
 )
 
 
@@ -37,63 +32,49 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_major_docs_share_v1_route_lock_language() -> None:
-    required = (
-        "Nollm V1 Route Lock",
-        "Nollm V1 Core exposes explicit filesystem-backed objects",
-        "Nollm V1 Core does not compose context",
-        "Cortex / LLM",
-    )
-    for path in MAJOR_DOCS:
+def test_boundary_documents_exist_for_v2_retirement_classification() -> None:
+    missing = [path.relative_to(ROOT).as_posix() for path in BOUNDARY_DOCS if not path.is_file()]
+
+    assert missing == []
+
+
+def test_root_and_boundary_docs_agree_on_v2_active_protocol() -> None:
+    for path in (*ROOT_DOCS, *BOUNDARY_DOCS[:2]):
         text = read(path)
-        for phrase in required:
-            assert phrase in text, f"{path}: missing {phrase!r}"
+
+        assert "V2 is the only active architecture" in text
+        assert "protocol/v2" in text or path.name == "LAYER_CONSTITUTION.md"
+        assert "L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0" in text
 
 
-def test_readme_and_tool_surface_list_stable_v1_tool_actions() -> None:
-    for path in (ROOT / "README.md", ROOT / "protocol" / "TOOL_SURFACE.md"):
+def test_openclaw_is_classified_as_migration_asset_not_runtime() -> None:
+    corpus = "\n".join(read(path) for path in (*ROOT_DOCS, *BOUNDARY_DOCS))
+
+    assert "OpenClaw legacy is a frozen L5/L6 migration asset" in corpus
+    assert "not current runtime" in corpus
+    assert "not the current Nollm runtime path" in corpus
+    assert "not a Core dependency" in corpus
+    assert "L5 Host Adapter or L6 Terminal" in corpus
+
+
+def test_root_docs_do_not_depend_on_v1_cli_tool_actions_or_openclaw_fixtures() -> None:
+    for path in ROOT_DOCS:
         text = read(path)
-        for action in STABLE_ACTIONS:
-            assert action in text, f"{path}: missing stable action {action}"
+        offenders = [phrase for phrase in ACTIVE_NAVIGATION_FORBIDDEN if phrase in text]
+
+        assert offenders == [], f"{path} uses retired V1 material as active navigation: {offenders}"
 
 
-def test_internal_actions_are_labeled_internal_or_experimental() -> None:
-    for path in (ROOT / "README.md", ROOT / "protocol" / "TOOL_SURFACE.md"):
-        text = read(path)
-        for action in INTERNAL_ACTIONS:
-            index = text.find(action)
-            assert index >= 0, f"{path}: missing internal action {action}"
-            context = text[max(0, index - 160) : index + 240].lower()
-            assert "internal" in context or "experimental" in context, f"{path}: {action} is not labeled"
-
-
-def test_known_limitations_file_exists_and_matches_roadmap() -> None:
-    limitations = read(ROOT / "docs" / "V1_KNOWN_LIMITATIONS.md").replace("`", "")
-    roadmap = read(ROOT / "ROADMAP.md").replace("`", "")
-    required = (
-        "Unicode/mojibake terminology guard remains deferred.",
-        "No GitHub Actions yet.",
-        "No formal CONTRIBUTING.md yet.",
-        "No public AGENTS.example.md yet.",
-        "Packaging remains simple.",
-        "Generated-output recall examples are isolated and should be run against temp notebooks.",
-        "SQLite audit projection remains future research, not V1 runtime.",
-        "MCP remains future consideration, not V1.",
+def test_legacy_presence_is_not_current_stable_or_parallel_active_status() -> None:
+    corpus = "\n".join(read(path) for path in (*ROOT_DOCS, *BOUNDARY_DOCS)).lower()
+    forbidden = (
+        "v1 is active runtime",
+        "v1 is the active runtime",
+        "stable v1",
+        "current v1",
+        "parallel active",
+        "openclaw is integrated",
+        "openclaw runtime is active",
     )
-    for phrase in required:
-        assert phrase in limitations
-        assert phrase in roadmap
 
-
-def test_forbidden_context_surface_is_not_documented_as_available() -> None:
-    docs = "\n".join(
-        read(path)
-        for path in (
-            ROOT / "README.md",
-            ROOT / "docs" / "integration" / "LLM_INTEGRATION.md",
-            ROOT / "protocol" / "TOOL_SURFACE.md",
-        )
-    )
-    assert "nollm.context" not in docs
-    assert "deterministic context bundle is implemented" not in docs.lower()
-    assert "orient -> surface -> focus -> recall" not in docs
+    assert [phrase for phrase in forbidden if phrase in corpus] == []

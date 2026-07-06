@@ -6,14 +6,11 @@ This repository is Nollm:
 
 > Not an LLM. A notebook for LLMs.
 
-Nollm is a structured external notebook protocol for language models.
+V2 is the only active architecture. `protocol/v2` is the only active protocol root.
 
-## Active Architecture
+V1 / MT1 / pre-V2 prototype source remains physically present as retired history; see docs/history/ for classification and migration boundaries.
 
-V2 is the only active architecture for new work. V1, MT1, and pre-V2 prototype
-content is retired history unless a task explicitly authorizes migration work.
-
-The active layers are:
+## Active Layers
 
 ```text
 L0 Constitution and Protocol
@@ -32,67 +29,38 @@ L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
 ```
 
 Core does not import adapters or terminals. Adapters translate and bind host
-surfaces; they do not own facts. Terminals present workflows; they do not bypass
+surfaces; they do not own facts. Terminals present workflows and do not bypass
 L4 Host Contract and Execution Bridge.
 
 ## Current Classification
 
-- `protocol/v2/` is the normative V2 protocol namespace.
 - `reference/python/nollm/dream_geometry/` is V2 Core and domain source; do not
   add terminal, runtime, OpenClaw, network, database, cache, LLM, NLP, embedding,
   or global discovery dependencies there.
-- HCG is an accepted L5 File Capture Adapter.
-- HAG1-C1R is accepted but unpromoted at
-  `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; do not merge or modify it unless
-  a later task explicitly authorizes that.
-- OpenClaw is a frozen migration asset for possible future L5/L6 work, not the
-  current Nollm runtime.
+- HCG1 is an accepted L5 File Capture Adapter.
+- HAG1-C1R is an accepted and unpromoted L5 File Admission Adapter candidate at
+  `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; V2L0-C1R does not merge or modify
+  it.
+- V2L0-C1R neither merges nor modifies HAG1-C1R.
+- OpenClaw legacy is a frozen L5/L6 migration asset, not current runtime.
 
-## Required Validation Commands
+## Validation Guidance
 
-Before reporting completion of ordinary repository tasks, run from
-`reference/python` when applicable:
+Ordinary V2 repository work uses component-local pytest gates and explicitly
+scoped public V2 regression gates for the affected components.
 
-```powershell
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"
-python run_tests.py
-python -m nollm.cli validate ../../examples/openclaw
-python -m nollm.cli audit ../../examples/openclaw
-```
+`python run_tests.py` is a legacy-inclusive repository diagnostic. It is not
+the primary V2 component acceptance gate and is not evidence that V1 is active architecture.
 
-For delivery-grade complete-suite verification after TQ1, use the bounded
-complete test matrix outside the repository under:
+Delivery-grade acceptance uses the TQ1 complete test matrix, parentless
+evidence capsule, `verify-ref`, and a complete-history Git bundle.
 
-```text
-C:\Users\chaos\nollm_test_runs\<git-commit>\<matrix-id>\
-C:\Users\chaos\nollm_test_worktrees\<git-commit>\<matrix-id>\
-```
+## Delivery Bundle Convention
 
-Delivery bundles must be complete-history bundles outside the repository, for
-example under `C:\Users\chaos\`.
-
-Delivery bundle convention:
+Delivery bundles must be created outside the repository:
 
 ```text
 C:\Users\chaos\<bundle-name>.bundle
 ```
-
-## Development Rules
-
-Preserve deterministic outputs, file-first evidence, exact identity boundaries,
-and the V2 layer dependency direction. Do not add LLM calls, embeddings, vector
-databases, graph databases, SQLite-backed recall, network services, runtime
-activation, OpenClaw integration, or terminal bypasses unless a task explicitly
-authorizes that scope.
-
-Pure polygon overlap is permitted only inside the D1 geometry kernel.
-
-Dream Geometry V2 Route Lock remains the historical name for the owner-approved
-V2 geometry direction; V2L0 now classifies it under the active layer
-constitution.
-
-The V2 amendment is active under V2L0. The historical phrase "parallel, not yet integrated" is retained only as retired wording.
-
-Pure polygon overlap is not geometry recall and is not automatic card placement.
 
 Do not place delivery bundles inside the repository or under repo/out.

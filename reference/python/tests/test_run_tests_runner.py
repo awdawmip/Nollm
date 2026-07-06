@@ -40,3 +40,16 @@ def test_tq1_matrix_self_tests_do_not_use_bare_subprocess_run() -> None:
     forbidden = "subprocess." + "run("
 
     assert forbidden not in text
+
+
+def test_root_docs_classify_runner_as_diagnostic_not_v2_acceptance_gate() -> None:
+    docs = "\n".join((ROOT / path).read_text(encoding="utf-8") for path in ("README.md", "AGENTS.md"))
+
+    assert "legacy-inclusive repository diagnostic" in docs
+    assert "not the primary V2 component acceptance gate" in docs
+    assert "not evidence that V1 is active architecture" in docs
+    assert "TQ1 complete test matrix" in docs or "TQ1 matrix" in docs
+    assert "parentless evidence capsule" in docs
+    assert "verify-ref" in docs
+    assert "nollm.cli" not in docs
+    assert "examples/openclaw" not in docs

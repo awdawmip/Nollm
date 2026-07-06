@@ -8,7 +8,7 @@
 | Capture / Admission / Assembly workflows | L3 | accepted components present | Core workflows; no terminal or adapter ownership of facts. |
 | HX1 | L4 | accepted asset | Trusted host staged execution bridge and preflight binding. |
 | CX2 | L4 | accepted asset | External cortex conformance and public envelope boundary. |
-| HCG | L5 | accepted | File Capture Adapter. |
+| HCG1 | L5 | accepted | File Capture Adapter. |
 | HAG1-C1R | L5 | accepted, unpromoted | File Admission Adapter candidate at `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`. |
 | OpenClaw | L5/L6 future | frozen migration asset | Not current runtime and not Core dependency. |
 | V1 / MT1 / pre-V2 prototypes | historical | retired | Preserved for audit and migration reference only. |

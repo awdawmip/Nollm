@@ -18,6 +18,28 @@ The fixed V2L0 gate covers:
 - package hygiene and test runner assertions.
 
 The public V2 regression gate covers CI1, CX1, HCG1, HX1, and HXA1 tests named
-by the V2L0 task.
+by the V2L0-C1R task.
 
-Final command output is recorded in the delivery evidence and final response.
+Final code head:
+
+```text
+<finalHead>
+```
+
+Final evidence ref:
+
+```text
+refs/nollm-delivery/tq1-c7r/<finalHead>
+```
+
+Authoritative final matrix facts:
+
+```text
+parentless evidence capsule
+```
+
+Bundle filename and SHA-256:
+
+```text
+external delivery receipt / acceptance audit
+```

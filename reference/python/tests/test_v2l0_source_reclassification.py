@@ -40,9 +40,9 @@ def test_legacy_and_openclaw_are_reclassified_as_inactive_material() -> None:
         "V1, MT1, and pre-V2 prototype",
         "retired history",
         "Physical presence is not active",
-        "OpenClaw is a frozen migration asset",
+        "OpenClaw legacy is a frozen L5/L6 migration asset",
         "not the current Nollm runtime",
-        "HCG is an accepted L5 File Capture Adapter",
+        "HCG1 is an accepted L5 File Capture Adapter",
         "HAG1-C1R is accepted but unpromoted",
     ]:
         assert phrase in corpus
@@ -53,14 +53,51 @@ def test_root_docs_do_not_preserve_v1_current_navigation_phrases() -> None:
 
     forbidden = [
         "stable v1",
-        "v1 is the active",
-        "v1 is active",
+        "v1 is the active runtime",
+        "v1 is active runtime",
         "current architecture (v1 legacy state)",
         "dream geometry v2 (parallel, not yet integrated)",
         "not yet replacing v1",
         "openclaw provider is current nollm memory core",
     ]
     assert [phrase for phrase in forbidden if phrase in corpus] == []
+
+
+def test_root_docs_do_not_list_executable_v1_tool_or_cli_routes() -> None:
+    root_docs = DOC_PATHS[:4]
+    forbidden = (
+        "nollm.validate",
+        "nollm.orient",
+        "nollm.surface",
+        "nollm.focus",
+        "nollm.recall",
+        "nollm.read_card",
+        "nollm.write_card",
+        "nollm.cli",
+        "examples/openclaw",
+    )
+    for path in root_docs:
+        text = read(path)
+        offenders = [phrase for phrase in forbidden if phrase in text]
+
+        assert offenders == [], f"{path} lists retired V1 entrypoints: {offenders}"
+
+
+def test_replacement_concepts_are_active_v2_classification() -> None:
+    corpus = "\n".join(read(path) for path in DOC_PATHS)
+
+    for phrase in (
+        "protocol/v2",
+        "only active protocol root",
+        "OpenClaw legacy is a frozen L5/L6 migration asset",
+        "not current runtime",
+        "HCG1 is an accepted L5 File Capture Adapter",
+        "HAG1-C1R is accepted but unpromoted",
+        "V2L0-C1R neither merges nor modifies HAG1-C1R",
+    ):
+        assert phrase in corpus
+
+    assert "register" not in corpus.lower() or "V1 CLI" not in corpus
 
 
 def test_dream_geometry_source_has_no_outward_adapter_or_terminal_imports() -> None:

@@ -18,10 +18,6 @@ def load_checker():
 
 def test_package_hygiene_script_passes_clean_temp_tree(tmp_path: Path) -> None:
     checker = load_checker()
-    (tmp_path / "examples" / "openclaw" / "recalls").mkdir(parents=True)
-    (tmp_path / "examples" / "openclaw" / "recalls" / "sample_recall_digest.json").write_text("{}", encoding="utf-8")
-    (tmp_path / "examples" / "audit_reports").mkdir(parents=True)
-    (tmp_path / "examples" / "audit_reports" / "openclaw_audit.json").write_text("{}", encoding="utf-8")
 
     assert checker.find_issues(tmp_path) == []
 
@@ -45,6 +41,11 @@ def test_package_hygiene_allows_runtime_release_archives_only(tmp_path: Path) ->
     assert checker.find_issues(tmp_path) == ["leaked.zip"]
 
 
-def test_release_docs_exist() -> None:
-    assert (ROOT / "docs" / "V1_RELEASE_CHECKLIST.md").exists()
-    assert (ROOT / "docs" / "V1_RELEASE_NOTES_DRAFT.md").exists()
+def test_v2_source_topology_and_retirement_records_exist() -> None:
+    required = (
+        ROOT / "docs" / "project" / "NOLLM_SOURCE_TOPOLOGY_V2.md",
+        ROOT / "docs" / "history" / "V1_RETIREMENT_RECORD.md",
+        ROOT / "docs" / "history" / "OPENCLAW_V2_MIGRATION_ASSET_BOUNDARY.md",
+    )
+
+    assert [path for path in required if not path.exists()] == []
