@@ -59,3 +59,20 @@ C1R public V2 regression: 109 passed
 Pre-C2 evidence is not final C2 acceptance evidence. C2 final evidence must use
 the final code head, fresh fixed gate, fresh public V2 regression, fresh matrix,
 and fresh parentless evidence capsule.
+
+## C3 RC Hash Rebaseline
+
+C2 candidate head:
+
+```text
+beb7f50c3272f768437a0952f9231150a1168cbe
+```
+
+C2 completed legacy-governance test migration but did not produce final
+acceptance evidence. C3 only rebaselines the historical Engineering RC hash
+manifest entry for `reference/python/tests/test_geometry.py` because the
+complete TQ1 matrix still collects that historical RC artifact integrity suite.
+
+The rebaseline does not change V1/MT1/prototype retired classification, does
+not make Engineering RC a current V2 runtime, and does not change HAG1-C1R's
+accepted / unpromoted status.

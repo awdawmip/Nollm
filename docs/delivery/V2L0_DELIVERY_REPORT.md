@@ -76,3 +76,20 @@ C1R public V2 regression: 109 passed
 Pre-C2 evidence is retained only as candidate evidence. Final C2 delivery must
 be based on final-head fresh fixed gate, public regression, matrix, capsule, and
 bundle verification.
+
+## C3 RC Hash Rebaseline
+
+C2 candidate head:
+
+```text
+beb7f50c3272f768437a0952f9231150a1168cbe
+```
+
+C2 completed legacy-governance test migration but had no final evidence because
+the complete matrix still collected a historical Engineering RC artifact hash
+check. C3 only rebaselines the `reference/python/tests/test_geometry.py`
+canonical hash record in the historical RC hash manifest.
+
+This rebaseline preserves historical matrix integrity. It does not restore V1
+navigation, does not make Engineering RC a current V2 runtime, does not activate
+OpenClaw or runtime services, and does not merge or promote HAG1-C1R.

@@ -2,7 +2,21 @@
 
 ## Scope
 
-This receipt records the fixed V2L0-C2 validation gate definition.
+This receipt records the fixed V2L0-C3 validation gate definition.
+
+## Engineering RC Focused Integrity Gate
+
+```powershell
+python -m pytest -q `
+  reference/python/tests/test_engineering_rc_artifact_hashes.py `
+  reference/python/tests/test_engineering_rc_export.py `
+  reference/python/tests/test_engineering_rc_archive.py `
+  reference/python/tests/test_engineering_rc_final_smoke.py
+```
+
+The raw result is recorded externally for final evidence. If the sealed packager
+cannot accept an additional log slot, this receipt records the focused gate as a
+required C3 external delivery audit artifact.
 
 ## Gate
 

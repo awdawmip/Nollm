@@ -258,8 +258,8 @@
     },
     {
       "path": "reference/python/tests/test_geometry.py",
-      "sha256": "14aa996e021b058db0d5ee7e73ce638ab78a704e5a364ee734c72f7cf14a7861",
-      "size_bytes": 17375
+      "sha256": "af3502745a0300f3f0b9f1ee05ee8b27babd71e5d9461c407722c8ed4d3aab59",
+      "size_bytes": 17999
     },
     {
       "path": "reference/python/tests/test_geometry_profiles.py",
