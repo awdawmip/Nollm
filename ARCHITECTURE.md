@@ -1,156 +1,100 @@
-# Architecture
+# Nollm Architecture
 
-Nollm treats Architecture is the Index as a design constraint. A memory is oriented through source files, cards, anchor fields, addresses, and ledger events, not through hidden model state or opaque retrieval machinery.
+V2 is the only active architecture for Nollm. Older V1, MT1, and pre-V2
+prototype material is retained only as retired history, audit evidence, and
+migration input.
 
-Required principles:
+## Layer Constitution
 
-- Not an LLM.
-- Architecture is the Index.
-- Anchor is Field, not Folder.
-- Recall is Scale Scan, not Tree Descent.
-- SQLite is Audit Projection, not Memory.
+The active dependency model is Core to Terminal by layers:
 
-Nollm is a layered rotating honeycomb memory field. Anchors are column fields / semantic fields crossing layers. Cards exist at every scale as durable memory expressions. Recall is scale scanning, not tree descent, and there is no absolute leaf layer.
+```text
+L0 Constitution and Protocol
+L1 Evidence and Identity Kernel
+L2 Deterministic Domain Services
+L3 Core Workflow
+L4 Host Contract and Execution Bridge
+L5 Host Adapter Family
+L6 Terminal and Product
+```
 
-## Dream Geometry V2 (parallel, not yet integrated)
+Allowed dependency direction:
 
-The V2 amendment in `docs/architecture/NOLLM_GEOMETRY_ARCHITECTURE_AMENDMENT_V2_ATLAS_COVERAGE_KERNELS_20260629.md` defines the target Dream Geometry route where it conflicts with older Anchor-oriented V1 descriptions.
+```text
+L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
+```
 
-V2 is being established as a parallel namespace and protocol boundary. It has not replaced V1, is not production recall, and is not an OpenClaw runtime path. The DG0 goal is pure module separation, stable contracts, and dependency firewalls.
+No inward layer may import an outward layer. In particular:
 
-The V2 target is a local cellular atlas with directed `K↑ / K↓` (`K_up` / `K_down`) coverage kernels, verified chart transforms, temporary Query Probes, exact Evidence fallback, and internal Field/Core gravity. The old external Anchor selection path is V1 legacy and is not the V2 target architecture.
+- Core facts are established by L0-L3 contracts and domain services.
+- L4 binds trusted hosts to exact contracts and execution receipts.
+- L5 adapters translate explicit host files, requests, or envelopes.
+- L6 terminals present product workflows and own terminal message identity.
 
-Pure geometry verifiability comes before semantics, adapters, and runtime integration.
+Core does not know OpenClaw, command-line products, UI terminals, sessions, or
+host-specific adapters.
 
-## V1 Legacy Core / Runtime
+## Business Path View
 
-## Layers
+The business paths are vertical flows across the layers:
 
-### Nollm Core
+- Capture: explicit content to bounded capture state and receipt.
+- Admission: explicit candidate to accepted admission record.
+- Assembly: verified admission records to finite field snapshot and recall
+  universe contracts.
 
-Core defines the durable notebook:
+The paths are not layers. A Capture implementation can include L1 facts, L3
+workflow, L4 host binding, and L5 adapter code without collapsing those
+responsibilities into one namespace.
 
-- Cards in Markdown.
-- Anchors in YAML.
-- Aliases in YAML.
-- Ledger events in JSONL.
-- Recall digests in Markdown or JSON.
-- Memory addresses as deterministic references.
-- Statuses and action records.
+## Identity Boundaries
 
-Core must be boring by design. It should validate, append, and expose records without interpreting them creatively.
+V2 keeps these identifiers distinct:
 
-For v0.1, promotion to `confirmed` requires explicit human approval. Policy-event confirmation is deferred until a later version defines it strictly.
+- real evidence identity: byte-level or object-level identity of source evidence;
+- host request ID: identity assigned by the trusted host or adapter envelope;
+- terminal message ID: identity assigned by a product or terminal surface;
+- CX2 projection reference: public envelope projection identity, not Core fact
+  ownership.
 
-### Nollm Cortex
+Adapters may translate these identifiers into structured envelopes. They must
+not rewrite evidence identity or make terminal identity authoritative over Core
+facts.
 
-Cortex is the orientation layer used by an LLM or prompt wrapper:
+## Current Accepted Source
 
-- Identifies active anchor fields.
-- Reads cards by address.
-- Writes new cards according to policy.
-- Summarizes recall material into digest form.
-- Proposes drafts, candidates, or status changes for approval.
-- Keeps model-side reasoning separate from Core truth.
+The local main baseline for V2L0 is
+`8bb324a3a5de46bebb6eadd217820627a971e2a0`. Main and remote state are
+machine-local facts and must be rechecked before any delivery.
 
-Cortex may be adaptive. Core must remain stable.
+HCG is an accepted L5 File Capture Adapter. HAG1-C1R is accepted but unpromoted
+at `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; V2L0 does not merge it. HX1 and
+CX2 remain L4 host contract and external cortex conformance assets. DC1 is the
+deterministic Cortex compiler component; it is not the external model-side
+Cortex policy.
 
-## Index Principle
+## Legacy Boundary
 
-Architecture is the Index. The durable architecture is expressed by Markdown, YAML, JSONL, card fields, anchor fields, addresses, and ledger events. SQLite, if used, is only an optional audit projection, not memory.
+Historical V1, MT1, OpenClaw, and pre-V2 prototype files may remain physically
+present. They are not active architecture, active API, active runtime, or an
+implicit dependency source for V2 Core work.
+OpenClaw is a frozen migration asset for future L5/L6 work.
 
-`search` may help an implementation inspect files, but the cognitive interface remains anchor-field-oriented: orient, surface, focus, recall. Conceptually, this is scale scan, not tree descent.
+## Retired V1 Compatibility Appendix
 
-The current runtime remains filesystem-first and deterministic. It does not implement honeycomb geometry, coordinate placement, or a visualization engine.
+This section preserves historical V1 route-lock language for audit tests. It is
+not active architecture.
 
-## Audit Projection
-
-P6.0 audit reports are deterministic file-first projections over cards, anchors, ledger events, recall digests, validation results, honeycomb metadata, and scale-scan metadata.
-
-Audit output is rebuildable and disposable. It is not memory, not a recall index, and not source of truth. Deleting audit output must not change recall behavior.
-
-P6.0 does not introduce SQLite. SQLite, if ever added, remains optional audit projection only.
-
-## Exclusions For v0.1
-
-Nollm v0.1 excludes embeddings, vector stores, graph backends, automatic ontology generation, autonomous memory mutation, and external LLM extraction pipelines.
-
-## MT1 Archive Publication Boundary
-
-MT1 archive ingest is deterministic Core plumbing. Raw source archive blobs are immutable evidence; ArchiveManifest v4 derives source-entry identity and source state from source policy, archived bytes, and an opaque workspace identity, preserving original path provenance even when bytes are identical. Publication packages are active candidates only after a complete archive-bound predicate validates. HEAD is a last-written atomic pointer, protected by SafeStorage writes, a publish journal, fenced single-writer locking, and compare-and-swap rules.
-
-Ingress, handoff, ledger, and migration reports are audit workflow records. They cannot authorize active memory, rollback, or replacement.
-
-MT1-R11 closes the storage boundary around immutable snapshot identity, operation-level containment, canonical source inventory, sealed ingress, validated publication packages, atomic HEAD activation, and serialized finalization/recovery. SafeStorage separates opening an existing memory root from initializing one, rejects symlink/reparse/hard-link authoritative artifacts, writes through same-directory temporary files, and returns structured failures. Self-hashes are not signatures; unknown authoritative fields are rejected rather than treated as extension channels.
-
-## Nollm V1 Route Lock
+Nollm V1 Route Lock
 
 Nollm V1 Core exposes explicit filesystem-backed objects, deterministic validation, audit projections, and tool surfaces.
 
 Nollm V1 Core does not compose context, rank semantics, infer truth, or perform autonomous memory management.
 
-Core:
+Cortex / LLM owned context composition in retired V1 documentation.
+V1 ledger/history inspection remains historical terminology.
 
-- explicit object read/write surfaces
-- validation
-- deterministic audit/audit-check
-- scale-scan recall digest
-- active inspection metadata
-- annotation ledger
-- ledger/history inspection
-- tool bridge
-
-Cortex / LLM:
-
-- context composition
-- deciding what to read next
-- interpreting recall
-- deciding how to use annotations/history
-- proposing writes
-- resolving ambiguity
-
-## V1 Allowed Surface
-
-V1 CLI commands:
-
-- `validate`
-- `orient`
-- `recall`
-- `read`
-- `inspect`
-- `review`
-- `annotate`
-- `annotations`
-- `ledger`
-- `history`
-- `audit`
-- `audit-check`
-- `tool`
-
-Stable V1 tool actions:
-
-- `nollm.validate`
-- `nollm.orient`
-- `nollm.recall`
-- `nollm.read_card`
-- `nollm.inspect`
-- `nollm.review`
-- `nollm.annotate`
-- `nollm.annotations`
-- `nollm.ledger`
-- `nollm.history`
-- `nollm.audit`
-
-Internal or experimental tool actions that remain available but are not the V1 external surface: `nollm.surface`, `nollm.focus`, `nollm.write_card`, `nollm.update_status`, and `nollm.read_card` legacy `card_id_or_address` input compatibility. They must preserve the same Core boundaries and must not introduce new V1 concepts.
-
-Compatibility labels:
-
-- `review` remains compatibility naming for active inspection.
-- `inspect` is preferred.
-- `read_card` is explicit single-card read.
-- context composition is not a Core action.
-
-## V1 Explicit Non-Goals
+Retired V1 non-goals:
 
 - No SQLite runtime.
 - No database-backed recall.

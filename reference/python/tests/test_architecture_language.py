@@ -8,10 +8,10 @@ ROOT = Path(__file__).resolve().parents[3]
 DOCS = [
     ROOT / "README.md",
     ROOT / "ARCHITECTURE.md",
-    ROOT / "protocol" / "HONEYCOMB_FIELD.md",
-    ROOT / "protocol" / "ANCHOR_FIELD.md",
-    ROOT / "protocol" / "SCALE_SCAN.md",
-    ROOT / "cortex" / "CORTEX_PROMPT.md",
+    ROOT / "ROADMAP.md",
+    ROOT / "AGENTS.md",
+    ROOT / "protocol" / "v2" / "LAYER_CONSTITUTION.md",
+    ROOT / "protocol" / "v2" / "LEGACY_BOUNDARY.md",
 ]
 
 
@@ -19,11 +19,12 @@ class ArchitectureLanguageTests(unittest.TestCase):
     def test_required_architecture_phrases_are_present(self) -> None:
         corpus = "\n".join(path.read_text(encoding="utf-8") for path in DOCS)
         for phrase in [
-            "Anchor is Field, not Folder",
-            "Recall is Scale Scan, not Tree Descent",
-            "SQLite is Audit Projection",
-            "Layered rotating honeycomb memory field",
-            "22.5",
+            "V2 is the only active architecture",
+            "L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0",
+            "Core does not import adapters or terminals",
+            "Adapters translate",
+            "Terminals present",
+            "OpenClaw is a frozen migration asset",
         ]:
             self.assertIn(phrase, corpus)
 

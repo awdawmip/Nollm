@@ -1,15 +1,32 @@
 # V2 Legacy Boundary
 
-V1 remains a frozen legacy/runtime path for DG0. Existing anchor and scale-scan behavior is not deleted or rewritten.
+V2 is the active Nollm architecture. V1, MT1, and pre-V2 prototype material is
+retired history unless a later task explicitly authorizes migration work.
 
-V2 changes the target architecture:
+## Physical Presence Is Not Active
 
-- Local cellular atlas, not a strict scheme.
-- `K_up` and `K_down` are directed coverage kernels.
-- Cell overlap is not a chart morphism.
-- Verified transform is the groupoid arrow.
-- Gravity is not an external anchor.
-- Query Probe is temporary and isomorphic to write-side growth.
-- Evidence, Trace, and Cover stay distinct.
+Historical source files, examples, reports, and protocol drafts may remain in
+the repository for auditability. Their presence does not make them active API,
+active runtime, active architecture, or an allowed dependency source for V2
+Core work.
 
-OpenClaw, sidecar, native memory, plugin install, trial, rollback, and real memory paths are out of scope until later runtime verification tasks.
+## OpenClaw Boundary
+
+OpenClaw material is a frozen migration asset. It may inform future L5 Host
+Adapter or L6 Terminal work only after an explicit task authorizes that
+migration. OpenClaw must not be imported by L0-L3 V2 Core code and must not be
+treated as the current Nollm runtime.
+
+## Adapter and Terminal Boundary
+
+HCG is an accepted L5 File Capture Adapter. HAG1-C1R is an accepted but
+unpromoted L5 File Admission Adapter candidate. Adapter source may translate
+host inputs through L4 contracts; it may not own Core facts.
+
+Terminal or product work belongs to L6 and must pass through L5/L4. No terminal
+surface may call Core workflow as a private shortcut.
+
+## Retired Source Boundary
+
+Retired V1 and MT1 material must not be deleted or moved by V2L0. Future
+cleanup, migration, or removal requires a separate task with explicit scope.

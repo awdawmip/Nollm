@@ -1,352 +1,111 @@
 # Nollm
 
-Not an LLM. A notebook for LLMs.
+Nollm means:
 
-Nollm is a structured external notebook protocol for LLMs. It gives a model a stable way to write, read, locate, and recall memory without turning the notebook into an agent, a model, a vector database, or an automatic knowledge system.
+> Not an LLM. A notebook for LLMs.
 
-## Architecture Principles
+Nollm is a structured external notebook protocol for language models. The
+active project architecture is V2. V1, MT1, and pre-V2 prototypes remain in the
+repository only as retired history and migration reference material.
 
-- Not an LLM.
-- Architecture is the Index.
-- Anchor is Field, not Folder.
-- Recall is Scale Scan, not Tree Descent.
-- SQLite is Audit Projection, not Memory.
+## Active Architecture
 
-Nollm is aligned around a layered rotating honeycomb memory field. Anchors are column fields / semantic fields that cross layers. Cards are durable memory expressions at every scale. Recall scans across scale, re-evaluating active anchor fields, rather than descending a tree.
+V2 is the only active architecture for repository navigation, implementation
+planning, and acceptance routing.
 
-There is no absolute leaf layer. The stable reference runtime remains filesystem-first and deterministic; it does not perform geometry recall or automatic card placement. D-series reference modules contain experimental Dream Geometry records and diagnostics outside the stable V1 tool surface.
+The horizontal dependency layers are:
 
-DR1 adds a read-only Dream Geometry Recall Resolver foundation in the reference
-modules. It consumes explicit DC1/DE1/DG1/DG2 objects and returns an ephemeral
-RecallDigest; it does not add runtime recall, OpenClaw integration, persistence,
-semantic search, vector search, or automatic context composition.
+- L0 Constitution and Protocol
+- L1 Evidence and Identity Kernel
+- L2 Deterministic Domain Services
+- L3 Core Workflow
+- L4 Host Contract and Execution Bridge
+- L5 Host Adapter Family
+- L6 Terminal and Product
 
-P5.1 preserves and validates optional card metadata for layer, hex coordinates, anchor fields, and scale links. Core stores these fields as auditable memory metadata; Cortex may interpret them during orientation.
+Dependencies move inward only:
 
-## V4 Engineering Gravity Decision
-
-The decided V4 engineering direction is documented in `NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md`.
-Supporting engineering drafts live in `docs/roadmap/NOLLM_ENGINEERING_ROADMAP_V4_20260616.md`,
-`docs/engineering/NOLLM_MINIMUM_DATA_MODEL_20260616.md`,
-`docs/experiments/NOLLM_MINIMAL_ABLATION_EXPERIMENT_PLAN_20260616.md`,
-`docs/geometry/NOLLM_TRUE_TILING_ENGINEERING_REQUIREMENTS_20260616.md`, and the gravity protocol stubs under `protocol/`.
-
-These documents are decision drafts for the next experimental engineering phase.
-They do not expand the stable V1 recall/tool surface, do not enable automatic card writing,
-and do not map `drift_class` to trust or status.
-
-The G-series engineering scaffold is frozen for external evaluation in
-`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_FREEZE_20260618.md`.
-The final RC audit, evaluator guide, and export manifest live in
-`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_AUDIT_20260618.md`,
-`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EVALUATION_GUIDE_20260618.md`, and
-`docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_EXPORT_MANIFEST_20260618.md`.
-
-## What Nollm Is
-
-- A card-based memory structure.
-- An anchor-field-oriented recall system.
-- A ledgered and auditable external memory.
-- A protocol for memory addresses, statuses, actions, recall digests, and write discipline.
-
-## What Nollm Is Not
-
-- An LLM.
-- A RAG framework.
-- A vector database.
-- A knowledge graph engine.
-- An agent runtime.
-- A self-improving memory agent.
-- An automatic memory system.
-
-## Core And Cortex
-
-Nollm Core is dumb, stable, deterministic, and auditable. It defines files, schemas, addresses, anchors, cards, ledgers, and recall digests.
-
-Nollm Cortex is model-side and prompt-side. It helps an LLM orient itself, compose anchors, decide what to read or write, and produce recall digests from Core material.
-
-Core stores. Cortex orients.
-
-Core confirmations require explicit operator approval in v0.1. Cortex may propose drafts, candidates, and recall digests, but it must not silently mutate Core.
-
-Nollm is LLM-first. Human inspection is optional, active, and ledgered. Human input is an operator action, not an oracle.
-
-## Source Of Truth
-
-Markdown, YAML, and JSONL are the project identity. SQLite, if used, is only an optional audit projection.
-
-Nollm v0.1 does not include embeddings, vector databases, graph providers, external LLM extraction, automatic ontology generation, or autonomous memory mutation.
-
-For canonical English/Chinese terminology and project namespace rules, see `protocol/TERMINOLOGY.md`.
-
-## V1 Spec Freeze
-
-Nollm V1 is scoped and frozen around explicit filesystem-backed objects, deterministic validation, audit projections, and JSON tool envelopes. Core stores, validates, reads, appends ledgered operator actions, and produces derived audit/recall outputs. Core does not compose context, rank related cards, infer truth, or run autonomous memory workflows.
-
-## Reference CLI
-
-V1 includes a minimal filesystem-first Python CLI in `reference/python`.
-
-Run without installing:
-
-```powershell
-cd path\to\nollm\reference\python
-python -m nollm.cli init .\demo-notebook --notebook demo
-python -m nollm.cli validate .\demo-notebook
-python -m nollm.cli recall .\demo-notebook "filesystem memory"
+```text
+L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
 ```
 
-POSIX shell:
+Core does not import adapters or terminals. Adapters translate host surfaces and
+do not own Core facts. Terminals present product interactions and must not
+bypass the L4 Host Contract and Execution Bridge.
 
-```bash
+## Business Paths
+
+Capture, Admission, and Assembly are vertical business paths. They are not
+replacement names for the horizontal layers.
+
+- Capture accepts explicit content from a host and produces bounded capture
+  state such as DreamShard and CaptureReceipt.
+- Admission accepts explicit candidates, decisions, growth, and placement to
+  produce AdmissionRecord.
+- Assembly and Recall consume verified admissions through explicit finite
+  assembly and recall contracts.
+
+## Source Classification
+
+- `protocol/v2/` is the normative V2 constitution and boundary namespace.
+- `reference/python/nollm/dream_geometry/` contains accepted V2 Core work and
+  sealed implementations that must not depend on terminal or adapter code.
+- HCG is an accepted L5 File Capture Adapter.
+- HAG1-C1R is an accepted but unpromoted L5 File Admission Adapter candidate at
+  `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; V2L0 does not merge or modify it.
+- OpenClaw is a frozen migration asset for possible future L5/L6 adapter and
+  terminal work. It is not the current Nollm runtime path.
+- Historical V1, MT1, and pre-V2 prototype files are preserved for audit and
+  migration reference. Their physical presence is not an active API.
+
+Local `main`, `origin/main`, and accepted component heads must be rechecked on
+the machine performing a delivery. This document does not promote remote state.
+
+## Validation
+
+The legacy single-process diagnostic remains documented for repository hygiene:
+
+```powershell
 cd reference/python
-python -m nollm.cli init ./demo-notebook --notebook demo
-python -m nollm.cli validate ./demo-notebook
-python -m nollm.cli recall ./demo-notebook "filesystem memory"
-python -m nollm.cli audit ./demo-notebook
-python -m nollm.cli inspect ./demo-notebook
-python -m nollm.cli annotate ./demo-notebook card-id --note "Needs source verification."
-python -m nollm.cli annotations ./demo-notebook card-id
-python -m nollm.cli ledger ./demo-notebook --object-id card-id --limit 20
-python -m nollm.cli history ./demo-notebook card-id
-```
-
-Cortex-side read flow:
-
-```bash
-python -m nollm.cli orient ./demo-notebook "why not turn Nollm into Cognee"
-python -m nollm.cli inspect ./demo-notebook --anchor project:demo
-python -m nollm.cli recall ./demo-notebook "why not turn Nollm into Cognee"
-```
-
-Run tests:
-
-```powershell
-cd path\to\nollm\reference\python
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"
 python run_tests.py
 ```
 
-Use the project test command so ambient pytest plugins do not affect Nollm tests. The runner sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, runs every test file in deterministic order, and applies a hard timeout to each group.
+Equivalent environment marker: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`.
 
-The reference CLI uses only the Python standard library and keeps Markdown, YAML, JSONL, and JSON as source-of-truth files.
+Delivery-grade matrix evidence after TQ1 is produced outside the repository
+under `C:\Users\chaos\nollm_test_runs\...` and sealed into a delivery bundle.
 
-Release packaging is source-first and simple. Before packaging, review `docs/V1_RELEASE_CHECKLIST.md` and run `python3 scripts/check_package_hygiene.py ../..` from `reference/python`.
+## Retired V1 Compatibility Appendix
 
-Audit reports are deterministic derived projections over notebook files. They are not memory, not a recall index, and not source of truth. The stable JSON contract is documented in `protocol/AUDIT_SCHEMA.md`; the OpenClaw golden snapshot lives at `examples/audit_reports/openclaw_audit.json`. Audit schema stability is for inspection and governance, not memory or recall.
+This appendix preserves historical V1 route-lock language for tests and audit
+navigation. It does not make V1 active.
 
-Compare current audit output with a snapshot:
-
-```bash
-python -m nollm.cli audit-check ./demo-notebook --against ../../examples/audit_reports/openclaw_audit.json
-```
-
-`audit-check` is read-only and CI-friendly: exit code `0` means no drift, `1` means drift detected, and `2` means invalid input or schema error. Audit drift is structural inspection drift only; it is not semantic correctness, memory, recall, or a hidden index.
-
-## JSON Tool Bridge
-
-V1 includes a dependency-free JSON bridge for external LLM tool callers. It is not an MCP server and does not start a network service.
-
-```bash
-python -m nollm.cli tool ../../../examples/tool_requests/orient.json
-python -m nollm.cli tool ../../../examples/tool_requests/inspect_openclaw.json
-```
-
-Tool requests use the `nollm.tool.v0.1` envelope and return structured `ok: true` or `ok: false` JSON responses.
-Optional `request_id`, `actor`, and `actor_type` fields are echoed or ledgered where appropriate.
-
-Top-level examples in `examples/tool_requests/*.json` are safe against committed OpenClaw. Generated-output examples, including recall examples that may write `recall_*.json` or `recall_*.md`, live under `examples/tool_requests/generated_output_examples/` and should be run against temporary notebook copies.
-
-## Using Nollm From External LLM Tools
-
-Recommended stable read flow:
-
-```text
-orient -> inspect/read/ledger/history as needed -> recall when a digest is useful
-```
-
-For one-shot use, call `nollm.recall`. For controlled multi-step use, call `nollm.orient`, then explicit stable reads such as `nollm.inspect`, `nollm.read_card`, `nollm.ledger`, or `nollm.history`. Cortex / the LLM composes any resulting context outside Core.
-
-External LLM tools should write only candidate cards unless a human explicitly approves a later status update. Nollm is not a RAG engine, autonomous memory agent, or MCP server.
-
-## Explicit Read
-
-`read_card` reads exactly one explicit card. `read_card` is not recall. `read_card` is not context composition. `read_card` does not return neighbors. `read_card` does not rank related cards.
-
-Core does not assemble deterministic context. Context composition belongs to Cortex / LLM using explicit calls. If an LLM needs context, it should make explicit read/inspect/history/ledger/recall calls and compose outside Core.
-
-Surface relation:
-
-- `read` / `read_card` = explicit object read
-- `inspect` / `review` = active metadata surface
-- `history` = object-level ledger trail
-- `ledger` = ledger query
-- `annotations` = annotation listing
-- `recall` = scale-scan digest
-- context composition = Cortex-side, not Core
-
-## Active Inspection
-
-Use `inspect` to inspect draft and candidate cards matching active metadata filters:
-
-```bash
-python -m nollm.cli inspect ./demo-notebook
-python -m nollm.cli inspect ./demo-notebook --status candidate --type decision --limit 20
-```
-
-Inspect is a deterministic active inspection surface. It does not judge truth, approve cards, confirm memory, block reads, or replace the `status` command. `confirmed` does not mean factually true, and `human-approved` does not prove factual truth. See `protocol/REVIEW.md`.
-
-External tools should call the same surface with `nollm.inspect`.
-
-`review` remains a compatibility command; its semantics are active inspection.
-
-## Operator Annotations
-
-Use `annotate` to append operator notes to the ledger for an existing card:
-
-```bash
-python -m nollm.cli annotate ./demo-notebook card-id --note "Needs source verification." --annotation-type source_request
-python -m nollm.cli annotations ./demo-notebook card-id --limit 20
-```
-
-Annotations are operator notes. Annotations are ledgered. Annotations do not modify card content, change status, change trust, prove truth, approve memory, block LLM usage, or create passive human review. Annotations are active operator actions, not recall inputs.
-
-Audit may count annotations. Inspect/review may show `annotation_count`. Annotation text is not recall content. Annotation text does not change status or trust. Annotation text does not prove truth. Annotation counts are not semantic risk scores. annotation_count means there are operator notes, not that a card is more or less reliable.
-
-External tools can call `nollm.annotate` and `nollm.annotations`. Mutating annotation examples live under `examples/tool_requests/templates/` so committed OpenClaw examples remain stable.
-
-## Ledger And History
-
-Use `ledger` to query compact ledger events and `history` to inspect the ledger trail for one card:
-
-```bash
-python -m nollm.cli ledger ./demo-notebook --object-id card-id --limit 20
-python -m nollm.cli history ./demo-notebook card-id
-```
-
-Ledger is an audit trail, not memory recall. History is object-level ledger inspection. Ledger/history do not prove truth, approve memory, change status, change trust, or perform semantic scoring. Ledger/history are read-only unless an explicit write action such as annotate/status is used.
-
-Annotation text may appear in history because history is explicit audit inspection, but annotation text is still not recall content.
-
-## Nollm V1 Route Lock
+Nollm V1 Route Lock
 
 Nollm V1 Core exposes explicit filesystem-backed objects, deterministic validation, audit projections, and tool surfaces.
 
 Nollm V1 Core does not compose context, rank semantics, infer truth, or perform autonomous memory management.
 
-Core:
+Cortex / LLM owned context composition in the retired V1 framing. V1 ledger/history inspection remains historical terminology.
 
-- explicit object read/write surfaces
-- validation
-- deterministic audit/audit-check
-- scale-scan recall digest
-- active inspection metadata
-- annotation ledger
-- ledger/history inspection
-- tool bridge
+Stable historical V1 tool actions:
 
-Cortex / LLM:
+- `nollm.validate`
+- `nollm.orient`
+- `nollm.recall`
+- `nollm.read_card`
+- `nollm.inspect`
+- `nollm.review`
+- `nollm.annotate`
+- `nollm.annotations`
+- `nollm.ledger`
+- `nollm.history`
+- `nollm.audit`
 
-- context composition
-- deciding what to read next
-- interpreting recall
-- deciding how to use annotations/history
-- proposing writes
-- resolving ambiguity
+Internal or experimental historical actions:
 
-## V1 Allowed Surface
-
-| CLI command | Tool action | Read/write | Writes ledger? | Mutates card files? | Returns body/text? | V1 status | Notes / boundaries |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `validate` | `nollm.validate` | read | no | no | no | stable | Deterministic structural validation only. |
-| `orient` | `nollm.orient` | read | no | no | no | stable | Anchor-field orientation; not context composition. |
-| `recall` | `nollm.recall` | derived write | no | no | yes | stable | May write recall digest files; not canonical memory or semantic completeness. |
-| `read` | `nollm.read_card` | read | no | no | yes | stable | Explicit single-card read; no neighbors or ranking. |
-| `inspect` | `nollm.inspect` | read | no | no | no | stable | Active metadata inspection; not truth or approval. |
-| `review` | `nollm.review` | read | no | no | no | stable | Compatibility name for active inspection. |
-| `annotate` | `nollm.annotate` | write | yes | no | no | stable | Appends operator notes; does not approve or change trust/status. |
-| `annotations` | `nollm.annotations` | read | no | no | yes | stable | Lists annotation ledger events. |
-| `ledger` | `nollm.ledger` | read | no | no | yes | stable | Audit trail query; not recall or truth. |
-| `history` | `nollm.history` | read | no | no | yes | stable | Object-level ledger inspection. |
-| `audit` | `nollm.audit` | read | no | no | no | stable | Derived inspection projection; not memory. |
-| `audit-check` | none | read | no | no | no | stable | Compares audit snapshots; structural drift only. |
-| `tool` | envelope runner | read/write by action | by action | by action | by action | stable | Executes JSON envelope actions. |
-| `surface` | `nollm.surface` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
-| `focus` | `nollm.focus` | read | no | no | no | internal/experimental | Existing orientation helper; not stable V1 external surface. |
-| `write` | `nollm.write_card` | write | yes | yes | yes | internal/experimental | Candidate/draft writing helper; no direct confirmed writes. |
-| `status` | `nollm.update_status` | write | yes | yes | no | internal/experimental | Operator transition helper; must preserve confirmation boundaries. |
-| `tools` | none | read | no | no | no | internal/experimental | Local manifest inspection helper, not a protocol action. |
-| `init` | none | write | no | yes | no | internal/experimental | Local notebook bootstrap helper, not a memory protocol action. |
-
-Compatibility labels:
-
-- `review` remains compatibility naming for active inspection.
-- `inspect` is preferred.
-- `read_card` is explicit single-card read.
-- context composition is not a Core action.
-
-## OpenClaw Functional Alpha Provider
-
-Nollm now ships a separate OpenClaw **active memory provider** package:
-
-`	ext
-integrations/openclaw/nollm-memory-provider/
-npm package: @nollm/openclaw-memory
-plugin id:   nollm
-kind:        memory
-`
-
-This is distinct from the historical
-ollm-memory-companion tool plugin. The
-companion remains available as an experimental geometry-navigation surface that
-delegates to legacy memory-core; it is not the active memory route.
-
-The Functional Alpha provider:
-
-- uses plugins.slots.memory = \"nollm\" to become the active memory provider;
-- injects a bounded NOLLM_MEMORY_CONTEXT_V1 envelope during
-  gent_turn_prepare;
-- writes capture receipts under
-ollmDataRoot during gent_end;
-- exposes **zero** Primary-visible memory or Nollm geometry tools;
-- never reads or writes MEMORY.md, DREAMS.md, or memory/*.md;
-- uses a synthetic deterministic alpha field, not historical memory.
-
-See docs/integration/openclaw/F0_NOLLM_MEMORY_PROVIDER_ALPHA.md for the full
-contract and docs/issues/FUNCTIONAL_ALPHA_OPEN_ISSUES.md for known
-limitations.
-
-This is Functional Alpha work. It does not claim production cutover, historical
-migration, or R14 capability-storage completion.
-
-## W1-01: OpenClaw Native Companion Memory MVP
-
-Nollm also ships an explicit native companion-memory path inside the historical
-`nollm-memory-companion` tool plugin:
-
-- `nollm_memory_remember` writes an explicit user identity, preference,
-  decision, project fact, or standalone memory sentence to a Nollm-owned store
-  under `<workspaceRoot>/.nollm-memory/native-companion-v1/`.
-- `nollm_memory_recall` returns Nollm-owned native memory evidence for a user
-  question using deterministic token overlap and Chinese identity/preference
-  aliases; it does not use embeddings or call an LLM.
-- `nollm_memory_get` reads a single native record by its Nollm-issued
-  `memory_id`; it rejects file paths, line locators, and legacy source locators.
-
-W1-01 keeps `memory-core` active, does not replace the OpenClaw memory slot,
-does not write `MEMORY.md` / `DREAMS.md` / `memory/*.md`, and does not call a
-real LLM. It is a minimal explicit remember/recall/get loop for user-stated
-identities and preferences, not an automatic conversation capture system.
-
-
-## W2-01: Direct Active Memory Cutover
-
-Owner-authorized empirical trial on the local Windows OpenClaw Gateway. The `nollm` provider (`integrations/openclaw/nollm-memory-provider/`) is the active OpenClaw memory-slot owner (`plugins.slots.memory = "nollm"`).
-
-- `agent_turn_prepare` recalls from the W1 native companion store and injects a bounded `NOLLM_MEMORY_CONTEXT_V1` envelope.
-- `agent_end` deterministically auto-captures explicit stable user sentences (remember directives, identity, preference, project/release decisions) into the same native store.
-- No Primary-visible Nollm memory tools in active mode.
-- No read/write of `MEMORY.md`, `DREAMS.md`, or `memory/*.md` by the provider.
-- Rollback to `memory-core` is tested and documented.
-- Legacy workspace `MEMORY.md` bootstrap is recorded as a measured confound; W2 does not claim exclusive prompt memory ownership while bootstrap may exist.
-
-Trial result: `PARTIAL`. Active slot ownership, capture, and most recalls succeeded; identity recall was confounded by legacy `MEMORY.md` bootstrap. Local-only redacted metrics live in `.local-runs/active-memory-w2/` and are not stored in Git.
+- `nollm.surface` is internal or experimental.
+- `nollm.focus` is internal or experimental.
+- `nollm.write_card` is internal or experimental.
+- `nollm.update_status` is internal or experimental.
