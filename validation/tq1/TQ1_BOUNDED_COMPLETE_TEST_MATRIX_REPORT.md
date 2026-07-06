@@ -142,3 +142,29 @@ TQ1-C6 closes the final evidence transport and raw-proof semantics:
 The final TQ1-C6 matrix must use fresh receipts under
 `C:\Users\chaos\nollm_test_runs\<final-head>\tq1-c6`; earlier C5 receipts are
 not final closure evidence.
+
+## TQ1-C7R Canonical Evidence Replay And One-Hour Contract Closure
+
+TQ1-C7R closes the final replay gap:
+
+- `matrix_plan.json` records an immutable execution contract. Final C7R uses
+  `planned_shard_timeout_seconds=3600.0`, `retry_policy=forbidden`,
+  `receipt_overwrite=forbidden`, and `execution_mode=single_pass`.
+- The final matrix path is one `run-shard --all --workers 4
+  --timeout-seconds 3600` invocation for a fresh `tq1-c7r` receipt root. A
+  non-resume run refuses existing shard receipts instead of overwriting them.
+- Runtime fixture manifest entries are sorted by relative POSIX path string in
+  binary lexical order before fingerprinting.
+- `verify` rejects success receipts whose timeout or execution contract differs
+  from the plan.
+- Delivery evidence uses `refs/nollm-delivery/tq1-c7r/<final-code-head>`.
+  `verify-ref` semantically replays the capsule tree: plan, root marker,
+  receipt/JUnit exactness, runtime fixture bytes, final run log, verify log,
+  final evidence summary, capsule manifest, and payload inventory must all
+  derive to the same head and execution contract.
+
+The final C7R bundle convention is:
+
+```text
+C:\Users\chaos\nollm_tq1_c7r_canonical_evidence_one_hour_contract_final_closure_20260706_<short-head>.bundle
+```

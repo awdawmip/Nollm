@@ -6,16 +6,17 @@ Complete test verification means:
 
 ```text
 For one clean git commit, one pytest collection fingerprint, and one
-plan-owned ignored-runtime fixture snapshot, every collected node id is
+plan-owned execution contract, plan-owned ignored-runtime fixture snapshot,
+every collected node id is
 assigned to exactly one shard, every shard completes successfully in a
 matrix-owned isolated worktree, and verify proves the receipt directory
 inventory is exactly the planned shard JSON set with no missing, duplicate,
 stale, extra, timed-out, malformed, failed, unowned, or drifted receipt.
-Successful shard receipts bind to the receipt schema, shard identity, actual
-JUnit `<testcase>` proof count, raw JUnit relative path, raw JUnit SHA-256,
-raw JUnit size, and no-failure cleanup state, with suite `tests` attributes
-parsed and rejected when malformed, not to a planned count echoed by the
-runner.
+Successful shard receipts bind to the receipt schema, shard identity, immutable
+execution contract, exact planned shard timeout, actual JUnit `<testcase>`
+proof count, raw JUnit relative path, raw JUnit SHA-256, raw JUnit size, and
+no-failure cleanup state, with suite `tests` attributes parsed and rejected
+when malformed, not to a planned count echoed by the runner.
 ```
 
 The canonical commands are:
@@ -32,7 +33,12 @@ a non-reusable matrix-instance boundary and is never overwritten or adopted. If
 `out/nollm_runtime` exists, `plan` snapshots it once under the receipt root and
 records canonical file hashes. `run-shard` must copy only
 that snapshot, never live source `out/nollm_runtime` and never tracked source
-checkout bytes. Worktree cleanup is allowed only for shard worktrees created by
+checkout bytes. The final C7R delivery contract freezes
+`planned_shard_timeout_seconds=3600.0`, `retry_policy=forbidden`,
+`receipt_overwrite=forbidden`, and `execution_mode=single_pass`; the final
+execution is one `run-shard --all --workers 4 --timeout-seconds 3600`
+invocation. Existing shard receipts are never overwritten by a non-resume run.
+Worktree cleanup is allowed only for shard worktrees created by
 the current matrix call and rooted under matching root and per-shard ownership
 markers. Cleanup refuses with zero deletions when any existing shard path lacks
 the exact per-shard marker, has a mismatched marker, or is outside the plan.
@@ -52,7 +58,7 @@ is not reported as pytest startup failure.
 receipt contents. Extra JSON files, non-JSON files, directories, symlinks,
 special files, and missing planned receipts are verification failures and are
 not deleted or adopted. A successful verify output includes
-`receipt_json_count=<planned-shard-count>`.
+`receipt_json_count=<planned-shard-count>` and execution contract fields.
 
 `verify` must also reject malformed JUnit inventories before accepting
 successful receipts. The `junit/` directory must contain exactly the planned
@@ -67,10 +73,14 @@ rebuilds the canonical manifest from the frozen snapshot tree and rejects a
 missing, malformed, non-regular, or mismatched manifest even when the receipt
 fields still claim success.
 
-TQ1-C6 delivery uses one complete-history Git bundle containing both the final
+TQ1-C7R delivery uses one complete-history Git bundle containing both the final
 code ref and a parentless Delivery Evidence Capsule ref:
-`refs/nollm-delivery/tq1-c6/<final-code-head>`. The capsule carries the raw
+`refs/nollm-delivery/tq1-c7r/<final-code-head>`. The capsule carries the raw
 final matrix plan, root marker, all receipts, all JUnit XML, frozen runtime
 fixture evidence, gate logs, manifest, inventory, and `FULL_MATRIX_OK` output.
+`verify-ref` must semantically replay those raw bytes rather than trusting only
+the inventory: plan, root marker, receipt/JUnit exactness, runtime fixture
+bytes, final `--all` log, verify log, summary, and manifest must all derive to
+the same final code head and execution contract.
 
 The protocol does not change Nollm production behavior and does not introduce runtime, OpenClaw, network, LLM/NLP, database, cache, daemon, global discovery, or automatic admission behavior.

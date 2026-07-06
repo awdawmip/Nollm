@@ -39,6 +39,30 @@ def test_tq1_plan_is_deterministic_for_tiny_git_repo(tmp_path: Path) -> None:
     assert plan["schema"] == "nollm.test_matrix.v1"
     assert plan["collected_count"] == 1
     assert plan["clean_status_before"] == ""
+    assert plan["execution_contract"] == {
+        "schema": "nollm.test_matrix.execution_contract.v1",
+        "planned_shard_timeout_seconds": 90.0,
+        "retry_policy": "forbidden",
+        "receipt_overwrite": "forbidden",
+        "execution_mode": "single_pass",
+    }
+
+
+def test_tq1_c7r_plan_can_freeze_one_hour_execution_contract(tmp_path: Path) -> None:
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+
+    result = _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts), "--target-node-count", "1", "--planned-shard-timeout-seconds", "3600"], cwd=repo)
+    plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
+
+    assert result.returncode == 0, result.stderr
+    assert plan["execution_contract"] == {
+        "schema": "nollm.test_matrix.execution_contract.v1",
+        "planned_shard_timeout_seconds": 3600.0,
+        "retry_policy": "forbidden",
+        "receipt_overwrite": "forbidden",
+        "execution_mode": "single_pass",
+    }
 
 
 def test_tq1_c4_plan_refuses_existing_receipt_root_without_overwrite(tmp_path: Path) -> None:
@@ -257,6 +281,7 @@ def test_tq1_verify_rejects_bad_receipt_states(tmp_path: Path) -> None:
     assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
     plan = json.loads((receipts / "matrix_plan.json").read_text(encoding="utf-8"))
     shard = plan["shards"][0]
+    assert _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", shard["shard_id"]], cwd=repo).returncode == 0
     receipt = {
         "schema": "nollm.test_matrix.shard_receipt.v1",
         "status": "timed_out",
@@ -271,9 +296,6 @@ def test_tq1_verify_rejects_bad_receipt_states(tmp_path: Path) -> None:
         "worktree_cleanup": "removed",
     }
     receipt_dir = receipts / "receipts"
-    receipt_dir.mkdir()
-    (receipt_dir / f"{shard['shard_id']}.json").write_text(json.dumps(receipt), encoding="utf-8")
-    assert _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", shard["shard_id"]], cwd=repo).returncode == 0
     (receipt_dir / f"{shard['shard_id']}.json").write_text(json.dumps(receipt), encoding="utf-8")
 
     result = _matrix(["verify", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=repo)
@@ -800,6 +822,18 @@ def test_tq1_runtime_fixture_symlink_is_rejected_without_plan(tmp_path: Path) ->
     assert not receipts.exists()
 
 
+def test_tq1_c7r_runtime_fixture_forbidden_dev_path_is_rejected_without_plan(tmp_path: Path) -> None:
+    repo = _tiny_repo(tmp_path, {".gitignore": "out/\n", "tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    _write(repo / "out" / "nollm_runtime" / "workspace" / ".git" / "config", "[core]\n")
+    receipts = tmp_path / "receipts"
+
+    result = _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo)
+
+    assert result.returncode != 0
+    assert "fixture_snapshot_rejected" in result.stderr
+    assert not receipts.exists()
+
+
 def test_tq1_timeout_writes_readable_receipt_and_cleans_worktree(tmp_path: Path) -> None:
     repo = _tiny_repo(
         tmp_path,
@@ -807,7 +841,7 @@ def test_tq1_timeout_writes_readable_receipt_and_cleans_worktree(tmp_path: Path)
     )
     receipts = tmp_path / "receipts"
     worktrees = tmp_path / "worktrees"
-    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts)], cwd=repo).returncode == 0
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts), "--planned-shard-timeout-seconds", "0.1"], cwd=repo).returncode == 0
 
     result = _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", "s001", "--timeout-seconds", "0.1"], cwd=repo, timeout_seconds=30)
     receipt = json.loads((receipts / "receipts" / "s001.json").read_text(encoding="utf-8"))
@@ -817,6 +851,61 @@ def test_tq1_timeout_writes_readable_receipt_and_cleans_worktree(tmp_path: Path)
     assert receipt["timed_out"] is True
     assert receipt["selected_count"] == 1
     assert receipt["worktree_cleanup"] == "removed"
+
+
+def test_tq1_c7r_run_rejects_timeout_contract_mismatch_without_receipt(tmp_path: Path) -> None:
+    repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(repo), "--receipt-root", str(receipts), "--planned-shard-timeout-seconds", "3600"], cwd=repo).returncode == 0
+
+    result = _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", "s001", "--timeout-seconds", "90"], cwd=repo)
+
+    assert result.returncode != 0
+    assert "execution_contract_timeout_mismatch" in result.stderr
+    assert not (receipts / "receipts" / "s001.json").exists()
+
+
+def test_tq1_c7r_verify_rejects_success_receipt_timeout_drift(tmp_path: Path) -> None:
+    _repo = _tiny_repo(tmp_path, {"tests/test_alpha.py": "def test_a():\n    assert True\n"})
+    receipts = tmp_path / "receipts"
+    worktrees = tmp_path / "worktrees"
+    assert _matrix(["plan", "--repo-root", str(_repo), "--receipt-root", str(receipts), "--target-node-count", "1", "--planned-shard-timeout-seconds", "3600"], cwd=_repo).returncode == 0
+    assert _matrix(["run-shard", "--repo-root", str(_repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--shard", "s001", "--timeout-seconds", "3600"], cwd=_repo).returncode == 0
+    receipt_path = receipts / "receipts" / "s001.json"
+    original = json.loads(receipt_path.read_text(encoding="utf-8"))
+    for value in (90.0, 300.0, 600.0, 3601.0):
+        receipt = dict(original)
+        receipt["timeout_seconds"] = value
+        receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        verify = _matrix(["verify", "--repo-root", str(_repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees)], cwd=_repo)
+        assert verify.returncode != 0
+        assert "timeout_contract_mismatch" in verify.stderr
+
+
+def test_tq1_c7r_existing_receipt_reexecution_is_rejected_without_overwrite(tmp_path: Path) -> None:
+    _matrix_module, repo, receipts, worktrees, _plan, _shard, receipt_path = _successful_single_shard_matrix(tmp_path)
+    before = receipt_path.read_bytes()
+
+    result = _matrix(["run-shard", "--repo-root", str(repo), "--receipt-root", str(receipts), "--worktree-root", str(worktrees), "--all", "--workers", "1"], cwd=repo)
+
+    assert result.returncode != 0
+    assert "receipt_overwrite_forbidden" in result.stderr
+    assert receipt_path.read_bytes() == before
+
+
+def test_tq1_c7r_runtime_manifest_uses_canonical_posix_path_order(tmp_path: Path) -> None:
+    matrix = load_matrix()
+    root = tmp_path / "fixture"
+    _write(root / "openclaw_live_eval" / "z" / "workspace" / "SOUL.md", "A")
+    _write(root / "openclaw_live_eval" / "z" / "workspace" / "memory" / ".dreams" / "events.jsonl", "{}\n")
+
+    entries = matrix.build_runtime_manifest_entries(root)
+
+    assert [entry["path"] for entry in entries] == [
+        "openclaw_live_eval/z/workspace/SOUL.md",
+        "openclaw_live_eval/z/workspace/memory/.dreams/events.jsonl",
+    ]
 
 
 def test_tq1_preexisting_worktree_is_not_deleted_and_writes_receipt(tmp_path: Path) -> None:

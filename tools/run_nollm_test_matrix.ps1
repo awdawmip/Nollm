@@ -3,7 +3,7 @@ param(
   [int]$TargetNodeCount = 120,
   [int]$MaxShards = 24,
   [int]$Workers = 4,
-  [int]$TimeoutSeconds = 90
+  [double]$TimeoutSeconds = 3600.0
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,7 +12,7 @@ $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
 $env:PYTHONPATH = Join-Path $RepoRoot "reference/python"
 
 $head = git -C $RepoRoot rev-parse HEAD
-$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c6"
+$receiptRoot = "C:\Users\chaos\nollm_test_runs\$head\tq1-c7r"
 $worktreeRoot = "C:\Users\chaos\nollm_test_worktrees\$head"
 
 New-Item -ItemType Directory -Force "C:\Users\chaos" | Out-Null
@@ -23,7 +23,8 @@ python reference/python/scripts/run_nollm_test_matrix.py plan `
   --repo-root $RepoRoot `
   --receipt-root $receiptRoot `
   --target-node-count $TargetNodeCount `
-  --max-shards $MaxShards
+  --max-shards $MaxShards `
+  --planned-shard-timeout-seconds $TimeoutSeconds
 
 python reference/python/scripts/run_nollm_test_matrix.py run-shard `
   --repo-root $RepoRoot `

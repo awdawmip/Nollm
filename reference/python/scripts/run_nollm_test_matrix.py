@@ -21,6 +21,7 @@ sys.dont_write_bytecode = True
 
 SCHEMA = "nollm.test_matrix.v1"
 RECEIPT_SCHEMA = "nollm.test_matrix.shard_receipt.v1"
+EXECUTION_CONTRACT_SCHEMA = "nollm.test_matrix.execution_contract.v1"
 MARKER = ".nollm_test_matrix_root.json"
 WORKTREE_MARKER = ".nollm_test_matrix_worktree_root.json"
 SHARD_WORKTREE_MARKER = ".nollm_test_matrix_worktree.json"
@@ -29,6 +30,7 @@ TAIL_CHARS = 12000
 POLL_INTERVAL_SECONDS = 0.1
 KILL_WAIT_SECONDS = 5.0
 JUNIT_PARSE_ERRORS = (ET.ParseError, ValueError, KeyError, TypeError, UnicodeError, OSError)
+DEFAULT_PLANNED_SHARD_TIMEOUT_SECONDS = 90.0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -39,6 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     _add_roots(plan_parser, include_worktree=False)
     plan_parser.add_argument("--target-node-count", type=int, default=120)
     plan_parser.add_argument("--max-shards", type=int, default=24)
+    plan_parser.add_argument("--planned-shard-timeout-seconds", type=float, default=DEFAULT_PLANNED_SHARD_TIMEOUT_SECONDS)
 
     run_parser = subparsers.add_parser("run-shard")
     _add_roots(run_parser, include_worktree=True)
@@ -46,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     shard_group.add_argument("--shard")
     shard_group.add_argument("--all", action="store_true")
     run_parser.add_argument("--workers", type=int, default=1)
-    run_parser.add_argument("--timeout-seconds", type=float, default=90.0)
+    run_parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_PLANNED_SHARD_TIMEOUT_SECONDS)
     run_parser.add_argument("--resume", action="store_true")
 
     list_parser = subparsers.add_parser("list-shards")
@@ -102,7 +105,8 @@ def command_plan(args: argparse.Namespace) -> int:
     shards = assign_shards(nodes, args.target_node_count, args.max_shards)
     try:
         runtime_fixture = snapshot_runtime_fixture(repo_root, receipt_root)
-        manifest_fingerprint = fingerprint({"head": head, "nodes": nodes, "shards": shards})
+        execution_contract = execution_contract_payload(args.planned_shard_timeout_seconds)
+        manifest_fingerprint = fingerprint({"head": head, "nodes": nodes, "shards": shards, "execution_contract": execution_contract})
         matrix_id = matrix_id_from_manifest(manifest_fingerprint)
         plan = {
             "schema": SCHEMA,
@@ -114,6 +118,7 @@ def command_plan(args: argparse.Namespace) -> int:
             "target_node_count": args.target_node_count,
             "max_shards": args.max_shards,
             "clean_status_before": "",
+            "execution_contract": execution_contract,
             "runtime_fixture": runtime_fixture,
             "node_ids": nodes,
             "shards": [
@@ -149,6 +154,8 @@ def command_run_shard(args: argparse.Namespace) -> int:
     receipt_root = resolve_receipt_root(args.receipt_root, head)
     worktree_root = resolve_worktree_root(args.worktree_root, head)
     plan = load_plan(receipt_root)
+    assert_execution_contract(plan)
+    assert_run_matches_execution_contract(plan, args.timeout_seconds)
     assert_source_matches_plan(repo_root, plan)
     assert_receipt_root_marker(receipt_root, plan)
     assert_runtime_fixture_snapshot_matches_plan(receipt_root, plan)
@@ -158,6 +165,8 @@ def command_run_shard(args: argparse.Namespace) -> int:
 
     if args.all:
         selected = [shard["shard_id"] for shard in plan["shards"]]
+        if not args.resume:
+            assert_receipts_absent_for_run(receipt_root, selected)
         workers = max(1, int(args.workers))
         if workers == 1:
             receipts = [run_one_shard(repo_root, receipt_root, worktree_root, plan, shard_id, args.timeout_seconds, args.resume) for shard_id in selected]
@@ -172,6 +181,8 @@ def command_run_shard(args: argparse.Namespace) -> int:
         print(f"RUN_ALL_DONE shards={len(receipts)} failed={len(failed)} receipt_root={receipt_root}")
         return 0 if not failed else 1
 
+    if not args.resume:
+        assert_receipts_absent_for_run(receipt_root, [args.shard])
     receipt = run_one_shard(repo_root, receipt_root, worktree_root, plan, args.shard, args.timeout_seconds, args.resume)
     print(f"SHARD_DONE shard={args.shard} status={receipt['status']} receipt={receipt_path(receipt_root, args.shard)}")
     return 0 if receipt["status"] == "passed" else 1
@@ -183,6 +194,7 @@ def command_verify(args: argparse.Namespace) -> int:
     receipt_root = resolve_receipt_root(args.receipt_root, head)
     worktree_root = resolve_worktree_root(args.worktree_root, head)
     plan = load_plan(receipt_root)
+    assert_execution_contract(plan)
     assert_source_matches_plan(repo_root, plan)
     assert_receipt_root_marker(receipt_root, plan)
     assert_runtime_fixture_snapshot_matches_plan(receipt_root, plan)
@@ -236,8 +248,14 @@ def command_verify(args: argparse.Namespace) -> int:
     print(f"collected={len(current_nodes)}")
     print(f"shards={len(plan['shards'])}")
     print(f"passed={len(plan['shards'])}")
+    print("failed=0")
+    print("timed_out=0")
     print(f"receipt_json_count={receipt_json_count}")
     print(f"junit_xml_count={junit_xml_count}")
+    print(f"planned_shard_timeout_seconds={planned_shard_timeout_seconds(plan)}")
+    print("retry_policy=forbidden")
+    print("receipt_overwrite=forbidden")
+    print("execution_mode=single_pass")
     print(f"collection_fingerprint={plan['collection_fingerprint']}")
     print(f"matrix_fingerprint={plan['manifest_fingerprint']}")
     print(f"runtime_fixture_manifest_fingerprint={plan['runtime_fixture']['manifest_fingerprint']}")
@@ -282,6 +300,7 @@ def command_cleanup(args: argparse.Namespace) -> int:
 
 def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan: dict[str, Any], shard_id: str, timeout_seconds: float, resume: bool) -> dict[str, Any]:
     shard = find_shard(plan, shard_id)
+    assert_execution_contract(plan)
     existing_path = receipt_path(receipt_root, shard_id)
     if resume and existing_path.exists():
         try:
@@ -291,6 +310,8 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         if existing is not None and validate_success_receipt(plan, shard, existing) is None:
             existing["resumed"] = True
             return existing
+    if existing_path.exists():
+        raise MatrixError("receipt_overwrite_forbidden", "shard receipt already exists and cannot be overwritten", {"receipt": str(existing_path)})
 
     receipt_root.mkdir(parents=True, exist_ok=True)
     (receipt_root / "junit").mkdir(parents=True, exist_ok=True)
@@ -424,6 +445,7 @@ def run_one_shard(repo_root: Path, receipt_root: Path, worktree_root: Path, plan
         "failure_stage": failure_stage,
         "timed_out": timed_out,
         "timeout_seconds": timeout_seconds,
+        "execution_contract": plan["execution_contract"],
         "duration_seconds": duration,
         "stdout_tail": read_tail(stdout_path),
         "stderr_tail": read_tail(stderr_path),
@@ -600,6 +622,51 @@ def assert_collection_matches(plan: dict[str, Any], nodes: list[str]) -> None:
         raise MatrixError("collection_drift", "pytest collection changed after plan", {"expected": plan["collection_fingerprint"], "actual": actual})
 
 
+def execution_contract_payload(timeout_seconds: float) -> dict[str, Any]:
+    timeout = float(timeout_seconds)
+    if timeout <= 0:
+        raise MatrixError("invalid_execution_contract", "planned shard timeout must be positive")
+    return {
+        "schema": EXECUTION_CONTRACT_SCHEMA,
+        "planned_shard_timeout_seconds": timeout,
+        "retry_policy": "forbidden",
+        "receipt_overwrite": "forbidden",
+        "execution_mode": "single_pass",
+    }
+
+
+def assert_execution_contract(plan: dict[str, Any]) -> None:
+    contract = plan.get("execution_contract")
+    if contract != execution_contract_payload(planned_shard_timeout_seconds(plan)):
+        raise MatrixError("execution_contract_mismatch", "matrix plan execution contract is invalid", {"execution_contract": contract})
+
+
+def planned_shard_timeout_seconds(plan: dict[str, Any]) -> float:
+    contract = plan.get("execution_contract")
+    if not isinstance(contract, dict):
+        raise MatrixError("execution_contract_missing", "matrix plan is missing execution contract")
+    timeout = contract.get("planned_shard_timeout_seconds")
+    if not isinstance(timeout, (int, float)):
+        raise MatrixError("execution_contract_mismatch", "planned shard timeout must be numeric")
+    return float(timeout)
+
+
+def assert_run_matches_execution_contract(plan: dict[str, Any], timeout_seconds: float) -> None:
+    expected = planned_shard_timeout_seconds(plan)
+    if float(timeout_seconds) != expected:
+        raise MatrixError(
+            "execution_contract_timeout_mismatch",
+            "run timeout does not match matrix execution contract",
+            {"expected": expected, "actual": float(timeout_seconds)},
+        )
+
+
+def assert_receipts_absent_for_run(receipt_root: Path, shard_ids: list[str]) -> None:
+    existing = [str(receipt_path(receipt_root, shard_id)) for shard_id in shard_ids if receipt_path(receipt_root, shard_id).exists()]
+    if existing:
+        raise MatrixError("receipt_overwrite_forbidden", "existing shard receipts cannot be overwritten", {"receipts": existing})
+
+
 def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receipt: dict[str, Any]) -> str | None:
     if receipt.get("schema") != RECEIPT_SCHEMA:
         return "receipt_schema_mismatch"
@@ -636,6 +703,10 @@ def validate_success_receipt(plan: dict[str, Any], shard: dict[str, Any], receip
         return "returncode_mismatch"
     if receipt.get("timed_out") is not False:
         return "timed_out"
+    if receipt.get("timeout_seconds") != planned_shard_timeout_seconds(plan):
+        return "timeout_contract_mismatch"
+    if receipt.get("execution_contract") != plan.get("execution_contract"):
+        return "execution_contract_mismatch"
     runtime_fixture = plan["runtime_fixture"]
     if receipt.get("runtime_fixture_state") != runtime_fixture["state"]:
         return "runtime_fixture_state_mismatch"
@@ -789,8 +860,8 @@ def assert_runtime_fixture_snapshot_matches_plan(receipt_root: Path, plan: dict[
 
 
 def build_runtime_manifest_entries(root: Path) -> list[dict[str, Any]]:
-    entries: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("*")):
+    files: list[tuple[str, Path]] = []
+    for path in root.rglob("*"):
         if path.is_symlink() or not path.is_file():
             if path.is_dir() and not path.is_symlink():
                 continue
@@ -798,6 +869,12 @@ def build_runtime_manifest_entries(root: Path) -> list[dict[str, Any]]:
         relative = path.relative_to(root).as_posix()
         if relative.startswith("../") or relative == ".." or "\\" in relative:
             raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains invalid relative path")
+        parts = relative.split("/")
+        if ".git" in parts or "node_modules" in parts or "__pycache__" in parts or any(part.endswith(".pyc") for part in parts):
+            raise MatrixError("fixture_snapshot_rejected", "runtime fixture contains forbidden development path")
+        files.append((relative, path))
+    entries: list[dict[str, Any]] = []
+    for relative, path in sorted(files, key=lambda item: item[0]):
         data = path.read_bytes()
         entries.append({"path": relative, "size_bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
     return entries
