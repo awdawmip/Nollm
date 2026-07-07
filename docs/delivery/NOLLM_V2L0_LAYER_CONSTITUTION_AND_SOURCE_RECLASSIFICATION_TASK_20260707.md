@@ -1,12 +1,12 @@
 # Nollm V2L0：Core→Terminal 分层宪法与源码重分类任务书
 
-**日期**：2026-07-07  
-**阶段**：V2L0 — Layer Constitution / Source Reclassification  
-**活动基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`  
-**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`  
-**建议工作分支**：`codex/v2l0-layer-constitution-source-reclassification`  
-**执行主体**：单一执行主体；禁止使用子代理、并行代理或后台任务。  
-**交付**：一个 complete-history Git bundle + 绑定 final head 的 parentless TQ1 evidence capsule。  
+**日期**：2026-07-07
+**阶段**：V2L0 — Layer Constitution / Source Reclassification
+**活动基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`
+**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`
+**建议工作分支**：`codex/v2l0-layer-constitution-source-reclassification`
+**执行主体**：单一执行主体；禁止使用子代理、并行代理或后台任务。
+**交付**：一个 complete-history Git bundle + 绑定 final head 的 parentless TQ1 evidence capsule。
 **本阶段不做**：不合并 HAG1-C1R、不提升 HAG、不删除 V1/MT1/OpenClaw/prototype 文件、不启动任何 runtime。
 
 ---

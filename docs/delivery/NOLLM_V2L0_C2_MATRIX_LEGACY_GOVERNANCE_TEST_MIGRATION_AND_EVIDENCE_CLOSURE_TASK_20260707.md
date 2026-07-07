@@ -1,13 +1,13 @@
 # Nollm V2L0-C2：矩阵遗留治理测试迁移、Canonical 边界闭合与证据交付任务书
 
-**日期**：2026-07-07  
-**阶段**：V2L0-C2 — Matrix Legacy Governance-Test Migration / Canonical Boundary Closure / Evidence Delivery  
-**当前 V2L0-C1R 候选头**：`242bf0d74c149309b66fa7e0ca97e6adfd36b6a1`  
-**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`  
-**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`  
-**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`  
-**执行主体**：单一执行主体；不得使用子代理、并行代理或后台任务。  
-**交付形式**：一个 complete-history Git bundle，且包含精确绑定 final code head 的 parentless TQ1 evidence capsule。  
+**日期**：2026-07-07
+**阶段**：V2L0-C2 — Matrix Legacy Governance-Test Migration / Canonical Boundary Closure / Evidence Delivery
+**当前 V2L0-C1R 候选头**：`242bf0d74c149309b66fa7e0ca97e6adfd36b6a1`
+**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`
+**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`
+**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`
+**执行主体**：单一执行主体；不得使用子代理、并行代理或后台任务。
+**交付形式**：一个 complete-history Git bundle，且包含精确绑定 final code head 的 parentless TQ1 evidence capsule。
 **本任务不做**：不删除、移动或重命名 V1、MT1、旧 Dream/Gravity prototype、OpenClaw 源码／测试／examples；不修改 sealed production；不合并 HAG；不提升 main；不进行 fetch/pull/push。
 
 ---

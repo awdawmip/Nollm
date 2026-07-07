@@ -1,13 +1,13 @@
 # Nollm V2L0-C3：历史 Engineering RC 哈希重基线与最终证据闭合任务书
 
-**日期**：2026-07-07  
-**阶段**：V2L0-C3 — Historical Engineering RC Hash Rebaseline / Final Evidence Closure  
-**当前 V2L0-C2 候选头**：`beb7f50c3272f768437a0952f9231150a1168cbe`  
-**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`  
-**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`  
-**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`  
-**执行主体**：单一执行主体；禁止子代理、并行代理和后台任务。  
-**交付**：一个 complete-history Git bundle + 精确绑定 final head 的 parentless TQ1 evidence capsule。  
+**日期**：2026-07-07
+**阶段**：V2L0-C3 — Historical Engineering RC Hash Rebaseline / Final Evidence Closure
+**当前 V2L0-C2 候选头**：`beb7f50c3272f768437a0952f9231150a1168cbe`
+**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`
+**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`
+**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`
+**执行主体**：单一执行主体；禁止子代理、并行代理和后台任务。
+**交付**：一个 complete-history Git bundle + 精确绑定 final head 的 parentless TQ1 evidence capsule。
 **本任务不做**：不删除/移动 V1、MT1、OpenClaw、旧 Dream/Gravity source；不修改 Core、Workflow、Bridge、HCG、HAG 或 TQ1 工具；不激活 runtime；不提升 main；不执行 fetch/pull/push。
 
 ---

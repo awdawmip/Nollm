@@ -1,13 +1,13 @@
 # Nollm V2L0-C1：活动导航去 V1 化与交付证据闭合任务书
 
-**日期**：2026-07-07  
-**阶段**：V2L0-C1 — Active Navigation De-V1 Closure / Evidence Closure  
-**前一候选代码头**：`5e3f9bd4547d2c6b0797b0f1ef82544be33aa7dc`  
-**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`  
-**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`  
-**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`  
-**执行主体**：单一执行主体；禁止子代理、并行代理、后台执行。  
-**交付**：一个 complete-history Git bundle + final-head parentless TQ1 evidence capsule。  
+**日期**：2026-07-07
+**阶段**：V2L0-C1 — Active Navigation De-V1 Closure / Evidence Closure
+**前一候选代码头**：`5e3f9bd4547d2c6b0797b0f1ef82544be33aa7dc`
+**活动开发基线**：`8bb324a3a5de46bebb6eadd217820627a971e2a0`
+**已接受、未提升组件**：HAG1-C1R `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`
+**继续分支**：`codex/v2l0-layer-constitution-source-reclassification`
+**执行主体**：单一执行主体；禁止子代理、并行代理、后台执行。
+**交付**：一个 complete-history Git bundle + final-head parentless TQ1 evidence capsule。
 **本任务不做**：不删除或移动 V1 / MT1 / old prototype / OpenClaw source；不修改任何 sealed production module；不合并 HAG1-C1R；不 promotion main；不 push / pull / fetch。
 
 ---

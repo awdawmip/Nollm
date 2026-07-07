@@ -21,6 +21,10 @@ NOLLM_V2L0_LAYER_CONSTITUTION_AND_SOURCE_RECLASSIFICATION_TASK_20260707.md
 - Added V2L0-specific tests for constitution and source classification.
 - Migrated V1 route-lock and matrix legacy-governance tests toward canonical
   V2 boundary documents rather than root-level legacy wording.
+- Closed C3R taskbook format cleanliness by deleting only trailing ASCII
+  spaces/tabs from the committed V2L0, C1, C1R, C2, and C3 taskbooks.
+- Bound the fresh C3R Engineering RC focused integrity gate into the evidence
+  capsule slot `logs/02_rc_export_check.txt`.
 
 ## Taskbook Record
 
@@ -65,6 +69,11 @@ external delivery receipt / acceptance audit
 The Git tree must not prewrite the final bundle SHA-256 because the bundle is
 created after the final code head and evidence ref are fixed.
 
+Final branch truth is the combination of final code head, final evidence ref,
+and `logs/00_environment_and_git_state.txt`. The capsule `code_branch` field is
+inherited sealed TQ1 metadata and is non-authoritative for V2L0-C3R branch
+identity.
+
 Pre-C2 evidence:
 
 ```text
@@ -93,3 +102,23 @@ canonical hash record in the historical RC hash manifest.
 This rebaseline preserves historical matrix integrity. It does not restore V1
 navigation, does not make Engineering RC a current V2 runtime, does not activate
 OpenClaw or runtime services, and does not merge or promote HAG1-C1R.
+
+## C3R Closure
+
+C3 code head:
+
+```text
+167c9663888a94185e8631e95f0b60f2d63ad09e
+```
+
+C3 is not the final C3R evidence head. C3R only performs taskbook whitespace
+normalization and evidence binding. The C3 RC rebaseline remains exactly one
+record: `reference/python/tests/test_geometry.py`.
+
+V2L0 remains a candidate until C3R acceptance audit. HAG1-C1R remains accepted /
+unpromoted at `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`.
+
+Engineering RC remains a historical matrix input. The C3R focused integrity
+gate is bound to capsule destination `logs/02_rc_export_check.txt`; that slot
+name is a sealed legacy layout name and does not mean only the export checker
+ran.

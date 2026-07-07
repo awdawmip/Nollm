@@ -8,7 +8,7 @@
 | DG5 | L2 validation | sealed / validation | Evidence-preserving trace compaction; does not replace original evidence or facts. |
 | DG6 | L2 validation | sealed / validation | Isolated verification-only snapshot-compaction projection; does not enter core recall or fact path. |
 | DG7 | L2 validation | sealed / validation | Explicit reference-runtime positive verification; not production runtime, daemon, network service, or terminal integration. |
-| Historical Engineering RC hash manifest | historical validation | C3 rebaseline | Only `reference/python/tests/test_geometry.py` canonical `size_bytes` / `sha256` was rebaselined because the complete TQ1 matrix still collects the historical RC artifact integrity suite. This does not make Engineering RC a current V2 runtime. |
+| Historical Engineering RC hash manifest | historical validation | C3 rebaseline / C3R evidence binding | Only `reference/python/tests/test_geometry.py` canonical `size_bytes` / `sha256` was rebaselined because the complete TQ1 matrix still collects the historical RC artifact integrity suite. C3R binds a fresh focused gate to `logs/02_rc_export_check.txt`; the slot name is sealed legacy layout metadata. This does not make Engineering RC a current V2 runtime. |
 | Capture / Admission / Assembly workflows | L3 | accepted components present | Core workflows; no terminal or adapter ownership of facts. |
 | HX1 | L4 | accepted asset | Trusted host staged execution bridge and preflight binding. |
 | CX2 | L4 | accepted asset | External cortex conformance and public envelope boundary. |
@@ -21,5 +21,10 @@ Local main baseline for this table is
 `8bb324a3a5de46bebb6eadd217820627a971e2a0`; each delivery machine must recheck
 local and remote refs before promotion or publication.
 
-V2L0 remains a candidate until C3 evidence and acceptance audit are complete.
+V2L0 remains a candidate until C3R evidence and acceptance audit are complete.
 HAG1-C1R remains accepted and unpromoted.
+
+C3 head `167c9663888a94185e8631e95f0b60f2d63ad09e` is not the final C3R
+evidence head. Final branch truth is code head plus evidence ref plus
+`logs/00_environment_and_git_state.txt`; inherited capsule `code_branch`
+metadata is non-authoritative.

@@ -24,6 +24,11 @@ The fixed V2L0-C2 gate covers:
 The public V2 regression gate covers CI1, CX1, HCG1, HX1, and HXA1 tests named
 by the V2L0-C1R task.
 
+The C3R evidence gate additionally binds the fresh Engineering RC focused
+integrity gate and the TQ1 helper self-test into the parentless evidence
+capsule. The Engineering RC focused gate remains historical validation input,
+not current production runtime.
+
 Final code head:
 
 ```text
@@ -60,6 +65,10 @@ Pre-C2 evidence is not final C2 acceptance evidence. C2 final evidence must use
 the final code head, fresh fixed gate, fresh public V2 regression, fresh matrix,
 and fresh parentless evidence capsule.
 
+The final branch identity must be read from the final code head, final evidence
+ref, and `logs/00_environment_and_git_state.txt`. The capsule `code_branch`
+field is inherited sealed TQ1 metadata and is non-authoritative for V2L0-C3R.
+
 ## C3 RC Hash Rebaseline
 
 C2 candidate head:
@@ -76,3 +85,24 @@ complete TQ1 matrix still collects that historical RC artifact integrity suite.
 The rebaseline does not change V1/MT1/prototype retired classification, does
 not make Engineering RC a current V2 runtime, and does not change HAG1-C1R's
 accepted / unpromoted status.
+
+## C3R Taskbook and Evidence Binding Closure
+
+C3 code head:
+
+```text
+167c9663888a94185e8631e95f0b60f2d63ad09e
+```
+
+C3 is not the final C3R evidence head. C3R changes only taskbook whitespace
+normalization and delivery evidence binding. The five earlier taskbooks are
+allowed to change only by deleting line-trailing ASCII spaces/tabs, and the C3
+RC rebaseline remains exactly one historical manifest record for
+`reference/python/tests/test_geometry.py`.
+
+The C3R Engineering RC focused integrity gate is bound to capsule destination
+`logs/02_rc_export_check.txt`. The slot name is sealed legacy layout metadata
+and does not mean only the export checker ran.
+
+V2L0 remains a candidate until C3R acceptance audit. HAG1-C1R remains accepted /
+unpromoted at `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`.
