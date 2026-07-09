@@ -24,6 +24,9 @@ from .importers import (
     import_v2_dream_shard_like,
 )
 from .fixed_point import Q16_ONE
+from .field_engine import CellRegistry, CellState, PlacementIndex
+from .incremental_field import IncrementalFieldBuilder, IncrementalUpdateReport
+from .kernel_registry import KernelCompressionReport, KernelKey, KernelRegistry
 from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
 from .capture import GRFCaptureIngress, GRFCaptureReceipt, GRFCaptureRequest
@@ -55,6 +58,14 @@ __all__ = [
     "EvidenceShardRecord",
     "GRFFacade",
     "GRFWorkspaceReport",
+    "CellRegistry",
+    "CellState",
+    "PlacementIndex",
+    "IncrementalFieldBuilder",
+    "IncrementalUpdateReport",
+    "KernelCompressionReport",
+    "KernelKey",
+    "KernelRegistry",
     "MIGRATION_BOUNDARY_MODE",
     "CaptureImportResult",
     "MinimalPlacementAdmissionFixture",
