@@ -14,6 +14,15 @@ from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .evidence import EvidenceShardRecord
 from .exporters import to_jsonable
 from .facade import GRFFacade, GRFWorkspaceReport
+from .importers import (
+    MIGRATION_BOUNDARY_MODE,
+    CaptureImportResult,
+    MinimalPlacementAdmissionFixture,
+    import_hcg_like_capture,
+    import_minimal_placement_admission_fixture,
+    import_oca_like_capture,
+    import_v2_dream_shard_like,
+)
 from .fixed_point import Q16_ONE
 from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
@@ -45,6 +54,9 @@ __all__ = [
     "EvidenceShardRecord",
     "GRFFacade",
     "GRFWorkspaceReport",
+    "MIGRATION_BOUNDARY_MODE",
+    "CaptureImportResult",
+    "MinimalPlacementAdmissionFixture",
     "EvidenceShardRef",
     "KernelEntry",
     "LocalPatch",
@@ -95,6 +107,10 @@ __all__ = [
     "canonical_dumps",
     "canonical_loads",
     "to_jsonable",
+    "import_hcg_like_capture",
+    "import_minimal_placement_admission_fixture",
+    "import_oca_like_capture",
+    "import_v2_dream_shard_like",
     "load_all_grf_objects",
     "rebuild_relation_field_from_files",
     "replay_recall",
