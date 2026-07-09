@@ -28,6 +28,7 @@ from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
 from .capture import GRFCaptureIngress, GRFCaptureReceipt, GRFCaptureRequest
 from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord
+from .placement_policy import GRFPlacementPolicy, PlacementCandidateGenerator, PlacementPolicyConfig, PlacementRankingReport
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
 from .admission import MinimalAdmissionRecord
@@ -70,8 +71,12 @@ __all__ = [
     "GRFAdmissionBridgeResult",
     "MissingSourceFallback",
     "PlacementCandidate",
+    "PlacementCandidateGenerator",
     "PlacementDecision",
+    "PlacementPolicyConfig",
+    "PlacementRankingReport",
     "PlacementRecord",
+    "GRFPlacementPolicy",
     "Profile",
     "Q16_ONE",
     "RejectionRecord",

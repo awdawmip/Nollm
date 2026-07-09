@@ -13,6 +13,7 @@ from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .fixed_point import Q16_ONE
 from .local_patch import LocalPatch
 from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord, SCORE_FIELDS
+from .placement_policy import GRFPlacementPolicy, POLICY_ID as DETERMINISTIC_POLICY_ID, PlacementRankingReport
 from .source_window import SourceWindowRecord
 from .storage import GRFFileStore
 
@@ -33,6 +34,7 @@ class GRFAdmissionBridgeResult:
     placement_record: PlacementRecord | None
     admission_record: MinimalAdmissionRecord | None
     rejection_record: RejectionRecord | None
+    ranking_report: PlacementRankingReport | None = None
 
 
 class GRFAdmissionBridge:
@@ -40,8 +42,11 @@ class GRFAdmissionBridge:
         self.store = store
 
     def admit(self, shard: EvidenceShardRecord, window: SourceWindowRecord, policy_hint: dict[str, Any], decided_at: str) -> GRFAdmissionBridgeResult:
-        if policy_hint.get("policy_id", "validation_fixture_policy") != "validation_fixture_policy":
-            raise ValueError("GRFAdmissionBridge only supports validation_fixture_policy")
+        policy_id = policy_hint.get("policy_id", DETERMINISTIC_POLICY_ID)
+        if policy_id == DETERMINISTIC_POLICY_ID:
+            return self._admit_deterministic(shard, window, policy_hint, decided_at)
+        if policy_id != "validation_fixture_policy":
+            raise ValueError("GRFAdmissionBridge only supports grf_deterministic_policy_v1 and validation_fixture_policy")
 
         target_cell = _target_cell(shard, policy_hint)
         ids = _BridgeIds(shard.shard_id)
@@ -70,6 +75,47 @@ class GRFAdmissionBridge:
         self.store.write_placement_record(placement, decided_at)
         self.store.write_minimal_admission_record(admission, decided_at)
         return GRFAdmissionBridgeResult(island, patch, candidate, decision, mark, placement, admission, None)
+
+    def _admit_deterministic(self, shard: EvidenceShardRecord, window: SourceWindowRecord, policy_hint: dict[str, Any], decided_at: str) -> GRFAdmissionBridgeResult:
+        target_cell = _target_cell(shard, {"policy_id": "validation_fixture_policy", "chart_id": policy_hint.get("chart_id", "chart_policy")})
+        ids = _BridgeIds(shard.shard_id)
+        shard_ref = EvidenceShardRef(shard.shard_id, shard.source_window_refs, shard.trust_state, shard.usage_state)
+        island = EvidenceIsland(ids.island_id, (shard_ref,), tuple(sorted(set((*shard.source_window_refs, window.window_id)))), "validation_fixture", "placed")
+        patch = LocalPatch(ids.patch_id, island.island_id, target_cell.chart_id, target_cell.profile_id, target_cell, (target_cell,), (), "placed", 0, 0)
+        ranked, decision, report = GRFPlacementPolicy().evaluate(
+            shard,
+            window,
+            island,
+            patch,
+            (),
+            false_friend_risk=bool(policy_hint.get("false_friend_risk") or policy_hint.get("reject")),
+            excessive_residual=bool(policy_hint.get("excessive_residual")),
+            force_defer=bool(policy_hint.get("defer")),
+        )
+        candidate = ranked[0]
+        if decision.decision == "reject":
+            rejection = RejectionRecord(ids.rejection_id, candidate.candidate_id, shard.shard_id, decided_at, "host_rule", decision.rejection_reason or "false_friend_risk", (shard.shard_id,))
+            self.store.write_evidence_island(island)
+            self.store.write_local_patch(patch)
+            self.store.write_placement_candidate(candidate)
+            self.store.write_rejection_record(rejection, decided_at)
+            return GRFAdmissionBridgeResult(island, patch, candidate, decision, None, None, None, rejection, report)
+        if decision.decision == "defer":
+            rejection = RejectionRecord(ids.rejection_id, candidate.candidate_id, shard.shard_id, decided_at, "host_rule", "insufficient_evidence", (shard.shard_id,))
+            self.store.write_evidence_island(island)
+            self.store.write_local_patch(patch)
+            self.store.write_placement_candidate(candidate)
+            self.store.write_rejection_record(rejection, decided_at)
+            return GRFAdmissionBridgeResult(island, patch, candidate, decision, None, None, None, rejection, report)
+        mark = GeometryMark(ids.mark_id, shard.shard_id, candidate.target_cell.profile_id, candidate.target_cell.chart_id, candidate.target_cell, DETERMINISTIC_POLICY_ID, candidate.confidence_band, 0, "rf:grf1opq")
+        placement = PlacementRecord(ids.placement_id, shard.shard_id, candidate.candidate_id, decision.decision_id, mark, island.island_id, patch.patch_id, (shard.shard_id,), candidate.target_cell.profile_id, "grf1opq_policy_v1")
+        admission = MinimalAdmissionRecord(ids.admission_id, shard.shard_id, placement, decided_at, "host_rule")
+        self.store.write_evidence_island(island)
+        self.store.write_local_patch(patch)
+        self.store.write_placement_candidate(candidate)
+        self.store.write_placement_record(placement, decided_at)
+        self.store.write_minimal_admission_record(admission, decided_at)
+        return GRFAdmissionBridgeResult(island, patch, candidate, decision, mark, placement, admission, None, report)
 
 
 def resolve_source_fallback(ref: str, store: GRFFileStore) -> EvidenceShardRecord | MissingSourceFallback:
