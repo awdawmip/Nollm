@@ -1,3 +1,24 @@
-{"id":"B1","text":"Payment retry policy starts after soft decline","group":"payments","source_window":"source:scattered:1"}
-{"id":"B2","text":"Soft decline retry window is two days","group":"payments","source_window":"source:scattered:2"}
-{"id":"B3","text":"Manual review blocks payment retry escalation","group":"payments","source_window":"source:scattered:3"}
+{"id":"B01","text":"Payment retry policy starts after soft decline","group":"payments","source_window":"source:scattered:1"}
+{"id":"B02","text":"Soft decline retry window is two days","group":"payments","source_window":"source:scattered:2"}
+{"id":"B03","text":"Manual review blocks payment retry escalation","group":"payments","source_window":"source:scattered:3"}
+{"id":"B04","text":"Retry escalation resumes after manual review approval","group":"payments","source_window":"source:scattered:4"}
+{"id":"B05","text":"Payment retry notice is sent before escalation","group":"payments","source_window":"source:scattered:5"}
+{"id":"B06","text":"Decline code R01 maps to soft decline","group":"payments","source_window":"source:scattered:6"}
+{"id":"B07","text":"Decline code H99 requires manual review","group":"payments","source_window":"source:scattered:7"}
+{"id":"B08","text":"Retry ledger stores source decline code","group":"payments","source_window":"source:scattered:8"}
+{"id":"B09","text":"Shipment hold starts when payment retry fails","group":"fulfillment","source_window":"source:scattered:9"}
+{"id":"B10","text":"Shipment release follows payment recovery","group":"fulfillment","source_window":"source:scattered:10"}
+{"id":"B11","text":"Warehouse notice references shipment hold","group":"fulfillment","source_window":"source:scattered:11"}
+{"id":"B12","text":"Carrier booking resumes after shipment release","group":"fulfillment","source_window":"source:scattered:12"}
+{"id":"B13","text":"Support ticket links customer retry notice","group":"support","source_window":"source:scattered:13"}
+{"id":"B14","text":"Support escalation links manual review approval","group":"support","source_window":"source:scattered:14"}
+{"id":"B15","text":"Customer message records retry failure reason","group":"support","source_window":"source:scattered:15"}
+{"id":"B16","text":"Support closure follows payment recovery","group":"support","source_window":"source:scattered:16"}
+{"id":"B17","text":"Fraud screen pauses payment retry sequence","group":"risk","source_window":"source:scattered:17"}
+{"id":"B18","text":"Risk approval resumes retry sequence","group":"risk","source_window":"source:scattered:18"}
+{"id":"B19","text":"Risk denial creates permanent retry block","group":"risk","source_window":"source:scattered:19"}
+{"id":"B20","text":"Retry block notifies support owner","group":"risk","source_window":"source:scattered:20"}
+{"id":"B21","text":"Invoice state changes after payment recovery","group":"billing","source_window":"source:scattered:21"}
+{"id":"B22","text":"Billing receipt links invoice recovery","group":"billing","source_window":"source:scattered:22"}
+{"id":"B23","text":"Ledger export includes payment recovery trace","group":"billing","source_window":"source:scattered:23"}
+{"id":"B24","text":"Finance report includes recovered invoice","group":"billing","source_window":"source:scattered:24"}

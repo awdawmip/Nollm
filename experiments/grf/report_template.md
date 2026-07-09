@@ -12,4 +12,9 @@ average_kernel_fanout
 runtime_float_operation_count
 polygon_runtime_call_count
 context_token_cost_estimate
+ledger_event_count
+object_file_count
+max_kernel_fanout
+replay_selected_shard_delta
+replay_path_class_delta
 ```

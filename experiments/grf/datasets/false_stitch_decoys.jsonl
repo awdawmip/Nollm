@@ -1,3 +1,18 @@
-{"id":"C1","text":"Apple company released an update","group":"apple_company","source_window":"source:false:1"}
-{"id":"C2","text":"apple fruit storage temperature","group":"apple_fruit","source_window":"source:false:2"}
-{"id":"C3","text":"Apple company privacy policy","group":"apple_company","source_window":"source:false:3"}
+{"id":"C01","text":"Apple company released an update","group":"apple_company","source_window":"source:false:1"}
+{"id":"C02","text":"apple fruit storage temperature","group":"apple_fruit","source_window":"source:false:2"}
+{"id":"C03","text":"Apple company privacy policy","group":"apple_company","source_window":"source:false:3"}
+{"id":"C04","text":"Mercury planet orbit observation","group":"mercury_planet","source_window":"source:false:4"}
+{"id":"C05","text":"Mercury element safety storage","group":"mercury_element","source_window":"source:false:5"}
+{"id":"C06","text":"Mercury planet transit calendar","group":"mercury_planet","source_window":"source:false:6"}
+{"id":"C07","text":"Jaguar vehicle recall notice","group":"jaguar_vehicle","source_window":"source:false:7"}
+{"id":"C08","text":"jaguar animal habitat range","group":"jaguar_animal","source_window":"source:false:8"}
+{"id":"C09","text":"Jaguar vehicle warranty policy","group":"jaguar_vehicle","source_window":"source:false:9"}
+{"id":"C10","text":"Cache must be disabled for audit replay","group":"opposite_cache_off","source_window":"source:false:10"}
+{"id":"C11","text":"Cache must be enabled for speed benchmark","group":"opposite_cache_on","source_window":"source:false:11"}
+{"id":"C12","text":"Global search is forbidden in exact runtime","group":"opposite_search_off","source_window":"source:false:12"}
+{"id":"C13","text":"Global search is required in legacy prototype","group":"opposite_search_on","source_window":"source:false:13"}
+{"id":"C14","text":"Manual bridge approves company policy relation","group":"apple_company","source_window":"source:false:14"}
+{"id":"C15","text":"Fruit storage policy rejects company update relation","group":"apple_fruit","source_window":"source:false:15"}
+{"id":"C16","text":"Planet observation rejects element safety merge","group":"mercury_planet","source_window":"source:false:16"}
+{"id":"C17","text":"Vehicle warranty rejects animal habitat merge","group":"jaguar_vehicle","source_window":"source:false:17"}
+{"id":"C18","text":"Audit replay rejects cache benchmark equivalence","group":"opposite_cache_off","source_window":"source:false:18"}

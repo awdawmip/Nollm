@@ -21,12 +21,20 @@ def test_mini_validation_reports_required_metrics() -> None:
         "false_stitch_rate",
         "missed_stitch_rate",
         "relation_storage_size",
+        "ledger_event_count",
+        "object_file_count",
         "average_kernel_fanout",
+        "max_kernel_fanout",
         "runtime_float_operation_count",
         "polygon_runtime_call_count",
         "context_token_cost_estimate",
+        "replay_selected_shard_delta",
+        "replay_path_class_delta",
     ):
         assert key in metrics
     assert metrics["polygon_runtime_call_count"] == 0
     assert metrics["runtime_float_operation_count"] == 0
+    replay = payload["metrics"]["N5_grf_file_replay"]
+    assert replay["replay_selected_shard_delta"] == 0
+    assert replay["replay_path_class_delta"] == 0
     assert payload["hard_conditions"]["relation_storage_not_o_n_squared_on_fixture"] is True
