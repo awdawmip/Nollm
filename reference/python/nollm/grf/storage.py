@@ -8,12 +8,15 @@ from typing import Any, Callable
 from .admission import MinimalAdmissionRecord
 from .bridge_kernel import BridgeKernel
 from .cell_address import CellAddress
+from .evidence import EvidenceShardRecord
 from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .json_canonical import canonical_dumps, canonical_loads
 from .ledger import GRFLedger
 from .local_patch import LocalPatch
+from .path_encoding import safe_object_path
 from .placement import GeometryMark, PlacementCandidate, PlacementRecord, RejectionRecord
 from .recall_digest import CoverageReport, RecallDigest, RecallPath
+from .source_window import SourceWindowRecord
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
 SCHEMA_VERSION = "grf_file_v1"
@@ -26,6 +29,7 @@ class GRFFileStore:
     def initialize_layout(self) -> None:
         for relative in (
             "grfs/evidence/shards",
+            "grfs/evidence/source_windows",
             "grfs/evidence/islands",
             "grfs/patches/local_patches",
             "grfs/patches/stitch/proposals",
@@ -43,6 +47,18 @@ class GRFFileStore:
             "grfs/manifests",
         ):
             (self.root / relative).mkdir(parents=True, exist_ok=True)
+
+    def write_evidence_shard(self, shard: EvidenceShardRecord, recorded_at: str | None = None) -> Path:
+        return self._write("evidence_shard", shard.shard_id, shard.to_mapping(), "grfs/evidence/shards", recorded_at)
+
+    def read_evidence_shard(self, shard_id: str) -> EvidenceShardRecord:
+        return _evidence_shard_from_payload(self._read("evidence_shard", shard_id, "grfs/evidence/shards"))
+
+    def write_source_window(self, window: SourceWindowRecord, recorded_at: str | None = None) -> Path:
+        return self._write("source_window", window.window_id, window.to_mapping(), "grfs/evidence/source_windows", recorded_at)
+
+    def read_source_window(self, window_id: str) -> SourceWindowRecord:
+        return _source_window_from_payload(self._read("source_window", window_id, "grfs/evidence/source_windows"))
 
     def write_evidence_island(self, island: EvidenceIsland) -> Path:
         return self._write("evidence_island", island.island_id, island.to_mapping(), "grfs/evidence/islands")
@@ -86,6 +102,12 @@ class GRFFileStore:
     def read_placement_record(self, placement_id: str) -> PlacementRecord:
         return _placement_from_payload(self._read("placement_record", placement_id, "grfs/placements/records"))
 
+    def write_rejection_record(self, record: RejectionRecord, recorded_at: str | None = None) -> Path:
+        return self._write("placement_rejection", record.rejection_id, record.to_mapping(), "grfs/placements/rejections", recorded_at)
+
+    def read_rejection_record(self, rejection_id: str) -> RejectionRecord:
+        return _rejection_from_payload(self._read("placement_rejection", rejection_id, "grfs/placements/rejections"))
+
     def write_minimal_admission_record(self, record: MinimalAdmissionRecord, recorded_at: str | None = None) -> Path:
         return self._write("minimal_admission_record", record.admission_id, record.to_mapping(), "grfs/admissions/minimal_records", recorded_at)
 
@@ -100,7 +122,7 @@ class GRFFileStore:
 
     def path_for(self, object_type: str, object_id: str, directory: str) -> Path:
         _safe_id(object_id)
-        return self.root / directory / f"{object_id}.json"
+        return self.root / directory / safe_object_path(object_type, object_id)
 
     def _write(self, object_type: str, object_id: str, payload: dict[str, Any], directory: str, recorded_at: str | None = None, event_type: str = "object_written") -> Path:
         path = self.path_for(object_type, object_id, directory)
@@ -130,7 +152,7 @@ class GRFFileStore:
 
 
 def _safe_id(object_id: str) -> None:
-    if not isinstance(object_id, str) or object_id == "" or "/" in object_id or "\\" in object_id or ".." in object_id:
+    if not isinstance(object_id, str) or object_id == "" or "\0" in object_id:
         raise ValueError("unsafe object id")
 
 
@@ -142,6 +164,14 @@ def _sha256_bytes(data: bytes) -> str:
 
 def _cell(payload: dict[str, Any]) -> CellAddress:
     return CellAddress(payload["profile_id"], payload["chart_id"], payload["layer"], payload["q"], payload["r"], payload["phase"])
+
+
+def _evidence_shard_from_payload(payload: dict[str, Any]) -> EvidenceShardRecord:
+    return EvidenceShardRecord(payload["shard_id"], payload["content"], payload["created_at"], payload["origin_kind"], tuple(payload["source_window_refs"]), payload["trust_state"], payload["usage_state"], payload["content_sha256"])
+
+
+def _source_window_from_payload(payload: dict[str, Any]) -> SourceWindowRecord:
+    return SourceWindowRecord(payload["window_id"], payload["kind"], tuple(payload["refs"]), payload["opened_at"], payload["closed_at"], payload["policy_ref"])
 
 
 def _bridge_from_payload(payload: dict[str, Any]) -> BridgeKernel:
@@ -187,6 +217,10 @@ def _mark(payload: dict[str, Any]) -> GeometryMark:
 
 def _placement_from_payload(payload: dict[str, Any]) -> PlacementRecord:
     return PlacementRecord(payload["placement_id"], payload["shard_id"], payload["candidate_id"], payload["decision_id"], _mark(payload["geometry_mark"]), payload["island_id"], payload["patch_id"], tuple(payload["source_fallback_refs"]), payload["replay_profile_id"], payload["replay_template_version"], payload["deterministic"])
+
+
+def _rejection_from_payload(payload: dict[str, Any]) -> RejectionRecord:
+    return RejectionRecord(payload["rejection_id"], payload["candidate_id"], payload["shard_id"], payload["rejected_at"], payload["rejected_by"], payload["reason"], tuple(payload["source_fallback_refs"]))
 
 
 def _admission_from_payload(payload: dict[str, Any]) -> MinimalAdmissionRecord:

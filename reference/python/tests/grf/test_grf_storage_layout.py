@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from nollm.grf.storage import GRFFileStore
 
 
@@ -17,5 +15,8 @@ def test_storage_layout_is_created_under_workspace(tmp_path) -> None:
 
 def test_storage_rejects_path_traversal_ids(tmp_path) -> None:
     store = GRFFileStore(tmp_path)
-    with pytest.raises(ValueError):
-        store.path_for("x", "../bad", "grfs/evidence/islands")
+    path = store.path_for("x", "../bad", "grfs/evidence/islands")
+    assert path.parent == tmp_path / "grfs" / "evidence" / "islands"
+    assert ".." not in path.name
+    assert "/" not in path.name
+    assert "\\" not in path.name

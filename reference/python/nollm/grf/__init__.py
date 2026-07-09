@@ -11,8 +11,11 @@ from .coverage_template import (
 )
 from .eisenstein import EisensteinInt
 from .evidence_island import EvidenceIsland, EvidenceShardRef
+from .evidence import EvidenceShardRecord
 from .fixed_point import Q16_ONE
 from .local_patch import LocalPatch
+from .source_window import SourceWindowRecord
+from .capture import GRFCaptureIngress, GRFCaptureReceipt, GRFCaptureRequest
 from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
@@ -24,6 +27,7 @@ from .relation_field import RelationField
 from .storage import GRFFileStore
 from .json_canonical import canonical_dumps, canonical_loads, sha256_canonical
 from .ledger import GRFLedger, GRFLedgerEvent
+from .path_encoding import safe_object_path
 from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
@@ -35,9 +39,14 @@ __all__ = [
     "CubeCoord",
     "EisensteinInt",
     "EvidenceIsland",
+    "EvidenceShardRecord",
     "EvidenceShardRef",
     "KernelEntry",
     "LocalPatch",
+    "SourceWindowRecord",
+    "GRFCaptureIngress",
+    "GRFCaptureReceipt",
+    "GRFCaptureRequest",
     "GeometryMark",
     "MinimalAdmissionRecord",
     "PlacementCandidate",
@@ -57,6 +66,7 @@ __all__ = [
     "GRFFileStore",
     "GRFLedger",
     "GRFLedgerEvent",
+    "safe_object_path",
     "SparseActivation",
     "StitchProposal",
     "StitchRecord",
