@@ -17,6 +17,10 @@ from .placement import GeometryMark, PlacementCandidate, PlacementDecision, Plac
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
 from .admission import MinimalAdmissionRecord
+from .propagation import ActivationFrontier, SparseActivation
+from .recall import QueryProbe, RecallBudget, resolve_grf_recall
+from .recall_digest import CoverageReport, RecallDigest, RecallPath
+from .relation_field import RelationField
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
 __all__ = [
@@ -39,6 +43,14 @@ __all__ = [
     "Q16_ONE",
     "RejectionRecord",
     "BridgeKernel",
+    "ActivationFrontier",
+    "CoverageReport",
+    "QueryProbe",
+    "RecallBudget",
+    "RecallDigest",
+    "RecallPath",
+    "RelationField",
+    "SparseActivation",
     "StitchProposal",
     "StitchRecord",
     "StitchTransform",
@@ -53,4 +65,5 @@ __all__ = [
     "hex_ring",
     "performance_profile",
     "profiles",
+    "resolve_grf_recall",
 ]

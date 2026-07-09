@@ -15,7 +15,17 @@ GATE_C_PASSED
 
 ## Gate D
 
-Pending implementation.
+```text
+GATE_D_PASSED
+- RelationField runtime uses coverage template lookup;
+- exact profile runtime has float operation count = 0;
+- polygon/shapely/sin/cos runtime count = 0;
+- top-B pruning deterministic;
+- bridge propagation bounded;
+- every RecallDigest selected shard has source_fallback_ref;
+- CoverageReport contains path and drift info;
+- no global semantic search or embedding path exists.
+```
 
 ## Gate E
 
