@@ -7,37 +7,41 @@ from .validation_bench import ValidationItem
 SCALE_VALIDATION_SEED = "grf1lm_scale_seed_v1"
 
 
-def generate_scale_validation_items() -> tuple[ValidationItem, ...]:
+def generate_scale_validation_items(concentrated_count: int = 1500, scattered_count: int = 2000, false_decoy_count: int = 1500) -> tuple[ValidationItem, ...]:
     items: list[ValidationItem] = []
-    items.extend(_concentrated())
-    items.extend(_scattered())
-    items.extend(_false_decoys())
+    items.extend(_concentrated(concentrated_count))
+    items.extend(_scattered(scattered_count))
+    items.extend(_false_decoys(false_decoy_count))
     return tuple(items)
 
 
-def _concentrated() -> tuple[ValidationItem, ...]:
-    groups = tuple(f"cluster_{index:03d}" for index in range(50))
+def _concentrated(count: int) -> tuple[ValidationItem, ...]:
+    groups = tuple(f"cluster_{index:03d}" for index in range(max(1, count // 6)))
     items = []
     counter = 1
     for group in groups:
         for slot in range(6):
+            if len(items) >= count:
+                return tuple(items)
             items.append(ValidationItem(f"A{counter:03d}", f"{group} concentrated fact {slot} shares bounded kernel and source trail", group, f"source:scale:concentrated:{counter % 10}"))
             counter += 1
     return tuple(items)
 
 
-def _scattered() -> tuple[ValidationItem, ...]:
-    groups = tuple(f"scattered_{index:03d}" for index in range(100))
+def _scattered(count: int) -> tuple[ValidationItem, ...]:
+    groups = tuple(f"scattered_{index:03d}" for index in range(max(1, count // 4)))
     items = []
     counter = 1
     for group in groups:
         for slot in range(4):
+            if len(items) >= count:
+                return tuple(items)
             items.append(ValidationItem(f"B{counter:03d}", f"{group} scattered fact {slot} links delayed window exact replay source", group, f"source:scale:scattered:{slot}"))
             counter += 1
     return tuple(items)
 
 
-def _false_decoys() -> tuple[ValidationItem, ...]:
+def _false_decoys(count: int) -> tuple[ValidationItem, ...]:
     families = (
         ("apple_company", "Apple company release policy", "apple_fruit", "apple fruit storage condition"),
         ("java_language", "Java language compiler type rule", "java_island", "Java island travel route"),
@@ -67,10 +71,18 @@ def _false_decoys() -> tuple[ValidationItem, ...]:
     )
     items = []
     counter = 1
-    for family in families:
-        for slot in range(6):
-            items.append(ValidationItem(f"C{counter:03d}", f"{family[1]} fixture {slot} same name false friend guard", family[0], f"source:scale:false:{counter}"))
+    slot = 0
+    while len(items) < count:
+        family = families[slot % len(families)]
+        round_index = slot // len(families)
+        for _ in range(1):
+            if len(items) >= count:
+                break
+            items.append(ValidationItem(f"C{counter:03d}", f"{family[1]} fixture {round_index} same name false friend guard", family[0], f"source:scale:false:{counter}"))
             counter += 1
-            items.append(ValidationItem(f"C{counter:03d}", f"{family[3]} fixture {slot} same name false friend guard", family[2], f"source:scale:false:{counter}"))
+            if len(items) >= count:
+                break
+            items.append(ValidationItem(f"C{counter:03d}", f"{family[3]} fixture {round_index} same name false friend guard", family[2], f"source:scale:false:{counter}"))
             counter += 1
+        slot += 1
     return tuple(items)

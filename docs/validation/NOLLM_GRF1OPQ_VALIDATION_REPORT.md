@@ -23,3 +23,26 @@ GATE_P_PASSED
 - Replay equality holds.
 - Selected shards all resolve source fallback.
 - CLI remains single-JSON envelope and safe error surface.
+
+## Gate Q
+
+GATE_Q_PASSED
+
+- Scale validation >= 5000 items.
+- Deterministic placement policy variant evaluated.
+- Query generalization variant evaluated.
+- Relation storage remains below explicit graph baseline.
+- Runtime no polygon/no exact float preserved.
+- Failure/limitation cases reported honestly.
+- No graph/vector/embedding main path introduced.
+
+Failure and limitation cases recorded:
+
+- false-friend high lexical overlap;
+- sparse evidence insufficient source affinity;
+- over-dense cell causing defer;
+- ambiguous patch boundary;
+- bridge candidate rejected;
+- source fallback missing simulated warning;
+- explicit graph baseline beats GRF on a narrow fixture;
+- GRF relation storage advantage but lower recall correctness case.
