@@ -1,24 +1,80 @@
-{"id":"B01","text":"Payment retry policy starts after soft decline","group":"payments","source_window":"source:scattered:1"}
-{"id":"B02","text":"Soft decline retry window is two days","group":"payments","source_window":"source:scattered:2"}
-{"id":"B03","text":"Manual review blocks payment retry escalation","group":"payments","source_window":"source:scattered:3"}
-{"id":"B04","text":"Retry escalation resumes after manual review approval","group":"payments","source_window":"source:scattered:4"}
-{"id":"B05","text":"Payment retry notice is sent before escalation","group":"payments","source_window":"source:scattered:5"}
-{"id":"B06","text":"Decline code R01 maps to soft decline","group":"payments","source_window":"source:scattered:6"}
-{"id":"B07","text":"Decline code H99 requires manual review","group":"payments","source_window":"source:scattered:7"}
-{"id":"B08","text":"Retry ledger stores source decline code","group":"payments","source_window":"source:scattered:8"}
-{"id":"B09","text":"Shipment hold starts when payment retry fails","group":"fulfillment","source_window":"source:scattered:9"}
-{"id":"B10","text":"Shipment release follows payment recovery","group":"fulfillment","source_window":"source:scattered:10"}
-{"id":"B11","text":"Warehouse notice references shipment hold","group":"fulfillment","source_window":"source:scattered:11"}
-{"id":"B12","text":"Carrier booking resumes after shipment release","group":"fulfillment","source_window":"source:scattered:12"}
-{"id":"B13","text":"Support ticket links customer retry notice","group":"support","source_window":"source:scattered:13"}
-{"id":"B14","text":"Support escalation links manual review approval","group":"support","source_window":"source:scattered:14"}
-{"id":"B15","text":"Customer message records retry failure reason","group":"support","source_window":"source:scattered:15"}
-{"id":"B16","text":"Support closure follows payment recovery","group":"support","source_window":"source:scattered:16"}
-{"id":"B17","text":"Fraud screen pauses payment retry sequence","group":"risk","source_window":"source:scattered:17"}
-{"id":"B18","text":"Risk approval resumes retry sequence","group":"risk","source_window":"source:scattered:18"}
-{"id":"B19","text":"Risk denial creates permanent retry block","group":"risk","source_window":"source:scattered:19"}
-{"id":"B20","text":"Retry block notifies support owner","group":"risk","source_window":"source:scattered:20"}
-{"id":"B21","text":"Invoice state changes after payment recovery","group":"billing","source_window":"source:scattered:21"}
-{"id":"B22","text":"Billing receipt links invoice recovery","group":"billing","source_window":"source:scattered:22"}
-{"id":"B23","text":"Ledger export includes payment recovery trace","group":"billing","source_window":"source:scattered:23"}
-{"id":"B24","text":"Finance report includes recovered invoice","group":"billing","source_window":"source:scattered:24"}
+{"id":"B01","text":"payments scattered fact 1 links through delayed window and exact source trail","group":"payments","source_window":"source:scattered:1"}
+{"id":"B02","text":"payments scattered fact 2 links through delayed window and exact source trail","group":"payments","source_window":"source:scattered:2"}
+{"id":"B03","text":"payments scattered fact 3 links through delayed window and exact source trail","group":"payments","source_window":"source:scattered:3"}
+{"id":"B04","text":"payments scattered fact 4 links through delayed window and exact source trail","group":"payments","source_window":"source:scattered:4"}
+{"id":"B05","text":"refunds scattered fact 1 links through delayed window and exact source trail","group":"refunds","source_window":"source:scattered:1"}
+{"id":"B06","text":"refunds scattered fact 2 links through delayed window and exact source trail","group":"refunds","source_window":"source:scattered:2"}
+{"id":"B07","text":"refunds scattered fact 3 links through delayed window and exact source trail","group":"refunds","source_window":"source:scattered:3"}
+{"id":"B08","text":"refunds scattered fact 4 links through delayed window and exact source trail","group":"refunds","source_window":"source:scattered:4"}
+{"id":"B09","text":"inventory scattered fact 1 links through delayed window and exact source trail","group":"inventory","source_window":"source:scattered:1"}
+{"id":"B10","text":"inventory scattered fact 2 links through delayed window and exact source trail","group":"inventory","source_window":"source:scattered:2"}
+{"id":"B11","text":"inventory scattered fact 3 links through delayed window and exact source trail","group":"inventory","source_window":"source:scattered:3"}
+{"id":"B12","text":"inventory scattered fact 4 links through delayed window and exact source trail","group":"inventory","source_window":"source:scattered:4"}
+{"id":"B13","text":"shipping scattered fact 1 links through delayed window and exact source trail","group":"shipping","source_window":"source:scattered:1"}
+{"id":"B14","text":"shipping scattered fact 2 links through delayed window and exact source trail","group":"shipping","source_window":"source:scattered:2"}
+{"id":"B15","text":"shipping scattered fact 3 links through delayed window and exact source trail","group":"shipping","source_window":"source:scattered:3"}
+{"id":"B16","text":"shipping scattered fact 4 links through delayed window and exact source trail","group":"shipping","source_window":"source:scattered:4"}
+{"id":"B17","text":"identity scattered fact 1 links through delayed window and exact source trail","group":"identity","source_window":"source:scattered:1"}
+{"id":"B18","text":"identity scattered fact 2 links through delayed window and exact source trail","group":"identity","source_window":"source:scattered:2"}
+{"id":"B19","text":"identity scattered fact 3 links through delayed window and exact source trail","group":"identity","source_window":"source:scattered:3"}
+{"id":"B20","text":"identity scattered fact 4 links through delayed window and exact source trail","group":"identity","source_window":"source:scattered:4"}
+{"id":"B21","text":"billing scattered fact 1 links through delayed window and exact source trail","group":"billing","source_window":"source:scattered:1"}
+{"id":"B22","text":"billing scattered fact 2 links through delayed window and exact source trail","group":"billing","source_window":"source:scattered:2"}
+{"id":"B23","text":"billing scattered fact 3 links through delayed window and exact source trail","group":"billing","source_window":"source:scattered:3"}
+{"id":"B24","text":"billing scattered fact 4 links through delayed window and exact source trail","group":"billing","source_window":"source:scattered:4"}
+{"id":"B25","text":"search scattered fact 1 links through delayed window and exact source trail","group":"search","source_window":"source:scattered:1"}
+{"id":"B26","text":"search scattered fact 2 links through delayed window and exact source trail","group":"search","source_window":"source:scattered:2"}
+{"id":"B27","text":"search scattered fact 3 links through delayed window and exact source trail","group":"search","source_window":"source:scattered:3"}
+{"id":"B28","text":"search scattered fact 4 links through delayed window and exact source trail","group":"search","source_window":"source:scattered:4"}
+{"id":"B29","text":"alerts scattered fact 1 links through delayed window and exact source trail","group":"alerts","source_window":"source:scattered:1"}
+{"id":"B30","text":"alerts scattered fact 2 links through delayed window and exact source trail","group":"alerts","source_window":"source:scattered:2"}
+{"id":"B31","text":"alerts scattered fact 3 links through delayed window and exact source trail","group":"alerts","source_window":"source:scattered:3"}
+{"id":"B32","text":"alerts scattered fact 4 links through delayed window and exact source trail","group":"alerts","source_window":"source:scattered:4"}
+{"id":"B33","text":"reports scattered fact 1 links through delayed window and exact source trail","group":"reports","source_window":"source:scattered:1"}
+{"id":"B34","text":"reports scattered fact 2 links through delayed window and exact source trail","group":"reports","source_window":"source:scattered:2"}
+{"id":"B35","text":"reports scattered fact 3 links through delayed window and exact source trail","group":"reports","source_window":"source:scattered:3"}
+{"id":"B36","text":"reports scattered fact 4 links through delayed window and exact source trail","group":"reports","source_window":"source:scattered:4"}
+{"id":"B37","text":"exports scattered fact 1 links through delayed window and exact source trail","group":"exports","source_window":"source:scattered:1"}
+{"id":"B38","text":"exports scattered fact 2 links through delayed window and exact source trail","group":"exports","source_window":"source:scattered:2"}
+{"id":"B39","text":"exports scattered fact 3 links through delayed window and exact source trail","group":"exports","source_window":"source:scattered:3"}
+{"id":"B40","text":"exports scattered fact 4 links through delayed window and exact source trail","group":"exports","source_window":"source:scattered:4"}
+{"id":"B41","text":"imports scattered fact 1 links through delayed window and exact source trail","group":"imports","source_window":"source:scattered:1"}
+{"id":"B42","text":"imports scattered fact 2 links through delayed window and exact source trail","group":"imports","source_window":"source:scattered:2"}
+{"id":"B43","text":"imports scattered fact 3 links through delayed window and exact source trail","group":"imports","source_window":"source:scattered:3"}
+{"id":"B44","text":"imports scattered fact 4 links through delayed window and exact source trail","group":"imports","source_window":"source:scattered:4"}
+{"id":"B45","text":"quotas scattered fact 1 links through delayed window and exact source trail","group":"quotas","source_window":"source:scattered:1"}
+{"id":"B46","text":"quotas scattered fact 2 links through delayed window and exact source trail","group":"quotas","source_window":"source:scattered:2"}
+{"id":"B47","text":"quotas scattered fact 3 links through delayed window and exact source trail","group":"quotas","source_window":"source:scattered:3"}
+{"id":"B48","text":"quotas scattered fact 4 links through delayed window and exact source trail","group":"quotas","source_window":"source:scattered:4"}
+{"id":"B49","text":"deploys scattered fact 1 links through delayed window and exact source trail","group":"deploys","source_window":"source:scattered:1"}
+{"id":"B50","text":"deploys scattered fact 2 links through delayed window and exact source trail","group":"deploys","source_window":"source:scattered:2"}
+{"id":"B51","text":"deploys scattered fact 3 links through delayed window and exact source trail","group":"deploys","source_window":"source:scattered:3"}
+{"id":"B52","text":"deploys scattered fact 4 links through delayed window and exact source trail","group":"deploys","source_window":"source:scattered:4"}
+{"id":"B53","text":"rollbacks scattered fact 1 links through delayed window and exact source trail","group":"rollbacks","source_window":"source:scattered:1"}
+{"id":"B54","text":"rollbacks scattered fact 2 links through delayed window and exact source trail","group":"rollbacks","source_window":"source:scattered:2"}
+{"id":"B55","text":"rollbacks scattered fact 3 links through delayed window and exact source trail","group":"rollbacks","source_window":"source:scattered:3"}
+{"id":"B56","text":"rollbacks scattered fact 4 links through delayed window and exact source trail","group":"rollbacks","source_window":"source:scattered:4"}
+{"id":"B57","text":"reviews scattered fact 1 links through delayed window and exact source trail","group":"reviews","source_window":"source:scattered:1"}
+{"id":"B58","text":"reviews scattered fact 2 links through delayed window and exact source trail","group":"reviews","source_window":"source:scattered:2"}
+{"id":"B59","text":"reviews scattered fact 3 links through delayed window and exact source trail","group":"reviews","source_window":"source:scattered:3"}
+{"id":"B60","text":"reviews scattered fact 4 links through delayed window and exact source trail","group":"reviews","source_window":"source:scattered:4"}
+{"id":"B61","text":"tokens scattered fact 1 links through delayed window and exact source trail","group":"tokens","source_window":"source:scattered:1"}
+{"id":"B62","text":"tokens scattered fact 2 links through delayed window and exact source trail","group":"tokens","source_window":"source:scattered:2"}
+{"id":"B63","text":"tokens scattered fact 3 links through delayed window and exact source trail","group":"tokens","source_window":"source:scattered:3"}
+{"id":"B64","text":"tokens scattered fact 4 links through delayed window and exact source trail","group":"tokens","source_window":"source:scattered:4"}
+{"id":"B65","text":"sessions scattered fact 1 links through delayed window and exact source trail","group":"sessions","source_window":"source:scattered:1"}
+{"id":"B66","text":"sessions scattered fact 2 links through delayed window and exact source trail","group":"sessions","source_window":"source:scattered:2"}
+{"id":"B67","text":"sessions scattered fact 3 links through delayed window and exact source trail","group":"sessions","source_window":"source:scattered:3"}
+{"id":"B68","text":"sessions scattered fact 4 links through delayed window and exact source trail","group":"sessions","source_window":"source:scattered:4"}
+{"id":"B69","text":"profiles scattered fact 1 links through delayed window and exact source trail","group":"profiles","source_window":"source:scattered:1"}
+{"id":"B70","text":"profiles scattered fact 2 links through delayed window and exact source trail","group":"profiles","source_window":"source:scattered:2"}
+{"id":"B71","text":"profiles scattered fact 3 links through delayed window and exact source trail","group":"profiles","source_window":"source:scattered:3"}
+{"id":"B72","text":"profiles scattered fact 4 links through delayed window and exact source trail","group":"profiles","source_window":"source:scattered:4"}
+{"id":"B73","text":"notices scattered fact 1 links through delayed window and exact source trail","group":"notices","source_window":"source:scattered:1"}
+{"id":"B74","text":"notices scattered fact 2 links through delayed window and exact source trail","group":"notices","source_window":"source:scattered:2"}
+{"id":"B75","text":"notices scattered fact 3 links through delayed window and exact source trail","group":"notices","source_window":"source:scattered:3"}
+{"id":"B76","text":"notices scattered fact 4 links through delayed window and exact source trail","group":"notices","source_window":"source:scattered:4"}
+{"id":"B77","text":"archives scattered fact 1 links through delayed window and exact source trail","group":"archives","source_window":"source:scattered:1"}
+{"id":"B78","text":"archives scattered fact 2 links through delayed window and exact source trail","group":"archives","source_window":"source:scattered:2"}
+{"id":"B79","text":"archives scattered fact 3 links through delayed window and exact source trail","group":"archives","source_window":"source:scattered:3"}
+{"id":"B80","text":"archives scattered fact 4 links through delayed window and exact source trail","group":"archives","source_window":"source:scattered:4"}

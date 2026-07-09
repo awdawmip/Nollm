@@ -1,20 +1,60 @@
-{"id":"A01","text":"Atlas service owner credential rotation policy","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A02","text":"Atlas service credential audit window","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A03","text":"Atlas owner approves rotation checklist","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A04","text":"Atlas incident responder owns credential rollback","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A05","text":"Atlas service key expires after ninety days","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A06","text":"Atlas key renewal requires two approvers","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A07","text":"Atlas audit trail records owner approval","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A08","text":"Atlas emergency access expires after one hour","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A09","text":"Atlas credential vault stores service key","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A10","text":"Atlas service restart follows credential rotation","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A11","text":"Atlas rollback checklist names incident owner","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A12","text":"Atlas policy forbids shared owner accounts","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A13","text":"Atlas production key has staged approval","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A14","text":"Atlas staging key has separate approval","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A15","text":"Atlas credential review happens monthly","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A16","text":"Atlas owner review signs audit evidence","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A17","text":"Atlas service key alert pages owner","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A18","text":"Atlas vault backup excludes expired key","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A19","text":"Atlas recovery test verifies rotated key","group":"atlas","source_window":"source:concentrated:1"}
-{"id":"A20","text":"Atlas credential summary links audit record","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A01","text":"atlas concentrated fact 1 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A02","text":"atlas concentrated fact 2 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A03","text":"atlas concentrated fact 3 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A04","text":"atlas concentrated fact 4 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A05","text":"atlas concentrated fact 5 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A06","text":"atlas concentrated fact 6 shares fixture chain and local policy marker","group":"atlas","source_window":"source:concentrated:1"}
+{"id":"A07","text":"beacon concentrated fact 1 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A08","text":"beacon concentrated fact 2 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A09","text":"beacon concentrated fact 3 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A10","text":"beacon concentrated fact 4 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A11","text":"beacon concentrated fact 5 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A12","text":"beacon concentrated fact 6 shares fixture chain and local policy marker","group":"beacon","source_window":"source:concentrated:2"}
+{"id":"A13","text":"cedar concentrated fact 1 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A14","text":"cedar concentrated fact 2 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A15","text":"cedar concentrated fact 3 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A16","text":"cedar concentrated fact 4 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A17","text":"cedar concentrated fact 5 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A18","text":"cedar concentrated fact 6 shares fixture chain and local policy marker","group":"cedar","source_window":"source:concentrated:3"}
+{"id":"A19","text":"delta concentrated fact 1 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A20","text":"delta concentrated fact 2 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A21","text":"delta concentrated fact 3 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A22","text":"delta concentrated fact 4 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A23","text":"delta concentrated fact 5 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A24","text":"delta concentrated fact 6 shares fixture chain and local policy marker","group":"delta","source_window":"source:concentrated:4"}
+{"id":"A25","text":"ember concentrated fact 1 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A26","text":"ember concentrated fact 2 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A27","text":"ember concentrated fact 3 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A28","text":"ember concentrated fact 4 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A29","text":"ember concentrated fact 5 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A30","text":"ember concentrated fact 6 shares fixture chain and local policy marker","group":"ember","source_window":"source:concentrated:5"}
+{"id":"A31","text":"forge concentrated fact 1 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A32","text":"forge concentrated fact 2 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A33","text":"forge concentrated fact 3 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A34","text":"forge concentrated fact 4 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A35","text":"forge concentrated fact 5 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A36","text":"forge concentrated fact 6 shares fixture chain and local policy marker","group":"forge","source_window":"source:concentrated:6"}
+{"id":"A37","text":"harbor concentrated fact 1 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A38","text":"harbor concentrated fact 2 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A39","text":"harbor concentrated fact 3 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A40","text":"harbor concentrated fact 4 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A41","text":"harbor concentrated fact 5 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A42","text":"harbor concentrated fact 6 shares fixture chain and local policy marker","group":"harbor","source_window":"source:concentrated:7"}
+{"id":"A43","text":"ion concentrated fact 1 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A44","text":"ion concentrated fact 2 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A45","text":"ion concentrated fact 3 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A46","text":"ion concentrated fact 4 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A47","text":"ion concentrated fact 5 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A48","text":"ion concentrated fact 6 shares fixture chain and local policy marker","group":"ion","source_window":"source:concentrated:8"}
+{"id":"A49","text":"juniper concentrated fact 1 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A50","text":"juniper concentrated fact 2 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A51","text":"juniper concentrated fact 3 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A52","text":"juniper concentrated fact 4 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A53","text":"juniper concentrated fact 5 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A54","text":"juniper concentrated fact 6 shares fixture chain and local policy marker","group":"juniper","source_window":"source:concentrated:9"}
+{"id":"A55","text":"keystone concentrated fact 1 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}
+{"id":"A56","text":"keystone concentrated fact 2 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}
+{"id":"A57","text":"keystone concentrated fact 3 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}
+{"id":"A58","text":"keystone concentrated fact 4 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}
+{"id":"A59","text":"keystone concentrated fact 5 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}
+{"id":"A60","text":"keystone concentrated fact 6 shares fixture chain and local policy marker","group":"keystone","source_window":"source:concentrated:10"}

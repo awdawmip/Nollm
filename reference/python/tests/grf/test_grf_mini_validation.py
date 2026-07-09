@@ -14,6 +14,7 @@ def test_mini_validation_reports_required_metrics() -> None:
     assert completed.returncode == 0
     payload = json.loads(completed.stdout)
     assert payload["note"] == "Cognee-style local baseline, not actual Cognee run"
+    assert payload["dataset_items"] >= 200
     metrics = payload["metrics"]["N3_grf_plus_stitching"]
     for key in (
         "recall_correctness",
@@ -37,4 +38,13 @@ def test_mini_validation_reports_required_metrics() -> None:
     replay = payload["metrics"]["N5_grf_file_replay"]
     assert replay["replay_selected_shard_delta"] == 0
     assert replay["replay_path_class_delta"] == 0
+    n6 = payload["metrics"]["N6_grf_capture_file_replay"]
+    assert n6["captured_shard_count"] >= 200
+    assert n6["admitted_shard_count"] > 0
+    assert n6["source_resolution_success_rate"] == 1.0
+    assert n6["capture_reopen_idempotency_checks"] == 1
+    assert n6["rejected_rewrite_checks"] == 1
+    assert n6["replay_selected_shard_delta"] == 0
+    assert n6["replay_path_class_delta"] == 0
+    assert n6["relation_storage_size"] < payload["metrics"]["B2_explicit_graph"]["relation_storage_size"]
     assert payload["hard_conditions"]["relation_storage_not_o_n_squared_on_fixture"] is True
