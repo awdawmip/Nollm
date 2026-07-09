@@ -21,6 +21,8 @@ from .propagation import ActivationFrontier, SparseActivation
 from .recall import QueryProbe, RecallBudget, resolve_grf_recall
 from .recall_digest import CoverageReport, RecallDigest, RecallPath
 from .relation_field import RelationField
+from .storage import GRFFileStore
+from .json_canonical import canonical_dumps, canonical_loads, sha256_canonical
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
 __all__ = [
@@ -50,6 +52,7 @@ __all__ = [
     "RecallDigest",
     "RecallPath",
     "RelationField",
+    "GRFFileStore",
     "SparseActivation",
     "StitchProposal",
     "StitchRecord",
@@ -66,4 +69,7 @@ __all__ = [
     "performance_profile",
     "profiles",
     "resolve_grf_recall",
+    "canonical_dumps",
+    "canonical_loads",
+    "sha256_canonical",
 ]
