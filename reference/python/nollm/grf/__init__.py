@@ -23,6 +23,8 @@ from .recall_digest import CoverageReport, RecallDigest, RecallPath
 from .relation_field import RelationField
 from .storage import GRFFileStore
 from .json_canonical import canonical_dumps, canonical_loads, sha256_canonical
+from .ledger import GRFLedger, GRFLedgerEvent
+from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
 __all__ = [
@@ -53,6 +55,8 @@ __all__ = [
     "RecallPath",
     "RelationField",
     "GRFFileStore",
+    "GRFLedger",
+    "GRFLedgerEvent",
     "SparseActivation",
     "StitchProposal",
     "StitchRecord",
@@ -71,5 +75,8 @@ __all__ = [
     "resolve_grf_recall",
     "canonical_dumps",
     "canonical_loads",
+    "load_all_grf_objects",
+    "rebuild_relation_field_from_files",
+    "replay_recall",
     "sha256_canonical",
 ]

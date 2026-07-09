@@ -10,6 +10,7 @@ from .bridge_kernel import BridgeKernel
 from .cell_address import CellAddress
 from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .json_canonical import canonical_dumps, canonical_loads
+from .ledger import GRFLedger
 from .local_patch import LocalPatch
 from .placement import GeometryMark, PlacementCandidate, PlacementRecord, RejectionRecord
 from .recall_digest import CoverageReport, RecallDigest, RecallPath
@@ -79,20 +80,20 @@ class GRFFileStore:
     def read_placement_candidate(self, candidate_id: str) -> PlacementCandidate:
         return _candidate_from_payload(self._read("placement_candidate", candidate_id, "grfs/placements/candidates"))
 
-    def write_placement_record(self, record: PlacementRecord) -> Path:
-        return self._write("placement_record", record.placement_id, record.to_mapping(), "grfs/placements/records")
+    def write_placement_record(self, record: PlacementRecord, recorded_at: str | None = None) -> Path:
+        return self._write("placement_record", record.placement_id, record.to_mapping(), "grfs/placements/records", recorded_at)
 
     def read_placement_record(self, placement_id: str) -> PlacementRecord:
         return _placement_from_payload(self._read("placement_record", placement_id, "grfs/placements/records"))
 
-    def write_minimal_admission_record(self, record: MinimalAdmissionRecord) -> Path:
-        return self._write("minimal_admission_record", record.admission_id, record.to_mapping(), "grfs/admissions/minimal_records")
+    def write_minimal_admission_record(self, record: MinimalAdmissionRecord, recorded_at: str | None = None) -> Path:
+        return self._write("minimal_admission_record", record.admission_id, record.to_mapping(), "grfs/admissions/minimal_records", recorded_at)
 
     def read_minimal_admission_record(self, admission_id: str) -> MinimalAdmissionRecord:
         return _admission_from_payload(self._read("minimal_admission_record", admission_id, "grfs/admissions/minimal_records"))
 
-    def write_recall_digest(self, digest: RecallDigest) -> Path:
-        return self._write("recall_digest", digest.query_id, digest.to_mapping(), "grfs/recalls/digests")
+    def write_recall_digest(self, digest: RecallDigest, recorded_at: str | None = None) -> Path:
+        return self._write("recall_digest", digest.query_id, digest.to_mapping(), "grfs/recalls/digests", recorded_at, event_type="recall_digest_written")
 
     def read_recall_digest(self, query_id: str) -> RecallDigest:
         return _digest_from_payload(self._read("recall_digest", query_id, "grfs/recalls/digests"))
@@ -101,7 +102,7 @@ class GRFFileStore:
         _safe_id(object_id)
         return self.root / directory / f"{object_id}.json"
 
-    def _write(self, object_type: str, object_id: str, payload: dict[str, Any], directory: str) -> Path:
+    def _write(self, object_type: str, object_id: str, payload: dict[str, Any], directory: str, recorded_at: str | None = None, event_type: str = "object_written") -> Path:
         path = self.path_for(object_type, object_id, directory)
         record = {"schema_version": SCHEMA_VERSION, "object_type": object_type, "object_id": object_id, "payload": payload}
         data = canonical_dumps(record)
@@ -109,9 +110,15 @@ class GRFFileStore:
         if path.exists():
             existing = path.read_bytes()
             if existing == data:
+                if recorded_at is not None:
+                    GRFLedger(self.root).append("object_reopened_same_bytes", object_type, object_id, path.relative_to(self.root), _sha256_bytes(data), recorded_at)
                 return path
+            if recorded_at is not None:
+                GRFLedger(self.root).append("object_write_rejected_different_bytes", object_type, object_id, path.relative_to(self.root), _sha256_bytes(existing), recorded_at)
             raise FileExistsError("different bytes already exist for object id")
         path.write_bytes(data)
+        if recorded_at is not None:
+            GRFLedger(self.root).append(event_type, object_type, object_id, path.relative_to(self.root), _sha256_bytes(data), recorded_at)
         return path
 
     def _read(self, object_type: str, object_id: str, directory: str) -> dict[str, Any]:
@@ -125,6 +132,12 @@ class GRFFileStore:
 def _safe_id(object_id: str) -> None:
     if not isinstance(object_id, str) or object_id == "" or "/" in object_id or "\\" in object_id or ".." in object_id:
         raise ValueError("unsafe object id")
+
+
+def _sha256_bytes(data: bytes) -> str:
+    from hashlib import sha256
+
+    return sha256(data).hexdigest()
 
 
 def _cell(payload: dict[str, Any]) -> CellAddress:

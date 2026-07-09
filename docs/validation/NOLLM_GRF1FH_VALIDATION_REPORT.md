@@ -15,7 +15,17 @@ GATE_F_PASSED
 
 ## Gate G
 
-Pending implementation.
+```text
+GATE_G_PASSED
+- append-only ledger implemented;
+- every durable GRF object write has ledger event when recorded_at is supplied;
+- object hash matches canonical bytes;
+- different-byte rewrite rejected without overwrite;
+- relation field rebuilt from files;
+- replayed recall matches in-memory recall on selected_shards and path classes;
+- rejected stitch records reload and suppress repeated false-friend acceptance;
+- RecallDigest is derived and source objects remain authoritative.
+```
 
 ## Gate H
 
