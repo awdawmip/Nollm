@@ -12,6 +12,8 @@ from .coverage_template import (
 from .eisenstein import EisensteinInt
 from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .evidence import EvidenceShardRecord
+from .exporters import to_jsonable
+from .facade import GRFFacade, GRFWorkspaceReport
 from .fixed_point import Q16_ONE
 from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
@@ -41,6 +43,8 @@ __all__ = [
     "EisensteinInt",
     "EvidenceIsland",
     "EvidenceShardRecord",
+    "GRFFacade",
+    "GRFWorkspaceReport",
     "EvidenceShardRef",
     "KernelEntry",
     "LocalPatch",
@@ -90,6 +94,7 @@ __all__ = [
     "resolve_source_fallback",
     "canonical_dumps",
     "canonical_loads",
+    "to_jsonable",
     "load_all_grf_objects",
     "rebuild_relation_field_from_files",
     "replay_recall",
