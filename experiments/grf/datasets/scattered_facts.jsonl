@@ -1,0 +1,3 @@
+{"id":"B1","text":"Payment retry policy starts after soft decline","group":"payments","source_window":"source:scattered:1"}
+{"id":"B2","text":"Soft decline retry window is two days","group":"payments","source_window":"source:scattered:2"}
+{"id":"B3","text":"Manual review blocks payment retry escalation","group":"payments","source_window":"source:scattered:3"}
