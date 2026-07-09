@@ -10,11 +10,12 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_mini_validation_reports_required_metrics() -> None:
-    completed = subprocess.run([sys.executable, str(ROOT / "experiments" / "grf" / "run_mini_validation.py")], cwd=ROOT, text=True, capture_output=True, timeout=30)
+    completed = subprocess.run([sys.executable, str(ROOT / "experiments" / "grf" / "run_mini_validation.py")], cwd=ROOT, text=True, capture_output=True, timeout=120)
     assert completed.returncode == 0
     payload = json.loads(completed.stdout)
     assert payload["note"] == "Cognee-style local baseline, not actual Cognee run"
-    assert payload["dataset_items"] >= 200
+    assert payload["dataset_items"] >= 1000
+    assert payload["scale_seed"] == "grf1lm_scale_seed_v1"
     metrics = payload["metrics"]["N3_grf_plus_stitching"]
     for key in (
         "recall_correctness",
@@ -47,4 +48,11 @@ def test_mini_validation_reports_required_metrics() -> None:
     assert n6["replay_selected_shard_delta"] == 0
     assert n6["replay_path_class_delta"] == 0
     assert n6["relation_storage_size"] < payload["metrics"]["B2_explicit_graph"]["relation_storage_size"]
+    n7 = payload["metrics"]["N7_grf_facade_file_replay"]
+    assert n7["captured_shard_count"] >= 1000
+    assert n7["source_resolution_success_rate"] == 1.0
+    assert n7["replay_selected_shard_delta"] == 0
+    assert n7["replay_path_class_delta"] == 0
+    assert n7["relation_storage_size"] < n7["explicit_graph_relation_storage_size"]
     assert payload["hard_conditions"]["relation_storage_not_o_n_squared_on_fixture"] is True
+    assert payload["hard_conditions"]["grf_relation_storage_below_explicit_graph"] is True

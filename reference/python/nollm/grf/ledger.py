@@ -71,5 +71,10 @@ class GRFLedger:
         return tuple(out)
 
     def last_event_id(self) -> str | None:
-        events = self.events()
-        return None if not events else events[-1].event_id
+        if not self.path.exists():
+            return None
+        lines = self.path.read_bytes().splitlines()
+        if not lines:
+            return None
+        payload = canonical_loads(lines[-1] + b"\n")
+        return payload["event_id"]
