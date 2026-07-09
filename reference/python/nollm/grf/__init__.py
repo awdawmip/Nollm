@@ -13,9 +13,11 @@ from .eisenstein import EisensteinInt
 from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .fixed_point import Q16_ONE
 from .local_patch import LocalPatch
+from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
-from .stitching import StitchProposal, StitchRecord, StitchWitness
+from .admission import MinimalAdmissionRecord
+from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
 __all__ = [
     "AxialCoord",
@@ -28,11 +30,18 @@ __all__ = [
     "EvidenceShardRef",
     "KernelEntry",
     "LocalPatch",
+    "GeometryMark",
+    "MinimalAdmissionRecord",
+    "PlacementCandidate",
+    "PlacementDecision",
+    "PlacementRecord",
     "Profile",
     "Q16_ONE",
+    "RejectionRecord",
     "BridgeKernel",
     "StitchProposal",
     "StitchRecord",
+    "StitchTransform",
     "StitchWitness",
     "axial_to_cube",
     "cube_to_axial",

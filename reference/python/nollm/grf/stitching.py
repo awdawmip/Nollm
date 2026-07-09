@@ -29,6 +29,48 @@ LOW_RESIDUAL_Q16 = Q16_ONE // 16
 
 
 @dataclass(frozen=True, order=True)
+class StitchTransform:
+    type: str
+    values: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        if self.type == "translation":
+            if len(self.values) != 2:
+                raise ValueError("translation requires dq, dr")
+        elif self.type == "eisenstein_similarity":
+            if len(self.values) != 4:
+                raise ValueError("eisenstein_similarity requires a, b, tq, tr")
+        elif self.type == "fixed_point_similarity":
+            if len(self.values) != 6:
+                raise ValueError("fixed_point_similarity requires four matrix and two translation Q16 values")
+        else:
+            raise ValueError("unknown transform type")
+        if any(type(value) is not int for value in self.values):
+            raise TypeError("transform values must be integers")
+
+    @staticmethod
+    def translation(dq: int, dr: int) -> "StitchTransform":
+        return StitchTransform("translation", (dq, dr))
+
+    @staticmethod
+    def eisenstein_similarity(a: int, b: int, tq: int, tr: int) -> "StitchTransform":
+        return StitchTransform("eisenstein_similarity", (a, b, tq, tr))
+
+    @staticmethod
+    def fixed_point_similarity(matrix_q16: tuple[int, int, int, int], translation_q16: tuple[int, int]) -> "StitchTransform":
+        if len(matrix_q16) != 4 or len(translation_q16) != 2:
+            raise ValueError("fixed_point_similarity requires 4 matrix and 2 translation values")
+        return StitchTransform("fixed_point_similarity", (*matrix_q16, *translation_q16))
+
+    def to_mapping(self) -> dict[str, object]:
+        if self.type == "translation":
+            return {"type": self.type, "dq": self.values[0], "dr": self.values[1]}
+        if self.type == "eisenstein_similarity":
+            return {"type": self.type, "a": self.values[0], "b": self.values[1], "tq": self.values[2], "tr": self.values[3]}
+        return {"type": self.type, "matrix_q16": self.values[:4], "translation_q16": self.values[4:]}
+
+
+@dataclass(frozen=True, order=True)
 class StitchWitness:
     type: str
     strength_q16: int
@@ -59,7 +101,7 @@ class StitchProposal:
     proposal_id: str
     from_patch: str
     to_patch: str
-    candidate_transform: tuple[tuple[str, int], ...]
+    candidate_transform: StitchTransform
     witnesses: tuple[StitchWitness, ...]
     confidence_q16: int
     state: str
@@ -71,6 +113,8 @@ class StitchProposal:
                 raise ValueError(f"{label} must be non-empty text")
         if self.from_patch == self.to_patch:
             raise ValueError("proposal patches must be distinct")
+        if not isinstance(self.candidate_transform, StitchTransform):
+            raise TypeError("candidate_transform must be StitchTransform")
         if not self.witnesses:
             raise ValueError("witnesses cannot be empty")
         if type(self.confidence_q16) is not int or self.confidence_q16 < 0 or self.confidence_q16 > Q16_ONE:
@@ -93,7 +137,7 @@ class StitchProposal:
             "proposal_id": self.proposal_id,
             "from_patch": self.from_patch,
             "to_patch": self.to_patch,
-            "candidate_transform": tuple(sorted(self.candidate_transform)),
+            "candidate_transform": self.candidate_transform.to_mapping(),
             "witnesses": tuple(witness.to_mapping() for witness in sorted(self.witnesses, key=lambda item: item.to_mapping()["type"])),
             "confidence_q16": self.confidence_q16,
             "state": self.state,
@@ -111,7 +155,7 @@ class StitchRecord:
     accepted_at: str
     from_patch: str
     to_patch: str
-    transform: tuple[tuple[str, int], ...]
+    transform: StitchTransform
     residual_q16: int
     bridge_kernel: BridgeKernel
     evidence_refs: tuple[str, ...]
@@ -125,8 +169,12 @@ class StitchRecord:
             raise ValueError("unknown accepted_by")
         if type(self.residual_q16) is not int or self.residual_q16 < 0 or self.residual_q16 > Q16_ONE:
             raise ValueError("residual_q16 must be in Q16 range")
+        if not isinstance(self.transform, StitchTransform):
+            raise TypeError("transform must be StitchTransform")
         if not isinstance(self.bridge_kernel, BridgeKernel):
             raise TypeError("bridge_kernel must be BridgeKernel")
+        if self.bridge_kernel.from_patch != self.from_patch or self.bridge_kernel.to_patch != self.to_patch:
+            raise ValueError("bridge kernel patch endpoints must match stitch record")
         if not self.evidence_refs or any(not isinstance(ref, str) or ref == "" for ref in self.evidence_refs):
             raise ValueError("evidence_refs must be non-empty text")
         if type(self.reversible) is not bool:
@@ -144,6 +192,8 @@ class StitchRecord:
     ) -> "StitchRecord":
         if proposal.state != "accepted":
             raise ValueError("cannot create stitch record from non-accepted proposal")
+        if bridge_kernel.from_patch != proposal.from_patch or bridge_kernel.to_patch != proposal.to_patch:
+            raise ValueError("bridge kernel patch endpoints must match proposal")
         evidence_refs = tuple(sorted({ref for witness in proposal.witnesses for ref in witness.refs}))
         return cls(
             stitch_id,
@@ -166,7 +216,7 @@ class StitchRecord:
             "accepted_at": self.accepted_at,
             "from_patch": self.from_patch,
             "to_patch": self.to_patch,
-            "transform": tuple(sorted(self.transform)),
+            "transform": self.transform.to_mapping(),
             "residual_q16": self.residual_q16,
             "bridge_kernel": self.bridge_kernel.to_mapping(),
             "evidence_refs": tuple(sorted(self.evidence_refs)),

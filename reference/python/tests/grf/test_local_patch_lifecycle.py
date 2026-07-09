@@ -33,6 +33,8 @@ def test_patch_rejects_mixed_profile_or_chart_cells() -> None:
         patch(occupied_cells=(cell("aligned_baseline_v1"),))
     with pytest.raises(ValueError):
         patch(boundary_cells=(cell(chart_id="chart_b"),))
+    with pytest.raises(ValueError):
+        patch(center_cell=cell(q=5), occupied_cells=(cell(q=0),))
 
 
 def test_patch_stable_serialization_and_boundary_empty() -> None:

@@ -4,7 +4,7 @@ import pytest
 
 from nollm.grf.bridge_kernel import BridgeKernel
 from nollm.grf.fixed_point import Q16_ONE
-from nollm.grf.stitching import StitchProposal, StitchRecord, StitchWitness, can_accept
+from nollm.grf.stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness, can_accept
 
 
 def witness(kind: str, strength: int = Q16_ONE // 2, refs: tuple[str, ...] = ("shard:a",)) -> StitchWitness:
@@ -12,7 +12,7 @@ def witness(kind: str, strength: int = Q16_ONE // 2, refs: tuple[str, ...] = ("s
 
 
 def proposal(*witnesses: StitchWitness, confidence: int = Q16_ONE // 2) -> StitchProposal:
-    return StitchProposal("proposal_a", "patch_a", "patch_b", (("dq", 1), ("dr", 0)), witnesses, confidence, "proposed")
+    return StitchProposal("proposal_a", "patch_a", "patch_b", StitchTransform.translation(1, 0), witnesses, confidence, "proposed")
 
 
 def bridge() -> BridgeKernel:
@@ -48,3 +48,14 @@ def test_source_backed_plus_coverage_can_create_stitch_record() -> None:
 def test_stitch_record_requires_accepted_proposal() -> None:
     with pytest.raises(ValueError):
         StitchRecord.from_accepted_proposal("stitch_bad", proposal(witness("lexical_hint")), "human", "2026-07-09T10:00:00+08:00", 0, bridge())
+
+
+def test_transform_schema_rejects_unknown_float_and_bridge_mismatch() -> None:
+    with pytest.raises(ValueError):
+        StitchTransform("unknown", (1,))
+    with pytest.raises(TypeError):
+        StitchTransform.translation(1.0, 0)  # type: ignore[arg-type]
+    accepted = proposal(witness("manual_bridge")).accept(0)
+    wrong_bridge = BridgeKernel("bridge_wrong", "patch_x", "patch_b", Q16_ONE // 2, "normal", 2, 3, ("shard:a",))
+    with pytest.raises(ValueError):
+        StitchRecord.from_accepted_proposal("stitch_wrong", accepted, "human", "2026-07-09T10:00:00+08:00", 0, wrong_bridge)

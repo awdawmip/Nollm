@@ -45,6 +45,8 @@ class LocalPatch:
                 raise TypeError("patch cells must be CellAddress")
             if cell.profile_id != self.profile_id or cell.chart_id != self.chart_id:
                 raise ValueError("patch cells must share profile_id and chart_id")
+        if self.center_cell not in self.occupied_cells:
+            raise ValueError("center_cell must be in occupied_cells")
         _require_q16(self.density_pressure_q16, "density_pressure_q16")
         _require_q16(self.ambiguity_q16, "ambiguity_q16")
 
