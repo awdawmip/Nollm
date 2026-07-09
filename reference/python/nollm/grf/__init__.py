@@ -10,8 +10,12 @@ from .coverage_template import (
     expand_template,
 )
 from .eisenstein import EisensteinInt
+from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .fixed_point import Q16_ONE
+from .local_patch import LocalPatch
 from .profiles import Profile, get_profile, performance_profile, profiles
+from .bridge_kernel import BridgeKernel
+from .stitching import StitchProposal, StitchRecord, StitchWitness
 
 __all__ = [
     "AxialCoord",
@@ -20,9 +24,16 @@ __all__ = [
     "CoverageTemplateCompiler",
     "CubeCoord",
     "EisensteinInt",
+    "EvidenceIsland",
+    "EvidenceShardRef",
     "KernelEntry",
+    "LocalPatch",
     "Profile",
     "Q16_ONE",
+    "BridgeKernel",
+    "StitchProposal",
+    "StitchRecord",
+    "StitchWitness",
     "axial_to_cube",
     "cube_to_axial",
     "expand_lateral",

@@ -43,6 +43,17 @@ coverage_up and coverage_down are distinct templates
 dream_quasi_v1 is not the default performance profile
 ```
 
+GRF1-B technical-debt closure:
+
+```text
+layer_index_direction = finer_with_increasing_index
+coverage_up = fine to coarse, layer_delta = -1
+coverage_down = coarse to fine, layer_delta = +1
+normalization_residual_q16 is Q16 sum residual only
+approximation_residual_q16 is compiler/profile approximation residual
+dream_quasi_v1 uses approximation residual or boundary ambiguity, not normalization residual, to report approximation
+```
+
 Known non-goals:
 
 ```text

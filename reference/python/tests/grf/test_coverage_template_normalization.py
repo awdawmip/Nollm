@@ -9,7 +9,7 @@ def test_templates_report_sum_and_residual() -> None:
     for profile_id in ("aligned_baseline_v1", "eisenstein_exact_v1", "dream_quasi_v1"):
         template = compiler.compile(profile_id, COVERAGE_UP)
         assert template.sum_weight_q16 == Q16_ONE
-        assert template.residual_q16 == 0
+        assert template.normalization_residual_q16 == 0
         assert template.compiler["weight_format"] == "q16_65536"
 
 
@@ -33,3 +33,4 @@ def test_dream_quasi_is_marked_research_ambiguous() -> None:
     template = CoverageTemplateCompiler().compile("dream_quasi_v1", COVERAGE_UP)
     assert "boundary_ambiguous" in template.compiler["flags"]
     assert template.compiler["method"] == "symbolic_research_template_with_residual"
+    assert template.approximation_residual_q16 > 0

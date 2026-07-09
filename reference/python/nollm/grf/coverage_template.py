@@ -14,6 +14,7 @@ COVERAGE_DOWN = "coverage_down"
 LATERAL = "lateral"
 DIRECTIONS = frozenset({COVERAGE_UP, COVERAGE_DOWN, LATERAL})
 DEFAULT_FANOUT_LIMIT = 7
+LAYER_INDEX_DIRECTION = "finer_with_increasing_index"
 
 
 @dataclass(frozen=True, order=True)
@@ -42,7 +43,8 @@ class CoverageTemplate:
     source_phase: str | None
     entries: tuple[KernelEntry, ...]
     sum_weight_q16: int
-    residual_q16: int
+    normalization_residual_q16: int
+    approximation_residual_q16: int
     compiler: dict[str, object]
 
     def __post_init__(self) -> None:
@@ -55,8 +57,10 @@ class CoverageTemplate:
             raise ValueError("template entries cannot be empty")
         if self.sum_weight_q16 != sum(entry.weight_q16 for entry in self.entries):
             raise ValueError("sum_weight_q16 mismatch")
-        if self.residual_q16 != residual_q16([entry.weight_q16 for entry in self.entries]):
-            raise ValueError("residual_q16 mismatch")
+        if self.normalization_residual_q16 != residual_q16([entry.weight_q16 for entry in self.entries]):
+            raise ValueError("normalization_residual_q16 mismatch")
+        if type(self.approximation_residual_q16) is not int or self.approximation_residual_q16 < 0:
+            raise ValueError("approximation_residual_q16 must be a non-negative integer")
 
 
 class CoverageTemplateCompiler:
@@ -83,11 +87,13 @@ class CoverageTemplateCompiler:
             entries,
             sum(entry.weight_q16 for entry in entries),
             residual_q16([entry.weight_q16 for entry in entries]),
+            _approximation_residual(profile.profile_id),
             {
                 "compiler_id": "grf1a_coverage_template_compiler",
                 "method": _method(profile.profile_id),
                 "weight_format": profile.weight_format,
                 "fanout_limit": self.fanout_limit,
+                "layer_index_direction": LAYER_INDEX_DIRECTION,
                 "flags": tuple(flags),
             },
         )
@@ -147,9 +153,9 @@ def _eisenstein_offsets(direction: str) -> tuple[tuple[int, int, str], ...]:
 
 def _layer_delta(direction: str) -> int:
     if direction == COVERAGE_UP:
-        return 1
-    if direction == COVERAGE_DOWN:
         return -1
+    if direction == COVERAGE_DOWN:
+        return 1
     if direction == LATERAL:
         return 0
     raise ValueError("unknown coverage direction")
@@ -159,3 +165,9 @@ def _method(profile_id: str) -> str:
     if profile_id == "dream_quasi_v1":
         return "symbolic_research_template_with_residual"
     return "integer_template_lookup"
+
+
+def _approximation_residual(profile_id: str) -> int:
+    if profile_id == "dream_quasi_v1":
+        return Q16_ONE // 16
+    return 0

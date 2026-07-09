@@ -21,6 +21,20 @@ The first performance candidate is `eisenstein_exact_v1`. The aligned profile
 is a control baseline. `dream_quasi_v1` is a research profile and must not be
 selected as the default performance path.
 
-GRF1-A does not implement EvidenceIsland persistence, LocalPatch,
-StitchProposal, StitchRecord, PlacementRecord migration, AdmissionRecord
+GRF1-B adds the first dispersed-evidence stitching prototype:
+
+```text
+EvidenceShard / EvidenceIsland -> LocalPatch -> StitchProposal -> StitchRecord -> BridgeKernel
+```
+
+The stitching line preserves these boundaries:
+
+```text
+unstitched evidence is not forgotten
+stitching is not truth merge
+bridge kernels are not parent-child links
+coverage relation is not an object-level semantic edge
+```
+
+GRF1-B still does not implement PlacementRecord migration, AdmissionRecord
 migration, GRF recall product behavior, OpenClaw runtime, or adapter work.
