@@ -20,6 +20,7 @@ from .placement import GeometryMark, PlacementCandidate, PlacementDecision, Plac
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
 from .admission import MinimalAdmissionRecord
+from .admission_bridge import GRFAdmissionBridge, GRFAdmissionBridgeResult, MissingSourceFallback, resolve_source_fallback
 from .propagation import ActivationFrontier, SparseActivation
 from .recall import QueryProbe, RecallBudget, resolve_grf_recall
 from .recall_digest import CoverageReport, RecallDigest, RecallPath
@@ -49,6 +50,9 @@ __all__ = [
     "GRFCaptureRequest",
     "GeometryMark",
     "MinimalAdmissionRecord",
+    "GRFAdmissionBridge",
+    "GRFAdmissionBridgeResult",
+    "MissingSourceFallback",
     "PlacementCandidate",
     "PlacementDecision",
     "PlacementRecord",
@@ -83,6 +87,7 @@ __all__ = [
     "performance_profile",
     "profiles",
     "resolve_grf_recall",
+    "resolve_source_fallback",
     "canonical_dumps",
     "canonical_loads",
     "load_all_grf_objects",

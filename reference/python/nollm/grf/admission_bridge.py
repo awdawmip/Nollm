@@ -1,0 +1,149 @@
+"""Explicit GRF capture-to-admission bridge prototype."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from hashlib import sha256
+from typing import Any
+
+from .admission import MinimalAdmissionRecord
+from .cell_address import CellAddress
+from .evidence import EvidenceShardRecord
+from .evidence_island import EvidenceIsland, EvidenceShardRef
+from .fixed_point import Q16_ONE
+from .local_patch import LocalPatch
+from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord, SCORE_FIELDS
+from .source_window import SourceWindowRecord
+from .storage import GRFFileStore
+
+
+@dataclass(frozen=True)
+class MissingSourceFallback:
+    ref: str
+    error: str = "missing_source"
+
+
+@dataclass(frozen=True)
+class GRFAdmissionBridgeResult:
+    evidence_island: EvidenceIsland
+    local_patch: LocalPatch
+    placement_candidate: PlacementCandidate
+    placement_decision: PlacementDecision
+    geometry_mark: GeometryMark | None
+    placement_record: PlacementRecord | None
+    admission_record: MinimalAdmissionRecord | None
+    rejection_record: RejectionRecord | None
+
+
+class GRFAdmissionBridge:
+    def __init__(self, store: GRFFileStore) -> None:
+        self.store = store
+
+    def admit(self, shard: EvidenceShardRecord, window: SourceWindowRecord, policy_hint: dict[str, Any], decided_at: str) -> GRFAdmissionBridgeResult:
+        if policy_hint.get("policy_id", "validation_fixture_policy") != "validation_fixture_policy":
+            raise ValueError("GRFAdmissionBridge only supports validation_fixture_policy")
+
+        target_cell = _target_cell(shard, policy_hint)
+        ids = _BridgeIds(shard.shard_id)
+        shard_ref = EvidenceShardRef(shard.shard_id, shard.source_window_refs, shard.trust_state, shard.usage_state)
+        island = EvidenceIsland(ids.island_id, (shard_ref,), tuple(sorted(set((*shard.source_window_refs, window.window_id)))), "validation_fixture", "placed")
+        patch = LocalPatch(ids.patch_id, island.island_id, target_cell.chart_id, target_cell.profile_id, target_cell, (target_cell,), (), "placed", 0, 0)
+        candidate = PlacementCandidate(ids.candidate_id, shard.shard_id, island.island_id, patch.patch_id, target_cell, _scores(policy_hint), _confidence(policy_hint), shard.source_window_refs, (shard.shard_id,))
+
+        if policy_hint.get("reject"):
+            decision = PlacementDecision(ids.decision_id, candidate.candidate_id, "reject", "validation_fixture", decided_at, ("validation_fixture_rejected",), None, "false_friend_risk")
+            rejection = RejectionRecord(ids.rejection_id, candidate.candidate_id, shard.shard_id, decided_at, "validation_fixture", "false_friend_risk", (shard.shard_id,))
+            self.store.write_evidence_island(island)
+            self.store.write_local_patch(patch)
+            self.store.write_placement_candidate(candidate)
+            self.store.write_rejection_record(rejection, decided_at)
+            return GRFAdmissionBridgeResult(island, patch, candidate, decision, None, None, None, rejection)
+
+        decision = PlacementDecision(ids.decision_id, candidate.candidate_id, "place", "validation_fixture", decided_at, ("validation_fixture_policy",), target_cell, None)
+        mark = GeometryMark(ids.mark_id, shard.shard_id, target_cell.profile_id, target_cell.chart_id, target_cell, "validation_fixture_policy", candidate.confidence_band, 0, "rf:grf1ik")
+        placement = PlacementRecord(ids.placement_id, shard.shard_id, candidate.candidate_id, decision.decision_id, mark, island.island_id, patch.patch_id, (shard.shard_id,), target_cell.profile_id, "grf1ik_validation_v1")
+        admission = MinimalAdmissionRecord(ids.admission_id, shard.shard_id, placement, decided_at, "validation_fixture")
+
+        self.store.write_evidence_island(island)
+        self.store.write_local_patch(patch)
+        self.store.write_placement_candidate(candidate)
+        self.store.write_placement_record(placement, decided_at)
+        self.store.write_minimal_admission_record(admission, decided_at)
+        return GRFAdmissionBridgeResult(island, patch, candidate, decision, mark, placement, admission, None)
+
+
+def resolve_source_fallback(ref: str, store: GRFFileStore) -> EvidenceShardRecord | MissingSourceFallback:
+    try:
+        return store.read_evidence_shard(ref)
+    except FileNotFoundError:
+        return MissingSourceFallback(ref)
+
+
+@dataclass(frozen=True)
+class _BridgeIds:
+    shard_id: str
+
+    @property
+    def stem(self) -> str:
+        return sha256(self.shard_id.encode("utf-8")).hexdigest()[:24]
+
+    @property
+    def island_id(self) -> str:
+        return f"island:grf1ik:{self.stem}"
+
+    @property
+    def patch_id(self) -> str:
+        return f"patch:grf1ik:{self.stem}"
+
+    @property
+    def candidate_id(self) -> str:
+        return f"candidate:grf1ik:{self.stem}"
+
+    @property
+    def decision_id(self) -> str:
+        return f"decision:grf1ik:{self.stem}"
+
+    @property
+    def mark_id(self) -> str:
+        return f"mark:grf1ik:{self.stem}"
+
+    @property
+    def placement_id(self) -> str:
+        return f"placement:grf1ik:{self.stem}"
+
+    @property
+    def admission_id(self) -> str:
+        return f"admission:grf1ik:{self.stem}"
+
+    @property
+    def rejection_id(self) -> str:
+        return f"rejection:grf1ik:{self.stem}"
+
+
+def _target_cell(shard: EvidenceShardRecord, policy_hint: dict[str, Any]) -> CellAddress:
+    target = policy_hint.get("target_cell")
+    if isinstance(target, CellAddress):
+        return target
+    if isinstance(target, dict):
+        return CellAddress(target["profile_id"], target["chart_id"], target["layer"], target["q"], target["r"], target.get("phase"))
+    digest = sha256(shard.shard_id.encode("utf-8")).digest()
+    q = int(digest[0] % 11) - 5
+    r = int(digest[1] % 11) - 5
+    return CellAddress("eisenstein_exact_v1", str(policy_hint.get("chart_id", "chart_validation")), 0, q, r)
+
+
+def _confidence(policy_hint: dict[str, Any]) -> str:
+    if policy_hint.get("target_cell") is not None:
+        return "high"
+    return str(policy_hint.get("confidence_band", "medium"))
+
+
+def _scores(policy_hint: dict[str, Any]) -> dict[str, int]:
+    base = {field: 0 for field in SCORE_FIELDS}
+    if policy_hint.get("target_cell") is not None:
+        base["local_fit_q16"] = Q16_ONE
+        base["coverage_gain_q16"] = Q16_ONE // 2
+    else:
+        base["local_fit_q16"] = Q16_ONE // 2
+        base["compute_cost_q16"] = Q16_ONE // 4
+    return base
