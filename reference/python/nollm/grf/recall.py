@@ -10,7 +10,7 @@ from .propagation import SparseActivation
 from .recall_digest import CoverageReport, RecallDigest, RecallPath
 from .relation_field import RelationField
 
-ENTRY_MODES = frozenset({"explicit_cell", "shard_id", "island_id", "patch_id", "source_window"})
+ENTRY_MODES = frozenset({"explicit_cell", "shard_id", "island_id", "patch_id", "source_window", "admission_id", "placement_id"})
 
 
 @dataclass(frozen=True)
@@ -97,6 +97,10 @@ def _entry_activations(query: QueryProbe, field: RelationField) -> tuple[SparseA
         elif query.entry_mode == "island_id" and placement.island_id == query.entry_ref:
             matches.append(placement)
         elif query.entry_mode == "patch_id" and placement.patch_id == query.entry_ref:
+            matches.append(placement)
+        elif query.entry_mode == "placement_id" and placement.placement_id == query.entry_ref:
+            matches.append(placement)
+        elif query.entry_mode == "admission_id" and placement.placement_id == query.entry_ref:
             matches.append(placement)
         elif query.entry_mode == "source_window" and query.entry_ref in placement.source_fallback_refs:
             matches.append(placement)

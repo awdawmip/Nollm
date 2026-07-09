@@ -46,11 +46,13 @@ class GRFFacade:
     def recall(self, query: QueryProbe) -> RecallDigest:
         from .replay import rebuild_relation_field_from_files
 
+        query = self._normalize_query(query)
         digest = resolve_grf_recall(query, rebuild_relation_field_from_files(self.workspace))
         _require_fallbacks(digest)
         return digest
 
     def replay_recall(self, query: QueryProbe) -> RecallDigest:
+        query = self._normalize_query(query)
         digest = replay_recall(query, self.workspace)
         _require_fallbacks(digest)
         return digest
@@ -74,6 +76,25 @@ class GRFFacade:
             window = SourceWindowRecord(window_id, "validation_fixture", refs or (window_id,), recorded_at, policy_ref="validation_fixture_policy")
             self.store.write_source_window(window, recorded_at)
             return window
+
+    def _normalize_query(self, query: QueryProbe) -> QueryProbe:
+        if query.entry_mode == "admission_id":
+            admission = self.store.read_minimal_admission_record(str(query.entry_ref))
+            return _replace_entry(query, "shard_id", admission.shard_id)
+        if query.entry_mode == "placement_id":
+            placement = self.store.read_placement_record(str(query.entry_ref))
+            return _replace_entry(query, "shard_id", placement.shard_id)
+        if query.entry_mode == "source_window":
+            shard_id = self._first_shard_for_source_window(str(query.entry_ref))
+            return _replace_entry(query, "shard_id", shard_id)
+        return query
+
+    def _first_shard_for_source_window(self, source_window_id: str) -> str:
+        for shard_id in _object_ids(self.workspace / "grfs" / "evidence" / "shards"):
+            shard = self.store.read_evidence_shard(shard_id)
+            if source_window_id in shard.source_window_refs:
+                return shard.shard_id
+        raise FileNotFoundError("source window has no captured shard")
 
 
 def capture_request_from_mapping(payload: dict[str, Any]) -> GRFCaptureRequest:
@@ -110,6 +131,22 @@ def recall_query_from_mapping(payload: dict[str, Any]) -> QueryProbe:
 
 def load_json_request(path: Path) -> dict[str, Any]:
     return canonical_loads(Path(path).read_bytes())
+
+
+def _replace_entry(query: QueryProbe, entry_mode: str, entry_ref: object) -> QueryProbe:
+    return QueryProbe(query.query_id, entry_mode, entry_ref, query.allowed_kernels, query.budget)
+
+
+def _object_ids(directory: Path) -> tuple[str, ...]:
+    ids: list[str] = []
+    if not directory.exists():
+        return ()
+    for path in sorted(directory.glob("*.json")):
+        record = canonical_loads(path.read_bytes())
+        object_id = record.get("object_id")
+        if isinstance(object_id, str) and object_id:
+            ids.append(object_id)
+    return tuple(ids)
 
 
 def _require_kind(payload: dict[str, Any], kind: str) -> None:
