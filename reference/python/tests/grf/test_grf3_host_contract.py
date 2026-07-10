@@ -25,12 +25,12 @@ def _capture(capture_id: str) -> dict[str, object]:
     }
 
 
-def _admit(capability: str, host_id: str, shard_id: str, window_id: str) -> GRFHostRequest:
+def _place(host_id: str, shard_id: str, window_id: str) -> GRFHostRequest:
     return GRFHostRequest.from_mapping(
         {
             "contract_version": "grf_host_v1",
             "host_request_id": host_id,
-            "capability": capability,
+            "capability": "place",
             "evidence_identity": shard_id,
             "payload": {
                 "kind": "nollm_grf_admit_request",
@@ -40,6 +40,19 @@ def _admit(capability: str, host_id: str, shard_id: str, window_id: str) -> GRFH
                 "policy_hint": {"policy_id": "validation_fixture_policy", "chart_id": "chart:grf3"},
                 "recorded_at": "2026-07-10T00:00:01Z",
             },
+        }
+    )
+
+
+def _admit_existing(host_id: str, shard_id: str, placement_id: str) -> GRFHostRequest:
+    return GRFHostRequest.from_mapping(
+        {
+            "contract_version": "grf_host_v1",
+            "host_request_id": host_id,
+            "capability": "admit",
+            "evidence_identity": shard_id,
+            "placement_identity": placement_id,
+            "payload": {"kind": "nollm_grf_admit_existing_placement_request", "version": "1", "shard_id": shard_id, "placement_id": placement_id, "recorded_at": "2026-07-10T00:00:02Z", "admitted_by": "validation_fixture"},
         }
     )
 
@@ -68,14 +81,14 @@ def test_contract_routes_capture_place_admit_recall_replay_and_validate(tmp_path
     service = GRFHostService(tmp_path)
     captured = service.handle(GRFHostRequest.from_mapping(_capture("capture:grf3:place")))
     assert captured.ok is True
-    placed = service.handle(_admit("place", "host:place", captured.evidence_identity.value, "window:capture:grf3:place"))
+    placed = service.handle(_place("host:place", captured.evidence_identity.value, "window:capture:grf3:place"))
     assert placed.ok is True
     assert placed.placement_identity and placed.placement_identity.value.startswith("placement:")
-    assert placed.admission_identity and placed.admission_identity.value.startswith("admission:")
-
-    second = service.handle(GRFHostRequest.from_mapping(_capture("capture:grf3:admit")))
-    admitted = service.handle(_admit("admit", "host:admit", second.evidence_identity.value, "window:capture:grf3:admit"))
+    assert placed.admission_identity is None
+    assert service.handle(GRFHostRequest("grf_host_v1", HostRequestID("host:pre-admission-count"), "validate", {})).result["admission_record_count"] == 0
+    admitted = service.handle(_admit_existing("host:admit", captured.evidence_identity.value, placed.placement_identity.value))
     assert admitted.ok is True
+    assert admitted.admission_identity and admitted.admission_identity.value.startswith("admission:")
 
     recall = service.handle(_recall("host:recall", captured.evidence_identity.value))
     replay = service.handle(GRFHostRequest.from_mapping({**_recall("host:replay", captured.evidence_identity.value).to_mapping(), "capability": "replay"}))
@@ -95,7 +108,7 @@ def test_contract_rejects_identity_collisions_and_unsupported_capabilities(tmp_p
     with pytest.raises(UnsupportedCapabilityError):
         CapabilityRegistry().require("unknown")
     response = GRFHostService(tmp_path).handle(
-        GRFHostRequest("grf_host_v1", HostRequestID("host:missing"), "admit", {"kind": "nollm_grf_admit_request", "version": "1", "shard_id": "shard:missing", "source_window_id": "window:missing", "policy_hint": {}, "recorded_at": "2026-07-10T00:00:00Z"}, EvidenceIdentity("shard:missing"))
+        GRFHostRequest.from_mapping({"contract_version": "grf_host_v1", "host_request_id": "host:missing", "capability": "admit", "evidence_identity": "shard:missing", "placement_identity": "placement:missing", "payload": {"kind": "nollm_grf_admit_existing_placement_request", "version": "1", "shard_id": "shard:missing", "placement_id": "placement:missing", "recorded_at": "2026-07-10T00:00:00Z", "admitted_by": "validation_fixture"}})
     )
     assert response.ok is False and response.error_code == "FileNotFoundError"
 

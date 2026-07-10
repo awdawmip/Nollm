@@ -114,6 +114,16 @@ class GRFFileStore:
     def read_minimal_admission_record(self, admission_id: str) -> MinimalAdmissionRecord:
         return _admission_from_payload(self._read("minimal_admission_record", admission_id, "grfs/admissions/minimal_records"))
 
+    def minimal_admission_records(self) -> tuple[MinimalAdmissionRecord, ...]:
+        directory = self.root / "grfs/admissions/minimal_records"
+        records = []
+        for path in sorted(directory.glob("*.json")):
+            record = canonical_loads(path.read_bytes())
+            if record.get("schema_version") != SCHEMA_VERSION or record.get("object_type") != "minimal_admission_record":
+                raise ValueError("stored admission record schema mismatch")
+            records.append(_admission_from_payload(record["payload"]))
+        return tuple(records)
+
     def write_recall_digest(self, digest: RecallDigest, recorded_at: str | None = None) -> Path:
         return self._write("recall_digest", digest.query_id, digest.to_mapping(), "grfs/recalls/digests", recorded_at, event_type="recall_digest_written")
 

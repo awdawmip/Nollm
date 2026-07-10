@@ -45,7 +45,13 @@ class GRFFacade:
 
     def place(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> GRFAdmissionBridgeResult:
         """Run the deterministic placement workflow and return its placement record."""
-        return self.admit(shard_id, source_window_id, policy_hint, recorded_at)
+        shard = self.store.read_evidence_shard(shard_id)
+        window = self._read_or_create_window(source_window_id, shard.source_window_refs, recorded_at)
+        return GRFAdmissionBridge(self.store).place(shard, window, policy_hint, recorded_at)
+
+    def admit_existing_placement(self, shard_id: str, placement_id: str, recorded_at: str, admitted_by: str) -> object:
+        shard = self.store.read_evidence_shard(shard_id)
+        return GRFAdmissionBridge(self.store).admit_existing_placement(shard, placement_id, recorded_at, admitted_by)
 
     def recall(self, query: QueryProbe) -> RecallDigest:
         from .replay import rebuild_relation_field_from_files
@@ -119,6 +125,11 @@ def capture_request_from_mapping(payload: dict[str, Any]) -> GRFCaptureRequest:
 def admit_request_from_mapping(payload: dict[str, Any]) -> tuple[str, str, dict[str, Any], str]:
     _require_kind(payload, "nollm_grf_admit_request")
     return str(payload["shard_id"]), str(payload["source_window_id"]), dict(payload["policy_hint"]), str(payload["recorded_at"])
+
+
+def admit_existing_placement_request_from_mapping(payload: dict[str, Any]) -> tuple[str, str, str, str]:
+    _require_kind(payload, "nollm_grf_admit_existing_placement_request")
+    return str(payload["shard_id"]), str(payload["placement_id"]), str(payload["recorded_at"]), str(payload["admitted_by"])
 
 
 def recall_query_from_mapping(payload: dict[str, Any]) -> QueryProbe:

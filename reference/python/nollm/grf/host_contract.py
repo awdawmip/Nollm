@@ -8,7 +8,7 @@ from time import perf_counter_ns
 from typing import Any
 
 from .exporters import to_jsonable
-from .facade import GRFFacade, admit_request_from_mapping, capture_request_from_mapping, recall_query_from_mapping
+from .facade import GRFFacade, admit_existing_placement_request_from_mapping, admit_request_from_mapping, capture_request_from_mapping, recall_query_from_mapping
 
 CONTRACT_VERSION = "grf_host_v1"
 CAPABILITIES = ("capture", "place", "admit", "recall", "replay", "validate")
@@ -157,26 +157,33 @@ class GRFHostService:
         self._capabilities = capabilities or CapabilityRegistry()
 
     def handle(self, request: GRFHostRequest) -> GRFHostResponse:
-        self._capabilities.require(request.capability)
         started = perf_counter_ns()
         try:
+            self._capabilities.require(request.capability)
             result, evidence, placement, admission = self._dispatch(request)
             return GRFHostResponse(CONTRACT_VERSION, request.host_request_id, request.capability, True, result, None, _evidence(evidence), _placement(placement), _admission(admission), perf_counter_ns() - started)
-        except (FileNotFoundError, ValueError, TypeError) as exc:
+        except (FileNotFoundError, UnsupportedCapabilityError, ValueError, TypeError) as exc:
             return GRFHostResponse(CONTRACT_VERSION, request.host_request_id, request.capability, False, None, type(exc).__name__, request.evidence_identity, request.placement_identity, request.admission_identity, perf_counter_ns() - started)
 
     def _dispatch(self, request: GRFHostRequest) -> tuple[dict[str, object], str | None, str | None, str | None]:
         if request.capability == "capture":
             receipt = self._facade.capture(capture_request_from_mapping(request.payload))
             return to_jsonable(receipt), receipt.shard_id, None, None
-        if request.capability in ("place", "admit"):
+        if request.capability == "place":
             shard_id, source_window_id, policy_hint, recorded_at = admit_request_from_mapping(request.payload)
             if request.evidence_identity is None or request.evidence_identity.value != shard_id:
-                raise ValueError("evidence_identity must match admitted shard_id")
-            outcome = self._facade.place(shard_id, source_window_id, policy_hint, recorded_at) if request.capability == "place" else self._facade.admit(shard_id, source_window_id, policy_hint, recorded_at)
+                raise ValueError("evidence_identity must match placed shard_id")
+            outcome = self._facade.place(shard_id, source_window_id, policy_hint, recorded_at)
             placement = None if outcome.placement_record is None else outcome.placement_record.placement_id
-            admission = None if outcome.admission_record is None else outcome.admission_record.admission_id
-            return to_jsonable(outcome), shard_id, placement, admission
+            return to_jsonable(outcome), shard_id, placement, None
+        if request.capability == "admit":
+            shard_id, placement_id, recorded_at, admitted_by = admit_existing_placement_request_from_mapping(request.payload)
+            if request.evidence_identity is None or request.evidence_identity.value != shard_id:
+                raise ValueError("evidence_identity must match admitted shard_id")
+            if request.placement_identity is None or request.placement_identity.value != placement_id:
+                raise ValueError("placement_identity must match admitted placement_id")
+            admission = self._facade.admit_existing_placement(shard_id, placement_id, recorded_at, admitted_by)
+            return to_jsonable(admission), shard_id, placement_id, admission.admission_id
         if request.capability in ("recall", "replay"):
             query = recall_query_from_mapping(request.payload)
             _validate_query_identity(request, query.entry_mode, query.entry_ref)
@@ -188,24 +195,39 @@ class GRFHostService:
 
 
 def _validate_query_identity(request: GRFHostRequest, entry_mode: str, entry_ref: object) -> None:
-    expected = {
-        "shard_id": _value(request.evidence_identity),
-        "placement_id": _value(request.placement_identity),
-        "admission_id": _value(request.admission_identity),
+    identities = (request.evidence_identity, request.placement_identity, request.admission_identity)
+    required = {
+        "shard_id": (request.evidence_identity, "evidence_identity"),
+        "placement_id": (request.placement_identity, "placement_identity"),
+        "admission_id": (request.admission_identity, "admission_identity"),
     }.get(entry_mode)
-    if expected is not None and entry_ref != expected:
+    if required is None:
+        if any(item is not None for item in identities):
+            raise ValueError("non-identity query mode cannot declare GRF identities")
+        return
+    identity, label = required
+    if identity is None:
+        raise ValueError(f"{entry_mode} query requires {label}")
+    if entry_ref != identity.value:
         raise ValueError("query identity does not match contract namespace")
+    if sum(item is not None for item in identities) != 1:
+        raise ValueError("identity query must declare exactly one GRF identity")
 
 
 def _validate_capability_identities(request: GRFHostRequest) -> None:
     identities = (request.evidence_identity, request.placement_identity, request.admission_identity)
     if request.capability in ("capture", "validate") and any(item is not None for item in identities):
         raise ValueError(f"{request.capability} cannot declare GRF identities")
-    if request.capability in ("place", "admit"):
+    if request.capability == "place":
         if request.evidence_identity is None:
-            raise ValueError(f"{request.capability} requires evidence_identity")
+            raise ValueError("place requires evidence_identity")
         if request.placement_identity is not None or request.admission_identity is not None:
-            raise ValueError(f"{request.capability} cannot predeclare output identities")
+            raise ValueError("place cannot predeclare output identities")
+    if request.capability == "admit":
+        if request.evidence_identity is None or request.placement_identity is None:
+            raise ValueError("admit requires evidence_identity and placement_identity")
+        if request.admission_identity is not None:
+            raise ValueError("admit cannot predeclare admission_identity")
 
 
 def _require_text(value: str, label: str) -> None:

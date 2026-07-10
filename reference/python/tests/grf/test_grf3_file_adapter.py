@@ -34,3 +34,4 @@ def test_file_adapter_only_maps_contract_and_translates_errors(tmp_path: Path) -
     bad = adapter.handle_mapping({"contract_version": "wrong"})
     assert bad["ok"] is False
     assert bad["error_code"] == "adapter_request_error"
+    assert str(tmp_path) not in repr(bad)
