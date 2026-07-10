@@ -14,3 +14,7 @@ def test_quality_dataset_has_six_categories_and_deterministic_truth() -> None:
     models = compare_baselines(*first)
     assert set(models) == {"B0_lexical", "B1_bm25_like", "B2_vector_like", "B3_explicit_graph", "B4_graph_vector_like", "N0_evidence_only", "N1_local_geometry", "N2_coverage_propagation", "N3_global_sharded_grf", "N4_grf_stitching", "N5_grf_revision_awareness"}
     assert models["B2_vector_like"] != models["N5_grf_revision_awareness"]
+    assert models["N4_grf_stitching"].missed_stitch_rate < models["N3_global_sharded_grf"].missed_stitch_rate
+    assert models["N5_grf_revision_awareness"].revision_correctness > models["N4_grf_stitching"].revision_correctness
+    assert models["N5_grf_revision_awareness"].storage_bytes > 0
+    assert models["N5_grf_revision_awareness"].query_latency_ms >= 0.0
