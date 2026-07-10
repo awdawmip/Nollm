@@ -29,7 +29,7 @@ def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
     path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")
     result = GRFFacade(tmp_path / "workspace").capture_source(path, "2026-07-10T00:00:00Z")
     assert len(result.created_shards) == 2
-    assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == '{"fact": "one"}'
+    assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == '{"fact":"one"}'
 
 
 def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
