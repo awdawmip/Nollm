@@ -10,7 +10,7 @@ from nollm.grf.facade import GRFFacade
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="nollm-grf8-ingestion-") as temp:
         root = Path(temp)
-        files = {"notes.md": "# Project\nconstraint\n\n## Revision\nlatest", "facts.jsonl": '{"fact":"one"}\n{"fact":"two"}\n', "code.py": "def f():\n    return 1\n\ndef g():\n    return 2\n", "chat.log": "user: decide\n\nassistant: recorded"}
+        files = {"notes.md": "# Project\nconstraint\n\n## Revision\nlatest", "notes.txt": "plain retained text", "facts.json": '{"fact":"one","kind":"json"}', "facts.jsonl": '{"fact":"one"}\n{"fact":"two"}\n', "code.py": "def f():\n    return 1\n\ndef g():\n    return 2\n", "chat.log": "user: decide\n\nassistant: recorded"}
         for name, content in files.items(): (root / name).write_text(content, encoding="utf-8")
         facade = GRFFacade(root / "workspace")
         ingested = {name: facade.capture_source(root / name, "2026-07-11T00:00:00Z") for name in files}
