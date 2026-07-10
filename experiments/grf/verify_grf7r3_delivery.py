@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import tarfile
 
 from experiments.grf.grf7r2_evidence_pack import verify_pack
 from experiments.grf.grf7r3_compact_evidence import verify_capsule
@@ -43,7 +44,38 @@ def _full(bundle: Path, pack: Path, receipt: dict[str, object]) -> None:
     manifest = verified["manifest"]
     if receipt.get("full_evidence_merkle_root_sha256") != manifest.get("merkle_root_sha256"):
         raise ValueError("receipt does not bind full evidence manifest")
+    _recompute_gates_from_pack(pack)
     print("LOCAL_FULL_VERIFIED")
+
+
+def _recompute_gates_from_pack(pack: Path) -> None:
+    import zstandard
+
+    wanted = {
+        "r2/runtime/host_registry_replay_report.json": "runtime/host_registry_replay_report.json",
+        "r2/real_global/negative_query_metrics.json": "real_global/negative_query_metrics.json",
+        "r2/long_running/long_running_metrics.json": "long_running/long_running_metrics.json",
+    }
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        found: set[str] = set()
+        with pack.open("rb") as raw, zstandard.ZstdDecompressor().stream_reader(raw) as decompressed:
+            with tarfile.open(fileobj=decompressed, mode="r|") as archive:
+                for member in archive:
+                    if member.name not in wanted or not member.isfile():
+                        continue
+                    stream = archive.extractfile(member)
+                    if stream is None:
+                        raise ValueError(f"cannot extract gate input: {member.name}")
+                    target = root / wanted[member.name]
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(stream.read())
+                    found.add(member.name)
+        if found != set(wanted):
+            raise ValueError("full evidence pack is missing Gate A-C inputs")
+        result = subprocess.run([sys.executable, "experiments/grf/verify_grf7r2_evidence.py", "--evidence-root", str(root), "--output", str(root / "gate.json")], capture_output=True, text=True)
+        if result.returncode != 0 or "GRF7_ACCEPTED" not in result.stdout:
+            raise ValueError(f"Gate A-C recomputation failed: {result.stdout}{result.stderr}")
 
 
 def _compact(bundle: Path, capsule: Path, receipt: dict[str, object]) -> None:
