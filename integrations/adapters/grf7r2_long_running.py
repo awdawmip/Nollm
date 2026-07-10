@@ -40,6 +40,7 @@ def run_sustained_mutation(root: Path, *, operation_count: int = 1_000_000, chec
     snapshots = []
     tracemalloc.start()
     initial_resource = sample_process_resources()
+    workload_started = perf_counter_ns()
     with ledger_path.open("w", encoding="utf-8", newline="\n") as ledger:
         # Interleave 1,000 mutation chains with bounded recall/replay observations.
         for index in range(mutation_count):
@@ -105,6 +106,22 @@ def run_sustained_mutation(root: Path, *, operation_count: int = 1_000_000, chec
                     recoveries += 1
                 operations["adapter_failure"] += 1
                 _write_event(ledger, "adapter_failure", index, False, (), maintenance=True)
+            if index < 100:
+                source_path = root / "sources" / f"source_{index:04d}.txt"
+                source_path.parent.mkdir(parents=True, exist_ok=True)
+                source_path.write_text(f"source revision zero {index}", encoding="utf-8", newline="\n")
+                source_capture = adapter.handle("long", _source_request(f"host:long:source-capture:{index}", "capture_source", {"path": str(source_path), "recorded_at": "2026-07-10T00:00:03Z"}))
+                if source_capture.get("ok") is not True:
+                    raise AssertionError("source capture failed")
+                source_id = str((source_capture.get("result") or {}).get("source_id", ""))
+                source_path.write_text(f"source revision one {index}", encoding="utf-8", newline="\n")
+                revision = adapter.handle("long", _source_request(f"host:long:revision:{index}", "revise", {"path": str(source_path), "recorded_at": "2026-07-10T00:00:04Z"}))
+                retirement = adapter.handle("long", _source_request(f"host:long:retire:{index}", "retire", {"source_id": source_id}))
+                if revision.get("ok") is not True or retirement.get("ok") is not True:
+                    raise AssertionError("source lifecycle failed")
+                for operation in ("capture_source", "revision", "retire"):
+                    operations[operation] += 1
+                    _write_event(ledger, operation, index, False, (), maintenance=True)
             if (index + 1) % max(1, mutation_count // 10) == 0:
                 adapter.flush_events()
                 _snapshot(root, snapshots, workspaces, adapters, registry_path, operations, ledger_path, maintenance)
@@ -131,10 +148,13 @@ def run_sustained_mutation(root: Path, *, operation_count: int = 1_000_000, chec
     tracemalloc.stop()
     event_rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines()]
     measured_counts = Counter(str(item["operation"]) for item in event_rows)
-    duplicate_evidence, duplicate_placement, duplicate_admission, orphan_count = _identity_integrity(final_reports, identities)
+    source_lifecycle_evidence_count = min(mutation_count, 100) * 2
+    duplicate_evidence, duplicate_placement, duplicate_admission, orphan_count = _identity_integrity(final_reports, identities, source_lifecycle_evidence_count)
     registry_snapshot = HostRequestRegistry(registry_path).snapshot()
     last_workspace = workspaces[(len(identities) - 1) % len(workspaces)]
     snapshot_report = _snapshot_replay_report(root, last_workspace, registry_path, identities[-1], len(identities) - 1, registry_snapshot, maintenance)
+    fallback_failures = sum(not item.service._facade.get_source(shard) for item, (shard, _placement, _admission) in zip(adapters, identities[-len(adapters):]))
+    elapsed_ns = perf_counter_ns() - workload_started
     result = {
         "operation_count": len(event_rows),
         "operation_counts": dict(measured_counts),
@@ -155,6 +175,11 @@ def run_sustained_mutation(root: Path, *, operation_count: int = 1_000_000, chec
         "tracemalloc_peak_bytes": peak_trace,
         "object_count": len(gc.get_objects()),
         "ledger_bytes": ledger_path.stat().st_size,
+        "disk_bytes": sum(path.stat().st_size for path in root.rglob("*") if path.is_file()),
+        "partition_count": len(maintenance.directory.entries()),
+        "fallback_failure_count": fallback_failures,
+        "replay_failure_count": int(not snapshot_report["passed"]),
+        "throughput_operations_per_second": len(event_rows) / (elapsed_ns / 1_000_000_000),
         "snapshot_bytes": sum((root / "snapshots" / item["path"]).stat().st_size for item in snapshots),
         "latency_by_operation": {name: _quantiles(values) for name, values in latency.items()},
         "snapshots": snapshots,
@@ -224,6 +249,10 @@ def _request(request_id: str, capability: str, payload: dict[str, object], *, ev
     return {"contract_version": "grf_host_v2", "host_request_id": request_id, "capability": capability, "payload": payload, "evidence_identity": evidence, "placement_identity": placement, "admission_identity": admission}
 
 
+def _source_request(request_id: str, capability: str, payload: dict[str, object]) -> dict[str, object]:
+    return _request(request_id, capability, payload)
+
+
 def _write_event(stream, operation: str, sequence: int, cache_hit: bool, identities: tuple[str, ...], response: dict[str, object] | None = None, maintenance: bool = False) -> None:
     stream.write(json.dumps({"operation": operation, "sequence": sequence, "cache_hit": cache_hit, "identities": identities, "maintenance": maintenance, "response_ok": None if response is None else response.get("ok")}, sort_keys=True, separators=(",", ":")) + "\n")
 
@@ -246,13 +275,13 @@ def _snapshot_replay_report(root: Path, workspace: Path, registry: Path, identit
     return payload
 
 
-def _identity_integrity(reports, identities: list[tuple[str, str, str]]) -> tuple[int, int, int, int]:
+def _identity_integrity(reports, identities: list[tuple[str, str, str]], source_lifecycle_evidence_count: int = 0) -> tuple[int, int, int, int]:
     shards, placements, admissions = zip(*identities)
     duplicates = (len(shards) - len(set(shards)), len(placements) - len(set(placements)), len(admissions) - len(set(admissions)))
     evidence = sum(item.evidence_shard_count for item in reports)
     placement = sum(item.placement_record_count for item in reports)
     admission = sum(item.admission_record_count for item in reports)
-    orphan = int(evidence != len(shards) or placement != len(placements) or admission != len(admissions))
+    orphan = int(evidence != len(shards) + source_lifecycle_evidence_count or placement != len(placements) or admission != len(admissions))
     return (*duplicates, orphan)
 
 
