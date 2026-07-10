@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from nollm.grf.host_contract import CapabilityRegistry, GRFHostRequest, GRFHostService, UnsupportedCapabilityError
+from nollm.grf.host_contract import CapabilityRegistry, EvidenceIdentity, GRFHostRequest, GRFHostService, HostRequestID, UnsupportedCapabilityError
 
 
 def _capture(capture_id: str) -> dict[str, object]:
@@ -68,34 +68,34 @@ def test_contract_routes_capture_place_admit_recall_replay_and_validate(tmp_path
     service = GRFHostService(tmp_path)
     captured = service.handle(GRFHostRequest.from_mapping(_capture("capture:grf3:place")))
     assert captured.ok is True
-    placed = service.handle(_admit("place", "host:place", captured.evidence_identity, "window:capture:grf3:place"))
+    placed = service.handle(_admit("place", "host:place", captured.evidence_identity.value, "window:capture:grf3:place"))
     assert placed.ok is True
-    assert placed.placement_identity and placed.placement_identity.startswith("placement:")
-    assert placed.admission_identity and placed.admission_identity.startswith("admission:")
+    assert placed.placement_identity and placed.placement_identity.value.startswith("placement:")
+    assert placed.admission_identity and placed.admission_identity.value.startswith("admission:")
 
     second = service.handle(GRFHostRequest.from_mapping(_capture("capture:grf3:admit")))
-    admitted = service.handle(_admit("admit", "host:admit", second.evidence_identity, "window:capture:grf3:admit"))
+    admitted = service.handle(_admit("admit", "host:admit", second.evidence_identity.value, "window:capture:grf3:admit"))
     assert admitted.ok is True
 
-    recall = service.handle(_recall("host:recall", captured.evidence_identity))
-    replay = service.handle(GRFHostRequest.from_mapping({**_recall("host:replay", captured.evidence_identity).to_mapping(), "capability": "replay"}))
+    recall = service.handle(_recall("host:recall", captured.evidence_identity.value))
+    replay = service.handle(GRFHostRequest.from_mapping({**_recall("host:replay", captured.evidence_identity.value).to_mapping(), "capability": "replay"}))
     assert recall.ok is True and replay.ok is True
     assert recall.result == replay.result
-    assert recall.result["coverage_reports"][0]["source_fallback_ref"] == captured.evidence_identity
-    assert service.handle(GRFHostRequest("grf_host_v1", "host:validate", "validate", {})).ok is True
+    assert recall.result["coverage_reports"][0]["source_fallback_ref"] == captured.evidence_identity.value
+    assert service.handle(GRFHostRequest("grf_host_v1", HostRequestID("host:validate"), "validate", {})).ok is True
 
 
 def test_contract_rejects_identity_collisions_and_unsupported_capabilities(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="cannot use a GRF identity namespace"):
-        GRFHostRequest("grf_host_v1", "shard:not-a-host-request", "capture", {})
-    with pytest.raises(ValueError, match="cannot equal host_request_id"):
-        GRFHostRequest("grf_host_v1", "host:same", "capture", {}, "host:same")
+        HostRequestID("shard:not-a-host-request")
+    with pytest.raises(TypeError, match="HostRequestID"):
+        GRFHostRequest("grf_host_v1", "host:same", "capture", {})
     with pytest.raises(ValueError, match="invalid namespace"):
-        GRFHostRequest("grf_host_v1", "host:wrong", "capture", {}, "terminal:wrong")
+        EvidenceIdentity("terminal:wrong")
     with pytest.raises(UnsupportedCapabilityError):
         CapabilityRegistry().require("unknown")
     response = GRFHostService(tmp_path).handle(
-        GRFHostRequest("grf_host_v1", "host:missing", "admit", {"kind": "nollm_grf_admit_request", "version": "1", "shard_id": "shard:missing", "source_window_id": "window:missing", "policy_hint": {}, "recorded_at": "2026-07-10T00:00:00Z"}, "shard:missing")
+        GRFHostRequest("grf_host_v1", HostRequestID("host:missing"), "admit", {"kind": "nollm_grf_admit_request", "version": "1", "shard_id": "shard:missing", "source_window_id": "window:missing", "policy_hint": {}, "recorded_at": "2026-07-10T00:00:00Z"}, EvidenceIdentity("shard:missing"))
     )
     assert response.ok is False and response.error_code == "FileNotFoundError"
 
