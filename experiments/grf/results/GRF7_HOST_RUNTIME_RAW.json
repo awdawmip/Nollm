@@ -1,0 +1,21 @@
+{
+  "adapter_owns_durable_truth": false,
+  "admission_count": 20000,
+  "capture_count": 20000,
+  "duplicate_evidence_count": 0,
+  "identity_collision_count": 0,
+  "injected_adapter_failure_count": 100,
+  "placement_count": 20000,
+  "recall_count": 20000,
+  "replay_count": 20000,
+  "replay_deterministic": true,
+  "request_count": 100000,
+  "restart_count": 100,
+  "retry_count": 1100,
+  "retry_idempotent": true,
+  "runtime_count": 3,
+  "status": "GATE_G_PASS",
+  "successful_request_count": 100000,
+  "timeout_count": 1000,
+  "total_latency_ns": 81692910900
+}

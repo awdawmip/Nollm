@@ -145,9 +145,20 @@ def run_grf7_scale_validation(
     root.mkdir(parents=True, exist_ok=True)
     tracemalloc.start()
     resident, kernel_bytes = _resident_validation(root / "resident", resident_milestones)
+    tracemalloc.reset_peak()
     global_metric = _global_validation(root / "global", global_count, partition_size)
     tracemalloc.stop()
     return GRF7ScaleResult(resident, global_metric, kernel_bytes, True, True, "GATE_D_PASS|GATE_E_PASS")
+
+
+def run_grf7_global_scale_validation(output_root: Path, global_count: int = 10_000_000, partition_size: int = 100_000) -> GlobalScaleMetric:
+    _validate_scale_inputs((1,), global_count, partition_size)
+    tracemalloc.start()
+    tracemalloc.reset_peak()
+    try:
+        return _global_validation(Path(output_root), global_count, partition_size)
+    finally:
+        tracemalloc.stop()
 
 
 def _resident_validation(root: Path, milestones: tuple[int, ...]) -> tuple[tuple[ResidentScaleMetric, ...], int]:
@@ -192,6 +203,7 @@ def _global_validation(root: Path, global_count: int, partition_size: int) -> Gl
     root.mkdir(parents=True, exist_ok=True)
     directory = GlobalFieldDirectory()
     generated = fallback = field_builds = recalls = shallow = deep = uncompressed = 0
+    global_peak_rss = _current_rss_bytes()
     partition_count = (global_count + partition_size - 1) // partition_size
     for partition_index in range(partition_count):
         start = partition_index * partition_size
@@ -216,6 +228,7 @@ def _global_validation(root: Path, global_count: int, partition_size: int) -> Gl
                 disk.write(index, shard, placement, admission)
             disk.close()
             field = engine.build_relation_field()
+            global_peak_rss = max(global_peak_rss, _current_rss_bytes())
             field_builds += 1
             target = start + count - 1
             digest = resolve_grf_recall(QueryProbe(f"query:grf7:global:{partition_index}", "placement_id", f"placement:grf7:global:{target}", ("lateral",), RecallBudget(0, 1, 0, 0, 0, 1)), field)
@@ -250,7 +263,7 @@ def _global_validation(root: Path, global_count: int, partition_size: int) -> Gl
     reload_ns = perf_counter_ns() - reload_started
     files = tuple(path for path in root.rglob("*") if path.is_file())
     disk_bytes = sum(path.stat().st_size for path in files)
-    return GlobalScaleMetric(global_count, partition_count, 0, generated, field_builds, recalls, f"{fallback}/{global_count}", len(directory_payload), len(rebuilt.to_mapping()["neighbors"]), len(bridge_payload), _peak_rss_bytes(), tracemalloc.get_traced_memory()[1], deep, shallow, disk_bytes, uncompressed, len(files), f"{uncompressed}/{disk_bytes}", rebuild_ns, reload_ns, reloaded)
+    return GlobalScaleMetric(global_count, partition_count, 0, generated, field_builds, recalls, f"{fallback}/{global_count}", len(directory_payload), len(rebuilt.to_mapping()["neighbors"]), len(bridge_payload), global_peak_rss, tracemalloc.get_traced_memory()[1], deep, shallow, disk_bytes, uncompressed, len(files), f"{uncompressed}/{disk_bytes}", rebuild_ns, reload_ns, reloaded)
 
 
 def _pipeline_record(index: int, ingress: GRFCaptureIngress, store: _CaptureStore, namespace: str) -> tuple[EvidenceShardRecord, PlacementRecord, MinimalAdmissionRecord]:
@@ -292,6 +305,14 @@ def _relation_container_bytes(engine: FieldEngine, field: object) -> int:
 
 
 def _peak_rss_bytes() -> int:
+    return _process_memory_bytes()[0]
+
+
+def _current_rss_bytes() -> int:
+    return _process_memory_bytes()[1]
+
+
+def _process_memory_bytes() -> tuple[int, int]:
     import ctypes
     from ctypes import wintypes
 
@@ -307,7 +328,7 @@ def _peak_rss_bytes() -> int:
     psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
     if not psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
         raise OSError("GetProcessMemoryInfo failed")
-    return int(counters.PeakWorkingSetSize)
+    return int(counters.PeakWorkingSetSize), int(counters.WorkingSetSize)
 
 
 def _validate_scale_inputs(milestones: tuple[int, ...], global_count: int, partition_size: int) -> None:

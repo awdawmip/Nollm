@@ -1,0 +1,1013 @@
+{
+  "directory_bytes": 110177,
+  "directory_entry_count": 100,
+  "directory_growth_monotonic": true,
+  "directory_replay_deterministic": true,
+  "gate": "GATE_A_PASS",
+  "neighbor_link_count": 198,
+  "partition_boundaries": [
+    {
+      "q_max": 99,
+      "q_min": 0,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 99999,
+      "source_start": 0,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 199,
+      "q_min": 100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 199999,
+      "source_start": 100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 299,
+      "q_min": 200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 299999,
+      "source_start": 200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 399,
+      "q_min": 300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 399999,
+      "source_start": 300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 499,
+      "q_min": 400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 499999,
+      "source_start": 400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 599,
+      "q_min": 500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 599999,
+      "source_start": 500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 699,
+      "q_min": 600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 699999,
+      "source_start": 600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 799,
+      "q_min": 700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 799999,
+      "source_start": 700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 899,
+      "q_min": 800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 899999,
+      "source_start": 800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 999,
+      "q_min": 900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 999999,
+      "source_start": 900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1099,
+      "q_min": 1000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1099999,
+      "source_start": 1000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1199,
+      "q_min": 1100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1199999,
+      "source_start": 1100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1299,
+      "q_min": 1200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1299999,
+      "source_start": 1200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1399,
+      "q_min": 1300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1399999,
+      "source_start": 1300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1499,
+      "q_min": 1400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1499999,
+      "source_start": 1400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1599,
+      "q_min": 1500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1599999,
+      "source_start": 1500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1699,
+      "q_min": 1600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1699999,
+      "source_start": 1600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1799,
+      "q_min": 1700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1799999,
+      "source_start": 1700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1899,
+      "q_min": 1800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1899999,
+      "source_start": 1800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 1999,
+      "q_min": 1900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 1999999,
+      "source_start": 1900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2099,
+      "q_min": 2000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2099999,
+      "source_start": 2000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2199,
+      "q_min": 2100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2199999,
+      "source_start": 2100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2299,
+      "q_min": 2200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2299999,
+      "source_start": 2200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2399,
+      "q_min": 2300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2399999,
+      "source_start": 2300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2499,
+      "q_min": 2400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2499999,
+      "source_start": 2400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2599,
+      "q_min": 2500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2599999,
+      "source_start": 2500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2699,
+      "q_min": 2600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2699999,
+      "source_start": 2600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2799,
+      "q_min": 2700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2799999,
+      "source_start": 2700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2899,
+      "q_min": 2800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2899999,
+      "source_start": 2800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 2999,
+      "q_min": 2900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 2999999,
+      "source_start": 2900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3099,
+      "q_min": 3000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3099999,
+      "source_start": 3000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3199,
+      "q_min": 3100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3199999,
+      "source_start": 3100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3299,
+      "q_min": 3200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3299999,
+      "source_start": 3200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3399,
+      "q_min": 3300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3399999,
+      "source_start": 3300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3499,
+      "q_min": 3400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3499999,
+      "source_start": 3400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3599,
+      "q_min": 3500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3599999,
+      "source_start": 3500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3699,
+      "q_min": 3600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3699999,
+      "source_start": 3600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3799,
+      "q_min": 3700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3799999,
+      "source_start": 3700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3899,
+      "q_min": 3800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3899999,
+      "source_start": 3800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 3999,
+      "q_min": 3900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 3999999,
+      "source_start": 3900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4099,
+      "q_min": 4000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4099999,
+      "source_start": 4000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4199,
+      "q_min": 4100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4199999,
+      "source_start": 4100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4299,
+      "q_min": 4200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4299999,
+      "source_start": 4200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4399,
+      "q_min": 4300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4399999,
+      "source_start": 4300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4499,
+      "q_min": 4400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4499999,
+      "source_start": 4400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4599,
+      "q_min": 4500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4599999,
+      "source_start": 4500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4699,
+      "q_min": 4600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4699999,
+      "source_start": 4600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4799,
+      "q_min": 4700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4799999,
+      "source_start": 4700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4899,
+      "q_min": 4800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4899999,
+      "source_start": 4800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 4999,
+      "q_min": 4900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 4999999,
+      "source_start": 4900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5099,
+      "q_min": 5000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5099999,
+      "source_start": 5000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5199,
+      "q_min": 5100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5199999,
+      "source_start": 5100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5299,
+      "q_min": 5200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5299999,
+      "source_start": 5200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5399,
+      "q_min": 5300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5399999,
+      "source_start": 5300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5499,
+      "q_min": 5400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5499999,
+      "source_start": 5400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5599,
+      "q_min": 5500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5599999,
+      "source_start": 5500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5699,
+      "q_min": 5600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5699999,
+      "source_start": 5600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5799,
+      "q_min": 5700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5799999,
+      "source_start": 5700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5899,
+      "q_min": 5800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5899999,
+      "source_start": 5800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 5999,
+      "q_min": 5900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 5999999,
+      "source_start": 5900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6099,
+      "q_min": 6000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6099999,
+      "source_start": 6000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6199,
+      "q_min": 6100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6199999,
+      "source_start": 6100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6299,
+      "q_min": 6200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6299999,
+      "source_start": 6200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6399,
+      "q_min": 6300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6399999,
+      "source_start": 6300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6499,
+      "q_min": 6400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6499999,
+      "source_start": 6400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6599,
+      "q_min": 6500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6599999,
+      "source_start": 6500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6699,
+      "q_min": 6600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6699999,
+      "source_start": 6600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6799,
+      "q_min": 6700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6799999,
+      "source_start": 6700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6899,
+      "q_min": 6800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6899999,
+      "source_start": 6800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 6999,
+      "q_min": 6900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 6999999,
+      "source_start": 6900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7099,
+      "q_min": 7000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7099999,
+      "source_start": 7000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7199,
+      "q_min": 7100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7199999,
+      "source_start": 7100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7299,
+      "q_min": 7200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7299999,
+      "source_start": 7200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7399,
+      "q_min": 7300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7399999,
+      "source_start": 7300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7499,
+      "q_min": 7400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7499999,
+      "source_start": 7400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7599,
+      "q_min": 7500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7599999,
+      "source_start": 7500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7699,
+      "q_min": 7600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7699999,
+      "source_start": 7600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7799,
+      "q_min": 7700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7799999,
+      "source_start": 7700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7899,
+      "q_min": 7800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7899999,
+      "source_start": 7800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 7999,
+      "q_min": 7900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 7999999,
+      "source_start": 7900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8099,
+      "q_min": 8000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8099999,
+      "source_start": 8000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8199,
+      "q_min": 8100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8199999,
+      "source_start": 8100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8299,
+      "q_min": 8200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8299999,
+      "source_start": 8200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8399,
+      "q_min": 8300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8399999,
+      "source_start": 8300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8499,
+      "q_min": 8400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8499999,
+      "source_start": 8400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8599,
+      "q_min": 8500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8599999,
+      "source_start": 8500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8699,
+      "q_min": 8600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8699999,
+      "source_start": 8600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8799,
+      "q_min": 8700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8799999,
+      "source_start": 8700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8899,
+      "q_min": 8800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8899999,
+      "source_start": 8800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 8999,
+      "q_min": 8900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 8999999,
+      "source_start": 8900000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9099,
+      "q_min": 9000,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9099999,
+      "source_start": 9000000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9199,
+      "q_min": 9100,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9199999,
+      "source_start": 9100000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9299,
+      "q_min": 9200,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9299999,
+      "source_start": 9200000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9399,
+      "q_min": 9300,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9399999,
+      "source_start": 9300000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9499,
+      "q_min": 9400,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9499999,
+      "source_start": 9400000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9599,
+      "q_min": 9500,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9599999,
+      "source_start": 9500000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9699,
+      "q_min": 9600,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9699999,
+      "source_start": 9600000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9799,
+      "q_min": 9700,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9799999,
+      "source_start": 9700000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9899,
+      "q_min": 9800,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9899999,
+      "source_start": 9800000,
+      "strategy": "spatial_cell_range"
+    },
+    {
+      "q_max": 9999,
+      "q_min": 9900,
+      "r_max": 1000000000,
+      "r_min": -1000000000,
+      "source_end": 9999999,
+      "source_start": 9900000,
+      "strategy": "spatial_cell_range"
+    }
+  ],
+  "partition_count": 100,
+  "snapshot_refs": [
+    "snapshot:partition:manifest:000:v1",
+    "snapshot:partition:manifest:001:v1",
+    "snapshot:partition:manifest:002:v1",
+    "snapshot:partition:manifest:003:v1",
+    "snapshot:partition:manifest:004:v1",
+    "snapshot:partition:manifest:005:v1",
+    "snapshot:partition:manifest:006:v1",
+    "snapshot:partition:manifest:007:v1",
+    "snapshot:partition:manifest:008:v1",
+    "snapshot:partition:manifest:009:v1",
+    "snapshot:partition:manifest:010:v1",
+    "snapshot:partition:manifest:011:v1",
+    "snapshot:partition:manifest:012:v1",
+    "snapshot:partition:manifest:013:v1",
+    "snapshot:partition:manifest:014:v1",
+    "snapshot:partition:manifest:015:v1",
+    "snapshot:partition:manifest:016:v1",
+    "snapshot:partition:manifest:017:v1",
+    "snapshot:partition:manifest:018:v1",
+    "snapshot:partition:manifest:019:v1",
+    "snapshot:partition:manifest:020:v1",
+    "snapshot:partition:manifest:021:v1",
+    "snapshot:partition:manifest:022:v1",
+    "snapshot:partition:manifest:023:v1",
+    "snapshot:partition:manifest:024:v1",
+    "snapshot:partition:manifest:025:v1",
+    "snapshot:partition:manifest:026:v1",
+    "snapshot:partition:manifest:027:v1",
+    "snapshot:partition:manifest:028:v1",
+    "snapshot:partition:manifest:029:v1",
+    "snapshot:partition:manifest:030:v1",
+    "snapshot:partition:manifest:031:v1",
+    "snapshot:partition:manifest:032:v1",
+    "snapshot:partition:manifest:033:v1",
+    "snapshot:partition:manifest:034:v1",
+    "snapshot:partition:manifest:035:v1",
+    "snapshot:partition:manifest:036:v1",
+    "snapshot:partition:manifest:037:v1",
+    "snapshot:partition:manifest:038:v1",
+    "snapshot:partition:manifest:039:v1",
+    "snapshot:partition:manifest:040:v1",
+    "snapshot:partition:manifest:041:v1",
+    "snapshot:partition:manifest:042:v1",
+    "snapshot:partition:manifest:043:v1",
+    "snapshot:partition:manifest:044:v1",
+    "snapshot:partition:manifest:045:v1",
+    "snapshot:partition:manifest:046:v1",
+    "snapshot:partition:manifest:047:v1",
+    "snapshot:partition:manifest:048:v1",
+    "snapshot:partition:manifest:049:v1",
+    "snapshot:partition:manifest:050:v1",
+    "snapshot:partition:manifest:051:v1",
+    "snapshot:partition:manifest:052:v1",
+    "snapshot:partition:manifest:053:v1",
+    "snapshot:partition:manifest:054:v1",
+    "snapshot:partition:manifest:055:v1",
+    "snapshot:partition:manifest:056:v1",
+    "snapshot:partition:manifest:057:v1",
+    "snapshot:partition:manifest:058:v1",
+    "snapshot:partition:manifest:059:v1",
+    "snapshot:partition:manifest:060:v1",
+    "snapshot:partition:manifest:061:v1",
+    "snapshot:partition:manifest:062:v1",
+    "snapshot:partition:manifest:063:v1",
+    "snapshot:partition:manifest:064:v1",
+    "snapshot:partition:manifest:065:v1",
+    "snapshot:partition:manifest:066:v1",
+    "snapshot:partition:manifest:067:v1",
+    "snapshot:partition:manifest:068:v1",
+    "snapshot:partition:manifest:069:v1",
+    "snapshot:partition:manifest:070:v1",
+    "snapshot:partition:manifest:071:v1",
+    "snapshot:partition:manifest:072:v1",
+    "snapshot:partition:manifest:073:v1",
+    "snapshot:partition:manifest:074:v1",
+    "snapshot:partition:manifest:075:v1",
+    "snapshot:partition:manifest:076:v1",
+    "snapshot:partition:manifest:077:v1",
+    "snapshot:partition:manifest:078:v1",
+    "snapshot:partition:manifest:079:v1",
+    "snapshot:partition:manifest:080:v1",
+    "snapshot:partition:manifest:081:v1",
+    "snapshot:partition:manifest:082:v1",
+    "snapshot:partition:manifest:083:v1",
+    "snapshot:partition:manifest:084:v1",
+    "snapshot:partition:manifest:085:v1",
+    "snapshot:partition:manifest:086:v1",
+    "snapshot:partition:manifest:087:v1",
+    "snapshot:partition:manifest:088:v1",
+    "snapshot:partition:manifest:089:v1",
+    "snapshot:partition:manifest:090:v1",
+    "snapshot:partition:manifest:091:v1",
+    "snapshot:partition:manifest:092:v1",
+    "snapshot:partition:manifest:093:v1",
+    "snapshot:partition:manifest:094:v1",
+    "snapshot:partition:manifest:095:v1",
+    "snapshot:partition:manifest:096:v1",
+    "snapshot:partition:manifest:097:v1",
+    "snapshot:partition:manifest:098:v1",
+    "snapshot:partition:manifest:099:v1"
+  ]
+}

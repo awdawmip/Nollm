@@ -1,0 +1,231 @@
+{
+  "baseline_count": 4,
+  "false_relation_rollback_audited": true,
+  "grf_context_reduction_measured": true,
+  "grf_pairwise_edge_maintenance": false,
+  "grf_traceable": true,
+  "metrics": [
+    {
+      "auditability": "low",
+      "context_reduction": "100/100",
+      "false_relation_rate": "99/100",
+      "maintenance_cost_bytes": 17000,
+      "model": "B0_lexical",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 76800,
+      "workflow": "coding"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 488,
+      "model": "B1_vector_like",
+      "recall_usefulness": "0/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 73900,
+      "workflow": "coding"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 7176,
+      "model": "B2_explicit_graph",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 15300,
+      "workflow": "coding"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 1328,
+      "model": "B3_graph_vector",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 89200,
+      "workflow": "coding"
+    },
+    {
+      "auditability": "high_replayable",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 6880,
+      "model": "Nollm_GRF",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "1/1",
+      "update_cost_ns": 2542500,
+      "workflow": "coding"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/100",
+      "false_relation_rate": "99/100",
+      "maintenance_cost_bytes": 17000,
+      "model": "B0_lexical",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 78200,
+      "workflow": "research"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 488,
+      "model": "B1_vector_like",
+      "recall_usefulness": "0/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 69700,
+      "workflow": "research"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 7176,
+      "model": "B2_explicit_graph",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 11500,
+      "workflow": "research"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 1328,
+      "model": "B3_graph_vector",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 81200,
+      "workflow": "research"
+    },
+    {
+      "auditability": "high_replayable",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 6880,
+      "model": "Nollm_GRF",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "1/1",
+      "update_cost_ns": 2867600,
+      "workflow": "research"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/100",
+      "false_relation_rate": "99/100",
+      "maintenance_cost_bytes": 17000,
+      "model": "B0_lexical",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 79400,
+      "workflow": "document"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 488,
+      "model": "B1_vector_like",
+      "recall_usefulness": "0/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 69600,
+      "workflow": "document"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 7176,
+      "model": "B2_explicit_graph",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 13600,
+      "workflow": "document"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 1328,
+      "model": "B3_graph_vector",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 83200,
+      "workflow": "document"
+    },
+    {
+      "auditability": "high_replayable",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 6880,
+      "model": "Nollm_GRF",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "1/1",
+      "update_cost_ns": 2355800,
+      "workflow": "document"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/100",
+      "false_relation_rate": "99/100",
+      "maintenance_cost_bytes": 17000,
+      "model": "B0_lexical",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 79900,
+      "workflow": "long_running_agent"
+    },
+    {
+      "auditability": "low",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 488,
+      "model": "B1_vector_like",
+      "recall_usefulness": "0/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 73400,
+      "workflow": "long_running_agent"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 7176,
+      "model": "B2_explicit_graph",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 14000,
+      "workflow": "long_running_agent"
+    },
+    {
+      "auditability": "medium",
+      "context_reduction": "100/2",
+      "false_relation_rate": "1/99",
+      "maintenance_cost_bytes": 1328,
+      "model": "B3_graph_vector",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "0/1",
+      "update_cost_ns": 87400,
+      "workflow": "long_running_agent"
+    },
+    {
+      "auditability": "high_replayable",
+      "context_reduction": "100/1",
+      "false_relation_rate": "0/1",
+      "maintenance_cost_bytes": 6880,
+      "model": "Nollm_GRF",
+      "recall_usefulness": "1/1",
+      "source_faithfulness": "1/1",
+      "update_cost_ns": 2539400,
+      "workflow": "long_running_agent"
+    }
+  ],
+  "status": "GATE_I_PASS",
+  "workflow_count": 4
+}

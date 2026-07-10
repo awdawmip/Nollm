@@ -480,6 +480,17 @@ class GlobalShardedField:
         self._refresh_bridge_summary(record.bridge.to_partition)
         return rollback
 
+    def move_across_partition(self, from_partition_id: str, to_partition_id: str, placement: PlacementRecord) -> None:
+        source = self._load(from_partition_id)
+        prior = source.remove(placement.placement_id)
+        if prior.shard_id != placement.shard_id:
+            raise ValueError("cross-partition move cannot change evidence identity")
+        target = self._load(to_partition_id)
+        target.insert(placement)
+        self.directory.replace(source.descriptor)
+        self.directory.replace(target.descriptor)
+        self._reroute_placement(placement.placement_id, to_partition_id)
+
     def split_partition(self, partition_id: str, left: GRFPartition, right: GRFPartition, split_q: int) -> None:
         original = self._load(partition_id)
         placements = original.engine.placements.placements()

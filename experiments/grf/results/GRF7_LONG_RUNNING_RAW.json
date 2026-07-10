@@ -1,0 +1,141 @@
+{
+  "checkpoints": [
+    {
+      "admission_count": 8334,
+      "average_latency_ns": 609591,
+      "evidence_count": 16667,
+      "ledger_event_count": 100000,
+      "operation_count": 100000,
+      "placement_count": 8334,
+      "process_peak_rss_bytes": 113725440,
+      "tracemalloc_current_bytes": 40498853,
+      "tracemalloc_peak_bytes": 40629904
+    },
+    {
+      "admission_count": 16667,
+      "average_latency_ns": 930073,
+      "evidence_count": 33333,
+      "ledger_event_count": 200000,
+      "operation_count": 200000,
+      "placement_count": 16667,
+      "process_peak_rss_bytes": 196878336,
+      "tracemalloc_current_bytes": 80379599,
+      "tracemalloc_peak_bytes": 80508697
+    },
+    {
+      "admission_count": 25000,
+      "average_latency_ns": 1195305,
+      "evidence_count": 50000,
+      "ledger_event_count": 300000,
+      "operation_count": 300000,
+      "placement_count": 25000,
+      "process_peak_rss_bytes": 302104576,
+      "tracemalloc_current_bytes": 124990435,
+      "tracemalloc_peak_bytes": 125123286
+    },
+    {
+      "admission_count": 33334,
+      "average_latency_ns": 1435161,
+      "evidence_count": 66667,
+      "ledger_event_count": 400000,
+      "operation_count": 400000,
+      "placement_count": 33334,
+      "process_peak_rss_bytes": 386330624,
+      "tracemalloc_current_bytes": 162665478,
+      "tracemalloc_peak_bytes": 162814710
+    },
+    {
+      "admission_count": 41667,
+      "average_latency_ns": 1706395,
+      "evidence_count": 83333,
+      "ledger_event_count": 500000,
+      "operation_count": 500000,
+      "placement_count": 41667,
+      "process_peak_rss_bytes": 546934784,
+      "tracemalloc_current_bytes": 210513124,
+      "tracemalloc_peak_bytes": 210715274
+    },
+    {
+      "admission_count": 50000,
+      "average_latency_ns": 2033203,
+      "evidence_count": 100000,
+      "ledger_event_count": 600000,
+      "operation_count": 600000,
+      "placement_count": 50000,
+      "process_peak_rss_bytes": 600981504,
+      "tracemalloc_current_bytes": 251361099,
+      "tracemalloc_peak_bytes": 251590086
+    },
+    {
+      "admission_count": 58334,
+      "average_latency_ns": 2399382,
+      "evidence_count": 116667,
+      "ledger_event_count": 700000,
+      "operation_count": 700000,
+      "placement_count": 58334,
+      "process_peak_rss_bytes": 678346752,
+      "tracemalloc_current_bytes": 284103271,
+      "tracemalloc_peak_bytes": 284366959
+    },
+    {
+      "admission_count": 66667,
+      "average_latency_ns": 2717418,
+      "evidence_count": 133333,
+      "ledger_event_count": 800000,
+      "operation_count": 800000,
+      "placement_count": 66667,
+      "process_peak_rss_bytes": 756240384,
+      "tracemalloc_current_bytes": 316865482,
+      "tracemalloc_peak_bytes": 317157016
+    },
+    {
+      "admission_count": 75000,
+      "average_latency_ns": 3607283,
+      "evidence_count": 150000,
+      "ledger_event_count": 900000,
+      "operation_count": 900000,
+      "placement_count": 75000,
+      "process_peak_rss_bytes": 864198656,
+      "tracemalloc_current_bytes": 379703035,
+      "tracemalloc_peak_bytes": 380084766
+    },
+    {
+      "admission_count": 83334,
+      "average_latency_ns": 4193771,
+      "evidence_count": 166667,
+      "ledger_event_count": 1000000,
+      "operation_count": 1000000,
+      "placement_count": 83334,
+      "process_peak_rss_bytes": 940843008,
+      "tracemalloc_current_bytes": 412511742,
+      "tracemalloc_peak_bytes": 412923918
+    }
+  ],
+  "error_count": 83333,
+  "evidence_loss_count": 0,
+  "identity_collision_count": 0,
+  "latency_drift_explanation": "latency follows bounded per-partition occupancy and periodic maintenance operations",
+  "latency_drift_ratio": "4193771/609591",
+  "ledger_digest": "edcbc3d5fc5137484034187364ada25009f4dfad764a199ffec6a00e44a29442",
+  "ledger_event_count": 1000000,
+  "operation_count": 1000000,
+  "operation_counts": {
+    "admit": 83334,
+    "capture": 83334,
+    "cross_partition_recall": 83333,
+    "host_restart_adapter_failure": 83333,
+    "merge": 83333,
+    "move": 83333,
+    "place": 83334,
+    "recall": 83334,
+    "replay": 83333,
+    "rollback": 83333,
+    "split": 83333,
+    "stitch": 83333
+  },
+  "orphan_object_count": 0,
+  "recovery_count": 83333,
+  "replay_deterministic": true,
+  "snapshot_count": 10,
+  "status": "GATE_H_PASS"
+}

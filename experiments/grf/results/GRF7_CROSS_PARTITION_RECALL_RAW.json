@@ -1,0 +1,72 @@
+{
+  "accept_count": 100,
+  "affected_partition_count": 100,
+  "bridge_decay_count": 1,
+  "false_friend_count": 2,
+  "false_positive_bridge_rate": "0/5000",
+  "missed_bridge_rate": "0/5000",
+  "no_global_partition_scan": true,
+  "proposal_count": 103,
+  "reject_count": 2,
+  "replay_deterministic": true,
+  "rollback_count": 1,
+  "status": "GATE_B_PASS|GATE_C_PASS",
+  "workloads": [
+    {
+      "cross_partition_query_count": 100,
+      "exact_identity_correct": 1000,
+      "logical_field_size": 100000,
+      "max_fanout_observed": 1,
+      "max_loaded_partitions": 2,
+      "max_partition_hops_observed": 1,
+      "path_correct": 1000,
+      "query_count": 1000,
+      "rollback_rejection_query_count": 100,
+      "source_fallback_correct": 1000,
+      "stitch_query_count": 100,
+      "total_latency_ns": 45941700
+    },
+    {
+      "cross_partition_query_count": 500,
+      "exact_identity_correct": 5000,
+      "logical_field_size": 500000,
+      "max_fanout_observed": 1,
+      "max_loaded_partitions": 2,
+      "max_partition_hops_observed": 1,
+      "path_correct": 5000,
+      "query_count": 5000,
+      "rollback_rejection_query_count": 100,
+      "source_fallback_correct": 5000,
+      "stitch_query_count": 500,
+      "total_latency_ns": 161434400
+    },
+    {
+      "cross_partition_query_count": 1000,
+      "exact_identity_correct": 10000,
+      "logical_field_size": 1000000,
+      "max_fanout_observed": 1,
+      "max_loaded_partitions": 2,
+      "max_partition_hops_observed": 1,
+      "path_correct": 10000,
+      "query_count": 10000,
+      "rollback_rejection_query_count": 100,
+      "source_fallback_correct": 10000,
+      "stitch_query_count": 1000,
+      "total_latency_ns": 330354900
+    },
+    {
+      "cross_partition_query_count": 5000,
+      "exact_identity_correct": 20000,
+      "logical_field_size": 10000000,
+      "max_fanout_observed": 1,
+      "max_loaded_partitions": 2,
+      "max_partition_hops_observed": 1,
+      "path_correct": 20000,
+      "query_count": 20000,
+      "rollback_rejection_query_count": 1000,
+      "source_fallback_correct": 20000,
+      "stitch_query_count": 1000,
+      "total_latency_ns": 810429600
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "add_changed_state": true,
+  "admission_identity_preserved": true,
+  "cross_partition_move_replayed": true,
+  "evidence_identity_preserved": true,
+  "identity_collision_count": 0,
+  "incremental_equals_full_rebuild": true,
+  "move_changed_state": true,
+  "placement_identity_preserved": true,
+  "profile_change_replayed": true,
+  "remove_changed_state": true,
+  "source_fallback_preserved": true,
+  "split_merge_replayed": true,
+  "status": "GATE_F_PASS",
+  "stitch_add_remove_replayed": true
+}
