@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from .grf_file_adapter import GRFFileAdapter
+from .grf_adapter_contract import GRFAdapterOperations
 
 
-class GRFDeclaredHostAdapter:
+class GRFDeclaredHostAdapter(GRFAdapterOperations):
     def __init__(self, workspace: Path, declaration_path: Path) -> None:
         payload = json.loads(Path(declaration_path).read_text(encoding="utf-8"))
         if payload.get("contract_version") != "grf_host_v1" or payload.get("mode") != "declarative_skeleton" or not isinstance(payload.get("capabilities"), list):

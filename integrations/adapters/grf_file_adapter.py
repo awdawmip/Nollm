@@ -7,9 +7,10 @@ from time import perf_counter_ns
 from typing import Any
 
 from nollm.grf.host_contract import GRFHostRequest, GRFHostService, UnsupportedCapabilityError
+from .grf_adapter_contract import GRFAdapterOperations
 
 
-class GRFFileAdapter:
+class GRFFileAdapter(GRFAdapterOperations):
     def __init__(self, workspace: Path) -> None:
         self._service = GRFHostService(Path(workspace))
 
