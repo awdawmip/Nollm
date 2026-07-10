@@ -22,11 +22,28 @@ class RelationField:
         object.__setattr__(self, "_template_lookup_cache", {(template.profile_id, template.direction): template for template in self.coverage_templates})
         cells: dict[tuple[str, str, int, int, int, str], list[PlacementRecord]] = {}
         patches: dict[str, list[PlacementRecord]] = {}
+        shards: dict[str, list[PlacementRecord]] = {}
+        placements_by_id: dict[str, list[PlacementRecord]] = {}
+        islands: dict[str, list[PlacementRecord]] = {}
+        source_windows: dict[str, list[PlacementRecord]] = {}
         for record in self.placements:
             cells.setdefault(record.geometry_mark.cell.stable_key(), []).append(record)
             patches.setdefault(record.patch_id, []).append(record)
+            shards.setdefault(record.shard_id, []).append(record)
+            placements_by_id.setdefault(record.placement_id, []).append(record)
+            islands.setdefault(record.island_id, []).append(record)
+            for source_window in record.source_fallback_refs:
+                source_windows.setdefault(source_window, []).append(record)
         object.__setattr__(self, "_cell_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in cells.items()})
         object.__setattr__(self, "_patch_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in patches.items()})
+        object.__setattr__(self, "_entry_lookup_cache", {
+            "shard_id": _ordered_index(shards),
+            "placement_id": _ordered_index(placements_by_id),
+            "admission_id": _ordered_index(placements_by_id),
+            "island_id": _ordered_index(islands),
+            "patch_id": _ordered_index(patches),
+            "source_window": _ordered_index(source_windows),
+        })
 
     def step(self, activation: SparseActivation, allowed_kernels: tuple[str, ...], max_lateral_ring: int, max_bridge_steps: int) -> tuple[tuple[SparseActivation, RecallPath], ...]:
         results: list[tuple[SparseActivation, RecallPath]] = []
@@ -45,6 +62,12 @@ class RelationField:
 
     def frontier(self, activations: tuple[SparseActivation, ...], beam: int, step: int) -> ActivationFrontier:
         return ActivationFrontier(step, activations).merged(beam)
+
+    def placements_for_entry(self, entry_mode: str, entry_ref: object) -> tuple[PlacementRecord, ...]:
+        index = self._entry_lookup_cache.get(entry_mode)
+        if index is None or not isinstance(entry_ref, str):
+            return ()
+        return index.get(entry_ref, ())
 
     def _coverage_step(self, activation: SparseActivation, direction: str) -> tuple[tuple[SparseActivation, RecallPath], ...]:
         template = self._template_index().get((activation.cell.profile_id, direction))
@@ -84,3 +107,7 @@ def _activation_path(source: SparseActivation, to_cell: CellAddress, weight_q16:
     activation = SparseActivation(to_cell, score, path_id)
     path = RecallPath(source.cell, to_cell, kernel_type, weight_q16, score, 0, flags)
     return activation, path
+
+
+def _ordered_index(index: dict[str, list[PlacementRecord]]) -> dict[str, tuple[PlacementRecord, ...]]:
+    return {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in index.items()}

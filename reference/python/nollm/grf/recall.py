@@ -51,6 +51,7 @@ class QueryProbe:
 
 def resolve_grf_recall(query: QueryProbe, field: RelationField) -> RecallDigest:
     starts = _entry_activations(query, field)
+    entry_shards = {placement.shard_id for placement in field.placements_for_entry(query.entry_mode, query.entry_ref)}
     frontier = field.frontier(starts, query.budget.beam, 0)
     paths: dict[tuple[str, str, int, int, int, str], tuple[RecallPath, ...]] = {activation.cell.stable_key(): () for activation in frontier.activations}
     selected: dict[str, CoverageReport] = {}
@@ -58,7 +59,8 @@ def resolve_grf_recall(query: QueryProbe, field: RelationField) -> RecallDigest:
     exhausted = False
     for step in range(query.budget.max_steps + 1):
         for activation in frontier.activations:
-            for placement in field.shards_at(activation.cell):
+            placements = tuple(sorted(field.shards_at(activation.cell), key=lambda item: (item.shard_id not in entry_shards, item.shard_id)))
+            for placement in placements:
                 if placement.shard_id in selected:
                     continue
                 selected[placement.shard_id] = _report(query, placement.shard_id, paths.get(activation.cell.stable_key(), ()), activation.score_q16, placement.source_fallback_refs[0])
@@ -90,20 +92,7 @@ def _entry_activations(query: QueryProbe, field: RelationField) -> tuple[SparseA
         if not isinstance(query.entry_ref, CellAddress):
             raise TypeError("explicit_cell entry_ref must be CellAddress")
         return (SparseActivation(query.entry_ref, Q16_ONE, query.query_id),)
-    matches = []
-    for placement in field.placements:
-        if query.entry_mode == "shard_id" and placement.shard_id == query.entry_ref:
-            matches.append(placement)
-        elif query.entry_mode == "island_id" and placement.island_id == query.entry_ref:
-            matches.append(placement)
-        elif query.entry_mode == "patch_id" and placement.patch_id == query.entry_ref:
-            matches.append(placement)
-        elif query.entry_mode == "placement_id" and placement.placement_id == query.entry_ref:
-            matches.append(placement)
-        elif query.entry_mode == "admission_id" and placement.placement_id == query.entry_ref:
-            matches.append(placement)
-        elif query.entry_mode == "source_window" and query.entry_ref in placement.source_fallback_refs:
-            matches.append(placement)
+    matches = field.placements_for_entry(query.entry_mode, query.entry_ref)
     return tuple(SparseActivation(record.geometry_mark.cell, Q16_ONE, query.query_id) for record in sorted(matches, key=lambda item: item.shard_id))
 
 

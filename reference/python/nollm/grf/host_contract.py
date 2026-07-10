@@ -10,7 +10,8 @@ from typing import Any
 from .exporters import to_jsonable
 from .facade import GRFFacade, admit_existing_placement_request_from_mapping, admit_request_from_mapping, capture_request_from_mapping, recall_query_from_mapping
 
-CONTRACT_VERSION = "grf_host_v1"
+CONTRACT_VERSION = "grf_host_v2"
+SUPPORTED_CONTRACT_VERSIONS = ("grf_host_v1", CONTRACT_VERSION)
 CAPABILITIES = ("capture", "place", "admit", "recall", "replay", "validate")
 
 
@@ -63,7 +64,7 @@ class GRFHostRequest:
     admission_identity: AdmissionIdentity | None = None
 
     def __post_init__(self) -> None:
-        if self.contract_version != CONTRACT_VERSION:
+        if self.contract_version not in SUPPORTED_CONTRACT_VERSIONS:
             raise ValueError("unsupported GRF host contract version")
         if not isinstance(self.host_request_id, HostRequestID):
             raise TypeError("host_request_id must be HostRequestID")
@@ -145,8 +146,10 @@ class CapabilityRegistry:
         if not self.supports(capability):
             raise UnsupportedCapabilityError(f"unsupported capability: {capability}")
 
-    def declaration(self) -> dict[str, object]:
-        return {"contract_version": CONTRACT_VERSION, "capabilities": self._supported}
+    def declaration(self, contract_version: str = CONTRACT_VERSION) -> dict[str, object]:
+        if contract_version not in SUPPORTED_CONTRACT_VERSIONS:
+            raise ValueError("unsupported GRF host contract version")
+        return {"contract_version": contract_version, "capabilities": self._supported}
 
 
 class GRFHostService:
@@ -161,9 +164,9 @@ class GRFHostService:
         try:
             self._capabilities.require(request.capability)
             result, evidence, placement, admission = self._dispatch(request)
-            return GRFHostResponse(CONTRACT_VERSION, request.host_request_id, request.capability, True, result, None, _evidence(evidence), _placement(placement), _admission(admission), perf_counter_ns() - started)
+            return GRFHostResponse(request.contract_version, request.host_request_id, request.capability, True, result, None, _evidence(evidence), _placement(placement), _admission(admission), perf_counter_ns() - started)
         except (FileNotFoundError, UnsupportedCapabilityError, ValueError, TypeError) as exc:
-            return GRFHostResponse(CONTRACT_VERSION, request.host_request_id, request.capability, False, None, type(exc).__name__, request.evidence_identity, request.placement_identity, request.admission_identity, perf_counter_ns() - started)
+            return GRFHostResponse(request.contract_version, request.host_request_id, request.capability, False, None, type(exc).__name__, request.evidence_identity, request.placement_identity, request.admission_identity, perf_counter_ns() - started)
 
     def _dispatch(self, request: GRFHostRequest) -> tuple[dict[str, object], str | None, str | None, str | None]:
         if request.capability == "capture":

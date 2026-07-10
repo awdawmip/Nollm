@@ -15,6 +15,7 @@ from .evidence import EvidenceShardRecord
 from .exporters import to_jsonable
 from .facade import GRFFacade, GRFWorkspaceReport
 from .host_contract import AdmissionIdentity, CapabilityRegistry, EvidenceIdentity, GRFHostRequest, GRFHostResponse, GRFHostService, HostRequestID, PlacementIdentity, UnsupportedCapabilityError
+from .contract_evolution import ContractVersion, ContractVersionRegistry, migrate_host_request
 from .importers import (
     MIGRATION_BOUNDARY_MODE,
     CaptureImportResult,
@@ -68,6 +69,9 @@ __all__ = [
     "GRFHostResponse",
     "GRFHostService",
     "UnsupportedCapabilityError",
+    "ContractVersion",
+    "ContractVersionRegistry",
+    "migrate_host_request",
     "CellRegistry",
     "CellState",
     "FieldEngine",

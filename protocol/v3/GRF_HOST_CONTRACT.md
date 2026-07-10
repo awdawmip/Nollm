@@ -1,6 +1,8 @@
 # GRF Host Contract V1
 
-`grf_host_v1` is a versioned boundary between a host adapter and GRF Core.
+`grf_host_v2` is the current versioned boundary between a host adapter and GRF
+Core. `grf_host_v1` remains supported with `supported_deprecated` status. Both
+versions preserve the same typed identity and capability semantics.
 
 Each request contains a distinct runtime-validated `HostRequestID`, optional
 `EvidenceIdentity` (`shard:`), `PlacementIdentity` (`placement:`), and
