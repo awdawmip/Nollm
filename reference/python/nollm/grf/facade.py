@@ -53,6 +53,10 @@ class GRFFacade:
 
         return IncrementalIngestion(self.workspace).retire(source_id)
 
+    def retire(self, source_id: str) -> object:
+        """Mark an explicitly ingested source retired without deleting evidence."""
+        return self.retire_source(source_id)
+
     def get_source(self, shard_id: str) -> str:
         """Return the retained original evidence text for an explicit shard."""
         return self.store.read_evidence_shard(shard_id).content

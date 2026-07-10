@@ -36,6 +36,15 @@ def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
     assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == '{"fact":"one"}'
 
 
+def test_facade_retire_preserves_captured_source(tmp_path) -> None:
+    path = tmp_path / "notes.txt"
+    path.write_text("retained after retirement", encoding="utf-8")
+    facade = GRFFacade(tmp_path / "workspace")
+    result = facade.capture_source(path, "2026-07-10T00:00:00Z")
+    assert facade.retire(result.source_id).retired
+    assert facade.get_source(result.created_shards[0]) == "retained after retirement"
+
+
 def test_facade_text_snapshot_and_restore_are_file_first(tmp_path) -> None:
     facade = GRFFacade(tmp_path / "workspace")
     receipt = facade.capture_text("capture:text", "retained", "window:text", "2026-07-11T00:00:00Z")
