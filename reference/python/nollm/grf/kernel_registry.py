@@ -42,11 +42,13 @@ class KernelCompressionReport:
 class KernelRegistry:
     def __init__(self) -> None:
         self._templates: dict[KernelKey, tuple[KernelEntry, ...]] = {}
+        self._coverage_templates_cache: tuple[CoverageTemplate, ...] | None = None
 
     def register_template(self, key: KernelKey, entries: tuple[KernelEntry, ...]) -> None:
         if not entries:
             raise ValueError("kernel entries cannot be empty")
         self._templates[key] = tuple(sorted(entries, key=lambda item: (item.layer_delta, item.dq, item.dr, item.weight_q16, item.kernel_type, item.flags)))
+        self._coverage_templates_cache = None
 
     def compile_profiles(self, profile_ids: tuple[str, ...]) -> None:
         compiler = CoverageTemplateCompiler()
@@ -61,12 +63,15 @@ class KernelRegistry:
         return tuple((key, self._templates[key]) for key in sorted(self._templates, key=lambda item: item.stable_key()))
 
     def coverage_templates(self) -> tuple[CoverageTemplate, ...]:
+        if self._coverage_templates_cache is not None:
+            return self._coverage_templates_cache
         compiler = CoverageTemplateCompiler()
         out = []
         for key, _entries in self.templates():
             if key.direction in (COVERAGE_UP, COVERAGE_DOWN, LATERAL):
                 out.append(compiler.compile(key.profile_id, key.direction))
-        return tuple(out)
+        self._coverage_templates_cache = tuple(out)
+        return self._coverage_templates_cache
 
     def compression_report(self, shard_count_assumption: int) -> KernelCompressionReport:
         payload = tuple((key.stable_key(), tuple(entry.__dict__.copy() for entry in entries)) for key, entries in self.templates())

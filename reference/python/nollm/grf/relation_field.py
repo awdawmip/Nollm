@@ -19,8 +19,14 @@ class RelationField:
     placements: tuple[PlacementRecord, ...]
 
     def __post_init__(self) -> None:
-        self._template_index()
-        self._cell_index()
+        object.__setattr__(self, "_template_lookup_cache", {(template.profile_id, template.direction): template for template in self.coverage_templates})
+        cells: dict[tuple[str, str, int, int, int, str], list[PlacementRecord]] = {}
+        patches: dict[str, list[PlacementRecord]] = {}
+        for record in self.placements:
+            cells.setdefault(record.geometry_mark.cell.stable_key(), []).append(record)
+            patches.setdefault(record.patch_id, []).append(record)
+        object.__setattr__(self, "_cell_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in cells.items()})
+        object.__setattr__(self, "_patch_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in patches.items()})
 
     def step(self, activation: SparseActivation, allowed_kernels: tuple[str, ...], max_lateral_ring: int, max_bridge_steps: int) -> tuple[tuple[SparseActivation, RecallPath], ...]:
         results: list[tuple[SparseActivation, RecallPath]] = []
@@ -58,7 +64,7 @@ class RelationField:
         for bridge in self.bridge_kernels:
             if bridge.from_patch not in patch_ids:
                 continue
-            targets = [record for record in self.placements if record.patch_id == bridge.to_patch]
+            targets = self._patch_lookup_cache.get(bridge.to_patch, ())
             if not bridge.fanout_allowed(len(targets)):
                 targets = targets[: bridge.max_fanout]
             for target in targets:
@@ -66,13 +72,10 @@ class RelationField:
         return tuple(out)
 
     def _template_index(self) -> dict[tuple[str, str], CoverageTemplate]:
-        return {(template.profile_id, template.direction): template for template in self.coverage_templates}
+        return self._template_lookup_cache
 
     def _cell_index(self) -> dict[tuple[str, str, int, int, int, str], tuple[PlacementRecord, ...]]:
-        index: dict[tuple[str, str, int, int, int, str], list[PlacementRecord]] = {}
-        for record in self.placements:
-            index.setdefault(record.geometry_mark.cell.stable_key(), []).append(record)
-        return {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in index.items()}
+        return self._cell_lookup_cache
 
 
 def _activation_path(source: SparseActivation, to_cell: CellAddress, weight_q16: int, kernel_type: str, path_kind: str, flags: tuple[str, ...]) -> tuple[SparseActivation, RecallPath]:

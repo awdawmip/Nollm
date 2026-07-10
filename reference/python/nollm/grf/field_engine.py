@@ -126,25 +126,35 @@ class FieldEngine:
         self.registry = registry or CellRegistry()
         self.placements = PlacementIndex(self.registry)
         self._bridges: dict[str, BridgeKernel] = {}
+        self._relation_field_cache: RelationField | None = None
 
     def insert(self, placement: PlacementRecord) -> None:
         self.placements.insert(placement)
+        self._relation_field_cache = None
 
     def remove(self, placement_id: str) -> PlacementRecord:
-        return self.placements.remove(placement_id)
+        placement = self.placements.remove(placement_id)
+        self._relation_field_cache = None
+        return placement
 
     def move(self, placement: PlacementRecord) -> None:
         self.placements.move(placement)
+        self._relation_field_cache = None
 
     def add_bridge(self, bridge: BridgeKernel) -> None:
         self._bridges[bridge.bridge_id] = bridge
+        self._relation_field_cache = None
 
     def remove_bridge(self, bridge_id: str) -> BridgeKernel:
-        return self._bridges.pop(bridge_id)
+        bridge = self._bridges.pop(bridge_id)
+        self._relation_field_cache = None
+        return bridge
 
     def build_relation_field(self) -> RelationField:
-        return RelationField(
-            self.kernel_registry.coverage_templates(),
-            tuple(self._bridges[key] for key in sorted(self._bridges)),
-            self.placements.placements(),
-        )
+        if self._relation_field_cache is None:
+            self._relation_field_cache = RelationField(
+                self.kernel_registry.coverage_templates(),
+                tuple(self._bridges[key] for key in sorted(self._bridges)),
+                self.placements.placements(),
+            )
+        return self._relation_field_cache
