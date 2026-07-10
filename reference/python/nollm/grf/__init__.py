@@ -24,7 +24,7 @@ from .importers import (
     import_v2_dream_shard_like,
 )
 from .fixed_point import Q16_ONE
-from .field_engine import CellRegistry, CellState, PlacementIndex
+from .field_engine import CellRegistry, CellState, FieldEngine, PlacementIndex
 from .incremental_field import IncrementalFieldBuilder, IncrementalUpdateReport
 from .kernel_registry import KernelCompressionReport, KernelKey, KernelRegistry
 from .local_patch import LocalPatch
@@ -60,6 +60,7 @@ __all__ = [
     "GRFWorkspaceReport",
     "CellRegistry",
     "CellState",
+    "FieldEngine",
     "PlacementIndex",
     "IncrementalFieldBuilder",
     "IncrementalUpdateReport",

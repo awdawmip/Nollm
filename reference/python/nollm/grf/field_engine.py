@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from .axial import AxialCoord, hex_ring
 from .cell_address import CellAddress
 from .placement import PlacementRecord
+from .bridge_kernel import BridgeKernel
+from .kernel_registry import KernelRegistry
+from .relation_field import RelationField
 
 DENSITY_STATES = ("normal", "dense", "overloaded", "migration_candidate")
 
@@ -111,3 +114,37 @@ class PlacementIndex:
 
     def placement_id_for_shard(self, shard_id: str) -> str | None:
         return self._by_shard.get(shard_id)
+
+
+class FieldEngine:
+    """In-memory field assembly surface used by deterministic GRF benchmarks."""
+
+    def __init__(self, kernel_registry: KernelRegistry | None = None, registry: CellRegistry | None = None) -> None:
+        self.kernel_registry = kernel_registry or KernelRegistry()
+        if not self.kernel_registry.templates():
+            self.kernel_registry.compile_profiles(("eisenstein_exact_v1",))
+        self.registry = registry or CellRegistry()
+        self.placements = PlacementIndex(self.registry)
+        self._bridges: dict[str, BridgeKernel] = {}
+
+    def insert(self, placement: PlacementRecord) -> None:
+        self.placements.insert(placement)
+
+    def remove(self, placement_id: str) -> PlacementRecord:
+        return self.placements.remove(placement_id)
+
+    def move(self, placement: PlacementRecord) -> None:
+        self.placements.move(placement)
+
+    def add_bridge(self, bridge: BridgeKernel) -> None:
+        self._bridges[bridge.bridge_id] = bridge
+
+    def remove_bridge(self, bridge_id: str) -> BridgeKernel:
+        return self._bridges.pop(bridge_id)
+
+    def build_relation_field(self) -> RelationField:
+        return RelationField(
+            self.kernel_registry.coverage_templates(),
+            tuple(self._bridges[key] for key in sorted(self._bridges)),
+            self.placements.placements(),
+        )
