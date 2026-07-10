@@ -1,4 +1,4 @@
-from nollm.grf.real_sources import FileSourceConnector
+from nollm.grf.real_sources import FileSourceConnector, connector_for
 from nollm.grf.ingestion import IncrementalIngestion
 from nollm.grf.facade import GRFFacade
 
@@ -10,6 +10,10 @@ def test_file_connector_preserves_original_meaningful_units(tmp_path) -> None:
     windows = FileSourceConnector().windows(document)
     assert document.source_type == "markdown"
     assert tuple(item.content for item in windows) == ("# Title\nfirst", "Next\nsecond")
+
+
+def test_six_explicit_source_connectors_are_selectable() -> None:
+    assert {type(connector_for(kind)).__name__ for kind in ("markdown", "text", "json", "jsonl", "code", "chat_log")} == {"MarkdownSource", "TextSource", "JsonSource", "JsonlSource", "CodeSource", "ChatLogSource"}
 
 
 def test_incremental_ingestion_is_idempotent_and_retirement_is_source_scoped(tmp_path) -> None:

@@ -49,6 +49,21 @@ class FileSourceConnector:
         return tuple(SourceWindow(f"window:grf8:{document.source_id.rsplit(':', 1)[-1]}:{index}", document.source_id, index, unit, document.source_type, document.recorded_at) for index, unit in enumerate(units) if unit.strip())
 
 
+class MarkdownSource(FileSourceConnector): pass
+class TextSource(FileSourceConnector): pass
+class JsonSource(FileSourceConnector): pass
+class JsonlSource(FileSourceConnector): pass
+class CodeSource(FileSourceConnector): pass
+class ChatLogSource(FileSourceConnector): pass
+
+
+def connector_for(source_type: str) -> FileSourceConnector:
+    mapping = {"markdown": MarkdownSource, "text": TextSource, "json": JsonSource, "jsonl": JsonlSource, "code": CodeSource, "chat_log": ChatLogSource}
+    if source_type not in mapping:
+        raise ValueError("unsupported source type")
+    return mapping[source_type]()
+
+
 def _source_type(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix in {".md", ".markdown"}: return "markdown"
