@@ -63,5 +63,5 @@ def _units(content: str, source_type: str) -> tuple[str, ...]:
     if source_type == "json": return (json.dumps(json.loads(content), sort_keys=True, ensure_ascii=True),)
     if source_type == "jsonl": return tuple(line for line in content.splitlines() if line.strip())
     if source_type == "code": return tuple(block for block in content.split("\n\ndef ") if block.strip())
-    if source_type == "markdown": return tuple(block for block in content.split("\n## ") if block.strip())
+    if source_type == "markdown": return tuple(block.strip() for block in content.split("\n## ") if block.strip())
     return tuple(block for block in content.split("\n\n") if block.strip())
