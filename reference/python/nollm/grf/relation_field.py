@@ -1,4 +1,4 @@
-"""Sparse GRF relation field runtime."""
+"""Sparse relation propagation derived from placement geometry, without routes."""
 
 from __future__ import annotations
 
@@ -18,33 +18,6 @@ class RelationField:
     bridge_kernels: tuple[BridgeKernel, ...]
     placements: tuple[PlacementRecord, ...]
 
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_template_lookup_cache", {(template.profile_id, template.direction): template for template in self.coverage_templates})
-        cells: dict[tuple[str, str, int, int, int, str], list[PlacementRecord]] = {}
-        patches: dict[str, list[PlacementRecord]] = {}
-        shards: dict[str, list[PlacementRecord]] = {}
-        placements_by_id: dict[str, list[PlacementRecord]] = {}
-        islands: dict[str, list[PlacementRecord]] = {}
-        source_windows: dict[str, list[PlacementRecord]] = {}
-        for record in self.placements:
-            cells.setdefault(record.geometry_mark.cell.stable_key(), []).append(record)
-            patches.setdefault(record.patch_id, []).append(record)
-            shards.setdefault(record.shard_id, []).append(record)
-            placements_by_id.setdefault(record.placement_id, []).append(record)
-            islands.setdefault(record.island_id, []).append(record)
-            for source_window in record.source_fallback_refs:
-                source_windows.setdefault(source_window, []).append(record)
-        object.__setattr__(self, "_cell_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in cells.items()})
-        object.__setattr__(self, "_patch_lookup_cache", {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in patches.items()})
-        object.__setattr__(self, "_entry_lookup_cache", {
-            "shard_id": _ordered_index(shards),
-            "placement_id": _ordered_index(placements_by_id),
-            "admission_id": _ordered_index(placements_by_id),
-            "island_id": _ordered_index(islands),
-            "patch_id": _ordered_index(patches),
-            "source_window": _ordered_index(source_windows),
-        })
-
     def step(self, activation: SparseActivation, allowed_kernels: tuple[str, ...], max_lateral_ring: int, max_bridge_steps: int) -> tuple[tuple[SparseActivation, RecallPath], ...]:
         results: list[tuple[SparseActivation, RecallPath]] = []
         if COVERAGE_UP in allowed_kernels:
@@ -58,56 +31,40 @@ class RelationField:
         return tuple(sorted(results, key=lambda item: (-item[0].score_q16, item[0].cell.stable_key(), item[1].kernel_type)))
 
     def shards_at(self, cell: CellAddress) -> tuple[PlacementRecord, ...]:
-        return self._cell_index().get(cell.stable_key(), ())
+        return tuple(sorted((item for item in self.placements if item.geometry_mark.cell == cell), key=lambda item: item.shard_id))
 
     def frontier(self, activations: tuple[SparseActivation, ...], beam: int, step: int) -> ActivationFrontier:
         return ActivationFrontier(step, activations).merged(beam)
 
-    def placements_for_entry(self, entry_mode: str, entry_ref: object) -> tuple[PlacementRecord, ...]:
-        index = self._entry_lookup_cache.get(entry_mode)
-        if index is None or not isinstance(entry_ref, str):
-            return ()
-        return index.get(entry_ref, ())
+    def explicit_entries(self, entry_mode: str, entry_ref: object) -> tuple[PlacementRecord, ...]:
+        if entry_mode == "placement_id" and isinstance(entry_ref, str):
+            return tuple(item for item in self.placements if item.placement_id == entry_ref)
+        if entry_mode == "explicit_cell" and isinstance(entry_ref, CellAddress):
+            return self.shards_at(entry_ref)
+        return ()
 
     def _coverage_step(self, activation: SparseActivation, direction: str) -> tuple[tuple[SparseActivation, RecallPath], ...]:
-        template = self._template_index().get((activation.cell.profile_id, direction))
+        template = next((item for item in self.coverage_templates if item.profile_id == activation.cell.profile_id and item.direction == direction), None)
         if template is None:
             return ()
-        expanded = expand_template(activation.cell, template)
-        return tuple(_activation_path(activation, cell, weight, direction, direction, ()) for cell, weight in expanded)
+        return tuple(_activation_path(activation, cell, weight, direction, direction, ()) for cell, weight in expand_template(activation.cell, template))
 
     def _lateral_step(self, activation: SparseActivation, ring: int) -> tuple[tuple[SparseActivation, RecallPath], ...]:
-        expanded = expand_lateral(activation.cell, ring)
-        return tuple(_activation_path(activation, cell, weight, LATERAL, LATERAL, ()) for cell, weight in expanded)
+        return tuple(_activation_path(activation, cell, weight, LATERAL, LATERAL, ()) for cell, weight in expand_lateral(activation.cell, ring))
 
     def _bridge_step(self, activation: SparseActivation) -> tuple[tuple[SparseActivation, RecallPath], ...]:
-        placements = self.shards_at(activation.cell)
-        patch_ids = {record.patch_id for record in placements}
-        out = []
+        patch_ids = {record.patch_id for record in self.shards_at(activation.cell)}
+        output = []
         for bridge in self.bridge_kernels:
             if bridge.from_patch not in patch_ids:
                 continue
-            targets = self._patch_lookup_cache.get(bridge.to_patch, ())
-            if not bridge.fanout_allowed(len(targets)):
-                targets = targets[: bridge.max_fanout]
-            for target in targets:
-                out.append(_activation_path(activation, target.geometry_mark.cell, bridge.weight_q16, "bridge", bridge.bridge_class, ("bridge",)))
-        return tuple(out)
-
-    def _template_index(self) -> dict[tuple[str, str], CoverageTemplate]:
-        return self._template_lookup_cache
-
-    def _cell_index(self) -> dict[tuple[str, str, int, int, int, str], tuple[PlacementRecord, ...]]:
-        return self._cell_lookup_cache
+            targets = tuple(item for item in self.placements if item.patch_id == bridge.to_patch)
+            for target in targets[: bridge.max_fanout]:
+                output.append(_activation_path(activation, target.geometry_mark.cell, bridge.weight_q16, "bridge", bridge.bridge_class, ("bridge",)))
+        return tuple(output)
 
 
 def _activation_path(source: SparseActivation, to_cell: CellAddress, weight_q16: int, kernel_type: str, path_kind: str, flags: tuple[str, ...]) -> tuple[SparseActivation, RecallPath]:
     score = propagate_score(source.score_q16, weight_q16)
-    path_id = f"{source.path_id}/{path_kind}:{to_cell.layer}:{to_cell.q}:{to_cell.r}"
-    activation = SparseActivation(to_cell, score, path_id)
-    path = RecallPath(source.cell, to_cell, kernel_type, weight_q16, score, 0, flags)
-    return activation, path
-
-
-def _ordered_index(index: dict[str, list[PlacementRecord]]) -> dict[str, tuple[PlacementRecord, ...]]:
-    return {key: tuple(sorted(value, key=lambda item: item.shard_id)) for key, value in index.items()}
+    activation = SparseActivation(to_cell, score, f"{source.path_id}/{path_kind}:{to_cell.layer}:{to_cell.q}:{to_cell.r}")
+    return activation, RecallPath(source.cell, to_cell, kernel_type, weight_q16, score, 0, flags)

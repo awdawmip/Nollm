@@ -181,7 +181,7 @@ def _evidence_shard_from_payload(payload: dict[str, Any]) -> EvidenceShardRecord
 
 
 def _source_window_from_payload(payload: dict[str, Any]) -> SourceWindowRecord:
-    return SourceWindowRecord(payload["window_id"], payload["kind"], tuple(payload["refs"]), payload["opened_at"], payload["closed_at"], payload["policy_ref"])
+    return SourceWindowRecord(payload["window_id"], payload["kind"], tuple(payload["refs"]), payload["opened_at"], payload["closed_at"], payload["policy_ref"], payload.get("source_id"), payload.get("source_path"), payload.get("source_type"), payload.get("encoding"), payload.get("newline_style"), payload.get("start_offset"), payload.get("end_offset"), payload.get("ordinal"), payload.get("exact_content"))
 
 
 def _bridge_from_payload(payload: dict[str, Any]) -> BridgeKernel:
@@ -218,7 +218,7 @@ def _record_from_payload(payload: dict[str, Any]) -> StitchRecord:
 
 
 def _candidate_from_payload(payload: dict[str, Any]) -> PlacementCandidate:
-    return PlacementCandidate(payload["candidate_id"], payload["shard_id"], payload["island_id"], payload["patch_id"], _cell(payload["target_cell"]), dict(payload["scores"]), payload["confidence_band"], tuple(payload["source_window_refs"]), tuple(payload["evidence_refs"]))
+    return PlacementCandidate(payload["candidate_id"], payload["shard_id"], payload["island_id"], payload["patch_id"], _cell(payload["target_cell"]), payload["confidence_band"], tuple(payload["source_window_refs"]), tuple(payload["evidence_refs"]))
 
 
 def _mark(payload: dict[str, Any]) -> GeometryMark:

@@ -3,6 +3,17 @@ from nollm.grf.ingestion import IncrementalIngestion
 from nollm.grf.facade import GRFFacade
 
 
+def _decision(name: str, q: int) -> dict[str, object]:
+    return {
+        "action": "place", "decision_id": f"decision:{name}",
+        "candidate_id": f"candidate:{name}", "placement_id": f"placement:{name}",
+        "decided_by": "human", "selected_cell": {
+            "profile_id": "eisenstein_exact_v1", "chart_id": "chart:explicit",
+            "layer": 0, "q": q, "r": 0,
+        },
+    }
+
+
 def test_file_connector_preserves_original_meaningful_units(tmp_path) -> None:
     path = tmp_path / "notes.md"
     path.write_bytes(b"# Title\nfirst\n\n## Next\nsecond")
@@ -54,6 +65,8 @@ def test_incremental_window_change_preserves_unmodified_shards(tmp_path) -> None
     assert len(first.created_shards) == 3
     assert len(second.created_shards) == 1
     assert {first.created_shards[0], first.created_shards[2]} == set(second.reused_shards)
+    manifest = (tmp_path / "workspace" / "grfs" / "manifests" / "source_index.json").read_text(encoding="utf-8")
+    assert '"start_offset"' in manifest and '"exact_content"' in manifest
 
 
 def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
@@ -85,7 +98,7 @@ def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
     path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")
     facade = GRFFacade(tmp_path / "workspace")
     ingested = facade.capture_source(path, "2026-07-10T00:00:00Z")
-    placed = facade.place_batch(ingested.created_shards, "window:batch", {"policy_id": "grf_deterministic_policy_v1"}, "2026-07-10T00:00:01Z")
+    placed = tuple(facade.place(shard, "window:batch", _decision(f"batch:{index}", index), "2026-07-10T00:00:01Z") for index, shard in enumerate(ingested.created_shards))
     assert all(item.admission_record is None and item.placement_record is not None for item in placed)
     admitted = facade.admit_batch(tuple((item.placement_record.shard_id, item.placement_record.placement_id) for item in placed), "2026-07-10T00:00:02Z", "batch_explicit")
     assert len({item.admission_id for item in admitted}) == 2
@@ -94,7 +107,7 @@ def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
 def test_replacement_creates_new_placement_without_losing_source(tmp_path) -> None:
     facade = GRFFacade(tmp_path / "workspace")
     shard = facade.capture_text("capture:replace", "retained replacement source", "window:replace", "2026-07-11T00:00:00Z").shard_id
-    original = facade.place(shard, "window:replace", {"policy_id": "grf_deterministic_policy_v1"}, "2026-07-11T00:00:01Z").placement_record
-    replacement = facade.re_place(shard, "window:replace", {"policy_id": "grf_deterministic_policy_v1", "chart_id": "chart:replacement"}, "profile-change-1", "2026-07-11T00:00:02Z").placement_record
+    original = facade.place(shard, "window:replace", _decision("replace:original", 0), "2026-07-11T00:00:01Z").placement_record
+    replacement = facade.place(shard, "window:replace", _decision("replace:changed", 1), "2026-07-11T00:00:02Z").placement_record
     assert original.placement_id != replacement.placement_id
     assert facade.get_source(shard) == "retained replacement source"

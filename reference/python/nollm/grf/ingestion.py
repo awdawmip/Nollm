@@ -8,6 +8,7 @@ from pathlib import Path
 from .capture import GRFCaptureRequest
 from .facade import GRFFacade
 from .real_sources import FileSourceConnector, SourceWindow, connector_for
+from .source_window import SourceWindowRecord
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,14 @@ class IncrementalIngestion:
                 reused.append(str(previous["shard_id"]))
                 current.append({**previous, **_window_mapping(window), "retired": False})
                 continue
+            self.facade.store.write_source_window(SourceWindowRecord(
+                window.window_id, "file", (window.source_id,), window.recorded_at,
+                policy_ref="exact_source_window_v1", source_id=window.source_id,
+                source_path=window.source_path, source_type=window.source_type,
+                encoding=window.encoding, newline_style=window.newline_style,
+                start_offset=window.start_offset, end_offset=window.end_offset,
+                ordinal=window.ordinal, exact_content=window.content,
+            ), recorded_at)
             request = GRFCaptureRequest(
                 f"{document.source_id}:{window.window_id}:{window.fingerprint}", window.content,
                 "imported_text", (window.window_id,), recorded_at, "grf_file_source",

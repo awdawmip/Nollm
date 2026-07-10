@@ -66,7 +66,7 @@ class FileSourceConnector:
         spans = _spans(document.content, document.source_type)
         return tuple(
             SourceWindow(
-                f"window:grf:{document.source_id.rsplit(':', 1)[-1]}:{ordinal}",
+                f"window:grf:{document.source_id.rsplit(':', 1)[-1]}:{ordinal}:{sha256(document.content[start:end].encode('utf-8')).hexdigest()[:16]}",
                 document.source_id, document.source_path, document.source_type,
                 document.encoding, document.newline_style, start, end, ordinal,
                 document.content[start:end], document.recorded_at,

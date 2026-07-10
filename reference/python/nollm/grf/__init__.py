@@ -26,14 +26,12 @@ from .importers import (
     import_v2_dream_shard_like,
 )
 from .fixed_point import Q16_ONE
-from .field_engine import CellRegistry, CellState, FieldEngine, PlacementIndex
-from .incremental_field import IncrementalFieldBuilder, IncrementalUpdateReport
+from .field_engine import CellState, CellStore, FieldEngine
 from .kernel_registry import KernelCompressionReport, KernelKey, KernelRegistry
 from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
 from .capture import GRFCaptureIngress, GRFCaptureReceipt, GRFCaptureRequest
 from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord
-from .placement_policy import GRFPlacementPolicy, PlacementCandidateGenerator, PlacementPolicyConfig, PlacementRankingReport
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
 from .admission import MinimalAdmissionRecord
@@ -48,23 +46,6 @@ from .ledger import GRFLedger, GRFLedgerEvent
 from .path_encoding import safe_object_path
 from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
-from .global_field import (
-    BridgeRollbackRecord,
-    CrossPartitionBridgeKernel,
-    CrossPartitionStitchProposal,
-    CrossPartitionStitchRecord,
-    GlobalFieldDirectory,
-    GlobalRecallBudget,
-    GlobalRecallPath,
-    GlobalRecallQuery,
-    GlobalRecallResult,
-    GlobalShardedField,
-    GRFPartition,
-    GRFPartitionBoundary,
-    GRFPartitionDescriptor,
-    GRFPartitionNeighbor,
-    GRFPartitionSnapshotRef,
-)
 
 __all__ = [
     "AxialCoord",
@@ -89,12 +70,9 @@ __all__ = [
     "ContractVersion",
     "ContractVersionRegistry",
     "migrate_host_request",
-    "CellRegistry",
     "CellState",
+    "CellStore",
     "FieldEngine",
-    "PlacementIndex",
-    "IncrementalFieldBuilder",
-    "IncrementalUpdateReport",
     "KernelCompressionReport",
     "KernelKey",
     "KernelRegistry",
@@ -114,12 +92,8 @@ __all__ = [
     "GRFAdmissionBridgeResult",
     "MissingSourceFallback",
     "PlacementCandidate",
-    "PlacementCandidateGenerator",
     "PlacementDecision",
-    "PlacementPolicyConfig",
-    "PlacementRankingReport",
     "PlacementRecord",
-    "GRFPlacementPolicy",
     "Profile",
     "Q16_ONE",
     "RejectionRecord",
@@ -140,21 +114,6 @@ __all__ = [
     "StitchRecord",
     "StitchTransform",
     "StitchWitness",
-    "BridgeRollbackRecord",
-    "CrossPartitionBridgeKernel",
-    "CrossPartitionStitchProposal",
-    "CrossPartitionStitchRecord",
-    "GlobalFieldDirectory",
-    "GlobalRecallBudget",
-    "GlobalRecallPath",
-    "GlobalRecallQuery",
-    "GlobalRecallResult",
-    "GlobalShardedField",
-    "GRFPartition",
-    "GRFPartitionBoundary",
-    "GRFPartitionDescriptor",
-    "GRFPartitionNeighbor",
-    "GRFPartitionSnapshotRef",
     "axial_to_cube",
     "cube_to_axial",
     "expand_lateral",

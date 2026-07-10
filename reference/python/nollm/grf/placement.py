@@ -9,16 +9,8 @@ from .fixed_point import Q16_ONE
 
 CONFIDENCE_BANDS = frozenset({"low", "medium", "high"})
 DECISIONS = frozenset({"place", "defer", "reject"})
-DECIDED_BY = frozenset({"human", "host_rule", "validation_fixture", "llm_assisted_review"})
+DECIDED_BY = frozenset({"human", "host_rule", "validation_fixture", "llm_assisted_review", "openclaw_llm"})
 REJECTION_REASONS = frozenset({"insufficient_evidence", "ambiguous_location", "false_friend_risk", "excessive_residual", "duplicate_candidate", "out_of_scope"})
-SCORE_FIELDS = (
-    "local_fit_q16",
-    "density_cost_q16",
-    "coverage_gain_q16",
-    "stitch_potential_q16",
-    "residual_cost_q16",
-    "compute_cost_q16",
-)
 
 
 @dataclass(frozen=True)
@@ -28,7 +20,6 @@ class PlacementCandidate:
     island_id: str
     patch_id: str
     target_cell: CellAddress
-    scores: dict[str, int]
     confidence_band: str
     source_window_refs: tuple[str, ...]
     evidence_refs: tuple[str, ...]
@@ -38,10 +29,6 @@ class PlacementCandidate:
             _require_text(value, label)
         if not isinstance(self.target_cell, CellAddress):
             raise TypeError("target_cell must be CellAddress")
-        if set(self.scores) != set(SCORE_FIELDS):
-            raise ValueError("scores must contain the fixed GRF placement score fields")
-        for value in self.scores.values():
-            _require_q16(value, "score")
         if self.confidence_band not in CONFIDENCE_BANDS:
             raise ValueError("unknown confidence_band")
         _require_text_refs(self.source_window_refs, "source_window_refs", allow_empty=True)
@@ -54,7 +41,6 @@ class PlacementCandidate:
             "island_id": self.island_id,
             "patch_id": self.patch_id,
             "target_cell": self.target_cell.to_mapping(),
-            "scores": {key: self.scores[key] for key in SCORE_FIELDS},
             "confidence_band": self.confidence_band,
             "source_window_refs": tuple(sorted(self.source_window_refs)),
             "evidence_refs": tuple(sorted(self.evidence_refs)),

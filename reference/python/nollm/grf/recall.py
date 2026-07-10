@@ -51,7 +51,7 @@ class QueryProbe:
 
 def resolve_grf_recall(query: QueryProbe, field: RelationField, *, collect_rejected: bool = True) -> RecallDigest:
     starts = _entry_activations(query, field)
-    entry_shards = {placement.shard_id for placement in field.placements_for_entry(query.entry_mode, query.entry_ref)}
+    entry_shards = {placement.shard_id for placement in field.explicit_entries(query.entry_mode, query.entry_ref)}
     frontier = field.frontier(starts, query.budget.beam, 0)
     paths: dict[tuple[str, str, int, int, int, str], tuple[RecallPath, ...]] = {activation.cell.stable_key(): () for activation in frontier.activations}
     selected: dict[str, CoverageReport] = {}
@@ -93,7 +93,7 @@ def _entry_activations(query: QueryProbe, field: RelationField) -> tuple[SparseA
         if not isinstance(query.entry_ref, CellAddress):
             raise TypeError("explicit_cell entry_ref must be CellAddress")
         return (SparseActivation(query.entry_ref, Q16_ONE, query.query_id),)
-    matches = field.placements_for_entry(query.entry_mode, query.entry_ref)
+    matches = field.explicit_entries(query.entry_mode, query.entry_ref)
     return tuple(SparseActivation(record.geometry_mark.cell, Q16_ONE, query.query_id) for record in sorted(matches, key=lambda item: item.shard_id))
 
 
