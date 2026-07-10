@@ -58,6 +58,7 @@ def run_real_global_workload(
     *,
     seed: int = 7_007_010,
     queries_per_partition: int = 200,
+    negative_checks: int = 1_000,
 ) -> dict[str, object]:
     """Execute fixed-seed queries over every persisted partition artifact."""
     artifact_root = Path(artifact_root)
@@ -65,11 +66,18 @@ def run_real_global_workload(
     output_root.mkdir(parents=True, exist_ok=True)
     prior_metrics_path = output_root / "real_global_metrics.json"
     prior_semantic_digest = None
+    prior_negative_digest = None
     if prior_metrics_path.is_file():
         try:
             prior_semantic_digest = json.loads(prior_metrics_path.read_text(encoding="utf-8")).get("semantic_query_digest")
         except (OSError, ValueError):
             prior_semantic_digest = None
+    prior_negative_path = output_root / "negative_query_metrics.json"
+    if prior_negative_path.is_file():
+        try:
+            prior_negative_digest = json.loads(prior_negative_path.read_text(encoding="utf-8")).get("semantic_digest")
+        except (OSError, ValueError):
+            prior_negative_digest = None
     directory = GlobalFieldDirectory.from_bytes((artifact_root / "GRF7_GLOBAL_DIRECTORY_MANIFEST.json").read_bytes())
     descriptors = directory.entries()
     if not descriptors:
@@ -99,6 +107,7 @@ def run_real_global_workload(
 
     accepted_bridges = _install_accepted_bridges(field, descriptors, rows)
     _exercise_nonaccepted_lifecycle(field, descriptors, rows)
+    forbidden = _install_forbidden_bridges(field, descriptors, rows, negative_checks)
     ledger_path = output_root / "query_ledger.jsonl"
     total = cross_count = stitch_count = rejection_checks = resolved = 0
     max_hops = max_fanout = max_hydrated = max_visited = 0
@@ -165,6 +174,7 @@ def run_real_global_workload(
                     max_visited = max(max_visited, result.visited_partition_count)
                 for partition_id in tuple(item.partition_id for item in descriptors):
                     field.unload_partition(partition_id)
+            negative_metrics = _run_negative_queries(field, evidence_store, descriptors, forbidden, output_root, seed, prior_negative_digest)
     finally:
         evidence_store.close()
 
@@ -178,6 +188,9 @@ def run_real_global_workload(
         "cross_partition_query_count": cross_count,
         "stitch_query_count": stitch_count,
         "rejection_rollback_verification_count": rejection_checks,
+        "negative_query_count": negative_metrics["negative_query_count"],
+        "negative_forbidden_bridge_hit_count": negative_metrics["forbidden_bridge_hit_count"],
+        "negative_replay_deterministic": negative_metrics["replay_deterministic"],
         "content_hash_resolution_count": resolved,
         "accepted_bridge_count": accepted_bridges,
         "stitch_metrics": field.stitch_metrics(),
@@ -316,3 +329,102 @@ def _exercise_nonaccepted_lifecycle(field: GlobalShardedField, descriptors: tupl
     rollback = _bridge(field, "proposal:rollback", "bridge:rollback", source, target)
     field.accept_stitch(rollback, "stitch:rollback", "2026-07-10T00:00:00Z")
     field.rollback_stitch(rollback.bridge.bridge_id, "negative_control", "2026-07-10T00:00:01Z")
+
+
+def _install_forbidden_bridges(field: GlobalShardedField, descriptors: tuple[object, ...], rows: dict[str, tuple[tuple[int, int, int, bytes, bytes, bytes], ...]], total_checks: int) -> dict[str, tuple[dict[str, object], ...]]:
+    if total_checks == 0:
+        return {name: () for name in ("rejected", "decayed", "rolled_back", "mixed")}
+    if total_checks < 4 or total_checks % 4:
+        raise ValueError("negative_checks must be zero or divisible by four")
+    if len(descriptors) < 3:
+        raise ValueError("negative bridge verification requires at least three partitions")
+    per_category = total_checks // 4
+    records: dict[str, list[dict[str, object]]] = {name: [] for name in ("rejected", "decayed", "rolled_back")}
+    for category_index, category in enumerate(records):
+        for ordinal in range(per_category):
+            source_index = (ordinal * 7 + category_index * 13) % len(descriptors)
+            target_index = (source_index + 2 + category_index) % len(descriptors)
+            while target_index in (source_index, (source_index + 1) % len(descriptors)):
+                target_index = (target_index + 1) % len(descriptors)
+            source = rows[descriptors[source_index].partition_id][ordinal % len(rows[descriptors[source_index].partition_id])]
+            target = rows[descriptors[target_index].partition_id][ordinal % len(rows[descriptors[target_index].partition_id])]
+            bridge_id = f"bridge:forbidden:{category}:{ordinal:04d}"
+            proposal = _bridge(field, f"proposal:forbidden:{category}:{ordinal:04d}", bridge_id, source, target)
+            if category == "rejected":
+                field.reject_stitch(proposal)
+            elif category == "decayed":
+                field.decay_stitch(field.defer_stitch(proposal, "negative_control_deferred").proposal_id, "negative_control_expired")
+            else:
+                field.accept_stitch(proposal, f"stitch:forbidden:{ordinal:04d}", "2026-07-10T00:00:00Z")
+                field.rollback_stitch(bridge_id, "negative_control_rollback", "2026-07-10T00:00:01Z")
+            records[category].append({"bridge_id": bridge_id, "source_partition": proposal.bridge.from_partition, "target_partition": proposal.bridge.to_partition, "entry_placement_id": proposal.bridge.from_placement_id})
+    mixed = []
+    for ordinal in range(per_category):
+        selected = tuple(records[name][ordinal] for name in ("rejected", "decayed", "rolled_back"))
+        mixed.append({"bridge_id": "mixed", "source_partition": selected[0]["source_partition"], "target_partition": selected[0]["target_partition"], "entry_placement_id": selected[0]["entry_placement_id"], "forbidden_records": selected})
+    return {**{name: tuple(value) for name, value in records.items()}, "mixed": tuple(mixed)}
+
+
+def _run_negative_queries(field: GlobalShardedField, evidence_store: SelectedEvidenceStore, descriptors: tuple[object, ...], forbidden: dict[str, tuple[dict[str, object], ...]], output_root: Path, seed: int, prior_digest: str | None) -> dict[str, object]:
+    events = []
+    semantic = sha256()
+    ledger_path = output_root / "negative_query_ledger.jsonl"
+    with ledger_path.open("w", encoding="utf-8", newline="\n") as stream:
+        for category in ("rejected", "decayed", "rolled_back", "mixed"):
+            for ordinal, record in enumerate(forbidden[category]):
+                checks = tuple(record.get("forbidden_records", (record,)))
+                forbidden_ids = tuple(str(item["bridge_id"]) for item in checks)
+                started = perf_counter_ns()
+                result = field.recall(GlobalRecallQuery(f"query:grf7r:negative:{category}:{ordinal}", "placement_id", str(record["entry_placement_id"]), GlobalRecallBudget(1, 1, 2, 2, Q16_ONE // 2), True))
+                latency = perf_counter_ns() - started
+                actual = result.path.bridges_used
+                active = tuple(sorted(field._bridges))
+                neighbors = tuple(item.neighbor_partition_id for item in field.directory.neighbors(str(record["source_partition"])))
+                stale_neighbor = any(str(item["target_partition"]) in neighbors for item in checks if item["bridge_id"] != "mixed")
+                hit = bool(set(forbidden_ids).intersection(actual))
+                inactive = not set(forbidden_ids).intersection(active)
+                if hit or not inactive or stale_neighbor:
+                    raise AssertionError("forbidden bridge became reachable or left stale directory state")
+                selected_shard = result.selected_shards[0] if result.selected_shards else ""
+                if not selected_shard:
+                    raise AssertionError("negative query selected no shard")
+                content, content_hash = evidence_store.read(selected_shard)
+                if sha256(content).digest() != content_hash:
+                    raise AssertionError("negative query evidence content hash mismatch")
+                event = {
+                    "query_id": result.query_id,
+                    "category": category,
+                    "seed": seed,
+                    "entry_identity": record["entry_placement_id"],
+                    "entry_partition": result.path.entry_partition,
+                    "forbidden_bridge_ids_checked": forbidden_ids,
+                    "actual_bridges_used": actual,
+                    "forbidden_bridge_hit": hit,
+                    "forbidden_bridge_active": not inactive,
+                    "directory_neighbor_state": neighbors,
+                    "bridge_registry_state": active,
+                    "stale_neighbor": stale_neighbor,
+                    "selected_shards": result.selected_shards,
+                    "fallback_sources": result.path.source_fallback_refs,
+                    "content_sha256": content_hash.hex(),
+                    "latency_ns": latency,
+                }
+                stream.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+                semantic.update(canonical_dumps({key: value for key, value in event.items() if key != "latency_ns"}))
+                events.append(event)
+                for partition_id in result.path.visited_partitions:
+                    field.unload_partition(partition_id)
+    by_category = {name: sum(item["category"] == name for item in events) for name in ("rejected", "decayed", "rolled_back", "mixed")}
+    metrics = {
+        "seed": seed,
+        "negative_query_count": len(events),
+        "by_category": by_category,
+        "forbidden_bridge_hit_count": sum(item["forbidden_bridge_hit"] for item in events),
+        "stale_neighbor_count": sum(item["stale_neighbor"] for item in events),
+        "forbidden_active_count": sum(item["forbidden_bridge_active"] for item in events),
+        "semantic_digest": semantic.hexdigest(),
+        "replay_deterministic": prior_digest == semantic.hexdigest(),
+        "ledger_sha256": sha256(ledger_path.read_bytes()).hexdigest(),
+    }
+    (output_root / "negative_query_metrics.json").write_bytes(canonical_dumps(metrics))
+    return metrics
