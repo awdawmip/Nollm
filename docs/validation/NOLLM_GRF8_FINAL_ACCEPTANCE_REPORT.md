@@ -22,5 +22,6 @@ Architecture, forbidden-feature, and repository-hygiene checks: 7 passed.
 
 The dataset and hosts are deterministic fixtures. This stage does not claim a
 production SLA, external-dataset generalization, live Host deployment, or
-Linux/macOS validation. GRF8_ACCEPTED_CANDIDATE applies only to the stated
-Windows validation scope.
+Linux/macOS validation. GRF8_ACCEPTED_CANDIDATE is not issued yet: the full
+connector, baseline/ablation, lifecycle, and Host-capability matrices remain
+to be implemented and accepted.
