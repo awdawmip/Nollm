@@ -29,3 +29,14 @@ def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
     path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")
     result = GRFFacade(tmp_path / "workspace").capture_source(path, "2026-07-10T00:00:00Z")
     assert len(result.created_shards) == 2
+
+
+def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
+    path = tmp_path / "facts.jsonl"
+    path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")
+    facade = GRFFacade(tmp_path / "workspace")
+    ingested = facade.capture_source(path, "2026-07-10T00:00:00Z")
+    placed = facade.place_batch(ingested.created_shards, "window:batch", {"policy_id": "grf_deterministic_policy_v1"}, "2026-07-10T00:00:01Z")
+    assert all(item.admission_record is None and item.placement_record is not None for item in placed)
+    admitted = facade.admit_batch(tuple((item.placement_record.shard_id, item.placement_record.placement_id) for item in placed), "2026-07-10T00:00:02Z", "batch_explicit")
+    assert len({item.admission_id for item in admitted}) == 2

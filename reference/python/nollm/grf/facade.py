@@ -64,6 +64,16 @@ class GRFFacade:
         shard = self.store.read_evidence_shard(shard_id)
         return GRFAdmissionBridge(self.store).admit_existing_placement(shard, placement_id, recorded_at, admitted_by)
 
+    def place_batch(self, shard_ids: tuple[str, ...], source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> tuple[GRFAdmissionBridgeResult, ...]:
+        if not shard_ids or len(set(shard_ids)) != len(shard_ids):
+            raise ValueError("batch shard ids must be non-empty and unique")
+        return tuple(self.place(shard_id, source_window_id, policy_hint, recorded_at) for shard_id in shard_ids)
+
+    def admit_batch(self, placements: tuple[tuple[str, str], ...], recorded_at: str, admitted_by: str) -> tuple[object, ...]:
+        if not placements or len({placement_id for _, placement_id in placements}) != len(placements):
+            raise ValueError("batch placements must be non-empty and unique")
+        return tuple(self.admit_existing_placement(shard_id, placement_id, recorded_at, admitted_by) for shard_id, placement_id in placements)
+
     def recall(self, query: QueryProbe) -> RecallDigest:
         from .replay import rebuild_relation_field_from_files
 
