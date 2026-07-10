@@ -1,5 +1,5 @@
 from nollm.grf.grf8_quality_dataset import CATEGORIES, QUERY_TYPES, build_quality_dataset, dataset_digest
-from nollm.grf.grf8_quality_benchmark import benchmark, compare_baselines
+from nollm.grf.grf8_quality_benchmark import benchmark, compare_baselines, ranker_for
 
 
 def test_quality_dataset_has_six_categories_and_deterministic_truth() -> None:
@@ -19,3 +19,4 @@ def test_quality_dataset_has_six_categories_and_deterministic_truth() -> None:
     assert models["N5_grf_revision_awareness"].revision_correctness > models["N4_grf_stitching"].revision_correctness
     assert models["N5_grf_revision_awareness"].storage_bytes > 0
     assert models["N5_grf_revision_awareness"].query_latency_ms >= 0.0
+    assert benchmark(*first, ranker=ranker_for("N5_grf_revision_awareness")).revision_correctness == 1.0

@@ -7,12 +7,12 @@ run when semantic results differ.
 
 | Path | Before | After | Improvement | Correctness diff |
 | --- | ---: | ---: | ---: | --- |
-| Full file ingest vs unchanged incremental ingest | 328.339 ms | 3.516 ms | 98.93% | false |
-| Per-item directory rebuild vs bulk directory build | 80.799 ms | 0.461 ms | 99.43% | false |
-| Linear cell scan vs indexed directory lookup | 0.050 ms | 0.032 ms | 35.94% | false |
+| Full file ingest vs unchanged incremental ingest | 290.487 ms | 3.662 ms | 98.74% | false |
+| Per-item directory rebuild vs bulk directory build | 65.812 ms | 0.438 ms | 99.33% | false |
+| Linear cell scan vs indexed directory lookup | 0.049 ms | 0.030 ms | 38.66% | false |
 
 The same run also verified 200 retained source fallbacks, batch placement, and
-snapshot restore. Snapshot restore measured 406.297 ms for this small fixture;
+snapshot restore. Snapshot restore measured 360.683 ms for this small fixture;
 it is recorded as a correctness path, not claimed as a speed improvement.
 
 No comparison removes evidence or source fallback, substitutes global

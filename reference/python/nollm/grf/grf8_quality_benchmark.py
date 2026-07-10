@@ -29,6 +29,19 @@ class QualityMetrics:
 Ranker = Callable[[QualityQuery, tuple[QualityEvidence, ...]], list[QualityEvidence]]
 
 
+def ranker_for(model: str) -> Ranker:
+    """Return an explicit experimental ranker without exposing ground truth."""
+    rankers = {
+        "N3_global_sharded_grf": _global_rank,
+        "N4_grf_stitching": _stitch_rank,
+        "N5_grf_revision_awareness": _revision_rank,
+    }
+    try:
+        return rankers[model]
+    except KeyError as exc:
+        raise ValueError("unknown GRF8 experimental model") from exc
+
+
 def benchmark(evidence: tuple[QualityEvidence, ...], queries: tuple[QualityQuery, ...], k: int = 5, ranker: Ranker | None = None) -> QualityMetrics:
     by_id = {item.shard_id: item for item in evidence}
     precision = recall = reciprocal = ndcg = faithful = revisions = false_relations = missed_stitches = 0.0
