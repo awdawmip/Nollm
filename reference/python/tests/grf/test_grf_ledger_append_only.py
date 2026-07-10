@@ -24,13 +24,12 @@ def test_ledger_records_hash_and_rejection_without_overwrite(tmp_path) -> None:
     path = store.write_placement_record(first, "2026-07-09T10:00:00+08:00")
     before = path.read_bytes()
     store.write_placement_record(first, "2026-07-09T10:00:01+08:00")
-    with pytest.raises(FileExistsError):
-        store.write_placement_record(second, "2026-07-09T10:00:02+08:00")
+    second_path = store.write_placement_record(second, "2026-07-09T10:00:02+08:00")
+    assert second_path != path
     assert path.read_bytes() == before
     events = GRFLedger(tmp_path).events()
-    assert [event.event_type for event in events] == ["object_written", "object_reopened_same_bytes", "object_write_rejected_different_bytes"]
-    assert events[0].object_sha256 == events[1].object_sha256 == events[2].object_sha256
+    assert [event.event_type for event in events] == ["object_written", "object_reopened_same_bytes", "object_written"]
+    assert events[0].object_sha256 == events[1].object_sha256
     assert events[1].previous_event_id == events[0].event_id
-    with pytest.raises(FileExistsError):
-        store.write_placement_record(second)
+    assert store.write_placement_record(second) == second_path
     assert path.read_bytes() == before

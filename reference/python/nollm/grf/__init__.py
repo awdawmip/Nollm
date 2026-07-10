@@ -44,6 +44,7 @@ from .storage import GRFFileStore
 from .json_canonical import canonical_dumps, canonical_loads, sha256_canonical
 from .ledger import GRFLedger, GRFLedgerEvent
 from .path_encoding import safe_object_path
+from .geometry_storage import PARTITION_WIDTH, admission_path, evidence_path, partition_id, placement_path, source_manifest_path
 from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
 
@@ -109,6 +110,12 @@ __all__ = [
     "GRFLedger",
     "GRFLedgerEvent",
     "safe_object_path",
+    "PARTITION_WIDTH",
+    "admission_path",
+    "evidence_path",
+    "partition_id",
+    "placement_path",
+    "source_manifest_path",
     "SparseActivation",
     "StitchProposal",
     "StitchRecord",

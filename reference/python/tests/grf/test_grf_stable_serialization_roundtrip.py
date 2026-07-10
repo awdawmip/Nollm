@@ -22,6 +22,6 @@ def test_placement_record_roundtrip_preserves_integer_fields(tmp_path) -> None:
     store = GRFFileStore(tmp_path)
     record = placement("shard_a", "patch_a", 1, 0, 0, "source:a")
     store.write_placement_record(record)
-    loaded = store.read_placement_record(record.placement_id)
+    loaded = store.read_placement_record(record.geometry_mark.cell, record.placement_id)
     assert loaded.to_mapping() == record.to_mapping()
     assert type(loaded.geometry_mark.cell.q) is int

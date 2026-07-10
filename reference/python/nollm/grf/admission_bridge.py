@@ -43,7 +43,7 @@ class GRFAdmissionBridge:
         placed = self.place(shard, window, decision, decided_at)
         if placed.placement_record is None:
             return placed
-        admission = self.admit_existing_placement(shard, placed.placement_record.placement_id, decided_at, str(decision.get("admitted_by", "openclaw_llm")))
+        admission = self.admit_existing_placement(shard, placed.placement_record.geometry_mark.cell, placed.placement_record.placement_id, decided_at, str(decision.get("admitted_by", "openclaw_llm")))
         return GRFAdmissionBridgeResult(placed.evidence_island, placed.local_patch, placed.placement_candidate, placed.placement_decision, placed.geometry_mark, placed.placement_record, admission, None)
 
     def place(self, shard: EvidenceShardRecord, window: SourceWindowRecord, decision: dict[str, Any], decided_at: str) -> GRFAdmissionBridgeResult:
@@ -74,8 +74,8 @@ class GRFAdmissionBridge:
         self.store.write_placement_record(placement, decided_at)
         return GRFAdmissionBridgeResult(island, patch, candidate, placement_decision, mark, placement, None, None)
 
-    def admit_existing_placement(self, shard: EvidenceShardRecord, placement_id: str, admitted_at: str, admitted_by: str) -> MinimalAdmissionRecord:
-        placement = self.store.read_placement_record(placement_id)
+    def admit_existing_placement(self, shard: EvidenceShardRecord, cell: CellAddress, placement_id: str, admitted_at: str, admitted_by: str) -> MinimalAdmissionRecord:
+        placement = self.store.read_placement_record(cell, placement_id)
         if placement.shard_id != shard.shard_id:
             raise ValueError("placement/shard mismatch")
         if any(record.placement_record.placement_id == placement_id for record in self.store.minimal_admission_records()):

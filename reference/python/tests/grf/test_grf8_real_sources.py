@@ -100,7 +100,7 @@ def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
     ingested = facade.capture_source(path, "2026-07-10T00:00:00Z")
     placed = tuple(facade.place(shard, "window:batch", _decision(f"batch:{index}", index), "2026-07-10T00:00:01Z") for index, shard in enumerate(ingested.created_shards))
     assert all(item.admission_record is None and item.placement_record is not None for item in placed)
-    admitted = facade.admit_batch(tuple((item.placement_record.shard_id, item.placement_record.placement_id) for item in placed), "2026-07-10T00:00:02Z", "batch_explicit")
+    admitted = facade.admit_batch(tuple((item.placement_record.shard_id, item.placement_record.geometry_mark.cell, item.placement_record.placement_id) for item in placed), "2026-07-10T00:00:02Z", "batch_explicit")
     assert len({item.admission_id for item in admitted}) == 2
 
 

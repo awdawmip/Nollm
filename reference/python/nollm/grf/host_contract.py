@@ -184,12 +184,12 @@ class GRFHostService:
             placement = None if outcome.placement_record is None else outcome.placement_record.placement_id
             return to_jsonable(outcome), shard_id, placement, None
         if request.capability == "admit":
-            shard_id, placement_id, recorded_at, admitted_by = admit_existing_placement_request_from_mapping(request.payload)
+            shard_id, cell, placement_id, recorded_at, admitted_by = admit_existing_placement_request_from_mapping(request.payload)
             if request.evidence_identity is None or request.evidence_identity.value != shard_id:
                 raise ValueError("evidence_identity must match admitted shard_id")
             if request.placement_identity is None or request.placement_identity.value != placement_id:
                 raise ValueError("placement_identity must match admitted placement_id")
-            admission = self._facade.admit_existing_placement(shard_id, placement_id, recorded_at, admitted_by)
+            admission = self._facade.admit_existing_placement(shard_id, cell, placement_id, recorded_at, admitted_by)
             return to_jsonable(admission), shard_id, placement_id, admission.admission_id
         if request.capability in ("recall", "replay"):
             query = recall_query_from_mapping(request.payload)

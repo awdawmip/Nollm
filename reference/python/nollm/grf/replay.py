@@ -14,7 +14,7 @@ from .storage import GRFFileStore
 
 def load_all_grf_objects(workspace: Path) -> dict[str, tuple[object, ...]]:
     store = GRFFileStore(workspace)
-    placements = tuple(store.read_placement_record(object_id) for object_id in _object_ids(workspace, "grfs/placements/records"))
+    placements = tuple(_placement_from_file(store, path) for path in sorted((Path(workspace) / "grfs/field").rglob("placements/*.json")))
     bridges = tuple(store.read_bridge_kernel(object_id) for object_id in _object_ids(workspace, "grfs/patches/stitch/bridges"))
     proposals = tuple(store.read_stitch_proposal(object_id) for object_id in _object_ids(workspace, "grfs/patches/stitch/proposals"))
     rejected = tuple(proposal for proposal in proposals if proposal.state == "rejected")
@@ -31,7 +31,7 @@ def rebuild_relation_field_from_files(workspace: Path, recorded_at: str | None =
     )
     field = RelationField(templates, tuple(objects["bridges"]), tuple(objects["placements"]))
     if recorded_at is not None:
-        GRFLedger(workspace).append("relation_field_rebuilt", "relation_field", "rf_rebuilt", Path("grfs/relation_fields/indexes"), "rebuilt", recorded_at)
+        GRFLedger(workspace).append("relation_field_rebuilt", "relation_field", "rf_rebuilt", Path("grfs/relation_fields/rebuild_events"), "rebuilt", recorded_at)
     return field
 
 
@@ -51,3 +51,14 @@ def _object_ids(workspace: Path, directory: str) -> tuple[str, ...]:
             raise ValueError("stored GRF object missing object_id")
         ids.append(object_id)
     return tuple(ids)
+
+
+def _placement_from_file(store: GRFFileStore, path: Path):
+    record = canonical_loads(path.read_bytes())
+    payload = record.get("payload")
+    if record.get("object_type") != "placement_record" or not isinstance(payload, dict):
+        raise ValueError("stored GRF placement record mismatch")
+    cell = payload["geometry_mark"]["cell"]
+    from .cell_address import CellAddress
+
+    return store.read_placement_record(CellAddress(cell["profile_id"], cell["chart_id"], cell["layer"], cell["q"], cell["r"], cell.get("phase")), str(record["object_id"]))

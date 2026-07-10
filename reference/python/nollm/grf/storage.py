@@ -10,6 +10,7 @@ from .bridge_kernel import BridgeKernel
 from .cell_address import CellAddress
 from .evidence import EvidenceShardRecord
 from .evidence_island import EvidenceIsland, EvidenceShardRef
+from .geometry_storage import admission_path, evidence_path, placement_path
 from .json_canonical import canonical_dumps, canonical_loads
 from .ledger import GRFLedger
 from .local_patch import LocalPatch
@@ -28,6 +29,7 @@ class GRFFileStore:
 
     def initialize_layout(self) -> None:
         for relative in (
+            "grfs/field",
             "grfs/evidence/shards",
             "grfs/evidence/source_windows",
             "grfs/evidence/islands",
@@ -38,18 +40,17 @@ class GRFFileStore:
             "grfs/patches/stitch/bridges",
             "grfs/placements/candidates",
             "grfs/placements/decisions",
-            "grfs/placements/records",
             "grfs/placements/rejections",
             "grfs/admissions/minimal_records",
             "grfs/recalls/digests",
             "grfs/recalls/coverage_reports",
-            "grfs/relation_fields/indexes",
+            "grfs/relation_fields/rebuild_events",
             "grfs/manifests",
         ):
             (self.root / relative).mkdir(parents=True, exist_ok=True)
 
     def write_evidence_shard(self, shard: EvidenceShardRecord, recorded_at: str | None = None) -> Path:
-        return self._write("evidence_shard", shard.shard_id, shard.to_mapping(), "grfs/evidence/shards", recorded_at)
+        return self._write_at("evidence_shard", shard.shard_id, shard.to_mapping(), evidence_path(self.root, shard.shard_id), recorded_at)
 
     def read_evidence_shard(self, shard_id: str) -> EvidenceShardRecord:
         return _evidence_shard_from_payload(self._read("evidence_shard", shard_id, "grfs/evidence/shards"))
@@ -97,10 +98,10 @@ class GRFFileStore:
         return _candidate_from_payload(self._read("placement_candidate", candidate_id, "grfs/placements/candidates"))
 
     def write_placement_record(self, record: PlacementRecord, recorded_at: str | None = None) -> Path:
-        return self._write("placement_record", record.placement_id, record.to_mapping(), "grfs/placements/records", recorded_at)
+        return self._write_at("placement_record", record.placement_id, record.to_mapping(), placement_path(self.root, record.geometry_mark.cell, record.placement_id), recorded_at)
 
-    def read_placement_record(self, placement_id: str) -> PlacementRecord:
-        return _placement_from_payload(self._read("placement_record", placement_id, "grfs/placements/records"))
+    def read_placement_record(self, cell: CellAddress, placement_id: str) -> PlacementRecord:
+        return _placement_from_payload(self._read_at("placement_record", placement_id, placement_path(self.root, cell, placement_id)))
 
     def write_rejection_record(self, record: RejectionRecord, recorded_at: str | None = None) -> Path:
         return self._write("placement_rejection", record.rejection_id, record.to_mapping(), "grfs/placements/rejections", recorded_at)
@@ -109,7 +110,7 @@ class GRFFileStore:
         return _rejection_from_payload(self._read("placement_rejection", rejection_id, "grfs/placements/rejections"))
 
     def write_minimal_admission_record(self, record: MinimalAdmissionRecord, recorded_at: str | None = None) -> Path:
-        return self._write("minimal_admission_record", record.admission_id, record.to_mapping(), "grfs/admissions/minimal_records", recorded_at)
+        return self._write_at("minimal_admission_record", record.admission_id, record.to_mapping(), admission_path(self.root, record.admission_id), recorded_at)
 
     def read_minimal_admission_record(self, admission_id: str) -> MinimalAdmissionRecord:
         return _admission_from_payload(self._read("minimal_admission_record", admission_id, "grfs/admissions/minimal_records"))
@@ -136,6 +137,9 @@ class GRFFileStore:
 
     def _write(self, object_type: str, object_id: str, payload: dict[str, Any], directory: str, recorded_at: str | None = None, event_type: str = "object_written") -> Path:
         path = self.path_for(object_type, object_id, directory)
+        return self._write_at(object_type, object_id, payload, path, recorded_at, event_type)
+
+    def _write_at(self, object_type: str, object_id: str, payload: dict[str, Any], path: Path, recorded_at: str | None = None, event_type: str = "object_written") -> Path:
         record = {"schema_version": SCHEMA_VERSION, "object_type": object_type, "object_id": object_id, "payload": payload}
         data = canonical_dumps(record)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -155,6 +159,9 @@ class GRFFileStore:
 
     def _read(self, object_type: str, object_id: str, directory: str) -> dict[str, Any]:
         path = self.path_for(object_type, object_id, directory)
+        return self._read_at(object_type, object_id, path)
+
+    def _read_at(self, object_type: str, object_id: str, path: Path) -> dict[str, Any]:
         record = canonical_loads(path.read_bytes())
         if record.get("schema_version") != SCHEMA_VERSION or record.get("object_type") != object_type or record.get("object_id") != object_id:
             raise ValueError("stored object schema/id mismatch")

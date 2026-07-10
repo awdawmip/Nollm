@@ -90,9 +90,9 @@ class GRFFacade:
         window = self._read_or_create_window(source_window_id, shard.source_window_refs, recorded_at)
         return GRFAdmissionBridge(self.store).place(shard, window, policy_hint, recorded_at)
 
-    def admit_existing_placement(self, shard_id: str, placement_id: str, recorded_at: str, admitted_by: str) -> object:
+    def admit_existing_placement(self, shard_id: str, cell: CellAddress, placement_id: str, recorded_at: str, admitted_by: str) -> object:
         shard = self.store.read_evidence_shard(shard_id)
-        return GRFAdmissionBridge(self.store).admit_existing_placement(shard, placement_id, recorded_at, admitted_by)
+        return GRFAdmissionBridge(self.store).admit_existing_placement(shard, cell, placement_id, recorded_at, admitted_by)
 
     def place_batch(self, shard_ids: tuple[str, ...], source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> tuple[GRFAdmissionBridgeResult, ...]:
         if not shard_ids or len(set(shard_ids)) != len(shard_ids):
@@ -106,10 +106,10 @@ class GRFFacade:
         hint["replacement_id"] = replacement_id
         return self.place(shard_id, source_window_id, hint, recorded_at)
 
-    def admit_batch(self, placements: tuple[tuple[str, str], ...], recorded_at: str, admitted_by: str) -> tuple[object, ...]:
-        if not placements or len({placement_id for _, placement_id in placements}) != len(placements):
+    def admit_batch(self, placements: tuple[tuple[str, CellAddress, str], ...], recorded_at: str, admitted_by: str) -> tuple[object, ...]:
+        if not placements or len({placement_id for _, _, placement_id in placements}) != len(placements):
             raise ValueError("batch placements must be non-empty and unique")
-        return tuple(self.admit_existing_placement(shard_id, placement_id, recorded_at, admitted_by) for shard_id, placement_id in placements)
+        return tuple(self.admit_existing_placement(shard_id, cell, placement_id, recorded_at, admitted_by) for shard_id, cell, placement_id in placements)
 
     def recall(self, query: QueryProbe) -> RecallDigest:
         from .replay import rebuild_relation_field_from_files
@@ -152,9 +152,6 @@ class GRFFacade:
         if query.entry_mode == "admission_id":
             admission = self.store.read_minimal_admission_record(str(query.entry_ref))
             return _replace_entry(query, "shard_id", admission.shard_id)
-        if query.entry_mode == "placement_id":
-            placement = self.store.read_placement_record(str(query.entry_ref))
-            return _replace_entry(query, "shard_id", placement.shard_id)
         if query.entry_mode == "source_window":
             shard_id = self._first_shard_for_source_window(str(query.entry_ref))
             return _replace_entry(query, "shard_id", shard_id)
@@ -185,9 +182,10 @@ def admit_request_from_mapping(payload: dict[str, Any]) -> tuple[str, str, dict[
     return str(payload["shard_id"]), str(payload["source_window_id"]), dict(payload["policy_hint"]), str(payload["recorded_at"])
 
 
-def admit_existing_placement_request_from_mapping(payload: dict[str, Any]) -> tuple[str, str, str, str]:
+def admit_existing_placement_request_from_mapping(payload: dict[str, Any]) -> tuple[str, CellAddress, str, str, str]:
     _require_kind(payload, "nollm_grf_admit_existing_placement_request")
-    return str(payload["shard_id"]), str(payload["placement_id"]), str(payload["recorded_at"]), str(payload["admitted_by"])
+    cell = payload["cell"]
+    return str(payload["shard_id"]), CellAddress(str(cell["profile_id"]), str(cell["chart_id"]), int(cell["layer"]), int(cell["q"]), int(cell["r"]), cell.get("phase")), str(payload["placement_id"]), str(payload["recorded_at"]), str(payload["admitted_by"])
 
 
 def recall_query_from_mapping(payload: dict[str, Any]) -> QueryProbe:
