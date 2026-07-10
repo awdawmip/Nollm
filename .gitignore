@@ -19,6 +19,7 @@ venv/
 env/
 build/
 dist/
+integrations/openclaw/grf-adapter/node_modules/
 *.egg-info/
 
 # Generated Nollm artifacts

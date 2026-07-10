@@ -32,6 +32,7 @@ from .local_patch import LocalPatch
 from .source_window import SourceWindowRecord
 from .capture import GRFCaptureIngress, GRFCaptureReceipt, GRFCaptureRequest
 from .placement import GeometryMark, PlacementCandidate, PlacementDecision, PlacementRecord, RejectionRecord
+from .placement_protocol import NollmPlacementDecision, NollmPlacementRequest, PLACEMENT_DECISION_SCHEMA, PLACEMENT_REQUEST_SCHEMA, validate_decision
 from .profiles import Profile, get_profile, performance_profile, profiles
 from .bridge_kernel import BridgeKernel
 from .admission import MinimalAdmissionRecord
@@ -95,6 +96,10 @@ __all__ = [
     "PlacementCandidate",
     "PlacementDecision",
     "PlacementRecord",
+    "NollmPlacementDecision",
+    "NollmPlacementRequest",
+    "PLACEMENT_DECISION_SCHEMA",
+    "PLACEMENT_REQUEST_SCHEMA",
     "Profile",
     "Q16_ONE",
     "RejectionRecord",
@@ -132,6 +137,7 @@ __all__ = [
     "performance_profile",
     "profiles",
     "resolve_grf_recall",
+    "validate_decision",
     "resolve_source_fallback",
     "canonical_dumps",
     "canonical_loads",

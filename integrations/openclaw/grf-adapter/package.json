@@ -1,0 +1,24 @@
+{
+  "name": "@nollm/openclaw-grf-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Native OpenClaw adapter for geometry-native Nollm GRF workflows.",
+  "main": "./dist/index.js",
+  "exports": { ".": "./dist/index.js" },
+  "files": ["dist", "openclaw.plugin.json", "skills", "README.md"],
+  "openclaw": {
+    "extensions": ["./dist/index.js"],
+    "compat": { "pluginApi": "2026.6.11", "minGatewayVersion": "2026.6.11" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check && openclaw plugins validate --entry ./dist/index.js"
+  },
+  "peerDependencies": { "openclaw": ">=2026.6.11" },
+  "peerDependenciesMeta": { "openclaw": { "optional": true } },
+  "devDependencies": { "@types/node": "^24.0.0", "openclaw": "^2026.6.11", "typescript": "^5.9.0" },
+  "dependencies": { "typebox": "^1.1.38" },
+  "engines": { "node": ">=24" }
+}

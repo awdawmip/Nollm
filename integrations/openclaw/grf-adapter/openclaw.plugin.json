@@ -1,0 +1,24 @@
+{
+  "id": "nollm-grf",
+  "name": "Nollm GRF",
+  "description": "Geometry-native Nollm capture, bounded placement preparation, and explicit recall tools.",
+  "version": "0.1.0",
+  "activation": { "onStartup": true },
+  "contracts": { "tools": ["nollm_capture", "nollm_prepare_placement", "nollm_apply_placement", "nollm_recall", "nollm_show_source", "nollm_status"] },
+  "skills": ["./skills/nollm-grf/SKILL.md"],
+  "configSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": true },
+      "nollm_repo_root": { "type": "string" }, "nollm_storage_root": { "type": "string" }, "python_executable": { "type": "string" },
+      "placement_mode": { "type": "string", "enum": ["manual", "assisted", "automatic"], "default": "assisted" },
+      "placement_execution": { "type": "string", "enum": ["agent-native", "isolated-llm-task"], "default": "isolated-llm-task" },
+      "placement_provider": { "type": "string" }, "placement_model": { "type": "string" }, "placement_auth_profile_id": { "type": "string" }, "placement_thinking": { "type": "string" },
+      "placement_timeout_ms": { "type": "integer", "minimum": 1, "default": 30000 }, "placement_max_tokens": { "type": "integer", "minimum": 1, "default": 1200 },
+      "allowed_models": { "type": "array", "items": { "type": "string" }, "default": [] },
+      "capture_user_messages": { "type": "boolean", "default": true }, "capture_assistant_messages": { "type": "boolean", "default": false }, "capture_tool_results": { "type": "boolean", "default": false },
+      "max_context_items": { "type": "integer", "minimum": 1, "default": 8 }, "max_nearby_cells": { "type": "integer", "minimum": 0, "default": 6 }, "max_candidate_placements": { "type": "integer", "minimum": 1, "default": 12 }, "max_stitch_candidates": { "type": "integer", "minimum": 0, "default": 4 },
+      "invalid_decision_policy": { "type": "string", "enum": ["defer"], "default": "defer" }, "log_level": { "type": "string", "enum": ["debug", "info", "warn", "error"], "default": "info" }
+    }
+  }
+}
