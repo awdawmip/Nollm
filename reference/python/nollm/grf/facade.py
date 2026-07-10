@@ -49,6 +49,10 @@ class GRFFacade:
 
         return IncrementalIngestion(self.workspace).retire(source_id)
 
+    def get_source(self, shard_id: str) -> str:
+        """Return the retained original evidence text for an explicit shard."""
+        return self.store.read_evidence_shard(shard_id).content
+
     def admit(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> GRFAdmissionBridgeResult:
         shard = self.store.read_evidence_shard(shard_id)
         window = self._read_or_create_window(source_window_id, shard.source_window_refs, recorded_at)
