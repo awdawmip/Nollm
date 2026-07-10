@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from .placement import PlacementRecord
 
 ADMISSION_STATES = frozenset({"admitted", "superseded", "rejected"})
-ADMITTED_BY = frozenset({"human", "host_rule", "validation_fixture", "llm_assisted_review"})
+ADMITTED_BY = frozenset({"human", "host_rule", "validation_fixture", "llm_assisted_review", "batch_explicit"})
 
 
 @dataclass(frozen=True)
