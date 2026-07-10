@@ -14,7 +14,7 @@ from .evidence_island import EvidenceIsland, EvidenceShardRef
 from .evidence import EvidenceShardRecord
 from .exporters import to_jsonable
 from .facade import GRFFacade, GRFWorkspaceReport
-from .host_contract import CapabilityRegistry, GRFHostRequest, GRFHostResponse, GRFHostService, UnsupportedCapabilityError
+from .host_contract import AdmissionIdentity, CapabilityRegistry, EvidenceIdentity, GRFHostRequest, GRFHostResponse, GRFHostService, HostRequestID, PlacementIdentity, UnsupportedCapabilityError
 from .importers import (
     MIGRATION_BOUNDARY_MODE,
     CaptureImportResult,
@@ -60,6 +60,10 @@ __all__ = [
     "GRFFacade",
     "GRFWorkspaceReport",
     "CapabilityRegistry",
+    "HostRequestID",
+    "EvidenceIdentity",
+    "PlacementIdentity",
+    "AdmissionIdentity",
     "GRFHostRequest",
     "GRFHostResponse",
     "GRFHostService",

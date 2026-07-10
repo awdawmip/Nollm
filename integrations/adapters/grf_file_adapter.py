@@ -22,3 +22,5 @@ class GRFFileAdapter:
             return result
         except (UnsupportedCapabilityError, TypeError, ValueError):
             return {"contract_version": "grf_host_v1", "ok": False, "error_code": "adapter_request_error", "adapter_latency_ns": perf_counter_ns() - started}
+        except Exception:
+            return {"contract_version": "grf_host_v1", "ok": False, "error_code": "adapter_failure", "adapter_latency_ns": perf_counter_ns() - started}
