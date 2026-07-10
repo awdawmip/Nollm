@@ -43,6 +43,10 @@ class GRFFacade:
         window = self._read_or_create_window(source_window_id, shard.source_window_refs, recorded_at)
         return GRFAdmissionBridge(self.store).admit(shard, window, policy_hint, recorded_at)
 
+    def place(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> GRFAdmissionBridgeResult:
+        """Run the deterministic placement workflow and return its placement record."""
+        return self.admit(shard_id, source_window_id, policy_hint, recorded_at)
+
     def recall(self, query: QueryProbe) -> RecallDigest:
         from .replay import rebuild_relation_field_from_files
 
@@ -56,6 +60,9 @@ class GRFFacade:
         digest = replay_recall(query, self.workspace)
         _require_fallbacks(digest)
         return digest
+
+    def replay(self, query: QueryProbe) -> RecallDigest:
+        return self.replay_recall(query)
 
     def validate_workspace(self) -> GRFWorkspaceReport:
         root = self.workspace / "grfs"
