@@ -38,6 +38,17 @@ class GRFFacade:
     def capture(self, request: GRFCaptureRequest) -> GRFCaptureReceipt:
         return GRFCaptureIngress(self.store).capture(request)
 
+    def capture_source(self, path: Path, recorded_at: str) -> object:
+        """Ingest a supported local source through the public file-first workflow."""
+        from .ingestion import IncrementalIngestion
+
+        return IncrementalIngestion(self.workspace).ingest_file(path, recorded_at)
+
+    def retire_source(self, source_id: str) -> object:
+        from .ingestion import IncrementalIngestion
+
+        return IncrementalIngestion(self.workspace).retire(source_id)
+
     def admit(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> GRFAdmissionBridgeResult:
         shard = self.store.read_evidence_shard(shard_id)
         window = self._read_or_create_window(source_window_id, shard.source_window_refs, recorded_at)
