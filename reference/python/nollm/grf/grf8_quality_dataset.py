@@ -7,6 +7,16 @@ from hashlib import sha256
 
 CATEGORIES = ("project", "coding", "research", "document", "conversation", "decision_revision")
 _REVISIONS = 3
+QUERY_TYPES = (
+    "direct_fact",
+    "multi_hop_scattered_fact",
+    "latest_valid_revision",
+    "source_specific_question",
+    "timeline_question",
+    "conflict_question",
+    "decision_rationale",
+    "context_reconstruction",
+)
 
 
 @dataclass(frozen=True)
@@ -56,15 +66,14 @@ def build_quality_dataset(evidence_count: int = 10_000, query_count: int = 1_000
     # remaining rows still model an uneven corpus, but are never ground truth.
     topic_count = evidence_count // (len(CATEGORIES) * _REVISIONS)
     queries: list[QualityQuery] = []
-    query_types = ("direct_fact", "latest_valid_revision", "cross_partition", "cross_session")
     for index in range(query_count):
         category = CATEGORIES[index % len(CATEGORIES)]
         topic = (seed + index * 17) % topic_count
         related_topic = (topic + 1) % topic_count
-        query_type = query_types[index % len(query_types)]
+        query_type = QUERY_TYPES[index % len(QUERY_TYPES)]
         primary = by_key[(category, topic, _REVISIONS - 1)]
         related = by_key[(category, related_topic, _REVISIONS - 1)]
-        relevant = (primary,) if query_type in {"direct_fact", "latest_valid_revision"} else (primary, related)
+        relevant = (primary,) if query_type in {"direct_fact", "latest_valid_revision", "source_specific_question", "timeline_question", "conflict_question", "decision_rationale"} else (primary, related)
         negative = by_key[(category, (topic + 2) % topic_count, _REVISIONS - 1)]
         queries.append(QualityQuery(
             f"query:grf8:{index}", category, query_type,

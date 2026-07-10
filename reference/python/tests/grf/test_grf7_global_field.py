@@ -104,3 +104,23 @@ def test_false_friend_stitch_is_rejected_without_bridge_storage() -> None:
     rejected = field.reject_stitch(CrossPartitionStitchProposal("proposal:false", bridge, ("lexical_hint",)))
     assert rejected.state == "rejected"
     assert all(not descriptor.bridge_summary for descriptor in field.directory.entries())
+
+
+def test_partition_lifecycle_load_snapshot_rebuild_and_empty_retirement() -> None:
+    field = GlobalShardedField()
+    active = GRFPartition(partition_descriptor("partition:lifecycle:active", 0, 9, 0, 99))
+    empty = GRFPartition(partition_descriptor("partition:lifecycle:empty", 10, 19, 100, 199))
+    field.add_partition(active)
+    field.add_partition(empty)
+    field.insert(active.descriptor.partition_id, _placement(10, 1), "admission:grf7:10")
+    assert field.load_partition(active.descriptor.partition_id) is active
+    assert field.snapshot_partition(active.descriptor.partition_id).partition_id == active.descriptor.partition_id
+    digest = field.rebuild_directory()
+    assert digest == field.directory.digest()
+    assert field.retire_partition(empty.descriptor.partition_id).partition_id == empty.descriptor.partition_id
+    try:
+        field.retire_partition(active.descriptor.partition_id)
+    except ValueError as error:
+        assert "placements" in str(error)
+    else:
+        raise AssertionError("retirement must refuse non-empty partitions")

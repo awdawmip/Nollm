@@ -48,7 +48,7 @@ def benchmark(evidence: tuple[QualityEvidence, ...], queries: tuple[QualityQuery
         faithful += float(bool(hits) and all(item.source_ref for item in hits))
         revisions += float(bool(ranked) and ranked[0].shard_id in relevant and not by_id[ranked[0].shard_id].deprecated)
         false_relations += float(any(item.shard_id in query.hard_negative_shard_ids for item in ranked))
-        if query.query_type in {"cross_partition", "cross_session"}:
+        if query.query_type in {"multi_hop_scattered_fact", "context_reconstruction"}:
             missed_stitches += float(len(hits) != len(relevant))
         context_bytes += sum(len(item.content.encode("utf-8")) for item in ranked)
     count = len(queries)
@@ -58,7 +58,7 @@ def benchmark(evidence: tuple[QualityEvidence, ...], queries: tuple[QualityQuery
     if evidence:
         evidence = (*evidence[:-1], evidence[-1])
     update_latency_ms = (perf_counter_ns() - started) / 1_000_000
-    stitch_queries = sum(query.query_type in {"cross_partition", "cross_session"} for query in queries)
+    stitch_queries = sum(query.query_type in {"multi_hop_scattered_fact", "context_reconstruction"} for query in queries)
     return QualityMetrics(precision / count, recall / count, reciprocal / count, ndcg / count, faithful / count, revisions / count, false_relations / count, missed_stitches / stitch_queries if stitch_queries else 0.0, context_bytes, elapsed_ns / count / 1_000_000, update_latency_ms, storage_bytes)
 
 
@@ -116,7 +116,7 @@ def _stitch_rank(query: QualityQuery, evidence: tuple[QualityEvidence, ...]) -> 
     # A stitch edge is materialized against the current endpoint record. This
     # is deliberately limited to cross-source queries; ordinary revision
     # resolution remains exclusive to N5 below.
-    current_endpoint = query.query_type in {"cross_partition", "cross_session"}
+    current_endpoint = query.query_type in {"multi_hop_scattered_fact", "context_reconstruction"}
     return _ordered(query, evidence, lambda item: (item.category != query.category, item.topic not in topics, -item.revision if current_endpoint else 0, abs(item.topic - query.topic)))
 
 

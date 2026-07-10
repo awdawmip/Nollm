@@ -758,6 +758,37 @@ class GlobalShardedField:
             raise ValueError("cannot unload resident partition")
         self._partitions.pop(partition_id, None)
 
+    def load_partition(self, partition_id: str) -> GRFPartition:
+        """Load an explicitly registered partition through the configured loader."""
+        if not self.directory.has_partition(partition_id):
+            raise FileNotFoundError("partition is not registered")
+        return self._load(partition_id)
+
+    def snapshot_partition(self, partition_id: str) -> GRFPartitionSnapshotRef:
+        return self._load(partition_id).snapshot()
+
+    def retire_partition(self, partition_id: str) -> GRFPartitionDescriptor:
+        """Retire only an empty partition so existing routes cannot orphan."""
+        partition = self._load(partition_id)
+        if partition.engine.placements.placement_count() != 0:
+            raise ValueError("cannot retire a partition with placements")
+        descriptor = self.directory.remove(partition_id)
+        self._partitions.pop(partition_id, None)
+        self._resident_partition_ids.discard(partition_id)
+        return descriptor
+
+    def rebuild_directory(self) -> str:
+        """Recreate directory indexes from metadata without reading evidence content."""
+        descriptors = self.directory.entries()
+        neighbors = tuple(neighbor for descriptor in descriptors for neighbor in self.directory.neighbors(descriptor.partition_id))
+        rebuilt = GlobalFieldDirectory()
+        rebuilt.add_many(descriptors)
+        for neighbor in neighbors:
+            if rebuilt.has_partition(neighbor.partition_id) and rebuilt.has_partition(neighbor.neighbor_partition_id):
+                rebuilt.connect(neighbor)
+        self.directory = rebuilt
+        return rebuilt.digest()
+
     def _reroute_placement(self, placement_id: str, partition_id: str) -> None:
         for key, value in tuple(self._unique_routes.items()):
             if value[1] == placement_id:

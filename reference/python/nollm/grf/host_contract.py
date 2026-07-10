@@ -12,7 +12,7 @@ from .facade import GRFFacade, admit_existing_placement_request_from_mapping, ad
 
 CONTRACT_VERSION = "grf_host_v2"
 SUPPORTED_CONTRACT_VERSIONS = ("grf_host_v1", CONTRACT_VERSION)
-CAPABILITIES = ("capture", "place", "admit", "recall", "replay", "validate")
+CAPABILITIES = ("capture", "capture_source", "place", "admit", "recall", "replay", "source_get", "revise", "retire", "validate")
 
 
 class UnsupportedCapabilityError(ValueError):
@@ -172,6 +172,10 @@ class GRFHostService:
         if request.capability == "capture":
             receipt = self._facade.capture(capture_request_from_mapping(request.payload))
             return to_jsonable(receipt), receipt.shard_id, None, None
+        if request.capability == "capture_source":
+            path = Path(_mapping_text(request.payload, "path"))
+            result = self._facade.capture_source(path, _mapping_text(request.payload, "recorded_at"))
+            return to_jsonable(result), None, None, None
         if request.capability == "place":
             shard_id, source_window_id, policy_hint, recorded_at = admit_request_from_mapping(request.payload)
             if request.evidence_identity is None or request.evidence_identity.value != shard_id:
@@ -192,6 +196,16 @@ class GRFHostService:
             _validate_query_identity(request, query.entry_mode, query.entry_ref)
             digest = self._facade.recall(query) if request.capability == "recall" else self._facade.replay(query)
             return to_jsonable(digest), _value(request.evidence_identity), _value(request.placement_identity), _value(request.admission_identity)
+        if request.capability == "source_get":
+            if request.evidence_identity is None:
+                raise ValueError("source_get requires evidence_identity")
+            return {"content": self._facade.get_source(request.evidence_identity.value)}, request.evidence_identity.value, None, None
+        if request.capability == "revise":
+            result = self._facade.revise(Path(_mapping_text(request.payload, "path")), _mapping_text(request.payload, "recorded_at"))
+            return to_jsonable(result), None, None, None
+        if request.capability == "retire":
+            result = self._facade.retire(_mapping_text(request.payload, "source_id"))
+            return to_jsonable(result), None, None, None
         if request.capability == "validate":
             return to_jsonable(self._facade.validate_workspace()), None, None, None
         raise AssertionError("capability registry and dispatcher disagree")
@@ -219,8 +233,11 @@ def _validate_query_identity(request: GRFHostRequest, entry_mode: str, entry_ref
 
 def _validate_capability_identities(request: GRFHostRequest) -> None:
     identities = (request.evidence_identity, request.placement_identity, request.admission_identity)
-    if request.capability in ("capture", "validate") and any(item is not None for item in identities):
+    if request.capability in ("capture", "capture_source", "revise", "retire", "validate") and any(item is not None for item in identities):
         raise ValueError(f"{request.capability} cannot declare GRF identities")
+    if request.capability == "source_get":
+        if request.evidence_identity is None or request.placement_identity is not None or request.admission_identity is not None:
+            raise ValueError("source_get requires exactly evidence_identity")
     if request.capability == "place":
         if request.evidence_identity is None:
             raise ValueError("place requires evidence_identity")
