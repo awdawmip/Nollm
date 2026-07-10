@@ -5,11 +5,27 @@ from nollm.grf.facade import GRFFacade
 
 def test_file_connector_preserves_original_meaningful_units(tmp_path) -> None:
     path = tmp_path / "notes.md"
-    path.write_text("# Title\nfirst\n\n## Next\nsecond", encoding="utf-8")
+    path.write_bytes(b"# Title\nfirst\n\n## Next\nsecond")
     document = FileSourceConnector().load(path, "2026-07-10T00:00:00Z")
     windows = FileSourceConnector().windows(document)
     assert document.source_type == "markdown"
-    assert tuple(item.content for item in windows) == ("# Title\nfirst", "Next\nsecond")
+    assert tuple(item.content for item in windows) == ("# Title\nfirst\n\n", "## Next\nsecond")
+    assert all(item.content == document.content[item.start_offset:item.end_offset] for item in windows)
+
+
+def test_exact_windows_preserve_json_bom_crlf_and_code_tokens(tmp_path) -> None:
+    json_path = tmp_path / "facts.json"
+    json_content = '\ufeff{\r\n  "z": 9007199254740993,\r\n  "name": "Ming\u2603"\r\n}\r\n'
+    json_path.write_bytes(json_content.encode("utf-8"))
+    json_document = FileSourceConnector().load(json_path, "2026-07-11T00:00:00Z")
+    assert json_document.newline_style == "crlf"
+    assert FileSourceConnector().windows(json_document)[0].content == json_content
+    code_path = tmp_path / "module.py"
+    code_content = "# heading\n@decorator\ndef first():\n    return 1\n\nclass Second:\n    pass\n"
+    code_path.write_bytes(code_content.encode("utf-8"))
+    code_document = FileSourceConnector().load(code_path, "2026-07-11T00:00:00Z")
+    assert "def first" in "".join(item.content for item in FileSourceConnector().windows(code_document))
+    assert "class Second" in "".join(item.content for item in FileSourceConnector().windows(code_document))
 
 
 def test_six_explicit_source_connectors_are_selectable() -> None:
@@ -28,12 +44,24 @@ def test_incremental_ingestion_is_idempotent_and_retirement_is_source_scoped(tmp
     assert two.created_shards
 
 
+def test_incremental_window_change_preserves_unmodified_shards(tmp_path) -> None:
+    path = tmp_path / "facts.jsonl"
+    path.write_text('{"id":1}\n{"id":2}\n{"id":3}\n', encoding="utf-8")
+    ingestion = IncrementalIngestion(tmp_path / "workspace")
+    first = ingestion.ingest_file(path, "2026-07-11T00:00:00Z")
+    path.write_text('{"id":1}\n{"id":20}\n{"id":3}\n', encoding="utf-8")
+    second = ingestion.ingest_file(path, "2026-07-11T00:00:01Z")
+    assert len(first.created_shards) == 3
+    assert len(second.created_shards) == 1
+    assert {first.created_shards[0], first.created_shards[2]} == set(second.reused_shards)
+
+
 def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
     path = tmp_path / "data.jsonl"
     path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")
     result = GRFFacade(tmp_path / "workspace").capture_source(path, "2026-07-10T00:00:00Z")
     assert len(result.created_shards) == 2
-    assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == '{"fact":"one"}'
+    assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == path.read_bytes().decode("utf-8").splitlines(keepends=True)[0]
 
 
 def test_facade_retire_preserves_captured_source(tmp_path) -> None:
