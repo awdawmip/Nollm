@@ -32,6 +32,13 @@ def test_facade_exposes_file_first_capture_source(tmp_path) -> None:
     assert GRFFacade(tmp_path / "workspace").get_source(result.created_shards[0]) == '{"fact":"one"}'
 
 
+def test_facade_text_snapshot_and_restore_are_file_first(tmp_path) -> None:
+    facade = GRFFacade(tmp_path / "workspace")
+    receipt = facade.capture_text("capture:text", "retained", "window:text", "2026-07-11T00:00:00Z")
+    restored = GRFFacade.restore(facade.snapshot(tmp_path / "snapshot"), tmp_path / "restored")
+    assert restored.get_source(receipt.shard_id) == "retained"
+
+
 def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
     path = tmp_path / "facts.jsonl"
     path.write_text('{"fact":"one"}\n{"fact":"two"}\n', encoding="utf-8")

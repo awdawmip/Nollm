@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import shutil
 from typing import Any
 
 from .admission_bridge import GRFAdmissionBridge, GRFAdmissionBridgeResult
@@ -38,6 +39,9 @@ class GRFFacade:
     def capture(self, request: GRFCaptureRequest) -> GRFCaptureReceipt:
         return GRFCaptureIngress(self.store).capture(request)
 
+    def capture_text(self, capture_id: str, content: str, source_window_id: str, recorded_at: str) -> GRFCaptureReceipt:
+        return self.capture(GRFCaptureRequest(capture_id, content, "imported_text", (source_window_id,), recorded_at, "grf8_text"))
+
     def capture_source(self, path: Path, recorded_at: str) -> object:
         """Ingest a supported local source through the public file-first workflow."""
         from .ingestion import IncrementalIngestion
@@ -52,6 +56,24 @@ class GRFFacade:
     def get_source(self, shard_id: str) -> str:
         """Return the retained original evidence text for an explicit shard."""
         return self.store.read_evidence_shard(shard_id).content
+
+    def revise(self, path: Path, recorded_at: str) -> object:
+        return self.capture_source(path, recorded_at)
+
+    def snapshot(self, snapshot_root: Path) -> Path:
+        target = Path(snapshot_root)
+        if target.exists():
+            raise FileExistsError(target)
+        shutil.copytree(self.workspace, target)
+        return target
+
+    @classmethod
+    def restore(cls, snapshot_root: Path, workspace: Path) -> "GRFFacade":
+        source, target = Path(snapshot_root), Path(workspace)
+        if target.exists():
+            raise FileExistsError(target)
+        shutil.copytree(source, target)
+        return cls(target)
 
     def admit(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], recorded_at: str) -> GRFAdmissionBridgeResult:
         shard = self.store.read_evidence_shard(shard_id)
