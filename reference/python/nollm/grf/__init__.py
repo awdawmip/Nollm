@@ -48,6 +48,23 @@ from .ledger import GRFLedger, GRFLedgerEvent
 from .path_encoding import safe_object_path
 from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
+from .global_field import (
+    BridgeRollbackRecord,
+    CrossPartitionBridgeKernel,
+    CrossPartitionStitchProposal,
+    CrossPartitionStitchRecord,
+    GlobalFieldDirectory,
+    GlobalRecallBudget,
+    GlobalRecallPath,
+    GlobalRecallQuery,
+    GlobalRecallResult,
+    GlobalShardedField,
+    GRFPartition,
+    GRFPartitionBoundary,
+    GRFPartitionDescriptor,
+    GRFPartitionNeighbor,
+    GRFPartitionSnapshotRef,
+)
 
 __all__ = [
     "AxialCoord",
@@ -123,6 +140,21 @@ __all__ = [
     "StitchRecord",
     "StitchTransform",
     "StitchWitness",
+    "BridgeRollbackRecord",
+    "CrossPartitionBridgeKernel",
+    "CrossPartitionStitchProposal",
+    "CrossPartitionStitchRecord",
+    "GlobalFieldDirectory",
+    "GlobalRecallBudget",
+    "GlobalRecallPath",
+    "GlobalRecallQuery",
+    "GlobalRecallResult",
+    "GlobalShardedField",
+    "GRFPartition",
+    "GRFPartitionBoundary",
+    "GRFPartitionDescriptor",
+    "GRFPartitionNeighbor",
+    "GRFPartitionSnapshotRef",
     "axial_to_cube",
     "cube_to_axial",
     "expand_lateral",
