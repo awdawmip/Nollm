@@ -1,4 +1,5 @@
 from nollm.grf.grf8_quality_dataset import CATEGORIES, build_quality_dataset, dataset_digest
+from nollm.grf.grf8_quality_benchmark import benchmark
 
 
 def test_quality_dataset_has_six_categories_and_deterministic_truth() -> None:
@@ -7,3 +8,6 @@ def test_quality_dataset_has_six_categories_and_deterministic_truth() -> None:
     assert {item.category for item in first[0]} == set(CATEGORIES)
     assert all(item.relevant_shard_ids and item.hard_negative_shard_ids for item in first[1])
     assert dataset_digest(*first) == dataset_digest(*second)
+    metrics = benchmark(*first)
+    assert metrics.source_faithfulness == 1.0
+    assert 0.0 <= metrics.false_relation_rate <= 1.0
