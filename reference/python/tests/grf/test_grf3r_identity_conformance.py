@@ -71,7 +71,7 @@ def test_adapter_source_has_no_direct_core_mutation_and_crash_is_translated(tmp_
     tree = ast.parse(adapter_path.read_text(encoding="utf-8"))
     imports = {alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
     imports |= {node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module}
-    assert imports == {"__future__", "pathlib", "time", "typing", "nollm.grf.host_contract"}
+    assert imports == {"__future__", "pathlib", "time", "typing", "nollm.grf.host_contract", "grf_adapter_contract"}
 
     import sys
 
