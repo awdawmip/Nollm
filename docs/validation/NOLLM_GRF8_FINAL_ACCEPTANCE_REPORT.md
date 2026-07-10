@@ -65,5 +65,6 @@ python experiments/grf/run_grf8_long_running_validation.py
 python experiments/grf/run_grf8_performance_validation.py
 ```
 
-`GRF8_ACCEPTED_CANDIDATE` is issued only after the final clean commit and
-complete-history Git bundle verification recorded below.
+The final clean commit was bundle-verified as complete history. This report
+therefore issues `GRF8_ACCEPTED_CANDIDATE` for the documented Windows fixture
+scope and limitations above.
