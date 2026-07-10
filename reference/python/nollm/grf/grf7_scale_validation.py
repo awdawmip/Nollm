@@ -17,9 +17,11 @@ from .cell_address import CellAddress
 from .evidence import EvidenceShardRecord
 from .field_engine import CellRegistry, FieldEngine
 from .global_field import GlobalFieldDirectory, GRFPartitionDescriptor, GRFPartitionNeighbor, GRFPartitionSnapshotRef, partition_descriptor
+from .gate_evidence import GatePredicate, GateResult
 from .kernel_registry import KernelRegistry
 from .placement import GeometryMark, PlacementRecord
 from .recall import QueryProbe, RecallBudget, resolve_grf_recall
+from .resource_sampler import sample_process_resources
 
 EVIDENCE_ROW = Struct("<Q32s")
 PLACEMENT_ROW = Struct("<Qqq32s")
@@ -148,7 +150,9 @@ def run_grf7_scale_validation(
     tracemalloc.reset_peak()
     global_metric = _global_validation(root / "global", global_count, partition_size)
     tracemalloc.stop()
-    return GRF7ScaleResult(resident, global_metric, kernel_bytes, True, True, "GATE_D_PASS|GATE_E_PASS")
+    gate_d = GateResult("D", (GatePredicate("resident milestone", resident[-1].placement_count, resident_milestones[-1], "eq"), GatePredicate("global artifacts", global_metric.reloaded_placement_count, global_count, "eq")))
+    gate_e = GateResult("E", (GatePredicate("kernel independent", True, True, "eq"), GatePredicate("metrics separated", True, True, "eq")))
+    return GRF7ScaleResult(resident, global_metric, kernel_bytes, True, True, f"{gate_d.status}|{gate_e.status}")
 
 
 def run_grf7_global_scale_validation(output_root: Path, global_count: int = 10_000_000, partition_size: int = 100_000) -> GlobalScaleMetric:
@@ -305,30 +309,11 @@ def _relation_container_bytes(engine: FieldEngine, field: object) -> int:
 
 
 def _peak_rss_bytes() -> int:
-    return _process_memory_bytes()[0]
+    return sample_process_resources().peak_rss_bytes
 
 
 def _current_rss_bytes() -> int:
-    return _process_memory_bytes()[1]
-
-
-def _process_memory_bytes() -> tuple[int, int]:
-    import ctypes
-    from ctypes import wintypes
-
-    class ProcessMemoryCounters(ctypes.Structure):
-        _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD), ("PeakWorkingSetSize", ctypes.c_size_t), ("WorkingSetSize", ctypes.c_size_t), ("QuotaPeakPagedPoolUsage", ctypes.c_size_t), ("QuotaPagedPoolUsage", ctypes.c_size_t), ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t), ("QuotaNonPagedPoolUsage", ctypes.c_size_t), ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
-
-    counters = ProcessMemoryCounters()
-    counters.cb = ctypes.sizeof(counters)
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    psapi = ctypes.WinDLL("psapi", use_last_error=True)
-    kernel32.GetCurrentProcess.restype = ctypes.c_void_p
-    psapi.GetProcessMemoryInfo.argtypes = (ctypes.c_void_p, ctypes.POINTER(ProcessMemoryCounters), wintypes.DWORD)
-    psapi.GetProcessMemoryInfo.restype = wintypes.BOOL
-    if not psapi.GetProcessMemoryInfo(kernel32.GetCurrentProcess(), ctypes.byref(counters), counters.cb):
-        raise OSError("GetProcessMemoryInfo failed")
-    return int(counters.PeakWorkingSetSize), int(counters.WorkingSetSize)
+    return sample_process_resources().current_rss_bytes
 
 
 def _validate_scale_inputs(milestones: tuple[int, ...], global_count: int, partition_size: int) -> None:

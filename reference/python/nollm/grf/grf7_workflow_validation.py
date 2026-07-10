@@ -9,6 +9,7 @@ from time import perf_counter_ns
 
 from .cell_address import CellAddress
 from .global_field import GRFPartition, GlobalRecallBudget, GlobalRecallQuery, GlobalShardedField, partition_descriptor
+from .gate_evidence import GatePredicate, GateResult
 from .placement import GeometryMark, PlacementRecord
 
 
@@ -79,7 +80,10 @@ def run_workflow_validation(items_per_workflow: int = 100) -> WorkflowValidation
         container = field._load(partition_id).engine.placements
         storage = getsizeof(container._placements) + getsizeof(container._by_cell) + getsizeof(container._by_shard)
         metrics.append(WorkflowMetric(workflow, "Nollm_GRF", f"{int(result.selected_shards == (placements[target].shard_id,))}/1", f"{int(result.path.source_fallback_refs == (placements[target].shard_id,))}/1", f"{items_per_workflow}/{len(result.selected_shards)}", storage, grf_update, "0/1", "high_replayable"))
-    return WorkflowValidationResult(tuple(metrics), 4, 4, all(item.source_faithfulness == "1/1" for item in metrics if item.model == "Nollm_GRF"), all(item.context_reduction.endswith("/1") for item in metrics if item.model == "Nollm_GRF"), False, True, "GATE_I_PASS")
+    traceable = all(item.source_faithfulness == "1/1" for item in metrics if item.model == "Nollm_GRF")
+    reduced = all(item.context_reduction.endswith("/1") for item in metrics if item.model == "Nollm_GRF")
+    status = GateResult("I", (GatePredicate("traceable", traceable, True, "eq"), GatePredicate("context measured", reduced, True, "eq"))).status
+    return WorkflowValidationResult(tuple(metrics), 4, 4, traceable, reduced, False, True, status)
 
 
 def _placement(workflow: str, workflow_index: int, index: int) -> PlacementRecord:

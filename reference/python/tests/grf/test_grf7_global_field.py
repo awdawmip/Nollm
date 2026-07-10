@@ -59,7 +59,7 @@ def test_cross_partition_recall_is_bounded_and_rollback_removes_path() -> None:
     assert result.selected_shards == (first.shard_id, second.shard_id)
     assert result.path.visited_partitions == ("partition:left", "partition:right")
     assert result.path.boundary_crossings == (("partition:left", "partition:right"),)
-    assert result.loaded_partition_count == 2 and result.exact_identity_match is True
+    assert result.visited_partition_count == 2 and result.exact_identity_match is True
     assert set(result.path.source_fallback_refs) == {first.shard_id, second.shard_id}
     global_field.rollback_stitch(bridge.bridge_id, "false_friend", "2026-07-10T00:00:01Z")
     after = global_field.recall(GlobalRecallQuery("query:grf7:rollback", "shard_id", first.shard_id, budget))

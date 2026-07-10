@@ -10,6 +10,7 @@ if str(PY_ROOT) not in sys.path:
     sys.path.insert(0, str(PY_ROOT))
 
 from nollm.grf.global_field import GlobalFieldDirectory, GRFPartitionNeighbor, partition_descriptor  # noqa: E402
+from nollm.grf.gate_evidence import GatePredicate, GateResult  # noqa: E402
 
 
 def main() -> int:
@@ -22,7 +23,9 @@ def main() -> int:
             directory.connect(GRFPartitionNeighbor(f"partition:manifest:{index - 1:03d}", f"partition:manifest:{index:03d}", "spatial_boundary"))
     payload = directory.canonical_bytes()
     replay = GlobalFieldDirectory.from_bytes(payload)
-    result = {"gate": "GATE_A_PASS", "partition_count": 100, "directory_entry_count": 100, "directory_bytes": len(payload), "neighbor_link_count": len(directory.to_mapping()["neighbors"]), "snapshot_refs": [item.snapshot_ref.snapshot_ref for item in directory.entries()], "partition_boundaries": [item.boundary.to_mapping() for item in directory.entries()], "directory_replay_deterministic": replay.canonical_bytes() == payload, "directory_growth_monotonic": sizes == sorted(sizes)}
+    replay_deterministic = replay.canonical_bytes() == payload
+    growth_monotonic = sizes == sorted(sizes)
+    result = {"gate": GateResult("A", (GatePredicate("directory replay", replay_deterministic, True, "eq"), GatePredicate("directory growth", growth_monotonic, True, "eq"))).status, "partition_count": 100, "directory_entry_count": 100, "directory_bytes": len(payload), "neighbor_link_count": len(directory.to_mapping()["neighbors"]), "snapshot_refs": [item.snapshot_ref.snapshot_ref for item in directory.entries()], "partition_boundaries": [item.boundary.to_mapping() for item in directory.entries()], "directory_replay_deterministic": replay_deterministic, "directory_growth_monotonic": growth_monotonic}
     raw = ROOT / "experiments" / "grf" / "results" / "GRF7_GLOBAL_DIRECTORY_MANIFEST.json"
     raw.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(result, sort_keys=True, indent=2) + "\n"

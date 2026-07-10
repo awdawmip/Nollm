@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from .cell_address import CellAddress
 from .fixed_point import Q16_ONE
 from .global_field import CrossPartitionBridgeKernel, CrossPartitionStitchProposal, GRFPartition, GlobalRecallBudget, GlobalRecallQuery, GlobalShardedField, partition_descriptor
+from .gate_evidence import GatePredicate, GateResult
 from .placement import GeometryMark, PlacementRecord
 
 
@@ -73,7 +74,9 @@ def run_incremental_repartition_validation() -> IncrementalRepartitionResult:
     refs = (("admission_id", "admission:inc:first"), ("admission_id", "admission:inc:second"))
     equal = all(field.recall(GlobalRecallQuery(f"query:inc:left:{ref}", mode, ref, budget, False)).selected_shards == rebuilt.recall(GlobalRecallQuery(f"query:inc:right:{ref}", mode, ref, budget, False)).selected_shards for mode, ref in refs)
     identities = {profiled.shard_id, profiled.placement_id, "admission:inc:first", second.shard_id, second.placement_id, "admission:inc:second"}
-    return IncrementalRepartitionResult(add_changed, remove_changed, move_changed, cross_ok, profile_ok, used and removed_bridge, split_merge, equal, profiled.shard_id == first.shard_id, profiled.placement_id == first.placement_id, cross_ok and profile_ok, profiled.source_fallback_refs == first.source_fallback_refs, 6 - len(identities), "GATE_F_PASS" if all((add_changed, remove_changed, move_changed, cross_ok, profile_ok, used, removed_bridge, split_merge, equal)) and len(identities) == 6 else "GATE_F_FAIL")
+    passed = all((add_changed, remove_changed, move_changed, cross_ok, profile_ok, used, removed_bridge, split_merge, equal)) and len(identities) == 6
+    status = GateResult("F", (GatePredicate("incremental equivalence", passed, True, "eq"),)).status
+    return IncrementalRepartitionResult(add_changed, remove_changed, move_changed, cross_ok, profile_ok, used and removed_bridge, split_merge, equal, profiled.shard_id == first.shard_id, profiled.placement_id == first.placement_id, cross_ok and profile_ok, profiled.source_fallback_refs == first.source_fallback_refs, 6 - len(identities), status)
 
 
 def _full_rebuild(first: PlacementRecord, second: PlacementRecord) -> GlobalShardedField:

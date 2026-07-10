@@ -11,12 +11,12 @@ if str(PY_ROOT) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from integrations.adapters.grf7_runtime_fixture import run_runtime_validation  # noqa: E402
+from experiments.grf.run_grf7r_runtime_semantics import run  # noqa: E402
 
 
 def main() -> int:
     runtime_root = ROOT / "experiments" / "grf" / "results" / "grf7_runtime_artifacts"
-    result = run_runtime_validation(runtime_root).to_mapping()
+    result = run(runtime_root)
     raw = ROOT / "experiments" / "grf" / "results" / "GRF7_HOST_RUNTIME_RAW.json"
     raw.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(result, sort_keys=True, indent=2) + "\n"

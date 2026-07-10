@@ -49,7 +49,7 @@ class QueryProbe:
             raise TypeError("budget must be RecallBudget")
 
 
-def resolve_grf_recall(query: QueryProbe, field: RelationField) -> RecallDigest:
+def resolve_grf_recall(query: QueryProbe, field: RelationField, *, collect_rejected: bool = True) -> RecallDigest:
     starts = _entry_activations(query, field)
     entry_shards = {placement.shard_id for placement in field.placements_for_entry(query.entry_mode, query.entry_ref)}
     frontier = field.frontier(starts, query.budget.beam, 0)
@@ -81,9 +81,10 @@ def resolve_grf_recall(query: QueryProbe, field: RelationField) -> RecallDigest:
         frontier = field.frontier(next_activations, query.budget.beam, step + 1)
         if not frontier.activations:
             break
-    for placement in field.placements:
-        if placement.shard_id not in selected:
-            rejected.append(placement.shard_id)
+    if collect_rejected:
+        for placement in field.placements:
+            if placement.shard_id not in selected:
+                rejected.append(placement.shard_id)
     return RecallDigest(query.query_id, tuple(sorted(selected)), tuple(selected[key] for key in sorted(selected)), tuple(sorted(rejected)), exhausted, ("no_global_capture_pool_claim",))
 
 

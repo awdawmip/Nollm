@@ -8,6 +8,7 @@ from time import perf_counter_ns
 from .cell_address import CellAddress
 from .fixed_point import Q16_ONE
 from .global_field import CrossPartitionBridgeKernel, CrossPartitionStitchProposal, GRFPartition, GlobalRecallBudget, GlobalRecallQuery, GlobalShardedField, partition_descriptor
+from .gate_evidence import GatePredicate, GateResult
 from .placement import GeometryMark, PlacementRecord
 
 
@@ -82,7 +83,7 @@ def run_grf7_cross_validation(workloads: tuple[tuple[int, int], ...] = ((100_000
             exact += placement.shard_id in result.selected_shards
             fallback += placement.shard_id in result.path.source_fallback_refs
             paths += result.path.entry_partition != "" and result.path.visited_partitions[0] == result.path.entry_partition
-            max_loaded = max(max_loaded, result.loaded_partition_count)
+            max_loaded = max(max_loaded, result.visited_partition_count)
             if is_cross:
                 cross += len(result.path.boundary_crossings) == 1
                 stitch += index < min(1_000, cross_target) and len(result.path.bridges_used) == 1
@@ -92,7 +93,9 @@ def run_grf7_cross_validation(workloads: tuple[tuple[int, int], ...] = ((100_000
     replay_query = GlobalRecallQuery("query:grf7:replay", "shard_id", placements[0].shard_id, budget, True)
     replayed = field.recall(replay_query) == field.recall(replay_query)
     final = metrics[-1]
-    status = "GATE_B_PASS|GATE_C_PASS" if final.cross_partition_query_count >= 5_000 and final.stitch_query_count >= 1_000 and final.rollback_rejection_query_count >= 1_000 else "GATE_B_FAIL|GATE_C_FAIL"
+    gate_b = GateResult("B", (GatePredicate("cross queries", final.cross_partition_query_count, 5_000, "ge"),))
+    gate_c = GateResult("C", (GatePredicate("stitch queries", final.stitch_query_count, 1_000, "ge"), GatePredicate("rollback rejection queries", final.rollback_rejection_query_count, 1_000, "ge")))
+    status = f"{gate_b.status}|{gate_c.status}"
     return GRF7CrossValidationResult(tuple(metrics), 103, 100, 2, 1, 2, 1, 100, "0/5000", "0/5000", all(item.max_loaded_partitions <= 2 for item in metrics), replayed, status)
 
 
