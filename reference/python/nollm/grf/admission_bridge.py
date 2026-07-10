@@ -57,7 +57,7 @@ class GRFAdmissionBridge:
             raise ValueError("GRFAdmissionBridge only supports grf_deterministic_policy_v1 and validation_fixture_policy")
 
         target_cell = _target_cell(shard, policy_hint)
-        ids = _BridgeIds(shard.shard_id)
+        ids = _BridgeIds(shard.shard_id + str(policy_hint.get("replacement_id", "")))
         shard_ref = EvidenceShardRef(shard.shard_id, shard.source_window_refs, shard.trust_state, shard.usage_state)
         island = EvidenceIsland(ids.island_id, (shard_ref,), tuple(sorted(set((*shard.source_window_refs, window.window_id)))), "validation_fixture", "placed")
         patch = LocalPatch(ids.patch_id, island.island_id, target_cell.chart_id, target_cell.profile_id, target_cell, (target_cell,), (), "placed", 0, 0)
@@ -96,7 +96,7 @@ class GRFAdmissionBridge:
 
     def _place_deterministic(self, shard: EvidenceShardRecord, window: SourceWindowRecord, policy_hint: dict[str, Any], decided_at: str) -> GRFAdmissionBridgeResult:
         target_cell = _target_cell(shard, {"policy_id": "validation_fixture_policy", "chart_id": policy_hint.get("chart_id", "chart_policy")})
-        ids = _BridgeIds(shard.shard_id)
+        ids = _BridgeIds(shard.shard_id + str(policy_hint.get("replacement_id", "")))
         shard_ref = EvidenceShardRef(shard.shard_id, shard.source_window_refs, shard.trust_state, shard.usage_state)
         island = EvidenceIsland(ids.island_id, (shard_ref,), tuple(sorted(set((*shard.source_window_refs, window.window_id)))), "validation_fixture", "placed")
         patch = LocalPatch(ids.patch_id, island.island_id, target_cell.chart_id, target_cell.profile_id, target_cell, (target_cell,), (), "placed", 0, 0)
@@ -110,6 +110,23 @@ class GRFAdmissionBridge:
             excessive_residual=bool(policy_hint.get("excessive_residual")),
             force_defer=bool(policy_hint.get("defer")),
         )
+        replacement_id = str(policy_hint.get("replacement_id", ""))
+        if replacement_id:
+            # The policy intentionally derives its canonical ranking from the
+            # shard. Re-placement retains that ranking but must not overwrite
+            # its previous persisted candidate or decision records.
+            ranked = tuple(replace(item, candidate_id=f"{item.candidate_id}:{ids.stem}") for item in ranked)
+            selected_candidate_id = ranked[0].candidate_id
+            decision = replace(
+                decision,
+                decision_id=f"{decision.decision_id}:{ids.stem}",
+                candidate_id=selected_candidate_id,
+            )
+            report = replace(
+                report,
+                selected_candidate_id=selected_candidate_id,
+                ranked_candidate_ids=tuple(item.candidate_id for item in ranked),
+            )
         candidate = ranked[0]
         if decision.decision == "reject":
             rejection = RejectionRecord(ids.rejection_id, candidate.candidate_id, shard.shard_id, decided_at, "host_rule", decision.rejection_reason or "false_friend_risk", (shard.shard_id,))

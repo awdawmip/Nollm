@@ -52,3 +52,12 @@ def test_batch_place_then_admit_keeps_distinct_identities(tmp_path) -> None:
     assert all(item.admission_record is None and item.placement_record is not None for item in placed)
     admitted = facade.admit_batch(tuple((item.placement_record.shard_id, item.placement_record.placement_id) for item in placed), "2026-07-10T00:00:02Z", "batch_explicit")
     assert len({item.admission_id for item in admitted}) == 2
+
+
+def test_replacement_creates_new_placement_without_losing_source(tmp_path) -> None:
+    facade = GRFFacade(tmp_path / "workspace")
+    shard = facade.capture_text("capture:replace", "retained replacement source", "window:replace", "2026-07-11T00:00:00Z").shard_id
+    original = facade.place(shard, "window:replace", {"policy_id": "grf_deterministic_policy_v1"}, "2026-07-11T00:00:01Z").placement_record
+    replacement = facade.re_place(shard, "window:replace", {"policy_id": "grf_deterministic_policy_v1", "chart_id": "chart:replacement"}, "profile-change-1", "2026-07-11T00:00:02Z").placement_record
+    assert original.placement_id != replacement.placement_id
+    assert facade.get_source(shard) == "retained replacement source"

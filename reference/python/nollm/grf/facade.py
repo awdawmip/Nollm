@@ -95,6 +95,13 @@ class GRFFacade:
             raise ValueError("batch shard ids must be non-empty and unique")
         return tuple(self.place(shard_id, source_window_id, policy_hint, recorded_at) for shard_id in shard_ids)
 
+    def re_place(self, shard_id: str, source_window_id: str, policy_hint: dict[str, Any], replacement_id: str, recorded_at: str) -> GRFAdmissionBridgeResult:
+        if not replacement_id:
+            raise ValueError("replacement_id is required")
+        hint = dict(policy_hint)
+        hint["replacement_id"] = replacement_id
+        return self.place(shard_id, source_window_id, hint, recorded_at)
+
     def admit_batch(self, placements: tuple[tuple[str, str], ...], recorded_at: str, admitted_by: str) -> tuple[object, ...]:
         if not placements or len({placement_id for _, placement_id in placements}) != len(placements):
             raise ValueError("batch placements must be non-empty and unique")
