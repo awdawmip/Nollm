@@ -1,0 +1,128 @@
+{
+  "schema": "grf7_evidence_manifest_v1",
+  "baseline": "7808510d64e707db41f2d5a96367fa78aeb99c99",
+  "evidence_commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+  "candidate_status": "GRF7_ACCEPTED_CANDIDATE",
+  "gates": [
+    {
+      "gate": "A",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_global_field_validation.py",
+      "result": "100 partitions; deterministic replay",
+      "report": "docs/validation/NOLLM_GRF7_GLOBAL_DIRECTORY_REPORT.md",
+      "report_sha256": "8BBBC17E25E80AABB7FA89B99B1AC01F4AE970B8426689722DD151C441B67E76",
+      "raw_file": "experiments/grf/results/GRF7_GLOBAL_DIRECTORY_MANIFEST.json",
+      "raw_sha256": "D2BC42333E4C97966C5554B0B0922BF188BAC62EE687FC3D999E8A7584AF6605",
+      "status": "GATE_A_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "B",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_cross_partition_recall.py",
+      "result": "20000 queries; 5000 cross-partition",
+      "report": "docs/validation/NOLLM_GRF7_CROSS_PARTITION_RECALL_REPORT.md",
+      "report_sha256": "B977B99675429C805A7F9479F17F0B7827F42AE2D39213D3109F311BC4AA5A96",
+      "raw_file": "experiments/grf/results/GRF7_CROSS_PARTITION_RECALL_RAW.json",
+      "raw_sha256": "90854A119CD7E15FD7A0C8EED83ABCF9AEB21E53A25D36028054C43CBB3CD925",
+      "status": "GATE_B_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "C",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_cross_partition_recall.py",
+      "result": "accepted/rejected/rollback lifecycle",
+      "report": "docs/validation/NOLLM_GRF7_CROSS_PARTITION_STITCH_REPORT.md",
+      "report_sha256": "FADD72256260261D439AE399E669CF544DB1EDD0AADDA2407103BB8EBAAA157E",
+      "raw_file": "experiments/grf/results/GRF7_CROSS_PARTITION_RECALL_RAW.json",
+      "raw_sha256": "90854A119CD7E15FD7A0C8EED83ABCF9AEB21E53A25D36028054C43CBB3CD925",
+      "status": "GATE_C_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "D",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_scale_validation.py",
+      "result": "1M resident and 10M sharded",
+      "report": "docs/validation/NOLLM_GRF7_SCALE_REPORT.md",
+      "report_sha256": "B850780F3E0C32F8D11EDEBC6185A345A3A88FC3A04235733BA3D62B733F4283",
+      "raw_file": "experiments/grf/results/GRF7_SCALE_RAW.json",
+      "raw_sha256": "F5D37A04DB0C8593CD51511A8DB02FDC9CB6A623C2E92B82B3C68EDC97F44194",
+      "status": "GATE_D_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "E",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_global_scale_validation.py",
+      "result": "RSS/deep/shallow/disk separated",
+      "report": "docs/validation/NOLLM_GRF7_RESOURCE_ACCOUNTING_REPORT.md",
+      "report_sha256": "FD8117A97477ABDB5A10FD8C72AE5086EE481C1328E7D4B2B5CE8AF48AA6BE88",
+      "raw_file": "experiments/grf/results/GRF7_EXTERNAL_ARTIFACT_HASHES.json",
+      "raw_sha256": "D63024B04A72CDF88EEBF2EC93B86C4D82B161D192DE2B67AB62602A61E25678",
+      "status": "GATE_E_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "F",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_incremental_validation.py",
+      "result": "incremental equals full rebuild",
+      "report": "docs/validation/NOLLM_GRF7_INCREMENTAL_REPARTITION_REPORT.md",
+      "report_sha256": "650B941835C728B964219240F0D59B0C3EF3E6AC89EC8A0926A2CEA646602790",
+      "raw_file": "experiments/grf/results/GRF7_INCREMENTAL_RAW.json",
+      "raw_sha256": "3A24680E89771DAD80389C43DB2495A9F75A7C4507322D191B0C1EFAEDDCA623",
+      "status": "GATE_F_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "G",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_host_runtime_validation.py",
+      "result": "100000 queued runtime requests",
+      "report": "docs/validation/NOLLM_GRF7_REAL_HOST_RUNTIME_REPORT.md",
+      "report_sha256": "A7D7A3218AAF4AE3992B514C16EF2385C2F97F89519CF668F6729C7B517E8DE9",
+      "raw_file": "experiments/grf/results/GRF7_HOST_RUNTIME_RAW.json",
+      "raw_sha256": "2C856D4497DEFF9D7110D4FAE1587BA20439EA95C0F713BC9BE500693D4CF90A",
+      "status": "GATE_G_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "H",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_long_running_validation.py",
+      "result": "1000000 mixed operations",
+      "report": "docs/validation/NOLLM_GRF7_LONG_RUNNING_RELIABILITY_REPORT.md",
+      "report_sha256": "B72270D65B99A771858E33207EE6E2DB15E960FD14FEA959D7B13A7D374EBF39",
+      "raw_file": "experiments/grf/results/GRF7_LONG_RUNNING_RAW.json",
+      "raw_sha256": "F174469C7B800B8C9707ACA8D66CA7CADE2912037E77B9E4CC59245DF3250DC3",
+      "status": "GATE_H_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "I",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python experiments/grf/run_grf7_workflow_validation.py",
+      "result": "four workflows and four baselines",
+      "report": "docs/validation/NOLLM_GRF7_WORKFLOW_VALIDATION_REPORT.md",
+      "report_sha256": "0191D0A615AEA0C7541DDDAF5883BB7852475701D308ACFF233842E48EAAFB9F",
+      "raw_file": "experiments/grf/results/GRF7_WORKFLOW_RAW.json",
+      "raw_sha256": "A03A4C094D6ACE3EC00DA643E774D48FAA22923DA864C41C7ECC665D7EB54023",
+      "status": "GATE_I_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    },
+    {
+      "gate": "J",
+      "commit": "e542b8a48f6639ea7dec78f246e6730289cd41fe",
+      "command": "python -m pytest -q reference/python/tests/grf",
+      "result": "architecture and evidence closure",
+      "report": "docs/validation/NOLLM_GRF7_FINAL_VALIDATION_REPORT.md",
+      "report_sha256": "3245A733F512B656CB5800EC9D0B113DEE04C87F9B2A7939E4B285C046AAE88E",
+      "raw_file": "experiments/grf/results/GRF7_EXTERNAL_ARTIFACT_HASHES.json",
+      "raw_sha256": "D63024B04A72CDF88EEBF2EC93B86C4D82B161D192DE2B67AB62602A61E25678",
+      "status": "GATE_J_PASS",
+      "limitations": "See NOLLM_GRF7_LIMITATIONS_AND_FAILURE_BOUNDARY.md"
+    }
+  ]
+}
