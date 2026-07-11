@@ -15,14 +15,16 @@
     "memory quality",
     "multi-process recovery"
   ],
-  "schema_version": 1,
   "unsupported_usage": [
     "private-module imports or monkeypatching",
     "direct file tampering",
     "malicious Trace callbacks",
     "concurrent direct Store mutation outside the owning composition"
   ],
-  "validation_head": "3375f156c0a9ba3445b5d6fdf0c3101b22dde28b",
+  "validated_code_commit": "a1c0b676c794ec7ca2bf20408cdf897bf2793c09",
+  "validated_code_tree_digest": "c1f1fc3b9e491f96ab858eaea6ac63ccec75666e43a725f2425f61928929a041",
+  "validation_command": "python lab/nollm-lab/m1/run_core_capability_validation.py --check",
+  "validation_schema": "nollm_core_capability_validation_v2",
   "verified_capabilities": {
     "addressed_handle_contract": true,
     "atomic_batch_and_bridge_add": true,

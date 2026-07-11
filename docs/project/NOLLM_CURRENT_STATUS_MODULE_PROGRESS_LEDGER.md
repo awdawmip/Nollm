@@ -1,26 +1,27 @@
 # Nollm Current Module Progress Ledger
 
-Date: 2026-07-11
+Date: 2026-07-12
 
-The validated implementation HEAD is `3375f156c0a9ba3445b5d6fdf0c3101b22dde28b`. Percentages are capability estimates against current charters, not permanence or code volume.
+Capability percentages are estimates against current modular charters. They do
+not represent permanence, code volume, or authorization for later work.
 
-| Module | Before | Target | Actual | Lifecycle | Confidence | Verified capabilities | Main gaps | Next candidate action |
-| --- | ---: | ---: | ---: | --- | --- | --- | --- | --- |
-| CORE | 65% | 75% | 76% | `ACTIVE_BASELINE` | high | reduced allowlist; addressed state; atomic batch/file; generated templates; bounded Recall; 25-dimension validator | cross-process recovery and scale | independent acceptance audit |
-| SNAPSHOT | 45% | 50% | 52% | `IMPLEMENTED` | medium-high | owns Protocol/service; atomic create/restore/clone/verify/diff; failed restore preserves state | version migration and large incremental snapshots | versioned snapshot task |
-| TRACE | 35% | 40% | 42% | `IMPLEMENTED` | medium | owns Null/Memory/JSONL/Metrics/Composite/Inspector; state parity and file deletion isolation | performance visualization depth | trace tooling task |
-| ACCESS | 55% | 60% | 60% | `ACTIVE_BASELINE` | medium-high | trusted composition; all explicit actions; Evidence fallback; ordinary rollback | real Host/LLM decisions and multi-process coordination | future placement contract task |
-| HISTORY | 10% | 10% | 10% | `PROPOSED` | low | ownership boundary unchanged | no product implementation | separately approved task |
-| AUDIT | 10% | 10% | 10% | `PROPOSED` | low | ownership boundary unchanged | no product implementation | separately approved task |
-| OPENCLAW | 25% | 25% | 25% | `LEGACY_REFERENCE` | medium-low | remains outside active distributions | no current Access integration or Live E2E | separately approved host task |
-| LAB | 40% | 50% | 50% | `IMPLEMENTED` | medium-high | canonical template compiler/generator; reproducibility; parity; Core capability validator | corpora and long stress runs | scale/quality task after approval |
-| DISTRIBUTIONS | 35% | 40% | 41% | `IMPLEMENTED` | medium | Bare/Minimal/Debug manifests match owner graph; no business logic | installer and version negotiation | packaging task |
+| Module | Before | Target | Actual | Lifecycle | Confidence | Latest evidence | Verified capability | Main gap | Next candidate action |
+| --- | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- |
+| CORE | 72% | 75% | 75% | `CAPABILITY_VALIDATED` | high | `a1c0b676`; tree `c1f1fc3b` | minimal runtime Profile view; artifact digest check; 25/25 validator | cross-process recovery and scale | separately approved Core task |
+| SNAPSHOT | 48% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests | immutable finite `SnapshotDiff`; create/restore/clone/verify | version migration and incremental snapshots | versioned Snapshot task |
+| TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests | sink/file/metrics/composite/inspector regression; state isolation | deeper performance visualization | separately approved Trace task |
+| ACCESS | 58% | 60% | 60% | `ACTIVE_BASELINE` | medium-high | 32 package tests | strict binding; five-action ordinary failure matrix; shared composition lock | real Host decisions and multi-process coordination | future placement task |
+| HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary check | ownership unchanged | no implementation | separately approved task |
+| AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary check | ownership unchanged | no implementation | separately approved task |
+| OPENCLAW | 25% | 25% | 25% | `LEGACY_REFERENCE` | medium-low | distribution check | remains outside active runtime | no Live E2E | separately approved Host task |
+| LAB | 48% | 50% | 50% | `IMPLEMENTED` | high | artifact `21659434`; tree `c1f1fc3b` | owns research Profiles; read-only generator; 9/9 parity; stable validator | corpora and long stress runs | separately approved Lab task |
+| DISTRIBUTIONS | 38% | 40% | 40% | `IMPLEMENTED` | medium-high | M0 composition tests | Bare/Minimal/Debug schema and imports | installer and version negotiation | packaging task |
 
-## Actual Vector
+Expected and actual vector:
 
 ```text
-CORE +11% | SNAPSHOT +7% | TRACE +7% | ACCESS +5% |
-LAB +10% | DISTRIBUTIONS +6% | HISTORY/AUDIT/OPENCLAW 0%
+CORE +3% | SNAPSHOT +2% | TRACE 0% | ACCESS +2% |
+HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +2% | DISTRIBUTIONS +2%
 ```
 
-No module exceeded the expected vector by more than 5%. The small positive deviations come from stronger independent capability evidence and explicit Trace/Distribution tooling, not scope expansion.
+Deviation is zero for every module. No recovery condition was activated.

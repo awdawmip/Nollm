@@ -1,23 +1,24 @@
 # Nollm Current Status
 
-Date: 2026-07-11
+Date: 2026-07-12
 
-M1 establishes package-level Core/Access behavior. The active Core and Access
-implementations are under `packages/`; Bare and Minimal distributions do not
-reference the old GRF runtime.
+The [active project basis](ACTIVE_PROJECT.md) identifies the V3.0 modular
+project book, CSTALD correction task, and current progress ledger. V2.2 project
+books are legacy references.
 
-Current verified boundaries after the public-boundary reallocation candidate:
+The validated code commit is `a1c0b676c794ec7ca2bf20408cdf897bf2793c09`
+with code tree digest
+`c1f1fc3b9e491f96ab858eaea6ac63ccec75666e43a725f2425f61928929a041`.
 
-- Core uses addressed Handles and explicit-cell bounded Recall.
-- Access preserves original Evidence and maps externally supplied decisions.
-- Snapshot owns its Protocol and composes through atomic Core state bytes.
-- Trace owns sink, file, metrics, and inspector implementations; Core retains only the immutable event port.
-- Lab owns canonical geometry template generation; Core loads the generated artifact.
-- Access uses a trusted local composition contract without Core-issued security capabilities.
-- Production boundary violations and production cycles are zero.
-- Old GRF and OpenClaw implementations are migration assets outside active
-  distributions.
+Current verified boundaries:
 
-OpenClaw Live and LLM corpora remain paused. M1 does not prove LLM placement
-quality. History/Audit product behavior and physical GitHub splitting remain
-deferred.
+- Core exposes minimal runtime Profile views and validates its generated artifact.
+- Lab owns research Profile definitions and reproducible generation/parity tools.
+- Snapshot provides a finite immutable structural diff.
+- Access enforces strict canonical bindings and ordinary failure rollback.
+- Trace remains state-independent and unchanged in capability.
+- Bare, Minimal, and Debug manifests describe importable package compositions.
+- Production boundary violations and cycles remain zero.
+
+OpenClaw Live, real LLM placement, cross-process recovery, memory quality,
+corpora, and PB scale remain unvalidated and require separate authorization.
