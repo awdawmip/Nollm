@@ -588,6 +588,18 @@
       "source_owner": "LEGACY",
       "target": "reference/python/nollm/grf/replay.py",
       "target_owner": "SNAPSHOT"
+    },
+    {
+      "confidence": "LOW",
+      "detail": "Legacy migration asset dependency; excluded from production gate.",
+      "fingerprint": "fa8e723725a9b3beae80f6d86a9a391b1970c709b30f60cbcdce7410dbb91528",
+      "kind": "legacy_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "QUARANTINE",
+      "path": "reference/python/nollm/grf/__init__.py",
+      "source_owner": "LEGACY",
+      "target": "reference/python/nollm/grf/m0_ports.py",
+      "target_owner": "SNAPSHOT"
     }
   ],
   "production_violations": [
@@ -701,5 +713,5 @@
     }
   ],
   "schema_version": 2,
-  "tracked_file_count": 1326
+  "tracked_file_count": 1328
 }

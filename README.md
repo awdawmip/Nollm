@@ -32,6 +32,8 @@ the ownership audit, not current architecture.
 M1 will extract mixed responsibilities and remove blocked paths. M0 does not
 perform those semantic rewrites.
 
+M1 is not started. It requires a separately approved taskbook after M0C1 closes.
+
 ## Validation
 
 The repository-wide diagnostic remains:

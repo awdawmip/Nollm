@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from nollm_core import NullTraceSink, TraceEvent, TraceSink, safe_emit
+
 from .axial import AxialCoord, hex_ring
 from .cell_address import CellAddress
 from .placement import PlacementRecord
@@ -21,10 +23,17 @@ class CellState:
 
 class CellStore:
     """Occupancy is stored by actual geometry cell, never by semantic identity."""
-    def __init__(self, dense_threshold: int = 8, overloaded_threshold: int = 32, migration_threshold: int = 96) -> None:
+    def __init__(
+        self,
+        dense_threshold: int = 8,
+        overloaded_threshold: int = 32,
+        migration_threshold: int = 96,
+        trace_sink: TraceSink | None = None,
+    ) -> None:
         self.dense_threshold = dense_threshold
         self.overloaded_threshold = overloaded_threshold
         self.migration_threshold = migration_threshold
+        self.trace_sink = trace_sink or NullTraceSink()
         self._cells: dict[tuple[str, str, int, int, int, str], list[PlacementRecord]] = {}
 
     def insert(self, placement: PlacementRecord) -> None:
@@ -33,6 +42,14 @@ class CellStore:
         if any(item.placement_id == placement.placement_id for item in values):
             raise FileExistsError("placement already occupies cell")
         values.append(placement)
+        safe_emit(
+            self.trace_sink,
+            TraceEvent(
+                "cell.insert",
+                {"placement_id": placement.placement_id, "cell": cell.stable_key()},
+                "stable",
+            ),
+        )
 
     def remove(self, placement_id: str) -> PlacementRecord:
         for key, values in tuple(self._cells.items()):
@@ -41,6 +58,14 @@ class CellStore:
                     values.pop(index)
                     if not values:
                         del self._cells[key]
+                    safe_emit(
+                        self.trace_sink,
+                        TraceEvent(
+                            "cell.remove",
+                            {"placement_id": placement_id, "cell": placement.geometry_mark.cell.stable_key()},
+                            "stable",
+                        ),
+                    )
                     return placement
         raise FileNotFoundError("placement does not occupy any cell")
 
@@ -50,6 +75,14 @@ class CellStore:
         except FileNotFoundError:
             pass
         self.insert(placement)
+        safe_emit(
+            self.trace_sink,
+            TraceEvent(
+                "cell.move",
+                {"placement_id": placement.placement_id, "cell": placement.geometry_mark.cell.stable_key()},
+                "stable",
+            ),
+        )
 
     def at(self, cell: CellAddress) -> tuple[PlacementRecord, ...]:
         return tuple(sorted(self._cells.get(cell.stable_key(), ()), key=lambda item: item.placement_id))
@@ -78,11 +111,17 @@ class CellStore:
 
 class FieldEngine:
     """Assembles a relation field directly from cell occupancy and bridges."""
-    def __init__(self, kernel_registry: KernelRegistry | None = None, cell_store: CellStore | None = None) -> None:
+    def __init__(
+        self,
+        kernel_registry: KernelRegistry | None = None,
+        cell_store: CellStore | None = None,
+        trace_sink: TraceSink | None = None,
+    ) -> None:
+        self.trace_sink = trace_sink or NullTraceSink()
         self.kernel_registry = kernel_registry or KernelRegistry()
         if not self.kernel_registry.templates():
             self.kernel_registry.compile_profiles(("eisenstein_exact_v1",))
-        self.cells = cell_store or CellStore()
+        self.cells = cell_store or CellStore(trace_sink=self.trace_sink)
         self._bridges: dict[str, BridgeKernel] = {}
 
     def insert(self, placement: PlacementRecord) -> None:
@@ -96,9 +135,27 @@ class FieldEngine:
 
     def add_bridge(self, bridge: BridgeKernel) -> None:
         self._bridges[bridge.bridge_id] = bridge
+        safe_emit(
+            self.trace_sink,
+            TraceEvent(
+                "field.bridge.add",
+                {"bridge_id": bridge.bridge_id, "from_patch": bridge.from_patch, "to_patch": bridge.to_patch},
+                "stable",
+            ),
+        )
 
     def remove_bridge(self, bridge_id: str) -> BridgeKernel:
-        return self._bridges.pop(bridge_id)
+        bridge = self._bridges.pop(bridge_id)
+        safe_emit(
+            self.trace_sink,
+            TraceEvent("field.bridge.remove", {"bridge_id": bridge_id}, "stable"),
+        )
+        return bridge
 
     def build_relation_field(self) -> RelationField:
-        return RelationField(self.kernel_registry.coverage_templates(), tuple(self._bridges[key] for key in sorted(self._bridges)), self.cells.all())
+        return RelationField(
+            self.kernel_registry.coverage_templates(),
+            tuple(self._bridges[key] for key in sorted(self._bridges)),
+            self.cells.all(),
+            self.trace_sink,
+        )

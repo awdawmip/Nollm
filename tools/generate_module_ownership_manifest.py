@@ -58,6 +58,14 @@ CORE_LEAVES = {
 }
 
 GRF_REVIEWS = {
+    "m0_ports.py": (
+        "SNAPSHOT",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "GRF workspace consistent-state adapter",
+        "The compatibility adapter implements the public Core state port with deterministic in-memory bytes and same-volume atomic restore; it imports no GRF private implementation.",
+    ),
     "relation_field.py": (
         "CORE",
         "CANDIDATE",

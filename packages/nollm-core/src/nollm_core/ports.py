@@ -23,6 +23,14 @@ class NullTraceSink:
         return None
 
 
+def safe_emit(sink: TraceSink, event: TraceEvent) -> None:
+    """Emit optional observability without affecting Core correctness."""
+    try:
+        sink.emit(event)
+    except Exception:
+        return None
+
+
 class ConsistentStatePort(Protocol):
     def begin_consistent_read(self) -> object: ...
 

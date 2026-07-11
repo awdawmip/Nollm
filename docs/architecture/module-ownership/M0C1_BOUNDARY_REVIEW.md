@@ -18,9 +18,11 @@ M0C1 applies the module charters directly:
 - Legacy dependencies are reported separately and do not enter the production
   acceptance baseline.
 
-After reclassification, the reviewed report contains 9 production violations
-and 43 Legacy migration dependencies. No new package implementation violates a
-target package boundary.
+After reclassification, the reviewed report contained 9 production violations
+and 43 Legacy migration dependencies. Binding the real Snapshot adapter added
+one explicit Legacy `grf/__init__.py` to Snapshot adapter export, bringing the
+final migration count to 44. No new package implementation violates a target
+package boundary.
 
 ## Reviewed Production Debt
 

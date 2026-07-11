@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from nollm_core import NullTraceSink, TraceEvent, TraceSink, safe_emit
 
 from .bridge_kernel import BridgeKernel
 from .cell_address import CellAddress
@@ -17,6 +19,7 @@ class RelationField:
     coverage_templates: tuple[CoverageTemplate, ...]
     bridge_kernels: tuple[BridgeKernel, ...]
     placements: tuple[PlacementRecord, ...]
+    trace_sink: TraceSink = field(default_factory=NullTraceSink, compare=False, repr=False)
 
     def step(self, activation: SparseActivation, allowed_kernels: tuple[str, ...], max_lateral_ring: int, max_bridge_steps: int) -> tuple[tuple[SparseActivation, RecallPath], ...]:
         results: list[tuple[SparseActivation, RecallPath]] = []
@@ -28,7 +31,20 @@ class RelationField:
             results.extend(self._lateral_step(activation, max_lateral_ring))
         if "bridge" in allowed_kernels and max_bridge_steps > 0:
             results.extend(self._bridge_step(activation))
-        return tuple(sorted(results, key=lambda item: (-item[0].score_q16, item[0].cell.stable_key(), item[1].kernel_type)))
+        output = tuple(sorted(results, key=lambda item: (-item[0].score_q16, item[0].cell.stable_key(), item[1].kernel_type)))
+        safe_emit(
+            self.trace_sink,
+            TraceEvent(
+                "relation.step",
+                {
+                    "source_cell": activation.cell.stable_key(),
+                    "allowed_kernels": allowed_kernels,
+                    "result_count": len(output),
+                },
+                "stable",
+            ),
+        )
+        return output
 
     def shards_at(self, cell: CellAddress) -> tuple[PlacementRecord, ...]:
         return tuple(sorted((item for item in self.placements if item.geometry_mark.cell == cell), key=lambda item: item.shard_id))

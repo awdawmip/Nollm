@@ -14077,7 +14077,11 @@
     "imported_by": [
       "packages/nollm-snapshot/src/nollm_snapshot/service.py",
       "packages/nollm-trace/src/nollm_trace/sinks.py",
-      "reference/python/tests/m0/test_module_ports.py"
+      "reference/python/nollm/grf/field_engine.py",
+      "reference/python/nollm/grf/m0_ports.py",
+      "reference/python/nollm/grf/relation_field.py",
+      "reference/python/tests/m0/test_module_ports.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "nollm_core.ports"
@@ -14197,7 +14201,8 @@
     "file_type": "py",
     "forbidden_feature_evidence": [],
     "imported_by": [
-      "reference/python/tests/m0/test_module_ports.py"
+      "reference/python/tests/m0/test_module_ports.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "nollm_snapshot.service"
@@ -14272,7 +14277,8 @@
     "file_type": "py",
     "forbidden_feature_evidence": [],
     "imported_by": [
-      "reference/python/tests/m0/test_module_ports.py"
+      "reference/python/tests/m0/test_module_ports.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "nollm_trace.sinks"
@@ -21817,7 +21823,7 @@
     "target_path": ""
   },
   {
-    "classification_evidence": "Unmatched path; direct imports are ['nollm.grf.admission', 'nollm.grf.admission_bridge', 'nollm.grf.axial', 'nollm.grf.bridge_kernel', 'nollm.grf.capture', 'nollm.grf.cell_address', 'nollm.grf.contract_evolution', 'nollm.grf.coverage_template', 'nollm.grf.eisenstein', 'nollm.grf.evidence', 'nollm.grf.evidence_island', 'nollm.grf.exporters', 'nollm.grf.facade', 'nollm.grf.field_engine', 'nollm.grf.fixed_point', 'nollm.grf.geometry_storage', 'nollm.grf.host_contract', 'nollm.grf.importers', 'nollm.grf.json_canonical', 'nollm.grf.kernel_registry', 'nollm.grf.ledger', 'nollm.grf.local_patch', 'nollm.grf.path_encoding', 'nollm.grf.placement', 'nollm.grf.placement_protocol', 'nollm.grf.profiles', 'nollm.grf.propagation', 'nollm.grf.recall', 'nollm.grf.recall_digest', 'nollm.grf.relation_field', 'nollm.grf.replay', 'nollm.grf.source_window', 'nollm.grf.stitching', 'nollm.grf.storage'].",
+    "classification_evidence": "Unmatched path; direct imports are ['nollm.grf.admission', 'nollm.grf.admission_bridge', 'nollm.grf.axial', 'nollm.grf.bridge_kernel', 'nollm.grf.capture', 'nollm.grf.cell_address', 'nollm.grf.contract_evolution', 'nollm.grf.coverage_template', 'nollm.grf.eisenstein', 'nollm.grf.evidence', 'nollm.grf.evidence_island', 'nollm.grf.exporters', 'nollm.grf.facade', 'nollm.grf.field_engine', 'nollm.grf.fixed_point', 'nollm.grf.geometry_storage', 'nollm.grf.host_contract', 'nollm.grf.importers', 'nollm.grf.json_canonical', 'nollm.grf.kernel_registry', 'nollm.grf.ledger', 'nollm.grf.local_patch', 'nollm.grf.m0_ports', 'nollm.grf.path_encoding', 'nollm.grf.placement', 'nollm.grf.placement_protocol', 'nollm.grf.profiles', 'nollm.grf.propagation', 'nollm.grf.recall', 'nollm.grf.recall_digest', 'nollm.grf.relation_field', 'nollm.grf.replay', 'nollm.grf.source_window', 'nollm.grf.stitching', 'nollm.grf.storage'].",
     "confidence": "LOW",
     "current_namespace": "reference/python/nollm/grf",
     "file_type": "py",
@@ -21831,7 +21837,8 @@
       "experiments/grf/run_grf7_scale_validation.py",
       "experiments/grf/run_grf7r_real_global_workload.py",
       "experiments/grf/run_grf7r_workflow_validation.py",
-      "experiments/grf/run_grf_unified_scale_validation.py"
+      "experiments/grf/run_grf_unified_scale_validation.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "nollm.grf.admission",
@@ -21856,6 +21863,7 @@
       "nollm.grf.kernel_registry",
       "nollm.grf.ledger",
       "nollm.grf.local_patch",
+      "nollm.grf.m0_ports",
       "nollm.grf.path_encoding",
       "nollm.grf.placement",
       "nollm.grf.placement_protocol",
@@ -22359,7 +22367,7 @@
     "target_path": ""
   },
   {
-    "classification_evidence": "Code-reviewed on 2026-07-11: CellStore is Core-like, while FieldEngine directly imports PlacementRecord and RelationField; the file is not a dependency-closed pure Core leaf. Direct imports: ['__future__', 'dataclasses', 'nollm.grf.axial', 'nollm.grf.bridge_kernel', 'nollm.grf.cell_address', 'nollm.grf.kernel_registry', 'nollm.grf.placement', 'nollm.grf.relation_field'].",
+    "classification_evidence": "Code-reviewed on 2026-07-11: CellStore is Core-like, while FieldEngine directly imports PlacementRecord and RelationField; the file is not a dependency-closed pure Core leaf. Direct imports: ['__future__', 'dataclasses', 'nollm.grf.axial', 'nollm.grf.bridge_kernel', 'nollm.grf.cell_address', 'nollm.grf.kernel_registry', 'nollm.grf.placement', 'nollm.grf.relation_field', 'nollm_core'].",
     "confidence": "MEDIUM",
     "current_namespace": "reference/python/nollm/grf",
     "file_type": "py",
@@ -22376,7 +22384,8 @@
       "nollm.grf.cell_address",
       "nollm.grf.kernel_registry",
       "nollm.grf.placement",
-      "nollm.grf.relation_field"
+      "nollm.grf.relation_field",
+      "nollm_core"
     ],
     "lifecycle_status": "CANDIDATE",
     "migration_action": "SPLIT",
@@ -22420,7 +22429,8 @@
       "reference/python/tests/grf/test_relation_field_runtime.py",
       "reference/python/tests/grf/test_sparse_activation.py",
       "reference/python/tests/grf/test_stitch_proposal_lifecycle.py",
-      "reference/python/tests/grf/test_stitch_rejects_false_friend.py"
+      "reference/python/tests/grf/test_stitch_rejects_false_friend.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "__future__"
@@ -22871,6 +22881,39 @@
     "target_path": ""
   },
   {
+    "classification_evidence": "Code-reviewed on 2026-07-11: The compatibility adapter implements the public Core state port with deterministic in-memory bytes and same-volume atomic restore; it imports no GRF private implementation. Direct imports: ['__future__', 'io', 'nollm_core', 'pathlib', 'shutil', 'threading', 'uuid', 'zipfile'].",
+    "confidence": "HIGH",
+    "current_namespace": "reference/python/nollm/grf",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [
+      "reference/python/nollm/grf/__init__.py"
+    ],
+    "imports": [
+      "__future__",
+      "io",
+      "nollm_core",
+      "pathlib",
+      "shutil",
+      "threading",
+      "uuid",
+      "zipfile"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "GRF workspace consistent-state adapter",
+    "owner": "SNAPSHOT",
+    "path": "reference/python/nollm/grf/m0_ports.py",
+    "public_api": "public",
+    "reason": "The compatibility adapter implements the public Core state port with deterministic in-memory bytes and same-volume atomic restore; it imports no GRF private implementation.",
+    "review_status": "DEPENDENCY_REVIEWED",
+    "reviewed_at": "2026-07-11",
+    "runtime_role": "production",
+    "secondary_owner": "",
+    "target_path": ""
+  },
+  {
     "classification_evidence": "Code-reviewed on 2026-07-11: The adapter is host-specific but still imports GRF facade and geometry contracts from the mixed namespace; extraction is pending. Direct imports: ['__future__', 'dataclasses', 'json', 'nollm.grf.cell_address', 'nollm.grf.facade', 'nollm.grf.placement_protocol', 'nollm.grf.recall', 'pathlib', 'sys', 'typing'].",
     "confidence": "MEDIUM",
     "current_namespace": "reference/python/nollm/grf",
@@ -23051,7 +23094,8 @@
       "reference/python/nollm/grf/recall.py",
       "reference/python/nollm/grf/relation_field.py",
       "reference/python/tests/grf/test_relation_field_runtime.py",
-      "reference/python/tests/grf/test_sparse_activation.py"
+      "reference/python/tests/grf/test_sparse_activation.py",
+      "reference/python/tests/m0/test_real_ports.py"
     ],
     "imports": [
       "__future__",
@@ -23205,7 +23249,7 @@
     "target_path": ""
   },
   {
-    "classification_evidence": "Code-reviewed on 2026-07-11: Sparse Cell/Coverage/Lateral/Bridge propagation performs linear scans and contains no route table or external relation index; it also imports placement and recall-result contracts. Direct imports: ['__future__', 'dataclasses', 'nollm.grf.bridge_kernel', 'nollm.grf.cell_address', 'nollm.grf.coverage_template', 'nollm.grf.placement', 'nollm.grf.propagation', 'nollm.grf.recall_digest'].",
+    "classification_evidence": "Code-reviewed on 2026-07-11: Sparse Cell/Coverage/Lateral/Bridge propagation performs linear scans and contains no route table or external relation index; it also imports placement and recall-result contracts. Direct imports: ['__future__', 'dataclasses', 'nollm.grf.bridge_kernel', 'nollm.grf.cell_address', 'nollm.grf.coverage_template', 'nollm.grf.placement', 'nollm.grf.propagation', 'nollm.grf.recall_digest', 'nollm_core'].",
     "confidence": "MEDIUM",
     "current_namespace": "reference/python/nollm/grf",
     "file_type": "py",
@@ -23226,7 +23270,8 @@
       "nollm.grf.coverage_template",
       "nollm.grf.placement",
       "nollm.grf.propagation",
-      "nollm.grf.recall_digest"
+      "nollm.grf.recall_digest",
+      "nollm_core"
     ],
     "lifecycle_status": "CANDIDATE",
     "migration_action": "SPLIT",
@@ -28574,6 +28619,38 @@
     "owned_state": "development-only state",
     "owner": "LAB",
     "path": "reference/python/tests/m0/test_package_imports.py",
+    "public_api": "development",
+    "reason": "The path is an explicitly declared Lab/tool root; production modules may not import it.",
+    "review_status": "DEPENDENCY_REVIEWED",
+    "reviewed_at": "2026-07-11",
+    "runtime_role": "test, experiment, fixture, benchmark, or repository tool",
+    "secondary_owner": "",
+    "target_path": ""
+  },
+  {
+    "classification_evidence": "Declared Lab root with direct imports ['__future__', 'nollm.grf', 'nollm.grf.fixed_point', 'nollm.grf.propagation', 'nollm_core', 'nollm_snapshot', 'nollm_trace', 'pathlib', 'pytest'].",
+    "confidence": "HIGH",
+    "current_namespace": "reference/python/tests/m0",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [
+      "__future__",
+      "nollm.grf",
+      "nollm.grf.fixed_point",
+      "nollm.grf.propagation",
+      "nollm_core",
+      "nollm_snapshot",
+      "nollm_trace",
+      "pathlib",
+      "pytest"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "development-only state",
+    "owner": "LAB",
+    "path": "reference/python/tests/m0/test_real_ports.py",
     "public_api": "development",
     "reason": "The path is an explicitly declared Lab/tool root; production modules may not import it.",
     "review_status": "DEPENDENCY_REVIEWED",

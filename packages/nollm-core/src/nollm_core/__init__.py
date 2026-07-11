@@ -4,6 +4,7 @@ from .ports import (
     TraceEvent,
     TraceSink,
     TraceStability,
+    safe_emit,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "TraceEvent",
     "TraceSink",
     "TraceStability",
+    "safe_emit",
 ]

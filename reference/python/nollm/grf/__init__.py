@@ -48,6 +48,7 @@ from .path_encoding import safe_object_path
 from .geometry_storage import PARTITION_WIDTH, admission_path, evidence_path, partition_id, placement_path, source_manifest_path
 from .replay import load_all_grf_objects, rebuild_relation_field_from_files, replay_recall
 from .stitching import StitchProposal, StitchRecord, StitchTransform, StitchWitness
+from .m0_ports import GRFWorkspaceConsistentStateAdapter, workspace_state_port
 
 __all__ = [
     "AxialCoord",
@@ -60,6 +61,7 @@ __all__ = [
     "EvidenceShardRecord",
     "GRFFacade",
     "GRFWorkspaceReport",
+    "GRFWorkspaceConsistentStateAdapter",
     "CapabilityRegistry",
     "HostRequestID",
     "EvidenceIdentity",
@@ -150,4 +152,5 @@ __all__ = [
     "rebuild_relation_field_from_files",
     "replay_recall",
     "sha256_canonical",
+    "workspace_state_port",
 ]
