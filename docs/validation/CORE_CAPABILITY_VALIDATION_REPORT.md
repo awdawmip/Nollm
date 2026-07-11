@@ -16,4 +16,4 @@ Validated dimensions:
 - None/Memory/Failing Trace parity and Trace exclusion from state bytes
 - stdlib-only Core dependency boundary and absence of semantic/global lookup APIs
 
-The record is an active capability baseline bound to a concrete implementation HEAD. It is not a sealed or final declaration.
+The executable record passed 25 dimensions against implementation HEAD `3375f156c0a9ba3445b5d6fdf0c3101b22dde28b`. It is an active capability baseline, not a sealed or final declaration.

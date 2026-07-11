@@ -75,4 +75,11 @@ git diff --check = passed
 
 This task did not validate malicious Python isolation, private API resistance, direct file tampering, cross-process locking, crash-recovery protocol, OpenClaw Live, real LLM placement, memory quality, corpora, PB scale, History/Audit products, or remote repository splitting.
 
-Allowed conclusion after evidence binding: `CAPABILITY_VALIDATED_AT_<IMPLEMENTATION_HEAD>` and `ACTIVE_BASELINE_AT_<IMPLEMENTATION_HEAD>`. This report does not claim sealed or final closure.
+Validated implementation HEAD: `3375f156c0a9ba3445b5d6fdf0c3101b22dde28b`.
+
+```text
+CAPABILITY_VALIDATED_AT_3375f156c0a9ba3445b5d6fdf0c3101b22dde28b
+ACTIVE_BASELINE_AT_3375f156c0a9ba3445b5d6fdf0c3101b22dde28b
+```
+
+This report does not claim sealed or final closure.

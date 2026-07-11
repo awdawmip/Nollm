@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-The validation HEAD is recorded in `CORE_CAPABILITY_VALIDATION.json` after the implementation commit. Percentages are capability estimates against current charters, not permanence or code volume.
+The validated implementation HEAD is `3375f156c0a9ba3445b5d6fdf0c3101b22dde28b`. Percentages are capability estimates against current charters, not permanence or code volume.
 
 | Module | Before | Target | Actual | Lifecycle | Confidence | Verified capabilities | Main gaps | Next candidate action |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- | --- |

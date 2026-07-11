@@ -22,7 +22,7 @@
     "malicious Trace callbacks",
     "concurrent direct Store mutation outside the owning composition"
   ],
-  "validation_head": "WORKTREE",
+  "validation_head": "3375f156c0a9ba3445b5d6fdf0c3101b22dde28b",
   "verified_capabilities": {
     "addressed_handle_contract": true,
     "atomic_batch_and_bridge_add": true,
