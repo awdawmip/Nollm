@@ -22,6 +22,32 @@ def tracked() -> list[str]:
 
 def classify(path: str) -> tuple[str, str, str, str, str, str]:
     p = path.replace("\\", "/"); name = Path(p).name
+    charter_owners = {
+        "NOLLM_CORE_CHARTER.md": "CORE",
+        "NOLLM_SNAPSHOT_CHARTER.md": "SNAPSHOT",
+        "NOLLM_TRACE_CHARTER.md": "TRACE",
+        "NOLLM_ACCESS_CHARTER.md": "ACCESS",
+        "NOLLM_HISTORY_CHARTER.md": "HISTORY",
+        "NOLLM_AUDIT_CHARTER.md": "AUDIT",
+        "NOLLM_OPENCLAW_CHARTER.md": "OPENCLAW",
+        "NOLLM_LAB_CHARTER.md": "LAB",
+        "NOLLM_DISTRIBUTIONS_CHARTER.md": "DISTRIBUTION",
+    }
+    if p.startswith("docs/architecture/modules/") and name in charter_owners:
+        return charter_owners[name], "ACTIVE", "KEEP", "HIGH", "current M0 module charter", "none"
+    if p.startswith("docs/architecture/module-ownership/"):
+        return "DISTRIBUTION", "GENERATED", "KEEP", "HIGH", "current M0 ownership governance record", "none"
+    if p == "docs/delivery/NOLLM_M0_MODULE_OWNERSHIP_AND_MONOREPO_PACKAGE_SEPARATION_TASK_20260711.md":
+        return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "authoritative M0 taskbook", "none"
+    if p.startswith("docs/validation/M0_"):
+        return "LAB", "ACTIVE", "KEEP", "HIGH", "current M0 validation record", "development-only results"
+    if p in {
+        "docs/project/M0_STARTING_STATE.md",
+        "docs/project/NOLLM_CURRENT_STATUS.md",
+        "docs/project/NOLLM_FUTURE_REPOSITORY_SPLIT_PLAN.md",
+        "docs/project/NOLLM_REPOSITORY_COMPATIBILITY_MATRIX.md",
+    }:
+        return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "current M0 project governance", "none"
     if p.startswith("packages/nollm-core/"): return "CORE", "ACTIVE", "KEEP", "HIGH", "core package asset", "current geometry state"
     if p.startswith("packages/nollm-snapshot/"): return "SNAPSHOT", "ACTIVE", "KEEP", "HIGH", "snapshot package asset", "snapshot artifacts"
     if p.startswith("packages/nollm-trace/"): return "TRACE", "ACTIVE", "KEEP", "HIGH", "trace package asset", "observability events"

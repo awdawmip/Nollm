@@ -56,19 +56,19 @@ docs/architecture/NOLLM_GRF_REFOUNDATION.md,md,docs/architecture,LEGACY,,HISTORI
 docs/architecture/NOLLM_PROJECT_BOOK_V2_2_LAYERED_CORE_TO_TERMINAL.md,md,docs/architecture,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/architecture/NOLLM_V2_MIGRATION_BOUNDARY_DG0.md,md,docs/architecture,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/architecture/NOLLM_V2_MODULE_BOUNDARIES_DG0.md,md,docs/architecture,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/module-ownership/M0_BOUNDARY_BASELINE.json,json,docs/architecture/module-ownership,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.csv,csv,docs/architecture/module-ownership,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.json,json,docs/architecture/module-ownership,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/module-ownership/UNCLASSIFIED_TRACKED_FILES.txt,txt,docs/architecture/module-ownership,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_ACCESS_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_AUDIT_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_CORE_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_DISTRIBUTIONS_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_HISTORY_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_LAB_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_OPENCLAW_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_SNAPSHOT_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/architecture/modules/NOLLM_TRACE_CHARTER.md,md,docs/architecture/modules,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
+docs/architecture/module-ownership/M0_BOUNDARY_BASELINE.json,json,docs/architecture/module-ownership,DISTRIBUTION,,GENERATED,development_or_reference,none,none,,,KEEP,HIGH,current M0 ownership governance record
+docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.csv,csv,docs/architecture/module-ownership,DISTRIBUTION,,GENERATED,development_or_reference,none,none,,,KEEP,HIGH,current M0 ownership governance record
+docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.json,json,docs/architecture/module-ownership,DISTRIBUTION,,GENERATED,development_or_reference,none,none,,,KEEP,HIGH,current M0 ownership governance record
+docs/architecture/module-ownership/UNCLASSIFIED_TRACKED_FILES.txt,txt,docs/architecture/module-ownership,DISTRIBUTION,,GENERATED,development_or_reference,none,none,,,KEEP,HIGH,current M0 ownership governance record
+docs/architecture/modules/NOLLM_ACCESS_CHARTER.md,md,docs/architecture/modules,ACCESS,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_AUDIT_CHARTER.md,md,docs/architecture/modules,AUDIT,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_CORE_CHARTER.md,md,docs/architecture/modules,CORE,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_DISTRIBUTIONS_CHARTER.md,md,docs/architecture/modules,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_HISTORY_CHARTER.md,md,docs/architecture/modules,HISTORY,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_LAB_CHARTER.md,md,docs/architecture/modules,LAB,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_OPENCLAW_CHARTER.md,md,docs/architecture/modules,OPENCLAW,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_SNAPSHOT_CHARTER.md,md,docs/architecture/modules,SNAPSHOT,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
+docs/architecture/modules/NOLLM_TRACE_CHARTER.md,md,docs/architecture/modules,TRACE,,ACTIVE,production,none,none,,,KEEP,HIGH,current M0 module charter
 docs/cortex/DC1_CORTEX_COMPILER_CONVENTIONS.md,md,docs/cortex,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/cortex/DC1_CORTEX_COMPILER_SCOPE.md,md,docs/cortex,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/delivery/BA1_BATCH_ADMISSION_DELIVERY_RECEIPT.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
@@ -117,7 +117,7 @@ docs/delivery/HAG1_DELIVERY_REPORT.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,
 docs/delivery/HCG1_FILE_FIRST_CAPTURE_GATEWAY_DELIVERY_RECEIPT.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
 docs/delivery/HX1_DELIVERY_RECEIPT.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
 docs/delivery/HXA1_DELIVERY_RECEIPT.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
-docs/delivery/NOLLM_M0_MODULE_OWNERSHIP_AND_MONOREPO_PACKAGE_SEPARATION_TASK_20260711.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
+docs/delivery/NOLLM_M0_MODULE_OWNERSHIP_AND_MONOREPO_PACKAGE_SEPARATION_TASK_20260711.md,md,docs/delivery,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,authoritative M0 taskbook
 docs/delivery/NOLLM_V2L0_C1R_V1_ROUTE_LOCK_TEST_MIGRATION_AND_EVIDENCE_CLOSURE_TASK_20260707.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
 docs/delivery/NOLLM_V2L0_C1_ACTIVE_NAVIGATION_AND_EVIDENCE_CLOSURE_TASK_20260707.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
 docs/delivery/NOLLM_V2L0_C2_MATRIX_LEGACY_GOVERNANCE_TEST_MIGRATION_AND_EVIDENCE_CLOSURE_TASK_20260707.md,md,docs/delivery,DISTRIBUTION,,HISTORICAL,development_or_reference,none,none,,,KEEP,HIGH,delivery history
@@ -237,11 +237,11 @@ docs/philosophy/layered-honeycomb-memory-field.md,md,docs/philosophy,LEGACY,,HIS
 docs/philosophy/not-an-llm.md,md,docs/philosophy,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/philosophy/scale-scan-not-tree-descent.md,md,docs/philosophy,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/philosophy/sqlite-as-audit-projection.md,md,docs/philosophy,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/project/M0_STARTING_STATE.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
+docs/project/M0_STARTING_STATE.md,md,docs/project,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 project governance
 docs/project/NOLLM_COMPONENT_PROGRESS_TABLE_V2_2.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/project/NOLLM_CURRENT_STATUS.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/project/NOLLM_FUTURE_REPOSITORY_SPLIT_PLAN.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
-docs/project/NOLLM_REPOSITORY_COMPATIBILITY_MATRIX.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
+docs/project/NOLLM_CURRENT_STATUS.md,md,docs/project,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 project governance
+docs/project/NOLLM_FUTURE_REPOSITORY_SPLIT_PLAN.md,md,docs/project,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 project governance
+docs/project/NOLLM_REPOSITORY_COMPATIBILITY_MATRIX.md,md,docs/project,DISTRIBUTION,,ACTIVE,development_or_reference,none,none,,,KEEP,HIGH,current M0 project governance
 docs/project/NOLLM_SOURCE_TOPOLOGY_V2.md,md,docs/project,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/recall/DR1_RECALL_RESOLVER_SCOPE.md,md,docs/recall,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/releases/NOLLM_ENGINEERING_GRAVITY_RC_ARTIFACT_HASHES_20260618.json,json,docs/releases,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
@@ -302,6 +302,7 @@ docs/validation/HCG1_FILE_FIRST_CAPTURE_GATEWAY_REPORT.md,md,docs/validation,LEG
 docs/validation/HX1_C4_SOURCE_INDEPENDENT_WORKROOT_CLOSURE_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/validation/HX1_TRUSTED_HOST_STAGED_EXECUTION_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/validation/HXA1_TRUSTED_HOST_FINAL_ACCEPTANCE_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
+docs/validation/M0_BEHAVIOR_PRESERVATION_REPORT.md,md,docs/validation,LAB,,ACTIVE,development_or_reference,development-only results,none,,,KEEP,HIGH,current M0 validation record
 docs/validation/NOLLM_GRF1A_VALIDATION_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/validation/NOLLM_GRF1B_VALIDATION_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation
 docs/validation/NOLLM_GRF1CDE_VALIDATION_REPORT.md,md,docs/validation,LEGACY,,HISTORICAL,development_or_reference,none,none,,,KEEP,MEDIUM,documentation requires current/superseded navigation

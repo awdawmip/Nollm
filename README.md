@@ -31,3 +31,22 @@ the ownership audit, not current architecture.
 
 M1 will extract mixed responsibilities and remove blocked paths. M0 does not
 perform those semantic rewrites.
+
+## Validation
+
+The repository-wide diagnostic remains:
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE = "1"
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
+python run_tests.py
+```
+
+The command runs with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. It is a
+legacy-inclusive repository diagnostic, not the M0 component acceptance gate.
+It is also not the primary V2 component acceptance gate; V2 is historical under
+M0.
+Historical delivery-grade V2 acceptance used the TQ1 matrix and a parentless evidence capsule;
+those terms do not define the M0 gate.
+M0 uses the scoped GRF, Snapshot/Trace, package import, boundary, and hygiene
+gates recorded in `docs/validation/M0_BEHAVIOR_PRESERVATION_REPORT.md`.

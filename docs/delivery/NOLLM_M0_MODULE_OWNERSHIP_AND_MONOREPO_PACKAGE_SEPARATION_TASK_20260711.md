@@ -1,11 +1,11 @@
 # Nollm M0：全仓模块归属审计与单仓 Package 分离任务书
 
-**日期**：2026-07-11  
-**阶段编号**：M0 — Module Ownership and Monorepo Separation  
-**状态**：当前唯一允许执行的下一步任务  
-**上位架构**：`NOLLM_MULTI_PROJECT_MODULAR_ARCHITECTURE_CORRECTION_20260711.md`  
-**主环境**：Windows 10/11 + PowerShell  
-**执行方式**：大跨度任务 + 内部 Gate + 最终单一 Git bundle  
+**日期**：2026-07-11
+**阶段编号**：M0 — Module Ownership and Monorepo Separation
+**状态**：当前唯一允许执行的下一步任务
+**上位架构**：`NOLLM_MULTI_PROJECT_MODULAR_ARCHITECTURE_CORRECTION_20260711.md`
+**主环境**：Windows 10/11 + PowerShell
+**执行方式**：大跨度任务 + 内部 Gate + 最终单一 Git bundle
 **行为原则**：本阶段优先建立所有权和依赖边界，不继续产品功能扩张
 
 ---
