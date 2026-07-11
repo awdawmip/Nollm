@@ -10,6 +10,9 @@ from .command import (
     ReplaceCommand,
 )
 from .geometry import GeometryAddress
+from .coverage_template import CoverageTemplate, CoverageTemplateCompiler, expand_template
+from .kernel_registry import KernelRegistry
+from .profiles import Profile, get_profile, profiles
 from .handle import AtomHandle
 from .ports import (
     ConsistentStatePort,
@@ -42,6 +45,13 @@ __all__ = [
     "CellStore",
     "FileCoreStateStore",
     "GeometryAddress",
+    "CoverageTemplate",
+    "CoverageTemplateCompiler",
+    "KernelRegistry",
+    "Profile",
+    "expand_template",
+    "get_profile",
+    "profiles",
     "GeometryAnchor",
     "MemoryAtom",
     "MoveCommand",

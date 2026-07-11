@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from .atom import MemoryAtom
 from .bridge import Q16_ONE
 from .geometry import GeometryAddress
+from .coverage_template import expand_lateral, expand_template
 from .handle import AtomHandle
 from .ports import NullTraceSink, TraceEvent, TraceSink, safe_emit
 
@@ -106,12 +107,14 @@ def resolve_recall(runtime: object, request: CoreRecallRequest, trace_sink: Trac
 def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest, bridge_steps: int) -> tuple[tuple[GeometryAddress, int, int], ...]:
     output: list[tuple[GeometryAddress, int, int]] = []
     if "coverage_up" in request.allowed_kernels:
-        output.extend((target, Q16_ONE * 3 // 4, bridge_steps) for target in cell.coverage_up())
-    if "coverage_down" in request.allowed_kernels and cell.layer > 0:
-        output.extend((target, Q16_ONE * 3 // 4, bridge_steps) for target in cell.coverage_down())
+        template = runtime.kernel_registry.coverage_template(cell.profile_id, "coverage_up")
+        output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
+    if "coverage_down" in request.allowed_kernels:
+        template = runtime.kernel_registry.coverage_template(cell.profile_id, "coverage_down")
+        output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
     if "lateral" in request.allowed_kernels:
         for ring in range(1, request.budget.max_lateral_ring + 1):
-            output.extend((target, Q16_ONE // (ring + 1), bridge_steps) for target in cell.lateral(ring))
+            output.extend((target, weight, bridge_steps) for target, weight in expand_lateral(cell, ring))
     if "bridge" in request.allowed_kernels and bridge_steps < request.budget.max_bridge_steps:
         for bridge in runtime.bridges():
             if cell not in bridge.from_anchor.cells or bridge_steps >= bridge.max_steps:

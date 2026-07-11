@@ -7,7 +7,7 @@ from nollm_snapshot import SnapshotService
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "chart", 1, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "chart", 1, q, r)
 
 
 def test_snapshot_create_restore_clone_verify_and_diff_new_core(tmp_path) -> None:

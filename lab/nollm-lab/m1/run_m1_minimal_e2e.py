@@ -32,7 +32,7 @@ class FailingTraceSink:
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "m1-e2e", 1, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "m1-e2e", 1, q, r)
 
 
 def decision(statement_id: str, action: str, **values: object) -> AccessDecision:

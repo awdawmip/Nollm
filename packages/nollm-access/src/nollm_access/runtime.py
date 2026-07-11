@@ -30,22 +30,15 @@ class AccessRuntime:
         if decision.action == "new":
             assert decision.target_cell is not None
             statement = self.evidence_store.get_original(decision.statement_id)
-            handle = self.core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell)
-            self.handle_store.put(statement.statement_id, handle)
-            return handle
+            return self._atomic(lambda: self.core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell), lambda handle: self.handle_store.put(statement.statement_id, handle))
         if decision.action == "revision_current":
             assert decision.existing_handle is not None
             statement = self.evidence_store.get_original(decision.statement_id)
-            handle = self.core.replace(decision.existing_handle, statement.content_utf8)
-            self.handle_store.remove_handle(decision.existing_handle)
-            self.handle_store.put(statement.statement_id, handle)
-            return handle
+            return self._atomic(lambda: self.core.replace(decision.existing_handle, statement.content_utf8), lambda handle: self.handle_store.revise_current(decision.existing_handle, statement.statement_id, handle))
         if decision.action == "revision_keep_history":
             assert decision.target_cell is not None
             statement = self.evidence_store.get_original(decision.statement_id)
-            handle = self.core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell)
-            self.handle_store.put(statement.statement_id, handle)
-            return handle
+            return self._atomic(lambda: self.core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell), lambda handle: self.handle_store.put(statement.statement_id, handle))
         if decision.action == "stitch":
             assert decision.bridge_spec is not None
             return self.core.bridge_add(decision.bridge_spec)
@@ -56,9 +49,7 @@ class AccessRuntime:
             return None
         if decision.action == "forget":
             assert decision.existing_handle is not None
-            atom = self.core.remove(decision.existing_handle)
-            self.handle_store.remove_handle(decision.existing_handle)
-            return atom
+            return self._atomic(lambda: self.core.remove(decision.existing_handle), lambda _atom: self.handle_store.remove_handle(decision.existing_handle))
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
@@ -68,14 +59,43 @@ class AccessRuntime:
             try:
                 statement_id = self.handle_store.statement_for_handle(item.handle)
             except KeyError:
-                statement_id = item.atom.atom_id
+                items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing"))
+                continue
             try:
                 statement = self.evidence_store.get_original(statement_id)
             except FileNotFoundError:
                 items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing"))
             else:
-                items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16))
+                if statement.content_utf8 != item.atom.payload_utf8:
+                    items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch"))
+                else:
+                    items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16))
         return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
         return self.handle_store.get(statement_id)
+
+    def _atomic(self, core_action: object, binding_action: object) -> object:
+        core_before = self.core.state_bytes()
+        binding_before = self.handle_store.state_bytes()
+        try:
+            result = core_action()
+            binding_action(result)
+            return result
+        except Exception as original:
+            failures = []
+            try:
+                self.core.import_state(core_before)
+            except Exception as error:
+                failures.append(error)
+            try:
+                self.handle_store.import_state(binding_before)
+            except Exception as error:
+                failures.append(error)
+            if failures:
+                raise AccessConsistencyError("fatal consistency failure during Access rollback") from original
+            raise
+
+
+class AccessConsistencyError(RuntimeError):
+    pass

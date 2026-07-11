@@ -16,6 +16,7 @@ from .command import (
 )
 from .geometry import GeometryAddress
 from .handle import AtomHandle
+from .kernel_registry import KernelRegistry
 from .ports import ConsistentStatePort, NullTraceSink, TraceEvent, TraceSink, safe_emit
 from .storage import FileCoreStateStore, SCHEMA_VERSION, canonical_state_bytes
 
@@ -54,10 +55,12 @@ class CoreRuntime(ConsistentStatePort):
         *,
         trace_sink: TraceSink | None = None,
         store: FileCoreStateStore | None = None,
+        kernel_registry: KernelRegistry | None = None,
     ) -> None:
         self.workspace = Path(workspace)
         self.trace_sink = trace_sink or NullTraceSink()
         self.store = store or FileCoreStateStore(self.workspace)
+        self.kernel_registry = kernel_registry or KernelRegistry()
         self._lock = RLock()
         self._read_token: object | None = None
         if self.store.exists():
@@ -246,10 +249,10 @@ class CoreRuntime(ConsistentStatePort):
         except KeyError as error:
             raise KeyError("AtomHandle does not exist") from error
 
-    @staticmethod
-    def _document(cells: dict[GeometryAddress, dict[str, MemoryAtom]], bridges: dict[str, BridgeSpec]) -> dict[str, object]:
+    def _document(self, cells: dict[GeometryAddress, dict[str, MemoryAtom]], bridges: dict[str, BridgeSpec]) -> dict[str, object]:
         return {
             "schema_version": SCHEMA_VERSION,
+            "geometry_registry": self.kernel_registry.state_identity,
             "cells": [
                 {
                     "address": address.to_mapping(),
@@ -263,24 +266,38 @@ class CoreRuntime(ConsistentStatePort):
             "bridges": [bridges[key].to_mapping() for key in sorted(bridges)],
         }
 
-    @staticmethod
-    def _decode(document: dict[str, object]) -> tuple[dict[GeometryAddress, dict[str, MemoryAtom]], dict[str, BridgeSpec]]:
-        if document.get("schema_version") != SCHEMA_VERSION:
+    def _decode(self, document: dict[str, object]) -> tuple[dict[GeometryAddress, dict[str, MemoryAtom]], dict[str, BridgeSpec]]:
+        if type(document) is not dict or frozenset(document) != frozenset({"schema_version", "geometry_registry", "cells", "bridges"}):
+            raise ValueError("Core state fields are not canonical")
+        if document["schema_version"] != SCHEMA_VERSION:
             raise ValueError("unsupported Core state schema")
+        if document["geometry_registry"] != self.kernel_registry.state_identity:
+            raise ValueError("Core state geometry registry mismatch")
+        if type(document["cells"]) is not list or type(document["bridges"]) is not list:
+            raise TypeError("Core cells and bridges must be arrays")
         cells: dict[GeometryAddress, dict[str, MemoryAtom]] = {}
-        for cell in document.get("cells", []):
-            address = GeometryAddress.from_mapping(dict(cell["address"]))
+        for cell in document["cells"]:
+            if type(cell) is not dict or frozenset(cell) != frozenset({"address", "atoms"}) or type(cell["atoms"]) is not list:
+                raise ValueError("invalid Core cell record")
+            address = GeometryAddress.from_mapping(cell["address"])
+            if address in cells:
+                raise ValueError("duplicate cell address")
             atoms: dict[str, MemoryAtom] = {}
             for item in cell["atoms"]:
-                local_id = str(item["local_atom_id"])
+                if type(item) is not dict or frozenset(item) != frozenset({"local_atom_id", "atom"}) or type(item["local_atom_id"]) is not str:
+                    raise ValueError("invalid Core atom record")
+                local_id = item["local_atom_id"]
                 if local_id in atoms:
                     raise ValueError("duplicate local atom id")
-                atoms[local_id] = MemoryAtom.from_mapping(dict(item["atom"]))
+                atom = MemoryAtom.from_mapping(item["atom"])
+                if atom.atom_id != local_id:
+                    raise ValueError("local atom identity mismatch")
+                atoms[local_id] = atom
             if atoms:
                 cells[address] = atoms
         bridges = {}
-        for value in document.get("bridges", []):
-            bridge = BridgeSpec.from_mapping(dict(value))
+        for value in document["bridges"]:
+            bridge = BridgeSpec.from_mapping(value)
             if bridge.bridge_id in bridges:
                 raise ValueError("duplicate bridge id")
             bridges[bridge.bridge_id] = bridge

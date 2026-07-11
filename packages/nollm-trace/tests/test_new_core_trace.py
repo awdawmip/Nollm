@@ -18,7 +18,7 @@ class FailingTraceSink:
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "chart", 1, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "chart", 1, q, r)
 
 
 def run_sequence(tmp_path, name: str, sink: object) -> tuple[object, ...]:

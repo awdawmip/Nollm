@@ -18,7 +18,7 @@ from nollm_core import (
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "chart", 1, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "chart", 1, q, r)
 
 
 def runtime(tmp_path) -> tuple[AccessRuntime, CoreRuntime]:
@@ -108,7 +108,7 @@ def test_decisions_require_explicit_geometry_or_handle() -> None:
         decision("missing-handle", "reuse")
 
 
-def test_missing_evidence_is_an_explicit_access_fallback(tmp_path) -> None:
+def test_missing_binding_is_an_explicit_access_fallback(tmp_path) -> None:
     access, core = runtime(tmp_path)
     handle = core.put(__import__("nollm_core").MemoryAtom("orphan", "payload"), cell(0, 0))
     result = access.recall(
@@ -118,5 +118,5 @@ def test_missing_evidence_is_an_explicit_access_fallback(tmp_path) -> None:
             budget=RecallBudget(0, 1, 0, 0, 0, 1),
         )
     )
-    assert result.items[0].fallback_error == "evidence_missing"
+    assert result.items[0].fallback_error == "binding_missing"
     assert result.items[0].evidence_utf8 is None

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .geometry import GeometryAddress
+from .validation import exact_int, exact_list, exact_mapping, exact_str
 
 
 Q16_ONE = 1 << 16
@@ -24,8 +25,9 @@ class GeometryAnchor:
         return {"anchor_id": self.anchor_id, "cells": [cell.to_mapping() for cell in self.cells]}
 
     @classmethod
-    def from_mapping(cls, value: dict[str, object]) -> "GeometryAnchor":
-        return cls(str(value["anchor_id"]), tuple(GeometryAddress.from_mapping(dict(item)) for item in value["cells"]))
+    def from_mapping(cls, value: object) -> "GeometryAnchor":
+        item = exact_mapping(value, frozenset({"anchor_id", "cells"}), "GeometryAnchor")
+        return cls(exact_str(item["anchor_id"], "anchor_id"), tuple(GeometryAddress.from_mapping(cell) for cell in exact_list(item["cells"], "cells")))
 
 
 @dataclass(frozen=True)
@@ -62,13 +64,14 @@ class BridgeSpec:
         }
 
     @classmethod
-    def from_mapping(cls, value: dict[str, object]) -> "BridgeSpec":
+    def from_mapping(cls, value: object) -> "BridgeSpec":
+        item = exact_mapping(value, frozenset({"bridge_id", "from_anchor", "to_anchor", "weight_q16", "bridge_class", "max_steps", "max_fanout"}), "BridgeSpec")
         return cls(
-            str(value["bridge_id"]),
-            GeometryAnchor.from_mapping(dict(value["from_anchor"])),
-            GeometryAnchor.from_mapping(dict(value["to_anchor"])),
-            int(value["weight_q16"]),
-            str(value["bridge_class"]),
-            int(value["max_steps"]),
-            int(value["max_fanout"]),
+            exact_str(item["bridge_id"], "bridge_id"),
+            GeometryAnchor.from_mapping(item["from_anchor"]),
+            GeometryAnchor.from_mapping(item["to_anchor"]),
+            exact_int(item["weight_q16"], "weight_q16"),
+            exact_str(item["bridge_class"], "bridge_class"),
+            exact_int(item["max_steps"], "max_steps"),
+            exact_int(item["max_fanout"], "max_fanout"),
         )

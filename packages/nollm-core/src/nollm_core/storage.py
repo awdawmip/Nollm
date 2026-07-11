@@ -29,7 +29,10 @@ class FileCoreStateStore:
         return self.path.read_bytes()
 
     def read_document(self) -> dict[str, object]:
-        value = json.loads(self.read_bytes().decode("utf-8"))
+        payload = self.read_bytes()
+        value = json.loads(payload.decode("utf-8"))
+        if type(value) is not dict or canonical_state_bytes(value) != payload:
+            raise ValueError("Core state bytes must be canonical")
         if value.get("schema_version") != SCHEMA_VERSION:
             raise ValueError("unsupported Core state schema")
         return value

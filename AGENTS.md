@@ -14,7 +14,12 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1 Core/Access extraction and cycle removal.
+- Current stage is M1C1 exact geometry, Access binding, and state truthfulness closure.
+- Core Recall must use the accepted Coverage Template registry; heuristic layer or coordinate scaling is forbidden.
+- Increasing layer indices are finer: coverage up decrements the layer and coverage down increments it.
+- Core and Access persisted state must use strict canonical bytes with no type coercion or duplicate identities.
+- Access Evidence resolution must use the exact canonical HandleBinding; lexical aliases and atom-id fallback are forbidden.
+- Cross-store Access mutations must be exception-atomic and expose fatal consistency failure when rollback cannot complete.
 - Do not resume OpenClaw Live, model calls, or corpus execution.
 - Core operations require addressed handles; no global atom-id lookup.
 - Core Recall accepts explicit geometry entry cells only.

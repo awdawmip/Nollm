@@ -404,67 +404,6 @@ def classify(path: str, imports: list[str]) -> Classification:
             evidence=f"Legacy GRF path retained for migration regression with direct imports {imports}.",
             review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
         )
-    if p.startswith("reference/python/nollm/grf/"):
-        if name in GRF_REVIEWS:
-            owner, lifecycle, action, confidence, state, evidence = GRF_REVIEWS[name]
-            return Classification(
-                owner,
-                lifecycle,
-                action,
-                confidence,
-                "production" if lifecycle == "ACTIVE" else "mixed production candidate",
-                state,
-                "public" if confidence == "HIGH" else "candidate",
-                evidence,
-                migration_status="BLOCKED_BY_SPLIT" if action == "SPLIT" else "NOT_APPLICABLE",
-                evidence=f"Code-reviewed on {REVIEWED_AT}: {evidence} Direct imports: {imports}.",
-                review_status="CODE_REVIEWED" if confidence == "MEDIUM" else "DEPENDENCY_REVIEWED",
-                reviewed_at=REVIEWED_AT,
-            )
-        if name in CORE_LEAVES:
-            return Classification(
-                "CORE",
-                "ACTIVE",
-                "KEEP",
-                "HIGH",
-                "deterministic geometry implementation",
-                "geometry current state or pure math",
-                "public",
-                "Reviewed Core leaf with deterministic geometry responsibility.",
-                evidence=f"Leaf-purity review found only deterministic geometry imports: {imports}.",
-                review_status="DEPENDENCY_REVIEWED",
-                reviewed_at=REVIEWED_AT,
-            )
-        if name in ACCESS_FILES:
-            return Classification(
-                "ACCESS",
-                "CANDIDATE",
-                "SPLIT",
-                "MEDIUM",
-                "mixed Access implementation",
-                "evidence, source, or host workflow state",
-                "candidate",
-                "Current behavior is Access-oriented but remains in the mixed GRF namespace.",
-                migration_status="BLOCKED_BY_SPLIT",
-                evidence=f"Behavior and direct imports indicate Access responsibility: {imports}.",
-                review_status="CODE_REVIEWED",
-                reviewed_at=REVIEWED_AT,
-            )
-        if name in {"recall_digest.py"}:
-            return Classification(
-                "CORE",
-                "CANDIDATE",
-                "SPLIT",
-                "MEDIUM",
-                "bounded recall result contracts",
-                "recall result state",
-                "candidate",
-                "Recall result objects currently mix Core traversal facts and source fallback presentation.",
-                migration_status="BLOCKED_BY_SPLIT",
-                evidence=f"Code-reviewed recall contract imports: {imports}.",
-                review_status="CODE_REVIEWED",
-                reviewed_at=REVIEWED_AT,
-            )
     if p.startswith("legacy/") or p.startswith("reference/python/nollm/dream_geometry/"):
         return Classification(
             "LEGACY",

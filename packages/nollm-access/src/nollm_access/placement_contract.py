@@ -35,3 +35,15 @@ class AccessDecision:
             raise ValueError("explicit bridge_spec is required")
         if self.action == "unstitch" and (self.bridge_spec is None or not self.bridge_spec.bridge_id):
             raise ValueError("bridge_spec identifying the bridge is required")
+        allowed = {
+            "new": (self.target_cell is not None, self.existing_handle is None, self.bridge_spec is None),
+            "revision_keep_history": (self.target_cell is not None, self.existing_handle is None, self.bridge_spec is None),
+            "reuse": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),
+            "revision_current": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),
+            "forget": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),
+            "stitch": (self.target_cell is None, self.existing_handle is None, self.bridge_spec is not None),
+            "unstitch": (self.target_cell is None, self.existing_handle is None, self.bridge_spec is not None),
+            "defer": (self.target_cell is None, self.existing_handle is None, self.bridge_spec is None),
+        }[self.action]
+        if not all(allowed):
+            raise ValueError("AccessDecision contains conflicting or unrelated fields")

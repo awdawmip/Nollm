@@ -1,8 +1,8 @@
 from .evidence_store import EvidenceStore, FileEvidenceStore
-from .handle_store import FileHandleStore
+from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
 from .placement_contract import ACTIONS, AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
-from .runtime import AccessRuntime
+from .runtime import AccessConsistencyError, AccessRuntime
 from .statement import MemoryStatement
 
 __all__ = [
@@ -12,8 +12,11 @@ __all__ = [
     "AccessRecallRequest",
     "AccessRecallResult",
     "AccessRuntime",
+    "AccessConsistencyError",
     "EvidenceStore",
     "FileEvidenceStore",
     "FileHandleStore",
+    "FileBindingStore",
+    "HandleBinding",
     "MemoryStatement",
 ]

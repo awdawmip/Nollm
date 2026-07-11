@@ -7,10 +7,11 @@ from nollm_core import (
     MemoryAtom,
     RecallBudget,
 )
+from nollm_core.coverage_template import CoverageTemplateCompiler, expand_template
 
 
 def address(layer: int, q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "chart", layer, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "chart", layer, q, r)
 
 
 def request(entry: GeometryAddress, kernels: tuple[str, ...], **changes: int) -> CoreRecallRequest:
@@ -23,8 +24,8 @@ def test_explicit_cell_direct_lateral_coverage_and_bridge(tmp_path) -> None:
     runtime = CoreRuntime(tmp_path)
     entry = address(1, -2, 3)
     lateral = entry.lateral(1)[0]
-    up = entry.coverage_up()[0]
-    down = entry.coverage_down()[0]
+    up = expand_template(entry, CoverageTemplateCompiler().compile(entry.profile_id, "coverage_up"))[0][0]
+    down = expand_template(entry, CoverageTemplateCompiler().compile(entry.profile_id, "coverage_down"))[0][0]
     bridge_target = address(1, 9, -9)
     for atom_id, cell in (("direct", entry), ("lateral", lateral), ("up", up), ("down", down), ("bridge", bridge_target)):
         runtime.put(MemoryAtom(atom_id, atom_id), cell)

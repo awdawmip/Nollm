@@ -16,7 +16,7 @@ from nollm_core import (
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("exact", "chart", 1, q, r)
+    return GeometryAddress("eisenstein_exact_v1", "chart", 1, q, r)
 
 
 def test_put_replace_move_remove_and_reopen(tmp_path) -> None:
