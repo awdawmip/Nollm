@@ -48,7 +48,7 @@ class CoverageTemplate:
     sum_weight_q16: int
     normalization_residual_q16: int
     approximation_residual_q16: int
-    compiler: dict[str, object]
+    compiler: CompilerMetadata
 
     def __post_init__(self) -> None:
         get_profile(self.profile_id)
@@ -62,14 +62,23 @@ class CoverageTemplate:
             raise TypeError("CoverageTemplate residuals must be integers")
         if self.sum_weight_q16 != sum(entry.weight_q16 for entry in self.entries) or self.normalization_residual_q16 != Q16_ONE - self.sum_weight_q16 or self.approximation_residual_q16 < 0:
             raise ValueError("CoverageTemplate weight metadata mismatch")
-        compiler_keys = {"compiler_id", "method", "weight_format", "fanout_limit", "layer_index_direction", "flags"}
-        if type(self.compiler) is not dict or set(self.compiler) != compiler_keys:
-            raise TypeError("compiler must be an exact metadata dict")
-        if any(type(self.compiler[key]) is not str for key in ("compiler_id", "method", "weight_format", "layer_index_direction")) or type(self.compiler["fanout_limit"]) is not int or type(self.compiler["flags"]) is not tuple:
-            raise TypeError("compiler metadata has invalid types")
+        if type(self.compiler) is not CompilerMetadata:
+            raise TypeError("compiler must be CompilerMetadata")
+        delta = -1 if self.direction == COVERAGE_UP else 1 if self.direction == COVERAGE_DOWN else 0
+        if self.to_layer_mod != self.from_layer_mod + delta or any(entry.layer_delta != delta for entry in self.entries):
+            raise ValueError("coverage layer contract mismatch")
+        if len(self.entries) > self.compiler.fanout_limit or tuple(sorted(self.entries)) != self.entries or len(set(self.entries)) != len(self.entries):
+            raise ValueError("coverage entries are not canonical or exceed fanout")
+        profile = get_profile(self.profile_id)
+        expected_flags = tuple(sorted({flag for entry in self.entries for flag in entry.flags}))
+        expected_method = "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
+        if self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
+            raise ValueError("coverage compiler metadata mismatch")
+        if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 <= 0) or (self.profile_id != "dream_quasi_v1" and self.approximation_residual_q16 != 0):
+            raise ValueError("profile approximation residual mismatch")
 
     def to_mapping(self) -> dict[str, object]:
-        return {"profile_id": self.profile_id, "direction": self.direction, "from_layer_mod": self.from_layer_mod, "to_layer_mod": self.to_layer_mod, "source_phase": self.source_phase, "entries": [entry.to_mapping() for entry in self.entries], "sum_weight_q16": self.sum_weight_q16, "normalization_residual_q16": self.normalization_residual_q16, "approximation_residual_q16": self.approximation_residual_q16, "compiler": self.compiler}
+        return {"profile_id": self.profile_id, "direction": self.direction, "from_layer_mod": self.from_layer_mod, "to_layer_mod": self.to_layer_mod, "source_phase": self.source_phase, "entries": [entry.to_mapping() for entry in self.entries], "sum_weight_q16": self.sum_weight_q16, "normalization_residual_q16": self.normalization_residual_q16, "approximation_residual_q16": self.approximation_residual_q16, "compiler": self.compiler.to_mapping()}
 
 
 class CoverageTemplateCompiler:
@@ -87,7 +96,8 @@ class CoverageTemplateCompiler:
             raise ValueError("template fanout exceeds hard bound")
         flags = tuple(sorted({flag for entry in entries for flag in entry.flags}))
         total = sum(entry.weight_q16 for entry in entries)
-        return CoverageTemplate(profile_id, direction, from_layer_mod, from_layer_mod + _layer_delta(direction), source_phase, entries, total, Q16_ONE - total, Q16_ONE // 16 if profile_id == "dream_quasi_v1" else 0, {"compiler_id": "grf1a_coverage_template_compiler", "method": "symbolic_research_template_with_residual" if profile_id == "dream_quasi_v1" else "integer_template_lookup", "weight_format": profile.weight_format, "fanout_limit": self.fanout_limit, "layer_index_direction": LAYER_INDEX_DIRECTION, "flags": flags})
+        metadata = CompilerMetadata("grf1a_coverage_template_compiler", "symbolic_research_template_with_residual" if profile_id == "dream_quasi_v1" else "integer_template_lookup", profile.weight_format, self.fanout_limit, LAYER_INDEX_DIRECTION, flags)
+        return CoverageTemplate(profile_id, direction, from_layer_mod, from_layer_mod + _layer_delta(direction), source_phase, entries, total, Q16_ONE - total, Q16_ONE // 16 if profile_id == "dream_quasi_v1" else 0, metadata)
 
     def _entries(self, profile_id: str, direction: str) -> tuple[KernelEntry, ...]:
         if direction == LATERAL:
@@ -117,3 +127,25 @@ def validate_lateral_ring(ring: int, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -
 
 def _layer_delta(direction: str) -> int:
     return -1 if direction == COVERAGE_UP else 1 if direction == COVERAGE_DOWN else 0
+@dataclass(frozen=True)
+class CompilerMetadata:
+    compiler_id: str
+    method: str
+    weight_format: str
+    fanout_limit: int
+    layer_index_direction: str
+    flags: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if any(type(getattr(self, name)) is not str or not getattr(self, name) for name in ("compiler_id", "method", "weight_format", "layer_index_direction")):
+            raise TypeError("compiler string fields must be non-empty")
+        if type(self.fanout_limit) is not int or self.fanout_limit <= 0:
+            raise ValueError("compiler fanout_limit must be positive")
+        if type(self.flags) is not tuple or tuple(sorted(set(self.flags))) != self.flags:
+            raise ValueError("compiler flags must be sorted and unique")
+
+    def __getitem__(self, key: str) -> object:
+        return getattr(self, key)
+
+    def to_mapping(self) -> dict[str, object]:
+        return {"compiler_id": self.compiler_id, "method": self.method, "weight_format": self.weight_format, "fanout_limit": self.fanout_limit, "layer_index_direction": self.layer_index_direction, "flags": list(self.flags)}

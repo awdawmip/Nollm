@@ -70,11 +70,15 @@ def run(root: Path, sink: object) -> dict[str, object]:
     access.capture(MemoryStatement("statement:support", "supporting Evidence"))
     access.apply(decision("statement:support", "reuse", existing_handle=first))
     assert access.handle_store.statement_for_handle(first) == "statement:one"
+    lateral_handle = core.put(MemoryAtom("lateral", "lateral"), cell(-3, 5).lateral(1)[0])
+    lateral_result = core.recall(CoreRecallRequest("lateral-one", (cell(-3, 5),), ("lateral",), RecallBudget(1, 8, 0, 1, 0, 4)))
+    assert any(item.handle == lateral_handle for item in lateral_result.items)
+    core.remove(lateral_handle)
 
     try:
         core.recall(CoreRecallRequest("fanout", (cell(-3, 5),), ("lateral",), RecallBudget(2, 8, 0, 2, 0, 4)))
     except ValueError as error:
-        assert "fanout" in str(error)
+        assert "registered lateral ring 1" in str(error)
     else:
         raise AssertionError("lateral ring=2 bypassed fanout limit")
 
@@ -156,6 +160,7 @@ def run(root: Path, sink: object) -> dict[str, object]:
         "history_retained": core.contains(first) and core.contains(historical),
         "coverage_up_registered": True,
         "lateral_ring_2_rejected": True,
+        "lateral_ring_one_real_recall": True,
         "reuse_preserved_current": True,
     }
 

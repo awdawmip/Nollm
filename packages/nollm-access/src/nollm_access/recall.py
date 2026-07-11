@@ -18,7 +18,7 @@ class AccessRecallRequest:
             raise ValueError("explicit entry_cells or entry_handles are required")
 
     def to_core_request(self) -> CoreRecallRequest:
-        cells = tuple(sorted(set((*self.entry_cells, *(handle.geometry_address for handle in self.entry_handles)))))
+        cells = tuple(sorted(set((*self.entry_cells, *(handle.geometry_address for handle in self.entry_handles))), key=lambda item: item.stable_key()))
         return CoreRecallRequest(self.request_id, cells, self.allowed_kernels, self.budget)
 
 

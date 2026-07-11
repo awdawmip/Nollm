@@ -14,7 +14,14 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C2 complete-kernel, canonical-Evidence, and serialized-transaction closure.
+- Current stage is M1-C3 immutable-kernel, phase-canonicality, and workspace-coordinator closure.
+- Preserve all accepted M1-C2 nine-template, canonical-Evidence, HandleBinding, boundary, and package results.
+- KernelRegistry and every registry/state identity input are immutable after construction.
+- Persistent and Recall geometry ordering uses GeometryAddress.stable_key only.
+- GeometryAnchor cells are strictly sorted, unique canonical set tuples.
+- Active lateral supports registered ring 1 only; unregistered rings are rejected.
+- One process cannot host independent mutable CoreRuntime owners for one canonical Core workspace.
+- Access reads spanning Core, Binding, and Evidence share the workspace coordinator lock.
 - Preserve M1/M1-C1 Addressed Handle, package boundaries, and one-current HandleBinding.
 - Kernel parity covers all three profiles and up/down/lateral, including residuals and fanout semantics.
 - Geometry registry identity binds every active relation-kernel semantic used by Recall.

@@ -7,7 +7,7 @@ from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .statement import MemoryStatement
-from .workspace_lock import workspace_lock
+from .workspace_lock import coordinate_workspace
 
 
 class AccessRuntime:
@@ -15,7 +15,10 @@ class AccessRuntime:
         self.core = core
         self.evidence_store = evidence_store
         self.handle_store = handle_store
-        self._transaction_lock = workspace_lock(handle_store.path.parent.parent)
+        access_root = handle_store.path.parent.parent
+        if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root.resolve():
+            raise ValueError("Evidence and Binding workspace identity mismatch")
+        self._transaction_lock = coordinate_workspace(access_root, core, core.store.path)
 
     def capture(self, statement: MemoryStatement) -> None:
         with self._transaction_lock:
@@ -30,6 +33,7 @@ class AccessRuntime:
             raise FileNotFoundError("original Evidence is missing")
         if decision.action == "reuse":
             assert decision.existing_handle is not None
+            self.evidence_store.get_original(decision.statement_id)
             if not self.core.contains(decision.existing_handle):
                 raise KeyError("explicit reuse handle no longer exists")
             self.handle_store.put(decision.statement_id, decision.existing_handle)
@@ -60,6 +64,10 @@ class AccessRuntime:
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
+        with self._transaction_lock:
+            return self._recall_locked(request)
+
+    def _recall_locked(self, request: AccessRecallRequest) -> AccessRecallResult:
         result = self.core.recall(request.to_core_request())
         items = []
         for item in result.items:
@@ -80,7 +88,8 @@ class AccessRuntime:
         return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
-        return self.handle_store.get(statement_id)
+        with self._transaction_lock:
+            return self.handle_store.get(statement_id)
 
     def _atomic(self, core_action: object, binding_action: object) -> object:
         core_before = self.core.state_bytes()

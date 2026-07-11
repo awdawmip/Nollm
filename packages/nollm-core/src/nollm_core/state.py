@@ -38,7 +38,7 @@ class CellStore:
         return tuple((AtomHandle(address, local_id), atoms[local_id]) for local_id in sorted(atoms))
 
     def occupied_cells(self) -> tuple[GeometryAddress, ...]:
-        return tuple(sorted(self._cells))
+        return tuple(sorted(self._cells, key=lambda cell: cell.stable_key()))
 
     def placement_count(self) -> int:
         return sum(len(atoms) for atoms in self._cells.values())
@@ -60,7 +60,7 @@ class CoreRuntime(ConsistentStatePort):
         self.workspace = Path(workspace)
         self.trace_sink = trace_sink or NullTraceSink()
         self.store = store or FileCoreStateStore(self.workspace)
-        self.kernel_registry = kernel_registry or KernelRegistry()
+        self._kernel_registry = kernel_registry or KernelRegistry()
         self.store.bind_semantic_validator(self._validate_state_bytes)
         self._lock = RLock()
         self._read_token: object | None = None
@@ -71,6 +71,10 @@ class CoreRuntime(ConsistentStatePort):
             self._bridges: dict[str, BridgeSpec] = {}
             self.store.write_document(self._document(self._cells, self._bridges))
         self.cells = CellStore(self._cells)
+
+    @property
+    def kernel_registry(self) -> KernelRegistry:
+        return self._kernel_registry
 
     def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
         return self.apply_batch((PutCommand(atom, target_cell),))[0]
@@ -261,7 +265,7 @@ class CoreRuntime(ConsistentStatePort):
                         for local_id in sorted(atoms)
                     ],
                 }
-                for address, atoms in sorted(cells.items())
+                for address, atoms in sorted(cells.items(), key=lambda item: item[0].stable_key())
             ],
             "bridges": [bridges[key].to_mapping() for key in sorted(bridges)],
         }

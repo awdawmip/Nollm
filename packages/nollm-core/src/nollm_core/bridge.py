@@ -22,6 +22,8 @@ class GeometryAnchor:
             raise TypeError("cells must be a non-empty GeometryAddress tuple")
         if len(set(self.cells)) != len(self.cells):
             raise ValueError("anchor cells must be unique")
+        if tuple(sorted(self.cells, key=lambda cell: cell.stable_key())) != self.cells:
+            raise ValueError("anchor cells must use canonical stable_key order")
 
     def to_mapping(self) -> dict[str, object]:
         return {"anchor_id": self.anchor_id, "cells": [cell.to_mapping() for cell in self.cells]}

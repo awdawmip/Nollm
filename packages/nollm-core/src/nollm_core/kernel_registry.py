@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 import json
+from types import MappingProxyType
 
 from .coverage_template import COVERAGE_DOWN, COVERAGE_UP, DEFAULT_FANOUT_LIMIT, LATERAL, CoverageTemplate, CoverageTemplateCompiler
 from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest, profiles
@@ -11,9 +12,15 @@ KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v2"
 
 class KernelRegistry:
     def __init__(self, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> None:
-        self.fanout_limit = fanout_limit
+        object.__setattr__(self, "fanout_limit", fanout_limit)
         compiler = CoverageTemplateCompiler(fanout_limit)
-        self._templates = {(profile.profile_id, direction): compiler.compile(profile.profile_id, direction) for profile in profiles() for direction in (COVERAGE_UP, COVERAGE_DOWN, LATERAL)}
+        object.__setattr__(self, "_templates", MappingProxyType({(profile.profile_id, direction): compiler.compile(profile.profile_id, direction) for profile in profiles() for direction in (COVERAGE_UP, COVERAGE_DOWN, LATERAL)}))
+        object.__setattr__(self, "_sealed", True)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if getattr(self, "_sealed", False):
+            raise AttributeError("KernelRegistry is immutable")
+        object.__setattr__(self, name, value)
 
     def coverage_template(self, profile_id: str, direction: str) -> CoverageTemplate:
         try:

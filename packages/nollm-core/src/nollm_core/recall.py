@@ -63,7 +63,9 @@ class CoreRecallResult:
 def resolve_recall(runtime: object, request: CoreRecallRequest, trace_sink: TraceSink | None = None) -> CoreRecallResult:
     sink = trace_sink or NullTraceSink()
     safe_emit(sink, TraceEvent("core.recall.begin", {"request_id": request.request_id, "entry_count": len(request.entry_cells)}, "stable"))
-    frontier = [(cell, Q16_ONE, 0, 0) for cell in sorted(request.entry_cells)]
+    if request.budget.max_lateral_ring > 1:
+        raise ValueError("only registered lateral ring 1 is supported")
+    frontier = [(cell, Q16_ONE, 0, 0) for cell in sorted(request.entry_cells, key=lambda item: item.stable_key())]
     best: dict[GeometryAddress, int] = {}
     found: dict[AtomHandle, CoreRecallItem] = {}
     entry_layers = tuple(cell.layer for cell in request.entry_cells)
@@ -121,6 +123,6 @@ def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest,
         for bridge in runtime.bridges():
             if cell not in bridge.from_anchor.cells or bridge_steps >= bridge.max_steps:
                 continue
-            for target in sorted(bridge.to_anchor.cells)[: bridge.max_fanout]:
+            for target in sorted(bridge.to_anchor.cells, key=lambda item: item.stable_key())[: bridge.max_fanout]:
                 output.append((target, bridge.weight_q16, bridge_steps + 1))
     return tuple(output)

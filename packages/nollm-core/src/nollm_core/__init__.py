@@ -10,7 +10,7 @@ from .command import (
     ReplaceCommand,
 )
 from .geometry import GeometryAddress
-from .coverage_template import CoverageTemplate, CoverageTemplateCompiler, KernelEntry, expand_template, validate_lateral_ring
+from .coverage_template import CompilerMetadata, CoverageTemplate, CoverageTemplateCompiler, KernelEntry, expand_template, validate_lateral_ring
 from .kernel_registry import KernelRegistry
 from .profiles import Profile, get_profile, profiles
 from .handle import AtomHandle
@@ -46,6 +46,7 @@ __all__ = [
     "FileCoreStateStore",
     "GeometryAddress",
     "CoverageTemplate",
+    "CompilerMetadata",
     "CoverageTemplateCompiler",
     "KernelRegistry",
     "KernelEntry",

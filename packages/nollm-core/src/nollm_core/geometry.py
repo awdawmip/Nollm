@@ -6,7 +6,7 @@ from .profiles import get_profile
 from .validation import exact_int, exact_mapping, exact_str
 
 
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class GeometryAddress:
     profile_id: str
     chart_id: str

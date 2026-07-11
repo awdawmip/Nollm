@@ -9,7 +9,7 @@ def template_contract(template):
         "identity": (template.profile_id, template.direction, template.from_layer_mod, template.to_layer_mod, template.source_phase),
         "entries": tuple((e.layer_delta, e.dq, e.dr, e.weight_q16, e.kernel_type, e.flags) for e in template.entries),
         "weights": (template.sum_weight_q16, template.normalization_residual_q16, template.approximation_residual_q16),
-        "compiler": template.compiler,
+        "compiler": template.compiler.to_mapping() if hasattr(template.compiler, "to_mapping") else {**template.compiler, "flags": list(template.compiler["flags"])},
     }
 
 
