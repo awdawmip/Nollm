@@ -1,51 +1,116 @@
-# M0 Behavior Preservation Report
+# M0C1 Behavior Preservation and Closure Report
 
 Date: 2026-07-11
 
-## Scope
+## Status
 
-M0 established ownership and package boundaries without modifying existing GRF,
-Dream Geometry, OpenClaw adapter, Snapshot, Recall, or Host production
-implementation. The only moved assets were the OpenClaw development corpus and
-paused result files; every move was Git identity-preserving (`R100`).
+M0C1 corrects the rejected M0 ownership, Port-binding, boundary, and architecture
+regression claims. It does not start M1, OpenClaw Live Integration, an LLM
+corpus, a remote repository split, or a long benchmark.
 
-No existing test was deleted. No live OpenClaw update, LLM corpus run, PB/1M
-benchmark, remote GitHub operation, or repository split was started.
+## External M0 Review Facts
 
-## Before and After
+The external review of the M0 bundle reported:
 
-| Check | Before M0 move | After M0 move | Result |
-| --- | ---: | ---: | --- |
-| GRF suite (`reference/python/tests/grf`) | 112 passed | 112 passed | Preserved |
-| Existing Snapshot/Trace selection | Not separately recorded | 111 passed | Passed |
-| M0 Snapshot/Trace ports and imports | Not present | 7 passed | Passed |
-| Repository/package hygiene | Existing contract | 8 passed | Passed after README compatibility terms were restored |
-| Module boundary checker | Not present | 642 reviewed baseline, 0 new; 1 reviewed cycle | Passed |
-| `git diff --check` | Not applicable | Passed | Clean |
+- M0 tests: 7 passed.
+- A GRF run: 109 passed and 1 skipped.
+- Two optional compact-evidence tests failed because `zstandard` was absent in
+  that review environment.
+- `test_architecture_language.py` still asserted V2 as the only active
+  architecture and failed against the new root navigation.
+- The old boundary baseline contained 642 findings and one cycle; most findings
+  were Lab/Legacy or root-file classification noise.
 
-The pre-move GRF run completed in 7.30 seconds. The post-move GRF run completed
-in 6.37 seconds. Both used `PYTHONDONTWRITEBYTECODE=1`,
-`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`, and the repository's public Python path.
+Those review results are historical input to M0C1. They are not presented as
+successful M0 acceptance.
 
-## Contract Coverage
+## Current Windows Environment
 
-- Public package imports: all six Python package roots import successfully.
-- Snapshot: consistent-read begin/export/end, failure cleanup, restore, clone,
-  verify, and policy-free structural comparison are covered.
-- Trace: NullTrace result equivalence, canonical JSONL, metrics, memory capture,
-  event stability classes, and composite sink failure isolation are covered.
-- Recall and current Host fixtures: covered by the unchanged GRF suite,
-  including host registry, capture/import, and recall tests.
-- Boundary firewall: all tracked Python and TypeScript/JavaScript sources are
-  scanned from the ownership manifest. New package violations are zero.
+The final environment is Windows with Python for Windows. `zstandard 0.25.0` is
+installed, so the complete GRF suite runs without excluding the two optional
+compression tests. There is no remaining environment-dependent test failure in
+the required M0C1 gates.
 
-## Existing Debt
+## Verified M0C1 Facts
 
-The baseline records 642 imports from the pre-M0 mixed architecture that violate
-the target ownership graph and one cycle across Access, Core, Snapshot, and
-Trace. Each finding carries its manifest migration action and is assigned to M1
-extraction or removal. M0 does not hide or semantically rewrite this debt.
+| Gate | Result |
+| --- | --- |
+| Manifest generator `--check` | Read-only, canonical outputs unchanged |
+| Manifest validator | 100% tracked coverage; schema and truth rules pass |
+| Boundary checker | 9 reviewed production findings, 0 new; 1 reviewed production cycle, 0 new; 44 migration dependencies |
+| M0 tests | 18 passed |
+| Real Snapshot/Trace Port tests | 4 passed |
+| Current architecture/no-forbidden/hygiene tests | 8 passed |
+| Complete GRF tests | 112 passed |
+| Unclassified tracked files | 0 |
+| HIGH + MOVE + PENDING | 0 |
+| BLOCKED/DELETE without code evidence | 0 |
 
-The external relation index is explicitly `BLOCKED / DELETE_LATER`; Python
-semantic placement remains `BLOCKED / SPLIT`. LOW-confidence assets remain
-preserved or quarantined and were not deleted.
+## Reproducible Commands
+
+With the taskbook `PYTHONPATH` and pytest environment variables set:
+
+```powershell
+python tools/generate_module_ownership_manifest.py --check
+python tools/validate_module_ownership_manifest.py
+python tools/check_module_boundaries.py
+python -m pytest -q reference/python/tests/m0
+python -m pytest -q reference/python/tests/m0/test_real_ports.py
+python -m pytest -q reference/python/tests/test_no_forbidden_features.py reference/python/tests/test_architecture_language.py reference/python/tests/test_repository_hygiene.py
+python -m pytest -q reference/python/tests/grf
+git diff --check
+git status --short
+```
+
+## Ownership Truthfulness
+
+`relation_field.py` is no longer marked `DELETE_LATER`. Code review confirms it
+uses explicit Cell, Coverage, Lateral, and Bridge propagation with linear scans
+and no route table or external relation index. It is `CORE / MEDIUM / SPLIT`
+because it consumes placement and recall-result contracts.
+
+`field_engine.py` is also `CORE / MEDIUM / SPLIT`, not a pure HIGH Core leaf,
+because it imports `PlacementRecord` and `RelationField`. Existing experiment
+roots are declared Lab roots and use `KEEP`; M0's completed R100 OpenClaw Lab
+moves are recorded at their actual target paths.
+
+The Manifest contains no unsupported `BLOCKED` or delete conclusion. Unknown
+assets default to `LEGACY / LOW / QUARANTINE`. Seven negative validator tests
+prove that forbidden HIGH imports, malformed moves, evidence-free blocks, LOW
+deletes, tracked omissions, and unsafe catch-all classifications are rejected.
+
+## Real Snapshot Port
+
+`GRFWorkspaceConsistentStateAdapter` binds the public Core consistent-state port
+to a real file-first GRF workspace. Tests use `GRFFacade`, `GRFFileStore`, raw
+UTF-8 evidence, explicit admission, a negative-coordinate placement, and actual
+workspace files. They verify create, restore, clone, verify, structural diff,
+read cleanup after export failure, invalid-input atomicity, and equivalence with
+the existing `GRFFacade.snapshot/restore` path.
+
+Snapshot bytes are finite and in memory. Restore uses same-volume staging and
+replacement. Snapshot does not infer truth, history, retention, or audit state;
+Core does not import the Snapshot implementation.
+
+## Real Trace Port
+
+The Core contract now provides `safe_emit`. Real `CellStore.insert/remove/move`,
+`FieldEngine.add_bridge/remove_bridge`, and `RelationField.step` emit optional
+events. Tests execute the same real occupancy, bridge, propagation, and bounded
+Recall sequence under Null, Memory, Failing, and Composite sinks.
+
+Cell occupancy, placement count, bridge state, RelationField output, Recall
+output, return values, and post-failure state are identical. Trace events are
+not persisted in Core state, and a failing ordinary sink cannot interrupt a
+mutation.
+
+## Remaining M1 Debt
+
+The reviewed production baseline contains nine real mixed-boundary imports and
+one `ACCESS/CORE/SNAPSHOT/TRACE` strongly connected component. The exact files,
+edges, and extraction actions are recorded in
+`docs/architecture/module-ownership/M0C1_BOUNDARY_REVIEW.md`.
+
+M1 must extract those contracts. M0C1 does not delete RelationField, rewrite
+FieldEngine, split all Evidence/Source objects, implement semantic Placement, or
+perform a GitHub repository split.
