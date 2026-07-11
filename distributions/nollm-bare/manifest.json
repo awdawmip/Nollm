@@ -1,4 +1,7 @@
 {
   "name": "nollm-bare",
-  "runtime": ["nollm-core"]
+  "runtime": ["nollm-core"],
+  "entrypoint": "nollm_core.CoreRuntime",
+  "capabilities": ["put", "remove", "replace", "move", "bridge", "explicit-cell-recall"],
+  "forbidden": ["evidence-store", "access", "snapshot-implementation", "trace-implementation", "legacy-grf"]
 }

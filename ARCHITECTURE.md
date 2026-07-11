@@ -1,40 +1,40 @@
 # Nollm Architecture
 
-The current architecture is a modular monorepo. GitHub repositories have not
-been physically split.
+M1 establishes package-level Core/Access behavior in a modular monorepo.
 
-## Dependency Direction
+## Active Dependency Graph
 
 ```text
-core <- snapshot
-core trace contracts <- trace implementations
-core <- access
-access <- history
-access contracts <- audit
-access <- openclaw
-all modules <- lab
-modules <- distributions (composition only)
+nollm-core -> Python standard library only
+nollm-snapshot -> nollm-core public ports
+nollm-trace -> nollm-core trace contracts
+nollm-access -> nollm-core public API (+ optional snapshot API)
+nollm-history -> skeleton
+nollm-audit -> skeleton
 ```
 
-Core owns deterministic geometry current state, bounded geometry-entry recall,
-atomic current-state writes, and Snapshot/Trace ports. It does not own source,
-host, user, session, semantic placement, history, audit, or trace persistence.
+The active production graph has zero boundary violations and zero cycles.
+Distributions contain composition metadata only. Lab may import all public
+modules and Legacy migration assets; production modules never import Lab.
 
-The machine-readable rules are in `config/module-boundaries.json` and enforced
-by `tools/check_module_boundaries.py`. Existing cross-boundary debt is frozen in
-`docs/architecture/module-ownership/M0_BOUNDARY_BASELINE.json`; new debt fails
-the checker.
+## Core State
 
-## State Boundaries
+Core owns deterministic geometry current state. `MemoryAtom` contains only
+`atom_id` and semantic-blind `payload_utf8`. `AtomHandle` contains a
+`GeometryAddress` and cell-local atom ID and is the only mutation locator.
 
-- Snapshot stores structural current-state copies; it does not define history.
-- Trace stores optional operation observations; it is not fact or audit state.
-- History owns semantic version chains; it is not Snapshot or Trace.
-- Audit owns host/user/session action records; Core does not depend on it.
-- Access owns product decisions and maps them to public Core commands.
+The canonical current-state JSON file is the M1 file fact source. It is not an
+object relation index. Runtime occupancy rebuilds entirely from it, and Recall
+correctness uses no route table. Geometry partition files are deferred until a
+future scale stage.
 
-## Historical Routes
+Core Recall accepts explicit geometry entry cells only and returns Core atoms,
+Handles, scores, and budget state. Source fallback and revision semantics belong
+to Access. Snapshot, Trace, History, and Audit are distinct ownership domains.
 
-Evidence-first V2/V2.1/V2.2, GRF8, older GRF handoffs, and paused OpenClaw Live
-Integration taskbooks are preserved as historical or superseded migration
-inputs. See `docs/history/M0_SUPERSEDED_ROUTE_INDEX.md`.
+## Legacy Boundary
+
+The old mixed GRF implementation remains available for migration regression but
+is absent from active distributions. OpenClaw adapters are paused migration
+assets. Evidence-first V2 and older layer constitutions remain historical and
+superseded rather than active architecture.

@@ -21,17 +21,17 @@ HISTORICAL_DOCS = [
 
 
 class ArchitectureLanguageTests(unittest.TestCase):
-    def test_current_m0_architecture_language_is_present(self) -> None:
+    def test_current_m1_architecture_language_is_present(self) -> None:
         corpus = "\n".join(path.read_text(encoding="utf-8") for path in CURRENT_DOCS)
         for phrase in [
-            "Nollm is in the M0 modular-monorepo stage",
+            "Nollm is in the M1 package-extraction stage",
             "Architecture is the Index",
             "Core owns deterministic geometry current state",
-            "Snapshot, Trace, Access, History, Audit, OpenClaw, Lab, and Distributions",
+            "M1 establishes package-level Core/Access behavior",
             "OpenClaw Live Integration",
             "GRF8 is an engineering checkpoint, not accepted architecture",
             "Evidence-first V2/V2.1/V2.2",
-            "M1 is not started",
+            "M1 does not prove LLM placement quality",
             "not been physically split on GitHub",
         ]:
             self.assertIn(phrase, corpus)

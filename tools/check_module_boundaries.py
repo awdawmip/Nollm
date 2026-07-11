@@ -191,6 +191,7 @@ def collect_report(config: dict[str, object], rows: list[dict[str, object]], pat
             continue
         row = by_path[path]
         source_owner = str(row["owner"])
+        source_active = row.get("lifecycle_status") == "ACTIVE"
         if source_owner == "DISTRIBUTION" and path.startswith("distributions/") and distribution_has_logic(path):
             add(production, "distribution_business_logic", path, source_owner, path, "Distributions may contain composition metadata only.")
         if suffix == ".py":
@@ -220,10 +221,13 @@ def collect_report(config: dict[str, object], rows: list[dict[str, object]], pat
             target_label = target_path or imported
             if source_owner in all_graph and target_owner in all_graph and source_owner != "LAB":
                 all_graph[source_owner].add(target_owner)
-            if source_owner in production_graph and target_owner in production_graph:
+            if source_active and source_owner in production_graph and target_owner in production_graph:
                 production_graph[source_owner].add(target_owner)
 
             if source_owner == "LAB":
+                continue
+            if source_owner in PRODUCTION_OWNERS and not source_active:
+                add(migration, "inactive_product_dependency", path, target_owner, target_label, "Inactive migration asset dependency; excluded from active production gate.")
                 continue
             if source_owner == "LEGACY":
                 add(migration, "legacy_dependency", path, target_owner, target_label, "Legacy migration asset dependency; excluded from production gate.")

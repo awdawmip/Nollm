@@ -14,7 +14,14 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- This stage is module ownership and monorepo separation only.
+- Current stage is M1 Core/Access extraction and cycle removal.
+- Do not resume OpenClaw Live, model calls, or corpus execution.
+- Core operations require addressed handles; no global atom-id lookup.
+- Core Recall accepts explicit geometry entry cells only.
+- Access owns semantic decisions and evidence/source mapping.
+- Old GRF compatibility code may remain only outside active distributions.
+- Do not remove a legacy implementation until a tested replacement exists.
+- Production boundary target for M1 is zero violations and zero cycles.
 - Preserve all potentially useful components until ownership is proven.
 - Classify before moving; move before deleting.
 - Core owns geometry current-state operations only.

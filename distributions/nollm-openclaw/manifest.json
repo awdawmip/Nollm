@@ -1,9 +1,8 @@
 {
   "name": "nollm-openclaw",
-  "runtime": [
-    "nollm-core",
-    "nollm-snapshot",
-    "nollm-access",
-    "nollm-openclaw"
-  ]
+  "extends": "nollm-minimal",
+  "adapter": "migration-asset-only",
+  "live_activation": "paused",
+  "requires": ["future-openclaw-e2e"],
+  "forbidden": ["legacy-grf-runtime-entrypoint"]
 }

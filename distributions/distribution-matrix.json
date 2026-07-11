@@ -1,9 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "active_runtime": "m1-package-api",
+  "forbidden_runtime": ["reference/python/nollm/grf", "integrations/openclaw"],
   "correctness_invariants": [
     "Core correctness is unchanged when Trace is disabled.",
-    "Core correctness is unchanged when Audit is disabled.",
-    "Distribution packages contain composition metadata only."
+    "Core correctness is unchanged when Audit is absent.",
+    "Distributions contain composition metadata only."
   ],
   "distributions": {
     "nollm-bare": {
@@ -16,37 +18,20 @@
       "optional": [],
       "development": []
     },
-    "nollm-openclaw": {
-      "runtime": [
-        "nollm-core",
-        "nollm-snapshot",
-        "nollm-access",
-        "nollm-openclaw"
-      ],
-      "optional": [],
-      "development": []
-    },
     "nollm-debug": {
-      "runtime": [
-        "nollm-core",
-        "nollm-snapshot",
-        "nollm-access",
-        "nollm-openclaw",
-        "nollm-trace"
-      ],
+      "runtime": ["nollm-core", "nollm-snapshot", "nollm-access", "nollm-trace"],
       "optional": ["inspectors"],
       "development": ["selected-nollm-lab-tools"]
     },
     "nollm-audited": {
-      "runtime": [
-        "nollm-core",
-        "nollm-snapshot",
-        "nollm-access",
-        "nollm-openclaw",
-        "nollm-trace",
-        "nollm-audit"
-      ],
+      "runtime": ["nollm-core", "nollm-snapshot", "nollm-access", "nollm-trace", "nollm-audit-skeleton"],
       "optional": ["external-source-store-connector"],
+      "development": []
+    },
+    "nollm-openclaw": {
+      "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"],
+      "migration": ["nollm-openclaw-adapter"],
+      "live_activation": "paused",
       "development": []
     }
   }

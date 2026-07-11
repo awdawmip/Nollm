@@ -1,23 +1,19 @@
 # Nollm Roadmap
 
-## M0: Modular Monorepo
+## M1: Package Core/Access Extraction
 
-Current work establishes complete ownership classification, package boundaries,
-Snapshot and Trace ports, distribution metadata, and a future repository split
-plan. No remote repository split occurs in M0.
+M1 establishes addressed Core current state, explicit-cell Recall, atomic file
+commands, Access Evidence/Handle stores, external decision mapping, real
+Snapshot/Trace composition, active package distributions, and a zero-cycle
+production graph.
 
-OpenClaw Live Integration and long LLM corpus execution remain paused. GRF8 is
-an engineering checkpoint and is not the accepted architecture.
+## Deferred Work
 
-## M1: Semantic Extraction
+OpenClaw Live, real model calls, statement/placement corpora, semantic quality
+evaluation, History/Audit products, PB-scale partitioning, and physical GitHub
+splitting require separately approved later tasks. M1 does not prove LLM
+placement quality and does not activate any model or host integration.
 
-M1 may begin only under a separate taskbook. It will extract mixed Core/Access
-responsibilities, remove blocked relation-index and Python semantic-placement
-paths, and replace temporary migration boundaries without changing the M0
-ownership model implicitly.
-
-## Later Stages
-
-Independent package release and GitHub repository splitting require stable Core
-handles, Snapshot and Trace contracts, Access command mapping, acyclic package
-imports, independent tests, and a separately authorized OpenClaw E2E gate.
+The next stage must preserve addressed Handles, explicit geometry Recall,
+Evidence first, and the absence of graph/vector/embedding or external relation
+indexes.

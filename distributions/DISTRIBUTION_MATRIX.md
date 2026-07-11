@@ -1,15 +1,15 @@
-# Distribution Matrix
+# M1 Distribution Matrix
 
-Distributions assemble public module packages. They contain no domain or
-product logic.
+Distributions assemble package public APIs and contain no runtime logic.
 
-| Distribution | Runtime modules | Optional | Development only |
-| --- | --- | --- | --- |
-| `nollm-bare` | Core | None | None |
-| `nollm-minimal` | Core, Snapshot, minimal Access API | None | None |
-| `nollm-openclaw` | Core, Snapshot, Access, OpenClaw | None | None |
-| `nollm-debug` | OpenClaw composition plus Trace | Inspectors | Selected Lab tools |
-| `nollm-audited` | OpenClaw composition plus Trace and Audit | External source-store connector | None |
+| Distribution | Runtime | Status |
+| --- | --- | --- |
+| `nollm-bare` | Core | Active addressed Core API |
+| `nollm-minimal` | Core, Snapshot, Access | Active minimal Evidence-to-Recall path |
+| `nollm-debug` | Minimal plus Trace | Active; inspectors/Lab tools remain development-only |
+| `nollm-audited` | Minimal, Trace, Audit skeleton | Composition only; Audit is not productized |
+| `nollm-openclaw` | Minimal plus adapter migration asset | Live activation paused pending future E2E |
 
-Trace and Audit are optional observers of public contracts. Disabling either
-does not alter Core correctness or its current-state result.
+No active distribution references `reference/python/nollm/grf` or uses
+`GRFFacade` as its runtime entrypoint. Trace and Audit do not alter Core
+correctness.
