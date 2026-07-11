@@ -2,6 +2,18 @@
 
 Execute the current taskbook exactly. Do not redesign or broaden scope.
 
+- Before any Nollm task, read:
+  `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md`
+  and the current taskbook.
+- First-principles invariants govern architecture direction.
+- Current modular charters govern component ownership.
+- Dated execution order in the first-principles document is historical stage
+  context; the current taskbook governs scheduling without overriding the
+  architectural invariants.
+- If a filename-based classification conflicts with current code behavior,
+  inspect the code and classify from behavior, dependencies, and state ownership.
+- Never mark a component `DELETE_LATER` merely because an older version of a
+  same-named file contained a forbidden path.
 - This stage is module ownership and monorepo separation only.
 - Preserve all potentially useful components until ownership is proven.
 - Classify before moving; move before deleting.
