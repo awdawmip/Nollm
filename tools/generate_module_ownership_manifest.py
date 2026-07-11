@@ -1,102 +1,595 @@
-"""Generate the complete M0 tracked-file ownership inventory."""
+"""Generate or verify the evidence-based M0C1 ownership manifest."""
+
 from __future__ import annotations
 
+import argparse
+import ast
 import csv
+import io
 import json
-import re
 import subprocess
-from pathlib import Path
+import sys
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "architecture" / "module-ownership"
-CORE_NAMES = {"axial.py", "eisenstein.py", "cell_address.py", "coverage_template.py", "kernel_registry.py", "profiles.py", "fixed_point.py", "field_engine.py", "propagation.py", "bridge_kernel.py", "stitching.py", "geometry_storage.py"}
-ACCESS_NAMES = {"capture.py", "admission.py", "admission_bridge.py", "placement.py", "placement_protocol.py", "facade.py", "host_contract.py", "openclaw_bridge.py", "evidence.py", "source_window.py", "real_sources.py", "ingestion.py"}
-SNAPSHOT_NAMES = {"replay.py", "storage.py", "snapshot.py", "importers.py", "exporters.py", "json_canonical.py", "path_encoding.py"}
-TRACE_NAMES = {"ledger.py", "recall_digest.py"}
+MANIFEST_JSON = OUT / "MODULE_OWNERSHIP_MANIFEST.json"
+MANIFEST_CSV = OUT / "MODULE_OWNERSHIP_MANIFEST.csv"
+UNCLASSIFIED = OUT / "UNCLASSIFIED_TRACKED_FILES.txt"
+REVIEWED_AT = "2026-07-11"
 
-FIELDS = ("path", "file_type", "current_namespace", "owner", "secondary_owner", "lifecycle_status", "runtime_role", "owned_state", "public_api", "imports", "imported_by", "migration_action", "confidence", "reason")
+FIELDS = (
+    "path",
+    "file_type",
+    "current_namespace",
+    "owner",
+    "secondary_owner",
+    "lifecycle_status",
+    "runtime_role",
+    "owned_state",
+    "public_api",
+    "imports",
+    "imported_by",
+    "migration_action",
+    "confidence",
+    "reason",
+    "target_path",
+    "migration_status",
+    "classification_evidence",
+    "forbidden_feature_evidence",
+    "review_status",
+    "reviewed_at",
+)
 
-def tracked() -> list[str]:
-    result = subprocess.run(["git", "ls-files"], cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8")
-    return [line for line in result.stdout.splitlines() if line]
+CORE_LEAVES = {
+    "axial.py",
+    "bridge_kernel.py",
+    "cell_address.py",
+    "coverage_template.py",
+    "eisenstein.py",
+    "fixed_point.py",
+    "json_canonical.py",
+    "kernel_registry.py",
+    "profiles.py",
+    "propagation.py",
+    "stitching.py",
+}
 
-def classify(path: str) -> tuple[str, str, str, str, str, str]:
-    p = path.replace("\\", "/"); name = Path(p).name
-    charter_owners = {
-        "NOLLM_CORE_CHARTER.md": "CORE",
-        "NOLLM_SNAPSHOT_CHARTER.md": "SNAPSHOT",
-        "NOLLM_TRACE_CHARTER.md": "TRACE",
-        "NOLLM_ACCESS_CHARTER.md": "ACCESS",
-        "NOLLM_HISTORY_CHARTER.md": "HISTORY",
-        "NOLLM_AUDIT_CHARTER.md": "AUDIT",
-        "NOLLM_OPENCLAW_CHARTER.md": "OPENCLAW",
-        "NOLLM_LAB_CHARTER.md": "LAB",
-        "NOLLM_DISTRIBUTIONS_CHARTER.md": "DISTRIBUTION",
-    }
-    if p.startswith("docs/architecture/modules/") and name in charter_owners:
-        return charter_owners[name], "ACTIVE", "KEEP", "HIGH", "current M0 module charter", "none"
-    if p.startswith("docs/architecture/module-ownership/"):
-        return "DISTRIBUTION", "GENERATED", "KEEP", "HIGH", "current M0 ownership governance record", "none"
-    if p == "docs/delivery/NOLLM_M0_MODULE_OWNERSHIP_AND_MONOREPO_PACKAGE_SEPARATION_TASK_20260711.md":
-        return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "authoritative M0 taskbook", "none"
-    if p.startswith("docs/validation/M0_"):
-        return "LAB", "ACTIVE", "KEEP", "HIGH", "current M0 validation record", "development-only results"
-    if p in {
-        "docs/project/M0_STARTING_STATE.md",
-        "docs/project/NOLLM_CURRENT_STATUS.md",
-        "docs/project/NOLLM_FUTURE_REPOSITORY_SPLIT_PLAN.md",
-        "docs/project/NOLLM_REPOSITORY_COMPATIBILITY_MATRIX.md",
-    }:
-        return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "current M0 project governance", "none"
-    if p.startswith("packages/nollm-core/"): return "CORE", "ACTIVE", "KEEP", "HIGH", "core package asset", "current geometry state"
-    if p.startswith("packages/nollm-snapshot/"): return "SNAPSHOT", "ACTIVE", "KEEP", "HIGH", "snapshot package asset", "snapshot artifacts"
-    if p.startswith("packages/nollm-trace/"): return "TRACE", "ACTIVE", "KEEP", "HIGH", "trace package asset", "observability events"
-    if p.startswith("packages/nollm-access/"): return "ACCESS", "ACTIVE", "KEEP", "HIGH", "access package asset", "product decisions and handles"
-    if p.startswith("packages/nollm-history/"): return "HISTORY", "CANDIDATE", "KEEP", "HIGH", "history package skeleton", "semantic history"
-    if p.startswith("packages/nollm-audit/"): return "AUDIT", "CANDIDATE", "KEEP", "HIGH", "audit package skeleton", "audit records"
-    if p.startswith("integrations/openclaw/"): return "OPENCLAW", "ACTIVE", "KEEP", "HIGH", "OpenClaw integration asset", "host/session/plugin state"
-    if p.startswith(("experiments/", "lab/", "validation/", "reference/python/tests/", "examples/")): return "LAB", "ACTIVE", "MOVE" if p.startswith("experiments/") else "KEEP", "HIGH", "test, experiment, fixture, or benchmark", "development-only results"
-    if p.startswith("distributions/"): return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "distribution composition metadata", "none"
-    if p.startswith("legacy/"): return "LEGACY", "MIGRATION_ASSET", "QUARANTINE", "LOW", "preserved migration or historical asset", "historical"
+GRF_REVIEWS = {
+    "relation_field.py": (
+        "CORE",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "geometry current-state propagation",
+        "Sparse Cell/Coverage/Lateral/Bridge propagation performs linear scans and contains no route table or external relation index; it also imports placement and recall-result contracts.",
+    ),
+    "field_engine.py": (
+        "CORE",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "in-memory geometry occupancy and bridge state",
+        "CellStore is Core-like, while FieldEngine directly imports PlacementRecord and RelationField; the file is not a dependency-closed pure Core leaf.",
+    ),
+    "placement.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "placement decision and record contracts",
+        "Dataclasses validate host-provided placement objects; no hash, scoring, keyword, vector, or automatic semantic placement algorithm is present.",
+    ),
+    "placement_protocol.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "host placement request and decision contracts",
+        "Typed host contracts validate explicit LLM/host decisions and depend only on the public geometry address contract.",
+    ),
+    "recall.py": (
+        "CORE",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "bounded geometry-entry recall",
+        "Bounded traversal is Core behavior, but the file currently couples RelationField traversal to RecallDigest product records.",
+    ),
+    "storage.py": (
+        "ACCESS",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "file-first evidence, placement, admission, recall, and stitch objects",
+        "One store persists multiple ownership domains; it must be split through stable public ports rather than moved as a pure module.",
+    ),
+    "facade.py": (
+        "ACCESS",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "host workflow facade and workspace lifecycle",
+        "The facade coordinates Capture, Admission, Recall, Snapshot, Source, and storage responsibilities across module boundaries.",
+    ),
+    "openclaw_bridge.py": (
+        "OPENCLAW",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "OpenClaw command translation",
+        "The adapter is host-specific but still imports GRF facade and geometry contracts from the mixed namespace; extraction is pending.",
+    ),
+    "geometry_storage.py": (
+        "ACCESS",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "physical paths for geometry, evidence, admission, and source objects",
+        "Path functions mix Core placement locations with Access evidence/source locations and require ownership separation.",
+    ),
+    "kernel_registry.py": (
+        "CORE",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "coverage kernel registry and deterministic compression",
+        "Current code depends only on deterministic coverage templates and canonical bytes and owns no product policy.",
+    ),
+    "replay.py": (
+        "SNAPSHOT",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "workspace structural replay",
+        "Replay reconstructs geometry from files but also invokes Recall and accesses the mixed GRF store.",
+    ),
+    "ledger.py": (
+        "TRACE",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "append-only operation records",
+        "The ledger is an observability record implementation using canonical bytes; Core does not import it.",
+    ),
+    "evidence.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "raw evidence record contract",
+        "The contract preserves UTF-8 source content and explicit source-window references without geometry semantics.",
+    ),
+    "source_window.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "source window record contract",
+        "The contract owns source projection metadata and has no Core implementation dependency.",
+    ),
+    "capture.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "file-first capture workflow",
+        "Capture preserves raw evidence through GRFFileStore and does not perform placement or recall.",
+    ),
+    "admission.py": (
+        "ACCESS",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "minimal admission record contract",
+        "The record binds explicit placement identity and contains no placement algorithm.",
+    ),
+    "admission_bridge.py": (
+        "ACCESS",
+        "CANDIDATE",
+        "SPLIT",
+        "MEDIUM",
+        "explicit admission workflow",
+        "The workflow coordinates Access records, Core geometry contracts, evidence fallback, and the mixed store.",
+    ),
+    "bridge_kernel.py": (
+        "CORE",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "deterministic bridge geometry contract",
+        "The immutable bridge contract depends only on fixed-point Core math.",
+    ),
+    "stitching.py": (
+        "CORE",
+        "ACTIVE",
+        "KEEP",
+        "HIGH",
+        "deterministic stitch validation contracts",
+        "Stitch objects and acceptance checks use BridgeKernel and fixed-point math without host or semantic policy.",
+    ),
+}
+
+ACCESS_FILES = {
+    "contract_evolution.py",
+    "evidence_island.py",
+    "exporters.py",
+    "host_contract.py",
+    "importers.py",
+    "ingestion.py",
+    "local_patch.py",
+    "path_encoding.py",
+    "real_sources.py",
+}
+
+
+@dataclass(frozen=True)
+class Classification:
+    owner: str
+    lifecycle: str
+    action: str
+    confidence: str
+    role: str
+    state: str
+    public_api: str
+    reason: str
+    target_path: str = ""
+    migration_status: str = "NOT_APPLICABLE"
+    evidence: str = ""
+    forbidden_evidence: tuple[dict[str, str], ...] = ()
+    review_status: str = "AUTO_CANDIDATE"
+    reviewed_at: str = ""
+
+
+def tracked_files() -> list[str]:
+    result = subprocess.run(
+        ["git", "ls-files"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return result.stdout.splitlines()
+
+
+def module_name(path: str) -> str | None:
+    source = PurePosixPath(path)
+    if source.suffix != ".py":
+        return None
+    parts = list(source.parts)
+    if parts[:2] == ["reference", "python"]:
+        parts = parts[2:]
+    elif "src" in parts:
+        parts = parts[parts.index("src") + 1 :]
+    else:
+        parts[-1] = source.stem
+        return ".".join(parts)
+    if parts[-1] == "__init__.py":
+        parts = parts[:-1]
+    else:
+        parts[-1] = source.stem
+    return ".".join(parts)
+
+
+def imports_for(path: str) -> list[str]:
+    source = ROOT / path
+    if source.suffix != ".py":
+        return []
+    try:
+        tree = ast.parse(source.read_text(encoding="utf-8"), filename=path)
+    except (SyntaxError, UnicodeDecodeError):
+        return []
+    current = module_name(path) or ""
+    package = current if path.endswith("/__init__.py") else current.rpartition(".")[0]
+    imports: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imports.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.level:
+                parts = package.split(".") if package else []
+                keep = max(0, len(parts) - (node.level - 1))
+                target = parts[:keep]
+                if node.module:
+                    target.extend(node.module.split("."))
+                if target:
+                    imports.add(".".join(target))
+            elif node.module:
+                imports.add(node.module)
+    return sorted(imports)
+
+
+def classify(path: str, imports: list[str]) -> Classification:
+    p = path.replace("\\", "/")
+    name = PurePosixPath(p).name
+    if p.startswith("packages/nollm-"):
+        package = p.split("/", 2)[1].removeprefix("nollm-").upper()
+        owner = "DISTRIBUTION" if package == "DISTRIBUTIONS" else package
+        return Classification(
+            owner,
+            "ACTIVE",
+            "KEEP",
+            "HIGH",
+            "module package",
+            "module-owned state or public contracts",
+            "public" if "/src/" in p else "metadata",
+            "Target package asset with explicit package ownership.",
+            evidence=f"Path is inside packages/{p.split('/')[1]} and direct imports are {imports}.",
+            review_status="DEPENDENCY_REVIEWED",
+            reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("lab/nollm-lab/openclaw/"):
+        return Classification(
+            "LAB",
+            "ACTIVE",
+            "KEEP",
+            "HIGH",
+            "development asset",
+            "corpus or paused validation result",
+            "none",
+            "R100-moved OpenClaw lab asset is already at its target path.",
+            target_path=p,
+            migration_status="COMPLETED",
+            evidence="Git-preserved M0 move into the declared Lab root.",
+            review_status="MOVE_VERIFIED",
+            reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith(("lab/", "experiments/", "validation/", "reference/python/tests/", "examples/", "tools/")) or p in {"run_tests.py"}:
+        return Classification(
+            "LAB",
+            "ACTIVE",
+            "KEEP",
+            "HIGH",
+            "test, experiment, fixture, benchmark, or repository tool",
+            "development-only state",
+            "development",
+            "The path is an explicitly declared Lab/tool root; production modules may not import it.",
+            evidence=f"Declared Lab root with direct imports {imports}.",
+            review_status="DEPENDENCY_REVIEWED",
+            reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("distributions/"):
+        return Classification(
+            "DISTRIBUTION",
+            "ACTIVE",
+            "KEEP",
+            "HIGH",
+            "composition metadata",
+            "none",
+            "metadata",
+            "Distribution tree contains only composition documentation and JSON manifests.",
+            evidence="File is under the machine-enforced distributions metadata root.",
+            review_status="DEPENDENCY_REVIEWED",
+            reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("integrations/openclaw/"):
+        return Classification(
+            "OPENCLAW",
+            "ACTIVE",
+            "KEEP",
+            "MEDIUM",
+            "OpenClaw host integration",
+            "host/plugin state",
+            "candidate",
+            "Host integration ownership is clear, but private Core dependency review remains pending.",
+            migration_status="BLOCKED_BY_SPLIT",
+            evidence=f"OpenClaw integration path with direct imports {imports}.",
+        )
     if p.startswith("reference/python/nollm/grf/"):
-        if name == "relation_field.py": return "LEGACY", "BLOCKED", "DELETE_LATER", "HIGH", "external relation index is forbidden on the Core path and awaits M1 removal", "blocked relation index"
-        if name in CORE_NAMES: return "CORE", "ACTIVE", "MOVE", "HIGH", "pure geometry/current-state implementation", "geometry current state"
-        if name in ACCESS_NAMES: return "ACCESS", "BLOCKED", "SPLIT", "MEDIUM", "product/source/placement responsibility currently mixed with GRF", "access policy or source handles"
-        if name in SNAPSHOT_NAMES: return "SNAPSHOT", "CANDIDATE", "SPLIT", "MEDIUM", "storage/replay responsibility requires public Core port", "snapshot or serialization state"
-        if name in TRACE_NAMES: return "TRACE", "CANDIDATE", "SPLIT", "MEDIUM", "observability/recording responsibility", "trace records"
-        return "LEGACY", "MIGRATION_ASSET", "QUARANTINE", "LOW", "mixed GRF responsibility pending extraction", "unknown or mixed"
-    if p.startswith("reference/python/nollm/dream_geometry/"): return "LEGACY", "HISTORICAL", "QUARANTINE", "LOW", "pre-M0 V2 domain implementation retained for migration", "historical domain state"
-    if p.startswith("reference/python/nollm/"): return "LEGACY", "HISTORICAL", "QUARANTINE", "LOW", "pre-modular root source retained pending M1 extraction", "historical or mixed runtime state"
-    if p.startswith("protocol/"): return "ACCESS", "MIGRATION_ASSET", "SPLIT", "MEDIUM", "protocol mixes product and Core contracts", "wire contracts"
-    if p.startswith("docs/delivery/") or "RECEIPT" in name: return "DISTRIBUTION", "HISTORICAL", "KEEP", "HIGH", "delivery history", "none"
-    if p.startswith("docs/"): return "LEGACY", "HISTORICAL", "KEEP", "MEDIUM", "documentation requires current/superseded navigation", "none"
-    if p.startswith("tools/"): return "LAB", "ACTIVE", "KEEP", "HIGH", "repository tooling", "development-only"
-    if p.startswith("integrations/"): return "OPENCLAW", "MIGRATION_ASSET", "SPLIT", "MEDIUM", "host adapter integration", "host state"
-    if p.startswith("cortex/"): return "ACCESS", "MIGRATION_ASSET", "QUARANTINE", "LOW", "product policy/cortex history", "product policy"
-    return "DISTRIBUTION", "ACTIVE", "KEEP", "MEDIUM", "root repository governance or packaging asset", "none"
+        if name in GRF_REVIEWS:
+            owner, lifecycle, action, confidence, state, evidence = GRF_REVIEWS[name]
+            return Classification(
+                owner,
+                lifecycle,
+                action,
+                confidence,
+                "production" if lifecycle == "ACTIVE" else "mixed production candidate",
+                state,
+                "public" if confidence == "HIGH" else "candidate",
+                evidence,
+                migration_status="BLOCKED_BY_SPLIT" if action == "SPLIT" else "NOT_APPLICABLE",
+                evidence=f"Code-reviewed on {REVIEWED_AT}: {evidence} Direct imports: {imports}.",
+                review_status="CODE_REVIEWED" if confidence == "MEDIUM" else "DEPENDENCY_REVIEWED",
+                reviewed_at=REVIEWED_AT,
+            )
+        if name in CORE_LEAVES:
+            return Classification(
+                "CORE",
+                "ACTIVE",
+                "KEEP",
+                "HIGH",
+                "deterministic geometry implementation",
+                "geometry current state or pure math",
+                "public",
+                "Reviewed Core leaf with deterministic geometry responsibility.",
+                evidence=f"Leaf-purity review found only deterministic geometry imports: {imports}.",
+                review_status="DEPENDENCY_REVIEWED",
+                reviewed_at=REVIEWED_AT,
+            )
+        if name in ACCESS_FILES:
+            return Classification(
+                "ACCESS",
+                "CANDIDATE",
+                "SPLIT",
+                "MEDIUM",
+                "mixed Access implementation",
+                "evidence, source, or host workflow state",
+                "candidate",
+                "Current behavior is Access-oriented but remains in the mixed GRF namespace.",
+                migration_status="BLOCKED_BY_SPLIT",
+                evidence=f"Behavior and direct imports indicate Access responsibility: {imports}.",
+                review_status="CODE_REVIEWED",
+                reviewed_at=REVIEWED_AT,
+            )
+        if name in {"recall_digest.py"}:
+            return Classification(
+                "CORE",
+                "CANDIDATE",
+                "SPLIT",
+                "MEDIUM",
+                "bounded recall result contracts",
+                "recall result state",
+                "candidate",
+                "Recall result objects currently mix Core traversal facts and source fallback presentation.",
+                migration_status="BLOCKED_BY_SPLIT",
+                evidence=f"Code-reviewed recall contract imports: {imports}.",
+                review_status="CODE_REVIEWED",
+                reviewed_at=REVIEWED_AT,
+            )
+    if p.startswith("legacy/") or p.startswith("reference/python/nollm/dream_geometry/"):
+        return Classification(
+            "LEGACY",
+            "MIGRATION_ASSET",
+            "QUARANTINE",
+            "LOW",
+            "historical migration asset",
+            "historical or mixed state",
+            "none",
+            "Preserved for migration evidence; current ownership is not dependency-closed.",
+            migration_status="QUARANTINED",
+            evidence=f"Historical path with direct imports {imports}.",
+        )
+    if p.startswith("protocol/"):
+        return Classification(
+            "ACCESS",
+            "MIGRATION_ASSET",
+            "SPLIT",
+            "MEDIUM",
+            "historical wire contracts",
+            "mixed protocol state",
+            "candidate",
+            "Protocol assets require M1 contract extraction under the modular architecture.",
+            migration_status="BLOCKED_BY_SPLIT",
+            evidence="Historical V2 protocol path retained as superseded migration input.",
+        )
+    if p.startswith("docs/architecture/modules/"):
+        charter_owner = name.removeprefix("NOLLM_").removesuffix("_CHARTER.md")
+        owner = charter_owner if charter_owner in {"CORE", "SNAPSHOT", "TRACE", "ACCESS", "HISTORY", "AUDIT", "OPENCLAW", "LAB", "DISTRIBUTIONS"} else "DISTRIBUTION"
+        if owner == "DISTRIBUTIONS":
+            owner = "DISTRIBUTION"
+        return Classification(owner, "ACTIVE", "KEEP", "HIGH", "module charter", "none", "governance", "Current M0 module charter.", evidence="Explicit current charter path.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
+    if p.startswith("docs/architecture/module-ownership/"):
+        return Classification("DISTRIBUTION", "GENERATED", "KEEP", "HIGH", "ownership governance", "none", "governance", "Generated M0C1 ownership or boundary record.", evidence="Generated by reviewed M0C1 tooling.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
+    if p.startswith("docs/validation/M0") or p.startswith("docs/project/M0C1"):
+        return Classification("LAB", "ACTIVE", "KEEP", "HIGH", "current M0C1 validation record", "development evidence", "governance", "Current M0C1 validation or starting-state record.", evidence="Explicit current M0C1 path.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
+    if p in {"AGENTS.md", "README.md", "ARCHITECTURE.md", "ROADMAP.md"} or "M0C1" in name or "FIRST_PRINCIPLES" in name:
+        return Classification("DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "current repository governance", "none", "governance", "Current M0C1 navigation, task, or first-principles authority.", evidence="Explicit current-governance filename and content role.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
+    if p.startswith("docs/"):
+        return Classification("LEGACY", "HISTORICAL", "KEEP", "MEDIUM", "historical documentation", "none", "none", "Preserved historical or superseded documentation.", evidence="Documentation is outside current M0C1 governance paths.")
+    if p.startswith("integrations/"):
+        return Classification("OPENCLAW", "MIGRATION_ASSET", "SPLIT", "MEDIUM", "host adapter migration asset", "host state", "candidate", "Integration requires module extraction review.", migration_status="BLOCKED_BY_SPLIT", evidence=f"Integration path with direct imports {imports}.")
+    return Classification(
+        "LEGACY",
+        "MIGRATION_ASSET",
+        "QUARANTINE",
+        "LOW",
+        "unresolved migration asset",
+        "unknown or mixed",
+        "none",
+        "Catch-all classification is intentionally conservative and cannot become ACTIVE/HIGH.",
+        migration_status="QUARANTINED",
+        evidence=f"Unmatched path; direct imports are {imports}.",
+    )
 
-def imports_for(path: Path) -> list[str]:
-    try: text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError): return []
-    if path.suffix == ".py": return sorted(set(re.findall(r"^(?:from|import)\s+([A-Za-z0-9_\.]+)", text, re.M)))
-    if path.suffix in {".ts", ".tsx", ".js", ".mjs", ".cjs"}: return sorted(set(re.findall(r"(?:from\s+|import\s*\()[\"']([^\"']+)", text)))
-    return []
 
-def main() -> None:
-    paths = tracked(); import_map = {p: imports_for(ROOT / p) for p in paths}; reverse: dict[str, list[str]] = {p: [] for p in paths}
-    for source, values in import_map.items():
-        for target in paths:
-            stem = target.removesuffix(".py").replace("/", ".")
-            if any(value == stem or value.startswith(stem + ".") for value in values): reverse[target].append(source)
-    rows = []
-    for p in paths:
-        owner, lifecycle, action, confidence, reason, state = classify(p); suffix = Path(p).suffix.lower().lstrip(".") or "none"
-        rows.append({"path":p,"file_type":suffix,"current_namespace":str(Path(p).parent).replace("\\","/"),"owner":owner,"secondary_owner":"","lifecycle_status":lifecycle,"runtime_role":"production" if owner not in {"LAB","LEGACY","DISTRIBUTION"} else "development_or_reference","owned_state":state,"public_api":"candidate" if suffix in {"py","ts","js"} else "none","imports":";".join(import_map[p]),"imported_by":";".join(sorted(reverse[p])),"migration_action":action,"confidence":confidence,"reason":reason})
+def build_rows(paths: list[str]) -> tuple[list[dict[str, object]], list[str]]:
+    import_map = {path: imports_for(path) for path in paths}
+    module_index = {name: path for path in paths if (name := module_name(path))}
+    reverse: dict[str, set[str]] = {path: set() for path in paths}
+    for source, imports in import_map.items():
+        for imported in imports:
+            parts = imported.split(".")
+            for length in range(len(parts), 0, -1):
+                target = module_index.get(".".join(parts[:length]))
+                if target:
+                    reverse[target].add(source)
+                    break
+    rows: list[dict[str, object]] = []
+    classified: set[str] = set()
+    for path in paths:
+        item = classify(path, import_map[path])
+        classified.add(path)
+        suffix = PurePosixPath(path).suffix.lower().lstrip(".") or "none"
+        rows.append(
+            {
+                "path": path,
+                "file_type": suffix,
+                "current_namespace": str(PurePosixPath(path).parent),
+                "owner": item.owner,
+                "secondary_owner": "",
+                "lifecycle_status": item.lifecycle,
+                "runtime_role": item.role,
+                "owned_state": item.state,
+                "public_api": item.public_api,
+                "imports": import_map[path],
+                "imported_by": sorted(reverse[path]),
+                "migration_action": item.action,
+                "confidence": item.confidence,
+                "reason": item.reason,
+                "target_path": item.target_path,
+                "migration_status": item.migration_status,
+                "classification_evidence": item.evidence,
+                "forbidden_feature_evidence": list(item.forbidden_evidence),
+                "review_status": item.review_status,
+                "reviewed_at": item.reviewed_at,
+            }
+        )
+    return rows, sorted(set(paths) - classified)
+
+
+def render(rows: list[dict[str, object]], unclassified: list[str]) -> dict[Path, bytes]:
+    csv_buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(csv_buffer, fieldnames=FIELDS, lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        encoded = dict(row)
+        for field in ("imports", "imported_by", "forbidden_feature_evidence"):
+            encoded[field] = json.dumps(encoded[field], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        writer.writerow(encoded)
+    return {
+        MANIFEST_CSV: csv_buffer.getvalue().encode("utf-8"),
+        MANIFEST_JSON: (json.dumps(rows, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8"),
+        UNCLASSIFIED: (("\n".join(unclassified) + "\n") if unclassified else "").encode("utf-8"),
+    }
+
+
+def write_outputs(outputs: dict[Path, bytes]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    with (OUT / "MODULE_OWNERSHIP_MANIFEST.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=FIELDS); writer.writeheader(); writer.writerows(rows)
-    (OUT / "MODULE_OWNERSHIP_MANIFEST.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    (OUT / "UNCLASSIFIED_TRACKED_FILES.txt").write_text("", encoding="utf-8")
-    print(f"classified {len(rows)} tracked files; unclassified=0")
+    for path, payload in outputs.items():
+        path.write_bytes(payload)
 
-if __name__ == "__main__": main()
+
+def check_outputs(outputs: dict[Path, bytes]) -> list[str]:
+    mismatches = []
+    for path, expected in outputs.items():
+        if not path.exists() or path.read_bytes() != expected:
+            mismatches.append(path.relative_to(ROOT).as_posix())
+    return mismatches
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--write", action="store_true", help="write canonical V2 manifest outputs")
+    mode.add_argument("--check", action="store_true", help="verify outputs without writing")
+    args = parser.parse_args()
+    paths = tracked_files()
+    rows, unclassified = build_rows(paths)
+    outputs = render(rows, unclassified)
+    if args.write:
+        write_outputs(outputs)
+        print(f"classified {len(rows)} tracked files; unclassified={len(unclassified)}")
+        return 0
+    mismatches = check_outputs(outputs)
+    if mismatches:
+        print("ownership manifest differs: " + ", ".join(mismatches), file=sys.stderr)
+        return 1
+    print(f"ownership manifest check: tracked={len(rows)} unclassified={len(unclassified)} unchanged")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
