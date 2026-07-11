@@ -1,0 +1,6 @@
+{
+  "name": "nollm-audited",
+  "extends": "nollm-openclaw",
+  "runtime": ["nollm-trace", "nollm-audit"],
+  "optional": ["external-source-store-connector"]
+}

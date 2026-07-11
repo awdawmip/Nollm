@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "architecture" / "module-ownership"
-CORE_NAMES = {"axial.py", "eisenstein.py", "cell_address.py", "coverage_template.py", "kernel_registry.py", "profiles.py", "fixed_point.py", "field_engine.py", "relation_field.py", "propagation.py", "bridge_kernel.py", "stitching.py", "geometry_storage.py"}
+CORE_NAMES = {"axial.py", "eisenstein.py", "cell_address.py", "coverage_template.py", "kernel_registry.py", "profiles.py", "fixed_point.py", "field_engine.py", "propagation.py", "bridge_kernel.py", "stitching.py", "geometry_storage.py"}
 ACCESS_NAMES = {"capture.py", "admission.py", "admission_bridge.py", "placement.py", "placement_protocol.py", "facade.py", "host_contract.py", "openclaw_bridge.py", "evidence.py", "source_window.py", "real_sources.py", "ingestion.py"}
 SNAPSHOT_NAMES = {"replay.py", "storage.py", "snapshot.py", "importers.py", "exporters.py", "json_canonical.py", "path_encoding.py"}
 TRACE_NAMES = {"ledger.py", "recall_digest.py"}
@@ -33,12 +33,14 @@ def classify(path: str) -> tuple[str, str, str, str, str, str]:
     if p.startswith("distributions/"): return "DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "distribution composition metadata", "none"
     if p.startswith("legacy/"): return "LEGACY", "MIGRATION_ASSET", "QUARANTINE", "LOW", "preserved migration or historical asset", "historical"
     if p.startswith("reference/python/nollm/grf/"):
+        if name == "relation_field.py": return "LEGACY", "BLOCKED", "DELETE_LATER", "HIGH", "external relation index is forbidden on the Core path and awaits M1 removal", "blocked relation index"
         if name in CORE_NAMES: return "CORE", "ACTIVE", "MOVE", "HIGH", "pure geometry/current-state implementation", "geometry current state"
         if name in ACCESS_NAMES: return "ACCESS", "BLOCKED", "SPLIT", "MEDIUM", "product/source/placement responsibility currently mixed with GRF", "access policy or source handles"
         if name in SNAPSHOT_NAMES: return "SNAPSHOT", "CANDIDATE", "SPLIT", "MEDIUM", "storage/replay responsibility requires public Core port", "snapshot or serialization state"
         if name in TRACE_NAMES: return "TRACE", "CANDIDATE", "SPLIT", "MEDIUM", "observability/recording responsibility", "trace records"
         return "LEGACY", "MIGRATION_ASSET", "QUARANTINE", "LOW", "mixed GRF responsibility pending extraction", "unknown or mixed"
     if p.startswith("reference/python/nollm/dream_geometry/"): return "LEGACY", "HISTORICAL", "QUARANTINE", "LOW", "pre-M0 V2 domain implementation retained for migration", "historical domain state"
+    if p.startswith("reference/python/nollm/"): return "LEGACY", "HISTORICAL", "QUARANTINE", "LOW", "pre-modular root source retained pending M1 extraction", "historical or mixed runtime state"
     if p.startswith("protocol/"): return "ACCESS", "MIGRATION_ASSET", "SPLIT", "MEDIUM", "protocol mixes product and Core contracts", "wire contracts"
     if p.startswith("docs/delivery/") or "RECEIPT" in name: return "DISTRIBUTION", "HISTORICAL", "KEEP", "HIGH", "delivery history", "none"
     if p.startswith("docs/"): return "LEGACY", "HISTORICAL", "KEEP", "MEDIUM", "documentation requires current/superseded navigation", "none"

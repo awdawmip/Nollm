@@ -1,0 +1,4 @@
+{
+  "name": "nollm-minimal",
+  "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"]
+}

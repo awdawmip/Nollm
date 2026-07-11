@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "manifest": "docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.json",
+  "baseline": "docs/architecture/module-ownership/M0_BOUNDARY_BASELINE.json",
+  "modules": {
+    "CORE": {
+      "roots": ["packages/nollm-core"],
+      "allowed": []
+    },
+    "SNAPSHOT": {
+      "roots": ["packages/nollm-snapshot"],
+      "allowed": ["CORE"]
+    },
+    "TRACE": {
+      "roots": ["packages/nollm-trace"],
+      "allowed": ["CORE"]
+    },
+    "ACCESS": {
+      "roots": ["packages/nollm-access"],
+      "allowed": ["CORE", "SNAPSHOT"]
+    },
+    "HISTORY": {
+      "roots": ["packages/nollm-history"],
+      "allowed": ["ACCESS", "SNAPSHOT"]
+    },
+    "AUDIT": {
+      "roots": ["packages/nollm-audit"],
+      "allowed": ["ACCESS", "TRACE"]
+    },
+    "OPENCLAW": {
+      "roots": ["integrations/openclaw"],
+      "allowed": ["ACCESS"]
+    },
+    "LAB": {
+      "roots": ["lab/nollm-lab", "experiments", "validation", "reference/python/tests"],
+      "allowed": ["CORE", "SNAPSHOT", "TRACE", "ACCESS", "HISTORY", "AUDIT", "OPENCLAW"]
+    },
+    "DISTRIBUTION": {
+      "roots": ["distributions"],
+      "allowed": ["CORE", "SNAPSHOT", "TRACE", "ACCESS", "HISTORY", "AUDIT", "OPENCLAW"]
+    }
+  },
+  "python_packages": {
+    "nollm_core": "CORE",
+    "nollm_snapshot": "SNAPSHOT",
+    "nollm_trace": "TRACE",
+    "nollm_access": "ACCESS",
+    "nollm_history": "HISTORY",
+    "nollm_audit": "AUDIT"
+  },
+  "typescript_packages": {
+    "@nollm/core": "CORE",
+    "@nollm/snapshot": "SNAPSHOT",
+    "@nollm/trace": "TRACE",
+    "@nollm/access": "ACCESS",
+    "@nollm/history": "HISTORY",
+    "@nollm/audit": "AUDIT",
+    "@nollm/openclaw": "OPENCLAW"
+  }
+}

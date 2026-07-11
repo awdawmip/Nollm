@@ -1,0 +1,7 @@
+{
+  "name": "nollm-debug",
+  "extends": "nollm-openclaw",
+  "runtime": ["nollm-trace"],
+  "optional": ["inspectors"],
+  "development": ["selected-nollm-lab-tools"]
+}

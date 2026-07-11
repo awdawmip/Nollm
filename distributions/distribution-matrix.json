@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "correctness_invariants": [
+    "Core correctness is unchanged when Trace is disabled.",
+    "Core correctness is unchanged when Audit is disabled.",
+    "Distribution packages contain composition metadata only."
+  ],
+  "distributions": {
+    "nollm-bare": {
+      "runtime": ["nollm-core"],
+      "optional": [],
+      "development": []
+    },
+    "nollm-minimal": {
+      "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"],
+      "optional": [],
+      "development": []
+    },
+    "nollm-openclaw": {
+      "runtime": [
+        "nollm-core",
+        "nollm-snapshot",
+        "nollm-access",
+        "nollm-openclaw"
+      ],
+      "optional": [],
+      "development": []
+    },
+    "nollm-debug": {
+      "runtime": [
+        "nollm-core",
+        "nollm-snapshot",
+        "nollm-access",
+        "nollm-openclaw",
+        "nollm-trace"
+      ],
+      "optional": ["inspectors"],
+      "development": ["selected-nollm-lab-tools"]
+    },
+    "nollm-audited": {
+      "runtime": [
+        "nollm-core",
+        "nollm-snapshot",
+        "nollm-access",
+        "nollm-openclaw",
+        "nollm-trace",
+        "nollm-audit"
+      ],
+      "optional": ["external-source-store-connector"],
+      "development": []
+    }
+  }
+}

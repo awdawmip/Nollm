@@ -1,49 +1,40 @@
 # Nollm Architecture
 
-V2 is the only active architecture. `protocol/v2` is the only active protocol root.
+The current architecture is a modular monorepo. GitHub repositories have not
+been physically split.
 
-V1 / MT1 / pre-V2 prototype source remains physically present as retired history; see docs/history/ for classification and migration boundaries.
-
-## Layer Constitution
-
-```text
-L0 Constitution and Protocol
-L1 Evidence and Identity Kernel
-L2 Deterministic Domain Services
-L3 Core Workflow
-L4 Host Contract and Execution Bridge
-L5 Host Adapter Family
-L6 Terminal and Product
-```
-
-Allowed dependency direction:
+## Dependency Direction
 
 ```text
-L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
+core <- snapshot
+core trace contracts <- trace implementations
+core <- access
+access <- history
+access contracts <- audit
+access <- openclaw
+all modules <- lab
+modules <- distributions (composition only)
 ```
 
-Core does not import adapters or terminals. Core facts are owned by L0-L3
-contracts and deterministic workflows. Adapters translate explicit host inputs
-and do not own facts. Terminals present product workflows and do not bypass L4.
+Core owns deterministic geometry current state, bounded geometry-entry recall,
+atomic current-state writes, and Snapshot/Trace ports. It does not own source,
+host, user, session, semantic placement, history, audit, or trace persistence.
 
-## Business Paths
+The machine-readable rules are in `config/module-boundaries.json` and enforced
+by `tools/check_module_boundaries.py`. Existing cross-boundary debt is frozen in
+`docs/architecture/module-ownership/M0_BOUNDARY_BASELINE.json`; new debt fails
+the checker.
 
-Capture, Admission, and Assembly are vertical business paths. They are not
-replacement names for the horizontal layers.
+## State Boundaries
 
-## Identity Boundaries
+- Snapshot stores structural current-state copies; it does not define history.
+- Trace stores optional operation observations; it is not fact or audit state.
+- History owns semantic version chains; it is not Snapshot or Trace.
+- Audit owns host/user/session action records; Core does not depend on it.
+- Access owns product decisions and maps them to public Core commands.
 
-V2 keeps real evidence identity, host request ID, terminal message ID, and CX2
-projection reference distinct.
+## Historical Routes
 
-## Current Component Classification
-
-- HCG1 is an accepted L5 File Capture Adapter.
-- HAG1-C1R is an accepted and unpromoted L5 File Admission Adapter candidate at
-  `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; V2L0-C1R does not merge or modify
-  it.
-- V2L0-C1R neither merges nor modifies HAG1-C1R.
-- HX1 and CX2 are L4 host contract and public envelope assets.
-- DC1 is a deterministic Cortex compiler component; external Cortex policy is
-  model-side policy outside Core.
-- OpenClaw legacy is a frozen L5/L6 migration asset, not current runtime.
+Evidence-first V2/V2.1/V2.2, GRF8, older GRF handoffs, and paused OpenClaw Live
+Integration taskbooks are preserved as historical or superseded migration
+inputs. See `docs/history/M0_SUPERSEDED_ROUTE_INDEX.md`.

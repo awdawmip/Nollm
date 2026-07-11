@@ -1,56 +1,33 @@
 # Nollm
 
-Nollm means:
-
 > Not an LLM. A notebook for LLMs.
 
-Nollm is a structured external notebook protocol for language models.
-V2 is the only active architecture.
+Nollm is in the M0 modular-monorepo stage. Module ownership and dependency
+boundaries are current; the repository has not been physically split on GitHub.
 
-V1 / MT1 / pre-V2 prototype source remains physically present as retired history; see docs/history/ for classification and migration boundaries.
+## Current Modules
 
-## Active Architecture
+- `packages/nollm-core`: deterministic geometry current state and public ports
+- `packages/nollm-snapshot`: policy-free state snapshot operations
+- `packages/nollm-trace`: optional observability sinks
+- `packages/nollm-access`: product and host decision boundary
+- `packages/nollm-history`: optional semantic history boundary
+- `packages/nollm-audit`: optional audit boundary
+- `integrations/openclaw`: OpenClaw adapter assets
+- `lab/nollm-lab`: corpora, tests, benchmarks, and migration assets
+- `distributions`: composition metadata only
+- `legacy/quarantine`: preserved uncertain migration assets
 
-`protocol/v2` is the only active protocol root.
+See [ARCHITECTURE.md](ARCHITECTURE.md), the module charters under
+`docs/architecture/modules/`, and the complete tracked-file ownership manifest
+under `docs/architecture/module-ownership/`.
 
-The active horizontal layers are:
+## Current Limits
 
-- L0 Constitution and Protocol
-- L1 Evidence and Identity Kernel
-- L2 Deterministic Domain Services
-- L3 Core Workflow
-- L4 Host Contract and Execution Bridge
-- L5 Host Adapter Family
-- L6 Terminal and Product
+OpenClaw Live Integration and long LLM corpus work are paused. GRF8 is an
+engineering checkpoint, not accepted architecture. Evidence-first V2, older GRF
+handoffs, and previous OpenClaw taskbooks are historical or superseded inputs to
+the ownership audit, not current architecture.
 
-Dependencies move inward only:
-
-```text
-L6 -> L5 -> L4 -> L3 -> L2 -> L1 -> L0
-```
-
-Core does not import adapters or terminals. Adapters translate host surfaces and
-do not own facts. Terminals present product workflows and do not bypass L4.
-
-## Current Source Classification
-
-- HCG1 is an accepted L5 File Capture Adapter.
-- HAG1-C1R is an accepted and unpromoted L5 File Admission Adapter candidate at
-  `0e0d21c1747d3113b5c19d39e920eb60bf5e3c5f`; V2L0-C1R does not merge or modify
-  it.
-- V2L0-C1R neither merges nor modifies HAG1-C1R.
-- OpenClaw legacy is a frozen L5/L6 migration asset, not current runtime.
-- Historical V1, MT1, and pre-V2 prototype files are preserved for audit and
-  migration reference only.
-
-Local `main`, `origin/main`, and accepted component heads must be rechecked on
-the delivery machine. This document does not promote remote state.
-
-## Validation
-
-Ordinary V2 work uses component-local pytest gates and explicitly scoped public
-regression gates for the affected V2 components. Delivery-grade acceptance uses
-the TQ1 matrix, parentless evidence capsule, and `verify-ref`.
-
-`python run_tests.py` remains a legacy-inclusive repository diagnostic. It is
-not the primary V2 component acceptance gate and is not evidence that V1 is active architecture. The diagnostic sets `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`.
+M1 will extract mixed responsibilities and remove blocked paths. M0 does not
+perform those semantic rewrites.

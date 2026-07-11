@@ -1,0 +1,9 @@
+{
+  "name": "nollm-openclaw",
+  "runtime": [
+    "nollm-core",
+    "nollm-snapshot",
+    "nollm-access",
+    "nollm-openclaw"
+  ]
+}
