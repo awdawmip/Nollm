@@ -2,12 +2,12 @@
 
 Execute the current taskbook exactly. Do not redesign or broaden scope.
 
-- Windows-first; use PowerShell.
-- Preserve original Evidence bytes/text and source fallback.
-- Do not add relation indexes, inverted routes, semantic graphs, or embedding paths.
-- Do not use Python rules, hashes, or fixed scores for semantic placement.
-- OpenClaw/LLM makes semantic placement decisions; Core only validates and executes.
-- Delete paths explicitly marked for removal; do not add compatibility shims.
-- Fix ordinary code and test failures inside the task and continue.
-- Stop only for a genuine taskbook contradiction or fundamental architecture failure.
+- This stage is module ownership and monorepo separation only.
+- Preserve all potentially useful components until ownership is proven.
+- Classify before moving; move before deleting.
+- Core owns geometry current-state operations only.
+- Snapshot, Trace, Access, History, Audit, OpenClaw, Lab, and Distributions are separate modules.
+- Do not add relation indexes, embeddings, semantic graphs, or Python semantic-placement logic.
+- Do not run live OpenClaw, long LLM corpus jobs, or remote GitHub changes in this stage.
+- Windows-first; fix ordinary failures inside the task.
 - Deliver one clean Git bundle and a clean working tree.
