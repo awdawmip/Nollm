@@ -8,6 +8,8 @@ from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .statement import MemoryStatement
 from .workspace_lock import acquire, release
+from contextlib import contextmanager
+from threading import local
 
 
 class AccessRuntime:
@@ -18,13 +20,25 @@ class AccessRuntime:
         access_root = handle_store.path.parent.parent
         if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root.resolve():
             raise ValueError("Evidence and Binding workspace identity mismatch")
-        if not core.is_open:
-            raise RuntimeError("AccessRuntime requires an OPEN CoreRuntime")
         self._transaction_lock, self._lease = acquire(access_root, core.state_path)
         self._closed = False
+        self._local = local()
+        try:
+            with self._transaction_lock:
+                with core.transaction_lease():
+                    if not core.is_open:
+                        raise RuntimeError("AccessRuntime requires an OPEN CoreRuntime")
+        except RuntimeError as error:
+            release(self._lease)
+            raise RuntimeError("AccessRuntime requires an OPEN CoreRuntime") from error
+        except Exception:
+            release(self._lease)
+            raise
 
     def close(self) -> None:
         with self._transaction_lock:
+            if getattr(self._local, "operation_depth", 0):
+                raise RuntimeError("cannot close during an active Access operation")
             if not self._closed:
                 self._closed=True; release(self._lease)
 
@@ -34,14 +48,26 @@ class AccessRuntime:
     def _require_open(self) -> None:
         if self._closed: raise RuntimeError("AccessRuntime is closed")
 
-    def capture(self, statement: MemoryStatement) -> None:
+    @contextmanager
+    def _operation(self):
         with self._transaction_lock:
             self._require_open()
+            self._local.operation_depth = getattr(self._local, "operation_depth", 0) + 1
+            try:
+                yield
+            finally:
+                depth = self._local.operation_depth - 1
+                if depth:
+                    self._local.operation_depth = depth
+                else:
+                    del self._local.operation_depth
+
+    def capture(self, statement: MemoryStatement) -> None:
+        with self._operation():
             self.evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
-        with self._transaction_lock:
-            self._require_open()
+        with self._operation():
             return self._apply_locked(decision)
 
     def _apply_locked(self, decision: AccessDecision) -> object | None:
@@ -50,9 +76,10 @@ class AccessRuntime:
         if decision.action == "reuse":
             assert decision.existing_handle is not None
             self.evidence_store.get_original(decision.statement_id)
-            if not self.core.contains(decision.existing_handle):
-                raise KeyError("explicit reuse handle no longer exists")
-            self.handle_store.put(decision.statement_id, decision.existing_handle)
+            with self.core.transaction_lease():
+                if not self.core.contains(decision.existing_handle):
+                    raise KeyError("explicit reuse handle no longer exists")
+                self.handle_store.put(decision.statement_id, decision.existing_handle)
             return decision.existing_handle
         if decision.action == "new":
             assert decision.target_cell is not None
@@ -80,8 +107,7 @@ class AccessRuntime:
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
-        with self._transaction_lock:
-            self._require_open()
+        with self._operation():
             return self._recall_locked(request)
 
     def _recall_locked(self, request: AccessRecallRequest) -> AccessRecallResult:
@@ -105,8 +131,7 @@ class AccessRuntime:
         return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
-        with self._transaction_lock:
-            self._require_open()
+        with self._operation():
             return self.handle_store.get(statement_id)
 
     def _atomic(self, core_action: object, binding_action: object) -> object:

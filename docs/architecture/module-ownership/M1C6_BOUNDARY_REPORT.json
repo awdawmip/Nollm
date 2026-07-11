@@ -1,0 +1,155 @@
+{
+  "compatibility_reexports": [],
+  "cycles_all": [],
+  "cycles_production": [],
+  "graph_all": {
+    "ACCESS": [
+      "CORE"
+    ],
+    "AUDIT": [],
+    "CORE": [],
+    "DISTRIBUTION": [],
+    "HISTORY": [],
+    "LAB": [],
+    "LEGACY": [
+      "CORE"
+    ],
+    "OPENCLAW": [
+      "LEGACY"
+    ],
+    "SNAPSHOT": [
+      "CORE"
+    ],
+    "TRACE": [
+      "CORE"
+    ]
+  },
+  "graph_production": {
+    "ACCESS": [
+      "CORE"
+    ],
+    "AUDIT": [],
+    "CORE": [],
+    "HISTORY": [],
+    "OPENCLAW": [],
+    "SNAPSHOT": [
+      "CORE"
+    ],
+    "TRACE": [
+      "CORE"
+    ]
+  },
+  "migration_violations": [
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "8393b0601ef220b717d63fc0acc80f6e4a23267b66e578066500e7ca079e2d52",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf4r_failure_recovery.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/facade.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "LOW",
+      "detail": "Legacy migration asset dependency; excluded from production gate.",
+      "fingerprint": "99c46fb6c3459c607d23cbbcf1723ad16ce78563306643e0282b553bdf618b9f",
+      "kind": "legacy_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "QUARANTINE",
+      "path": "reference/python/nollm/grf/relation_field.py",
+      "source_owner": "LEGACY",
+      "target": "packages/nollm-core/src/nollm_core/__init__.py",
+      "target_owner": "CORE"
+    },
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "b9ea0af62fac5e684f32b4825b4e516b6d15fc2e52f1fc1c885e9af73b7d4e78",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf7r_facade_runtime.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/json_canonical.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "c0feccfbfd1f810feae5f1f8c5db81837380962da6c55c4bf22e5a75ade926a1",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf_file_adapter.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/host_contract.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "c5dd9adcfaa26890ed445c55fb611756c1c925e7c38b24bed091424bd7486aa3",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf4r_failure_recovery.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/admission_bridge.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "LOW",
+      "detail": "Legacy migration asset dependency; excluded from production gate.",
+      "fingerprint": "cfa9c37d640ca9d738559c6403fff14fac7dce81d9c368f7d1303a0103fbab9b",
+      "kind": "legacy_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "QUARANTINE",
+      "path": "reference/python/nollm/grf/m0_ports.py",
+      "source_owner": "LEGACY",
+      "target": "packages/nollm-core/src/nollm_core/__init__.py",
+      "target_owner": "CORE"
+    },
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "f1ba283ca7c969dd88e9a4a359872f12feedfda0fb9de73d9314e9cfc4805151",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf7r_facade_runtime.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/storage.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "MEDIUM",
+      "detail": "Inactive migration asset dependency; excluded from active production gate.",
+      "fingerprint": "f9f622e0eaab70e9497c6ad202b05300d8e00f70358ee29b4b997257ffc3b9d1",
+      "kind": "inactive_product_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "SPLIT",
+      "path": "integrations/adapters/grf7r_facade_runtime.py",
+      "source_owner": "OPENCLAW",
+      "target": "reference/python/nollm/grf/host_contract.py",
+      "target_owner": "LEGACY"
+    },
+    {
+      "confidence": "LOW",
+      "detail": "Legacy migration asset dependency; excluded from production gate.",
+      "fingerprint": "fc288474c331985a6827d271e55cad8feaa0e21d626d17546a005f0fc76d4743",
+      "kind": "legacy_dependency",
+      "m1_action": "extract mixed responsibilities through public module contracts",
+      "migration_action": "QUARANTINE",
+      "path": "reference/python/nollm/grf/field_engine.py",
+      "source_owner": "LEGACY",
+      "target": "packages/nollm-core/src/nollm_core/__init__.py",
+      "target_owner": "CORE"
+    }
+  ],
+  "production_violations": [],
+  "schema_version": 2,
+  "tracked_file_count": 1440
+}

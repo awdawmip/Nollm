@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from threading import RLock
+from threading import RLock, local
 from contextlib import contextmanager
 
 from .atom import MemoryAtom
@@ -66,6 +66,7 @@ class CoreRuntime(ConsistentStatePort):
         self._owner_key = claim(self.store.path, self)
         self._kernel_registry = kernel_registry or KernelRegistry()
         self._lock = RLock()
+        self._local = local()
         self._read_token: object | None = None
         try:
             self._store_token = self.store.bind_semantic_validator(self._validate_state_bytes)
@@ -84,6 +85,8 @@ class CoreRuntime(ConsistentStatePort):
     def close(self) -> None:
         with self._lock:
             if self._closed: return
+            if self._depth("operation_depth") or self._depth("trace_depth"):
+                raise RuntimeError("cannot close during an active Core operation")
             if self._read_token is not None: raise RuntimeError("cannot close during consistent read")
             self._closed=True; release(self._owner_key,self)
 
@@ -106,7 +109,48 @@ class CoreRuntime(ConsistentStatePort):
     def transaction_lease(self):
         with self._lock:
             self._require_open()
-            yield self
+            self._reject_trace_reentry()
+            self._push("operation_depth")
+            try:
+                yield self
+            finally:
+                self._pop("operation_depth")
+
+    @contextmanager
+    def _operation(self):
+        with self._lock:
+            self._require_open()
+            self._reject_trace_reentry()
+            self._push("operation_depth")
+            try:
+                yield
+            finally:
+                self._pop("operation_depth")
+
+    def _emit_trace(self, event: TraceEvent) -> None:
+        self._push("trace_depth")
+        try:
+            safe_emit(self.trace_sink, event)
+        finally:
+            self._pop("trace_depth")
+
+    def _reject_trace_reentry(self) -> None:
+        if self._depth("trace_depth"):
+            raise RuntimeError("Trace callback cannot reenter CoreRuntime")
+
+    def _depth(self, name: str) -> int:
+        return getattr(self._local, name, 0)
+
+    def _push(self, name: str) -> None:
+        setattr(self._local, name, self._depth(name) + 1)
+
+    def _pop(self, name: str) -> None:
+        depth = self._depth(name)
+        if depth <= 1:
+            if hasattr(self._local, name):
+                delattr(self._local, name)
+        else:
+            setattr(self._local, name, depth - 1)
 
     def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
         self._require_open()
@@ -134,8 +178,7 @@ class CoreRuntime(ConsistentStatePort):
     def apply_batch(self, commands: tuple[CoreCommand, ...]) -> tuple[object, ...]:
         if not commands:
             raise ValueError("batch must contain at least one command")
-        with self._lock:
-            self._require_open()
+        with self._operation():
             if self._read_token is not None:
                 raise RuntimeError("mutation is forbidden during consistent read")
             if self._mutation_active:
@@ -145,7 +188,7 @@ class CoreRuntime(ConsistentStatePort):
             bridges = dict(self._bridges)
             results: list[object] = []
             events: list[TraceEvent] = []
-            safe_emit(self.trace_sink, TraceEvent("core.batch.begin", {"command_count": len(commands)}, "stable"))
+            self._emit_trace(TraceEvent("core.batch.begin", {"command_count": len(commands)}, "stable"))
             try:
                 for command in commands:
                     result, event = self._apply(command, cells, bridges)
@@ -153,18 +196,17 @@ class CoreRuntime(ConsistentStatePort):
                     events.append(event)
                 self.store.write_document(self._document(cells, bridges), self._store_token)
             except Exception:
-                safe_emit(self.trace_sink, TraceEvent("core.batch.rollback", {"command_count": len(commands)}, "stable"))
+                self._emit_trace(TraceEvent("core.batch.rollback", {"command_count": len(commands)}, "stable"))
                 self._mutation_active = False
                 raise
             self._cells = cells; self._bridges = bridges; self._cell_store = CellStore(self._cells)
-            for event in events: safe_emit(self.trace_sink, event)
-            safe_emit(self.trace_sink, TraceEvent("core.batch.commit", {"command_count": len(commands)}, "stable"))
+            for event in events: self._emit_trace(event)
+            self._emit_trace(TraceEvent("core.batch.commit", {"command_count": len(commands)}, "stable"))
             self._mutation_active = False
             return tuple(results)
 
     def get(self, handle: AtomHandle) -> MemoryAtom:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return self._require_handle(handle, self._cells)
 
     def contains(self, handle: AtomHandle) -> bool:
@@ -175,28 +217,23 @@ class CoreRuntime(ConsistentStatePort):
         return True
 
     def atoms_at(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return self._cell_store.atoms_at(address)
 
     def occupied_cells(self) -> tuple[GeometryAddress, ...]:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return self._cell_store.occupied_cells()
 
     def bridges(self) -> tuple[BridgeSpec, ...]:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return tuple(self._bridges[key] for key in sorted(self._bridges))
 
     def placement_count(self) -> int:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return self._cell_store.placement_count()
 
     def density_state(self, address: GeometryAddress) -> str:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return self._cell_store.density_state(address)
 
     def recall(self, request: object) -> object:
@@ -204,19 +241,18 @@ class CoreRuntime(ConsistentStatePort):
 
         if not isinstance(request, CoreRecallRequest):
             raise TypeError("request must be CoreRecallRequest")
-        with self._lock:
-            self._require_open()
-            return resolve_recall(self, request, self.trace_sink)
+        with self._operation():
+            return resolve_recall(self, request)
 
     def state_bytes(self) -> bytes:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             return canonical_state_bytes(self._document(self._cells, self._bridges))
 
     def begin_consistent_read(self) -> object:
         self._lock.acquire()
         try:
             self._require_open()
+            self._reject_trace_reentry()
         except Exception:
             self._lock.release()
             raise
@@ -225,7 +261,8 @@ class CoreRuntime(ConsistentStatePort):
             raise RuntimeError("consistent read already active")
         token = object()
         self._read_token = token
-        safe_emit(self.trace_sink, TraceEvent("core.snapshot.freeze", {}, "stable"))
+        self._push("operation_depth")
+        self._emit_trace(TraceEvent("core.snapshot.freeze", {}, "stable"))
         return token
 
     def export_state(self, token: object) -> bytes:
@@ -233,8 +270,7 @@ class CoreRuntime(ConsistentStatePort):
         return self.state_bytes()
 
     def import_state(self, payload: bytes) -> None:
-        with self._lock:
-            self._require_open()
+        with self._operation():
             if self._read_token is not None:
                 raise RuntimeError("cannot restore during a consistent read")
             cells, bridges = self._decode_state_bytes(payload)
@@ -244,10 +280,14 @@ class CoreRuntime(ConsistentStatePort):
             self._cell_store = CellStore(self._cells)
 
     def end_consistent_read(self, token: object) -> None:
+        self._reject_trace_reentry()
         self._require_token(token)
         self._read_token = None
-        safe_emit(self.trace_sink, TraceEvent("core.snapshot.release", {}, "stable"))
-        self._lock.release()
+        try:
+            self._emit_trace(TraceEvent("core.snapshot.release", {}, "stable"))
+        finally:
+            self._pop("operation_depth")
+            self._lock.release()
 
     def _apply(
         self,

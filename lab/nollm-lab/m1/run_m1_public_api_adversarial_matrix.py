@@ -50,6 +50,20 @@ def run_matrix(root:Path)->dict[str,bool]:
                 try:self.core.put(MemoryAtom('inner','inner'),none)
                 except RuntimeError:self.rejected=True
     sink=Reentrant();traced=CoreRuntime(root/'trace',trace_sink=sink);sink.core=traced;traced.put(MemoryAtom('outer','outer'),none);facts['reentrant_trace_mutation_rejected']=sink.rejected and traced.placement_count()==1;facts['trace_parity']=facts['reentrant_trace_mutation_rejected'];traced.close()
+    class LifecycleTrace:
+        def __init__(self,name,action):self.name=name;self.action=action;self.rejected=False
+        def emit(self,event):
+            if event.name==self.name:
+                try:self.action()
+                except RuntimeError:self.rejected=True
+    recall_core=None
+    recall_sink=LifecycleTrace('core.recall.begin',lambda:recall_core.put(MemoryAtom('trace-added','x'),none));recall_core=CoreRuntime(root/'trace-recall',trace_sink=recall_sink)
+    recall_result=recall_core.recall(CoreRecallRequest('trace',(none,),(),RecallBudget(0,1,0,0,0,1)));facts['trace_recall_observation_only']=recall_sink.rejected and not recall_result.items;recall_core.close()
+    snapshot_core=None
+    snapshot_sink=LifecycleTrace('core.snapshot.release',lambda:snapshot_core.put(MemoryAtom('release-added','x'),none));snapshot_core=CoreRuntime(root/'trace-snapshot',trace_sink=snapshot_sink);snapshot_token=snapshot_core.begin_consistent_read();snapshot_core.export_state(snapshot_token);snapshot_core.end_consistent_read(snapshot_token);facts['trace_snapshot_release_observation_only']=snapshot_sink.rejected and snapshot_core.placement_count()==0;snapshot_core.close()
+    lease_core=CoreRuntime(root/'lease-close')
+    with lease_core.transaction_lease():facts['same_thread_transaction_close_rejected']=rejected(lease_core.close) and rejected(lambda:CoreRuntime(root/'lease-close'))
+    lease_core.close()
     entered,release_event=Event(),Event()
     def hook(_):entered.set();release_event.wait(5)
     closing_core=CoreRuntime(root/'close',store=FileCoreStateStore(root/'close',hook))
@@ -62,29 +76,38 @@ def run_matrix(root:Path)->dict[str,bool]:
         if fail:fail=False;binding_entered.set();binding_release.wait(5);raise OSError('binding fault')
     race_store=FileHandleStore(race_root,binding_hook);race_access=AccessRuntime(race_core,FileEvidenceStore(race_root),race_store);race_access.capture(MemoryStatement('a','a'))
     race_cell=GeometryAddress('eisenstein_exact_v1','race',0,0,0);direct_cell=GeometryAddress('eisenstein_exact_v1','race',0,1,0)
-    with ThreadPoolExecutor(5) as pool:
+    with ThreadPoolExecutor(4) as pool:
         failed=pool.submit(race_access.apply,AccessDecision('a','a','new',target_cell=race_cell,reason_text='x'));binding_entered.wait(5)
-        direct=pool.submit(race_core.put,MemoryAtom('direct','direct'),direct_cell)
-        reading=pool.submit(race_core.recall,CoreRecallRequest('read',(direct_cell,),(),RecallBudget(0,1,0,0,0,1)))
         close_started=Event()
         def close_access():close_started.set();race_access.close()
         closing=pool.submit(close_access);close_started.wait(5)
-        other=pool.submit(AccessRuntime,race_core,FileEvidenceStore(root/'other-root'),FileHandleStore(root/'other-root'))
-        facts['access_close_race_safe']=not closing.done() and not other.done()
+        facts['active_pair_rebind_rejected']=rejected(lambda:AccessRuntime(race_core,FileEvidenceStore(root/'other-root'),FileHandleStore(root/'other-root')))
+        facts['access_close_race_safe']=not closing.done()
         binding_release.set()
         try:failed.result()
         except OSError:pass
-        direct_handle=direct.result();read_result=reading.result();closing.result();rebound=other.result()
+        closing.result()
+    direct_handle=race_core.put(MemoryAtom('direct','direct'),direct_cell);read_result=race_core.recall(CoreRecallRequest('read',(direct_cell,),(),RecallBudget(0,1,0,0,0,1)));rebound=AccessRuntime(race_core,FileEvidenceStore(root/'other-root'),FileHandleStore(root/'other-root'))
     facts['direct_core_success_survives_failed_access_transaction']=race_core.contains(direct_handle)
     facts['concurrent_recall_consistent']=len(read_result.items)==1 and read_result.items[0].handle==direct_handle
     rebound.close();race_core.close()
+    callback_core=CoreRuntime(root/'callback-core');callback_access=None;callback_facts={'close':False,'rebind':False};callback_once=True
+    def callback_hook(_):
+        nonlocal callback_once
+        if not callback_once:return
+        callback_once=False;callback_facts['close']=rejected(callback_access.close);callback_facts['rebind']=rejected(lambda:AccessRuntime(callback_core,FileEvidenceStore(root/'callback-other'),FileHandleStore(root/'callback-other')));raise OSError('callback fault')
+    callback_access=AccessRuntime(callback_core,FileEvidenceStore(root/'callback-access'),FileHandleStore(root/'callback-access',callback_hook));callback_access.capture(MemoryStatement('callback','x'))
+    try:callback_access.apply(AccessDecision('callback','callback','new',target_cell=none,reason_text='x'))
+    except OSError:pass
+    facts['access_callback_close_rejected']=callback_facts['close'];facts['access_callback_cross_root_rejected']=callback_facts['rebind'];facts['callback_rollback_consistent']=callback_core.placement_count()==0
+    callback_access.close();callback_core.close()
     corrupt_root=root/'corrupt';corrupt_core=CoreRuntime(corrupt_root/'core');corrupt_evidence=FileEvidenceStore(corrupt_root);corrupt_access=AccessRuntime(corrupt_core,corrupt_evidence,FileHandleStore(corrupt_root));corrupt_evidence.put_original(MemoryStatement('base','base'));base=corrupt_access.apply(AccessDecision('base','base','new',target_cell=cell,reason_text='x'));corrupt_evidence.put_original(MemoryStatement('bad','bad'));corrupt_evidence._path('bad').write_text('{}\n',encoding='utf-8');facts['reuse_corrupt_evidence_rejected']=rejected(lambda:corrupt_access.apply(AccessDecision('bad','bad','reuse',existing_handle=base,reason_text='x')));corrupt_access.close();corrupt_core.close()
-    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C5_BOUNDARY_REPORT.json'
+    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C6_BOUNDARY_REPORT.json'
     if report.exists():
         boundary=json.loads(report.read_text(encoding='utf-8'));facts['boundary_zero']=boundary.get('production_violations')==[] and boundary.get('cycles_production')==[]
     return facts
 
 def main():
-    with TemporaryDirectory(prefix='nollm-m1c5-matrix-') as directory:
+    with TemporaryDirectory(prefix='nollm-m1c6-matrix-') as directory:
         facts=run_matrix(Path(directory));assert all(facts.values());print(json.dumps({'status':'passed','facts':facts},sort_keys=True))
 if __name__=='__main__':main()

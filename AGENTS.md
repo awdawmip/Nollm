@@ -14,7 +14,19 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C5 operation-lease, state-encapsulation, and canonical-recall final closure.
+- Current stage is M1-C6 reentrancy-safe lifecycle, Trace isolation, and reuse consistency final closure.
+- Preserve all accepted M1-C5 package, kernel, canonical state/evidence, owner, pair, Snapshot, Trace, Recall, boundary, and regression results.
+- RLock ownership alone is not an operation lease. Same-thread lifecycle reentry is explicitly tracked and rejected.
+- Core close cannot execute from inside an active Core operation, transaction lease, Trace callback, Store callback, Snapshot callback, or Recall callback on the same Runtime.
+- Cross-thread close may wait; same-thread close during an active operation fails deterministically without releasing the owner.
+- TraceSink is observation-only. Trace callbacks cannot mutate, restore, close, reopen, begin another Recall, or change Core lifecycle/state.
+- Every Core Trace event passes through one Runtime-owned guarded emitter; direct `safe_emit` calls that bypass the guard are forbidden.
+- Access close cannot execute from inside an active Access operation or Binding/Evidence callback on the same Runtime.
+- AccessRuntime construction atomically binds a live OPEN Core and the canonical Access pair.
+- Reuse holds a Core transaction lease across Handle validation and Binding commit.
+- A successful Access binding cannot refer to a Handle removed before commit.
+- Lock order is uniform: Access pair coordinator before Core transaction/lifecycle lease for Access operations.
+- Do not proceed to M2, OpenClaw Live, model calls, corpus execution, PB scale, or remote GitHub work.
 - Core close/release is serialized with mutation, Recall, Snapshot, restore, and state reads.
 - Access close/release is serialized with capture, apply, recall, saved_handle, and rollback.
 - Access atomic transactions hold a Core-owned transaction lease across snapshot, action, binding, and rollback.
