@@ -27,17 +27,17 @@
     "plc-0061",
     "plc-0062",
     "plc-0063",
-    "plc-0064"
-  ],
-  "failed_case_ids": [],
-  "deferred_case_ids": [],
-  "pending_case_ids": [
+    "plc-0064",
     "plc-0073",
     "plc-0074",
     "plc-0075",
     "plc-0076",
     "plc-0085",
-    "plc-0086",
+    "plc-0086"
+  ],
+  "failed_case_ids": [],
+  "deferred_case_ids": [],
+  "pending_case_ids": [
     "plc-0087",
     "plc-0088",
     "plc-0097",
@@ -126,11 +126,11 @@
     "plc-0340"
   ],
   "current_batch": 1,
-  "last_completed_case_id": "plc-0064",
+  "last_completed_case_id": "plc-0086",
   "provider": "meituan",
   "model": "LongCat-2.0",
   "prompt_version": "placement_v1",
   "schema_version": "nollm_placement_v1",
-  "started_at": "2026-07-11T01:38:56.371395+00:00",
-  "updated_at": "2026-07-11T01:45:48.742718+00:00"
+  "started_at": "2026-07-11T01:46:54.054410+00:00",
+  "updated_at": "2026-07-11T01:54:03.453553+00:00"
 }

@@ -1,10 +1,10 @@
 {
   "case_count": 6,
   "success_count": 6,
-  "defer_count": 1,
+  "defer_count": 0,
   "parse_failure_count": 0,
   "model_failure_count": 0,
   "core_rejection_count": 0,
-  "average_latency_ms": 68727.66666666667,
-  "p95_latency_ms": 76419
+  "average_latency_ms": 71565.83333333333,
+  "p95_latency_ms": 78144
 }
