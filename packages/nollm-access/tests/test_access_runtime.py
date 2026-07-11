@@ -33,21 +33,21 @@ def decision(statement_id: str, action: str, **values: object) -> AccessDecision
 def test_capture_new_reuse_defer_and_forget(tmp_path) -> None:
     access, core = runtime(tmp_path)
     statement = MemoryStatement("s1", "原始 Evidence", "file:one", ("context:one",))
-    before = core.state_bytes()
+    before = core.export_state_bytes()
     access.capture(statement)
-    assert core.state_bytes() == before
+    assert core.export_state_bytes() == before
 
     handle = access.apply(decision("s1", "new", target_cell=cell(-3, 5)))
     assert access.saved_handle("s1") == handle
-    after_new = core.state_bytes()
+    after_new = core.export_state_bytes()
 
     access.capture(MemoryStatement("s1-reuse", "explicit reuse Evidence"))
     assert access.apply(decision("s1-reuse", "reuse", existing_handle=handle)) == handle
-    assert core.state_bytes() == after_new
+    assert core.export_state_bytes() == after_new
 
     access.capture(MemoryStatement("s-defer", "deferred Evidence"))
     assert access.apply(decision("s-defer", "defer")) is None
-    assert core.state_bytes() == after_new
+    assert core.export_state_bytes() == after_new
 
     removed = access.apply(decision("s1", "forget", existing_handle=handle))
     assert removed.atom_id == "s1"

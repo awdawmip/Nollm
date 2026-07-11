@@ -10,4 +10,4 @@ Purpose: corpora, gold labels, validation, benchmarks, stress/migration tests, v
 - Failure: never affects production Core correctness.
 - Distributions: selected tools only in debug; otherwise development-only.
 - Future repository: `nollm-lab`.
-- Current sources: experiments, tests, validation, examples, migration tools, and benchmarks.
+- Current sources: experiments, tests, validation, examples, migration tools, benchmarks, canonical geometry template compiler/generator, and Core capability validator.

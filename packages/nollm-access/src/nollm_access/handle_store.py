@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-from typing import Callable
 from uuid import uuid4
 
 from nollm_core import AtomHandle
@@ -40,13 +39,9 @@ def _canonical(document: dict[str, object]) -> bytes:
 class FileHandleStore:
     """Canonical one-handle/one-current physical binding registry."""
 
-    def __init__(self, root: Path, before_replace: Callable[[Path], None] | None = None) -> None:
+    def __init__(self, root: Path) -> None:
         self._workspace = Path(root).resolve()
         self._path = self._workspace / "access" / "bindings.json"
-        self._before_replace = before_replace
-        self._writer_capability: object | None = None
-        self._pair_key: tuple[str, str] | None = None
-        self._configuration_frozen = False
 
     @property
     def workspace(self) -> Path:
@@ -56,38 +51,6 @@ class FileHandleStore:
     def path(self) -> Path:
         return self._path
 
-    @property
-    def before_replace(self) -> Callable[[Path], None] | None:
-        return self._before_replace
-
-    @before_replace.setter
-    def before_replace(self, callback: Callable[[Path], None] | None) -> None:
-        if self._configuration_frozen:
-            raise RuntimeError("HandleStore configuration is frozen after Access binding")
-        self._before_replace = callback
-
-    @property
-    def binding_configuration(self) -> tuple[object, ...]:
-        return (str(self._path), self._before_replace)
-
-    def bind_writer(self, capability: object, pair_key: tuple[str, str]) -> None:
-        if self._writer_capability is not None and self._writer_capability is not capability:
-            raise RuntimeError("HandleStore is already bound to another Access writer")
-        self._writer_capability = capability
-        self._pair_key = pair_key
-        self._configuration_frozen = True
-
-    def unbind_writer(self, capability: object) -> None:
-        self._require_writer(capability)
-        self._writer_capability = None
-        self._pair_key = None
-
-    def _require_writer(self, capability: object | None) -> None:
-        if capability is None or capability is not self._writer_capability:
-            raise RuntimeError("HandleStore mutation requires the bound Access writer capability")
-        if not getattr(capability, "active", False):
-            raise RuntimeError("HandleStore writer capability is expired")
-
     def state_bytes(self) -> bytes:
         if not self.path.exists():
             return self._encode(())
@@ -95,13 +58,11 @@ class FileHandleStore:
         self._decode(payload)
         return payload
 
-    def import_state(self, payload: bytes, *, capability: object | None = None) -> None:
-        self._require_writer(capability)
+    def import_state(self, payload: bytes) -> None:
         self._decode(payload)
         self._write_bytes(payload)
 
-    def put(self, statement_id: str, handle: AtomHandle, *, capability: object | None = None) -> None:
-        self._require_writer(capability)
+    def put(self, statement_id: str, handle: AtomHandle) -> None:
         bindings = list(self._load())
         self._require_unbound_statement(bindings, statement_id)
         for index, binding in enumerate(bindings):
@@ -113,8 +74,7 @@ class FileHandleStore:
         bindings.append(HandleBinding(handle, statement_id))
         self._write(tuple(bindings))
 
-    def revise_current(self, old_handle: AtomHandle, statement_id: str, new_handle: AtomHandle, *, capability: object | None = None) -> None:
-        self._require_writer(capability)
+    def revise_current(self, old_handle: AtomHandle, statement_id: str, new_handle: AtomHandle) -> None:
         bindings = list(self._load())
         self._require_unbound_statement(bindings, statement_id)
         index = self._index_for_handle(bindings, old_handle)
@@ -134,8 +94,7 @@ class FileHandleStore:
         bindings = self._load()
         return bindings[self._index_for_handle(list(bindings), handle)]
 
-    def remove_handle(self, handle: AtomHandle, *, capability: object | None = None) -> None:
-        self._require_writer(capability)
+    def remove_handle(self, handle: AtomHandle) -> None:
         bindings = list(self._load())
         del bindings[self._index_for_handle(bindings, handle)]
         self._write(tuple(bindings))
@@ -210,8 +169,6 @@ class FileHandleStore:
                 stream.write(payload)
                 stream.flush()
                 os.fsync(stream.fileno())
-            if self._before_replace is not None:
-                self._before_replace(temporary)
             os.replace(temporary, self.path)
         finally:
             if temporary.exists():

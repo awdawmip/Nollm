@@ -4,7 +4,8 @@ from hashlib import sha256
 import json
 from types import MappingProxyType
 
-from .coverage_template import COVERAGE_DOWN, COVERAGE_UP, DEFAULT_FANOUT_LIMIT, LATERAL, CoverageTemplate, CoverageTemplateCompiler
+from .compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA256
+from .coverage_template import DEFAULT_FANOUT_LIMIT, CoverageTemplate, template_from_mapping
 from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest, profiles
 
 KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v2"
@@ -12,9 +13,15 @@ KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v2"
 
 class KernelRegistry:
     def __init__(self, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> None:
+        if fanout_limit != DEFAULT_FANOUT_LIMIT:
+            raise ValueError("Core runtime uses the canonical compiled fanout limit")
         object.__setattr__(self, "fanout_limit", fanout_limit)
-        compiler = CoverageTemplateCompiler(fanout_limit)
-        object.__setattr__(self, "_templates", MappingProxyType({(profile.profile_id, direction): compiler.compile(profile.profile_id, direction) for profile in profiles() for direction in (COVERAGE_UP, COVERAGE_DOWN, LATERAL)}))
+        document = json.loads(COMPILED_TEMPLATES_JSON.decode("utf-8"))
+        if document.get("schema_version") != "nollm_compiled_geometry_templates_v1":
+            raise ValueError("unsupported compiled geometry template artifact")
+        templates = tuple(template_from_mapping(value) for value in document["templates"])
+        object.__setattr__(self, "_templates", MappingProxyType({(template.profile_id, template.direction): template for template in templates}))
+        object.__setattr__(self, "compiled_artifact_sha256", COMPILED_TEMPLATES_SHA256)
         object.__setattr__(self, "_sealed", True)
 
     def __setattr__(self, name: str, value: object) -> None:

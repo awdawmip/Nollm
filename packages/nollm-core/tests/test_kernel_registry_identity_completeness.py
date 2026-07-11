@@ -1,5 +1,8 @@
+import pytest
+
 from nollm_core import KernelRegistry
 
 
-def test_fanout_changes_registry_identity() -> None:
-    assert KernelRegistry(7).identity != KernelRegistry(8).identity
+def test_runtime_registry_rejects_noncanonical_fanout() -> None:
+    with pytest.raises(ValueError, match="canonical compiled"):
+        KernelRegistry(8)

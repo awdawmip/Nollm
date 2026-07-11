@@ -5,15 +5,14 @@ from nollm_core import (
     GeometryAddress,
     GeometryAnchor,
     MemoryAtom,
-    NullTraceSink,
     RecallBudget,
-    TraceEvent,
+    CoreTraceEvent,
 )
-from nollm_trace import CompositeTraceSink, MemoryTraceSink
+from nollm_trace import CompositeTraceSink, MemoryTraceSink, NullTraceSink
 
 
 class FailingTraceSink:
-    def emit(self, event: TraceEvent) -> None:
+    def emit(self, event: CoreTraceEvent) -> None:
         raise RuntimeError(event.name)
 
 
@@ -45,13 +44,9 @@ def run_sequence(tmp_path, name: str, sink: object) -> tuple[object, ...]:
             RecallBudget(1, 4, 1, 0, 1, 4),
         )
     )
-    token = core.begin_consistent_read()
-    try:
-        snapshot = core.export_state(token)
-    finally:
-        core.end_consistent_read(token)
+    snapshot = core.export_state_bytes()
     core.bridge_remove("bridge")
-    return core.state_bytes(), first, moved, recall, snapshot
+    return core.export_state_bytes(), first, moved, recall, snapshot
 
 
 def test_trace_failure_never_changes_new_core_results(tmp_path) -> None:
@@ -77,7 +72,6 @@ def test_trace_failure_never_changes_new_core_results(tmp_path) -> None:
         "core.bridge.remove",
         "core.recall.begin",
         "core.recall.end",
-        "core.snapshot.freeze",
-        "core.snapshot.release",
+        "core.state.export",
     } <= names
     assert composite_memory.events

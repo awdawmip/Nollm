@@ -1,4 +1,4 @@
-from .sinks import CompositeTraceSink, ConsoleTraceSink, JsonlTraceSink, MemoryTraceSink, MetricsTraceSink
+from .sinks import CompositeTraceSink, ConsoleTraceSink, JsonlTraceSink, MemoryTraceSink, MetricsTraceSink, NullTraceSink, TraceInspector
 
 __all__ = [
     "CompositeTraceSink",
@@ -6,4 +6,6 @@ __all__ = [
     "JsonlTraceSink",
     "MemoryTraceSink",
     "MetricsTraceSink",
+    "NullTraceSink",
+    "TraceInspector",
 ]

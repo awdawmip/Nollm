@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from nollm_core import NullTraceSink, TraceEvent, TraceSink, safe_emit
+from .trace_compat import NullTraceSink, TraceEvent, TraceSink, safe_emit
 
 from .axial import AxialCoord, hex_ring
 from .cell_address import CellAddress

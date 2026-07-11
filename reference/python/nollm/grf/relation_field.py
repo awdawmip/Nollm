@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from nollm_core import NullTraceSink, TraceEvent, TraceSink, safe_emit
+from .trace_compat import NullTraceSink, TraceEvent, TraceSink, safe_emit
 
 from .bridge_kernel import BridgeKernel
 from .cell_address import CellAddress

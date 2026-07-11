@@ -5,7 +5,6 @@ from nollm_core import (
     BridgeAddCommand,
     BridgeSpec,
     CoreRuntime,
-    FileCoreStateStore,
     GeometryAddress,
     GeometryAnchor,
     MemoryAtom,
@@ -56,7 +55,7 @@ def test_batch_is_atomic_and_commits_once(tmp_path) -> None:
     )
     assert len(results) == 4
     assert runtime.get(AtomHandle(cell(0, 1), "existing")).payload_utf8 == "updated"
-    before = runtime.state_bytes()
+    before = runtime.export_state_bytes()
     with pytest.raises(KeyError):
         runtime.apply_batch(
             (
@@ -64,25 +63,20 @@ def test_batch_is_atomic_and_commits_once(tmp_path) -> None:
                 MoveCommand(AtomHandle(cell(99, 99), "missing"), cell(3, 0)),
             )
         )
-    assert runtime.state_bytes() == before
+    assert runtime.export_state_bytes() == before
     assert not runtime.contains(AtomHandle(cell(2, 0), "rolled-back"))
 
 
-def test_disk_failure_preserves_memory_and_reopen_state(tmp_path) -> None:
-    fail = False
+def test_disk_failure_preserves_memory_and_reopen_state(tmp_path, monkeypatch) -> None:
+    from nollm_core import storage
 
-    def before_replace(_path) -> None:
-        if fail:
-            raise OSError("simulated disk failure")
-
-    store = FileCoreStateStore(tmp_path, before_replace)
-    runtime = CoreRuntime(tmp_path, store=store)
+    runtime = CoreRuntime(tmp_path)
     original = runtime.put(MemoryAtom("stable", "before"), cell(0, 0))
-    stable_bytes = runtime.state_bytes()
-    fail = True
+    stable_bytes = runtime.export_state_bytes()
+    monkeypatch.setattr(storage, "_atomic_replace", lambda _source, _target: (_ for _ in ()).throw(OSError("simulated disk failure")))
     with pytest.raises(OSError, match="simulated disk failure"):
         runtime.put(MemoryAtom("failed", "after"), cell(1, 0))
-    assert runtime.state_bytes() == stable_bytes
+    assert runtime.export_state_bytes() == stable_bytes
     runtime.close()
     reopened = CoreRuntime(tmp_path)
     assert reopened.get(original).payload_utf8 == "before"

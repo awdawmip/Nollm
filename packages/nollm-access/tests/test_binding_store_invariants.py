@@ -1,7 +1,7 @@
 import pytest
 
 from nollm_access import AccessDecision, AccessRuntime, FileBindingStore, FileEvidenceStore, MemoryStatement
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress
+from nollm_core import CoreRuntime, GeometryAddress
 
 
 CELL = GeometryAddress("eisenstein_exact_v1", "c", 0, 0, 0)
@@ -18,7 +18,5 @@ def test_one_current_and_one_statement_per_binding(tmp_path) -> None:
     binding = store.binding_for_handle(current)
     assert binding.current_statement_id == "current"
     assert binding.supporting_statement_ids == ("support",)
-    with pytest.raises(RuntimeError, match="writer capability"):
-        store.put("ghost", AtomHandle(CELL, "ghost"))
     access.close()
     core.close()

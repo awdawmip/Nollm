@@ -7,6 +7,10 @@ commands, Access Evidence/Handle stores, external decision mapping, real
 Snapshot/Trace composition, active package distributions, and a zero-cycle
 production graph.
 
+The current active baseline reallocates template generation to Lab, Snapshot
+Protocol to Snapshot, Trace implementations to Trace, and trusted composition
+to Access. This is capability validation, not a final or sealed M1 API.
+
 ## Deferred Work
 
 OpenClaw Live, real model calls, statement/placement corpora, semantic quality

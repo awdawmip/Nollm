@@ -20,8 +20,8 @@
     },
     "nollm-debug": {
       "runtime": ["nollm-core", "nollm-snapshot", "nollm-access", "nollm-trace"],
-      "optional": ["inspectors"],
-      "development": ["selected-nollm-lab-tools"]
+      "optional": ["nollm-trace.TraceInspector"],
+      "development": ["geometry-template-generator", "core-capability-validator"]
     },
     "nollm-audited": {
       "runtime": ["nollm-core", "nollm-snapshot", "nollm-access", "nollm-trace", "nollm-audit-skeleton"],

@@ -2,6 +2,6 @@
   "name": "nollm-minimal",
   "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"],
   "entrypoint": "nollm_access.AccessRuntime",
-  "defaults": ["nollm_core.NullTraceSink", "nollm_access.FileEvidenceStore"],
+  "defaults": ["nollm_access.FileEvidenceStore", "trace=None"],
   "forbidden": ["legacy-grf", "openclaw-live"]
 }

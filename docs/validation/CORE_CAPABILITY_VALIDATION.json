@@ -1,0 +1,53 @@
+{
+  "future_scale_work": [
+    "cross-process coordination",
+    "PB-scale partitioning",
+    "long-duration performance validation"
+  ],
+  "known_limitations": [
+    "same-process single-writer composition only",
+    "no crash-recovery protocol beyond atomic file replace",
+    "no semantic placement or Evidence ownership in Core"
+  ],
+  "not_yet_validated": [
+    "OpenClaw Live",
+    "real LLM placement",
+    "memory quality",
+    "multi-process recovery"
+  ],
+  "schema_version": 1,
+  "unsupported_usage": [
+    "private-module imports or monkeypatching",
+    "direct file tampering",
+    "malicious Trace callbacks",
+    "concurrent direct Store mutation outside the owning composition"
+  ],
+  "validation_head": "WORKTREE",
+  "verified_capabilities": {
+    "addressed_handle_contract": true,
+    "atomic_batch_and_bridge_add": true,
+    "bridge_remove": true,
+    "canonical_disk_bytes": true,
+    "cell_occupancy": true,
+    "clone_independent": true,
+    "close_reopen": true,
+    "compiled_templates_9_of_9": true,
+    "core_stdlib_only": true,
+    "exact_runtime_no_float_polygon_trigonometry": true,
+    "failed_batch_is_atomic": true,
+    "memory_atom_semantic_blind": true,
+    "negative_coordinates_and_mixed_phase_order": true,
+    "no_global_or_semantic_lookup": true,
+    "none_memory_failing_trace_parity": true,
+    "put_replace_move_get_contains": true,
+    "recall_bridge_bounded": true,
+    "recall_budget_exhausted": true,
+    "recall_coverage_up_down": true,
+    "recall_deterministic_repeat": true,
+    "recall_direct_hit": true,
+    "recall_empty_cell": true,
+    "recall_lateral_ring_one": true,
+    "state_export_import_clone": true,
+    "trace_not_in_state_bytes": true
+  }
+}

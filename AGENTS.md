@@ -14,7 +14,13 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C8 workspace-wide callback fence, bound Store capability, and Runtime configuration immutability final closure.
+- Current task affects CORE, SNAPSHOT, TRACE, ACCESS, LAB, and DISTRIBUTIONS.
+- Current expected vector is CORE +10%, SNAPSHOT +5%, TRACE +5%, ACCESS +5%, LAB +10%, DISTRIBUTIONS +5%; all other modules remain 0%.
+- Do not build capability issuance, shadow Store defenses, malicious plugin sandboxes, or attack-matrix production paths.
+- Do not delete old capabilities before a tested replacement exists or the asset is classified REMOVABLE.
+- Do not restore graph/vector/embedding, external relation indexes, or Python semantic Placement.
+- Do not start OpenClaw Live, real models, corpus long runs, PB tests, or remote repository splitting.
+- Recalculate the actual vector and module progress after every result gate; do not claim sealed or final closure.
 - Preserve every accepted M1-C7 lifecycle, client lease, transaction capability, consistent-read ownership, exact Geometry, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, package, boundary, and regression result.
 - Callback isolation is canonical-workspace scoped, not merely one AccessRuntime object's thread-local flag.
 - A callback active for one AccessRuntime blocks public operations, close, construction, and Store mutation through every AccessRuntime bound to the same canonical pair on that thread.

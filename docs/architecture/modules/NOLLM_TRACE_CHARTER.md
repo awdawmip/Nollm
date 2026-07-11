@@ -4,7 +4,7 @@ Purpose: optional operation, frontier, bridge, partition, cache, and performance
 
 - Persistent state: sink-owned event streams; Core owns none.
 - Temporary state: sink buffers and metric accumulators.
-- Public API: `TraceSink.emit(event)` plus JSONL, console, memory, metrics, and composite sinks.
+- Public API: Null, JSONL, console, memory, metrics, composite sinks, and Trace inspector over Core's immutable event contract.
 - Forbidden API: mutation authority, facts, audit decisions, product policy.
 - Dependencies: Core trace contracts only.
 - Failure: sink errors are isolated and cannot change Core results.

@@ -17,9 +17,9 @@ from nollm.grf import (
     resolve_grf_recall,
 )
 from nollm.grf.fixed_point import Q16_ONE
-from nollm_core import NullTraceSink, TraceEvent
+from nollm.grf.trace_compat import TraceEvent
 from nollm_snapshot import SnapshotService
-from nollm_trace import CompositeTraceSink, MemoryTraceSink
+from nollm_trace import CompositeTraceSink, MemoryTraceSink, NullTraceSink
 
 
 RECORDED_AT = "2026-07-11T00:00:00Z"
@@ -31,8 +31,8 @@ class FailingTraceSink:
 
 
 class FailingExportAdapter(GRFWorkspaceConsistentStateAdapter):
-    def export_state(self, token: object) -> bytes:
-        super().export_state(token)
+    def export_state_bytes(self) -> bytes:
+        super().export_state_bytes()
         raise RuntimeError("forced export failure")
 
 

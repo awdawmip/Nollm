@@ -7,7 +7,7 @@ Purpose: form statements, decide placement/recall entry, format recall, and own 
 - Public API: reuse/new/revision/stitch/defer/forget mappings to Core public commands.
 - Forbidden API: direct Core private access, geometry invariants, external relation indexes, Python semantic fallback.
 - Dependencies: Core public API and optional Snapshot public API.
-- Failure: can defer or reject product actions; cannot corrupt Core state.
+- Failure: trusted exclusive composition uses public Core state bytes for ordinary local rollback; direct concurrent Store mutation is unsupported.
 - Distributions: minimal API, OpenClaw, debug, audited.
 - Future repository: `nollm-access`.
 - Current sources: capture/admission/evidence/source/placement/facade and protocol assets marked `SPLIT`.

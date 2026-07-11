@@ -20,4 +20,4 @@ def test_same_atom_id_is_valid_in_independent_core_instances(tmp_path) -> None:
     first = CoreRuntime(tmp_path / "first")
     second = CoreRuntime(tmp_path / "second")
     assert first.put(MemoryAtom("same-id", "first"), cell) == second.put(MemoryAtom("same-id", "second"), cell)
-    assert first.state_bytes() != second.state_bytes()
+    assert first.export_state_bytes() != second.export_state_bytes()

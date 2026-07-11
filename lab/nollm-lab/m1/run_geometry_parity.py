@@ -1,7 +1,18 @@
+from hashlib import sha256
+from pathlib import Path
+import sys
+
 from nollm.grf.cell_address import CellAddress
 from nollm.grf.coverage_template import CoverageTemplateCompiler as LegacyCompiler, expand_template as legacy_expand
 from nollm.grf.profiles import get_profile as legacy_profile
-from nollm_core import CoverageTemplateCompiler, GeometryAddress, expand_template, get_profile
+from nollm_core import GeometryAddress, expand_template, get_profile
+from nollm_core.compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA256
+
+
+GEOMETRY_LAB = Path(__file__).resolve().parents[1] / "geometry"
+sys.path.insert(0, str(GEOMETRY_LAB))
+from compiler import CoverageTemplateCompiler  # noqa: E402
+from generate_compiled_templates import canonical_document  # noqa: E402
 
 
 def template_contract(template):
@@ -18,6 +29,8 @@ def profile_contract(profile):
 
 
 def main() -> None:
+    assert canonical_document() == COMPILED_TEMPLATES_JSON
+    assert sha256(COMPILED_TEMPLATES_JSON).hexdigest() == COMPILED_TEMPLATES_SHA256
     legacy, active = LegacyCompiler(), CoverageTemplateCompiler()
     count = 0
     for profile_id in ("eisenstein_exact_v1", "aligned_baseline_v1", "dream_quasi_v1"):

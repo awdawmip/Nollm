@@ -1,18 +1,14 @@
 from __future__ import annotations
 
-from nollm_core import ConsistentStatePort
+from .ports import ConsistentStatePort
 
 
 class SnapshotService:
     def create(self, port: ConsistentStatePort) -> bytes:
-        token = port.begin_consistent_read()
-        try:
-            return port.export_state(token)
-        finally:
-            port.end_consistent_read(token)
+        return port.export_state_bytes()
 
     def restore(self, port: ConsistentStatePort, payload: bytes) -> None:
-        port.import_state(payload)
+        port.import_state_bytes(payload)
 
     def clone(
         self,

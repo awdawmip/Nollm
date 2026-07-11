@@ -7,7 +7,7 @@ from .bridge import Q16_ONE
 from .geometry import GeometryAddress
 from .coverage_template import expand_template, validate_lateral_ring
 from .handle import AtomHandle
-from .ports import TraceEvent
+from .ports import CoreTraceEvent
 
 
 ALLOWED_KERNELS = frozenset({"coverage_up", "coverage_down", "lateral", "bridge"})
@@ -67,7 +67,7 @@ class CoreRecallResult:
 
 
 def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallResult:
-    runtime._emit_trace(TraceEvent("core.recall.begin", {"request_id": request.request_id, "entry_count": len(request.entry_cells)}, "stable"))
+    runtime._emit_trace(CoreTraceEvent("core.recall.begin", {"request_id": request.request_id, "entry_count": len(request.entry_cells)}, "stable"))
     if request.budget.max_lateral_ring > 1:
         raise ValueError("only registered lateral ring 1 is supported")
     frontier = [(cell, Q16_ONE, 0, 0) for cell in sorted(request.entry_cells, key=lambda item: item.stable_key())]
@@ -97,7 +97,7 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
                 previous = merged.get(target)
                 if previous is None or target_score > previous[0]:
                     merged[target] = (target_score, next_bridge_steps)
-        runtime._emit_trace(TraceEvent("core.recall.frontier", {"step": step, "cell_count": len(frontier)}, "internal"))
+        runtime._emit_trace(CoreTraceEvent("core.recall.frontier", {"step": step, "cell_count": len(frontier)}, "internal"))
         frontier = [
             (cell, score, step + 1, bridge_steps)
             for cell, (score, bridge_steps) in sorted(merged.items(), key=lambda item: (-item[1][0], item[0].stable_key()))[: request.budget.beam]
@@ -107,7 +107,7 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
     items = tuple(sorted(found.values(), key=lambda item: (-item.score_q16, item.handle.geometry_address.stable_key(), item.handle.local_atom_id))[: request.budget.max_results])
     exhausted = truncated_by_budget or bool(frontier)
     result = CoreRecallResult(request.request_id, items, exhausted)
-    runtime._emit_trace(TraceEvent("core.recall.end", {"request_id": request.request_id, "result_count": len(items), "budget_exhausted": exhausted}, "stable"))
+    runtime._emit_trace(CoreTraceEvent("core.recall.end", {"request_id": request.request_id, "result_count": len(items), "budget_exhausted": exhausted}, "stable"))
     return result
 
 

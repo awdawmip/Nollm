@@ -2,6 +2,6 @@
   "name": "nollm-debug",
   "extends": "nollm-minimal",
   "runtime": ["nollm-trace"],
-  "optional": ["inspectors"],
-  "development": ["selected-nollm-lab-tools"]
+  "optional": ["nollm_trace.TraceInspector"],
+  "development": ["lab/nollm-lab/geometry/generate_compiled_templates.py", "lab/nollm-lab/m1/run_core_capability_validation.py"]
 }

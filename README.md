@@ -8,12 +8,14 @@ monorepo and has not been physically split on GitHub.
 ## Active Runtime
 
 - `nollm-core` owns semantic-blind `MemoryAtom`, addressed `AtomHandle`,
-  deterministic geometry current state, atomic commands, explicit-cell bounded
-  Recall, and public Snapshot/Trace ports.
+  deterministic geometry current state, atomic commands, generated-template
+  lookup, explicit-cell bounded Recall, atomic state bytes, and the minimal
+  immutable Trace port.
 - `nollm-access` owns original Evidence, caller-held Handle registration,
   explicit Host/LLM/Human decisions, action mapping, and Evidence-backed Recall
   formatting.
-- `nollm-snapshot` and `nollm-trace` compose through Core public contracts.
+- `nollm-snapshot` owns its state Protocol and service; `nollm-trace` owns all
+  sink, JSONL, metrics, and inspector implementations.
 - Bare and Minimal distributions use package APIs only.
 
 Core operations require `GeometryAddress + local_atom_id`; there is no global

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+from pathlib import Path
+from threading import RLock
+
 from nollm_core import AtomHandle, CoreRuntime, MemoryAtom
 
 from .evidence_store import EvidenceStore
@@ -7,73 +11,26 @@ from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .statement import MemoryStatement
-from .workspace_lock import acquire, release
-from contextlib import contextmanager
-from pathlib import Path
-from threading import Condition, RLock, local
+from .workspace_lock import composition_lock
 
 
 class AccessRuntime:
+    """Trusted local coordinator for Evidence, Handle binding, and Core."""
+
     def __init__(self, core: CoreRuntime, evidence_store: EvidenceStore, handle_store: FileHandleStore) -> None:
         self._core = core
         self._evidence_store = evidence_store
         self._handle_store = handle_store
-        access_root = handle_store.path.parent.parent
-        if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root.resolve():
+        access_root = handle_store.path.parent.parent.resolve()
+        if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root:
             raise ValueError("Evidence and Binding workspace identity mismatch")
-        self._coordinator, self._lease = acquire(access_root, core.state_path, handle_store)
-        self._canonical_access_root = access_root.resolve()
+        if not core.is_open:
+            raise RuntimeError("AccessRuntime requires an open CoreRuntime")
+        self._canonical_access_root = access_root
         self._canonical_core_state_path = core.state_path.resolve()
-        self._transaction_lock = self._coordinator.transaction_lock
-        self._binding_capability = self._coordinator.binding_capability
-        self._lifecycle = Condition(RLock())
-        self._state = "OPENING"
-        self._active_operations = 0
-        self._local = local()
-        self._core_lease = None
-        try:
-            with self._transaction_lock:
-                self._core_lease = core.acquire_client_lease("nollm-access")
-                self._state = "OPEN"
-        except RuntimeError as error:
-            if self._core_lease is not None:
-                self._core_lease.close()
-            release(self._lease)
-            raise RuntimeError("AccessRuntime requires an OPEN CoreRuntime") from error
-        except Exception:
-            if self._core_lease is not None:
-                self._core_lease.close()
-            release(self._lease)
-            raise
-
-    def close(self) -> None:
-        with self._lifecycle:
-            if self._state == "CLOSED":
-                return
-        self._reject_reentry("close")
-        with self._lifecycle:
-            if self._state == "CLOSING":
-                while self._state != "CLOSED":
-                    self._lifecycle.wait()
-                return
-            self._state = "CLOSING"
-            self._lifecycle.notify_all()
-            while self._active_operations:
-                self._lifecycle.wait()
-        with self._transaction_lock:
-            assert self._core_lease is not None
-            self._core_lease.close()
-            release(self._lease)
-        with self._lifecycle:
-            self._state = "CLOSED"
-            self._lifecycle.notify_all()
-
-    def __enter__(self) -> "AccessRuntime": return self
-    def __exit__(self,*_args: object) -> None: self.close()
-
-    def _require_open(self) -> None:
-        if self._state != "OPEN":
-            raise RuntimeError(f"AccessRuntime is {self._state.lower()}")
+        self._composition_lock = composition_lock(access_root, core.state_path)
+        self._lifecycle_lock = RLock()
+        self._state = "OPEN"
 
     @property
     def core(self) -> CoreRuntime:
@@ -97,113 +54,96 @@ class AccessRuntime:
 
     @property
     def lifecycle_state(self) -> str:
-        with self._lifecycle:
+        with self._lifecycle_lock:
             return self._state
 
+    def close(self) -> None:
+        with self._lifecycle_lock:
+            self._state = "CLOSED"
+
+    def __enter__(self) -> "AccessRuntime":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()
+
     @contextmanager
-    def _operation(self, name: str):
-        self._enter_operation(name)
-        try:
-            with self._transaction_lock:
-                yield
-        finally:
-            self._leave_operation()
-
-    def _enter_operation(self, name: str) -> None:
-        self._reject_reentry(name)
-        with self._lifecycle:
-            self._require_open()
-            self._active_operations += 1
-            self._local.activity = name
-
-    def _leave_operation(self) -> None:
-        with self._lifecycle:
-            self._active_operations -= 1
-            if hasattr(self._local, "activity"):
-                del self._local.activity
-            self._lifecycle.notify_all()
-
-    def _reject_reentry(self, name: str) -> None:
-        self._coordinator.assert_entry_allowed(name)
-        if getattr(self._local, "callback_depth", 0) or hasattr(self._local, "activity"):
-            raise RuntimeError(f"cannot enter Access {name} during an active Access operation or callback")
-        assert self._core_lease is not None
-        self._core_lease.guard_operation()
-
-    def _callback(self, guard: object, callback: object, *args: object, **kwargs: object) -> object:
-        self._local.callback_depth = getattr(self._local, "callback_depth", 0) + 1
-        try:
-            with self._coordinator.callback_fence(getattr(callback, "__qualname__", type(callback).__name__)):
-                return guard.callback(lambda: callback(*args, **kwargs))
-        finally:
-            depth = self._local.callback_depth - 1
-            if depth:
-                self._local.callback_depth = depth
-            else:
-                del self._local.callback_depth
+    def _operation(self):
+        with self._lifecycle_lock:
+            if self._state != "OPEN":
+                raise RuntimeError("AccessRuntime is closed")
+        with self._composition_lock:
+            if not self._core.is_open:
+                raise RuntimeError("AccessRuntime Core is closed")
+            yield
 
     def capture(self, statement: MemoryStatement) -> None:
-        with self._operation("capture"):
-            self._callback(self._core_lease, self._evidence_store.put_original, statement)
+        with self._operation():
+            self._evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
-        with self._operation("apply"):
+        with self._operation():
             return self._apply_locked(decision)
 
     def _apply_locked(self, decision: AccessDecision) -> object | None:
-        if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "defer"} and not self._callback(self._core_lease, self._evidence_store.exists, decision.statement_id):
+        if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "defer"} and not self._evidence_store.exists(decision.statement_id):
             raise FileNotFoundError("original Evidence is missing")
         if decision.action == "reuse":
             assert decision.existing_handle is not None
-            self._callback(self._core_lease, self._evidence_store.get_original, decision.statement_id)
-            with self._core.transaction() as transaction:
-                if not transaction.contains(decision.existing_handle):
-                    raise KeyError("explicit reuse handle no longer exists")
-                self._callback(transaction, self._handle_store.put, decision.statement_id, decision.existing_handle, capability=self._binding_capability)
+            self._evidence_store.get_original(decision.statement_id)
+            if not self._core.contains(decision.existing_handle):
+                raise KeyError("explicit reuse handle no longer exists")
+            self._handle_store.put(decision.statement_id, decision.existing_handle)
             return decision.existing_handle
         if decision.action == "new":
             assert decision.target_cell is not None
-            statement = self._callback(self._core_lease, self._evidence_store.get_original, decision.statement_id)
-            return self._atomic(lambda tx: tx.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell), lambda tx, handle: self._callback(tx, self._handle_store.put, statement.statement_id, handle, capability=self._binding_capability))
+            statement = self._evidence_store.get_original(decision.statement_id)
+            return self._atomic(
+                lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
+                lambda handle: self._handle_store.put(statement.statement_id, handle),
+            )
         if decision.action == "revision_current":
             assert decision.existing_handle is not None
-            statement = self._callback(self._core_lease, self._evidence_store.get_original, decision.statement_id)
-            return self._atomic(lambda tx: tx.replace(decision.existing_handle, statement.content_utf8), lambda tx, handle: self._callback(tx, self._handle_store.revise_current, decision.existing_handle, statement.statement_id, handle, capability=self._binding_capability))
+            statement = self._evidence_store.get_original(decision.statement_id)
+            return self._atomic(
+                lambda: self._core.replace(decision.existing_handle, statement.content_utf8),
+                lambda handle: self._handle_store.revise_current(decision.existing_handle, statement.statement_id, handle),
+            )
         if decision.action == "revision_keep_history":
             assert decision.target_cell is not None
-            statement = self._callback(self._core_lease, self._evidence_store.get_original, decision.statement_id)
-            return self._atomic(lambda tx: tx.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell), lambda tx, handle: self._callback(tx, self._handle_store.put, statement.statement_id, handle, capability=self._binding_capability))
+            statement = self._evidence_store.get_original(decision.statement_id)
+            return self._atomic(
+                lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
+                lambda handle: self._handle_store.put(statement.statement_id, handle),
+            )
         if decision.action == "stitch":
             assert decision.bridge_spec is not None
-            with self._core.transaction() as transaction:
-                return transaction.bridge_add(decision.bridge_spec)
+            return self._core.bridge_add(decision.bridge_spec)
         if decision.action == "unstitch":
             assert decision.bridge_spec is not None
-            with self._core.transaction() as transaction:
-                return transaction.bridge_remove(decision.bridge_spec.bridge_id)
+            return self._core.bridge_remove(decision.bridge_spec.bridge_id)
         if decision.action == "defer":
             return None
         if decision.action == "forget":
             assert decision.existing_handle is not None
-            return self._atomic(lambda tx: tx.remove(decision.existing_handle), lambda tx, _atom: self._callback(tx, self._handle_store.remove_handle, decision.existing_handle, capability=self._binding_capability))
+            return self._atomic(
+                lambda: self._core.remove(decision.existing_handle),
+                lambda _atom: self._handle_store.remove_handle(decision.existing_handle),
+            )
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
-        with self._operation("recall"):
-            return self._recall_locked(request)
-
-    def _recall_locked(self, request: AccessRecallRequest) -> AccessRecallResult:
-        with self._core.transaction() as transaction:
-            result = transaction.recall(request.to_core_request())
+        with self._operation():
+            result = self._core.recall(request.to_core_request())
             items = []
             for item in result.items:
                 try:
-                    statement_id = self._callback(transaction, self._handle_store.statement_for_handle, item.handle)
+                    statement_id = self._handle_store.statement_for_handle(item.handle)
                 except KeyError:
                     items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing"))
                     continue
                 try:
-                    statement = self._callback(transaction, self._evidence_store.get_original, statement_id)
+                    statement = self._evidence_store.get_original(statement_id)
                 except FileNotFoundError:
                     items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing"))
                 else:
@@ -211,28 +151,32 @@ class AccessRuntime:
                         items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch"))
                     else:
                         items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16))
-        return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
+            return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
-        with self._operation("saved_handle"):
-            return self._callback(self._core_lease, self._handle_store.get, statement_id)
+        with self._operation():
+            return self._handle_store.get(statement_id)
 
     def _atomic(self, core_action: object, binding_action: object) -> object:
-        with self._core.transaction() as transaction:
-            core_before = transaction.state_bytes()
-            binding_before = self._callback(transaction, self._handle_store.state_bytes)
+        core_before = self._core.export_state_bytes()
+        binding_before = self._handle_store.state_bytes()
+        try:
+            result = core_action()
+            binding_action(result)
+            return result
+        except Exception as original:
+            failures = []
             try:
-                result = core_action(transaction)
-                binding_action(transaction, result)
-                return result
-            except Exception as original:
-                failures = []
-                try: transaction.import_state(core_before)
-                except Exception as error: failures.append(error)
-                try: self._callback(transaction, self._handle_store.import_state, binding_before, capability=self._binding_capability)
-                except Exception as error: failures.append(error)
-                if failures: raise AccessConsistencyError("fatal consistency failure during Access rollback") from original
-                raise
+                self._core.import_state_bytes(core_before)
+            except Exception as error:
+                failures.append(error)
+            try:
+                self._handle_store.import_state(binding_before)
+            except Exception as error:
+                failures.append(error)
+            if failures:
+                raise AccessConsistencyError("fatal consistency failure during trusted Access rollback") from original
+            raise
 
 
 class AccessConsistencyError(RuntimeError):

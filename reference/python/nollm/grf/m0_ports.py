@@ -9,7 +9,7 @@ from threading import RLock
 from uuid import uuid4
 from zipfile import ZIP_STORED, BadZipFile, ZipFile, ZipInfo
 
-from nollm_core import ConsistentStatePort
+from nollm_snapshot import ConsistentStatePort
 
 
 class GRFWorkspaceConsistentStateAdapter:
@@ -31,6 +31,13 @@ class GRFWorkspaceConsistentStateAdapter:
 
     def export_state(self, token: object) -> bytes:
         self._require_token(token)
+        return self._export_locked()
+
+    def export_state_bytes(self) -> bytes:
+        with self._lock:
+            return self._export_locked()
+
+    def _export_locked(self) -> bytes:
         buffer = BytesIO()
         with ZipFile(buffer, "w", compression=ZIP_STORED) as archive:
             if self.workspace.exists():
@@ -43,6 +50,9 @@ class GRFWorkspaceConsistentStateAdapter:
         return buffer.getvalue()
 
     def import_state(self, payload: bytes) -> None:
+        self.import_state_bytes(payload)
+
+    def import_state_bytes(self, payload: bytes) -> None:
         with self._lock:
             if self._active_token is not None:
                 raise RuntimeError("cannot import during a consistent read")

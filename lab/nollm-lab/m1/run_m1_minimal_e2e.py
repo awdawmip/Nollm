@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from concurrent.futures import ThreadPoolExecutor
-from threading import Event
 
 from nollm_access import (
     AccessDecision,
@@ -23,13 +21,14 @@ from nollm_core import (
     GeometryAnchor,
     MemoryAtom,
     RecallBudget,
-    TraceEvent,
+    CoreTraceEvent,
 )
 from nollm_snapshot import SnapshotService
+from nollm_trace import NullTraceSink
 
 
 class FailingTraceSink:
-    def emit(self, event: TraceEvent) -> None:
+    def emit(self, event: CoreTraceEvent) -> None:
         raise RuntimeError(event.name)
 
 
@@ -115,9 +114,9 @@ def run(root: Path, sink: object) -> dict[str, object]:
     assert restored_recall.items[0].evidence_utf8 == "Evidence revision current"
 
     access.capture(MemoryStatement("statement:defer", "deferred Evidence"))
-    before_defer = core.state_bytes()
+    before_defer = core.export_state_bytes()
     assert access.apply(decision("statement:defer", "defer")) is None
-    assert core.state_bytes() == before_defer
+    assert core.export_state_bytes() == before_defer
 
     access.capture(MemoryStatement("statement:history", "retained historical Evidence"))
     historical = access.apply(
@@ -149,10 +148,10 @@ def run(root: Path, sink: object) -> dict[str, object]:
     else:
         raise AssertionError("over-budget BridgeSpec was accepted")
 
-    state = core.state_bytes(); count = core.placement_count(); retained = core.contains(first) and core.contains(historical)
+    state = core.export_state_bytes(); count = core.placement_count(); retained = core.contains(first) and core.contains(historical)
     access.close(); core.close()
     reopened = CoreRuntime(root / "core")
-    assert reopened.state_bytes() == state
+    assert reopened.export_state_bytes() == state
     return {
         "state": state.decode("utf-8"),
         "placement_count": count,
@@ -168,46 +167,16 @@ def run(root: Path, sink: object) -> dict[str, object]:
     }
 
 
-def failure_matrix(root: Path) -> dict[str, bool]:
-    facts = {}
-    for action in ("new", "revision_current", "revision_keep_history", "forget", "reuse"):
-        workspace = root / action
-        core = CoreRuntime(workspace / "core")
-        armed = False
-        def fail_once(_path):
-            nonlocal armed
-            if armed:
-                armed = False
-                raise OSError("binding fault")
-        store = FileHandleStore(workspace, fail_once)
-        access = AccessRuntime(core, FileEvidenceStore(workspace), store)
-        access.capture(MemoryStatement("old", "old"))
-        old = access.apply(decision("old", "new", target_cell=GeometryAddress("eisenstein_exact_v1", "fault", 0, 0, 0)))
-        statement_id = "next"
-        access.capture(MemoryStatement(statement_id, "next"))
-        core_before, binding_before = core.state_bytes(), store.state_bytes()
-        armed = True
-        kwargs = {"target_cell": GeometryAddress("eisenstein_exact_v1", "fault", 0, 1, 0)} if action in {"new", "revision_keep_history"} else {"existing_handle": old}
-        try:
-            access.apply(decision(statement_id if action != "forget" else "old", action, **kwargs))
-        except OSError:
-            pass
-        else:
-            raise AssertionError(f"{action} fault did not fire")
-        facts[f"{action}_rollback"] = core.state_bytes() == core_before and store.state_bytes() == binding_before
-    return facts
-
-
 def negative_matrix(root: Path) -> dict[str, bool]:
     import json
     from nollm_core.storage import canonical_state_bytes
 
     core = CoreRuntime(root / "core")
     core.put(MemoryAtom("a", "a"), GeometryAddress("eisenstein_exact_v1", "negative", 0, 0, 0))
-    document = json.loads(core.state_bytes())
+    document = json.loads(core.export_state_bytes())
     document["cells"].append({"address": GeometryAddress("eisenstein_exact_v1", "negative", 0, 1, 0).to_mapping(), "atoms": []})
     try:
-        core.import_state(canonical_state_bytes(document))
+        core.import_state_bytes(canonical_state_bytes(document))
     except ValueError:
         empty_rejected = True
     else:
@@ -230,44 +199,16 @@ def negative_matrix(root: Path) -> dict[str, bool]:
     return {"empty_cell_rejected": empty_rejected, "noncanonical_evidence_rejected": evidence_rejected, "unknown_profile_rejected": unknown_rejected}
 
 
-def concurrency_fact(root: Path) -> bool:
-    entered, release = Event(), Event()
-    fail = True
-    def hook(_path):
-        nonlocal fail
-        if fail:
-            fail = False
-            entered.set(); release.wait(5)
-            raise OSError("fault")
-    core = CoreRuntime(root / "core")
-    store = FileHandleStore(root, hook)
-    left = AccessRuntime(core, FileEvidenceStore(root), store)
-    right = AccessRuntime(core, FileEvidenceStore(root), store)
-    left.capture(MemoryStatement("left", "left")); right.capture(MemoryStatement("right", "right"))
-    def apply(runtime, name, q):
-        try:
-            return runtime.apply(decision(name, "new", target_cell=GeometryAddress("eisenstein_exact_v1", "concurrent", 0, q, 0)))
-        except OSError:
-            return None
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(apply, left, "left", 0); assert entered.wait(5)
-        second = pool.submit(apply, right, "right", 1); release.set()
-        assert first.result() is None
-        handle = second.result()
-    return handle is not None and core.contains(handle) and store.get("right") == handle
-
-
 def main() -> None:
-    from run_m1_public_api_adversarial_matrix import run_matrix
     with TemporaryDirectory(prefix="nollm-m1-e2e-") as directory:
         root = Path(directory)
-        normal = run(root / "normal", __import__("nollm_core").NullTraceSink())
+        normal = run(root / "normal", NullTraceSink())
         failing = run(root / "failing", FailingTraceSink())
         if normal != failing:
             raise AssertionError("FailingTraceSink changed M1 E2E results")
-        facts = {**normal, **failure_matrix(root / "faults"), **negative_matrix(root / "negative"), **run_matrix(root / "adversarial"), "transaction_serialized": concurrency_fact(root / "concurrent"), "trace_parity": normal == failing, "reopen_bytes_equal": True}
+        facts = {**normal, **negative_matrix(root / "negative"), "trace_parity": normal == failing, "reopen_bytes_equal": True}
         if not all(value is True for key, value in facts.items() if key != "state" and not isinstance(value, (int, str))):
-            raise AssertionError("M1C6 E2E fact failed")
+            raise AssertionError("M1 boundary-reallocation E2E fact failed")
         print(json.dumps({"status": "passed", "gates": facts}, ensure_ascii=False, sort_keys=True))
 
 

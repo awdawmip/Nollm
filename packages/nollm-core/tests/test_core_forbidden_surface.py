@@ -29,6 +29,7 @@ def test_core_has_no_semantic_or_global_lookup_surface() -> None:
 
 def test_core_imports_no_product_package() -> None:
     assert not any(name.startswith("nollm_access") for name in vars(nollm_core))
-    source = __import__("inspect").getsource(nollm_core.CellStore)
+    source = __import__("inspect").getsource(nollm_core.CoreRuntime)
     assert "PlacementRecord" not in source
-    assert {"source", "patch", "island", "relation_index"}.isdisjoint(nollm_core.CellStore.__dict__)
+    assert not hasattr(nollm_core, "CellStore")
+    assert all(term not in source for term in ("relation_index", "semantic_search", "embedding"))

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .axial import AxialCoord, hex_ring
-from .fixed_point import Q16_ONE, WEIGHT_FORMAT, normalize_q16_weights
+from .fixed_point import Q16_ONE
 from .geometry import GeometryAddress
 from .profiles import get_profile
 
@@ -84,37 +83,6 @@ class CoverageTemplate:
         return {"profile_id": self.profile_id, "direction": self.direction, "from_layer_mod": self.from_layer_mod, "to_layer_mod": self.to_layer_mod, "source_phase": self.source_phase, "entries": [entry.to_mapping() for entry in self.entries], "sum_weight_q16": self.sum_weight_q16, "normalization_residual_q16": self.normalization_residual_q16, "approximation_residual_q16": self.approximation_residual_q16, "compiler": self.compiler.to_mapping()}
 
 
-class CoverageTemplateCompiler:
-    def __init__(self, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> None:
-        if type(fanout_limit) is not int or fanout_limit <= 0:
-            raise ValueError("fanout_limit must be positive")
-        self.fanout_limit = fanout_limit
-
-    def compile(self, profile_id: str, direction: str, from_layer_mod: int = 0, source_phase: str | None = None) -> CoverageTemplate:
-        profile = get_profile(profile_id)
-        if direction not in DIRECTIONS or type(from_layer_mod) is not int:
-            raise ValueError("invalid coverage request")
-        entries = self._entries(profile_id, direction)
-        if len(entries) > self.fanout_limit:
-            raise ValueError("template fanout exceeds hard bound")
-        flags = tuple(sorted({flag for entry in entries for flag in entry.flags}))
-        total = sum(entry.weight_q16 for entry in entries)
-        metadata = CompilerMetadata("grf1a_coverage_template_compiler", "symbolic_research_template_with_residual" if profile_id == "dream_quasi_v1" else "integer_template_lookup", profile.weight_format, self.fanout_limit, LAYER_INDEX_DIRECTION, flags)
-        return CoverageTemplate(profile_id, direction, from_layer_mod, from_layer_mod + _layer_delta(direction), source_phase, entries, total, Q16_ONE - total, Q16_ONE // 16 if profile_id == "dream_quasi_v1" else 0, metadata)
-
-    def _entries(self, profile_id: str, direction: str) -> tuple[KernelEntry, ...]:
-        if direction == LATERAL:
-            offsets = tuple((coord.q, coord.r, "lateral_neighbor") for coord in hex_ring(AxialCoord(0, 0), 1))
-        elif profile_id == "aligned_baseline_v1":
-            offsets = ((0, 0, "aligned_center"),)
-        elif profile_id == "eisenstein_exact_v1":
-            offsets = ((0, 0, "eisenstein_exact"), (1, 0, "eisenstein_exact"), (0, 1, "eisenstein_exact")) if direction == COVERAGE_UP else ((0, 0, "eisenstein_exact"), (-1, 0, "eisenstein_exact"), (0, -1, "eisenstein_exact"))
-        else:
-            offsets = ((0, 0, "boundary_ambiguous"), (1, 0, "boundary_ambiguous"), (0, 1, "boundary_ambiguous"))
-        weights = normalize_q16_weights([1] * len(offsets))
-        return tuple(sorted((KernelEntry(_layer_delta(direction), dq, dr, weight, "coverage_template", (flag,)) for (dq, dr, flag), weight in zip(offsets, weights)), key=lambda item: (item.layer_delta, item.dq, item.dr, item.kernel_type, item.flags)))
-
-
 def expand_template(cell: GeometryAddress, template: CoverageTemplate, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> tuple[tuple[GeometryAddress, int], ...]:
     if cell.profile_id != template.profile_id or len(template.entries) > fanout_limit:
         raise ValueError("template cannot be expanded")
@@ -152,3 +120,43 @@ class CompilerMetadata:
 
     def to_mapping(self) -> dict[str, object]:
         return {"compiler_id": self.compiler_id, "method": self.method, "weight_format": self.weight_format, "fanout_limit": self.fanout_limit, "layer_index_direction": self.layer_index_direction, "flags": list(self.flags)}
+
+
+def template_from_mapping(value: object) -> CoverageTemplate:
+    if type(value) is not dict:
+        raise TypeError("compiled template must be an object")
+    compiler = value.get("compiler")
+    entries = value.get("entries")
+    if type(compiler) is not dict or type(entries) is not list:
+        raise ValueError("compiled template fields are invalid")
+    metadata = CompilerMetadata(
+        compiler["compiler_id"],
+        compiler["method"],
+        compiler["weight_format"],
+        compiler["fanout_limit"],
+        compiler["layer_index_direction"],
+        tuple(compiler["flags"]),
+    )
+    kernel_entries = tuple(
+        KernelEntry(
+            entry["layer_delta"],
+            entry["dq"],
+            entry["dr"],
+            entry["weight_q16"],
+            entry["kernel_type"],
+            tuple(entry["flags"]),
+        )
+        for entry in entries
+    )
+    return CoverageTemplate(
+        value["profile_id"],
+        value["direction"],
+        value["from_layer_mod"],
+        value["to_layer_mod"],
+        value["source_phase"],
+        kernel_entries,
+        value["sum_weight_q16"],
+        value["normalization_residual_q16"],
+        value["approximation_residual_q16"],
+        metadata,
+    )
