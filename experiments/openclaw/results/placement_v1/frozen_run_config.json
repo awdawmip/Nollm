@@ -1,0 +1,11 @@
+{
+  "provider": "meituan",
+  "model": "LongCat-2.0",
+  "prompt_version": "placement_v1",
+  "schema_version": "nollm_placement_v1",
+  "plugin_version": "0.1.0",
+  "openclaw_version": "2026.6.11",
+  "context_limits": {
+    "candidate_cells": 12
+  }
+}
