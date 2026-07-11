@@ -5,6 +5,9 @@
 Nollm is in the M1 package-extraction stage. The active runtime is a modular
 monorepo and has not been physically split on GitHub.
 
+The repository's single [active project basis](docs/project/ACTIVE_PROJECT.md)
+links the current V3.0 project book, authorized task, and progress ledger.
+
 ## Active Runtime
 
 - `nollm-core` owns semantic-blind `MemoryAtom`, addressed `AtomHandle`,

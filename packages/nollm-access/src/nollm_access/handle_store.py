@@ -19,14 +19,18 @@ class HandleBinding:
     supporting_statement_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        if type(self.handle) is not AtomHandle:
+            raise TypeError("handle must be an exact AtomHandle")
         if type(self.current_statement_id) is not str or not self.current_statement_id:
-            raise ValueError("current_statement_id is required")
+            raise TypeError("current_statement_id must be a non-empty string")
+        if type(self.supporting_statement_ids) is not tuple:
+            raise TypeError("supporting_statement_ids must be a tuple")
+        if any(type(value) is not str or not value for value in self.supporting_statement_ids):
+            raise TypeError("supporting statement ids must be non-empty strings")
         if tuple(sorted(set(self.supporting_statement_ids))) != self.supporting_statement_ids:
             raise ValueError("supporting_statement_ids must be sorted and unique")
         if self.current_statement_id in self.supporting_statement_ids:
             raise ValueError("current statement cannot also be supporting")
-        if any(type(value) is not str or not value for value in self.supporting_statement_ids):
-            raise TypeError("supporting statement ids must be non-empty strings")
 
     def to_mapping(self) -> dict[str, object]:
         return {"handle": self.handle.to_mapping(), "current_statement_id": self.current_statement_id, "supporting_statement_ids": list(self.supporting_statement_ids)}

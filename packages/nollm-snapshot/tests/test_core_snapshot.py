@@ -21,9 +21,9 @@ def test_snapshot_create_restore_clone_verify_and_diff_new_core(tmp_path) -> Non
 
     clone = CoreRuntime(tmp_path / "clone")
     assert service.clone(source, clone) == payload
-    assert not service.structural_diff(payload, service.create(clone))
+    assert service.structural_diff(payload, service.create(clone)).equal
     clone.put(MemoryAtom("other", "different"), cell(0, 0))
-    assert service.structural_diff(payload, service.create(clone))
+    assert not service.structural_diff(payload, service.create(clone)).equal
 
 
 def test_snapshot_create_is_atomic_core_state_export(tmp_path) -> None:

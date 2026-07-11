@@ -6,7 +6,7 @@ from types import MappingProxyType
 
 from .compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA256
 from .coverage_template import DEFAULT_FANOUT_LIMIT, CoverageTemplate, template_from_mapping
-from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest, profiles
+from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest
 
 KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v2"
 
@@ -16,6 +16,8 @@ class KernelRegistry:
         if fanout_limit != DEFAULT_FANOUT_LIMIT:
             raise ValueError("Core runtime uses the canonical compiled fanout limit")
         object.__setattr__(self, "fanout_limit", fanout_limit)
+        if sha256(COMPILED_TEMPLATES_JSON).hexdigest() != COMPILED_TEMPLATES_SHA256:
+            raise ValueError("compiled geometry template artifact digest mismatch")
         document = json.loads(COMPILED_TEMPLATES_JSON.decode("utf-8"))
         if document.get("schema_version") != "nollm_compiled_geometry_templates_v1":
             raise ValueError("unsupported compiled geometry template artifact")

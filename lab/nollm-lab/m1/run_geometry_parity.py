@@ -5,7 +5,7 @@ import sys
 from nollm.grf.cell_address import CellAddress
 from nollm.grf.coverage_template import CoverageTemplateCompiler as LegacyCompiler, expand_template as legacy_expand
 from nollm.grf.profiles import get_profile as legacy_profile
-from nollm_core import GeometryAddress, expand_template, get_profile
+from nollm_core import GeometryAddress, expand_template, runtime_profile
 from nollm_core.compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA256
 
 
@@ -13,6 +13,7 @@ GEOMETRY_LAB = Path(__file__).resolve().parents[1] / "geometry"
 sys.path.insert(0, str(GEOMETRY_LAB))
 from compiler import CoverageTemplateCompiler  # noqa: E402
 from generate_compiled_templates import canonical_document  # noqa: E402
+from research_profiles import research_profile  # noqa: E402
 
 
 def template_contract(template):
@@ -34,7 +35,13 @@ def main() -> None:
     legacy, active = LegacyCompiler(), CoverageTemplateCompiler()
     count = 0
     for profile_id in ("eisenstein_exact_v1", "aligned_baseline_v1", "dream_quasi_v1"):
-        assert profile_contract(get_profile(profile_id)) == profile_contract(legacy_profile(profile_id))
+        assert profile_contract(research_profile(profile_id)) == profile_contract(legacy_profile(profile_id))
+        runtime = runtime_profile(profile_id)
+        assert (runtime.profile_id, runtime.coordinate_model, runtime.weight_format) == (
+            research_profile(profile_id).profile_id,
+            research_profile(profile_id).coordinate_model,
+            research_profile(profile_id).weight_format,
+        )
         for direction in ("coverage_up", "coverage_down", "lateral"):
             old = legacy.compile(profile_id, direction, 3, "phase:x")
             new = active.compile(profile_id, direction, 3, "phase:x")

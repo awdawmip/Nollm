@@ -114,10 +114,10 @@ def test_snapshot_port_round_trips_real_grf_workspace(tmp_path: Path) -> None:
     assert restored.validate_workspace() == facade.validate_workspace()
     assert restored.get_source(shard_id) == "原始证据：negative coordinates stay reversible."
     assert service.verify(GRFWorkspaceConsistentStateAdapter(restored_root), payload)
-    assert not service.structural_diff(
+    assert service.structural_diff(
         payload,
         service.create(GRFWorkspaceConsistentStateAdapter(restored_root)),
-    )
+    ).equal
 
 
 def test_snapshot_clone_and_facade_snapshot_are_structurally_equivalent(tmp_path: Path) -> None:

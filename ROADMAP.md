@@ -1,5 +1,8 @@
 # Nollm Roadmap
 
+Scheduling follows the [active project basis](docs/project/ACTIVE_PROJECT.md).
+Historical V2.2 books do not define the current route.
+
 ## M1: Package Core/Access Extraction
 
 M1 establishes addressed Core current state, explicit-cell Recall, atomic file

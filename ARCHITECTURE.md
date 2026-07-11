@@ -1,6 +1,8 @@
 # Nollm Architecture
 
 M1 establishes package-level Core/Access behavior in a modular monorepo.
+The [active project basis](docs/project/ACTIVE_PROJECT.md) is the authoritative
+navigation entry; older V2.2 project books are legacy references.
 
 ## Active Dependency Graph
 
@@ -29,8 +31,9 @@ object relation index. Runtime occupancy rebuilds entirely from it, and Recall
 correctness uses no route table. Geometry partition files are deferred until a
 future scale stage.
 
-Core loads immutable generated templates; compilation and parity generation
-belong to Lab and never execute during Core initialization.
+Core loads immutable generated templates and exposes only minimal runtime
+Profile views. Research Profile roles, descriptions, compilation models, and
+parity generation belong to Lab and never execute during Core initialization.
 
 Core Recall accepts explicit geometry entry cells only and returns Core atoms,
 Handles, scores, and budget state. Source fallback and revision semantics belong

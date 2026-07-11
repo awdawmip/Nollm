@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .ports import ConsistentStatePort
+from .diff import SnapshotDiff, structural_diff
 
 
 class SnapshotService:
@@ -22,5 +23,5 @@ class SnapshotService:
     def verify(self, port: ConsistentStatePort, expected: bytes) -> bool:
         return self.create(port) == expected
 
-    def structural_diff(self, left: bytes, right: bytes) -> bool:
-        return left != right
+    def structural_diff(self, left: bytes, right: bytes) -> SnapshotDiff:
+        return structural_diff(left, right)

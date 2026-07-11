@@ -70,8 +70,8 @@ def test_snapshot_clone_verify_and_structural_diff_are_policy_free() -> None:
     assert service.clone(source, target) == b"state-a"
     assert target.state == b"state-a"
     assert service.verify(target, b"state-a")
-    assert not service.structural_diff(b"state-a", b"state-a")
-    assert service.structural_diff(b"state-a", b"state-b")
+    assert service.structural_diff(b"state-a", b"state-a").equal
+    assert not service.structural_diff(b"state-a", b"state-b").equal
 
 
 def test_null_trace_does_not_change_operation_result() -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ast
 from dataclasses import fields
+from hashlib import sha256
 import json
 from pathlib import Path
 import subprocess
@@ -24,13 +25,43 @@ from nollm_core import (
     PutCommand,
     RecallBudget,
     ReplaceCommand,
+    available_profile_ids,
     expand_template,
-    profiles,
+    runtime_profile,
 )
 
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = ROOT / "docs" / "validation" / "CORE_CAPABILITY_VALIDATION.json"
+VALIDATION_SCHEMA = "nollm_core_capability_validation_v2"
+VALIDATED_PATHS = (
+    "packages/nollm-core/src",
+    "packages/nollm-core/tests",
+    "packages/nollm-snapshot/src",
+    "packages/nollm-trace/src",
+    "lab/nollm-lab/geometry",
+    "lab/nollm-lab/m1/run_core_capability_validation.py",
+    "lab/nollm-lab/m1/run_geometry_parity.py",
+)
+
+
+def code_tree_digest() -> str:
+    files: list[Path] = []
+    for relative in VALIDATED_PATHS:
+        path = ROOT / relative
+        files.extend(path.rglob("*") if path.is_dir() else (path,))
+    digest = sha256()
+    for path in sorted(
+        (path for path in files if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"),
+        key=lambda value: value.relative_to(ROOT).as_posix(),
+    ):
+        relative = path.relative_to(ROOT).as_posix().encode("utf-8")
+        payload = path.read_bytes()
+        digest.update(len(relative).to_bytes(4, "big"))
+        digest.update(relative)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+    return digest.hexdigest()
 
 
 class MemorySink:
@@ -171,7 +202,11 @@ def validate(root: Path) -> dict[str, object]:
     source_root = ROOT / "packages/nollm-core/src/nollm_core"
     exact_sources = "\n".join(path.read_text(encoding="utf-8") for path in source_root.glob("*.py"))
     verified["exact_runtime_no_float_polygon_trigonometry"] = (
-        all(not profile.runtime_float_allowed and not profile.runtime_polygon for profile in profiles())
+        all(
+            not runtime_profile(profile_id).runtime_float_allowed
+            and not runtime_profile(profile_id).runtime_polygon
+            for profile_id in available_profile_ids()
+        )
         and "math.sin" not in exact_sources
         and "math.cos" not in exact_sources
     )
@@ -188,7 +223,6 @@ def validate(root: Path) -> dict[str, object]:
     verified["core_stdlib_only"] = external == set()
 
     return {
-        "schema_version": 1,
         "verified_capabilities": dict(sorted(verified.items())),
         "known_limitations": [
             "same-process single-writer composition only",
@@ -208,17 +242,46 @@ def validate(root: Path) -> dict[str, object]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--head")
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--code-commit")
     args = parser.parse_args()
-    head = args.head or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     with TemporaryDirectory(prefix="nollm-core-capability-") as directory:
         document = validate(Path(directory))
-    document["validation_head"] = head
     if not all(document["verified_capabilities"].values()):
         failed = [name for name, value in document["verified_capabilities"].items() if not value]
         raise AssertionError(f"Core capability validation failed: {failed}")
+    digest = code_tree_digest()
+    if args.check:
+        recorded = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        if recorded.get("validation_schema") != VALIDATION_SCHEMA:
+            raise AssertionError("unsupported capability validation record")
+        if recorded.get("validated_code_tree_digest") != digest:
+            raise AssertionError("validated code tree digest mismatch")
+        commit = recorded.get("validated_code_commit")
+        if type(commit) is not str:
+            raise AssertionError("validated_code_commit is missing")
+        subprocess.run(["git", "merge-base", "--is-ancestor", commit, "HEAD"], cwd=ROOT, check=True)
+        expected = dict(document)
+        expected.update(
+            validation_schema=VALIDATION_SCHEMA,
+            validation_command="python lab/nollm-lab/m1/run_core_capability_validation.py --check",
+            validated_code_commit=commit,
+            validated_code_tree_digest=digest,
+        )
+        if recorded != expected:
+            raise AssertionError("capability validation record does not match current results")
+        print(json.dumps({"status": "passed", "validated_code_commit": commit, "validated_code_tree_digest": digest, "verified_count": len(document["verified_capabilities"])}, sort_keys=True))
+        return
+    commit = args.code_commit or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    subprocess.run(["git", "cat-file", "-e", commit + "^{commit}"], cwd=ROOT, check=True)
+    document.update(
+        validation_schema=VALIDATION_SCHEMA,
+        validation_command="python lab/nollm-lab/m1/run_core_capability_validation.py --check",
+        validated_code_commit=commit,
+        validated_code_tree_digest=digest,
+    )
     OUTPUT.write_text(json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
-    print(json.dumps({"status": "passed", "validation_head": head, "verified_count": len(document["verified_capabilities"])}, sort_keys=True))
+    print(json.dumps({"status": "passed", "validated_code_commit": commit, "validated_code_tree_digest": digest, "verified_count": len(document["verified_capabilities"])}, sort_keys=True))
 
 
 if __name__ == "__main__":

@@ -15,11 +15,13 @@
     },
     "nollm-minimal": {
       "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"],
+      "composition": ["nollm_access.FileEvidenceStore", "nollm_access.FileHandleStore", "nollm_snapshot.SnapshotService", "trace=None"],
       "optional": [],
       "development": []
     },
     "nollm-debug": {
       "runtime": ["nollm-core", "nollm-snapshot", "nollm-access", "nollm-trace"],
+      "extends": "nollm-minimal",
       "optional": ["nollm-trace.TraceInspector"],
       "development": ["geometry-template-generator", "core-capability-validator"]
     },

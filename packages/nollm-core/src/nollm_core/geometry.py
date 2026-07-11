@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .profiles import get_profile
+from .profiles import runtime_profile
 from .validation import exact_int, exact_mapping, exact_str
 
 
@@ -16,7 +16,7 @@ class GeometryAddress:
     phase: str | None = None
 
     def __post_init__(self) -> None:
-        get_profile(self.profile_id)
+        runtime_profile(self.profile_id)
         exact_str(self.chart_id, "chart_id")
         for name, value in (("layer", self.layer), ("q", self.q), ("r", self.r)):
             exact_int(value, name)

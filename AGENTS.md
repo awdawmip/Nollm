@@ -1,112 +1,13 @@
-# Nollm Codex Rules
+# Nollm Repository Rules
 
-Execute the current taskbook exactly. Do not redesign or broaden scope.
-
-- Before any Nollm task, read:
-  `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md`
-  and the current taskbook.
-- First-principles invariants govern architecture direction.
-- Current modular charters govern component ownership.
-- Dated execution order in the first-principles document is historical stage
-  context; the current taskbook governs scheduling without overriding the
-  architectural invariants.
-- If a filename-based classification conflicts with current code behavior,
-  inspect the code and classify from behavior, dependencies, and state ownership.
-- Never mark a component `DELETE_LATER` merely because an older version of a
-  same-named file contained a forbidden path.
-- Current task affects CORE, SNAPSHOT, TRACE, ACCESS, LAB, and DISTRIBUTIONS.
-- Current expected vector is CORE +10%, SNAPSHOT +5%, TRACE +5%, ACCESS +5%, LAB +10%, DISTRIBUTIONS +5%; all other modules remain 0%.
-- Do not build capability issuance, shadow Store defenses, malicious plugin sandboxes, or attack-matrix production paths.
-- Do not delete old capabilities before a tested replacement exists or the asset is classified REMOVABLE.
-- Do not restore graph/vector/embedding, external relation indexes, or Python semantic Placement.
-- Do not start OpenClaw Live, real models, corpus long runs, PB tests, or remote repository splitting.
-- Recalculate the actual vector and module progress after every result gate; do not claim sealed or final closure.
-- Preserve every accepted M1-C7 lifecycle, client lease, transaction capability, consistent-read ownership, exact Geometry, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, package, boundary, and regression result.
-- Callback isolation is canonical-workspace scoped, not merely one AccessRuntime object's thread-local flag.
-- A callback active for one AccessRuntime blocks public operations, close, construction, and Store mutation through every AccessRuntime bound to the same canonical pair on that thread.
-- CoreClientLease.callback is non-reentrant. A Core callback cannot invoke another client callback, transaction callback, public Core operation, client lifecycle operation, or Access operation.
-- Default FileHandleStore mutation is Access-owned. Direct callers do not receive the write capability and cannot create or alter canonical HandleBinding state.
-- FileHandleStore path, hook, validator, owner binding, and callback runner are immutable after binding.
-- FileCoreStateStore workspace/path/hook/validator/owner binding are immutable after Runtime binding, including when the caller retains the injected Store object.
-- AccessRuntime binds immutable Core/Evidence/Handle dependencies for its complete lifetime. Public properties are read-only and cannot be reassigned.
-- CoreRuntime canonical workspace identity and state_path are captured once and never follow a later-mutated Store field.
-- Trace cannot rebind Access dependencies, mutate Core/Access Store paths or hooks, or change future operation results.
-- Store fault injection remains constructor-only or Lab/test-only; production Runtime binding freezes it.
-- HandleStore read/inspection may remain public, but every mutation and rollback requires an unforgeable Access-owned capability.
-- Same-pair multiple AccessRuntime instances share one workspace coordinator, one callback fence, one transaction lock, and compatible immutable Store identity.
-- Preserve all accepted M1-C6 package, kernel, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, boundary, and regression results.
-- Public Core and Access operations are non-reentrant by default. RLock reentrancy is not permission to enter another public operation.
-- Internal transaction work uses an unforgeable Runtime-owned capability/facade; external callbacks never receive it.
-- Binding, Evidence, Store, and Trace callbacks execute behind a unified callback fence and cannot enter public Core/Access operations or lifecycle methods.
-- A callback-returned successful Core/Access write may never be deleted by an outer rollback.
-- Access callbacks cannot observe Core/Binding/Evidence intermediate state through nested recall or saved_handle.
-- Core lifecycle is explicitly OPEN/CLOSING/CLOSED; close marks CLOSING before waiting and new operations reject after CLOSING begins.
-- Access lifecycle is explicitly OPEN/CLOSING/CLOSED with the same rule.
-- AccessRuntime holds a Core client lease for its entire lifetime; Core cannot close while a live Access client remains.
-- Access construction atomically acquires the canonical pair and Core client lease with no post-lease close window.
-- Consistent-read tokens bind Runtime identity, generation, and owner thread; wrong-thread export/end reject before state changes.
-- CoreRuntime exposes no mutable StateStore or mutable write/fault hook through its public surface.
-- TraceSink is observation-only, including indirect mutation of Store hooks or Runtime configuration.
-- Lock order remains Access lifecycle/pair -> Core client/transaction -> state lock. No Core path acquires Access locks.
-- Do not proceed to M2, OpenClaw Live, model calls, corpus execution, PB scale, or remote GitHub work.
-- Preserve all accepted M1-C5 package, kernel, canonical state/evidence, owner, pair, Snapshot, Trace, Recall, boundary, and regression results.
-- RLock ownership alone is not an operation lease. Same-thread lifecycle reentry is explicitly tracked and rejected.
-- Core close cannot execute from inside an active Core operation, transaction lease, Trace callback, Store callback, Snapshot callback, or Recall callback on the same Runtime.
-- Cross-thread close may wait; same-thread close during an active operation fails deterministically without releasing the owner.
-- TraceSink is observation-only. Trace callbacks cannot mutate, restore, close, reopen, begin another Recall, or change Core lifecycle/state.
-- Every Core Trace event passes through one Runtime-owned guarded emitter; direct `safe_emit` calls that bypass the guard are forbidden.
-- Access close cannot execute from inside an active Access operation or Binding/Evidence callback on the same Runtime.
-- AccessRuntime construction atomically binds a live OPEN Core and the canonical Access pair.
-- Reuse holds a Core transaction lease across Handle validation and Binding commit.
-- A successful Access binding cannot refer to a Handle removed before commit.
-- Lock order is uniform: Access pair coordinator before Core transaction/lifecycle lease for Access operations.
-- Do not proceed to M2, OpenClaw Live, model calls, corpus execution, PB scale, or remote GitHub work.
-- Core close/release is serialized with mutation, Recall, Snapshot, restore, and state reads.
-- Access close/release is serialized with capture, apply, recall, saved_handle, and rollback.
-- Access atomic transactions hold a Core-owned transaction lease across snapshot, action, binding, and rollback.
-- A consistent-read token is read-only even under same-thread RLock reentry.
-- Trace callbacks cannot reenter Core mutation.
-- Core persistent state is writable only through CoreRuntime; Store and Cell views cannot bypass ownership.
-- Core and Access Recall tuples are canonical, unique, directly validated, and never silently deduplicated.
-- Compiler metadata flags and dream_quasi residual use exact canonical contracts.
-- A canonical Core state path has at most one live mutable CoreRuntime owner per process, including bare Core.
-- Core claims ownership before validator binding or state I/O and provides explicit close/context lifecycle.
-- One active Core workspace binds to one active Access workspace; identical pairs may share coordination.
-- KernelEntry and CoverageTemplate reject duplicate targets, noncanonical flags/types, and invalid Q16 bounds.
-- Public Core/Access requests, decisions, and commands reject wrong direct-constructor types before writes.
-- Core Recall is one consistent read serialized against mutation.
-- Preserve all accepted M1-C2 nine-template, canonical-Evidence, HandleBinding, boundary, and package results.
-- KernelRegistry and every registry/state identity input are immutable after construction.
-- Persistent and Recall geometry ordering uses GeometryAddress.stable_key only.
-- GeometryAnchor cells are strictly sorted, unique canonical set tuples.
-- Active lateral supports registered ring 1 only; unregistered rings are rejected.
-- One process cannot host independent mutable CoreRuntime owners for one canonical Core workspace.
-- Access reads spanning Core, Binding, and Evidence share the workspace coordinator lock.
-- Preserve M1/M1-C1 Addressed Handle, package boundaries, and one-current HandleBinding.
-- Kernel parity covers all three profiles and up/down/lateral, including residuals and fanout semantics.
-- Geometry registry identity binds every active relation-kernel semantic used by Recall.
-- Any accepted Core state must re-encode byte-for-byte to persisted bytes; semantic reordering and empty cells are invalid.
-- Persistent public dataclasses reject incorrect direct-constructor types before any write.
-- MemoryStatement and Evidence files never coerce numeric, bool, or object values into strings.
-- Access mutations are serialized across Core and Binding snapshots, actions, and rollback.
-- Forget by explicit Handle remains possible when Evidence is missing.
-- Core Recall must use the accepted Coverage Template registry; heuristic layer or coordinate scaling is forbidden.
-- Increasing layer indices are finer: coverage up decrements the layer and coverage down increments it.
-- Core and Access persisted state must use strict canonical bytes with no type coercion or duplicate identities.
-- Access Evidence resolution must use the exact canonical HandleBinding; lexical aliases and atom-id fallback are forbidden.
-- Cross-store Access mutations must be exception-atomic and expose fatal consistency failure when rollback cannot complete.
-- Do not resume OpenClaw Live, model calls, or corpus execution.
-- Core operations require addressed handles; no global atom-id lookup.
-- Core Recall accepts explicit geometry entry cells only.
-- Access owns semantic decisions and evidence/source mapping.
-- Old GRF compatibility code may remain only outside active distributions.
-- Do not remove a legacy implementation until a tested replacement exists.
-- Production boundary target for M1 is zero violations and zero cycles.
-- Preserve all potentially useful components until ownership is proven.
-- Classify before moving; move before deleting.
-- Core owns geometry current-state operations only.
-- Snapshot, Trace, Access, History, Audit, OpenClaw, Lab, and Distributions are separate modules.
-- Do not add relation indexes, embeddings, semantic graphs, or Python semantic-placement logic.
-- Do not run live OpenClaw, long LLM corpus jobs, or remote GitHub changes in this stage.
-- Windows-first; fix ordinary failures inside the task.
-- Deliver one clean Git bundle and a clean working tree.
+- Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md`,
+  `docs/project/ACTIVE_PROJECT.md`, and the linked current task before work.
+- Execute the current task exactly; do not redesign or broaden its scope.
+- Classify code from behavior, dependencies, and state ownership before moving it.
+- Preserve unrelated work and use public package contracts across boundaries.
+- Use Windows and PowerShell as the primary development environment.
+- Run every task-required test and validation command before delivery.
+- Keep generated artifacts reproducible and reports bound to verified evidence.
+- Commit all intended changes and finish with a clean working tree.
+- Deliver one verified, complete-history Git bundle outside the repository.
+- Do not perform remote, destructive, or live external operations unless the task explicitly authorizes them.

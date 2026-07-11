@@ -13,7 +13,7 @@ from nollm_core.coverage_template import (
     LAYER_INDEX_DIRECTION,
 )
 from nollm_core.fixed_point import Q16_ONE, normalize_q16_weights
-from nollm_core.profiles import get_profile
+from research_profiles import research_profile
 
 
 class CoverageTemplateCompiler:
@@ -31,7 +31,7 @@ class CoverageTemplateCompiler:
         from_layer_mod: int = 0,
         source_phase: str | None = None,
     ) -> CoverageTemplate:
-        profile = get_profile(profile_id)
+        profile = research_profile(profile_id)
         if direction not in DIRECTIONS or type(from_layer_mod) is not int:
             raise ValueError("invalid coverage request")
         entries = self._entries(profile_id, direction)

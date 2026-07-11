@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import argparse
 from hashlib import sha256
 import json
 from pathlib import Path
 
 from compiler import CoverageTemplateCompiler
-from nollm_core.profiles import profiles
+from research_profiles import research_profiles
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -19,7 +20,7 @@ def canonical_document() -> bytes:
         "schema_version": "nollm_compiled_geometry_templates_v1",
         "templates": [
             compiler.compile(profile.profile_id, direction).to_mapping()
-            for profile in profiles()
+            for profile in research_profiles()
             for direction in DIRECTIONS
         ],
     }
@@ -36,9 +37,18 @@ def render(payload: bytes) -> str:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true")
+    args = parser.parse_args()
     rendered = render(canonical_document())
+    digest = sha256(canonical_document()).hexdigest()
+    if args.check:
+        if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != rendered:
+            raise SystemExit("compiled geometry template artifact is stale")
+        print(f"artifact SHA-256: {digest}")
+        return
     OUTPUT.write_text(rendered, encoding="utf-8", newline="\n")
-    print(f"wrote {OUTPUT.relative_to(ROOT)}")
+    print(f"wrote {OUTPUT.relative_to(ROOT)}; artifact SHA-256: {digest}")
 
 
 if __name__ == "__main__":

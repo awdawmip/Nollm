@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .fixed_point import Q16_ONE
 from .geometry import GeometryAddress
-from .profiles import get_profile
+from .profiles import runtime_profile
 
 COVERAGE_UP = "coverage_up"
 COVERAGE_DOWN = "coverage_down"
@@ -52,7 +52,7 @@ class CoverageTemplate:
     compiler: CompilerMetadata
 
     def __post_init__(self) -> None:
-        get_profile(self.profile_id)
+        runtime_profile(self.profile_id)
         if self.direction not in DIRECTIONS or type(self.from_layer_mod) is not int or type(self.to_layer_mod) is not int:
             raise TypeError("invalid CoverageTemplate identity")
         if self.source_phase is not None and (type(self.source_phase) is not str or not self.source_phase):
@@ -71,7 +71,7 @@ class CoverageTemplate:
         targets = tuple((entry.layer_delta, entry.dq, entry.dr) for entry in self.entries)
         if len(self.entries) > self.compiler.fanout_limit or tuple(sorted(self.entries)) != self.entries or len(set(targets)) != len(targets):
             raise ValueError("coverage entries are not canonical or exceed fanout")
-        profile = get_profile(self.profile_id)
+        profile = runtime_profile(self.profile_id)
         expected_flags = tuple(sorted({flag for entry in self.entries for flag in entry.flags}))
         expected_method = "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
         if self.compiler.compiler_id != "grf1a_coverage_template_compiler" or self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
