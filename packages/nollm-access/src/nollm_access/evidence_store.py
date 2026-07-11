@@ -8,6 +8,7 @@ from typing import Protocol
 from uuid import uuid4
 
 from .statement import MemoryStatement
+from .workspace_lock import workspace_lock
 
 
 class EvidenceStore(Protocol):
@@ -22,22 +23,31 @@ class FileEvidenceStore:
     """File-first original Evidence store with no semantic or relation index."""
 
     def __init__(self, root: Path) -> None:
-        self.root = Path(root) / "access" / "evidence"
+        self.workspace = Path(root)
+        self.root = self.workspace / "access" / "evidence"
+        self._lock = workspace_lock(self.workspace)
 
     def put_original(self, statement: MemoryStatement) -> None:
-        path = self._path(statement.statement_id)
-        payload = _canonical({"schema_version": "nollm_access_evidence_v1", "statement": statement.to_mapping()})
-        if path.exists():
-            if path.read_bytes() != payload:
-                raise FileExistsError("statement evidence already exists with different content")
-            return
-        _atomic_write(path, payload)
+        if type(statement) is not MemoryStatement:
+            raise TypeError("statement must be MemoryStatement")
+        with self._lock:
+            path = self._path(statement.statement_id)
+            payload = _canonical({"schema_version": "nollm_access_evidence_v1", "statement": statement.to_mapping()})
+            if path.exists():
+                if path.read_bytes() != payload:
+                    raise FileExistsError("statement evidence already exists with different content")
+                return
+            _atomic_write(path, payload)
 
     def get_original(self, statement_id: str) -> MemoryStatement:
-        value = json.loads(self._path(statement_id).read_text(encoding="utf-8"))
-        if value.get("schema_version") != "nollm_access_evidence_v1":
-            raise ValueError("unsupported Evidence schema")
-        statement = MemoryStatement.from_mapping(dict(value["statement"]))
+        path = self._path(statement_id)
+        payload = path.read_bytes()
+        value = json.loads(payload.decode("utf-8"))
+        if type(value) is not dict or set(value) != {"schema_version", "statement"} or value["schema_version"] != "nollm_access_evidence_v1":
+            raise ValueError("unsupported or noncanonical Evidence schema")
+        statement = MemoryStatement.from_mapping(value["statement"])
+        if _canonical(value) != payload:
+            raise ValueError("Evidence bytes must be canonical")
         if statement.statement_id != statement_id:
             raise ValueError("Evidence statement identity mismatch")
         return statement
@@ -46,8 +56,8 @@ class FileEvidenceStore:
         return self._path(statement_id).is_file()
 
     def _path(self, statement_id: str) -> Path:
-        if not statement_id:
-            raise ValueError("statement_id is required")
+        if type(statement_id) is not str or not statement_id:
+            raise TypeError("statement_id must be a non-empty string")
         digest = sha256(statement_id.encode("utf-8")).hexdigest()
         return self.root / digest[:2] / f"{digest}.json"
 

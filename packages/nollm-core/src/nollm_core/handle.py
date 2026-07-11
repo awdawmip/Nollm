@@ -12,6 +12,8 @@ class AtomHandle:
     local_atom_id: str
 
     def __post_init__(self) -> None:
+        if type(self.geometry_address) is not GeometryAddress:
+            raise TypeError("geometry_address must be GeometryAddress")
         exact_str(self.local_atom_id, "local_atom_id")
 
     def to_mapping(self) -> dict[str, object]:

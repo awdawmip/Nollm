@@ -14,7 +14,15 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1C1 exact geometry, Access binding, and state truthfulness closure.
+- Current stage is M1-C2 complete-kernel, canonical-Evidence, and serialized-transaction closure.
+- Preserve M1/M1-C1 Addressed Handle, package boundaries, and one-current HandleBinding.
+- Kernel parity covers all three profiles and up/down/lateral, including residuals and fanout semantics.
+- Geometry registry identity binds every active relation-kernel semantic used by Recall.
+- Any accepted Core state must re-encode byte-for-byte to persisted bytes; semantic reordering and empty cells are invalid.
+- Persistent public dataclasses reject incorrect direct-constructor types before any write.
+- MemoryStatement and Evidence files never coerce numeric, bool, or object values into strings.
+- Access mutations are serialized across Core and Binding snapshots, actions, and rollback.
+- Forget by explicit Handle remains possible when Evidence is missing.
 - Core Recall must use the accepted Coverage Template registry; heuristic layer or coordinate scaling is forbidden.
 - Increasing layer indices are finer: coverage up decrements the layer and coverage down increments it.
 - Core and Access persisted state must use strict canonical bytes with no type coercion or duplicate identities.

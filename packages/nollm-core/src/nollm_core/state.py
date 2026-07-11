@@ -61,10 +61,11 @@ class CoreRuntime(ConsistentStatePort):
         self.trace_sink = trace_sink or NullTraceSink()
         self.store = store or FileCoreStateStore(self.workspace)
         self.kernel_registry = kernel_registry or KernelRegistry()
+        self.store.bind_semantic_validator(self._validate_state_bytes)
         self._lock = RLock()
         self._read_token: object | None = None
         if self.store.exists():
-            self._cells, self._bridges = self._decode(self.store.read_document())
+            self._cells, self._bridges = self._decode_state_bytes(self.store.read_bytes())
         else:
             self._cells: dict[GeometryAddress, dict[str, MemoryAtom]] = {}
             self._bridges: dict[str, BridgeSpec] = {}
@@ -175,9 +176,8 @@ class CoreRuntime(ConsistentStatePort):
         with self._lock:
             if self._read_token is not None:
                 raise RuntimeError("cannot restore during a consistent read")
-            document = self._decode_document(payload)
-            cells, bridges = self._decode(document)
-            self.store.write_bytes(canonical_state_bytes(document))
+            cells, bridges = self._decode_state_bytes(payload)
+            self.store.write_bytes(payload)
             self._cells = cells
             self._bridges = bridges
             self.cells = CellStore(self._cells)
@@ -295,6 +295,8 @@ class CoreRuntime(ConsistentStatePort):
                 atoms[local_id] = atom
             if atoms:
                 cells[address] = atoms
+            else:
+                raise ValueError("empty cells are not canonical Core state")
         bridges = {}
         for value in document["bridges"]:
             bridge = BridgeSpec.from_mapping(value)
@@ -311,6 +313,16 @@ class CoreRuntime(ConsistentStatePort):
         if canonical_state_bytes(value) != payload:
             raise ValueError("snapshot bytes must be canonical Core state")
         return value
+
+    def _decode_state_bytes(self, payload: bytes) -> tuple[dict[GeometryAddress, dict[str, MemoryAtom]], dict[str, BridgeSpec]]:
+        document = self._decode_document(payload)
+        cells, bridges = self._decode(document)
+        if canonical_state_bytes(self._document(cells, bridges)) != payload:
+            raise ValueError("Core state semantic order is not canonical")
+        return cells, bridges
+
+    def _validate_state_bytes(self, payload: bytes) -> None:
+        self._decode_state_bytes(payload)
 
     def _require_token(self, token: object) -> None:
         if token is not self._read_token:

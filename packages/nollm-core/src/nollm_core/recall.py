@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from .atom import MemoryAtom
 from .bridge import Q16_ONE
 from .geometry import GeometryAddress
-from .coverage_template import expand_lateral, expand_template
+from .coverage_template import expand_template, validate_lateral_ring
 from .handle import AtomHandle
 from .ports import NullTraceSink, TraceEvent, TraceSink, safe_emit
 
@@ -114,7 +114,9 @@ def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest,
         output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
     if "lateral" in request.allowed_kernels:
         for ring in range(1, request.budget.max_lateral_ring + 1):
-            output.extend((target, weight, bridge_steps) for target, weight in expand_lateral(cell, ring))
+            validate_lateral_ring(ring, runtime.kernel_registry.fanout_limit)
+            template = runtime.kernel_registry.coverage_template(cell.profile_id, "lateral")
+            output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
     if "bridge" in request.allowed_kernels and bridge_steps < request.budget.max_bridge_steps:
         for bridge in runtime.bridges():
             if cell not in bridge.from_anchor.cells or bridge_steps >= bridge.max_steps:

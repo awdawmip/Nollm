@@ -10,7 +10,7 @@ from .command import (
     ReplaceCommand,
 )
 from .geometry import GeometryAddress
-from .coverage_template import CoverageTemplate, CoverageTemplateCompiler, expand_template
+from .coverage_template import CoverageTemplate, CoverageTemplateCompiler, KernelEntry, expand_template, validate_lateral_ring
 from .kernel_registry import KernelRegistry
 from .profiles import Profile, get_profile, profiles
 from .handle import AtomHandle
@@ -48,10 +48,12 @@ __all__ = [
     "CoverageTemplate",
     "CoverageTemplateCompiler",
     "KernelRegistry",
+    "KernelEntry",
     "Profile",
     "expand_template",
     "get_profile",
     "profiles",
+    "validate_lateral_ring",
     "GeometryAnchor",
     "MemoryAtom",
     "MoveCommand",

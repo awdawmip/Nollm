@@ -7,6 +7,7 @@ from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .statement import MemoryStatement
+from .workspace_lock import workspace_lock
 
 
 class AccessRuntime:
@@ -14,12 +15,18 @@ class AccessRuntime:
         self.core = core
         self.evidence_store = evidence_store
         self.handle_store = handle_store
+        self._transaction_lock = workspace_lock(handle_store.path.parent.parent)
 
     def capture(self, statement: MemoryStatement) -> None:
-        self.evidence_store.put_original(statement)
+        with self._transaction_lock:
+            self.evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
-        if decision.action not in {"stitch", "unstitch"} and not self.evidence_store.exists(decision.statement_id):
+        with self._transaction_lock:
+            return self._apply_locked(decision)
+
+    def _apply_locked(self, decision: AccessDecision) -> object | None:
+        if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "defer"} and not self.evidence_store.exists(decision.statement_id):
             raise FileNotFoundError("original Evidence is missing")
         if decision.action == "reuse":
             assert decision.existing_handle is not None

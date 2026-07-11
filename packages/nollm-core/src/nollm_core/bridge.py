@@ -16,8 +16,10 @@ class GeometryAnchor:
     cells: tuple[GeometryAddress, ...]
 
     def __post_init__(self) -> None:
-        if not self.anchor_id or not self.cells:
-            raise ValueError("anchor_id and cells are required")
+        if type(self.anchor_id) is not str or not self.anchor_id:
+            raise TypeError("anchor_id must be a non-empty string")
+        if type(self.cells) is not tuple or not self.cells or any(type(cell) is not GeometryAddress for cell in self.cells):
+            raise TypeError("cells must be a non-empty GeometryAddress tuple")
         if len(set(self.cells)) != len(self.cells):
             raise ValueError("anchor cells must be unique")
 
@@ -41,8 +43,12 @@ class BridgeSpec:
     max_fanout: int
 
     def __post_init__(self) -> None:
-        if not self.bridge_id:
-            raise ValueError("bridge_id is required")
+        if type(self.bridge_id) is not str or not self.bridge_id:
+            raise TypeError("bridge_id must be a non-empty string")
+        if type(self.from_anchor) is not GeometryAnchor or type(self.to_anchor) is not GeometryAnchor:
+            raise TypeError("bridge anchors must be GeometryAnchor values")
+        if type(self.bridge_class) is not str:
+            raise TypeError("bridge_class must be a string")
         if type(self.weight_q16) is not int or not 0 < self.weight_q16 <= Q16_ONE:
             raise ValueError("weight_q16 must be in (0, Q16_ONE]")
         if self.bridge_class not in BRIDGE_CLASSES:
