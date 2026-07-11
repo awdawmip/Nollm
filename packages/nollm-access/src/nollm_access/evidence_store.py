@@ -23,9 +23,17 @@ class FileEvidenceStore:
     """File-first original Evidence store with no semantic or relation index."""
 
     def __init__(self, root: Path) -> None:
-        self.workspace = Path(root)
-        self.root = self.workspace / "access" / "evidence"
-        self._lock = workspace_lock(self.workspace)
+        self._workspace = Path(root).resolve()
+        self._root = self._workspace / "access" / "evidence"
+        self._lock = workspace_lock(self._workspace)
+
+    @property
+    def workspace(self) -> Path:
+        return self._workspace
+
+    @property
+    def root(self) -> Path:
+        return self._root
 
     def put_original(self, statement: MemoryStatement) -> None:
         if type(statement) is not MemoryStatement:

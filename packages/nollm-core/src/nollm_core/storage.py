@@ -18,13 +18,21 @@ class FileCoreStateStore:
     """Canonical current-state file; it is not an identity or relation index."""
 
     def __init__(self, workspace: Path, before_replace: Callable[[Path], None] | None = None) -> None:
-        self.workspace = Path(workspace)
-        self.path = self.workspace / "core" / "current_state.json"
+        self._workspace = Path(workspace).resolve()
+        self._path = self._workspace / "core" / "current_state.json"
         self._before_replace = before_replace
         self._callback_runner: Callable[..., object] | None = None
         self._bound = False
         self._semantic_validator: Callable[[bytes], None] | None = None
         self._owner_token: object | None = None
+
+    @property
+    def workspace(self) -> Path:
+        return self._workspace
+
+    @property
+    def path(self) -> Path:
+        return self._path
 
     @property
     def before_replace(self) -> Callable[[Path], None] | None:

@@ -25,10 +25,7 @@ def decision(statement_id: str, action: str, **values) -> AccessDecision:
 
 def test_binding_callback_rejects_nested_access_and_direct_core(tmp_path: Path) -> None:
     core = CoreRuntime(tmp_path / "core")
-    store = FileHandleStore(tmp_path)
-    access = AccessRuntime(core, FileEvidenceStore(tmp_path), store)
-    access.capture(MemoryStatement("a", "a"))
-    access.capture(MemoryStatement("b", "b"))
+    access = None
     rejected = []
     calls = 0
 
@@ -51,13 +48,16 @@ def test_binding_callback_rejects_nested_access_and_direct_core(tmp_path: Path) 
                 rejected.append(True)
         raise OSError("outer fault")
 
-    store.before_replace = hook
+    store = FileHandleStore(tmp_path, hook)
+    access = AccessRuntime(core, FileEvidenceStore(tmp_path), store)
+    access.capture(MemoryStatement("a", "a"))
+    access.capture(MemoryStatement("b", "b"))
+
     with pytest.raises(OSError, match="outer fault"):
         access.apply(decision("a", "new", target_cell=CELL))
     assert len(rejected) == 5
     assert core.placement_count() == 0
     assert not store.exists("a") and not store.exists("b")
-    store.before_replace = None
     access.capture(MemoryStatement("c", "c"))
     handle = access.apply(decision("c", "new", target_cell=CELL))
     assert core.contains(handle) and access._active_operations == 0

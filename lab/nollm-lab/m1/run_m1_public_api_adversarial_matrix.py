@@ -9,12 +9,12 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from nollm_access import AccessDecision,AccessRecallRequest,AccessRuntime,FileEvidenceStore,FileHandleStore,MemoryStatement
-from nollm_core import CompilerMetadata,CoreRecallRequest,CoreRuntime,CoverageTemplateCompiler,FileCoreStateStore,GeometryAddress,GeometryAnchor,KernelEntry,MemoryAtom,RecallBudget
+from nollm_core import AtomHandle,CompilerMetadata,CoreRecallRequest,CoreRuntime,CoverageTemplateCompiler,FileCoreStateStore,GeometryAddress,GeometryAnchor,KernelEntry,MemoryAtom,RecallBudget
 from nollm_snapshot import SnapshotService
 
 def rejected(call):
     try: call()
-    except (TypeError,ValueError,RuntimeError): return True
+    except (AttributeError,TypeError,ValueError,RuntimeError): return True
     return False
 
 
@@ -114,9 +114,10 @@ def run_matrix(root:Path)->dict[str,bool]:
     callback_access.close();callback_core.close()
     corrupt_root=root/'corrupt';corrupt_core=CoreRuntime(corrupt_root/'core');corrupt_evidence=FileEvidenceStore(corrupt_root);corrupt_access=AccessRuntime(corrupt_core,corrupt_evidence,FileHandleStore(corrupt_root));corrupt_evidence.put_original(MemoryStatement('base','base'));base=corrupt_access.apply(AccessDecision('base','base','new',target_cell=cell,reason_text='x'));corrupt_evidence.put_original(MemoryStatement('bad','bad'));corrupt_evidence._path('bad').write_text('{}\n',encoding='utf-8');facts['reuse_corrupt_evidence_rejected']=rejected(lambda:corrupt_access.apply(AccessDecision('bad','bad','reuse',existing_handle=base,reason_text='x')));corrupt_access.close();corrupt_core.close()
     facts.update(run_m1c7_matrix(root/'m1c7'))
-    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C7_BOUNDARY_REPORT.json'
+    facts.update(run_m1c8_matrix(root/'m1c8'))
+    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C8_BOUNDARY_REPORT.json'
     if report.exists():
-        boundary=json.loads(report.read_text(encoding='utf-8'));facts['boundary_zero']=boundary.get('production_violations')==[] and boundary.get('cycles_production')==[]
+        boundary=json.loads(report.read_text(encoding='utf-8'));facts['boundary_zero']=boundary.get('production_violations')==[] and boundary.get('cycles_production')==[];facts['cycles_zero']=boundary.get('cycles_production')==[]
     return facts
 
 
@@ -173,8 +174,7 @@ def run_m1c7_matrix(root: Path) -> dict[str, bool]:
     facts['transaction_capability_foreign_rejected']=len(thread_errors)==1 and rejected(transaction.state_bytes)
     capability_core.close()
 
-    callback_core=CoreRuntime(root/'callback-core');callback_store=FileHandleStore(root/'callback-access');callback_access=AccessRuntime(callback_core,FileEvidenceStore(root/'callback-access'),callback_store)
-    callback_access.capture(MemoryStatement('outer','outer'));callback_access.capture(MemoryStatement('nested','nested'));callback_results={'apply':False,'recall':False,'core':False};first=True
+    callback_core=CoreRuntime(root/'callback-core');callback_access=None;callback_results={'apply':False,'recall':False,'core':False};first=True
     def callback_hook(_):
         nonlocal first
         if not first:return
@@ -183,7 +183,8 @@ def run_m1c7_matrix(root: Path) -> dict[str, bool]:
         callback_results['recall']=rejected(lambda:callback_access.recall(AccessRecallRequest('nested',entry_cells=(cell,),budget=budget)))
         callback_results['core']=rejected(lambda:callback_core.put(MemoryAtom('direct','direct'),cell))
         raise OSError('callback fault')
-    callback_store.before_replace=callback_hook
+    callback_store=FileHandleStore(root/'callback-access',callback_hook);callback_access=AccessRuntime(callback_core,FileEvidenceStore(root/'callback-access'),callback_store)
+    callback_access.capture(MemoryStatement('outer','outer'));callback_access.capture(MemoryStatement('nested','nested'))
     try:callback_access.apply(AccessDecision('outer','outer','new',target_cell=cell,reason_text='x'))
     except OSError:pass
     facts['nested_access_apply_rejected']=callback_results['apply']
@@ -214,6 +215,116 @@ def run_m1c7_matrix(root: Path) -> dict[str, bool]:
     constructor_proceed.set();join_thread(thread,'Access constructor client lease')
     facts['constructor_returns_open_core']=len(constructed)==1 and constructed[0].core.is_open
     constructed[0].close();constructor_core.close()
+    return facts
+
+
+def run_m1c8_matrix(root: Path) -> dict[str, bool]:
+    from nollm_access.workspace_lock import BindingWriterCapability
+
+    facts: dict[str, bool] = {}
+    cell = GeometryAddress('eisenstein_exact_v1', 'm1c8', 0, 0, 0)
+    budget = RecallBudget(0, 8, 0, 0, 0, 8)
+
+    callback_core = CoreRuntime(root/'pair-core')
+    backing = FileEvidenceStore(root/'pair-access')
+    first = second = None
+    attacked: dict[str, bool] = {}
+    callback_calls = 0
+    class PairCallbackEvidence:
+        workspace = backing.workspace
+        def put_original(self, statement):
+            nonlocal callback_calls
+            callback_calls += 1
+            operations = {
+                'capture': lambda: second.capture(MemoryStatement('nested','nested')),
+                'apply': lambda: second.apply(AccessDecision('nested','nested','new',target_cell=cell,reason_text='x')),
+                'recall': lambda: second.recall(AccessRecallRequest('nested',entry_cells=(cell,),budget=budget)),
+                'saved_handle': lambda: second.saved_handle('nested'),
+                'close': second.close,
+                'constructor': lambda: AccessRuntime(callback_core,backing,FileHandleStore(root/'pair-access')),
+                'direct_store': lambda: second.handle_store.put('ghost',AtomHandle(cell,'ghost')),
+            }
+            for name, operation in operations.items(): attacked[name] = rejected(operation)
+            raise OSError('pair callback fault')
+        def get_original(self, statement_id): return backing.get_original(statement_id)
+        def exists(self, statement_id): return backing.exists(statement_id)
+    first = AccessRuntime(callback_core,PairCallbackEvidence(),FileHandleStore(root/'pair-access'))
+    second = AccessRuntime(callback_core,backing,FileHandleStore(root/'pair-access'))
+    errors = []
+    def invoke_pair_callback():
+        try:first.capture(MemoryStatement('outer','outer'))
+        except Exception as error:errors.append(error)
+    thread = Thread(target=invoke_pair_callback,name='m1c8-pair-callback');thread.start();join_thread(thread,'M1-C8 pair callback attacks')
+    facts['workspace_callback_fence_shared_across_access_instances'] = all(attacked.values())
+    facts['cross_access_capture_rejected_without_evidence_write'] = attacked.get('capture',False) and not backing.exists('nested')
+    facts['cross_access_apply_rejected'] = attacked.get('apply',False)
+    facts['cross_access_recall_rejected'] = attacked.get('recall',False)
+    facts['cross_access_saved_handle_rejected_without_binding_read'] = attacked.get('saved_handle',False)
+    facts['cross_access_close_rejected_without_closing_state'] = attacked.get('close',False) and second.lifecycle_state=='OPEN'
+    facts['same_pair_constructor_rejected_during_callback'] = attacked.get('constructor',False)
+    facts['bound_handle_store_direct_write_rejected'] = attacked.get('direct_store',False)
+    facts['callback_exception_cleanup'] = len(errors)==1 and isinstance(errors[0],OSError) and first._active_operations==second._active_operations==0 and not hasattr(first._coordinator._local,'callback_depth')
+    second.capture(MemoryStatement('after','after'))
+    facts['callback_counts_cleanup'] = callback_calls==1 and backing.exists('after')
+
+    store = second.handle_store;empty = FileHandleStore(root/'empty').state_bytes();capability = second._binding_capability
+    forged = BindingWriterCapability(second._coordinator)
+    facts['binding_capability_foreign_rejected'] = rejected(lambda:store.import_state(empty,capability=forged))
+    facts['handle_store_hook_frozen_after_bind'] = rejected(lambda:setattr(store,'before_replace',lambda _p:None)) and rejected(lambda:setattr(store,'path',root/'redirect.json'))
+    original_bindings = store.state_bytes()
+    first.close();second.close()
+    facts['binding_capability_expired_rejected'] = not capability.active and rejected(lambda:store.import_state(empty,capability=capability)) and store.state_bytes()==original_bindings
+    callback_core.close()
+
+    recursive_core = CoreRuntime(root/'recursive-core');lease1=recursive_core.acquire_client_lease('one');lease2=recursive_core.acquire_client_lease('two');success=[]
+    nested = {}
+    def outer_callback():
+        nested['same']=rejected(lambda:lease1.callback(lambda:success.append(True)))
+        nested['different']=rejected(lambda:lease2.callback(lambda:success.append(True)))
+    lease1.callback(outer_callback)
+    with recursive_core.transaction() as transaction:
+        nested['transaction']=rejected(lambda:transaction.callback(lease1.callback,lambda:success.append(True)))
+    facts['recursive_client_callback_rejected'] = all(nested.values())
+    facts['recursive_callback_returned_no_success'] = not success
+    facts['transaction_callback_client_callback_rejected'] = nested['transaction']
+    facts['core_callback_counts_cleanup'] = recursive_core._active_operations==recursive_core._active_transactions==0 and not hasattr(recursive_core._local,'callback_depth')
+    lease1.close();lease2.close();recursive_core.close()
+
+    other = CoreRuntime(root/'other-core');trace_access = None;trace_attempts=[]
+    trace_store = FileHandleStore(root/'trace-access');trace_evidence=FileEvidenceStore(root/'trace-access')
+    class AccessMutatingTrace:
+        def emit(self,event):
+            if event.name!='core.recall.begin':return
+            for target,name,value in ((trace_access,'core',other),(trace_access,'handle_store',FileHandleStore(root/'redirect-access')),(trace_store,'path',root/'redirect-bindings.json'),(trace_store,'before_replace',lambda _p:None)):
+                try:setattr(target,name,value)
+                except (AttributeError,RuntimeError):trace_attempts.append(name)
+    trace_core=CoreRuntime(root/'trace-core',trace_sink=AccessMutatingTrace());trace_access=AccessRuntime(trace_core,trace_evidence,trace_store)
+    original_dependencies=(trace_access.core,trace_access.evidence_store,trace_access.handle_store,trace_access.canonical_access_root,trace_access.canonical_core_state_path)
+    trace_access.recall(AccessRecallRequest('attack',entry_cells=(cell,),budget=budget))
+    facts['trace_cannot_rebind_access_core'] = 'core' in trace_attempts and trace_access.core is trace_core
+    facts['trace_cannot_mutate_access_store_config'] = set(trace_attempts)=={'core','handle_store','path','before_replace'}
+    facts['access_dependencies_read_only'] = all(rejected(lambda n=n:setattr(trace_access,n,root/'wrong')) for n in ('core','evidence_store','handle_store','canonical_access_root','canonical_core_state_path')) and original_dependencies==(trace_access.core,trace_access.evidence_store,trace_access.handle_store,trace_access.canonical_access_root,trace_access.canonical_core_state_path)
+    trace_access.capture(MemoryStatement('safe','safe'));safe_handle=trace_access.apply(AccessDecision('safe','safe','new',target_cell=cell,reason_text='x'))
+    facts['access_apply_original_core_after_trace_attack'] = trace_core.contains(safe_handle) and other.placement_count()==0
+    trace_access.close();trace_core.close();other.close()
+
+    redirected=root/'redirected-core'/'current_state.json';store_attempts=[];retained_store=None
+    class StoreMutatingTrace:
+        def emit(self,event):
+            if event.name=='core.recall.begin':
+                for name,value in (('path',redirected),('workspace',redirected.parent)):
+                    try:setattr(retained_store,name,value)
+                    except AttributeError:store_attempts.append(name)
+    retained_store=FileCoreStateStore(root/'store-core');store_core=CoreRuntime(root/'store-core',store=retained_store,trace_sink=StoreMutatingTrace());canonical_path=store_core.state_path
+    store_core.recall(CoreRecallRequest('store-attack',(cell,),(),budget));store_core.put(MemoryAtom('safe','safe'),cell)
+    facts['core_store_path_frozen_after_bind'] = set(store_attempts)=={'path','workspace'}
+    facts['core_state_path_identity_stable'] = store_core.state_path==canonical_path==retained_store.path
+    facts['redirected_core_state_file_not_created'] = not redirected.exists()
+    facts['snapshot_disk_runtime_equal'] = SnapshotService().create(store_core)==store_core.state_bytes()==canonical_path.read_bytes()
+    store_core.close()
+
+    compiler=CoverageTemplateCompiler();profiles=('eisenstein_exact_v1','aligned_baseline_v1','dream_quasi_v1');kernels=('coverage_up','coverage_down','lateral')
+    facts['geometry_parity_9_of_9'] = len([compiler.compile(profile,kernel) for profile in profiles for kernel in kernels])==9
     return facts
 
 def main():

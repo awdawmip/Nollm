@@ -64,6 +64,9 @@ class CoreClientLease:
     def callback(self, callback: Callable[..., object], *args: object) -> object:
         return self._runtime._client_callback(self, callback, *args)
 
+    def guard_operation(self) -> None:
+        self._runtime._guard_client_operation(self)
+
     def close(self) -> None:
         self._runtime.release_client_lease(self)
 
@@ -148,9 +151,12 @@ class CoreRuntime(ConsistentStatePort):
         store: FileCoreStateStore | None = None,
         kernel_registry: KernelRegistry | None = None,
     ) -> None:
-        self.workspace = Path(workspace)
+        self._workspace = Path(workspace).resolve()
         self._trace_sink = trace_sink or NullTraceSink()
-        self._store = store or FileCoreStateStore(self.workspace)
+        self._store = store or FileCoreStateStore(self._workspace)
+        if self._store.workspace.resolve() != self._workspace:
+            raise ValueError("Core Store workspace must match Runtime workspace")
+        self._state_path = Path(self._store.path).resolve()
         self._generation = object()
         self._lifecycle = Condition(RLock())
         self._state = "OPEN"
@@ -161,7 +167,7 @@ class CoreRuntime(ConsistentStatePort):
         self._state_lock = RLock()
         self._local = local()
         self._read_token: _ConsistentReadToken | None = None
-        self._owner_key = claim(self._store.path, self)
+        self._owner_key = claim(self._state_path, self)
         self._kernel_registry = kernel_registry or KernelRegistry()
         try:
             self._store_token = self._store.bind_semantic_validator(self._validate_state_bytes, self._run_callback)
@@ -205,8 +211,12 @@ class CoreRuntime(ConsistentStatePort):
             raise RuntimeError(f"CoreRuntime is {self._state.lower()}")
 
     @property
+    def workspace(self) -> Path:
+        return self._workspace
+
+    @property
     def state_path(self) -> Path:
-        return self._store.path
+        return self._state_path
 
     @property
     def is_open(self) -> bool:
@@ -285,6 +295,7 @@ class CoreRuntime(ConsistentStatePort):
                 del self._local.callback_depth
 
     def _client_callback(self, lease: CoreClientLease, callback: Callable[..., object], *args: object) -> object:
+        self._reject_lifecycle_reentry("client callback")
         with self._lifecycle:
             self._validate_client_lease_locked(lease)
             self._require_open()
@@ -295,6 +306,12 @@ class CoreRuntime(ConsistentStatePort):
             with self._lifecycle:
                 self._active_operations -= 1
                 self._lifecycle.notify_all()
+
+    def _guard_client_operation(self, lease: CoreClientLease) -> None:
+        self._reject_lifecycle_reentry("client operation")
+        with self._lifecycle:
+            self._validate_client_lease_locked(lease)
+            self._require_open()
 
     def _enter_activity(self, kind: str, name: str = "") -> None:
         self._reject_lifecycle_reentry(name or kind)

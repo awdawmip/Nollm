@@ -173,20 +173,20 @@ def failure_matrix(root: Path) -> dict[str, bool]:
     for action in ("new", "revision_current", "revision_keep_history", "forget", "reuse"):
         workspace = root / action
         core = CoreRuntime(workspace / "core")
-        store = FileHandleStore(workspace)
+        armed = False
+        def fail_once(_path):
+            nonlocal armed
+            if armed:
+                armed = False
+                raise OSError("binding fault")
+        store = FileHandleStore(workspace, fail_once)
         access = AccessRuntime(core, FileEvidenceStore(workspace), store)
         access.capture(MemoryStatement("old", "old"))
         old = access.apply(decision("old", "new", target_cell=GeometryAddress("eisenstein_exact_v1", "fault", 0, 0, 0)))
         statement_id = "next"
         access.capture(MemoryStatement(statement_id, "next"))
         core_before, binding_before = core.state_bytes(), store.state_bytes()
-        failed = True
-        def fail_once(_path):
-            nonlocal failed
-            if failed:
-                failed = False
-                raise OSError("binding fault")
-        store.before_replace = fail_once
+        armed = True
         kwargs = {"target_cell": GeometryAddress("eisenstein_exact_v1", "fault", 0, 1, 0)} if action in {"new", "revision_keep_history"} else {"existing_handle": old}
         try:
             access.apply(decision(statement_id if action != "forget" else "old", action, **kwargs))

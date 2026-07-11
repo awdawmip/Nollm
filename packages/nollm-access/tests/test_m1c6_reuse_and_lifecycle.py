@@ -21,7 +21,7 @@ def test_binding_callback_cannot_close_or_rebind_pair(tmp_path: Path) -> None:
         calls += 1
         if calls > 1:
             return
-        with pytest.raises(RuntimeError, match="active Access operation"):
+        with pytest.raises(RuntimeError, match="pair callback"):
             access.close()
         with pytest.raises(ValueError, match="different Access root"):
             AccessRuntime(core, FileEvidenceStore(tmp_path / "other"), FileHandleStore(tmp_path / "other"))
@@ -46,10 +46,14 @@ def test_reuse_holds_core_lease_across_binding_commit(tmp_path: Path) -> None:
         entered.set()
         assert proceed.wait(5)
 
-    access = AccessRuntime(core, FileEvidenceStore(tmp_path), FileHandleStore(tmp_path))
+    armed = False
+    def armed_callback(path: Path) -> None:
+        if armed:
+            callback(path)
+    access = AccessRuntime(core, FileEvidenceStore(tmp_path), FileHandleStore(tmp_path, armed_callback))
     access.capture(MemoryStatement("original", "x"))
     original = access.apply(AccessDecision("d-original", "original", "new", target_cell=CELL, reason_text="fixture"))
-    access.handle_store.before_replace = callback
+    armed = True
     access.capture(MemoryStatement("alias", "x"))
     result = []
     reuse = Thread(target=lambda: result.append(access.apply(AccessDecision("d-alias", "alias", "reuse", existing_handle=original, reason_text="fixture"))))
@@ -114,7 +118,7 @@ def test_evidence_callback_cannot_close_active_access(tmp_path: Path) -> None:
         workspace = backing.workspace
 
         def put_original(self, statement) -> None:
-            with pytest.raises(RuntimeError, match="active Access operation"):
+            with pytest.raises(RuntimeError, match="pair callback"):
                 access.close()
             rejected.append(True)
             backing.put_original(statement)

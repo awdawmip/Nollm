@@ -14,7 +14,20 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C7 callback fence, Core client lease, and consistent-read ownership final closure.
+- Current stage is M1-C8 workspace-wide callback fence, bound Store capability, and Runtime configuration immutability final closure.
+- Preserve every accepted M1-C7 lifecycle, client lease, transaction capability, consistent-read ownership, exact Geometry, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, package, boundary, and regression result.
+- Callback isolation is canonical-workspace scoped, not merely one AccessRuntime object's thread-local flag.
+- A callback active for one AccessRuntime blocks public operations, close, construction, and Store mutation through every AccessRuntime bound to the same canonical pair on that thread.
+- CoreClientLease.callback is non-reentrant. A Core callback cannot invoke another client callback, transaction callback, public Core operation, client lifecycle operation, or Access operation.
+- Default FileHandleStore mutation is Access-owned. Direct callers do not receive the write capability and cannot create or alter canonical HandleBinding state.
+- FileHandleStore path, hook, validator, owner binding, and callback runner are immutable after binding.
+- FileCoreStateStore workspace/path/hook/validator/owner binding are immutable after Runtime binding, including when the caller retains the injected Store object.
+- AccessRuntime binds immutable Core/Evidence/Handle dependencies for its complete lifetime. Public properties are read-only and cannot be reassigned.
+- CoreRuntime canonical workspace identity and state_path are captured once and never follow a later-mutated Store field.
+- Trace cannot rebind Access dependencies, mutate Core/Access Store paths or hooks, or change future operation results.
+- Store fault injection remains constructor-only or Lab/test-only; production Runtime binding freezes it.
+- HandleStore read/inspection may remain public, but every mutation and rollback requires an unforgeable Access-owned capability.
+- Same-pair multiple AccessRuntime instances share one workspace coordinator, one callback fence, one transaction lock, and compatible immutable Store identity.
 - Preserve all accepted M1-C6 package, kernel, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, boundary, and regression results.
 - Public Core and Access operations are non-reentrant by default. RLock reentrancy is not permission to enter another public operation.
 - Internal transaction work uses an unforgeable Runtime-owned capability/facade; external callbacks never receive it.
