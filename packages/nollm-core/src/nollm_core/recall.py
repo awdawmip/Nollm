@@ -44,6 +44,10 @@ class CoreRecallRequest:
         if type(self.budget) is not RecallBudget: raise TypeError("budget must be RecallBudget")
         if len(set(self.entry_cells)) != len(self.entry_cells):
             raise ValueError("entry_cells must be unique")
+        if tuple(sorted(self.entry_cells, key=lambda cell: cell.stable_key())) != self.entry_cells:
+            raise ValueError("entry_cells must use canonical stable_key order")
+        if tuple(sorted(self.allowed_kernels)) != self.allowed_kernels:
+            raise ValueError("allowed_kernels must use canonical order")
         if any(kernel not in ALLOWED_KERNELS for kernel in self.allowed_kernels):
             raise ValueError("unknown Recall kernel")
 

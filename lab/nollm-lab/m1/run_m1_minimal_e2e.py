@@ -258,15 +258,16 @@ def concurrency_fact(root: Path) -> bool:
 
 
 def main() -> None:
+    from run_m1_public_api_adversarial_matrix import run_matrix
     with TemporaryDirectory(prefix="nollm-m1-e2e-") as directory:
         root = Path(directory)
         normal = run(root / "normal", __import__("nollm_core").NullTraceSink())
         failing = run(root / "failing", FailingTraceSink())
         if normal != failing:
             raise AssertionError("FailingTraceSink changed M1 E2E results")
-        facts = {**normal, **failure_matrix(root / "faults"), **negative_matrix(root / "negative"), "transaction_serialized": concurrency_fact(root / "concurrent"), "trace_parity": normal == failing, "reopen_bytes_equal": True}
+        facts = {**normal, **failure_matrix(root / "faults"), **negative_matrix(root / "negative"), **run_matrix(root / "adversarial"), "transaction_serialized": concurrency_fact(root / "concurrent"), "trace_parity": normal == failing, "reopen_bytes_equal": True}
         if not all(value is True for key, value in facts.items() if key != "state" and not isinstance(value, (int, str))):
-            raise AssertionError("M1C2 E2E fact failed")
+            raise AssertionError("M1C5 E2E fact failed")
         print(json.dumps({"status": "passed", "gates": facts}, ensure_ascii=False, sort_keys=True))
 
 

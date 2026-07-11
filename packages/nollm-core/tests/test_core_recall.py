@@ -40,7 +40,7 @@ def test_explicit_cell_direct_lateral_coverage_and_bridge(tmp_path) -> None:
             2,
         )
     )
-    result = runtime.recall(request(entry, ("lateral", "coverage_up", "coverage_down", "bridge")))
+    result = runtime.recall(request(entry, ("bridge", "coverage_down", "coverage_up", "lateral")))
     assert {item.atom.atom_id for item in result.items} == {"direct", "lateral", "up", "down", "bridge"}
     assert result.items == tuple(sorted(result.items, key=lambda item: (-item.score_q16, item.handle.geometry_address.stable_key(), item.handle.local_atom_id)))
 

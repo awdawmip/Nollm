@@ -77,7 +77,7 @@ class CoverageTemplate:
         expected_method = "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
         if self.compiler.compiler_id != "grf1a_coverage_template_compiler" or self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
             raise ValueError("coverage compiler metadata mismatch")
-        if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 <= 0) or (self.profile_id != "dream_quasi_v1" and self.approximation_residual_q16 != 0):
+        if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 != Q16_ONE // 16) or (self.profile_id != "dream_quasi_v1" and self.approximation_residual_q16 != 0):
             raise ValueError("profile approximation residual mismatch")
 
     def to_mapping(self) -> dict[str, object]:
@@ -144,7 +144,7 @@ class CompilerMetadata:
             raise TypeError("compiler string fields must be non-empty")
         if type(self.fanout_limit) is not int or self.fanout_limit <= 0:
             raise ValueError("compiler fanout_limit must be positive")
-        if type(self.flags) is not tuple or tuple(sorted(set(self.flags))) != self.flags:
+        if type(self.flags) is not tuple or any(type(flag) is not str or not flag for flag in self.flags) or tuple(sorted(set(self.flags))) != self.flags:
             raise ValueError("compiler flags must be sorted and unique")
 
     def __getitem__(self, key: str) -> object:

@@ -42,5 +42,5 @@ def test_reversed_bridges_and_store_bypass_are_rejected(tmp_path) -> None:
     payload = canonical_state_bytes(document)
     with pytest.raises(ValueError, match="semantic order"):
         runtime.import_state(payload)
-    with pytest.raises(ValueError, match="semantic order"):
+    with pytest.raises(RuntimeError, match="owner capability"):
         runtime.store.write_bytes(payload)

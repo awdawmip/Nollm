@@ -18,12 +18,15 @@ class AccessRuntime:
         access_root = handle_store.path.parent.parent
         if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root.resolve():
             raise ValueError("Evidence and Binding workspace identity mismatch")
-        self._transaction_lock, self._lease = acquire(access_root, core.store.path)
+        if not core.is_open:
+            raise RuntimeError("AccessRuntime requires an OPEN CoreRuntime")
+        self._transaction_lock, self._lease = acquire(access_root, core.state_path)
         self._closed = False
 
     def close(self) -> None:
-        if not self._closed:
-            self._closed=True; release(self._lease)
+        with self._transaction_lock:
+            if not self._closed:
+                self._closed=True; release(self._lease)
 
     def __enter__(self) -> "AccessRuntime": return self
     def __exit__(self,*_args: object) -> None: self.close()
@@ -32,13 +35,13 @@ class AccessRuntime:
         if self._closed: raise RuntimeError("AccessRuntime is closed")
 
     def capture(self, statement: MemoryStatement) -> None:
-        self._require_open()
         with self._transaction_lock:
+            self._require_open()
             self.evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
-        self._require_open()
         with self._transaction_lock:
+            self._require_open()
             return self._apply_locked(decision)
 
     def _apply_locked(self, decision: AccessDecision) -> object | None:
@@ -77,8 +80,8 @@ class AccessRuntime:
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
-        self._require_open()
         with self._transaction_lock:
+            self._require_open()
             return self._recall_locked(request)
 
     def _recall_locked(self, request: AccessRecallRequest) -> AccessRecallResult:
@@ -102,30 +105,23 @@ class AccessRuntime:
         return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
-        self._require_open()
         with self._transaction_lock:
+            self._require_open()
             return self.handle_store.get(statement_id)
 
     def _atomic(self, core_action: object, binding_action: object) -> object:
-        core_before = self.core.state_bytes()
-        binding_before = self.handle_store.state_bytes()
-        try:
-            result = core_action()
-            binding_action(result)
-            return result
-        except Exception as original:
-            failures = []
+        with self.core.transaction_lease():
+            core_before = self.core.state_bytes(); binding_before = self.handle_store.state_bytes()
             try:
-                self.core.import_state(core_before)
-            except Exception as error:
-                failures.append(error)
-            try:
-                self.handle_store.import_state(binding_before)
-            except Exception as error:
-                failures.append(error)
-            if failures:
-                raise AccessConsistencyError("fatal consistency failure during Access rollback") from original
-            raise
+                result = core_action(); binding_action(result); return result
+            except Exception as original:
+                failures = []
+                try: self.core.import_state(core_before)
+                except Exception as error: failures.append(error)
+                try: self.handle_store.import_state(binding_before)
+                except Exception as error: failures.append(error)
+                if failures: raise AccessConsistencyError("fatal consistency failure during Access rollback") from original
+                raise
 
 
 class AccessConsistencyError(RuntimeError):

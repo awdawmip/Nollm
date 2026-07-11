@@ -14,7 +14,15 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C4 single-owner, kernel-canonicality, and public-contract final closure.
+- Current stage is M1-C5 operation-lease, state-encapsulation, and canonical-recall final closure.
+- Core close/release is serialized with mutation, Recall, Snapshot, restore, and state reads.
+- Access close/release is serialized with capture, apply, recall, saved_handle, and rollback.
+- Access atomic transactions hold a Core-owned transaction lease across snapshot, action, binding, and rollback.
+- A consistent-read token is read-only even under same-thread RLock reentry.
+- Trace callbacks cannot reenter Core mutation.
+- Core persistent state is writable only through CoreRuntime; Store and Cell views cannot bypass ownership.
+- Core and Access Recall tuples are canonical, unique, directly validated, and never silently deduplicated.
+- Compiler metadata flags and dream_quasi residual use exact canonical contracts.
 - A canonical Core state path has at most one live mutable CoreRuntime owner per process, including bare Core.
 - Core claims ownership before validator binding or state I/O and provides explicit close/context lifecycle.
 - One active Core workspace binds to one active Access workspace; identical pairs may share coordination.
