@@ -20,6 +20,33 @@ from .ports import ConsistentStatePort, NullTraceSink, TraceEvent, TraceSink, sa
 from .storage import FileCoreStateStore, SCHEMA_VERSION, canonical_state_bytes
 
 
+class CellStore:
+    """Geometry-addressed local occupancy with no identity or source route."""
+
+    def __init__(self, cells: dict[GeometryAddress, dict[str, MemoryAtom]] | None = None) -> None:
+        self._cells = cells or {}
+
+    def get(self, handle: AtomHandle) -> MemoryAtom:
+        try:
+            return self._cells[handle.geometry_address][handle.local_atom_id]
+        except KeyError as error:
+            raise KeyError("AtomHandle does not exist") from error
+
+    def atoms_at(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
+        atoms = self._cells.get(address, {})
+        return tuple((AtomHandle(address, local_id), atoms[local_id]) for local_id in sorted(atoms))
+
+    def occupied_cells(self) -> tuple[GeometryAddress, ...]:
+        return tuple(sorted(self._cells))
+
+    def placement_count(self) -> int:
+        return sum(len(atoms) for atoms in self._cells.values())
+
+    def density_state(self, address: GeometryAddress) -> str:
+        count = len(self.atoms_at(address))
+        return "overloaded" if count >= 32 else "dense" if count >= 8 else "normal"
+
+
 class CoreRuntime(ConsistentStatePort):
     def __init__(
         self,
@@ -39,6 +66,7 @@ class CoreRuntime(ConsistentStatePort):
             self._cells: dict[GeometryAddress, dict[str, MemoryAtom]] = {}
             self._bridges: dict[str, BridgeSpec] = {}
             self.store.write_document(self._document(self._cells, self._bridges))
+        self.cells = CellStore(self._cells)
 
     def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
         return self.apply_batch((PutCommand(atom, target_cell),))[0]
@@ -78,6 +106,7 @@ class CoreRuntime(ConsistentStatePort):
                 raise
             self._cells = cells
             self._bridges = bridges
+            self.cells = CellStore(self._cells)
             for event in events:
                 safe_emit(self.trace_sink, event)
             safe_emit(self.trace_sink, TraceEvent("core.batch.commit", {"command_count": len(commands)}, "stable"))
@@ -96,12 +125,11 @@ class CoreRuntime(ConsistentStatePort):
 
     def atoms_at(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
         with self._lock:
-            atoms = self._cells.get(address, {})
-            return tuple((AtomHandle(address, local_id), atoms[local_id]) for local_id in sorted(atoms))
+            return self.cells.atoms_at(address)
 
     def occupied_cells(self) -> tuple[GeometryAddress, ...]:
         with self._lock:
-            return tuple(sorted(self._cells))
+            return self.cells.occupied_cells()
 
     def bridges(self) -> tuple[BridgeSpec, ...]:
         with self._lock:
@@ -109,11 +137,11 @@ class CoreRuntime(ConsistentStatePort):
 
     def placement_count(self) -> int:
         with self._lock:
-            return sum(len(atoms) for atoms in self._cells.values())
+            return self.cells.placement_count()
 
     def density_state(self, address: GeometryAddress) -> str:
-        count = len(self.atoms_at(address))
-        return "overloaded" if count >= 32 else "dense" if count >= 8 else "normal"
+        with self._lock:
+            return self.cells.density_state(address)
 
     def recall(self, request: object) -> object:
         from .recall import CoreRecallRequest, resolve_recall
@@ -149,6 +177,7 @@ class CoreRuntime(ConsistentStatePort):
             self.store.write_bytes(canonical_state_bytes(document))
             self._cells = cells
             self._bridges = bridges
+            self.cells = CellStore(self._cells)
 
     def end_consistent_read(self, token: object) -> None:
         self._require_token(token)

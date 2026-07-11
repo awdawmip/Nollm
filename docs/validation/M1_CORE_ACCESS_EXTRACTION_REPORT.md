@@ -9,6 +9,8 @@ Date: 2026-07-11
 - `MemoryAtom` contains only `atom_id` and semantic-blind `payload_utf8`.
 - `AtomHandle` is `GeometryAddress + local_atom_id`; all mutation uses a Handle
   and Core has no global atom/source/topic lookup.
+- Core `CellStore` owns only geometry-addressed local `MemoryAtom` occupancy and
+  has no `PlacementRecord`, Evidence, Source, patch, island, or relation route.
 - Core current state is a canonical file-first JSON document that reconstructs
   Cell occupancy and Bridge state without a relation route table.
 - Commands put/remove/replace/move/bridge/apply_batch are atomic; simulated

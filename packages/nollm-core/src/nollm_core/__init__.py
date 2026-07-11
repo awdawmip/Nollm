@@ -25,7 +25,7 @@ from .recall import (
     CoreRecallResult,
     RecallBudget,
 )
-from .state import CoreRuntime
+from .state import CellStore, CoreRuntime
 from .storage import FileCoreStateStore
 
 __all__ = [
@@ -39,6 +39,7 @@ __all__ = [
     "CoreRecallRequest",
     "CoreRecallResult",
     "CoreRuntime",
+    "CellStore",
     "FileCoreStateStore",
     "GeometryAddress",
     "GeometryAnchor",
