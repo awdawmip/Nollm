@@ -149,15 +149,18 @@ def run(root: Path, sink: object) -> dict[str, object]:
     else:
         raise AssertionError("over-budget BridgeSpec was accepted")
 
+    state = core.state_bytes(); count = core.placement_count(); retained = core.contains(first) and core.contains(historical)
+    access.close(); core.close()
     reopened = CoreRuntime(root / "core")
-    assert reopened.state_bytes() == core.state_bytes()
+    assert reopened.state_bytes() == state
     return {
-        "state": core.state_bytes().decode("utf-8"),
-        "placement_count": core.placement_count(),
+        "state": state.decode("utf-8"),
+        "placement_count": count,
         "restored_statement": restored_recall.items[0].statement_id,
         "restored_evidence": restored_recall.items[0].evidence_utf8,
         "defer_unchanged": True,
-        "history_retained": core.contains(first) and core.contains(historical),
+        "history_retained": retained,
+        "core_close_reopen_succeeds": True,
         "coverage_up_registered": True,
         "lateral_ring_2_rejected": True,
         "lateral_ring_one_real_recall": True,

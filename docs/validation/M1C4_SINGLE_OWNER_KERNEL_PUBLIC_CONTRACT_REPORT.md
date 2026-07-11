@@ -1,0 +1,3 @@
+# M1C4 Single Owner, Kernel, and Public Contract Report
+
+Windows verification proves canonical KernelEntry/Q16/unique-target rules, 9/9 parity, Core constructor-time single ownership, idempotent close/reopen, closed-owner rejection, consistent Recall locking, one Core to one Access root, coordinator lease release, strict Decision/Recall/Command types, canonical Evidence reuse, mixed phase, Anchor, ring-1 lateral, Snapshot and Trace parity. Guarantees are same-process only; cross-process locks, crash recovery, databases, distributed transactions, PB scale, OpenClaw Live, models, corpora, and History/Audit products remain out of scope. External Linux audit remains 109 passed, 1 skipped, with two zstandard-dependent historical tests unavailable.

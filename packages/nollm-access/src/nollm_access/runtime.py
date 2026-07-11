@@ -7,7 +7,7 @@ from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .statement import MemoryStatement
-from .workspace_lock import coordinate_workspace
+from .workspace_lock import acquire, release
 
 
 class AccessRuntime:
@@ -18,13 +18,26 @@ class AccessRuntime:
         access_root = handle_store.path.parent.parent
         if hasattr(evidence_store, "workspace") and evidence_store.workspace.resolve() != access_root.resolve():
             raise ValueError("Evidence and Binding workspace identity mismatch")
-        self._transaction_lock = coordinate_workspace(access_root, core, core.store.path)
+        self._transaction_lock, self._lease = acquire(access_root, core.store.path)
+        self._closed = False
+
+    def close(self) -> None:
+        if not self._closed:
+            self._closed=True; release(self._lease)
+
+    def __enter__(self) -> "AccessRuntime": return self
+    def __exit__(self,*_args: object) -> None: self.close()
+
+    def _require_open(self) -> None:
+        if self._closed: raise RuntimeError("AccessRuntime is closed")
 
     def capture(self, statement: MemoryStatement) -> None:
+        self._require_open()
         with self._transaction_lock:
             self.evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
+        self._require_open()
         with self._transaction_lock:
             return self._apply_locked(decision)
 
@@ -64,6 +77,7 @@ class AccessRuntime:
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
+        self._require_open()
         with self._transaction_lock:
             return self._recall_locked(request)
 
@@ -88,6 +102,7 @@ class AccessRuntime:
         return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
+        self._require_open()
         with self._transaction_lock:
             return self.handle_store.get(statement_id)
 

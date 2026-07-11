@@ -38,8 +38,10 @@ class CoreRecallRequest:
     budget: RecallBudget
 
     def __post_init__(self) -> None:
-        if not self.request_id or not self.entry_cells:
+        if type(self.request_id) is not str or not self.request_id or type(self.entry_cells) is not tuple or not self.entry_cells or any(type(cell) is not GeometryAddress for cell in self.entry_cells):
             raise ValueError("request_id and explicit entry_cells are required")
+        if type(self.allowed_kernels) is not tuple or any(type(kernel) is not str for kernel in self.allowed_kernels) or len(set(self.allowed_kernels)) != len(self.allowed_kernels): raise TypeError("allowed_kernels must be a unique string tuple")
+        if type(self.budget) is not RecallBudget: raise TypeError("budget must be RecallBudget")
         if len(set(self.entry_cells)) != len(self.entry_cells):
             raise ValueError("entry_cells must be unique")
         if any(kernel not in ALLOWED_KERNELS for kernel in self.allowed_kernels):

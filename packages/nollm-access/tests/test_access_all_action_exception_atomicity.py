@@ -33,6 +33,7 @@ def test_all_binding_failures_preserve_prestate(tmp_path, action) -> None:
     with pytest.raises(OSError, match="binding failure"):
         access.apply(decision(statement, action, **kwargs))
     assert (core.state_bytes(), store.state_bytes()) == before
+    access.close(); core.close()
     CoreRuntime(tmp_path / "core")
 
 

@@ -55,4 +55,5 @@ def test_failed_restore_preserves_current_state(tmp_path) -> None:
     with pytest.raises((ValueError, UnicodeDecodeError)):
         SnapshotService().restore(runtime, b"not canonical state")
     assert runtime.state_bytes() == before
+    runtime.close()
     assert CoreRuntime(tmp_path).get(handle).payload_utf8 == "before"

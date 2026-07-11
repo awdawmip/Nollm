@@ -14,7 +14,13 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C3 immutable-kernel, phase-canonicality, and workspace-coordinator closure.
+- Current stage is M1-C4 single-owner, kernel-canonicality, and public-contract final closure.
+- A canonical Core state path has at most one live mutable CoreRuntime owner per process, including bare Core.
+- Core claims ownership before validator binding or state I/O and provides explicit close/context lifecycle.
+- One active Core workspace binds to one active Access workspace; identical pairs may share coordination.
+- KernelEntry and CoverageTemplate reject duplicate targets, noncanonical flags/types, and invalid Q16 bounds.
+- Public Core/Access requests, decisions, and commands reject wrong direct-constructor types before writes.
+- Core Recall is one consistent read serialized against mutation.
 - Preserve all accepted M1-C2 nine-template, canonical-Evidence, HandleBinding, boundary, and package results.
 - KernelRegistry and every registry/state identity input are immutable after construction.
 - Persistent and Recall geometry ordering uses GeometryAddress.stable_key only.

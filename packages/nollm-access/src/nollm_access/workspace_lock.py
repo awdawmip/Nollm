@@ -1,30 +1,29 @@
 from __future__ import annotations
-
+import os
 from pathlib import Path
 from threading import RLock
 
-_REGISTRY_GUARD = RLock()
-_LOCKS: dict[str, RLock] = {}
-_CORE_OWNERS: dict[str, object] = {}
-_ACCESS_CORES: dict[str, str] = {}
+_guard=RLock(); _pairs: dict[tuple[str,str],tuple[RLock,int]]={}; _access:dict[str,str]={}; _core:dict[str,str]={}
 
+def _id(path:Path)->str:
+    value=str(path.resolve()); return os.path.normcase(value) if os.name=='nt' else value
 
-def workspace_lock(root: Path) -> RLock:
-    identity = str(Path(root).resolve()).casefold()
-    with _REGISTRY_GUARD:
-        return _LOCKS.setdefault(identity, RLock())
+def acquire(access_root:Path,core_path:Path)->tuple[RLock,tuple[str,str]]:
+    a,c=_id(access_root),_id(core_path); key=(a,c)
+    with _guard:
+        if a in _access and _access[a]!=c: raise ValueError('Access root already bound to different Core workspace')
+        if c in _core and _core[c]!=a: raise ValueError('Core workspace already bound to different Access root')
+        lock,count=_pairs.get(key,(RLock(),0));_pairs[key]=(lock,count+1);_access[a]=c;_core[c]=a
+        return lock,key
 
+def release(key:tuple[str,str])->None:
+    with _guard:
+        lock,count=_pairs[key]
+        if count>1:_pairs[key]=(lock,count-1);return
+        _pairs.pop(key);a,c=key;_access.pop(a,None);_core.pop(c,None)
 
-def coordinate_workspace(access_root: Path, core: object, core_state_path: Path) -> RLock:
-    access_id = str(Path(access_root).resolve()).casefold()
-    core_id = str(Path(core_state_path).resolve()).casefold()
-    with _REGISTRY_GUARD:
-        owner = _CORE_OWNERS.get(core_id)
-        if owner is not None and owner is not core:
-            raise RuntimeError("canonical Core workspace already has a distinct mutable state owner")
-        bound = _ACCESS_CORES.get(access_id)
-        if bound is not None and bound != core_id:
-            raise ValueError("Access and Core workspace identity mismatch")
-        _CORE_OWNERS[core_id] = core
-        _ACCESS_CORES[access_id] = core_id
-        return _LOCKS.setdefault(access_id, RLock())
+def workspace_lock(root:Path)->RLock:
+    # Evidence-only operations use a stable lock without creating a coordinator lease.
+    key=(_id(root),'evidence-only')
+    with _guard:
+        return _pairs.setdefault(key,(RLock(),0))[0]

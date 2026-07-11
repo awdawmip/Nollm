@@ -14,7 +14,10 @@ class AccessRecallRequest:
     budget: RecallBudget = RecallBudget(0, 1, 0, 0, 0, 16)
 
     def __post_init__(self) -> None:
-        if not self.request_id or (not self.entry_cells and not self.entry_handles):
+        if type(self.request_id) is not str or not self.request_id or type(self.entry_cells) is not tuple or type(self.entry_handles) is not tuple or type(self.allowed_kernels) is not tuple or type(self.budget) is not RecallBudget:
+            raise TypeError("Access Recall fields have invalid types")
+        if any(type(cell) is not GeometryAddress for cell in self.entry_cells) or any(type(handle) is not AtomHandle for handle in self.entry_handles) or any(type(kernel) is not str for kernel in self.allowed_kernels): raise TypeError("Access Recall tuple members have invalid types")
+        if not self.entry_cells and not self.entry_handles:
             raise ValueError("explicit entry_cells or entry_handles are required")
 
     def to_core_request(self) -> CoreRecallRequest:

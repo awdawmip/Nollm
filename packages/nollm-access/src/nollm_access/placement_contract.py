@@ -21,8 +21,11 @@ class AccessDecision:
     decided_by: str = "host"
 
     def __post_init__(self) -> None:
-        if not self.decision_id or not self.statement_id or not self.reason_text:
+        if any(type(value) is not str or not value for value in (self.decision_id,self.statement_id,self.action,self.reason_text,self.decided_by)):
             raise ValueError("decision_id, statement_id, and reason_text are required")
+        if self.target_cell is not None and type(self.target_cell) is not GeometryAddress: raise TypeError("target_cell must be GeometryAddress")
+        if self.existing_handle is not None and type(self.existing_handle) is not AtomHandle: raise TypeError("existing_handle must be AtomHandle")
+        if self.bridge_spec is not None and type(self.bridge_spec) is not BridgeSpec: raise TypeError("bridge_spec must be BridgeSpec")
         if self.action not in ACTIONS:
             raise ValueError("unknown Access action")
         if self.decided_by not in DECIDED_BY:

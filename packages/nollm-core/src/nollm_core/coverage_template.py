@@ -28,10 +28,12 @@ class KernelEntry:
         for name in ("layer_delta", "dq", "dr", "weight_q16"):
             if type(getattr(self, name)) is not int:
                 raise TypeError(f"{name} must be an integer")
-        if self.weight_q16 < 0 or type(self.kernel_type) is not str or not self.kernel_type:
-            raise ValueError("invalid KernelEntry")
+        if not 0 < self.weight_q16 <= Q16_ONE or self.kernel_type != "coverage_template":
+            raise ValueError("KernelEntry must be bounded coverage_template")
         if type(self.flags) is not tuple or any(type(flag) is not str or not flag for flag in self.flags):
             raise TypeError("flags must be a tuple of strings")
+        if tuple(sorted(set(self.flags))) != self.flags:
+            raise ValueError("flags must be sorted and unique")
 
     def to_mapping(self) -> dict[str, object]:
         return {"layer_delta": self.layer_delta, "dq": self.dq, "dr": self.dr, "weight_q16": self.weight_q16, "kernel_type": self.kernel_type, "flags": list(self.flags)}
@@ -60,19 +62,20 @@ class CoverageTemplate:
             raise TypeError("entries must be a non-empty KernelEntry tuple")
         if any(type(value) is not int for value in (self.sum_weight_q16, self.normalization_residual_q16, self.approximation_residual_q16)):
             raise TypeError("CoverageTemplate residuals must be integers")
-        if self.sum_weight_q16 != sum(entry.weight_q16 for entry in self.entries) or self.normalization_residual_q16 != Q16_ONE - self.sum_weight_q16 or self.approximation_residual_q16 < 0:
+        if not 0 < self.sum_weight_q16 <= Q16_ONE or self.normalization_residual_q16 < 0 or self.sum_weight_q16 != sum(entry.weight_q16 for entry in self.entries) or self.normalization_residual_q16 != Q16_ONE - self.sum_weight_q16 or self.approximation_residual_q16 < 0:
             raise ValueError("CoverageTemplate weight metadata mismatch")
         if type(self.compiler) is not CompilerMetadata:
             raise TypeError("compiler must be CompilerMetadata")
         delta = -1 if self.direction == COVERAGE_UP else 1 if self.direction == COVERAGE_DOWN else 0
         if self.to_layer_mod != self.from_layer_mod + delta or any(entry.layer_delta != delta for entry in self.entries):
             raise ValueError("coverage layer contract mismatch")
-        if len(self.entries) > self.compiler.fanout_limit or tuple(sorted(self.entries)) != self.entries or len(set(self.entries)) != len(self.entries):
+        targets = tuple((entry.layer_delta, entry.dq, entry.dr) for entry in self.entries)
+        if len(self.entries) > self.compiler.fanout_limit or tuple(sorted(self.entries)) != self.entries or len(set(targets)) != len(targets):
             raise ValueError("coverage entries are not canonical or exceed fanout")
         profile = get_profile(self.profile_id)
         expected_flags = tuple(sorted({flag for entry in self.entries for flag in entry.flags}))
         expected_method = "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
-        if self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
+        if self.compiler.compiler_id != "grf1a_coverage_template_compiler" or self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
             raise ValueError("coverage compiler metadata mismatch")
         if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 <= 0) or (self.profile_id != "dream_quasi_v1" and self.approximation_residual_q16 != 0):
             raise ValueError("profile approximation residual mismatch")

@@ -27,7 +27,9 @@ def test_put_replace_move_remove_and_reopen(tmp_path) -> None:
     moved = runtime.move(handle, cell(8, -13))
     assert not runtime.contains(handle)
     assert runtime.get(moved).payload_utf8 == "replacement"
-    assert CoreRuntime(tmp_path).get(moved).payload_utf8 == "replacement"
+    runtime.close()
+    runtime = CoreRuntime(tmp_path)
+    assert runtime.get(moved).payload_utf8 == "replacement"
     assert runtime.remove(moved).atom_id == "atom-a"
     assert runtime.placement_count() == 0
 
@@ -81,6 +83,7 @@ def test_disk_failure_preserves_memory_and_reopen_state(tmp_path) -> None:
     with pytest.raises(OSError, match="simulated disk failure"):
         runtime.put(MemoryAtom("failed", "after"), cell(1, 0))
     assert runtime.state_bytes() == stable_bytes
+    runtime.close()
     reopened = CoreRuntime(tmp_path)
     assert reopened.get(original).payload_utf8 == "before"
     assert reopened.placement_count() == 1

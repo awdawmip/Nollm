@@ -19,6 +19,7 @@ from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
 from .ports import ConsistentStatePort, NullTraceSink, TraceEvent, TraceSink, safe_emit
 from .storage import FileCoreStateStore, SCHEMA_VERSION, canonical_state_bytes
+from .workspace_owner import claim, release
 
 
 class CellStore:
@@ -38,6 +39,7 @@ class CellStore:
         return tuple((AtomHandle(address, local_id), atoms[local_id]) for local_id in sorted(atoms))
 
     def occupied_cells(self) -> tuple[GeometryAddress, ...]:
+        self._require_open()
         return tuple(sorted(self._cells, key=lambda cell: cell.stable_key()))
 
     def placement_count(self) -> int:
@@ -60,24 +62,42 @@ class CoreRuntime(ConsistentStatePort):
         self.workspace = Path(workspace)
         self.trace_sink = trace_sink or NullTraceSink()
         self.store = store or FileCoreStateStore(self.workspace)
+        self._closed = False
+        self._owner_key = claim(self.store.path, self)
         self._kernel_registry = kernel_registry or KernelRegistry()
-        self.store.bind_semantic_validator(self._validate_state_bytes)
         self._lock = RLock()
         self._read_token: object | None = None
-        if self.store.exists():
-            self._cells, self._bridges = self._decode_state_bytes(self.store.read_bytes())
-        else:
-            self._cells: dict[GeometryAddress, dict[str, MemoryAtom]] = {}
-            self._bridges: dict[str, BridgeSpec] = {}
-            self.store.write_document(self._document(self._cells, self._bridges))
+        try:
+            self.store.bind_semantic_validator(self._validate_state_bytes)
+            if self.store.exists():
+                self._cells, self._bridges = self._decode_state_bytes(self.store.read_bytes())
+            else:
+                self._cells = {}
+                self._bridges = {}
+                self.store.write_document(self._document(self._cells, self._bridges))
+        except Exception:
+            release(self._owner_key,self)
+            raise
         self.cells = CellStore(self._cells)
 
+    def close(self) -> None:
+        if self._closed: return
+        if self._read_token is not None: raise RuntimeError("cannot close during consistent read")
+        self._closed=True; release(self._owner_key,self)
+
+    def __enter__(self) -> "CoreRuntime": return self
+    def __exit__(self,*_args: object) -> None: self.close()
+
+    def _require_open(self) -> None:
+        if self._closed: raise RuntimeError("CoreRuntime is closed")
+
+    def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
+        self._require_open()
+        return self.apply_batch((PutCommand(atom, target_cell),))[0]
     @property
     def kernel_registry(self) -> KernelRegistry:
         return self._kernel_registry
 
-    def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
-        return self.apply_batch((PutCommand(atom, target_cell),))[0]
 
     def remove(self, handle: AtomHandle) -> MemoryAtom:
         return self.apply_batch((RemoveCommand(handle),))[0]
@@ -95,6 +115,7 @@ class CoreRuntime(ConsistentStatePort):
         return self.apply_batch((BridgeRemoveCommand(bridge_id),))[0]
 
     def apply_batch(self, commands: tuple[CoreCommand, ...]) -> tuple[object, ...]:
+        self._require_open()
         if not commands:
             raise ValueError("batch must contain at least one command")
         with self._lock:
@@ -121,6 +142,7 @@ class CoreRuntime(ConsistentStatePort):
             return tuple(results)
 
     def get(self, handle: AtomHandle) -> MemoryAtom:
+        self._require_open()
         with self._lock:
             return self._require_handle(handle, self._cells)
 
@@ -132,6 +154,7 @@ class CoreRuntime(ConsistentStatePort):
         return True
 
     def atoms_at(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
+        self._require_open()
         with self._lock:
             return self.cells.atoms_at(address)
 
@@ -140,14 +163,17 @@ class CoreRuntime(ConsistentStatePort):
             return self.cells.occupied_cells()
 
     def bridges(self) -> tuple[BridgeSpec, ...]:
+        self._require_open()
         with self._lock:
             return tuple(self._bridges[key] for key in sorted(self._bridges))
 
     def placement_count(self) -> int:
+        self._require_open()
         with self._lock:
             return self.cells.placement_count()
 
     def density_state(self, address: GeometryAddress) -> str:
+        self._require_open()
         with self._lock:
             return self.cells.density_state(address)
 
@@ -156,13 +182,17 @@ class CoreRuntime(ConsistentStatePort):
 
         if not isinstance(request, CoreRecallRequest):
             raise TypeError("request must be CoreRecallRequest")
-        return resolve_recall(self, request, self.trace_sink)
+        self._require_open()
+        with self._lock:
+            return resolve_recall(self, request, self.trace_sink)
 
     def state_bytes(self) -> bytes:
+        self._require_open()
         with self._lock:
             return canonical_state_bytes(self._document(self._cells, self._bridges))
 
     def begin_consistent_read(self) -> object:
+        self._require_open()
         self._lock.acquire()
         if self._read_token is not None:
             self._lock.release()
@@ -177,6 +207,7 @@ class CoreRuntime(ConsistentStatePort):
         return self.state_bytes()
 
     def import_state(self, payload: bytes) -> None:
+        self._require_open()
         with self._lock:
             if self._read_token is not None:
                 raise RuntimeError("cannot restore during a consistent read")
