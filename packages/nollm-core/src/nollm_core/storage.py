@@ -20,15 +20,33 @@ class FileCoreStateStore:
     def __init__(self, workspace: Path, before_replace: Callable[[Path], None] | None = None) -> None:
         self.workspace = Path(workspace)
         self.path = self.workspace / "core" / "current_state.json"
-        self.before_replace = before_replace
+        self._before_replace = before_replace
+        self._callback_runner: Callable[..., object] | None = None
+        self._bound = False
         self._semantic_validator: Callable[[bytes], None] | None = None
         self._owner_token: object | None = None
 
-    def bind_semantic_validator(self, validator: Callable[[bytes], None]) -> object:
+    @property
+    def before_replace(self) -> Callable[[Path], None] | None:
+        return self._before_replace
+
+    @before_replace.setter
+    def before_replace(self, callback: Callable[[Path], None] | None) -> None:
+        if self._bound:
+            raise RuntimeError("Core state Store hook is frozen after Runtime binding")
+        self._before_replace = callback
+
+    def bind_semantic_validator(
+        self,
+        validator: Callable[[bytes], None],
+        callback_runner: Callable[..., object] | None = None,
+    ) -> object:
         if self._owner_token is not None:
             raise RuntimeError("Core state store is already bound")
         self._semantic_validator = validator
+        self._callback_runner = callback_runner
         self._owner_token = object()
+        self._bound = True
         return self._owner_token
 
     def exists(self) -> bool:
@@ -72,8 +90,11 @@ class FileCoreStateStore:
                 handle.write(payload)
                 handle.flush()
                 os.fsync(handle.fileno())
-            if self.before_replace is not None:
-                self.before_replace(temporary)
+            if self._before_replace is not None:
+                if self._callback_runner is None:
+                    self._before_replace(temporary)
+                else:
+                    self._callback_runner(self._before_replace, temporary)
             os.replace(temporary, self.path)
         finally:
             if temporary.exists():

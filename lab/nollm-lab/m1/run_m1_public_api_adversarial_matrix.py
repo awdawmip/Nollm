@@ -1,7 +1,10 @@
 from __future__ import annotations
 import json
+import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event
+from threading import Event, Thread
+from time import monotonic, sleep
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -13,6 +16,14 @@ def rejected(call):
     try: call()
     except (TypeError,ValueError,RuntimeError): return True
     return False
+
+
+def join_thread(thread: Thread, stage: str) -> None:
+    thread.join(5)
+    if thread.is_alive():
+        frame = sys._current_frames().get(thread.ident)
+        stack = "" if frame is None else "".join(traceback.format_stack(frame))
+        raise RuntimeError(f"{stage} timed out; thread={thread.name}\n{stack}")
 
 def run_matrix(root:Path)->dict[str,bool]:
     facts={}
@@ -30,7 +41,7 @@ def run_matrix(root:Path)->dict[str,bool]:
     core=CoreRuntime(root/'core');facts['second_core_owner_rejected_at_constructor']=rejected(lambda:CoreRuntime(root/'core'))
     facts['direct_stale_overwrite_prevented']=rejected(lambda:CoreRuntime(root/'core'))
     token=core.begin_consistent_read();facts['consistent_read_same_thread_mutation_rejected']=rejected(lambda:core.put(MemoryAtom('a','a'),cell));core.end_consistent_read(token)
-    facts['public_store_bypass_rejected']=rejected(lambda:core.store.write_bytes(core.state_bytes()))
+    facts['public_store_bypass_rejected']=not hasattr(core,'store')
     facts['public_cell_view_read_only']=not hasattr(core,'cells');facts['occupied_cells_works']=core.occupied_cells()==()
     facts['core_recall_noncanonical_rejected']=rejected(lambda:CoreRecallRequest('r',(cell,),('lateral','bridge'),budget))
     facts['access_recall_noncanonical_rejected']=rejected(lambda:AccessRecallRequest('r',entry_cells=(cell,cell),budget=budget))
@@ -102,12 +113,110 @@ def run_matrix(root:Path)->dict[str,bool]:
     facts['access_callback_close_rejected']=callback_facts['close'];facts['access_callback_cross_root_rejected']=callback_facts['rebind'];facts['callback_rollback_consistent']=callback_core.placement_count()==0
     callback_access.close();callback_core.close()
     corrupt_root=root/'corrupt';corrupt_core=CoreRuntime(corrupt_root/'core');corrupt_evidence=FileEvidenceStore(corrupt_root);corrupt_access=AccessRuntime(corrupt_core,corrupt_evidence,FileHandleStore(corrupt_root));corrupt_evidence.put_original(MemoryStatement('base','base'));base=corrupt_access.apply(AccessDecision('base','base','new',target_cell=cell,reason_text='x'));corrupt_evidence.put_original(MemoryStatement('bad','bad'));corrupt_evidence._path('bad').write_text('{}\n',encoding='utf-8');facts['reuse_corrupt_evidence_rejected']=rejected(lambda:corrupt_access.apply(AccessDecision('bad','bad','reuse',existing_handle=base,reason_text='x')));corrupt_access.close();corrupt_core.close()
-    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C6_BOUNDARY_REPORT.json'
+    facts.update(run_m1c7_matrix(root/'m1c7'))
+    report=Path(__file__).resolve().parents[3]/'docs/architecture/module-ownership/M1C7_BOUNDARY_REPORT.json'
     if report.exists():
         boundary=json.loads(report.read_text(encoding='utf-8'));facts['boundary_zero']=boundary.get('production_violations')==[] and boundary.get('cycles_production')==[]
     return facts
 
+
+def run_m1c7_matrix(root: Path) -> dict[str, bool]:
+    facts: dict[str, bool] = {}
+    cell = GeometryAddress('eisenstein_exact_v1', 'm1c7', 0, 0, 0)
+    budget = RecallBudget(0, 8, 0, 0, 0, 8)
+
+    CoreRuntime(root/'closing').close()
+    entered, proceed = Event(), Event()
+    def blocking_hook(_): entered.set(); proceed.wait(5)
+    core = CoreRuntime(root/'closing', store=FileCoreStateStore(root/'closing', blocking_hook))
+    write = Thread(target=core.put, args=(MemoryAtom('a','a'), cell)); write.start(); entered.wait(5)
+    close = Thread(target=core.close); close.start(); deadline=monotonic()+5
+    while core.lifecycle_state!='CLOSING' and monotonic()<deadline: sleep(0.005)
+    facts['core_closing_state_observed']=core.lifecycle_state=='CLOSING'
+    facts['close_pending_new_operation_rejected']=rejected(core.placement_count)
+    facts['no_new_owner_while_closing']=rejected(lambda:CoreRuntime(root/'closing'))
+    proceed.set(); join_thread(write,'core write'); join_thread(close,'core close')
+    facts['core_state_machine_open_closing_closed']=core.lifecycle_state=='CLOSED'
+
+    client_core=CoreRuntime(root/'client');client=AccessRuntime(client_core,FileEvidenceStore(root/'client-access'),FileHandleStore(root/'client-access'))
+    facts['access_live_core_close_rejected']=rejected(client_core.close)
+    facts['client_lease_lifetime_bound']=client_core.is_open
+    client.close();client_core.close()
+
+    access_core=CoreRuntime(root/'access-closing-core');access_entered,access_proceed=Event(),Event()
+    def access_hook(_):access_entered.set();access_proceed.wait(5)
+    access_store=FileHandleStore(root/'access-closing',access_hook);access=AccessRuntime(access_core,FileEvidenceStore(root/'access-closing'),access_store);access.capture(MemoryStatement('closing','closing'))
+    applying=Thread(target=access.apply,args=(AccessDecision('closing','closing','new',target_cell=cell,reason_text='x'),));applying.start();access_entered.wait(5)
+    access_close=Thread(target=access.close);access_close.start();deadline=monotonic()+5
+    while access.lifecycle_state!='CLOSING' and monotonic()<deadline:sleep(0.005)
+    access_rejects_new=rejected(lambda:access.saved_handle('closing'));access_proceed.set();join_thread(applying,'Access apply');join_thread(access_close,'Access close')
+    facts['access_state_machine_open_closing_closed']=access_rejects_new and access.lifecycle_state=='CLOSED'
+    access_core.close()
+
+    token_core=CoreRuntime(root/'token');token=token_core.begin_consistent_read();errors=[]
+    def wrong_thread():
+        for operation in (token_core.export_state,token_core.end_consistent_read):
+            try:operation(token)
+            except Exception as error:errors.append(error)
+    thread=Thread(target=wrong_thread);thread.start();join_thread(thread,'wrong-thread consistent read')
+    facts['wrong_thread_consistent_read_rejected']=len(errors)==2 and token.active
+    owner_bytes=token_core.export_state(token);token_core.end_consistent_read(token)
+    facts['owner_thread_consistent_read_survives']=owner_bytes==token_core.state_path.read_bytes()
+    token_core.close()
+
+    capability_core=CoreRuntime(root/'capability');thread_errors=[]
+    with capability_core.transaction() as transaction:
+        def wrong_capability_thread():
+            try:transaction.state_bytes()
+            except Exception as error:thread_errors.append(error)
+        thread=Thread(target=wrong_capability_thread);thread.start();join_thread(thread,'wrong-thread transaction capability')
+    facts['transaction_capability_foreign_rejected']=len(thread_errors)==1 and rejected(transaction.state_bytes)
+    capability_core.close()
+
+    callback_core=CoreRuntime(root/'callback-core');callback_store=FileHandleStore(root/'callback-access');callback_access=AccessRuntime(callback_core,FileEvidenceStore(root/'callback-access'),callback_store)
+    callback_access.capture(MemoryStatement('outer','outer'));callback_access.capture(MemoryStatement('nested','nested'));callback_results={'apply':False,'recall':False,'core':False};first=True
+    def callback_hook(_):
+        nonlocal first
+        if not first:return
+        first=False
+        callback_results['apply']=rejected(lambda:callback_access.apply(AccessDecision('nested','nested','new',target_cell=cell,reason_text='x')))
+        callback_results['recall']=rejected(lambda:callback_access.recall(AccessRecallRequest('nested',entry_cells=(cell,),budget=budget)))
+        callback_results['core']=rejected(lambda:callback_core.put(MemoryAtom('direct','direct'),cell))
+        raise OSError('callback fault')
+    callback_store.before_replace=callback_hook
+    try:callback_access.apply(AccessDecision('outer','outer','new',target_cell=cell,reason_text='x'))
+    except OSError:pass
+    facts['nested_access_apply_rejected']=callback_results['apply']
+    facts['nested_access_recall_rejected']=callback_results['recall']
+    facts['callback_direct_core_rejected']=callback_results['core']
+    facts['callback_success_not_rolled_back']=callback_core.placement_count()==0 and not callback_store.exists('nested')
+    callback_access.close();callback_core.close()
+
+    trace_core=None;trace_attempt=[]
+    class StoreMutatingTrace:
+        def emit(self,event):
+            if event.name=='core.recall.begin':
+                try:trace_core.store.before_replace=lambda _p:(_ for _ in ()).throw(OSError('installed'))
+                except AttributeError:trace_attempt.append(True)
+    trace_core=CoreRuntime(root/'trace-store',trace_sink=StoreMutatingTrace());trace_core.recall(CoreRecallRequest('trace',(cell,),(),budget));trace_core.put(MemoryAtom('safe','safe'),cell)
+    facts['trace_store_hook_mutation_rejected']=bool(trace_attempt) and trace_core.placement_count()==1
+    facts['store_not_public']=not hasattr(trace_core,'store') and not hasattr(trace_core,'trace_sink')
+    facts['snapshot_disk_runtime_equal']=SnapshotService().create(trace_core)==trace_core.state_bytes()==trace_core.state_path.read_bytes()
+    trace_core.close()
+
+    constructor_entered,constructor_proceed=Event(),Event()
+    class BlockingCore(CoreRuntime):
+        def acquire_client_lease(self,kind):
+            lease=super().acquire_client_lease(kind);constructor_entered.set();constructor_proceed.wait(5);return lease
+    constructor_core=BlockingCore(root/'constructor-core');constructed=[]
+    thread=Thread(target=lambda:constructed.append(AccessRuntime(constructor_core,FileEvidenceStore(root/'constructor-access'),FileHandleStore(root/'constructor-access'))));thread.start();constructor_entered.wait(5)
+    facts['constructor_client_lease_closes_window']=rejected(constructor_core.close)
+    constructor_proceed.set();join_thread(thread,'Access constructor client lease')
+    facts['constructor_returns_open_core']=len(constructed)==1 and constructed[0].core.is_open
+    constructed[0].close();constructor_core.close()
+    return facts
+
 def main():
-    with TemporaryDirectory(prefix='nollm-m1c6-matrix-') as directory:
+    with TemporaryDirectory(prefix='nollm-m1c7-matrix-') as directory:
         facts=run_matrix(Path(directory));assert all(facts.values());print(json.dumps({'status':'passed','facts':facts},sort_keys=True))
 if __name__=='__main__':main()

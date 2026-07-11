@@ -14,7 +14,22 @@ Execute the current taskbook exactly. Do not redesign or broaden scope.
   inspect the code and classify from behavior, dependencies, and state ownership.
 - Never mark a component `DELETE_LATER` merely because an older version of a
   same-named file contained a forbidden path.
-- Current stage is M1-C6 reentrancy-safe lifecycle, Trace isolation, and reuse consistency final closure.
+- Current stage is M1-C7 callback fence, Core client lease, and consistent-read ownership final closure.
+- Preserve all accepted M1-C6 package, kernel, canonical state/evidence, HandleBinding, Snapshot, Trace, Recall, boundary, and regression results.
+- Public Core and Access operations are non-reentrant by default. RLock reentrancy is not permission to enter another public operation.
+- Internal transaction work uses an unforgeable Runtime-owned capability/facade; external callbacks never receive it.
+- Binding, Evidence, Store, and Trace callbacks execute behind a unified callback fence and cannot enter public Core/Access operations or lifecycle methods.
+- A callback-returned successful Core/Access write may never be deleted by an outer rollback.
+- Access callbacks cannot observe Core/Binding/Evidence intermediate state through nested recall or saved_handle.
+- Core lifecycle is explicitly OPEN/CLOSING/CLOSED; close marks CLOSING before waiting and new operations reject after CLOSING begins.
+- Access lifecycle is explicitly OPEN/CLOSING/CLOSED with the same rule.
+- AccessRuntime holds a Core client lease for its entire lifetime; Core cannot close while a live Access client remains.
+- Access construction atomically acquires the canonical pair and Core client lease with no post-lease close window.
+- Consistent-read tokens bind Runtime identity, generation, and owner thread; wrong-thread export/end reject before state changes.
+- CoreRuntime exposes no mutable StateStore or mutable write/fault hook through its public surface.
+- TraceSink is observation-only, including indirect mutation of Store hooks or Runtime configuration.
+- Lock order remains Access lifecycle/pair -> Core client/transaction -> state lock. No Core path acquires Access locks.
+- Do not proceed to M2, OpenClaw Live, model calls, corpus execution, PB scale, or remote GitHub work.
 - Preserve all accepted M1-C5 package, kernel, canonical state/evidence, owner, pair, Snapshot, Trace, Recall, boundary, and regression results.
 - RLock ownership alone is not an operation lease. Same-thread lifecycle reentry is explicitly tracked and rejected.
 - Core close cannot execute from inside an active Core operation, transaction lease, Trace callback, Store callback, Snapshot callback, or Recall callback on the same Runtime.

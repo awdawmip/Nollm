@@ -78,9 +78,9 @@ def test_store_callback_cannot_close_active_core(tmp_path: Path) -> None:
         except RuntimeError:
             rejected = True
 
-    store = FileCoreStateStore(tmp_path)
+    CoreRuntime(tmp_path).close()
+    store = FileCoreStateStore(tmp_path, hook)
     core = CoreRuntime(tmp_path, store=store)
-    store.before_replace = hook
     core.put(MemoryAtom("outer", "x"), CELL)
     assert rejected and core.is_open and core.placement_count() == 1
     core.close()

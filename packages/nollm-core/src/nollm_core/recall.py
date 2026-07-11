@@ -82,7 +82,7 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
             if score <= best.get(cell, -1):
                 continue
             best[cell] = score
-            for handle, atom in runtime.atoms_at(cell):
+            for handle, atom in runtime._atoms_at_locked(cell):
                 current = found.get(handle)
                 if current is None or score > current.score_q16:
                     found[handle] = CoreRecallItem(handle, atom, score)
@@ -125,7 +125,7 @@ def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest,
             template = runtime.kernel_registry.coverage_template(cell.profile_id, "lateral")
             output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
     if "bridge" in request.allowed_kernels and bridge_steps < request.budget.max_bridge_steps:
-        for bridge in runtime.bridges():
+        for bridge in runtime._bridges_locked():
             if cell not in bridge.from_anchor.cells or bridge_steps >= bridge.max_steps:
                 continue
             for target in sorted(bridge.to_anchor.cells, key=lambda item: item.stable_key())[: bridge.max_fanout]:

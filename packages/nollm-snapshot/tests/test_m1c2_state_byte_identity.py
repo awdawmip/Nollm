@@ -13,4 +13,4 @@ def test_store_runtime_and_snapshot_bytes_match_after_mutations(tmp_path) -> Non
         lambda: runtime.bridge_remove("b"),
     ):
         action()
-        assert runtime.store.read_bytes() == runtime.state_bytes() == snapshot.create(runtime)
+        assert runtime.state_path.read_bytes() == runtime.state_bytes() == snapshot.create(runtime)
