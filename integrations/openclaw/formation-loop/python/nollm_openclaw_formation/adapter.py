@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -68,6 +69,27 @@ defer = {{"schema_version":"{config.schema_version}","outcome":"defer","selectio
 Maximum selections: {request.max_statements}
 request_id: {request.request_id}
 evidence: {json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}{iteration}{retry}"""
+
+
+def formation_schema_bytes(config: OpenClawFormationConfig) -> bytes:
+    schema = {
+        "defer": {
+            "outcome": "defer",
+            "reason_class": ["ambiguous", "insufficient_context", "no_durable_statement"],
+            "required": ["schema_version", "outcome", "selections", "reason_class", "reason_summary"],
+        },
+        "formed": {
+            "outcome": "formed",
+            "required": ["schema_version", "outcome", "selections", "reason_summary"],
+            "selection_required": ["evidence_id", "start", "end", "statement_id"],
+        },
+        "schema_version": config.schema_version,
+    }
+    return json.dumps(schema, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def sha256_hex(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
 
 
 class OpenClawLLMClient:

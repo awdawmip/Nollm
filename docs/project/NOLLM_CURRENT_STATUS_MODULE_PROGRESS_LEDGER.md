@@ -11,12 +11,12 @@ do not define this active ledger.
 | CORE | 80% | 80% | 80% | `CAPABILITY_VALIDATED` | high | code `7ff9690e`; tree `b8a17134`; no Lab private consumers | cross-process recovery and scale |
 | SNAPSHOT | 50% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests; SnapshotDiff unchanged | version migration and incremental snapshots |
 | TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests; state isolation unchanged | deeper performance visualization |
-| ACCESS | 70% | 70% | 70% | `ACTIVE_BASELINE` candidate | high | public contract plus 36 real-model validated decisions | Placement and multi-process coordination |
+| ACCESS | 65% | 65% | 65% | `CAPABILITY_VALIDATED` | high | unchanged public contract; normal-chat results use the same exact-span path | Placement and multi-process coordination |
 | HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
 | AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
-| OPENCLAW | 25% | 35% | 35% | `CAPABILITY_VALIDATED` candidate | medium | OpenClaw 2026.6.11; 43 live calls; reversible plugin smoke | Placement, Recall, product integration |
-| LAB | 65% | 70% | 70% | `IMPLEMENTED` | high | 36 reviewed live cases; three prompt rounds; negative E2E | broad real-user samples |
-| DISTRIBUTIONS | 50% | 55% | 55% | `IMPLEMENTED` | high | explicit Formation manifest and six PowerShell operations | release/version negotiation |
+| OPENCLAW | 30% | 40% | 40% | `CAPABILITY_VALIDATED` | high | 15 normal-chat cases; 16 autonomous tool calls; lifecycle controls | Placement, Recall, product integration |
+| LAB | 65% | 70% | 70% | `IMPLEMENTED` | high | read-only live evidence verifier; truthful assistant reviews | broad real-user samples and human review |
+| DISTRIBUTIONS | 50% | 55% | 55% | `IMPLEMENTED` | high | V3.2 active basis; Formation assets ACTIVE; lifecycle scripts | release/version negotiation |
 
 Previous task actual vector:
 
@@ -25,11 +25,11 @@ CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS 0% |
 HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +5% | DISTRIBUTIONS +5%
 ```
 
-ALD expected and actual vector:
+ALD external recomputation:
 
 ```text
-CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +10% |
-HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +10% | DISTRIBUTIONS +5%
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +5% | DISTRIBUTIONS +5%
 ```
 
 The current contract, corpus, and governance evidence supports the expected
@@ -40,12 +40,16 @@ commit
 The next candidate action requires a separately authorized task. AOLD does not
 authorize Placement or broader product integration.
 
-AOLD actual vector:
+AOLD checkpoint external recomputation:
 
 ```text
-CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS 0% |
-HISTORY 0% | AUDIT 0% | OPENCLAW +10% | LAB +5% | DISTRIBUTIONS +5%
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +5% | LAB +5% | DISTRIBUTIONS 0%
 ```
 
-The planned Access +5% was not claimed because the existing public contract
-needed no change. OpenClaw, Lab, and Distribution targets were met.
+Natural-chat truth closure actual vector:
+
+```text
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +5% | LAB +5% | DISTRIBUTIONS +5%
+```

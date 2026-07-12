@@ -1,0 +1,5 @@
+OpenClaw 2026.6.11
+Node v24.17.0
+npm test: PASS (5)
+openclaw plugins build --check: PASS
+openclaw plugins validate: PASS

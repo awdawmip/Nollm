@@ -1,0 +1,4 @@
+Official path link install: PASS
+Plugin version: 0.2.0
+Enabled and gateway loaded: PASS
+Final state after lifecycle gate: uninstalled

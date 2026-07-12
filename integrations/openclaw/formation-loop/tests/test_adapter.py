@@ -1,11 +1,13 @@
 import json
+from pathlib import Path
+import subprocess
 
 import pytest
 
 from nollm_openclaw_formation.adapter import (
     AccessFormationClient, FormationAdapterError, FormationDecisionParser,
     FormationPromptBuilder, FormationResultRenderer, OpenClawEventTranslator,
-    OpenClawFormationConfig,
+    OpenClawFormationConfig, OpenClawLLMClient, formation_schema_bytes, sha256_hex,
 )
 
 
@@ -45,3 +47,69 @@ def test_defer_and_prompt_contract():
     prompt = FormationPromptBuilder().build(request, CONFIG)
     assert "Never summarize, rewrite, translate, join, or invent text" in prompt
     assert "Python/Unicode code points" in prompt
+
+
+def test_prompt_and_schema_digests_are_canonical():
+    request = OpenClawEventTranslator().translate(REQUEST)
+    config = OpenClawFormationConfig("openclaw.cmd", "provider/model", prompt_version="aold-v3")
+    first = FormationPromptBuilder().build(request, config, "invalid_span")
+    second = FormationPromptBuilder().build(request, config, "invalid_span")
+    assert first == second
+    assert "Previous output was rejected: invalid_span" in first
+    assert len(sha256_hex(first.encode("utf-8"))) == 64
+    assert b'aold-formation-v1' in formation_schema_bytes(config)
+
+
+def test_windows_cmd_launcher(monkeypatch, tmp_path):
+    command = tmp_path / "openclaw.cmd"
+    node = tmp_path / "node.exe"
+    module = tmp_path / "node_modules" / "openclaw" / "openclaw.mjs"
+    node.touch(); module.parent.mkdir(parents=True); module.touch()
+    seen = {}
+    def fake_run(args, **kwargs):
+        seen["args"] = args
+        return subprocess.CompletedProcess(args, 0, json.dumps({"outputs":[{"text":"ok"}]}), "")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    raw, _, _ = OpenClawLLMClient().run("prompt", OpenClawFormationConfig(str(command), "provider/model"))
+    assert raw == "ok"
+    assert seen["args"][:2] == [str(node), str(module)]
+
+
+@pytest.mark.parametrize("missing", ["node", "module"])
+def test_windows_cmd_launcher_missing_files(tmp_path, missing):
+    command = tmp_path / "openclaw.cmd"
+    node = tmp_path / "node.exe"
+    module = tmp_path / "node_modules" / "openclaw" / "openclaw.mjs"
+    if missing != "node": node.touch()
+    if missing != "module": module.parent.mkdir(parents=True); module.touch()
+    with pytest.raises(FormationAdapterError, match="launcher files are missing"):
+        OpenClawLLMClient().run("prompt", OpenClawFormationConfig(str(command), "provider/model"))
+
+
+def test_direct_executable_and_failure_classes(monkeypatch):
+    calls = []
+    def fake_run(args, **kwargs):
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, json.dumps({"outputs":[{"text":"answer"}]}), "")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert OpenClawLLMClient().run("p", OpenClawFormationConfig("openclaw.exe", "m"))[0] == "answer"
+    assert calls[0][0] == "openclaw.exe"
+
+
+@pytest.mark.parametrize(("completed", "category"), [
+    (subprocess.CompletedProcess([], 2, "", "failure"), "llm_call_error"),
+    (subprocess.CompletedProcess([], 0, "not-json", ""), "llm_envelope_error"),
+    (subprocess.CompletedProcess([], 0, json.dumps({"outputs":[{"text":""}]}), ""), "empty_output"),
+])
+def test_llm_failure_classes(monkeypatch, completed, category):
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: completed)
+    with pytest.raises(FormationAdapterError) as caught:
+        OpenClawLLMClient().run("p", OpenClawFormationConfig("openclaw.exe", "m"))
+    assert caught.value.category == category
+
+
+def test_llm_timeout(monkeypatch):
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: (_ for _ in ()).throw(subprocess.TimeoutExpired("x", 1)))
+    with pytest.raises(FormationAdapterError) as caught:
+        OpenClawLLMClient().run("p", OpenClawFormationConfig("openclaw.exe", "m", timeout_seconds=1))
+    assert caught.value.category == "llm_timeout"

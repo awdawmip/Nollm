@@ -398,14 +398,12 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         gate = "lab:compiled-templates" if role == "active tool" else "lab:geometry-parity"
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", role, "compile-time geometry definitions", "development", "Current geometry generation and compile support.", evidence="Stable Lab geometry directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), asset_class, gate)
     if p.startswith("lab/nollm-lab/statement_formation/"):
-        if name == "validate_corpus.py":
-            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current exact-span corpus validation entrypoint.", evidence="Explicit statement formation corpus gate.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", "lab:statement-formation-corpus")
-        if name == "evaluate_fixture_decisions.py":
-            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current fixture decision evaluation entrypoint.", evidence="Explicit statement formation fixture gate.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", "lab:statement-formation-fixtures")
-        if name == "corpus_support.py":
-            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active library", "validation workspace only", "development", "Shared exact-span corpus parsing support.", evidence="Imported by both statement formation gates.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_LIBRARY", "lab:statement-formation-corpus")
-        gate = "lab:statement-formation-fixtures" if "/fixtures/" in p else "lab:statement-formation-corpus"
-        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active fixture", "versioned validation input", "none", "Versioned statement formation schema, corpus, fixture, or usage contract.", evidence="Input to an explicit statement formation gate.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_FIXTURE", gate)
+        gate = "lab:statement-formation-fixtures" if "/fixtures/" in p or name == "evaluate_fixture_decisions.py" else "lab:statement-formation-corpus"
+        return lab_asset(Classification("LAB", "MIGRATION_ASSET", "KEEP", "HIGH", "legacy regression", "versioned validation input", "none", "Parser/schema regression asset; it does not establish semantic quality.", evidence="Superseded by the normal-chat live Formation gate.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "LEGACY_REGRESSION", gate)
+    if p.startswith("lab/nollm-lab/openclaw_formation/"):
+        if name == "validate_live_plugin_evidence.py":
+            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Read-only verifier for frozen normal-chat plugin evidence.", evidence="Explicit openclaw:formation-live final gate.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", "openclaw:formation-live")
+        return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Prior standalone Formation runs are parser/schema regression evidence, not natural-chat semantic quality.", evidence="Normal-chat gate is authoritative.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
     if p.startswith("lab/nollm-lab/m1/"):
         gates = {
             "run_geometry_parity.py": "lab:geometry-parity",
@@ -451,6 +449,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             evidence="File is under the machine-enforced distributions metadata root.",
             review_status="DEPENDENCY_REVIEWED",
             reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("integrations/openclaw/formation-loop/"):
+        return Classification(
+            "OPENCLAW", "ACTIVE", "KEEP", "HIGH",
+            "active OpenClaw Formation integration", "host/plugin state", "public",
+            "Normal-chat live gate validates runtime registration, canonical prompt parsing, and Access exact-span results.",
+            evidence="Bound to validation_gate openclaw:formation-live.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
         )
     if p.startswith("integrations/openclaw/"):
         return Classification(

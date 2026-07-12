@@ -3,6 +3,7 @@
   "extends": "nollm-minimal",
   "adapter": "integrations/openclaw/formation-loop",
   "live_activation": "explicit-formation-only",
+  "validation_gate": "openclaw:formation-live",
   "requires": ["nollm-access", "openclaw>=2026.6.11", "explicit-evidence"],
   "diagnose": "integrations/openclaw/formation-loop/scripts/diagnose.ps1",
   "forbidden": ["legacy-grf-runtime-entrypoint", "core-write", "placement", "python-semantic-fallback"]

@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Statement Formation",
   "description": "Exact-span Statement Formation through a real OpenClaw model and the public Nollm Access contract.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "activation": {
     "onStartup": true
   },
@@ -20,6 +20,14 @@
       },
       "model": {
         "type": "string"
+      },
+      "prompt_version": {
+        "type": "string",
+        "default": "aold-v3"
+      },
+      "schema_version": {
+        "type": "string",
+        "default": "aold-formation-v1"
       },
       "timeout_ms": {
         "type": "integer",

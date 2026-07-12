@@ -47,6 +47,7 @@ VALIDATION_GATES = {
     "lab:compiled-templates", "lab:geometry-parity", "lab:core-capability",
     "lab:minimal-e2e", "repository:manifest", "repository:boundary",
     "lab:statement-formation-corpus", "lab:statement-formation-fixtures",
+    "openclaw:formation-live",
 }
 GATE_TARGETS = {
     "package:core": "packages/nollm-core/tests",
@@ -64,6 +65,7 @@ GATE_TARGETS = {
     "repository:boundary": "tools/check_module_boundaries.py",
     "lab:statement-formation-corpus": "lab/nollm-lab/statement_formation/validate_corpus.py",
     "lab:statement-formation-fixtures": "lab/nollm-lab/statement_formation/evaluate_fixture_decisions.py",
+    "openclaw:formation-live": "lab/nollm-lab/openclaw_formation/validate_live_plugin_evidence.py",
 }
 
 

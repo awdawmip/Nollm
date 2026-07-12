@@ -4,11 +4,12 @@ Date: 2026-07-12
 
 Input baseline: `3528c0130a2f29987e06105753310d3b2a592a2a`.
 
-Current authorized task: `NOLLM_AOLD_OPENCLAW_FORMATION_LOOP_TASK_20260712.md`.
+Current authorized task: `NOLLM_AOLD_NATURAL_CHAT_LIVE_TRUTH_TASK_20260712.md`.
 
-Status: Core capability remains unchanged. OpenClaw 2026.6.11 and its real
-`model.run` interface have produced 43 retained live Formation calls. Access
-validated every accepted result as an evidence-preserving exact span; no Python
+Status: Core capability remains unchanged. OpenClaw 2026.6.11 normal chat
+autonomously selected the Formation plugin in the frozen gate: 15 retained
+cases, 16 plugin tool calls, and 16 real model calls through the tool. Access
+validated accepted results as evidence-preserving exact spans; no Python
 semantic fallback, Placement, Recall, or persistence was introduced.
 
 Validated code commit:
@@ -23,7 +24,8 @@ Access Statement Formation validated code commit:
 Access Statement Formation Git-blob tree digest:
 `9a62882d5b14a8d1e034a1032710d7a8a8eb91236f35a1eb38d99fd00e4525b9`.
 
-The active V3.1 project book owns stable architecture. This status owns input,
+The V3.1 project book owns stable architecture; V3.2 owns the current
+OpenClaw-first semantic route. This status owns input,
 task, validation state, and revision-specific facts. Machine governance is
 derived from the five links in `ACTIVE_PROJECT.md`.
 

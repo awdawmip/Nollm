@@ -37,7 +37,8 @@ def test_broad_lab_roots_are_not_default_active() -> None:
 def test_statement_formation_assets_have_explicit_gates() -> None:
     rows = [row for row in lab_rows() if row["path"].startswith("lab/nollm-lab/statement_formation/")]
     assert rows
-    assert all(row["asset_class"] in {"ACTIVE_LIBRARY", "ACTIVE_FIXTURE", "ACTIVE_VALIDATION"} for row in rows)
+    assert all(row["asset_class"] == "LEGACY_REGRESSION" for row in rows)
+    assert all(row["lifecycle_status"] == "MIGRATION_ASSET" for row in rows)
     assert {row["validation_gate"] for row in rows} == {"lab:statement-formation-corpus", "lab:statement-formation-fixtures"}
 
 
