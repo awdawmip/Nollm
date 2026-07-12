@@ -1,0 +1,15 @@
+{"turn":1,"session_id":"aold-rev1-enabled-s1","exit_code":0,"main_started_at":1783868347314,"main_command_returned_at":1783868399634,"visible_assistant_messages":1}
+{"turn":2,"session_id":"aold-rev1-enabled-s1","exit_code":0,"main_started_at":1783868399687,"main_command_returned_at":1783868432054,"visible_assistant_messages":1}
+{"turn":3,"session_id":"aold-rev1-enabled-s1","exit_code":0,"main_started_at":1783868432061,"main_command_returned_at":1783868456268,"visible_assistant_messages":1}
+{"turn":4,"session_id":"aold-rev1-enabled-s2","exit_code":0,"main_started_at":1783868456275,"main_command_returned_at":1783868480780,"visible_assistant_messages":1}
+{"turn":5,"session_id":"aold-rev1-enabled-s2","exit_code":0,"main_started_at":1783868480787,"main_command_returned_at":1783868506715,"visible_assistant_messages":1}
+{"turn":6,"session_id":"aold-rev1-enabled-s2","exit_code":0,"main_started_at":1783868506720,"main_command_returned_at":1783868530255,"visible_assistant_messages":1}
+{"turn":7,"session_id":"aold-rev1-enabled-s3","exit_code":0,"main_started_at":1783868530261,"main_command_returned_at":1783868557087,"visible_assistant_messages":1}
+{"turn":8,"session_id":"aold-rev1-enabled-s3","exit_code":0,"main_started_at":1783868557091,"main_command_returned_at":1783868578497,"visible_assistant_messages":1}
+{"turn":9,"session_id":"aold-rev1-enabled-s3","exit_code":0,"main_started_at":1783868578505,"main_command_returned_at":1783868614015,"visible_assistant_messages":1}
+{"turn":10,"session_id":"aold-rev1-enabled-s4","exit_code":0,"main_started_at":1783868614019,"main_command_returned_at":1783868637315,"visible_assistant_messages":1}
+{"turn":11,"session_id":"aold-rev1-enabled-s4","exit_code":0,"main_started_at":1783868637319,"main_command_returned_at":1783868660672,"visible_assistant_messages":1}
+{"turn":12,"session_id":"aold-rev1-enabled-s4","exit_code":0,"main_started_at":1783868660677,"main_command_returned_at":1783868682645,"visible_assistant_messages":1}
+{"turn":13,"session_id":"aold-rev1-enabled-s5","exit_code":0,"main_started_at":1783868682651,"main_command_returned_at":1783868855682,"visible_assistant_messages":2}
+{"turn":14,"session_id":"aold-rev1-enabled-s5","exit_code":0,"main_started_at":1783868855689,"main_command_returned_at":1783868888039,"visible_assistant_messages":1}
+{"turn":15,"session_id":"aold-rev1-enabled-s5","exit_code":0,"main_started_at":1783868888043,"main_command_returned_at":1783868921996,"visible_assistant_messages":1}

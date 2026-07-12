@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { appendFile, mkdir } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
+import { AsyncResource } from "node:async_hooks";
 import { dirname, join } from "node:path";
 import { buildJsonPluginConfigSchema, definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 
@@ -54,8 +55,11 @@ async function bridge(config: DreamConfig, envelope: object): Promise<Record<str
   try { return JSON.parse(result.stdout); } catch { return { ok: false, error: "bridge_invalid_json", detail: result.stderr }; }
 }
 
-type Turn = { role: "user" | "assistant"; content_utf8: string };
-type Pending = { users: Turn[]; inheritedModel?: string };
+export type Turn = { role: "user" | "assistant"; content_utf8: string };
+export type TriggerPhase = "AFTER_DELIVERY" | "AFTER_TURN";
+type UserObservation = Turn & { identity: string };
+type Pending = { users: UserObservation[]; resolvedModel?: string; runId?: string };
+type Candidate = { sessionKey: string; runId?: string; assistant: string; phase: TriggerPhase; sourceHook: "message_sent" | "agent_end"; observedAt: number; users?: Turn[]; resolvedModel?: string };
 
 export function wellFormedText(value: string): string {
   return Array.from(value, character => {
@@ -64,19 +68,19 @@ export function wellFormedText(value: string): string {
   }).join("");
 }
 
-function boundedTurns(users: Turn[], assistant: string, budget: number): Turn[] {
+export function boundedTurns(users: Turn[], assistant: string, budget: number): Turn[] {
   const selected = [...users.slice(-2), { role: "assistant" as const, content_utf8: assistant }];
   let remaining = budget; const reversed: Turn[] = [];
   for (const turn of selected.reverse()) {
     if (remaining <= 0) break;
     const content = wellFormedText(turn.content_utf8.slice(0, remaining));
-    if (content) reversed.push({ ...turn, content_utf8: content });
+    if (content) reversed.push({ role: turn.role, content_utf8: content });
     remaining -= content.length;
   }
   return reversed.reverse();
 }
 
-function extractAssistantText(messages: unknown[]): string | undefined {
+export function extractAssistantText(messages: unknown[]): string | undefined {
   for (const item of [...messages].reverse()) {
     if (!item || typeof item !== "object") continue;
     const value = item as Record<string, unknown>;
@@ -90,7 +94,7 @@ function extractAssistantText(messages: unknown[]): string | undefined {
   return undefined;
 }
 
-function extractUserTurns(messages: unknown[]): Turn[] {
+export function extractUserTurns(messages: unknown[]): Turn[] {
   return messages.flatMap(item => {
     if (!item || typeof item !== "object") return [];
     const value = item as Record<string, unknown>;
@@ -100,6 +104,18 @@ function extractUserTurns(messages: unknown[]): Turn[] {
     const content = value.content.map(part => part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string" ? (part as Record<string, unknown>).text : "").join("").trim();
     return content ? [{ role: "user" as const, content_utf8: content }] : [];
   }).slice(-2);
+}
+
+export function turnKey(sessionKey: string, runId?: string, messageId?: string, content = ""): string {
+  const marker = runId || messageId || createHash("sha256").update(wellFormedText(content)).digest("hex");
+  return `${sessionKey}\0${marker}`;
+}
+
+export function modelOverride(ref?: string): { provider: string; model: string } | undefined {
+  if (!ref) return undefined;
+  const separator = ref.indexOf("/");
+  if (separator <= 0 || separator === ref.length - 1) return undefined;
+  return { provider: ref.slice(0, separator), model: ref.slice(separator + 1) };
 }
 
 async function trace(config: DreamConfig, value: object): Promise<void> {
@@ -113,40 +129,59 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const pending = new Map<string, Pending>();
   const inFlight = new Set<string>();
   const scheduled = new Set<string>();
+  const childParents = new Map<string, { parentRunId?: string; requestedModel?: string }>();
+  let duplicateHookObservationCount = 0;
+  let duplicateDreamSuppressedCount = 0;
+  const backgroundScope = new AsyncResource("nollm-formation-background");
+  const queue = (work: () => void) => { queueMicrotask(() => backgroundScope.runInAsyncScope(work)); };
+  const recordHandler = (hook: string, startedAt: number, extra: object) => {
+    const returnedAt = Date.now();
+    queue(() => { void trace(config, { status: "hook", hook, hook_observed_at: startedAt, hook_handler_returned_at: returnedAt, hook_handler_duration_ms: returnedAt - startedAt, ...extra }); });
+  };
   api.on("before_agent_run", (event, ctx) => {
-    void trace(config, { status: "observed", hook: "before_agent_run", session_key: ctx.sessionKey, agent_id: ctx.agentId, message_provider: ctx.messageProvider, model_provider_id: ctx.modelProviderId, model_id: ctx.modelId });
-    if (config.enabled === false || !ctx.sessionKey || ctx.agentId === "nollm-dream-agent" || !event.prompt.trim()) return;
+    const observedAt = Date.now();
+    if (config.enabled === false || !ctx.sessionKey || ctx.agentId === "nollm-dream-agent") { recordHandler("before_agent_run", observedAt, {}); return; }
     const current: Pending = pending.get(ctx.sessionKey) ?? { users: [] };
-    current.users = [...current.users, { role: "user" as const, content_utf8: wellFormedText(event.prompt.trim()) }].slice(-2);
-    if (ctx.modelProviderId && ctx.modelId) current.inheritedModel = `${ctx.modelProviderId}/${ctx.modelId}`;
+    current.runId = ctx.runId ?? current.runId;
+    if (ctx.modelProviderId && ctx.modelId) current.resolvedModel = `${ctx.modelProviderId}/${ctx.modelId}`;
     pending.set(ctx.sessionKey, current);
+    recordHandler("before_agent_run", observedAt, { session_key: ctx.sessionKey, run_id: ctx.runId, model_provider_id: ctx.modelProviderId, model_id: ctx.modelId });
   });
   api.on("message_received", (event, ctx) => {
+    const observedAt = Date.now();
     if (config.enabled === false || !ctx.sessionKey || typeof event.content !== "string" || !event.content.trim()) return;
     const current: Pending = pending.get(ctx.sessionKey) ?? { users: [] };
-    current.users = [...current.users, { role: "user" as const, content_utf8: wellFormedText(event.content.trim()) }].slice(-2);
+    const content = wellFormedText(event.content.trim());
+    const identity = event.messageId || `${event.runId ?? ctx.runId ?? ""}:${createHash("sha256").update(content).digest("hex")}`;
+    if (!current.users.some(turn => turn.identity === identity)) current.users = [...current.users, { role: "user", content_utf8: content, identity } as UserObservation].slice(-2);
+    else duplicateHookObservationCount += 1;
+    current.runId = event.runId ?? ctx.runId ?? current.runId;
     pending.set(ctx.sessionKey, current);
+    recordHandler("message_received", observedAt, { session_key: ctx.sessionKey, run_id: current.runId, message_id: event.messageId });
   });
   api.on("llm_output", (event, ctx) => {
     if (!ctx.sessionKey) return;
     const current: Pending = pending.get(ctx.sessionKey) ?? { users: [] };
-    current.inheritedModel = event.resolvedRef ?? `${event.provider}/${event.model}`;
+    current.resolvedModel = event.resolvedRef ?? `${event.provider}/${event.model}`;
+    current.runId = event.runId ?? current.runId;
     pending.set(ctx.sessionKey, current);
   });
-  const launch = async (sessionKey: string, assistant: string, marker: string, eligibleAt: number, sourceHook: "message_sent" | "agent_end", users?: Turn[], inheritedModel?: string) => {
-    const deliveredAt = Date.now();
+  const launch = async (candidate: Candidate) => {
+    const { sessionKey, assistant, sourceHook, observedAt, phase } = candidate;
     if (config.enabled === false || !assistant.trim() || inFlight.has(sessionKey)) return;
-    if (!config.python_executable || !config.nollm_repo_root) { await trace(config, { status: "defer", reason: "explicit_configuration_required", main_reply_delivered_at: deliveredAt }); return; }
-    const current = pending.get(sessionKey) ?? { users: users ?? [], inheritedModel };
-    if (!current.users.length && users?.length) current.users = users;
-    if (!current.inheritedModel && inheritedModel) current.inheritedModel = inheritedModel;
+    if (!config.python_executable || !config.nollm_repo_root) { await trace(config, { status: "defer", reason: "explicit_configuration_required", trigger_phase: phase }); return; }
+    const fallbackUsers: UserObservation[] = (candidate.users ?? []).map((turn, index) => ({ role: turn.role, content_utf8: turn.content_utf8, identity: `${candidate.runId ?? "fallback"}:${index}:${createHash("sha256").update(turn.content_utf8).digest("hex")}` }));
+    const current = pending.get(sessionKey) ?? { users: fallbackUsers, resolvedModel: candidate.resolvedModel, runId: candidate.runId };
+    if (!current.users.length && fallbackUsers.length) current.users = fallbackUsers;
+    if (!current.resolvedModel && candidate.resolvedModel) current.resolvedModel = candidate.resolvedModel;
     if (!current?.users.length) return;
-    const model = config.model_mode === "dedicated" ? config.model : current.inheritedModel;
+    const model = config.model_mode === "dedicated" ? config.model : current.resolvedModel;
     if ((config.model_mode === "dedicated" && !model) || (config.allowed_models?.length && (!model || !config.allowed_models.includes(model)))) {
       await trace(config, { status: "defer", reason: "model_not_allowed", model }); return;
     }
-    const idempotencyKey = createHash("sha256").update(`${sessionKey}\0${marker}`).digest("hex");
-    if (scheduled.has(idempotencyKey)) return;
+    const key = turnKey(sessionKey, candidate.runId ?? current.runId, undefined, assistant);
+    const idempotencyKey = createHash("sha256").update(`${key}\0${config.prompt_version ?? "dream-v1"}\0nollm_access_dream_formation_v1`).digest("hex");
+    if (scheduled.has(idempotencyKey)) { duplicateDreamSuppressedCount += 1; return; }
     scheduled.add(idempotencyKey);
     const requestId = `dream-request-${idempotencyKey}`;
     const request = {
@@ -161,49 +196,80 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const dreamStartedAt = Date.now();
     try {
       const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
+      const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
+      childParents.set(childSessionKey, { parentRunId: candidate.runId ?? current.runId, requestedModel: model });
       const spawned = await api.runtime.subagent.run({
         sessionKey: childSessionKey, message: built.prompt,
-        ...(config.model_mode === "dedicated" ? { model } : {}),
+        ...(override ?? {}),
         lightContext: true, deliver: false, idempotencyKey,
       });
-      await trace(config, { status: "started", request_id: requestId, session_key: sessionKey, child_session_key: childSessionKey, run_id: spawned.runId, model: model ?? "host-inherit", model_mode: config.model_mode ?? "inherit", prompt_version: built.prompt_version, prompt_sha256: built.prompt_sha256, schema_sha256: built.schema_sha256, source_hook: sourceHook, eligibility_at: eligibleAt, main_reply_delivered_at: deliveredAt, dream_started_at: dreamStartedAt, hook_scheduling_overhead_ms: dreamStartedAt - eligibleAt, deliver: false, visible_message_count: 0 });
-      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt);
+      await trace(config, { status: "started", request_id: requestId, turn_key_sha256: createHash("sha256").update(key).digest("hex"), session_key: sessionKey, parent_run_id: candidate.runId ?? current.runId, child_session_key: childSessionKey, run_id: spawned.runId, requested_model: model, model_mode: config.model_mode ?? "inherit", prompt_version: built.prompt_version, prompt_sha256: built.prompt_sha256, schema_sha256: built.schema_sha256, source_hook: sourceHook, trigger_phase: phase, hook_observed_at: observedAt, background_scheduled_at: dreamStartedAt, prompt_build_started_at: dreamStartedAt, subagent_started_at: Date.now(), deliver: false, material: request.material, duplicate_hook_observation_count: duplicateHookObservationCount, duplicate_dream_suppressed_count: duplicateDreamSuppressedCount });
+      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt, idempotencyKey);
     } catch (error) {
       inFlight.delete(sessionKey);
-      await trace(config, { status: "error", stage: "spawn", request_id: requestId, error: String(error), main_reply_delivered_at: deliveredAt });
+      await trace(config, { status: "error", stage: "spawn", request_id: requestId, error: String(error), trigger_phase: phase });
     }
   };
   api.on("message_sent", (event, ctx) => {
-    if (!event.success || !ctx.sessionKey || !event.content.trim()) return;
-    const content = wellFormedText(event.content);
-    void launch(ctx.sessionKey, content, event.messageId ?? content, Date.now(), "message_sent");
+    const observedAt = Date.now();
+    const sessionKey = ctx.sessionKey ?? event.sessionKey;
+    if (!event.success || !sessionKey || !event.content.trim()) { recordHandler("message_sent", observedAt, { success: event.success }); return; }
+    const current = pending.get(sessionKey); const runId = event.runId ?? ctx.runId ?? current?.runId;
+    queue(() => { void launch({ sessionKey, runId, assistant: wellFormedText(event.content), phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt }); });
+    recordHandler("message_sent", observedAt, { session_key: sessionKey, run_id: runId, trigger_phase: "AFTER_DELIVERY", success: true });
   });
   api.on("agent_end", (event, ctx) => {
-    void trace(config, { status: "observed", hook: "agent_end", session_key: ctx.sessionKey, agent_id: ctx.agentId, message_provider: ctx.messageProvider, success: event.success });
+    const observedAt = Date.now();
     if (!event.success || !ctx.sessionKey || (ctx.messageProvider && ctx.messageProvider !== "webchat") || ctx.agentId === "nollm-dream-agent") return;
     const assistant = extractAssistantText(event.messages);
     if (!assistant) return;
     const model = ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined;
     const content = wellFormedText(assistant);
-    void launch(ctx.sessionKey, content, event.runId ?? content, Date.now(), "agent_end", extractUserTurns(event.messages), model);
+    const runId = event.runId ?? ctx.runId;
+    queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, users: extractUserTurns(event.messages), resolvedModel: model }); });
+    recordHandler("agent_end", observedAt, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
+  });
+  api.on("subagent_spawned", (event) => {
+    const parent = childParents.get(event.childSessionKey);
+    if (!parent) return;
+    queue(() => { void trace(config, { status: "subagent_spawned", parent_run_id: parent.parentRunId, child_run_id: event.runId, child_session_key: event.childSessionKey, requested_model: parent.requestedModel, resolved_provider: event.resolvedProvider, resolved_model: event.resolvedModel, observed_at: Date.now() }); });
+  });
+  api.on("subagent_ended", (event, ctx) => {
+    if (!ctx.childSessionKey || !childParents.has(ctx.childSessionKey)) return;
+    queue(() => { void trace(config, { status: "subagent_ended", child_run_id: event.runId ?? ctx.runId, child_session_key: ctx.childSessionKey, outcome: event.outcome, ended_at: event.endedAt, reason: event.reason }); });
   });
 }
 
-async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number): Promise<void> {
+async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number, stableId: string): Promise<void> {
   try {
     const waited = await api.runtime.subagent.waitForRun({ runId, timeoutMs: config.timeout_ms ?? 120000 });
-    if (waited.status !== "ok") { await trace(config, { status: waited.status, stage: "subagent", run_id: runId, error: waited.error, dream_latency_ms: Date.now() - startedAt, visible_message_count: 0 }); return; }
+    if (waited.status !== "ok") { const completedAt = Date.now(); await trace(config, { status: waited.status, stage: "subagent", run_id: runId, error: waited.error, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, visible_message_count: 0 }); return; }
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSession, limit: 20 });
     const raw = extractAssistantText(session.messages);
-    if (!raw) { await trace(config, { status: "error", stage: "empty_output", run_id: runId, visible_message_count: 0 }); return; }
-    const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: `dream-result-${runId}`, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
-    await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", run_id: runId, parent_session_key: parentSession, dream_latency_ms: Date.now() - startedAt, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: built.prompt_version, ...parsed });
+    const resolved = extractResolvedModel(session.messages);
+    if (!raw) { await trace(config, { status: "error", stage: "empty_output", run_id: runId, dream_completed_at: Date.now(), ...resolved, visible_message_count: 0 }); return; }
+    const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: `dream-result-${stableId}`, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
+    const completedAt = Date.now();
+    await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", run_id: runId, parent_session_key: parentSession, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, ...resolved, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: built.prompt_version, ...parsed });
   } catch (error) {
-    await trace(config, { status: "error", stage: "completion", run_id: runId, error: String(error), visible_message_count: 0 });
+    await trace(config, { status: "error", stage: "completion", run_id: runId, dream_completed_at: Date.now(), error: String(error), visible_message_count: 0 });
   } finally {
     inFlight.delete(parentSession);
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSession, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ } }
   }
+}
+
+export function extractResolvedModel(messages: unknown[]): Record<string, string> {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (!message || typeof message !== "object") continue;
+    const value = message as Record<string, unknown>;
+    if (value.role !== "assistant") continue;
+    const provider = typeof value.provider === "string" ? value.provider : undefined;
+    const model = typeof value.model === "string" ? value.model : undefined;
+    if (provider && model) return { resolved_provider: provider, resolved_model: model, resolved_model_ref: `${provider}/${model}` };
+  }
+  return {};
 }
 
 const plugin = definePluginEntry({

@@ -15,4 +15,7 @@ $dream = $agents | Where-Object id -eq "nollm-dream-agent"
   python_bridge=$config.config.python_executable; dream_agent_present=($null -ne $dream)
   dream_agent_denies_message=(@($dream.tools.deny) -contains "message")
   dream_agent_allows_read=(@($dream.tools.allow) -contains "read")
+  host_allow_model_override=$config.subagent.allowModelOverride
+  host_allowed_models=@($config.subagent.allowedModels)
+  plugin_allowed_models=@($config.config.allowed_models)
 } | ConvertTo-Json -Depth 5

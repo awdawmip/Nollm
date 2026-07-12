@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Invisible Dream Agent",
   "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "activation": {
     "onStartup": true
   },

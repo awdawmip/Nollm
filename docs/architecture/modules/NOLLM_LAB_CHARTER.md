@@ -16,3 +16,4 @@ Purpose: corpora, gold labels, validation, benchmarks, stress/migration tests, v
 - Active libraries, tools, validations, and repository tools use package-root public contracts and import without side effects. Active tests use their declared package or governance suite.
 - Legacy regressions run only through an explicit compatibility gate and do not count as current product capability. References and historical results are preserved but not executed by active gates.
 - Dream Agent assets provide versioned Prompt/Schema, bounded real background-run observations, and truthful assistant/human review labels. Exact-span assets are legacy parser/schema regression only.
+- Dream runtime truth validation recomputes visible main replies, Hook phase and duration, child model resolution, terminal timing, duplicate suppression, and fallback use from controlled raw Host evidence. Its check mode is read-only and does not call a model.

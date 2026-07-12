@@ -150,6 +150,20 @@ def test_dream_result_parses_rewritten_statement_and_writes_store(tmp_path):
     assert FileStatementStore(tmp_path).get(statement_id).content_utf8 == "The user prefers terse reports."
 
 
+def test_dream_statement_write_is_idempotent_and_never_overwrites(tmp_path):
+    raw = json.dumps({
+        "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
+        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}],
+    })
+    first = process_dream_result(raw, _dream_request(), "stable-result", tmp_path)
+    second = process_dream_result(raw, _dream_request(), "stable-result", tmp_path)
+    assert first["statements"] == second["statements"]
+    assert len(list((tmp_path / "access" / "statements").glob("*/*.json"))) == 1
+    changed = raw.replace("terse reports", "expanded reports")
+    with pytest.raises(FileExistsError, match="different content"):
+        process_dream_result(changed, _dream_request(), "stable-result", tmp_path)
+
+
 def test_dream_defer_and_invalid_structure():
     raw = json.dumps({"schema_version": "nollm_access_dream_formation_v1", "outcome": "defer", "drafts": [], "defer_reason": "uncertain"})
     assert parse_dream_result(raw, _dream_request(), "result").outcome == "defer"

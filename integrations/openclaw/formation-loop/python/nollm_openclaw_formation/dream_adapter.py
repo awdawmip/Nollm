@@ -10,6 +10,7 @@ from nollm_access import (
     DreamFormationResult,
     DreamMemoryDraft,
     FileStatementStore,
+    MemoryStatement,
     form_dream_statements,
 )
 
@@ -82,7 +83,10 @@ def parse_dream_result(raw: str, request: DreamFormationRequest, result_id: str)
 
 def process_dream_result(raw: str, request: DreamFormationRequest, result_id: str, workspace: Path | None) -> dict[str, object]:
     result = parse_dream_result(raw, request, result_id)
-    statements = form_dream_statements(request, result)
+    statements = tuple(
+        MemoryStatement(_stable_statement_id(result.result_id, draft.draft_id), draft.content_utf8)
+        for draft in result.drafts
+    )
     if workspace is not None:
         store = FileStatementStore(workspace)
         for statement in statements:
@@ -100,6 +104,11 @@ def process_dream_result(raw: str, request: DreamFormationRequest, result_id: st
         "statements": [item.to_mapping() for item in statements],
         "statement_store_write_count": len(statements) if workspace is not None else 0,
     }
+
+
+def _stable_statement_id(result_id: str, draft_id: str) -> str:
+    payload = f"{DREAM_SCHEMA_VERSION}\0{result_id}\0{draft_id}".encode("utf-8")
+    return f"dream:{hashlib.sha256(payload).hexdigest()}"
 
 
 def request_from_mapping(value: object) -> DreamFormationRequest:

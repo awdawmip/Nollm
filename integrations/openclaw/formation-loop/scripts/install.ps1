@@ -30,6 +30,13 @@ if ($Model) { & $OpenClaw config set plugins.entries.nollm-formation.config.mode
 if ($StatementWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.statement_store_workspace $StatementWorkspace }
 & $OpenClaw plugins enable nollm-formation
 & $OpenClaw config set plugins.entries.nollm-formation.hooks.allowConversationAccess true
+& $OpenClaw config set plugins.entries.nollm-formation.subagent.allowModelOverride true
+$resolvedModel = if ($ModelMode -eq "dedicated") { $Model } else { & $OpenClaw config get agents.defaults.model.primary --json | ConvertFrom-Json }
+if ($resolvedModel -isnot [string] -or -not $resolvedModel.Contains('/')) { throw "Host model must be a canonical provider/model reference" }
+$hostAllowedModels = @($resolvedModel)
+$hostAllowedModelsJson = ConvertTo-Json -InputObject $hostAllowedModels -Compress
+& $OpenClaw config set plugins.entries.nollm-formation.subagent.allowedModels $hostAllowedModelsJson --strict-json
+& $OpenClaw config set plugins.entries.nollm-formation.config.allowed_models $hostAllowedModelsJson --strict-json
 $agents = & $OpenClaw config get agents.list --json | ConvertFrom-Json
 if (@($agents.id) -notcontains "nollm-dream-agent") {
   $workspace = Join-Path $env:USERPROFILE ".openclaw\workspace-nollm-dream-agent"

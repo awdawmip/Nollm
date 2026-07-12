@@ -1,0 +1,3 @@
+[state-migrations] Legacy state migration warnings:
+- Left legacy update-check state in place because shared SQLite state already differs: C:\Users\Administrator\.openclaw\update-check.json
+- Left legacy config health state in place because 1 entry conflicts with shared SQLite state: C:\Users\Administrator\.openclaw\logs\config-health.json
