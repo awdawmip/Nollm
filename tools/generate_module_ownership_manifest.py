@@ -29,6 +29,8 @@ FIELDS = (
     "owner",
     "secondary_owner",
     "lifecycle_status",
+    "asset_class",
+    "validation_gate",
     "runtime_role",
     "owned_state",
     "public_api",
@@ -251,6 +253,8 @@ class Classification:
     forbidden_evidence: tuple[dict[str, str], ...] = ()
     review_status: str = "AUTO_CANDIDATE"
     reviewed_at: str = ""
+    asset_class: str = ""
+    validation_gate: str = ""
 
 
 def tracked_files() -> list[str]:
@@ -330,18 +334,25 @@ def active_governance_paths(root: Path = ROOT) -> set[str]:
     return active
 
 
+def lab_asset(classification: Classification, asset_class: str, validation_gate: str = "") -> Classification:
+    return Classification(
+        **{**classification.__dict__, "asset_class": asset_class, "validation_gate": validation_gate}
+    )
+
+
 def classify(path: str, imports: list[str], active_governance: set[str] | None = None) -> Classification:
     p = path.replace("\\", "/")
     name = PurePosixPath(p).name
     active_governance = active_governance or set()
     if p.startswith("packages/") and "/tests/" in p:
-        return Classification(
+        package = p.split("/", 2)[1].removeprefix("nollm-")
+        return lab_asset(Classification(
             "LAB", "ACTIVE", "KEEP", "HIGH",
             "package-local independent test", "development-only state", "development",
             "Package tests verify only public dependencies and are not production implementation.",
             evidence=f"Package test path with direct imports {imports}.",
             review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
-        )
+        ), "ACTIVE_TEST", f"package:{package}")
     if p.startswith("packages/nollm-"):
         package = p.split("/", 2)[1].removeprefix("nollm-").upper()
         owner = "DISTRIBUTION" if package == "DISTRIBUTIONS" else package
@@ -359,56 +370,65 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             reviewed_at=REVIEWED_AT,
         )
     if p.startswith("lab/nollm-lab/history/"):
-        return Classification(
+        return lab_asset(Classification(
             "LAB", "HISTORICAL", "KEEP", "HIGH",
             "legacy reference", "historical reproduction inputs", "none",
             "History-directory Lab assets preserve withdrawn validation routes and are not active tools.",
             evidence="Stable Lab history directory convention.",
             review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
-        )
+        ), "LEGACY_REFERENCE")
     if p.startswith("lab/nollm-lab/openclaw/results/"):
-        return Classification(
+        return lab_asset(Classification(
             "LAB", "HISTORICAL", "KEEP", "HIGH",
             "historical result", "frozen validation output", "none",
             "Recorded model-run results are preserved evidence, not active tools.",
             evidence="Stable Lab results directory convention.",
             review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
-        )
+        ), "HISTORICAL_RESULT")
     if p.startswith("lab/nollm-lab/openclaw/datasets/"):
-        return Classification(
-            "LAB",
-            "ACTIVE",
-            "KEEP",
-            "HIGH",
-            "active fixture",
-            "versioned validation dataset",
-            "none",
-            "Versioned Lab dataset retained as an active fixture.",
-            target_path=p,
-            migration_status="COMPLETED",
-            evidence="Stable Lab datasets directory convention.",
-            review_status="MOVE_VERIFIED",
-            reviewed_at=REVIEWED_AT,
-        )
+        return lab_asset(Classification(
+            "LAB", "HISTORICAL", "KEEP", "HIGH", "legacy reference",
+            "versioned validation dataset", "none",
+            "Paused OpenClaw dataset is retained but is not an input to the current final gate.",
+            evidence="No current final-gate consumer.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "LEGACY_REFERENCE")
     if p.startswith("lab/nollm-lab/geometry/"):
         role = "active tool" if name == "generate_compiled_templates.py" else "active library"
-        return Classification("LAB", "ACTIVE", "KEEP", "HIGH", role, "compile-time geometry definitions", "development", "Current geometry generation and compile support.", evidence="Stable Lab geometry directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
+        asset_class = "ACTIVE_TOOL" if role == "active tool" else "ACTIVE_LIBRARY"
+        gate = "lab:compiled-templates" if role == "active tool" else "lab:geometry-parity"
+        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", role, "compile-time geometry definitions", "development", "Current geometry generation and compile support.", evidence="Stable Lab geometry directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), asset_class, gate)
     if p.startswith("lab/nollm-lab/m1/"):
-        return Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active tool", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Stable current Lab tool directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
+        gates = {
+            "run_geometry_parity.py": "lab:geometry-parity",
+            "run_core_capability_validation.py": "lab:core-capability",
+            "run_m1_minimal_e2e.py": "lab:minimal-e2e",
+        }
+        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Explicit current final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", gates[name])
+    if p.startswith("reference/python/tests/m0/"):
+        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active governance test", "development-only state", "development", "Executed by the current M0 governance gate.", evidence="Explicit current final-gate suite reference/python/tests/m0.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_TEST", "governance:m0")
+    if p in {
+        "reference/python/tests/test_no_forbidden_features.py",
+        "reference/python/tests/test_architecture_language.py",
+        "reference/python/tests/test_repository_hygiene.py",
+    }:
+        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active architecture test", "development-only state", "development", "Executed by the current architecture governance gate.", evidence="Explicit current final-gate test path.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_TEST", "governance:architecture")
+    if p.startswith("reference/python/tests/grf/"):
+        return lab_asset(Classification("LAB", "MIGRATION_ASSET", "KEEP", "HIGH", "legacy compatibility regression", "development-only state", "development", "Executed only by the explicit GRF compatibility regression gate.", evidence="Explicit current compatibility suite reference/python/tests/grf.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "LEGACY_REGRESSION", "compatibility:grf")
+    if p.startswith("tools/") and name in {"generate_module_ownership_manifest.py", "validate_module_ownership_manifest.py", "check_module_boundaries.py"}:
+        gate = "repository:boundary" if name == "check_module_boundaries.py" else "repository:manifest"
+        return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active repository tool", "governance state", "development", "Current machine-governance entrypoint.", evidence="Explicit current final-gate repository command.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_REPOSITORY_TOOL", gate)
+    if p.startswith("experiments/") and "/results/" in p:
+        return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Frozen experiment output is not executable current-gate input.", evidence="Stable experiment results directory convention.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
+    if p.startswith("validation/") and PurePosixPath(p).suffix.lower() in {".md", ".json"}:
+        return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Frozen validation report is not executable current-gate input.", evidence="Validation report extension and no current final-gate command.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
     if p.startswith(("lab/", "experiments/", "validation/", "reference/python/tests/", "examples/", "tools/")) or p in {"run_tests.py"}:
-        return Classification(
-            "LAB",
-            "ACTIVE",
-            "KEEP",
-            "HIGH",
-            "test, experiment, fixture, benchmark, or repository tool",
-            "development-only state",
-            "development",
-            "The path is an explicitly declared Lab/tool root; production modules may not import it.",
-            evidence=f"Declared Lab root with direct imports {imports}.",
-            review_status="DEPENDENCY_REVIEWED",
-            reviewed_at=REVIEWED_AT,
-        )
+        return lab_asset(Classification(
+            "LAB", "HISTORICAL", "KEEP", "HIGH", "legacy reference",
+            "development-only state", "none",
+            "Preserved Lab asset is not executed by the current final gate.",
+            evidence=f"No current final-gate consumer; direct imports are {imports}.",
+            review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "LEGACY_REFERENCE")
     if p.startswith("distributions/"):
         return Classification(
             "DISTRIBUTION",
@@ -479,7 +499,10 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         owner = charter_owner if charter_owner in {"CORE", "SNAPSHOT", "TRACE", "ACCESS", "HISTORY", "AUDIT", "OPENCLAW", "LAB", "DISTRIBUTIONS"} else "DISTRIBUTION"
         if owner == "DISTRIBUTIONS":
             owner = "DISTRIBUTION"
-        return Classification(owner, "ACTIVE", "KEEP", "HIGH", "module charter", "none", "governance", "Current M0 module charter.", evidence="Explicit current charter path.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
+        classification = Classification(owner, "ACTIVE", "KEEP", "HIGH", "module charter", "none", "governance", "Current M0 module charter.", evidence="Explicit current charter path.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
+        if owner == "LAB":
+            return lab_asset(classification, "ACTIVE_REPOSITORY_TOOL", "repository:manifest")
+        return classification
     if p.startswith("docs/architecture/module-ownership/"):
         return Classification("DISTRIBUTION", "GENERATED", "KEEP", "HIGH", "ownership governance", "none", "governance", "Generated ownership or boundary record.", evidence="Generated by reviewed repository tooling.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
     if p in {"AGENTS.md", "README.md", "ARCHITECTURE.md", "ROADMAP.md", "docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md"}:
@@ -529,6 +552,8 @@ def build_rows(paths: list[str]) -> tuple[list[dict[str, object]], list[str]]:
                 "owner": item.owner,
                 "secondary_owner": "",
                 "lifecycle_status": item.lifecycle,
+                "asset_class": item.asset_class,
+                "validation_gate": item.validation_gate,
                 "runtime_role": item.role,
                 "owned_state": item.state,
                 "public_api": item.public_api,

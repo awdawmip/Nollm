@@ -29,6 +29,39 @@ PUBLIC_PACKAGE_FILES = {
     "nollm_snapshot": "packages/nollm-snapshot/src/nollm_snapshot/__init__.py",
     "nollm_trace": "packages/nollm-trace/src/nollm_trace/__init__.py",
 }
+LAB_ASSET_CLASSES = {
+    "ACTIVE_LIBRARY", "ACTIVE_TOOL", "ACTIVE_FIXTURE", "ACTIVE_TEST",
+    "ACTIVE_VALIDATION", "ACTIVE_REPOSITORY_TOOL", "LEGACY_REGRESSION",
+    "LEGACY_REFERENCE", "HISTORICAL_RESULT",
+}
+CONTRACT_ASSET_CLASSES = {
+    "ACTIVE_LIBRARY", "ACTIVE_TOOL", "ACTIVE_VALIDATION", "ACTIVE_REPOSITORY_TOOL",
+}
+GATED_ASSET_CLASSES = {
+    "ACTIVE_LIBRARY", "ACTIVE_TOOL", "ACTIVE_FIXTURE", "ACTIVE_TEST",
+    "ACTIVE_VALIDATION", "ACTIVE_REPOSITORY_TOOL", "LEGACY_REGRESSION",
+}
+VALIDATION_GATES = {
+    "package:core", "package:snapshot", "package:trace", "package:access",
+    "governance:m0", "governance:architecture", "compatibility:grf",
+    "lab:compiled-templates", "lab:geometry-parity", "lab:core-capability",
+    "lab:minimal-e2e", "repository:manifest", "repository:boundary",
+}
+GATE_TARGETS = {
+    "package:core": "packages/nollm-core/tests",
+    "package:snapshot": "packages/nollm-snapshot/tests",
+    "package:trace": "packages/nollm-trace/tests",
+    "package:access": "packages/nollm-access/tests",
+    "governance:m0": "reference/python/tests/m0",
+    "governance:architecture": "reference/python/tests/test_architecture_language.py",
+    "compatibility:grf": "reference/python/tests/grf",
+    "lab:compiled-templates": "lab/nollm-lab/geometry/generate_compiled_templates.py",
+    "lab:geometry-parity": "lab/nollm-lab/m1/run_geometry_parity.py",
+    "lab:core-capability": "lab/nollm-lab/m1/run_core_capability_validation.py",
+    "lab:minimal-e2e": "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
+    "repository:manifest": "tools/generate_module_ownership_manifest.py",
+    "repository:boundary": "tools/check_module_boundaries.py",
+}
 
 
 def package_exports(root: Path, package: str) -> set[str]:
@@ -41,7 +74,7 @@ def package_exports(root: Path, package: str) -> set[str]:
 
 def active_lab_contract_errors(row: dict[str, object], root: Path) -> list[str]:
     path = str(row.get("path", ""))
-    if not (path.startswith("lab/nollm-lab/") and row.get("owner") == "LAB" and row.get("lifecycle_status") == "ACTIVE" and row.get("file_type") == "py"):
+    if not (row.get("owner") == "LAB" and row.get("asset_class") in CONTRACT_ASSET_CLASSES and row.get("file_type") == "py"):
         return []
     tree = ast.parse((root / path).read_text(encoding="utf-8"), filename=path)
     errors = []
@@ -118,6 +151,8 @@ def validate_rows(
         confidence = str(row.get("confidence", ""))
         migration_status = str(row.get("migration_status", ""))
         review_status = str(row.get("review_status", ""))
+        asset_class = str(row.get("asset_class", ""))
+        validation_gate = str(row.get("validation_gate", ""))
         if owner not in OWNERS:
             errors.append(f"{path}: invalid owner {owner}")
         if lifecycle not in LIFECYCLES:
@@ -130,6 +165,25 @@ def validate_rows(
             errors.append(f"{path}: invalid migration_status {migration_status}")
         if review_status not in REVIEW_STATUSES:
             errors.append(f"{path}: invalid review_status {review_status}")
+        if owner == "LAB":
+            if asset_class not in LAB_ASSET_CLASSES:
+                errors.append(f"{path}: invalid or missing LAB asset_class {asset_class}")
+            if asset_class.startswith("ACTIVE_") and lifecycle != "ACTIVE":
+                errors.append(f"{path}: {asset_class} requires ACTIVE lifecycle")
+            if asset_class == "LEGACY_REGRESSION" and lifecycle != "MIGRATION_ASSET":
+                errors.append(f"{path}: LEGACY_REGRESSION requires MIGRATION_ASSET lifecycle")
+            if asset_class in {"LEGACY_REFERENCE", "HISTORICAL_RESULT"} and lifecycle != "HISTORICAL":
+                errors.append(f"{path}: {asset_class} requires HISTORICAL lifecycle")
+            if asset_class in GATED_ASSET_CLASSES and not validation_gate:
+                errors.append(f"{path}: {asset_class} requires validation_gate")
+            if validation_gate and validation_gate not in VALIDATION_GATES:
+                errors.append(f"{path}: unknown validation_gate {validation_gate}")
+            if validation_gate in GATE_TARGETS and not (root / GATE_TARGETS[validation_gate]).exists():
+                errors.append(f"{path}: validation_gate target does not exist: {GATE_TARGETS[validation_gate]}")
+            if asset_class in {"LEGACY_REFERENCE", "HISTORICAL_RESULT"} and validation_gate:
+                errors.append(f"{path}: {asset_class} must not enter an active gate")
+        elif asset_class or validation_gate:
+            errors.append(f"{path}: non-LAB asset must not define asset_class or validation_gate")
 
         target = str(row.get("target_path", ""))
         if action == "MOVE":

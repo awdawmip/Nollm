@@ -33,7 +33,7 @@ def test_missing_public_symbol_fails_contract_validation(tmp_path) -> None:
     script = tmp_path / "lab/nollm-lab/tool.py"
     script.parent.mkdir(parents=True)
     script.write_text("from nollm_core import Missing\n", encoding="utf-8")
-    row = {"path": "lab/nollm-lab/tool.py", "owner": "LAB", "lifecycle_status": "ACTIVE", "file_type": "py"}
+    row = {"path": "lab/nollm-lab/tool.py", "owner": "LAB", "lifecycle_status": "ACTIVE", "asset_class": "ACTIVE_TOOL", "file_type": "py"}
     assert "missing public symbol nollm_core.Missing" in active_lab_contract_errors(row, tmp_path)[0]
 
 
@@ -50,7 +50,7 @@ def test_dynamic_import_and_getattr_fail_contract_validation(tmp_path) -> None:
     script = tmp_path / "lab/nollm-lab/tool.py"
     script.parent.mkdir(parents=True)
     script.write_text("import importlib\nimport nollm_core\ngetattr(nollm_core, 'hidden')\nimportlib.import_module('nollm_core._state')\n", encoding="utf-8")
-    row = {"path": "lab/nollm-lab/tool.py", "owner": "LAB", "lifecycle_status": "ACTIVE", "file_type": "py"}
+    row = {"path": "lab/nollm-lab/tool.py", "owner": "LAB", "lifecycle_status": "ACTIVE", "asset_class": "ACTIVE_TOOL", "file_type": "py"}
     errors = active_lab_contract_errors(row, tmp_path)
     assert any("dynamic getattr" in error for error in errors)
     assert any("dynamic import_module" in error for error in errors)
@@ -68,10 +68,10 @@ def test_lab_asset_classes_follow_stable_directories() -> None:
     for row in rows:
         path = str(row["path"])
         if path.startswith("lab/nollm-lab/openclaw/results/"):
-            assert row["lifecycle_status"] == "HISTORICAL" and row["runtime_role"] == "historical result"
+            assert row["lifecycle_status"] == "HISTORICAL" and row["asset_class"] == "HISTORICAL_RESULT"
         elif path.startswith("lab/nollm-lab/openclaw/datasets/"):
-            assert row["lifecycle_status"] == "ACTIVE" and row["runtime_role"] == "active fixture"
+            assert row["lifecycle_status"] == "HISTORICAL" and row["asset_class"] == "LEGACY_REFERENCE"
         elif path.startswith("lab/nollm-lab/m1/"):
-            assert row["lifecycle_status"] == "ACTIVE" and row["runtime_role"] == "active tool"
+            assert row["lifecycle_status"] == "ACTIVE" and row["asset_class"] == "ACTIVE_VALIDATION"
         elif path.startswith("lab/nollm-lab/geometry/"):
-            assert row["lifecycle_status"] == "ACTIVE" and row["runtime_role"] in {"active library", "active tool"}
+            assert row["lifecycle_status"] == "ACTIVE" and row["asset_class"] in {"ACTIVE_LIBRARY", "ACTIVE_TOOL"}

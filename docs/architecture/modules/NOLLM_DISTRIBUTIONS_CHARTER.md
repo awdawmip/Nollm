@@ -11,3 +11,5 @@ Purpose: declare installable combinations without business logic.
 - Distributions: owns all five named assembly manifests.
 - Future repository: `nollm-distributions`.
 - Current sources: root packaging/delivery metadata and future distribution manifests.
+- Distribution governance records Lab asset class and gate metadata but does not implement Lab validation or product behavior.
+- Core, Snapshot, Trace, and Access distributions never depend on Lab assets.

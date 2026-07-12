@@ -103,3 +103,23 @@ def test_rejects_tracked_file_omission(tmp_path: Path) -> None:
 def test_rejects_active_high_catch_all(tmp_path: Path) -> None:
     item = row("unknown.py", owner="CORE", lifecycle_status="ACTIVE", migration_action="KEEP", confidence="HIGH", migration_status="NOT_APPLICABLE")
     assert any("catch-all classification" in value for value in errors(tmp_path, [item]))
+
+
+def test_rejects_active_lab_asset_without_gate(tmp_path: Path) -> None:
+    item = row(
+        "lab/tool.py", owner="LAB", lifecycle_status="ACTIVE",
+        migration_action="KEEP", confidence="HIGH", migration_status="NOT_APPLICABLE",
+        review_status="CODE_REVIEWED", classification_evidence="Explicit active tool.",
+        asset_class="ACTIVE_TOOL", validation_gate="",
+    )
+    assert any("requires validation_gate" in value for value in errors(tmp_path, [item]))
+
+
+def test_rejects_legacy_reference_in_active_gate(tmp_path: Path) -> None:
+    item = row(
+        "examples/old.json", owner="LAB", lifecycle_status="HISTORICAL",
+        migration_action="KEEP", confidence="HIGH", migration_status="NOT_APPLICABLE",
+        review_status="CODE_REVIEWED", classification_evidence="Historical example.",
+        asset_class="LEGACY_REFERENCE", validation_gate="governance:m0",
+    )
+    assert any("must not enter an active gate" in value for value in errors(tmp_path, [item]))
