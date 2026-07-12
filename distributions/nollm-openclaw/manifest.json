@@ -1,8 +1,9 @@
 {
   "name": "nollm-openclaw",
   "extends": "nollm-minimal",
-  "adapter": "migration-asset-only",
-  "live_activation": "paused",
-  "requires": ["future-openclaw-e2e"],
-  "forbidden": ["legacy-grf-runtime-entrypoint"]
+  "adapter": "integrations/openclaw/formation-loop",
+  "live_activation": "explicit-formation-only",
+  "requires": ["nollm-access", "openclaw>=2026.6.11", "explicit-evidence"],
+  "diagnose": "integrations/openclaw/formation-loop/scripts/diagnose.ps1",
+  "forbidden": ["legacy-grf-runtime-entrypoint", "core-write", "placement", "python-semantic-fallback"]
 }

@@ -4,13 +4,12 @@ Date: 2026-07-12
 
 Input baseline: `3528c0130a2f29987e06105753310d3b2a592a2a`.
 
-Current authorized task:
-`tasks/NOLLM_ALD_STATEMENT_FORMATION_CONTRACT_CORPUS_TASK_20260712.md`.
+Current authorized task: `NOLLM_AOLD_OPENCLAW_FORMATION_LOOP_TASK_20260712.md`.
 
-Status: Core capability remains validated; Access provides an evidence-preserving
-exact-span Statement Formation contract, and Lab provides deterministic Gold
-and fixture gates. The active baseline remains bound to successful bundle
-creation and replay. Passing this task does not authorize another stage.
+Status: Core capability remains unchanged. OpenClaw 2026.6.11 and its real
+`model.run` interface have produced 43 retained live Formation calls. Access
+validated every accepted result as an evidence-preserving exact span; no Python
+semantic fallback, Placement, Recall, or persistence was introduced.
 
 Validated code commit:
 `7ff9690edeca71806bf5783787ef81367b9eb167`.
@@ -28,9 +27,8 @@ The active V3.1 project book owns stable architecture. This status owns input,
 task, validation state, and revision-specific facts. Machine governance is
 derived from the five links in `ACTIVE_PROJECT.md`.
 
-Formation validation proves contract fidelity and fixture behavior only. It
-does not prove that a model can choose meaningful spans, and it does not perform
-placement, recall, or implicit persistence.
+Formation live validation is a small active capability record, not final model
+quality. It does not perform Placement, Recall, or implicit persistence.
 
-OpenClaw Live, real LLM placement, cross-process recovery, memory quality,
-corpora, PB scale, and installers remain unvalidated.
+Real LLM Placement, cross-process recovery, broad memory quality, PB scale,
+formal release, and cross-platform operation remain unvalidated.

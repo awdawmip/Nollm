@@ -1,0 +1,37 @@
+{
+  "id": "nollm-formation",
+  "name": "Nollm Statement Formation",
+  "description": "Exact-span Statement Formation through a real OpenClaw model and the public Nollm Access contract.",
+  "version": "0.1.0",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "python_executable": {
+        "type": "string"
+      },
+      "nollm_repo_root": {
+        "type": "string"
+      },
+      "openclaw_command": {
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "timeout_ms": {
+        "type": "integer",
+        "minimum": 1000,
+        "default": 120000
+      }
+    },
+    "additionalProperties": false
+  },
+  "contracts": {
+    "tools": [
+      "nollm_form_statement"
+    ]
+  }
+}
