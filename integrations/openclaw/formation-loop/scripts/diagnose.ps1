@@ -1,16 +1,18 @@
 param([string]$OpenClaw = "$env:LOCALAPPDATA\Programs\nodejs\openclaw.cmd")
 $ErrorActionPreference = "Stop"
-& $OpenClaw --version
 $plugins = & $OpenClaw plugins list --json | ConvertFrom-Json
 $plugin = $plugins.plugins | Where-Object id -eq "nollm-formation"
 if (-not $plugin) { throw "nollm-formation is not registered" }
 $inspect = & $OpenClaw plugins inspect nollm-formation --json | ConvertFrom-Json
-$gateway = & $OpenClaw gateway status
 $config = & $OpenClaw config get plugins.entries.nollm-formation --json | ConvertFrom-Json
-$evidence = Join-Path $PSScriptRoot "..\..\..\..\docs\integration\openclaw\evidence\aold-natural-chat-live\live-cases.json"
+$agents = & $OpenClaw config get agents.list --json | ConvertFrom-Json
+$dream = $agents | Where-Object id -eq "nollm-dream-agent"
 [pscustomobject]@{
-  id=$plugin.id; status=$plugin.status; source=$plugin.source; tools=$plugin.contracts.tools
-  version=$inspect.version; prompt_version=$config.config.prompt_version
-  schema_version=$config.config.schema_version; python_bridge=$config.config.python_executable
-  gateway_status=($gateway -join "`n"); live_evidence=(Test-Path $evidence)
+  id=$plugin.id; status=$plugin.status; version=$inspect.plugin.version; tools=@($inspect.plugin.toolNames)
+  hooks=@("before_agent_run", "message_received", "llm_output", "message_sent", "agent_end"); model_mode=$config.config.model_mode
+  dedicated_model=$config.config.model; write_mode=$config.config.write_mode
+  persist_subagent_transcripts=$config.config.persist_subagent_transcripts
+  python_bridge=$config.config.python_executable; dream_agent_present=($null -ne $dream)
+  dream_agent_denies_message=(@($dream.tools.deny) -contains "message")
+  dream_agent_allows_read=(@($dream.tools.allow) -contains "read")
 } | ConvertTo-Json -Depth 5

@@ -404,6 +404,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         if name == "validate_live_plugin_evidence.py":
             return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Read-only verifier for frozen normal-chat plugin evidence.", evidence="Explicit openclaw:formation-live final gate.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", "openclaw:formation-live")
         return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Prior standalone Formation runs are parser/schema regression evidence, not natural-chat semantic quality.", evidence="Normal-chat gate is authoritative.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
+    if p.startswith("lab/nollm-lab/dream_agent/"):
+        if name in {"verify_live_evidence.py", "run-live-round.ps1"}:
+            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Read-only replay or explicit live validation entrypoint for the invisible Dream Agent gate.", evidence="Explicit AOLD V3.3 final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", "openclaw:dream-agent-live")
+        if "/prompts/" in p:
+            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active library", "versioned prompt definition", "development", "Canonical versioned Dream Formation prompt input.", evidence="AOLD V3.3 prompt authority.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_LIBRARY", "openclaw:dream-agent-live")
+        if "/schemas/" in p:
+            return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active fixture", "versioned schema definition", "development", "Canonical Dream Formation output schema fixture.", evidence="AOLD V3.3 schema authority.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_FIXTURE", "openclaw:dream-agent-live")
+        return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Frozen three-round Dream Agent evidence and reports are replay inputs, not production state.", evidence="AOLD V3.3 final live gate.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
     if p.startswith("lab/nollm-lab/m1/"):
         gates = {
             "run_geometry_parity.py": "lab:geometry-parity",

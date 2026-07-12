@@ -36,18 +36,22 @@ embedding
 
 ## 2. 不可动摇的原则
 
-### 2.1 Evidence first
+### 2.1 Evidence and semantic-memory ownership (V3.3 amended)
 
 ```text
-原始 Evidence 是事实源。
-解释、位置、覆盖、路径和召回结果都不能替代原文。
+Host-owned conversation material is temporary semantic input by default.
+Nollm's canonical persistent semantic unit is `MemoryStatement`; it may be
+rewritten, split, or merged by a real LLM. Nollm guarantees structural and
+state correctness, not model semantic accuracy. Optional transcript and
+exact-span provenance belong to Host, History, Audit, debug, or migration
+policy and are not an active default persistence requirement.
 ```
 
 必须始终成立：
 
 ```text
-Evidence ≠ Interpretation
-Interpretation ≠ Placement
+Conversation Material ≠ MemoryStatement
+MemoryStatement ≠ Placement
 Placement ≠ Fact confirmation
 Recall path ≠ Proof
 ```
@@ -145,7 +149,8 @@ Nollm Core
   负责验证、执行、存储和几何传播
 ```
 
-OpenClaw 不是事实源，LLM 判断也不是事实本身；原始 Evidence 始终保留。
+OpenClaw 不是事实源，LLM 判断也不是事实本身；Host-owned conversation
+material 默认不进入 Nollm 持久状态。
 
 ### 2.6 Capture、Placement、Admission、Recall 分离
 
@@ -374,7 +379,7 @@ Original Evidence fallback
 开始任何新任务前，逐项检查：
 
 ```text
-1. 它是否保留原始 Evidence？
+1. 它是否遵守 ConversationMaterial 临时性与 MemoryStatement 持久边界？
 
 2. 关系来自几何结构，还是另建索引？
 
@@ -457,4 +462,4 @@ Windows 10/11 + PowerShell
 
 ## 8. 最终一句话
 
-> **Nollm 不是用索引找到记忆后再展示几何，而是让 LLM 把证据放入几何关系场，使几何结构本身成为记忆关系和召回路径。**
+> **Nollm 不是用索引找到记忆后再展示几何，而是让 LLM 把 MemoryStatement 放入几何关系场，使几何结构本身成为记忆关系和召回路径。**

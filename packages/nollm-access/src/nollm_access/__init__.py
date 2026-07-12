@@ -1,4 +1,15 @@
 from .evidence_store import EvidenceStore, FileEvidenceStore
+from .dream import (
+    DREAM_ACTORS,
+    DREAM_OUTCOMES,
+    DREAM_SCHEMA_VERSION,
+    ConversationMaterial,
+    ConversationTurn,
+    DreamFormationRequest,
+    DreamFormationResult,
+    DreamMemoryDraft,
+    form_dream_statements,
+)
 from .formation import (
     FORMATION_ACTORS,
     FORMATION_OUTCOMES,
@@ -18,6 +29,7 @@ from .placement_contract import ACTIONS, AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .runtime import AccessConsistencyError, AccessRuntime
 from .statement import MemoryStatement
+from .statement_store import FileStatementStore, StatementStore
 
 __all__ = [
     "ACTIONS",
@@ -30,6 +42,7 @@ __all__ = [
     "EvidenceStore",
     "EvidenceSpan",
     "FileEvidenceStore",
+    "FileStatementStore",
     "FileHandleStore",
     "FileBindingStore",
     "HandleBinding",
@@ -38,6 +51,16 @@ __all__ = [
     "MAX_STATEMENTS",
     "FormedMemoryStatement",
     "MemoryStatement",
+    "StatementStore",
+    "DREAM_ACTORS",
+    "DREAM_OUTCOMES",
+    "DREAM_SCHEMA_VERSION",
+    "ConversationMaterial",
+    "ConversationTurn",
+    "DreamFormationRequest",
+    "DreamFormationResult",
+    "DreamMemoryDraft",
+    "form_dream_statements",
     "RawEvidenceRecord",
     "StatementFormationDecision",
     "StatementFormationRequest",

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 import pytest
 
@@ -9,6 +10,8 @@ from nollm_openclaw_formation.adapter import (
     FormationPromptBuilder, FormationResultRenderer, OpenClawEventTranslator,
     OpenClawFormationConfig, OpenClawLLMClient, formation_schema_bytes, sha256_hex,
 )
+from nollm_openclaw_formation.dream_adapter import build_dream_prompt, parse_dream_result, process_dream_result
+from nollm_access import ConversationMaterial, ConversationTurn, DreamFormationRequest, FileStatementStore
 
 
 REQUEST = {"request_id":"r1","evidence":[{"evidence_id":"e1","content_utf8":"Keep this exact text.","source_handle":"s.txt","context_refs":["ctx"]}],"max_statements":2}
@@ -113,3 +116,60 @@ def test_llm_timeout(monkeypatch):
     with pytest.raises(FormationAdapterError) as caught:
         OpenClawLLMClient().run("p", OpenClawFormationConfig("openclaw.exe", "m", timeout_seconds=1))
     assert caught.value.category == "llm_timeout"
+
+
+def _dream_request():
+    return DreamFormationRequest("r", ConversationMaterial("m", (ConversationTurn("user", "I prefer terse reports."),)))
+
+
+def test_dream_prompt_allows_rewrite_and_forbids_tools():
+    prompt = build_dream_prompt(_dream_request())
+    assert "rewrite, split, merge" in prompt
+    assert "Do not call tools" in prompt
+    assert "exact span" not in prompt
+
+
+def test_dream_v2_refines_durability_without_semantic_fallback():
+    prompt = build_dream_prompt(_dream_request(), "dream-v2")
+    assert "one-off requests" in prompt
+    assert "assistant promise" in prompt
+    with pytest.raises(FormationAdapterError, match="unsupported Dream prompt version"):
+        build_dream_prompt(_dream_request(), "dream-v3")
+
+
+def test_dream_result_parses_rewritten_statement_and_writes_store(tmp_path):
+    raw = json.dumps({
+        "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
+        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}],
+    })
+    result = parse_dream_result(raw, _dream_request(), "result")
+    assert result.drafts[0].content_utf8 != _dream_request().material.turns[0].content_utf8
+    rendered = process_dream_result(raw, _dream_request(), "result", tmp_path)
+    assert rendered["statement_store_write_count"] == 1
+    statement_id = rendered["statements"][0]["statement_id"]
+    assert FileStatementStore(tmp_path).get(statement_id).content_utf8 == "The user prefers terse reports."
+
+
+def test_dream_defer_and_invalid_structure():
+    raw = json.dumps({"schema_version": "nollm_access_dream_formation_v1", "outcome": "defer", "drafts": [], "defer_reason": "uncertain"})
+    assert parse_dream_result(raw, _dream_request(), "result").outcome == "defer"
+    with pytest.raises(FormationAdapterError):
+        parse_dream_result("{}", _dream_request(), "result")
+
+
+def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
+    envelope = {
+        "action": "build_dream_prompt", "prompt_version": "dream-v1",
+        "request": {
+            "request_id": "r-surrogate", "schema_version": "nollm_access_dream_formation_v1",
+            "material": {"material_id": "m-surrogate", "turns": [{"role": "user", "content_utf8": "bad\udc94text"}]},
+            "max_statements": 8, "max_statement_chars": 4096, "max_total_chars": 8192,
+        },
+    }
+    completed = subprocess.run(
+        [sys.executable, "-m", "nollm_openclaw_formation.bridge"],
+        input=json.dumps(envelope), text=True, capture_output=True, check=True,
+    )
+    result = json.loads(completed.stdout)
+    assert result["ok"] is True
+    assert "bad\ufffdtext" in result["prompt"]

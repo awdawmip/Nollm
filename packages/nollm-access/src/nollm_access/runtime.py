@@ -6,7 +6,7 @@ from threading import RLock
 
 from nollm_core import AtomHandle, CoreRuntime, MemoryAtom
 
-from .evidence_store import EvidenceStore
+from .statement_store import StatementStore
 from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
@@ -17,7 +17,7 @@ from .workspace_lock import composition_lock
 class AccessRuntime:
     """Trusted local coordinator for Evidence, Handle binding, and Core."""
 
-    def __init__(self, core: CoreRuntime, evidence_store: EvidenceStore, handle_store: FileHandleStore) -> None:
+    def __init__(self, core: CoreRuntime, evidence_store: StatementStore, handle_store: FileHandleStore) -> None:
         self._core = core
         self._evidence_store = evidence_store
         self._handle_store = handle_store
@@ -37,8 +37,12 @@ class AccessRuntime:
         return self._core
 
     @property
-    def evidence_store(self) -> EvidenceStore:
+    def statement_store(self) -> StatementStore:
         return self._evidence_store
+
+    @property
+    def evidence_store(self) -> StatementStore:
+        return self.statement_store
 
     @property
     def handle_store(self) -> FileHandleStore:
@@ -78,8 +82,17 @@ class AccessRuntime:
             yield
 
     def capture(self, statement: MemoryStatement) -> None:
+        self.put_statement(statement)
+
+    def stage_statement(self, statement: MemoryStatement) -> None:
+        self.put_statement(statement)
+
+    def put_statement(self, statement: MemoryStatement) -> None:
         with self._operation():
-            self._evidence_store.put_original(statement)
+            if hasattr(self._evidence_store, "put"):
+                self._evidence_store.put(statement)
+            else:
+                self._evidence_store.put_original(statement)
 
     def apply(self, decision: AccessDecision) -> object | None:
         with self._operation():
@@ -90,28 +103,28 @@ class AccessRuntime:
             raise FileNotFoundError("original Evidence is missing")
         if decision.action == "reuse":
             assert decision.existing_handle is not None
-            self._evidence_store.get_original(decision.statement_id)
+            self._get_statement(decision.statement_id)
             if not self._core.contains(decision.existing_handle):
                 raise KeyError("explicit reuse handle no longer exists")
             self._handle_store.put(decision.statement_id, decision.existing_handle)
             return decision.existing_handle
         if decision.action == "new":
             assert decision.target_cell is not None
-            statement = self._evidence_store.get_original(decision.statement_id)
+            statement = self._get_statement(decision.statement_id)
             return self._atomic(
                 lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
                 lambda handle: self._handle_store.put(statement.statement_id, handle),
             )
         if decision.action == "revision_current":
             assert decision.existing_handle is not None
-            statement = self._evidence_store.get_original(decision.statement_id)
+            statement = self._get_statement(decision.statement_id)
             return self._atomic(
                 lambda: self._core.replace(decision.existing_handle, statement.content_utf8),
                 lambda handle: self._handle_store.revise_current(decision.existing_handle, statement.statement_id, handle),
             )
         if decision.action == "revision_keep_history":
             assert decision.target_cell is not None
-            statement = self._evidence_store.get_original(decision.statement_id)
+            statement = self._get_statement(decision.statement_id)
             return self._atomic(
                 lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
                 lambda handle: self._handle_store.put(statement.statement_id, handle),
@@ -143,7 +156,7 @@ class AccessRuntime:
                     items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing"))
                     continue
                 try:
-                    statement = self._evidence_store.get_original(statement_id)
+                    statement = self._get_statement(statement_id)
                 except FileNotFoundError:
                     items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing"))
                 else:
@@ -156,6 +169,11 @@ class AccessRuntime:
     def saved_handle(self, statement_id: str) -> AtomHandle:
         with self._operation():
             return self._handle_store.get(statement_id)
+
+    def _get_statement(self, statement_id: str) -> MemoryStatement:
+        if hasattr(self._evidence_store, "get"):
+            return self._evidence_store.get(statement_id)
+        return self._evidence_store.get_original(statement_id)
 
     def _atomic(self, core_action: object, binding_action: object) -> object:
         core_before = self._core.export_state_bytes()

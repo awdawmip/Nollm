@@ -2,9 +2,18 @@
   "name": "nollm-openclaw",
   "extends": "nollm-minimal",
   "adapter": "integrations/openclaw/formation-loop",
-  "live_activation": "explicit-formation-only",
-  "validation_gate": "openclaw:formation-live",
-  "requires": ["nollm-access", "openclaw>=2026.6.11", "explicit-evidence"],
+  "live_activation": "invisible-dream-agent",
+  "validation_gate": "openclaw:dream-agent-live",
+  "dreamAgent": {
+    "enabled": true,
+    "mode": "background",
+    "modelMode": "inherit",
+    "persistTranscripts": false,
+    "writeMode": "shadow"
+  },
+  "formationTool": {"visible": false},
+  "externalApi": {"required": false},
+  "requires": ["nollm-access", "openclaw>=2026.6.11", "statement-store"],
   "diagnose": "integrations/openclaw/formation-loop/scripts/diagnose.ps1",
   "forbidden": ["legacy-grf-runtime-entrypoint", "core-write", "placement", "python-semantic-fallback"]
 }

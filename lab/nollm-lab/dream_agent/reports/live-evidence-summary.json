@@ -1,0 +1,59 @@
+{
+  "rounds": [
+    {
+      "dream_started": 15,
+      "eligible_inputs": 15,
+      "main_chat_success": 15,
+      "prompt_version": "dream-v1",
+      "python_semantic_fallback_count": 0,
+      "reopened_statement_count": 0,
+      "round": 1,
+      "statement_store_write_count": 0,
+      "terminal_statuses": {
+        "completed": 12,
+        "invalid_json": 2,
+        "invalid_schema": 1
+      },
+      "visible_message_count": 0,
+      "write_mode": "shadow"
+    },
+    {
+      "dream_started": 15,
+      "eligible_inputs": 15,
+      "main_chat_success": 15,
+      "prompt_version": "dream-v2",
+      "python_semantic_fallback_count": 0,
+      "reopened_statement_count": 0,
+      "round": 2,
+      "statement_store_write_count": 0,
+      "terminal_statuses": {
+        "completed": 12,
+        "invalid_json": 3
+      },
+      "visible_message_count": 0,
+      "write_mode": "shadow"
+    },
+    {
+      "dream_started": 15,
+      "eligible_inputs": 15,
+      "main_chat_success": 15,
+      "prompt_version": "dream-v2",
+      "python_semantic_fallback_count": 0,
+      "reopened_statement_count": 11,
+      "round": 3,
+      "statement_store_write_count": 11,
+      "terminal_statuses": {
+        "completed": 11,
+        "invalid_json": 3,
+        "invalid_schema": 1
+      },
+      "visible_message_count": 0,
+      "write_mode": "statement-store"
+    }
+  ],
+  "schema_version": "nollm_aold_live_evidence_v1",
+  "total_live_turns": 45,
+  "total_python_semantic_fallbacks": 0,
+  "total_visible_messages": 0,
+  "verified": true
+}

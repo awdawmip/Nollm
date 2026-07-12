@@ -13,4 +13,4 @@ Purpose: declare installable combinations without business logic.
 - Current sources: root packaging/delivery metadata and future distribution manifests.
 - Distribution governance records Lab asset class and gate metadata but does not implement Lab validation or product behavior.
 - Core, Snapshot, Trace, and Access distributions never depend on Lab assets.
-- Formation Corpus and fixture gate metadata are governance records only and are not shipped as Access runtime behavior.
+- The OpenClaw distribution defaults to invisible background Dream Formation, inherited Host model/auth, shadow writes, no transcript persistence, and no main-agent Formation tool. Dedicated model and StatementStore writes are explicit configurations.

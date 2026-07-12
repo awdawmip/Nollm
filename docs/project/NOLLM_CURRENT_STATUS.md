@@ -2,35 +2,31 @@
 
 Date: 2026-07-12
 
-Input baseline: `3528c0130a2f29987e06105753310d3b2a592a2a`.
+Input baseline: `bac2c7f06017f90adbc24ae3b71a99cae1581e85`.
 
-Current authorized task: `NOLLM_AOLD_NATURAL_CHAT_LIVE_TRUTH_TASK_20260712.md`.
+Current authorized task: `NOLLM_AOLD_INVISIBLE_DREAM_AGENT_TASK_20260712.md`.
 
-Status: Core capability remains unchanged. OpenClaw 2026.6.11 normal chat
-autonomously selected the Formation plugin in the frozen gate: 15 retained
-cases, 16 plugin tool calls, and 16 real model calls through the tool. Access
-validated accepted results as evidence-preserving exact spans; no Python
-semantic fallback, Placement, Recall, or persistence was introduced.
+Status: V3.3 is the active semantic-memory route. Ordinary OpenClaw chat can
+schedule bounded Dream Formation after the main reply through an invisible,
+`deliver=false` background subagent. The default inherits the Host model and
+credentials, stores no transcript, exposes no Formation tool, and writes only
+to shadow mode. Explicit `statement-store` mode writes through the Access
+`FileStatementStore` contract.
 
-Validated code commit:
-`7ff9690edeca71806bf5783787ef81367b9eb167`.
+The three-round live gate used 45 ordinary chats on OpenClaw 2026.6.11. All 45
+main chats returned successfully and started a Dream run after delivery. The
+rounds completed 12, 12, and 11 structurally valid formations; model output
+produced the remaining JSON/schema failures. No extra user-visible message or
+Python semantic fallback occurred. Round 3 wrote and reopened 11 canonical
+MemoryStatements.
 
-Validated code tree digest:
-`b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27`.
+Validated implementation commit: `PENDING_FINAL_COMMIT`.
 
-Access Statement Formation validated code commit:
-`1cad3f756528d91e1d88dc443357cc46ae2dac52`.
+V3.2 exact-span Formation is no longer active architecture. Its
+`EvidenceStore` schema remains compatibility-readable and migratable; new
+writes use `nollm_access_statement_v1`.
 
-Access Statement Formation Git-blob tree digest:
-`9a62882d5b14a8d1e034a1032710d7a8a8eb91236f35a1eb38d99fd00e4525b9`.
-
-The V3.1 project book owns stable architecture; V3.2 owns the current
-OpenClaw-first semantic route. This status owns input,
-task, validation state, and revision-specific facts. Machine governance is
-derived from the five links in `ACTIVE_PROJECT.md`.
-
-Formation live validation is a small active capability record, not final model
-quality. It does not perform Placement, Recall, or implicit persistence.
-
-Real LLM Placement, cross-process recovery, broad memory quality, PB scale,
-formal release, and cross-platform operation remain unvalidated.
+Core, Snapshot, Trace, History, and Audit behavior is unchanged. This task did
+not implement Placement or Recall, preserve raw user transcripts, or establish
+model semantic accuracy. Real-user quality review, revision/forget workflows,
+cross-process Store coordination, and broader product integration remain open.

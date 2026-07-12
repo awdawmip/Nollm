@@ -1,8 +1,8 @@
 {
   "id": "nollm-formation",
-  "name": "Nollm Statement Formation",
-  "description": "Exact-span Statement Formation through a real OpenClaw model and the public Nollm Access contract.",
-  "version": "0.2.0",
+  "name": "Nollm Invisible Dream Agent",
+  "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
+  "version": "0.3.0",
   "activation": {
     "onStartup": true
   },
@@ -15,31 +15,30 @@
       "nollm_repo_root": {
         "type": "string"
       },
-      "openclaw_command": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
+      "statement_store_workspace": { "type": "string" },
+      "write_mode": { "type": "string", "enum": ["shadow", "statement-store"], "default": "shadow" },
+      "model_mode": { "type": "string", "enum": ["inherit", "dedicated"], "default": "inherit" },
+      "model": { "type": "string" },
+      "allowed_models": { "type": "array", "items": { "type": "string" }, "default": [] },
       "prompt_version": {
         "type": "string",
-        "default": "aold-v3"
+        "default": "dream-v1"
       },
-      "schema_version": {
-        "type": "string",
-        "default": "aold-formation-v1"
-      },
+      "enabled": { "type": "boolean", "default": true },
+      "persist_subagent_transcripts": { "type": "boolean", "const": false, "default": false },
+      "debug_trace": { "type": "boolean", "default": false },
+      "evidence_path": { "type": "string" },
       "timeout_ms": {
         "type": "integer",
         "minimum": 1000,
         "default": 120000
-      }
+      },
+      "max_material_chars": { "type": "integer", "minimum": 1, "default": 12000 },
+      "max_statements": { "type": "integer", "minimum": 1, "default": 8 },
+      "max_statement_chars": { "type": "integer", "minimum": 1, "default": 4096 },
+      "max_total_chars": { "type": "integer", "minimum": 1, "default": 8192 }
     },
     "additionalProperties": false
   },
-  "contracts": {
-    "tools": [
-      "nollm_form_statement"
-    ]
-  }
+  "contracts": { "tools": [] }
 }

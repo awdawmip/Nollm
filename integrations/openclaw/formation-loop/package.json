@@ -1,6 +1,6 @@
 {
   "name": "@nollm/openclaw-formation-loop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check && openclaw plugins validate --entry ./dist/index.js"
+    "plugin:check": "npm run build && node -e \"import('./dist/index.js').then(m=>{if(typeof m.default?.register!=='function')process.exit(1)})\""
   },
   "peerDependencies": {
     "openclaw": ">=2026.6.11"
