@@ -46,6 +46,7 @@ VALIDATION_GATES = {
     "governance:m0", "governance:architecture", "compatibility:grf",
     "lab:compiled-templates", "lab:geometry-parity", "lab:core-capability",
     "lab:minimal-e2e", "repository:manifest", "repository:boundary",
+    "lab:statement-formation-corpus", "lab:statement-formation-fixtures",
 }
 GATE_TARGETS = {
     "package:core": "packages/nollm-core/tests",
@@ -61,6 +62,8 @@ GATE_TARGETS = {
     "lab:minimal-e2e": "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
     "repository:manifest": "tools/generate_module_ownership_manifest.py",
     "repository:boundary": "tools/check_module_boundaries.py",
+    "lab:statement-formation-corpus": "lab/nollm-lab/statement_formation/validate_corpus.py",
+    "lab:statement-formation-fixtures": "lab/nollm-lab/statement_formation/evaluate_fixture_decisions.py",
 }
 
 

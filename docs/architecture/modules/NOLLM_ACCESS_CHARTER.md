@@ -5,6 +5,8 @@ Purpose: form statements, decide placement/recall entry, format recall, and own 
 - Persistent state: Core handles, policy configuration, optional current/history references.
 - Temporary state: bounded candidate context and pending decisions.
 - Public API: reuse/new/revision/stitch/defer/forget mappings to Core public commands.
+- Statement formation: external hosts select one continuous Unicode code-point span per statement; Access validates exact evidence references and deterministically assembles the existing `MemoryStatement` payload with separate provenance.
+- Formation boundary: Access does not infer boundaries, rewrite evidence, choose placement, or write Formation results implicitly.
 - Forbidden API: direct Core private access, geometry invariants, external relation indexes, Python semantic fallback.
 - Dependencies: Core public API and optional Snapshot public API.
 - Failure: trusted exclusive composition uses public Core state bytes for ordinary local rollback; direct concurrent Store mutation is unsupported.

@@ -1,0 +1,265 @@
+[
+  {
+    "case_id": "case-001",
+    "expectation": "perfect",
+    "fixture_id": "perfect",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "decision-001",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "degraded",
+    "fixture_id": "off_by_one",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-off",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 9,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "unknown_evidence",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-unknown",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "missing",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-010",
+    "expectation": "reject",
+    "fixture_id": "overlap",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-overlap",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-010",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 7,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-010-1"
+        },
+        {
+          "span": {
+            "end_codepoint": 15,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 6
+          },
+          "statement_id": "statement-010-2"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-010",
+    "expectation": "reject",
+    "fixture_id": "duplicate_statement_id",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-duplicate",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-010",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 7,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-010-1"
+        },
+        {
+          "span": {
+            "end_codepoint": 15,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 8
+          },
+          "statement_id": "statement-010-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-010",
+    "expectation": "reject",
+    "fixture_id": "noncanonical_order",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-order",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-010",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 15,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 8
+          },
+          "statement_id": "statement-010-2"
+        },
+        {
+          "span": {
+            "end_codepoint": 7,
+            "evidence_id": "evidence-010",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-010-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "paraphrased_text",
+    "proposal": {
+      "content_utf8": "A rewritten statement.",
+      "decided_by": "fixture",
+      "decision_id": "decision-001",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "invented_text",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "decision-001",
+      "defer_reason": null,
+      "invented_text": "Text absent from evidence.",
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "formed_empty",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-empty",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": []
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "defer_with_selection",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "fixture-defer-selection",
+      "defer_reason": "later",
+      "outcome": "defer",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "case-001",
+    "expectation": "reject",
+    "fixture_id": "placement_field_injection",
+    "proposal": {
+      "decided_by": "fixture",
+      "decision_id": "decision-001",
+      "defer_reason": null,
+      "outcome": "formed",
+      "request_id": "request-001",
+      "selections": [
+        {
+          "span": {
+            "end_codepoint": 10,
+            "evidence_id": "evidence-001",
+            "start_codepoint": 0
+          },
+          "statement_id": "statement-001-1"
+        }
+      ],
+      "target_cell": {
+        "q": 0,
+        "r": 0
+      }
+    }
+  }
+]

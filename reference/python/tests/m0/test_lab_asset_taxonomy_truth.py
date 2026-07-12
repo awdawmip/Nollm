@@ -32,3 +32,16 @@ def test_stable_suites_have_exact_classes() -> None:
 def test_broad_lab_roots_are_not_default_active() -> None:
     historical_roots = ("examples/", "experiments/", "validation/")
     assert all(row["asset_class"] not in ACTIVE_CLASSES for row in lab_rows() if row["path"].startswith(historical_roots))
+
+
+def test_statement_formation_assets_have_explicit_gates() -> None:
+    rows = [row for row in lab_rows() if row["path"].startswith("lab/nollm-lab/statement_formation/")]
+    assert rows
+    assert all(row["asset_class"] in {"ACTIVE_LIBRARY", "ACTIVE_FIXTURE", "ACTIVE_VALIDATION"} for row in rows)
+    assert {row["validation_gate"] for row in rows} == {"lab:statement-formation-corpus", "lab:statement-formation-fixtures"}
+
+
+def test_lab_charter_is_an_active_governance_fixture() -> None:
+    charter = next(row for row in lab_rows() if row["path"] == "docs/architecture/modules/NOLLM_LAB_CHARTER.md")
+    assert charter["asset_class"] == "ACTIVE_FIXTURE"
+    assert charter["validation_gate"] == "repository:manifest"

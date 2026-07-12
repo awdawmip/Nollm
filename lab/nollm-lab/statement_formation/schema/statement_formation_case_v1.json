@@ -1,0 +1,7 @@
+{
+  "schema_version": "nollm_statement_formation_case_v1",
+  "required_fields": ["case_id", "split", "category", "language", "request", "gold_decision"],
+  "splits": ["development", "held_out"],
+  "offset_unit": "unicode_codepoint",
+  "gold_contract": "one continuous span per statement; no rewritten text"
+}

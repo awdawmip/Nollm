@@ -15,3 +15,4 @@ Purpose: corpora, gold labels, validation, benchmarks, stress/migration tests, v
 - `ACTIVE` means a current consumer or explicit gate exists; it does not follow from placement under a Lab-owned directory.
 - Active libraries, tools, validations, and repository tools use package-root public contracts and import without side effects. Active tests use their declared package or governance suite.
 - Legacy regressions run only through an explicit compatibility gate and do not count as current product capability. References and historical results are preserved but not executed by active gates.
+- Statement formation assets provide versioned exact-span Gold, fixture proposals, and deterministic validation; they do not run or score an actual model.
