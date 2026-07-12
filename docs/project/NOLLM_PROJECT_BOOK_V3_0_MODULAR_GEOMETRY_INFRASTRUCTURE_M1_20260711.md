@@ -1,3 +1,7 @@
+# LEGACY_REFERENCE / SUPERSEDED
+
+This historical V3.0 book is superseded by the [active V3.1 project book](NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md).
+
 # Nollm 项目书 V3.0：模块化几何记忆基础设施与 M1 活动架构
 
 **版本**：V3.0

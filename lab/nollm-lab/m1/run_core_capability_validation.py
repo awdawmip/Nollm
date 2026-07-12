@@ -42,6 +42,7 @@ VALIDATED_PATHS = (
     "lab/nollm-lab/geometry",
     "lab/nollm-lab/m1/run_core_capability_validation.py",
     "lab/nollm-lab/m1/run_geometry_parity.py",
+    "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
 )
 
 

@@ -1,4 +1,4 @@
-"""Validate M0C1 ownership truthfulness and migration invariants."""
+"""Validate ownership truthfulness and migration invariants."""
 
 from __future__ import annotations
 

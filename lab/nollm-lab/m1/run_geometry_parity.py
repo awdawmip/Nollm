@@ -5,8 +5,7 @@ import sys
 from nollm.grf.cell_address import CellAddress
 from nollm.grf.coverage_template import CoverageTemplateCompiler as LegacyCompiler, expand_template as legacy_expand
 from nollm.grf.profiles import get_profile as legacy_profile
-from nollm_core import GeometryAddress, expand_template, runtime_profile
-from nollm_core.compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA256
+from nollm_core import GeometryAddress, KernelRegistry, expand_template, runtime_profile
 
 
 GEOMETRY_LAB = Path(__file__).resolve().parents[1] / "geometry"
@@ -30,8 +29,9 @@ def profile_contract(profile):
 
 
 def main() -> None:
-    assert canonical_document() == COMPILED_TEMPLATES_JSON
-    assert sha256(COMPILED_TEMPLATES_JSON).hexdigest() == COMPILED_TEMPLATES_SHA256
+    registry = KernelRegistry()
+    generated = canonical_document()
+    assert sha256(generated).hexdigest() == registry.compiled_artifact_sha256
     legacy, active = LegacyCompiler(), CoverageTemplateCompiler()
     count = 0
     for profile_id in ("eisenstein_exact_v1", "aligned_baseline_v1", "dream_quasi_v1"):
@@ -49,7 +49,9 @@ def main() -> None:
             old_cell = CellAddress(profile_id, "chart", 3, -4, 2, "phase:x")
             new_cell = GeometryAddress(profile_id, "chart", 3, -4, 2, "phase:x")
             old_expanded = tuple((cell.stable_key(), weight) for cell, weight in legacy_expand(old_cell, old))
-            new_expanded = tuple((cell.stable_key(), weight) for cell, weight in expand_template(new_cell, new))
+            public_template = registry.coverage_template(profile_id, direction)
+            assert new.to_mapping() == public_template.to_mapping() | {"from_layer_mod": 3, "to_layer_mod": 3 + (-1 if direction == "coverage_up" else 1 if direction == "coverage_down" else 0), "source_phase": "phase:x"}
+            new_expanded = tuple((cell.stable_key(), weight) for cell, weight in expand_template(new_cell, public_template))
             assert new_expanded == old_expanded
             count += 1
     print(f"geometry full parity: {count}/9 templates passed")

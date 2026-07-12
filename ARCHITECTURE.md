@@ -1,6 +1,6 @@
 # Nollm Architecture
 
-M1 establishes package-level Core/Access behavior in a modular monorepo.
+The V3.1 architecture establishes package-level behavior in a modular monorepo.
 The [active project basis](docs/project/ACTIVE_PROJECT.md) is the authoritative
 navigation entry; older V2.2 project books are legacy references.
 

@@ -9,7 +9,8 @@ CURRENT_DOCS = [
     ROOT / "README.md",
     ROOT / "ARCHITECTURE.md",
     ROOT / "ROADMAP.md",
-    ROOT / "AGENTS.md",
+    ROOT / "docs" / "project" / "ACTIVE_PROJECT.md",
+    ROOT / "docs" / "project" / "NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md",
     ROOT / "docs" / "project" / "NOLLM_CURRENT_STATUS.md",
     ROOT / "docs" / "architecture" / "NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md",
 ]
@@ -21,21 +22,21 @@ HISTORICAL_DOCS = [
 
 
 class ArchitectureLanguageTests(unittest.TestCase):
-    def test_current_m1_architecture_language_is_present(self) -> None:
+    def test_active_v31_architecture_language_is_present(self) -> None:
         corpus = "\n".join(path.read_text(encoding="utf-8") for path in CURRENT_DOCS)
         for phrase in [
-            "Nollm is in the M1 package-extraction stage",
+            "V3.1",
             "Architecture is the Index",
             "Core owns deterministic geometry current state",
-            "M1 establishes package-level Core/Access behavior",
-            "OpenClaw Live Integration",
+            "explicit package ownership",
+            "Private submodules are implementation details",
+            "no baseline automatically starts another stage",
             "GRF8 is an engineering checkpoint, not accepted architecture",
             "Evidence-first V2/V2.1/V2.2",
             "M1 does not prove LLM placement quality",
-            "not been physically split on GitHub",
+            "active project basis",
         ]:
             self.assertIn(phrase, corpus)
-        self.assertIn("paused", corpus.lower())
         self.assertIn("historical or superseded", corpus.lower())
 
     def test_historical_v2_language_is_preserved_but_superseded(self) -> None:

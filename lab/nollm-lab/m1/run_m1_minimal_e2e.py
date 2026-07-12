@@ -169,7 +169,9 @@ def run(root: Path, sink: object) -> dict[str, object]:
 
 def negative_matrix(root: Path) -> dict[str, bool]:
     import json
-    from nollm_core.storage import canonical_state_bytes
+
+    def canonical_state_bytes(document: dict[str, object]) -> bytes:
+        return json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
 
     core = CoreRuntime(root / "core")
     core.put(MemoryAtom("a", "a"), GeometryAddress("eisenstein_exact_v1", "negative", 0, 0, 0))

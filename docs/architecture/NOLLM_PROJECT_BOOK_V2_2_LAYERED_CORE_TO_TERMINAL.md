@@ -1,6 +1,6 @@
 # LEGACY_REFERENCE / SUPERSEDED
 
-This historical V2.2 project book is superseded by the [active modular project book](../project/NOLLM_PROJECT_BOOK_V3_0_MODULAR_GEOMETRY_INFRASTRUCTURE_M1_20260711.md).
+This historical V2.2 project book is superseded by the [active V3.1 project book](../project/NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md).
 
 # Nollm Project Book V2.2: Layered Core to Terminal
 

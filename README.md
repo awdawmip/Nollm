@@ -2,11 +2,12 @@
 
 > Not an LLM. A notebook for LLMs.
 
-Nollm is in the M1 package-extraction stage. The active runtime is a modular
-monorepo and has not been physically split on GitHub.
+Nollm uses a modular monorepo with explicit package ownership and public
+dependency boundaries. Physical repository splitting is a separate concern.
 
 The repository's single [active project basis](docs/project/ACTIVE_PROJECT.md)
-links the current V3.0 project book, authorized task, and progress ledger.
+links the architecture book, status, authorized task, progress ledger, and
+latest baseline report without duplicating their revision-specific content.
 
 ## Active Runtime
 

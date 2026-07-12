@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from nollm_core.fixed_point import WEIGHT_FORMAT
+from compile_support import WEIGHT_FORMAT
 
 
 @dataclass(frozen=True, order=True)

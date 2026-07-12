@@ -1,7 +1,8 @@
 # Nollm Roadmap
 
 Scheduling follows the [active project basis](docs/project/ACTIVE_PROJECT.md).
-Historical V2.2 books do not define the current route.
+Historical project books do not define the active route, and no validated
+baseline automatically authorizes a later stage.
 
 ## M1: Package Core/Access Extraction
 
