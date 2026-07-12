@@ -9,6 +9,16 @@ Core validated code commit: `7ff9690edeca71806bf5783787ef81367b9eb167`
 Core validated tree digest:
 `b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27`
 
+Access Statement Formation validated code commit:
+`1cad3f756528d91e1d88dc443357cc46ae2dac52`
+
+Access Statement Formation Git-blob tree digest:
+`9a62882d5b14a8d1e034a1032710d7a8a8eb91236f35a1eb38d99fd00e4525b9`
+
+The Formation digest covers committed `nollm-access` source and tests plus the
+Statement Formation Lab directory. Later delivery documentation does not alter
+those 34 files.
+
 ## Progress
 
 Expected and actual vector:

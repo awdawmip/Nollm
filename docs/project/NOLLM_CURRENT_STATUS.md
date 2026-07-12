@@ -18,6 +18,12 @@ Validated code commit:
 Validated code tree digest:
 `b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27`.
 
+Access Statement Formation validated code commit:
+`1cad3f756528d91e1d88dc443357cc46ae2dac52`.
+
+Access Statement Formation Git-blob tree digest:
+`9a62882d5b14a8d1e034a1032710d7a8a8eb91236f35a1eb38d99fd00e4525b9`.
+
 The active V3.1 project book owns stable architecture. This status owns input,
 task, validation state, and revision-specific facts. Machine governance is
 derived from the five links in `ACTIVE_PROJECT.md`.
