@@ -1,18 +1,18 @@
 # Nollm LD 活动资产分类与机器清单真实性任务书
 
-**模块缩写**：`L=Lab | D=Distributions`  
-**日期**：2026-07-12  
-**任务文件名**：`NOLLM_LD_ASSET_TAXONOMY_TRUTH_TASK_20260712.md`  
-**性质**：Lab资产生命周期分类、活动Gate归属、Manifest真值和进度账纠正  
-**输入Bundle**：`nollm_ld_active_tool_truth_20260712_bdd9049.bundle`  
-**输入Bundle SHA-256**：`9926397f7e0a2ed9194208912f55c06a1dd2a514a0c3f2853ae58be73fecb52b`  
-**输入分支**：`codex/ld-active-tool-truth`  
-**输入HEAD**：`bdd90499b240eb65ecc089059c249a8eb862d570`  
-**已验证代码提交**：`7ff9690edeca71806bf5783787ef81367b9eb167`  
-**已验证代码树摘要**：`b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27`  
-**建议分支**：`codex/ld-asset-taxonomy-truth`  
-**主环境**：Windows 10/11 + PowerShell  
-**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle  
+**模块缩写**：`L=Lab | D=Distributions`
+**日期**：2026-07-12
+**任务文件名**：`NOLLM_LD_ASSET_TAXONOMY_TRUTH_TASK_20260712.md`
+**性质**：Lab资产生命周期分类、活动Gate归属、Manifest真值和进度账纠正
+**输入Bundle**：`nollm_ld_active_tool_truth_20260712_bdd9049.bundle`
+**输入Bundle SHA-256**：`9926397f7e0a2ed9194208912f55c06a1dd2a514a0c3f2853ae58be73fecb52b`
+**输入分支**：`codex/ld-active-tool-truth`
+**输入HEAD**：`bdd90499b240eb65ecc089059c249a8eb862d570`
+**已验证代码提交**：`7ff9690edeca71806bf5783787ef81367b9eb167`
+**已验证代码树摘要**：`b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27`
+**建议分支**：`codex/ld-asset-taxonomy-truth`
+**主环境**：Windows 10/11 + PowerShell
+**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle
 **结论边界**：只形成绑定具体代码树和最终HEAD的能力记录或活动基线，不宣称封版、最终闭合或自动进入后续阶段。
 
 ---
