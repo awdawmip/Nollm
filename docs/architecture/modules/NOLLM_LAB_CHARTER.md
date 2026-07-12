@@ -11,3 +11,5 @@ Purpose: corpora, gold labels, validation, benchmarks, stress/migration tests, v
 - Distributions: selected tools only in debug; otherwise development-only.
 - Future repository: `nollm-lab`.
 - Current sources: experiments, tests, validation, examples, migration tools, benchmarks, canonical geometry template compiler/generator, and Core capability validator.
+- Active asset classes: `ACTIVE_LIBRARY`, `ACTIVE_TOOL`, and `ACTIVE_FIXTURE`; active Python tools must import only package-root public contracts and must import without side effects.
+- Historical asset classes: `LEGACY_REFERENCE` and `HISTORICAL_RESULT`; `lab/nollm-lab/history/**` is preserved evidence, not an active tool surface and need not work against current package APIs.

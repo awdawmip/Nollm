@@ -358,22 +358,43 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             review_status="DEPENDENCY_REVIEWED",
             reviewed_at=REVIEWED_AT,
         )
-    if p.startswith("lab/nollm-lab/openclaw/"):
+    if p.startswith("lab/nollm-lab/history/"):
+        return Classification(
+            "LAB", "HISTORICAL", "KEEP", "HIGH",
+            "legacy reference", "historical reproduction inputs", "none",
+            "History-directory Lab assets preserve withdrawn validation routes and are not active tools.",
+            evidence="Stable Lab history directory convention.",
+            review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("lab/nollm-lab/openclaw/results/"):
+        return Classification(
+            "LAB", "HISTORICAL", "KEEP", "HIGH",
+            "historical result", "frozen validation output", "none",
+            "Recorded model-run results are preserved evidence, not active tools.",
+            evidence="Stable Lab results directory convention.",
+            review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
+        )
+    if p.startswith("lab/nollm-lab/openclaw/datasets/"):
         return Classification(
             "LAB",
             "ACTIVE",
             "KEEP",
             "HIGH",
-            "development asset",
-            "corpus or paused validation result",
+            "active fixture",
+            "versioned validation dataset",
             "none",
-            "R100-moved OpenClaw lab asset is already at its target path.",
+            "Versioned Lab dataset retained as an active fixture.",
             target_path=p,
             migration_status="COMPLETED",
-            evidence="Git-preserved M0 move into the declared Lab root.",
+            evidence="Stable Lab datasets directory convention.",
             review_status="MOVE_VERIFIED",
             reviewed_at=REVIEWED_AT,
         )
+    if p.startswith("lab/nollm-lab/geometry/"):
+        role = "active tool" if name == "generate_compiled_templates.py" else "active library"
+        return Classification("LAB", "ACTIVE", "KEEP", "HIGH", role, "compile-time geometry definitions", "development", "Current geometry generation and compile support.", evidence="Stable Lab geometry directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
+    if p.startswith("lab/nollm-lab/m1/"):
+        return Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active tool", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Stable current Lab tool directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT)
     if p.startswith(("lab/", "experiments/", "validation/", "reference/python/tests/", "examples/", "tools/")) or p in {"run_tests.py"}:
         return Classification(
             "LAB",

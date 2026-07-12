@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ast
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +23,55 @@ CONFIDENCES = {"HIGH", "MEDIUM", "LOW"}
 MIGRATION_STATUSES = {"NOT_APPLICABLE", "PENDING", "COMPLETED", "BLOCKED_BY_SPLIT", "QUARANTINED"}
 REVIEW_STATUSES = {"AUTO_CANDIDATE", "CODE_REVIEWED", "DEPENDENCY_REVIEWED", "MOVE_VERIFIED"}
 DELETE_ACTIONS = {"DELETE_LATER", "DELETE_NOW"}
+PUBLIC_PACKAGE_FILES = {
+    "nollm_core": "packages/nollm-core/src/nollm_core/__init__.py",
+    "nollm_access": "packages/nollm-access/src/nollm_access/__init__.py",
+    "nollm_snapshot": "packages/nollm-snapshot/src/nollm_snapshot/__init__.py",
+    "nollm_trace": "packages/nollm-trace/src/nollm_trace/__init__.py",
+}
+
+
+def package_exports(root: Path, package: str) -> set[str]:
+    tree = ast.parse((root / PUBLIC_PACKAGE_FILES[package]).read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "__all__" for target in node.targets):
+            return set(ast.literal_eval(node.value))
+    raise ValueError(f"{package} has no literal __all__")
+
+
+def active_lab_contract_errors(row: dict[str, object], root: Path) -> list[str]:
+    path = str(row.get("path", ""))
+    if not (path.startswith("lab/nollm-lab/") and row.get("owner") == "LAB" and row.get("lifecycle_status") == "ACTIVE" and row.get("file_type") == "py"):
+        return []
+    tree = ast.parse((root / path).read_text(encoding="utf-8"), filename=path)
+    errors = []
+    exports = {package: package_exports(root, package) for package in PUBLIC_PACKAGE_FILES}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if any(alias.name.startswith(package + ".") for package in PUBLIC_PACKAGE_FILES):
+                    errors.append(f"{path}: ACTIVE Lab imports private package submodule {alias.name}")
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            if any(node.module.startswith(package + ".") for package in PUBLIC_PACKAGE_FILES):
+                errors.append(f"{path}: ACTIVE Lab imports private package submodule {node.module}")
+            elif node.module in exports:
+                for alias in node.names:
+                    if alias.name not in exports[node.module]:
+                        errors.append(f"{path}: ACTIVE Lab imports missing public symbol {node.module}.{alias.name}")
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id in {"__import__", "import_module"}:
+                errors.append(f"{path}: ACTIVE Lab uses dynamic {node.func.id}")
+            elif (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "getattr"
+                and node.args
+                and isinstance(node.args[0], ast.Name)
+                and node.args[0].id in PUBLIC_PACKAGE_FILES
+            ):
+                errors.append(f"{path}: ACTIVE Lab uses dynamic getattr on {node.args[0].id}")
+            elif isinstance(node.func, ast.Attribute) and node.func.attr == "import_module":
+                errors.append(f"{path}: ACTIVE Lab uses dynamic import_module")
+    return errors
 
 
 def resolve_import(imported: str, modules: dict[str, str]) -> str | None:
@@ -131,6 +181,7 @@ def validate_rows(
                     errors.append(
                         f"{path}: HIGH file imports forbidden owner {target_owner} via {target_path}"
                     )
+        errors.extend(active_lab_contract_errors(row, root))
     return sorted(set(errors))
 
 
