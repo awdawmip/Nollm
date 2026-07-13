@@ -137,6 +137,15 @@ def test_dream_v2_refines_durability_without_semantic_fallback():
         build_dream_prompt(_dream_request(), "dream-v3")
 
 
+def test_dream_default_prompt_is_p1_and_outer_text_is_allowlisted():
+    assert "prompt_version: dream-json-p1" in build_dream_prompt(_dream_request())
+    allowed = "Here is the requested JSON: {\"schema_version\":\"nollm_access_dream_formation_v1\",\"outcome\":\"defer\",\"drafts\":[],\"defer_reason\":\"uncertain\"}"
+    assert parse_dream_result(allowed, _dream_request(), "result").outcome == "defer"
+    rejected = "This contradicts the object: {\"schema_version\":\"nollm_access_dream_formation_v1\",\"outcome\":\"defer\",\"drafts\":[],\"defer_reason\":\"uncertain\"}"
+    with pytest.raises(FormationAdapterError, match="unsupported outer text"):
+        parse_dream_result(rejected, _dream_request(), "result")
+
+
 def test_dream_result_parses_rewritten_statement_and_writes_store(tmp_path):
     raw = json.dumps({
         "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
@@ -179,10 +188,10 @@ def test_dream_result_accepts_one_fenced_json_object():
 
 
 def test_dream_json_repair_is_limited_to_allowed_syntax():
-    raw = "\ufeff Explanation follows. {\n\"schema_version\":\"nollm_access_dream_formation_v1\",\n\"outcome\":\"defer\",\n\"drafts\":[],\n\"defer_reason\":\"keep comma, literally\",\n} done."
+    raw = "\ufeffJSON: {\n\"schema_version\":\"nollm_access_dream_formation_v1\",\n\"outcome\":\"defer\",\n\"drafts\":[],\n\"defer_reason\":\"keep comma, literally\",\n}"
     repaired, diagnostics = repair_dream_json(raw)
     assert json.loads(repaired)["defer_reason"] == "keep comma, literally"
-    assert diagnostics["repair_types"] == ["bom", "outer_whitespace", "single_object_outer_text", "trailing_comma"]
+    assert diagnostics["repair_types"] == ["bom", "single_object_outer_text", "trailing_comma"]
     assert diagnostics["string_values_unchanged"] is True
     assert diagnostics["fields_added"] is False
     assert diagnostics["fields_removed"] is False

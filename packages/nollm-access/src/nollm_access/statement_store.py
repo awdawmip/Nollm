@@ -69,6 +69,20 @@ class FileStatementStore:
     def exists(self, statement_id: str) -> bool:
         return self._path(statement_id).is_file() or self._legacy_path(statement_id).is_file()
 
+    def discard_new(self, statement: MemoryStatement) -> bool:
+        """Remove only the exact canonical file created for a failed placement."""
+        if type(statement) is not MemoryStatement:
+            raise TypeError("statement must be MemoryStatement")
+        with self._lock:
+            path = self._path(statement.statement_id)
+            if not path.is_file():
+                return False
+            payload = _canonical({"schema_version": "nollm_access_statement_v1", "statement": statement.to_mapping()})
+            if path.read_bytes() != payload:
+                raise FileExistsError("statement already exists with different content")
+            path.unlink()
+            return True
+
     def _path(self, statement_id: str) -> Path:
         return self._root / _relative_path(statement_id)
 

@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, modelOverride, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
   assert.deepEqual(manifest.contracts.tools, []);
+  assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
 });
@@ -95,6 +96,20 @@ test("shadow Formation never continues into Placement", () => {
   const parsed = { ok: true, statements: [{ statement_id: "s" }] };
   assert.equal(shouldApplyPlacement({ write_mode: "shadow", statement_store_workspace: "C:\\temp" }, parsed, "meituan/LongCat-2.0"), false);
   assert.equal(shouldApplyPlacement({ write_mode: "statement-store", statement_store_workspace: "C:\\temp" }, parsed, "meituan/LongCat-2.0"), true);
+});
+
+test("engineering input errors never trigger a Formation model retry", () => {
+  assert.equal(formationRetryable({ ok: false, error: "invalid_input" }), false);
+  assert.equal(formationRetryable({ ok: false, error: "bridge_process_error" }), false);
+  assert.equal(formationRetryable({ ok: false, error: "invalid_json" }), true);
+  assert.equal(formationRetryable({ ok: false, error: "invalid_schema" }), true);
+});
+
+test("Placement retries only JSON and schema failures", () => {
+  assert.equal(placementRetryable({ ok: false, error: "invalid_json" }), true);
+  assert.equal(placementRetryable({ ok: false, error: "invalid_schema" }), true);
+  assert.equal(placementRetryable({ ok: false, error: "invalid_input" }), false);
+  assert.equal(placementRetryable({ ok: false, error: "bridge_process_error" }), false);
 });
 
 test("plugin entry is an ordinary hook plugin", () => {

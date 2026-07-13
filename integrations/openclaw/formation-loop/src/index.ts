@@ -22,7 +22,7 @@ const JSON_SCHEMA = {
     enabled: { type: "boolean", default: true }, python_executable: { type: "string" }, nollm_repo_root: { type: "string" },
     statement_store_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
-    allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-v1" },
+    allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
     max_statements: { type: "integer", minimum: 1, default: 8 }, max_statement_chars: { type: "integer", minimum: 1, default: 4096 },
     max_total_chars: { type: "integer", minimum: 1, default: 8192 }, persist_subagent_transcripts: { type: "boolean", const: false, default: false },
@@ -214,7 +214,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       await trace(config, { status: "defer", reason: "model_not_allowed", model }); return;
     }
     const key = turnKey(sessionKey, candidate.runId ?? current.runId, undefined, assistant);
-    const idempotencyKey = createHash("sha256").update(`${key}\0${config.prompt_version ?? "dream-v1"}\0nollm_access_dream_formation_v1`).digest("hex");
+    const idempotencyKey = createHash("sha256").update(`${key}\0${config.prompt_version ?? "dream-json-p1"}\0nollm_access_dream_formation_v1`).digest("hex");
     if (scheduled.has(idempotencyKey)) { duplicateDreamSuppressedCount += 1; return; }
     scheduled.add(idempotencyKey);
     const requestId = `dream-request-${idempotencyKey}`;
@@ -224,7 +224,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       max_statements: config.max_statements ?? 8, max_statement_chars: config.max_statement_chars ?? 4096,
       max_total_chars: config.max_total_chars ?? 8192, schema_version: "nollm_access_dream_formation_v1",
     };
-    const built = await bridge(config, { action: "build_dream_prompt", request, prompt_version: config.prompt_version ?? "dream-v1" });
+    const built = await bridge(config, { action: "build_dream_prompt", request, prompt_version: config.prompt_version ?? "dream-json-p1" });
     if (built.ok !== true || typeof built.prompt !== "string") { await trace(config, { status: "error", stage: "build_prompt", ...built }); return; }
     inFlight.add(sessionKey);
     const dreamStartedAt = Date.now();
@@ -283,12 +283,12 @@ async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parent
     const resolved = extractResolvedModel(session.messages);
     if (!raw) { await trace(config, { status: "error", stage: "empty_output", run_id: runId, dream_completed_at: Date.now(), ...resolved, visible_message_count: 0 }); return; }
     let parsed = await parseDreamAttempt(config, request, raw, `dream-result-${stableId}`, "initial", runId, parentSession, startedAt, resolved, built.prompt_version);
-    if (parsed.ok !== true) {
+    if (formationRetryable(parsed)) {
       const repaired = await runFormatRepair(api, config, raw, String(parsed.error ?? "invalid_json"), model, stableId);
       if (repaired) parsed = await parseDreamAttempt(config, request, repaired.raw, `dream-result-${stableId}`, "format_repair", repaired.runId, parentSession, startedAt, repaired.resolved, "dream-format-repair-v1");
     }
     for (const version of ["dream-json-p1", "dream-json-p2"]) {
-      if (parsed.ok === true) break;
+      if (!formationRetryable(parsed)) break;
       const retry = await runFullDreamRetry(api, config, request, version, model, stableId);
       if (retry) parsed = await parseDreamAttempt(config, request, retry.raw, `dream-result-${stableId}`, version, retry.runId, parentSession, startedAt, retry.resolved, version);
     }
@@ -313,12 +313,21 @@ function outputEvidence(raw: string): Record<string, unknown> {
   };
 }
 
+export function formationRetryable(parsed: Record<string, unknown>): boolean {
+  return parsed.ok !== true && ["invalid_json", "invalid_schema", "invalid_dream_result"].includes(String(parsed.error ?? ""));
+}
+
+export function placementRetryable(parsed: Record<string, unknown>): boolean {
+  return parsed.ok !== true && ["invalid_json", "invalid_schema"].includes(String(parsed.error ?? ""));
+}
+
 export function shouldApplyPlacement(config: DreamConfig, parsed: Record<string, unknown>, model?: string): boolean {
   return parsed.ok === true && config.write_mode === "statement-store" && Boolean(config.statement_store_workspace) && Boolean(model) && Array.isArray(parsed.statements);
 }
 
 async function parseDreamAttempt(config: DreamConfig, request: object, raw: string, resultId: string, attempt: string, runId: string, parentSession: string, startedAt: number, resolved: Record<string, string>, promptVersion: unknown): Promise<Record<string, unknown>> {
-  const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: resultId, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
+  // Placement owns the first persistent write so a rejected placement cannot leave an orphan Statement.
+  const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: resultId, statement_store_workspace: null });
   const completedAt = Date.now();
   await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", formation_attempt: attempt, run_id: runId, parent_session_key: parentSession, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, ...resolved, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: promptVersion, ...outputEvidence(raw), ...parsed });
   return parsed;
@@ -365,13 +374,34 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
     const raw = extractAssistantText(session.messages);
     if (!raw) { await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output" }); return; }
-    const applied = await bridge(config, { action: "apply_placement", request_id: requestId, raw_model_response: raw, statement, session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
-    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", request_id: requestId, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
+    let applied = await applyPlacementAttempt(config, requestId, raw, statement, sessionKey);
+    let attemptKind = "initial";
+    if (placementRetryable(applied)) {
+      const repaired = await runFormatRepair(api, config, raw, String(applied.error ?? "invalid_json"), model, `${requestId}:format-repair`);
+      if (repaired) {
+        applied = await applyPlacementAttempt(config, requestId, repaired.raw, statement, sessionKey);
+        attemptKind = "format_repair";
+      }
+    }
+    for (let index = 1; index <= 2 && placementRetryable(applied); index += 1) {
+      const retry = await runDreamSubagent(api, config, String(built.prompt), model, `${requestId}:retry:${index}`);
+      if (!retry) break;
+      applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, sessionKey);
+      attemptKind = `full_retry_${index}`;
+    }
+    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
   } catch (error) {
     await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error) });
   } finally {
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
   }
+}
+
+async function applyPlacementAttempt(config: DreamConfig, requestId: string, raw: string, statement: unknown, sessionKey: string): Promise<Record<string, unknown>> {
+  return bridge(config, {
+    action: "apply_placement", request_id: requestId, raw_model_response: raw, statement,
+    session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace,
+  });
 }
 
 export function extractResolvedModel(messages: unknown[]): Record<string, string> {

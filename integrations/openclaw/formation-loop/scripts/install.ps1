@@ -24,7 +24,7 @@ if (-not (Test-Path $pythonExecutable)) { throw "Python executable not found: $p
 & $OpenClaw config set plugins.entries.nollm-formation.config.enabled true
 & $OpenClaw config set plugins.entries.nollm-formation.config.model_mode $ModelMode
 & $OpenClaw config set plugins.entries.nollm-formation.config.write_mode $WriteMode
-& $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-json-p1
 & $OpenClaw config set plugins.entries.nollm-formation.config.persist_subagent_transcripts false
 if ($Model) { & $OpenClaw config set plugins.entries.nollm-formation.config.model $Model }
 if ($StatementWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.statement_store_workspace $StatementWorkspace }

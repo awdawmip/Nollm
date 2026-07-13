@@ -18,7 +18,7 @@ from nollm_access import (
 from .adapter import FormationAdapterError
 
 
-DREAM_PROMPT_VERSION = "dream-v1"
+DREAM_PROMPT_VERSION = "dream-json-p1"
 DREAM_SCHEMA_VERSION = "nollm_access_dream_formation_v1"
 
 
@@ -161,8 +161,11 @@ def _extract_single_complete_object(text: str) -> str:
     end = _complete_object_end(text, start)
     if end is None:
         raise json.JSONDecodeError("response has no complete JSON object", text, start)
+    prefix = text[:start].strip()
     remainder = text[end + 1 :]
-    if _contains_object_start(remainder):
+    if prefix not in {"", "JSON:", "Here is the JSON:", "Here is the requested JSON:"}:
+        raise json.JSONDecodeError("response has unsupported outer text", text, 0)
+    if remainder.strip() or _contains_object_start(remainder):
         raise json.JSONDecodeError("response contains multiple JSON objects", text, end + 1)
     return text[start : end + 1]
 

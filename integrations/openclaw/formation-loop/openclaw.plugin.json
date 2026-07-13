@@ -22,7 +22,7 @@
       "allowed_models": { "type": "array", "items": { "type": "string" }, "default": [] },
       "prompt_version": {
         "type": "string",
-        "default": "dream-v1"
+        "default": "dream-json-p1"
       },
       "enabled": { "type": "boolean", "default": true },
       "persist_subagent_transcripts": { "type": "boolean", "const": false, "default": false },

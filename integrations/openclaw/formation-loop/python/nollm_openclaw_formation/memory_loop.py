@@ -10,6 +10,7 @@ from nollm_access import AccessDecision, AccessRecallRequest, AccessRuntime, Fil
 from nollm_core import AtomHandle, BridgeSpec, CoreRuntime, GeometryAddress, GeometryAnchor, RecallBudget
 
 from .adapter import FormationAdapterError
+from .dream_adapter import repair_dream_json
 
 
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_placement_v1"
@@ -42,38 +43,63 @@ def _cursor_path(root: Path) -> Path:
     return root / "openclaw" / "memory_cursor.json"
 
 
-def _load_cursor(root: Path, session_key: object) -> tuple[GeometryAddress, ...]:
+def _agent_cursor_key(session_key: object) -> str:
     if type(session_key) is not str or not session_key:
         raise FormationAdapterError("invalid_session", "session_key is required")
+    parts = session_key.split(":")
+    return ":".join(parts[:2]) if len(parts) >= 2 and parts[0] == "agent" and parts[1] else "profile:default"
+
+
+def _cursor_state(root: Path) -> tuple[dict[str, list[object]], dict[str, list[object]]]:
     path = _cursor_path(root)
     if not path.exists():
-        return ()
+        return {}, {}
     value = json.loads(path.read_text(encoding="utf-8"))
-    if type(value) is not dict or set(value) != {"schema_version", "sessions"} or value["schema_version"] != CURSOR_SCHEMA_VERSION or type(value["sessions"]) is not dict:
+    if type(value) is not dict or value.get("schema_version") != CURSOR_SCHEMA_VERSION or set(value) not in ({"schema_version", "sessions"}, {"schema_version", "sessions", "agents"}) or type(value["sessions"]) is not dict:
         raise FormationAdapterError("invalid_cursor", "MemoryCursor is invalid")
-    raw = value["sessions"].get(session_key, [])
-    if type(raw) is not list:
-        raise FormationAdapterError("invalid_cursor", "MemoryCursor session is invalid")
+    agents = value.get("agents", {})
+    if type(agents) is not dict:
+        raise FormationAdapterError("invalid_cursor", "MemoryCursor agents are invalid")
+    if any(type(key) is not str or type(items) is not list for key, items in value["sessions"].items()) or any(type(key) is not str or type(items) is not list for key, items in agents.items()):
+        raise FormationAdapterError("invalid_cursor", "MemoryCursor entries are invalid")
+    return {key: list(items) for key, items in value["sessions"].items()}, {key: list(items) for key, items in agents.items()}
+
+
+def _cells(raw: list[object]) -> tuple[GeometryAddress, ...]:
     cells = tuple(GeometryAddress.from_mapping(item) for item in raw)
     if len(cells) > _CURSOR_LIMIT or len(set(cells)) != len(cells):
         raise FormationAdapterError("invalid_cursor", "MemoryCursor cells are invalid")
     return cells
 
 
+def _load_cursor(root: Path, session_key: object) -> tuple[GeometryAddress, ...]:
+    if type(session_key) is not str or not session_key:
+        raise FormationAdapterError("invalid_session", "session_key is required")
+    sessions, _ = _cursor_state(root)
+    return _cells(sessions.get(session_key, []))
+
+
+def _load_agent_cursor(root: Path, session_key: object) -> tuple[GeometryAddress, ...]:
+    _, agents = _cursor_state(root)
+    return _cells(agents.get(_agent_cursor_key(session_key), []))
+
+
+def _recall_cursor(root: Path, session_key: object) -> tuple[tuple[GeometryAddress, ...], str]:
+    session = _load_cursor(root, session_key)
+    return (session, "session") if session else (_load_agent_cursor(root, session_key), "agent")
+
+
 def _store_cursor(root: Path, session_key: str, cell: GeometryAddress) -> tuple[GeometryAddress, ...]:
     path = _cursor_path(root)
-    sessions: dict[str, list[dict[str, object]]] = {}
-    if path.exists():
-        existing = json.loads(path.read_text(encoding="utf-8"))
-        if type(existing) is not dict or set(existing) != {"schema_version", "sessions"} or existing["schema_version"] != CURSOR_SCHEMA_VERSION or type(existing["sessions"]) is not dict:
-            raise FormationAdapterError("invalid_cursor", "MemoryCursor is invalid")
-        sessions = {key: list(value) for key, value in existing["sessions"].items() if type(key) is str and type(value) is list}
-    previous = [GeometryAddress.from_mapping(item) for item in sessions.get(session_key, [])]
+    sessions, agents = _cursor_state(root)
+    previous = list(_cells(sessions.get(session_key, [])))
     ordered = [item for item in previous if item != cell]
     ordered.append(cell)
     ordered = ordered[-_CURSOR_LIMIT:]
-    sessions[session_key] = [item.to_mapping() for item in ordered]
-    payload = _canonical({"schema_version": CURSOR_SCHEMA_VERSION, "sessions": dict(sorted(sessions.items()))})
+    mapped = [item.to_mapping() for item in ordered]
+    sessions[session_key] = mapped
+    agents[_agent_cursor_key(session_key)] = mapped
+    payload = _canonical({"schema_version": CURSOR_SCHEMA_VERSION, "sessions": dict(sorted(sessions.items())), "agents": dict(sorted(agents.items()))})
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.parent / f".{path.name}.{uuid4().hex}.tmp"
     try:
@@ -148,15 +174,18 @@ def _decision(raw: object, statement: MemoryStatement, request_id: str) -> Acces
     if value.get("statement_id") != statement.statement_id or type(value.get("action")) is not str or type(value.get("reason_text")) is not str:
         raise FormationAdapterError("invalid_placement", "decision does not bind the formed statement")
     action = value["action"]
-    target = GeometryAddress.from_mapping(value["target_cell"]) if value.get("target_cell") is not None else None
-    handle = AtomHandle.from_mapping(value["existing_handle"]) if value.get("existing_handle") is not None else None
-    if action == "stitch":
-        spec_value = value.get("bridge_spec")
-        if type(spec_value) is not dict:
-            raise FormationAdapterError("invalid_placement", "stitch requires bridge_spec")
-        bridge = BridgeSpec.from_mapping(spec_value)
-    else:
-        bridge = None
+    try:
+        target = GeometryAddress.from_mapping(value["target_cell"]) if value.get("target_cell") is not None else None
+        handle = AtomHandle.from_mapping(value["existing_handle"]) if value.get("existing_handle") is not None else None
+        if action == "stitch":
+            spec_value = value.get("bridge_spec")
+            if type(spec_value) is not dict:
+                raise ValueError("stitch requires bridge_spec")
+            bridge = BridgeSpec.from_mapping(spec_value)
+        else:
+            bridge = None
+    except (KeyError, TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_schema", str(exc)) from exc
     return AccessDecision(f"placement:{request_id}:{statement.statement_id}", statement.statement_id, action, target, handle, bridge, value["reason_text"], "llm")
 
 
@@ -166,16 +195,24 @@ def apply_placement(raw_response: object, statement_value: object, session_key: 
     statement = _statement(statement_value)
     root = _workspace(memory_workspace)
     try:
-        raw = json.loads(raw_response)
+        repaired, diagnostics = repair_dream_json(raw_response)
+        raw = json.loads(repaired)
     except json.JSONDecodeError as exc:
-        raise FormationAdapterError("invalid_placement", str(exc)) from exc
+        raise FormationAdapterError("invalid_json", str(exc)) from exc
     decision = _decision(raw, statement, request_id)
     if decision is None:
-        return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0}
+        return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "json_repair": diagnostics}
     core, access = _open_access(root)
+    statement_store = FileStatementStore(root)
+    existed_before = statement_store.exists(statement.statement_id)
     try:
         access.capture(statement)
-        result = access.apply(decision)
+        try:
+            result = access.apply(decision)
+        except Exception:
+            if not existed_before:
+                statement_store.discard_new(statement)
+            raise
         if isinstance(result, AtomHandle):
             cursor = _store_cursor(root, session_key, result.geometry_address)
             handle = result.to_mapping()
@@ -184,7 +221,7 @@ def apply_placement(raw_response: object, statement_value: object, session_key: 
             handle = None
     finally:
         access.close(); core.close()
-    return {"outcome": "applied", "statement_id": statement.statement_id, "action": decision.action, "handle": handle, "cursor": [cell.to_mapping() for cell in cursor], "core_write_count": 1 if decision.action in {"new", "move", "revision_current", "revision_keep_history", "stitch"} else 0}
+    return {"outcome": "applied", "statement_id": statement.statement_id, "action": decision.action, "handle": handle, "cursor": [cell.to_mapping() for cell in cursor], "core_write_count": 1 if decision.action in {"new", "move", "revision_current", "revision_keep_history", "stitch"} else 0, "json_repair": diagnostics}
 
 
 def build_recall_prompt(query: object, session_key: object, memory_workspace: object, request_id: object) -> dict[str, object]:
@@ -193,12 +230,12 @@ def build_recall_prompt(query: object, session_key: object, memory_workspace: ob
     root = _workspace(memory_workspace)
     core, access = _open_access(root)
     try:
-        cursor = _load_cursor(root, session_key)
+        cursor, cursor_source = _recall_cursor(root, session_key)
         candidates = _context(access, cursor, request_id)
     finally:
         access.close(); core.close()
     if not candidates:
-        return {"available": False, "candidate_count": 0}
+        return {"available": False, "candidate_count": 0, "cursor_source": cursor_source}
     prompt = f"""You are a private background memory recall agent. The user will never see this run.
 Given the new user query and finite geometry-recalled statements, choose only statements that directly help answer the query. Return NONE when none help. Do not invent facts, do not call tools, and do not reveal hidden reasoning.
 Return exactly one raw JSON object with no markdown.
@@ -207,7 +244,7 @@ inject: {{\"schema_version\":\"{RECALL_SCHEMA_VERSION}\",\"outcome\":\"inject\",
 none: {{\"schema_version\":\"{RECALL_SCHEMA_VERSION}\",\"outcome\":\"none\",\"statement_ids\":[]}}
 query: {json.dumps(query, ensure_ascii=False)}
 recalled_candidates: {json.dumps(candidates, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
-    return {"available": True, "prompt": prompt, "candidates": candidates, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
+    return {"available": True, "prompt": prompt, "candidates": candidates, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "cursor_source": cursor_source, "entry_cells": [cell.to_mapping() for cell in cursor]}
 
 
 def render_recall_injection(raw_response: object, candidates: object) -> dict[str, object]:
