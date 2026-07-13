@@ -58,7 +58,7 @@ Produce self-contained statements. Preserve important negation, conditions, time
 Do not invent facts. When uncertain or nothing is durable, defer. Do not reveal hidden reasoning.{refinement}
 Do not call tools. Return exactly one raw JSON object with no markdown or commentary.
 Schema version: {DREAM_SCHEMA_VERSION}
-emit: {{"schema_version":"{DREAM_SCHEMA_VERSION}","outcome":"emit","drafts":[{{"draft_id":"d1","content_utf8":"...","scope_hint":null,"stability_hint":null,"uncertainty_hint":null}}]}}
+emit: {{"schema_version":"{DREAM_SCHEMA_VERSION}","outcome":"emit","drafts":[{{"draft_id":"d1","content_utf8":"...","scope_hint":null,"stability_hint":null,"uncertainty_hint":null}}],"defer_reason":null}}
 defer: {{"schema_version":"{DREAM_SCHEMA_VERSION}","outcome":"defer","drafts":[],"defer_reason":"short reason"}}
 Drafts must be unique and ordered by draft_id. Maximum drafts: {request.max_statements}.
 Maximum characters per draft: {request.max_statement_chars}. Maximum total draft characters: {request.max_total_chars}.
@@ -98,7 +98,7 @@ def parse_dream_result_with_diagnostics(
         if set(value) != common | {"defer_reason"}:
             raise FormationAdapterError("invalid_schema", "defer has incorrect fields")
         return DreamFormationResult(result_id, request.request_id, "defer", (), value["defer_reason"], "llm"), diagnostics
-    if outcome != "emit" or set(value) != common:
+    if outcome != "emit" or set(value) != common | {"defer_reason"} or value["defer_reason"] is not None:
         raise FormationAdapterError("invalid_schema", "emit has incorrect fields")
     try:
         drafts = tuple(DreamMemoryDraft.from_mapping(item) for item in value["drafts"])

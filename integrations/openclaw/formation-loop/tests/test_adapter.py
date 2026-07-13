@@ -149,7 +149,7 @@ def test_dream_default_prompt_is_p1_and_outer_text_is_allowlisted():
 def test_dream_result_parses_rewritten_statement_and_writes_store(tmp_path):
     raw = json.dumps({
         "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
-        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}],
+        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}], "defer_reason": None,
     })
     result = parse_dream_result(raw, _dream_request(), "result")
     assert result.drafts[0].content_utf8 != _dream_request().material.turns[0].content_utf8
@@ -162,7 +162,7 @@ def test_dream_result_parses_rewritten_statement_and_writes_store(tmp_path):
 def test_dream_statement_write_is_idempotent_and_never_overwrites(tmp_path):
     raw = json.dumps({
         "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
-        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}],
+        "drafts": [{"draft_id": "d1", "content_utf8": "The user prefers terse reports.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}], "defer_reason": None,
     })
     first = process_dream_result(raw, _dream_request(), "stable-result", tmp_path)
     second = process_dream_result(raw, _dream_request(), "stable-result", tmp_path)
@@ -178,6 +178,15 @@ def test_dream_defer_and_invalid_structure():
     assert parse_dream_result(raw, _dream_request(), "result").outcome == "defer"
     with pytest.raises(FormationAdapterError):
         parse_dream_result("{}", _dream_request(), "result")
+
+
+def test_dream_emit_requires_explicit_null_defer_reason():
+    raw = json.dumps({
+        "schema_version": "nollm_access_dream_formation_v1", "outcome": "emit",
+        "drafts": [{"draft_id": "d1", "content_utf8": "A durable fact.", "scope_hint": None, "stability_hint": None, "uncertainty_hint": None}],
+        "defer_reason": None,
+    })
+    assert parse_dream_result(raw, _dream_request(), "result").outcome == "emit"
 
 
 def test_dream_result_accepts_one_fenced_json_object():
