@@ -21,20 +21,38 @@ output and a hash are retained in debug evidence. Shadow mode does not run Place
 
 ## Current Evidence
 
-P0 `dream-v1` produced 13 completed and 1 rejected initial parse attempts in the
-independent lab. The rejected P0 response exercised same-model retry and a P2 full
-retry completed. P1 started on the same twelve-case set and had both initial
-successes and classified failures. The primary 48-initial-run P0/P1/P2/P3 matrix
-is not complete, so no winner is selected.
+The completed independent 48-initial-run matrix used the same OpenClaw CLI,
+Provider, model, timeout, schema, and twelve cases for every strategy:
+
+| Strategy | Initial parses | Completed | Errors | Deterministic repairs | Mean latency |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| P0 `dream-v1` | 12 | 11 | 1 | 3 | 34,723 ms |
+| P1 `dream-json-p1` | 12 | 12 | 0 | 0 | 33,457 ms |
+| P2 `dream-json-p2` | 12 | 12 | 0 | 2 | 33,394 ms |
+| P3 `dream-json-p3` | 12 | 11 | 1 | 0 | 29,461 ms |
+
+P1 is the winner by strict initial parse success and is installed as the active
+plugin prompt. The live plugin also exercised its one-call same-model format
+repair and bounded P1/P2 full retry path for malformed outputs. Repairs never
+changed JSON string values or added or removed fields.
 
 One pre-guard shadow probe reached Placement in the temporary workspace. The
 discovered defect was fixed before the next probe. The post-fix shadow probe
 completed Formation with `statement_store_write_count=0` and emitted no new
 Placement/Core event.
 
+The active user instance then completed ten normal chats with the plugin enabled.
+Fourteen P1 Formation parses were recorded during this period. Five Placement
+applications succeeded and updated Core/cursors; four Placement failures were
+isolated and did not block chat delivery. A successful session was reopened for
+Recall: the resolver selected the exact stored statement
+`dream:15c153f28a7a7d9d4e984eb06d8f522be434e25aadacd1f8353c48d5052c3b67`,
+and the visible response followed the recalled Chinese/risk-first format.
+
 ## Status
 
-`IN_PROGRESS`. JSON resilience and failure isolation are implemented and tested,
-but the required P2/P3 matrix, active-instance smoke, and full write/reopen/Recall
-validation remain unfinished. This report does not claim CSTAOLD closure or
-semantic accuracy.
+`FORMATION_JSON_RESILIENCE_VALIDATED`. The required matrix, active-instance
+smoke, successful StatementStore-to-Placement/Core-to-Recall path, and failure
+isolation evidence are complete. This validates output resilience only; it does
+not claim CSTAOLD closure, semantic accuracy, release readiness, or long-term
+stability.

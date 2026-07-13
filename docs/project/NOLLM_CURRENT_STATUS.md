@@ -21,10 +21,11 @@ than accepting a configured `host-inherit` label as proof. Statement formation
 remains `deliver=false`, has no main-agent tool, and uses no Python semantic
 fallback.
 
-Formation JSON resilience is IN_PROGRESS. The bridge has restricted
+Formation JSON resilience is VALIDATED. The bridge has restricted
 non-semantic repairs, bounded raw-output diagnostics, same-model format repair,
-and no-shadow-write enforcement. The required 48-run strategy matrix and final
-active-instance write/Recall closure are not complete.
+and no-shadow-write enforcement. The 48-run strategy matrix selected P1, and
+the active instance has a verified StatementStore-to-Placement/Core-to-Recall
+path with isolated local Placement failures.
 
 The user OpenClaw instance remains installed and enabled. Its StatementStore
 and Nollm workspace were not cleared or reset. Plugin-disabled comparison and

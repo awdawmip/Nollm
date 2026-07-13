@@ -81,6 +81,7 @@ CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
 HISTORY 0% | AUDIT 0% | OPENCLAW +10% | LAB +10% | DISTRIBUTIONS +5%
 ```
 
-The implementation and partial real evidence support the orchestration,
-repair, and isolation increments. The 48-run comparison and active write/
-Recall continuation remain required before this vector is final.
+The completed 48-run comparison selected P1, and active-instance evidence
+includes successful StatementStore, Placement/Core, cursor, and Recall stages.
+The vector is final for Formation JSON resilience only; CSTAOLD remains a
+separate broader closure claim.
