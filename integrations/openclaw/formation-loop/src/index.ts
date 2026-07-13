@@ -51,7 +51,8 @@ function pythonPath(config: DreamConfig): string {
 
 async function bridge(config: DreamConfig, envelope: object): Promise<Record<string, unknown>> {
   const wire = JSON.stringify(envelope, (_key, value: unknown) => typeof value === "string" ? wellFormedText(value) : value);
-  const result = await run(config.python_executable!, ["-m", "nollm_openclaw_formation.bridge"], wire, config.timeout_ms, { ...process.env, PYTHONPATH: pythonPath(config) });
+  // Node pipes UTF-8 JSON. Windows Python otherwise inherits the console code page.
+  const result = await run(config.python_executable!, ["-m", "nollm_openclaw_formation.bridge"], wire, config.timeout_ms, { ...process.env, PYTHONUTF8: "1", PYTHONPATH: pythonPath(config) });
   if (result.code !== 0) return { ok: false, error: "bridge_process_error", detail: result.stderr };
   try { return JSON.parse(result.stdout); } catch { return { ok: false, error: "bridge_invalid_json", detail: result.stderr }; }
 }
