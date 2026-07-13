@@ -282,17 +282,72 @@ async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parent
     const raw = extractAssistantText(session.messages);
     const resolved = extractResolvedModel(session.messages);
     if (!raw) { await trace(config, { status: "error", stage: "empty_output", run_id: runId, dream_completed_at: Date.now(), ...resolved, visible_message_count: 0 }); return; }
-    const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: `dream-result-${stableId}`, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
-    const completedAt = Date.now();
-    await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", run_id: runId, parent_session_key: parentSession, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, ...resolved, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: built.prompt_version, ...parsed });
-    if (parsed.ok === true && config.statement_store_workspace && model && Array.isArray(parsed.statements)) {
-      for (const statement of parsed.statements) await completePlacement(api, config, parentSession, statement, model, stableId);
+    let parsed = await parseDreamAttempt(config, request, raw, `dream-result-${stableId}`, "initial", runId, parentSession, startedAt, resolved, built.prompt_version);
+    if (parsed.ok !== true) {
+      const repaired = await runFormatRepair(api, config, raw, String(parsed.error ?? "invalid_json"), model, stableId);
+      if (repaired) parsed = await parseDreamAttempt(config, request, repaired.raw, `dream-result-${stableId}`, "format_repair", repaired.runId, parentSession, startedAt, repaired.resolved, "dream-format-repair-v1");
+    }
+    for (const version of ["dream-json-p1", "dream-json-p2"]) {
+      if (parsed.ok === true) break;
+      const retry = await runFullDreamRetry(api, config, request, version, model, stableId);
+      if (retry) parsed = await parseDreamAttempt(config, request, retry.raw, `dream-result-${stableId}`, version, retry.runId, parentSession, startedAt, retry.resolved, version);
+    }
+    if (shouldApplyPlacement(config, parsed, model)) {
+      for (const statement of parsed.statements as unknown[]) await completePlacement(api, config, parentSession, statement, model!, stableId);
     }
   } catch (error) {
     await trace(config, { status: "error", stage: "completion", run_id: runId, dream_completed_at: Date.now(), error: String(error), visible_message_count: 0 });
   } finally {
     inFlight.delete(parentSession);
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSession, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ } }
+  }
+}
+
+type DreamAttempt = { raw: string; runId: string; resolved: Record<string, string> };
+
+function outputEvidence(raw: string): Record<string, unknown> {
+  const limit = 24000;
+  return {
+    raw_visible_output: raw.slice(0, limit), raw_visible_output_truncated: raw.length > limit,
+    raw_visible_output_chars: raw.length, raw_visible_output_sha256: createHash("sha256").update(raw).digest("hex"),
+  };
+}
+
+export function shouldApplyPlacement(config: DreamConfig, parsed: Record<string, unknown>, model?: string): boolean {
+  return parsed.ok === true && config.write_mode === "statement-store" && Boolean(config.statement_store_workspace) && Boolean(model) && Array.isArray(parsed.statements);
+}
+
+async function parseDreamAttempt(config: DreamConfig, request: object, raw: string, resultId: string, attempt: string, runId: string, parentSession: string, startedAt: number, resolved: Record<string, string>, promptVersion: unknown): Promise<Record<string, unknown>> {
+  const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: resultId, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
+  const completedAt = Date.now();
+  await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", formation_attempt: attempt, run_id: runId, parent_session_key: parentSession, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, ...resolved, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: promptVersion, ...outputEvidence(raw), ...parsed });
+  return parsed;
+}
+
+async function runFormatRepair(api: OpenClawPluginApi, config: DreamConfig, raw: string, failure: string, model: string | undefined, stableId: string): Promise<DreamAttempt | undefined> {
+  const built = await bridge(config, { action: "build_dream_format_repair_prompt", raw_model_response: raw, failure });
+  if (built.ok !== true || typeof built.prompt !== "string") return undefined;
+  return runDreamSubagent(api, config, built.prompt, model, `${stableId}:format-repair`);
+}
+
+async function runFullDreamRetry(api: OpenClawPluginApi, config: DreamConfig, request: object, version: string, model: string | undefined, stableId: string): Promise<DreamAttempt | undefined> {
+  const built = await bridge(config, { action: "build_dream_prompt", request, prompt_version: version });
+  if (built.ok !== true || typeof built.prompt !== "string") return undefined;
+  return runDreamSubagent(api, config, built.prompt, model, `${stableId}:${version}`);
+}
+
+async function runDreamSubagent(api: OpenClawPluginApi, config: DreamConfig, prompt: string, model: string | undefined, idempotencyKey: string): Promise<DreamAttempt | undefined> {
+  const sessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
+  const override = config.model_mode === "dedicated" && model ? modelOverride(model) : undefined;
+  try {
+    const spawned = await api.runtime.subagent.run({ sessionKey, message: prompt, ...(override ?? {}), lightContext: true, deliver: false, idempotencyKey });
+    const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
+    if (waited.status !== "ok") return undefined;
+    const session = await api.runtime.subagent.getSessionMessages({ sessionKey, limit: 20 });
+    const raw = extractAssistantText(session.messages);
+    return raw ? { raw, runId: spawned.runId, resolved: extractResolvedModel(session.messages) } : undefined;
+  } finally {
+    if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ } }
   }
 }
 

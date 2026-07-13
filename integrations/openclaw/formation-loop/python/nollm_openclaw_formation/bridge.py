@@ -9,7 +9,7 @@ from .adapter import (
     OpenClawFormationConfig, formation_schema_bytes, sha256_hex,
 )
 from .dream_adapter import (
-    DREAM_PROMPT_VERSION, build_dream_prompt, dream_schema_bytes,
+    DREAM_PROMPT_VERSION, build_dream_format_repair_prompt, build_dream_prompt, dream_schema_bytes,
     process_dream_result, request_from_mapping, sha256_hex as dream_sha256_hex,
 )
 from .memory_loop import apply_placement, build_placement_prompt, build_recall_prompt, render_recall_injection
@@ -37,7 +37,15 @@ def main() -> None:
     try:
         envelope = _well_formed(json.load(sys.stdin))
         action = envelope.get("action")
-        if action in {"build_dream_prompt", "parse_dream_result"}:
+        if action in {"build_dream_prompt", "parse_dream_result", "build_dream_format_repair_prompt"}:
+            if action == "build_dream_format_repair_prompt":
+                prompt = build_dream_format_repair_prompt(str(envelope["raw_model_response"]), str(envelope["failure"]))
+                print(json.dumps({
+                    "ok": True, "prompt": prompt, "prompt_version": "dream-format-repair-v1",
+                    "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
+                    "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
+                }, ensure_ascii=True, separators=(",", ":")))
+                return
             request = request_from_mapping(envelope["request"])
             if action == "build_dream_prompt":
                 version = str(envelope.get("prompt_version", DREAM_PROMPT_VERSION))

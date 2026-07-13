@@ -1,6 +1,6 @@
 # Nollm Current Module Progress Ledger
 
-Date: 2026-07-12
+Date: 2026-07-13
 
 Percentages use five-percent increments and estimate capability against current
 charters. Historical reports retain their original finer-grained vectors but
@@ -73,3 +73,14 @@ The runtime-truth expected and actual vectors match with zero measured module
 deviation. The next candidate action requires a separately authorized task;
 this validation does not authorize Placement, Recall, or automatic semantic
 correction.
+
+Formation JSON resilience current vector (IN_PROGRESS):
+
+```text
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +10% | LAB +10% | DISTRIBUTIONS +5%
+```
+
+The implementation and partial real evidence support the orchestration,
+repair, and isolation increments. The 48-run comparison and active write/
+Recall continuation remain required before this vector is final.

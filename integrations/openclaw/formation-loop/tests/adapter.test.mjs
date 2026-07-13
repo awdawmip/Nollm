@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, modelOverride, registerDreamAgent, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, modelOverride, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -89,6 +89,12 @@ test("failed delivery and disallowed model never spawn Dream", async () => {
   await hooks.get("message_sent")({ success: true, content: "delivered" }, { sessionKey: "s" });
   hooks.get("agent_end")({ success: true, runId: "channel-run", messages: [] }, { sessionKey: "s", messageProvider: "telegram" });
   assert.equal(spawnCount, 0);
+});
+
+test("shadow Formation never continues into Placement", () => {
+  const parsed = { ok: true, statements: [{ statement_id: "s" }] };
+  assert.equal(shouldApplyPlacement({ write_mode: "shadow", statement_store_workspace: "C:\\temp" }, parsed, "meituan/LongCat-2.0"), false);
+  assert.equal(shouldApplyPlacement({ write_mode: "statement-store", statement_store_workspace: "C:\\temp" }, parsed, "meituan/LongCat-2.0"), true);
 });
 
 test("plugin entry is an ordinary hook plugin", () => {

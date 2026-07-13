@@ -1,12 +1,12 @@
 # Nollm Current Status
 
-Date: 2026-07-12
+Date: 2026-07-13
 
 Accepted active baseline: `3528c0130a2f29987e06105753310d3b2a592a2a`.
 Runtime-truth implementation checkpoint: `e2ac451ec39befc5cfd539f1260268126ec072f7`.
 
 Current authorized task:
-`NOLLM_AOLD_INVISIBLE_RUNTIME_TRUTH_REV1_TASK_20260712.md`.
+`NOLLM_AOLD_FORMATION_JSON_RESILIENCE_TASK_20260713.md`.
 
 V3.3 is the active semantic-memory route. OpenClaw channel delivery is
 classified as `AFTER_DELIVERY`; CLI/webchat completion is classified as
@@ -20,6 +20,11 @@ The runtime records the actual provider/model from the child session rather
 than accepting a configured `host-inherit` label as proof. Statement formation
 remains `deliver=false`, has no main-agent tool, and uses no Python semantic
 fallback.
+
+Formation JSON resilience is IN_PROGRESS. The bridge has restricted
+non-semantic repairs, bounded raw-output diagnostics, same-model format repair,
+and no-shadow-write enforcement. The required 48-run strategy matrix and final
+active-instance write/Recall closure are not complete.
 
 The user OpenClaw instance remains installed and enabled. Its StatementStore
 and Nollm workspace were not cleared or reset. Plugin-disabled comparison and

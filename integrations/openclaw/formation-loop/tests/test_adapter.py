@@ -10,7 +10,7 @@ from nollm_openclaw_formation.adapter import (
     FormationPromptBuilder, FormationResultRenderer, OpenClawEventTranslator,
     OpenClawFormationConfig, OpenClawLLMClient, formation_schema_bytes, sha256_hex,
 )
-from nollm_openclaw_formation.dream_adapter import build_dream_prompt, parse_dream_result, process_dream_result
+from nollm_openclaw_formation.dream_adapter import build_dream_prompt, parse_dream_result, process_dream_result, repair_dream_json
 from nollm_access import ConversationMaterial, ConversationTurn, DreamFormationRequest, FileStatementStore
 
 
@@ -176,6 +176,26 @@ def test_dream_result_accepts_one_fenced_json_object():
 {"schema_version":"nollm_access_dream_formation_v1","outcome":"defer","drafts":[],"defer_reason":"uncertain"}
 ```"""
     assert parse_dream_result(raw, _dream_request(), "result").outcome == "defer"
+
+
+def test_dream_json_repair_is_limited_to_allowed_syntax():
+    raw = "\ufeff Explanation follows. {\n\"schema_version\":\"nollm_access_dream_formation_v1\",\n\"outcome\":\"defer\",\n\"drafts\":[],\n\"defer_reason\":\"keep comma, literally\",\n} done."
+    repaired, diagnostics = repair_dream_json(raw)
+    assert json.loads(repaired)["defer_reason"] == "keep comma, literally"
+    assert diagnostics["repair_types"] == ["bom", "outer_whitespace", "single_object_outer_text", "trailing_comma"]
+    assert diagnostics["string_values_unchanged"] is True
+    assert diagnostics["fields_added"] is False
+    assert diagnostics["fields_removed"] is False
+
+
+@pytest.mark.parametrize("raw", [
+    '{"schema_version":"nollm_access_dream_formation_v1"} and {"outcome":"defer"}',
+    "{'schema_version':'nollm_access_dream_formation_v1'}",
+    '{"schema_version":"nollm_access_dream_formation_v1","outcome":"defer","drafts":[],"defer_reason":"unterminated}',
+])
+def test_dream_json_repair_rejects_semantic_or_ambiguous_changes(raw):
+    with pytest.raises((FormationAdapterError, json.JSONDecodeError)):
+        parse_dream_result(raw, _dream_request(), "result")
 
 
 def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
