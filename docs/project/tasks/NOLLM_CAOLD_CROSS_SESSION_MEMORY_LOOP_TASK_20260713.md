@@ -1,17 +1,17 @@
 # Nollm CAOLD 跨会话真实记忆闭环任务书
 
-**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`  
-**日期**：2026-07-13  
-**任务文件名**：`NOLLM_CAOLD_CROSS_SESSION_MEMORY_LOOP_TASK_20260713.md`  
-**性质**：核心功能优先期的单一真实端到端能力任务  
-**输入Bundle**：`nollm_aold_formation_json_resilience_20260713_9c0e1b6d.bundle`  
-**输入Bundle SHA-256**：`720efcf3c9f072d88f6432e959fdad732fe7763a56c4858f5e15679bee718498`  
-**输入分支**：`codex/cstaold-real-memory-loop`  
-**输入HEAD**：`9c0e1b6d7e507de6240baae637a2bd0029950d76`  
-**建议继续分支**：`codex/cstaold-real-memory-loop`  
-**主环境**：真实Windows 10/11 + 当前实际OpenClaw  
-**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle  
-**成功后环境**：插件保持安装和启用，现有Statement/Core/Handle/Cursor数据保留，交给用户正常聊天手动测试  
+**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`
+**日期**：2026-07-13
+**任务文件名**：`NOLLM_CAOLD_CROSS_SESSION_MEMORY_LOOP_TASK_20260713.md`
+**性质**：核心功能优先期的单一真实端到端能力任务
+**输入Bundle**：`nollm_aold_formation_json_resilience_20260713_9c0e1b6d.bundle`
+**输入Bundle SHA-256**：`720efcf3c9f072d88f6432e959fdad732fe7763a56c4858f5e15679bee718498`
+**输入分支**：`codex/cstaold-real-memory-loop`
+**输入HEAD**：`9c0e1b6d7e507de6240baae637a2bd0029950d76`
+**建议继续分支**：`codex/cstaold-real-memory-loop`
+**主环境**：真实Windows 10/11 + 当前实际OpenClaw
+**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle
+**成功后环境**：插件保持安装和启用，现有Statement/Core/Handle/Cursor数据保留，交给用户正常聊天手动测试
 **结论边界**：只验证指定HEAD和真实环境中的跨会话记忆闭环；不宣称语义准确、长期稳定、发布就绪或完整安全。
 
 ---
