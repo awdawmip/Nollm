@@ -59,7 +59,7 @@ conversation_material: {json.dumps(turns, ensure_ascii=False, sort_keys=True, se
 
 def parse_dream_result(raw: str, request: DreamFormationRequest, result_id: str) -> DreamFormationResult:
     try:
-        value = json.loads(raw)
+        value = json.loads(_json_object(raw))
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
     common = {"schema_version", "outcome", "drafts"}
@@ -79,6 +79,17 @@ def parse_dream_result(raw: str, request: DreamFormationRequest, result_id: str)
         return result
     except (TypeError, ValueError) as exc:
         raise FormationAdapterError("invalid_dream_result", str(exc)) from exc
+
+
+def _json_object(raw: str) -> str:
+    """Accept the one JSON object requested from the model, including a fenced response."""
+    text = raw.strip()
+    if text.startswith("```") and text.endswith("```"):
+        text = text.split("\n", 1)[1].rsplit("\n", 1)[0].strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < start or text[:start].strip() or text[end + 1 :].strip():
+        raise json.JSONDecodeError("response must contain one JSON object", text, 0)
+    return text[start : end + 1]
 
 
 def process_dream_result(raw: str, request: DreamFormationRequest, result_id: str, workspace: Path | None) -> dict[str, object]:

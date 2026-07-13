@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from nollm_core import AtomHandle, BridgeSpec, GeometryAddress
 
 
-ACTIONS = frozenset({"reuse", "new", "revision_current", "revision_keep_history", "stitch", "unstitch", "defer", "forget"})
+ACTIONS = frozenset({"reuse", "new", "move", "revision_current", "revision_keep_history", "stitch", "unstitch", "defer", "forget"})
 DECIDED_BY = frozenset({"host", "llm", "human", "fixture"})
 
 
@@ -32,8 +32,10 @@ class AccessDecision:
             raise ValueError("unknown decision source")
         if self.action in {"new", "revision_keep_history"} and self.target_cell is None:
             raise ValueError("explicit target_cell is required")
-        if self.action in {"reuse", "revision_current", "forget"} and self.existing_handle is None:
+        if self.action in {"reuse", "move", "revision_current", "forget"} and self.existing_handle is None:
             raise ValueError("explicit existing_handle is required")
+        if self.action == "move" and self.target_cell is None:
+            raise ValueError("explicit target_cell is required")
         if self.action == "stitch" and self.bridge_spec is None:
             raise ValueError("explicit bridge_spec is required")
         if self.action == "unstitch" and (self.bridge_spec is None or not self.bridge_spec.bridge_id):
@@ -41,6 +43,7 @@ class AccessDecision:
         allowed = {
             "new": (self.target_cell is not None, self.existing_handle is None, self.bridge_spec is None),
             "revision_keep_history": (self.target_cell is not None, self.existing_handle is None, self.bridge_spec is None),
+            "move": (self.target_cell is not None, self.existing_handle is not None, self.bridge_spec is None),
             "reuse": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),
             "revision_current": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),
             "forget": (self.target_cell is None, self.existing_handle is not None, self.bridge_spec is None),

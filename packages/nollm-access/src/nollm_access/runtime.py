@@ -115,6 +115,13 @@ class AccessRuntime:
                 lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
                 lambda handle: self._handle_store.put(statement.statement_id, handle),
             )
+        if decision.action == "move":
+            assert decision.existing_handle is not None and decision.target_cell is not None
+            self._get_statement(decision.statement_id)
+            return self._atomic(
+                lambda: self._core.move(decision.existing_handle, decision.target_cell),
+                lambda handle: self._handle_store.move_handle(decision.existing_handle, handle),
+            )
         if decision.action == "revision_current":
             assert decision.existing_handle is not None
             statement = self._get_statement(decision.statement_id)

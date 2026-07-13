@@ -171,6 +171,13 @@ def test_dream_defer_and_invalid_structure():
         parse_dream_result("{}", _dream_request(), "result")
 
 
+def test_dream_result_accepts_one_fenced_json_object():
+    raw = """```json
+{"schema_version":"nollm_access_dream_formation_v1","outcome":"defer","drafts":[],"defer_reason":"uncertain"}
+```"""
+    assert parse_dream_result(raw, _dream_request(), "result").outcome == "defer"
+
+
 def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
     envelope = {
         "action": "build_dream_prompt", "prompt_version": "dream-v1",

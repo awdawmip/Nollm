@@ -9,6 +9,7 @@ export type RunResult = { code: number; stdout: string; stderr: string };
 export type DreamConfig = {
   enabled?: boolean; python_executable?: string; nollm_repo_root?: string;
   statement_store_workspace?: string; write_mode?: "shadow" | "statement-store";
+  memory_workspace?: string;
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -138,6 +139,39 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const returnedAt = Date.now();
     queue(() => { void trace(config, { status: "hook", hook, hook_observed_at: startedAt, hook_handler_returned_at: returnedAt, hook_handler_duration_ms: returnedAt - startedAt, ...extra }); });
   };
+  const configuredModel = (resolved?: string): string | undefined => config.model_mode === "dedicated" ? config.model : resolved;
+  const usableModel = (model?: string): boolean => Boolean(model) && (!config.allowed_models?.length || config.allowed_models.includes(model!));
+  const runHiddenAgent = async (prompt: string, model: string, idempotencyKey: string): Promise<{ raw?: string; resolved: Record<string, string>; error?: string }> => {
+    const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
+    const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
+    try {
+      const spawned = await api.runtime.subagent.run({ sessionKey: childSessionKey, message: prompt, ...(override ?? {}), lightContext: true, deliver: false, idempotencyKey });
+      const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
+      if (waited.status !== "ok") return { error: waited.error ?? waited.status, resolved: {} };
+      const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
+      return { raw: extractAssistantText(session.messages), resolved: extractResolvedModel(session.messages) };
+    } catch (error) {
+      return { error: String(error), resolved: {} };
+    } finally {
+      if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
+    }
+  };
+  api.on("agent_turn_prepare", async (event, ctx) => {
+    const observedAt = Date.now();
+    const memoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
+    if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !memoryWorkspace || !config.python_executable || !config.nollm_repo_root || !event.prompt.trim()) return;
+    const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
+    if (!usableModel(model)) return;
+    const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
+    const built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, session_key: ctx.sessionKey, memory_workspace: memoryWorkspace });
+    if (built.ok !== true || built.available !== true || typeof built.prompt !== "string") return;
+    const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:agent`);
+    if (!selected.raw) { await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt }); return; }
+    const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
+    if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
+    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, visible_message_count: 0, ...selected.resolved });
+    return { appendContext: rendered.injection };
+  });
   api.on("before_agent_run", (event, ctx) => {
     const observedAt = Date.now();
     if (config.enabled === false || !ctx.sessionKey || ctx.agentId === "nollm-dream-agent") { recordHandler("before_agent_run", observedAt, {}); return; }
@@ -175,8 +209,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!current.users.length && fallbackUsers.length) current.users = fallbackUsers;
     if (!current.resolvedModel && candidate.resolvedModel) current.resolvedModel = candidate.resolvedModel;
     if (!current?.users.length) return;
-    const model = config.model_mode === "dedicated" ? config.model : current.resolvedModel;
-    if ((config.model_mode === "dedicated" && !model) || (config.allowed_models?.length && (!model || !config.allowed_models.includes(model)))) {
+    const model = configuredModel(current.resolvedModel);
+    if (!usableModel(model)) {
       await trace(config, { status: "defer", reason: "model_not_allowed", model }); return;
     }
     const key = turnKey(sessionKey, candidate.runId ?? current.runId, undefined, assistant);
@@ -204,7 +238,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         lightContext: true, deliver: false, idempotencyKey,
       });
       await trace(config, { status: "started", request_id: requestId, turn_key_sha256: createHash("sha256").update(key).digest("hex"), session_key: sessionKey, parent_run_id: candidate.runId ?? current.runId, child_session_key: childSessionKey, run_id: spawned.runId, requested_model: model, model_mode: config.model_mode ?? "inherit", prompt_version: built.prompt_version, prompt_sha256: built.prompt_sha256, schema_sha256: built.schema_sha256, source_hook: sourceHook, trigger_phase: phase, hook_observed_at: observedAt, background_scheduled_at: dreamStartedAt, prompt_build_started_at: dreamStartedAt, subagent_started_at: Date.now(), deliver: false, material: request.material, duplicate_hook_observation_count: duplicateHookObservationCount, duplicate_dream_suppressed_count: duplicateDreamSuppressedCount });
-      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt, idempotencyKey);
+      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt, idempotencyKey, model);
     } catch (error) {
       inFlight.delete(sessionKey);
       await trace(config, { status: "error", stage: "spawn", request_id: requestId, error: String(error), trigger_phase: phase });
@@ -220,7 +254,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   });
   api.on("agent_end", (event, ctx) => {
     const observedAt = Date.now();
-    if (!event.success || !ctx.sessionKey || (ctx.messageProvider && ctx.messageProvider !== "webchat") || ctx.agentId === "nollm-dream-agent") return;
+    if (!event.success || !ctx.sessionKey || ctx.agentId === "nollm-dream-agent") return;
     const assistant = extractAssistantText(event.messages);
     if (!assistant) return;
     const model = ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined;
@@ -240,7 +274,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   });
 }
 
-async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number, stableId: string): Promise<void> {
+async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number, stableId: string, model?: string): Promise<void> {
   try {
     const waited = await api.runtime.subagent.waitForRun({ runId, timeoutMs: config.timeout_ms ?? 120000 });
     if (waited.status !== "ok") { const completedAt = Date.now(); await trace(config, { status: waited.status, stage: "subagent", run_id: runId, error: waited.error, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, visible_message_count: 0 }); return; }
@@ -251,11 +285,37 @@ async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parent
     const parsed = await bridge(config, { action: "parse_dream_result", request, raw_model_response: raw, result_id: `dream-result-${stableId}`, statement_store_workspace: config.write_mode === "statement-store" ? config.statement_store_workspace : null });
     const completedAt = Date.now();
     await trace(config, { status: parsed.ok === true ? "completed" : "error", stage: "parse_store", run_id: runId, parent_session_key: parentSession, dream_completed_at: completedAt, dream_latency_ms: completedAt - startedAt, ...resolved, write_mode: config.write_mode ?? "shadow", visible_message_count: 0, python_semantic_fallback: false, prompt_version: built.prompt_version, ...parsed });
+    if (parsed.ok === true && config.statement_store_workspace && model && Array.isArray(parsed.statements)) {
+      for (const statement of parsed.statements) await completePlacement(api, config, parentSession, statement, model, stableId);
+    }
   } catch (error) {
     await trace(config, { status: "error", stage: "completion", run_id: runId, dream_completed_at: Date.now(), error: String(error), visible_message_count: 0 });
   } finally {
     inFlight.delete(parentSession);
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSession, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ } }
+  }
+}
+
+async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, sessionKey: string, statement: unknown, model: string, stableId: string): Promise<void> {
+  const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
+  const requestId = `placement-${createHash("sha256").update(`${stableId}\0${statementId}`).digest("hex")}`;
+  const built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+  if (built.ok !== true || typeof built.prompt !== "string") { await trace(config, { status: "error", stage: "placement_prompt", request_id: requestId, ...built }); return; }
+  const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
+  const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
+  try {
+    const spawned = await api.runtime.subagent.run({ sessionKey: childSessionKey, message: built.prompt, ...(override ?? {}), lightContext: true, deliver: false, idempotencyKey: `${requestId}:agent` });
+    const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
+    if (waited.status !== "ok") { await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: waited.error ?? waited.status }); return; }
+    const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
+    const raw = extractAssistantText(session.messages);
+    if (!raw) { await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output" }); return; }
+    const applied = await bridge(config, { action: "apply_placement", request_id: requestId, raw_model_response: raw, statement, session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", request_id: requestId, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
+  } catch (error) {
+    await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error) });
+  } finally {
+    if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
   }
 }
 

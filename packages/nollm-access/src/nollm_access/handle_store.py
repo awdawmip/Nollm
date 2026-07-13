@@ -88,6 +88,17 @@ class FileHandleStore:
         bindings.append(HandleBinding(new_handle, statement_id))
         self._write(tuple(bindings))
 
+    def move_handle(self, old_handle: AtomHandle, new_handle: AtomHandle) -> None:
+        bindings = list(self._load())
+        index = self._index_for_handle(bindings, old_handle)
+        if old_handle == new_handle:
+            return
+        if any(binding.handle == new_handle for binding in bindings):
+            raise ValueError("moved handle is already bound")
+        binding = bindings[index]
+        bindings[index] = HandleBinding(new_handle, binding.current_statement_id, binding.supporting_statement_ids)
+        self._write(tuple(bindings))
+
     def get(self, statement_id: str) -> AtomHandle:
         matches = [binding.handle for binding in self._load() if statement_id == binding.current_statement_id or statement_id in binding.supporting_statement_ids]
         if len(matches) != 1:

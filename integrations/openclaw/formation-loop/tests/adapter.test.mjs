@@ -14,10 +14,10 @@ test("wire text replaces isolated UTF-16 surrogates before UTF-8 encoding", () =
   assert.equal(wellFormedText("valid \udc94 text"), "valid \ufffd text");
 });
 
-test("plugin registers channel delivery and Gateway completion hooks with no tool", () => {
+test("plugin registers channel delivery, recall preparation, and Gateway completion hooks with no tool", () => {
   const hooks = new Map(); let toolCount = 0;
   registerDreamAgent({ pluginConfig: { enabled: false }, on(name, handler) { hooks.set(name, handler); }, registerTool() { toolCount += 1; } });
-  assert.deepEqual([...hooks.keys()].sort(), ["agent_end", "before_agent_run", "llm_output", "message_received", "message_sent", "subagent_ended", "subagent_spawned"]);
+  assert.deepEqual([...hooks.keys()].sort(), ["agent_end", "agent_turn_prepare", "before_agent_run", "llm_output", "message_received", "message_sent", "subagent_ended", "subagent_spawned"]);
   assert.equal(toolCount, 0);
 });
 

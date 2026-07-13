@@ -84,6 +84,15 @@ def test_revision_current_and_keep_history_are_access_semantics(tmp_path) -> Non
     }
 
 
+def test_move_preserves_the_canonical_binding(tmp_path) -> None:
+    access, core = runtime(tmp_path)
+    access.capture(MemoryStatement("movable", "move this"))
+    original = access.apply(decision("movable", "new", target_cell=cell(0, 0)))
+    moved = access.apply(decision("movable", "move", existing_handle=original, target_cell=cell(2, -1)))
+    assert moved.geometry_address == cell(2, -1)
+    assert access.saved_handle("movable") == moved
+    assert core.get(moved).payload_utf8 == "move this"
+
 def test_stitch_and_unstitch_use_explicit_geometry(tmp_path) -> None:
     access, core = runtime(tmp_path)
     bridge = BridgeSpec(

@@ -12,6 +12,7 @@ from .dream_adapter import (
     DREAM_PROMPT_VERSION, build_dream_prompt, dream_schema_bytes,
     process_dream_result, request_from_mapping, sha256_hex as dream_sha256_hex,
 )
+from .memory_loop import apply_placement, build_placement_prompt, build_recall_prompt, render_recall_injection
 
 
 def _well_formed(value: object) -> object:
@@ -53,6 +54,22 @@ def main() -> None:
                 str(envelope["raw_model_response"]), request, str(envelope["result_id"]),
                 None if workspace is None else __import__("pathlib").Path(str(workspace)),
             )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_placement_prompt":
+            result = build_placement_prompt(envelope["statement"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "apply_placement":
+            result = apply_placement(envelope["raw_model_response"], envelope["statement"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_recall_prompt":
+            result = build_recall_prompt(envelope["query"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "render_recall_injection":
+            result = render_recall_injection(envelope["raw_model_response"], envelope["candidates"])
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         request = OpenClawEventTranslator().translate(envelope["request"])
