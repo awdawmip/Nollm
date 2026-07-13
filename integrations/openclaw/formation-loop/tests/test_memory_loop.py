@@ -1,6 +1,6 @@
 import json
 
-from nollm_core import CoreRuntime
+from nollm_access import AccessMemoryLoop
 from nollm_openclaw_formation.memory_loop import (
     PLACEMENT_SCHEMA_VERSION,
     build_placement_prompt,
@@ -24,9 +24,8 @@ def test_placement_uses_explicit_llm_geometry_and_persists_cursor(tmp_path):
     }), STATEMENT, "agent:main:session-a", str(tmp_path), "placement-1")
     assert applied["outcome"] == "applied"
     assert applied["core_write_count"] == 1
-    core = CoreRuntime(tmp_path)
-    assert core.placement_count() == 1
-    core.close()
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding("dream:test")["current_statement_id"] == "dream:test"
 
 
 def test_recall_is_bounded_to_cursor_and_rendered_as_hidden_context(tmp_path):
@@ -71,9 +70,9 @@ def test_failed_placement_leaves_no_new_statement_or_core_binding(tmp_path):
     else:
         raise AssertionError("invalid placement unexpectedly applied")
     assert not list((tmp_path / "access" / "statements").rglob("*.json"))
-    core = CoreRuntime(tmp_path)
-    assert core.placement_count() == 0
-    core.close()
+    assert build_recall_prompt("What do you remember?", "agent:main:failure", str(tmp_path), "recall-failure") == {
+        "available": False, "candidate_count": 0, "cursor_source": "agent",
+    }
 
 
 def test_placement_uses_the_same_limited_json_repair_rules(tmp_path):

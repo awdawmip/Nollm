@@ -106,6 +106,12 @@ class AccessRuntime:
             self._get_statement(decision.statement_id)
             if not self._core.contains(decision.existing_handle):
                 raise KeyError("explicit reuse handle no longer exists")
+            try:
+                existing = self._handle_store.binding_for_handle(decision.existing_handle)
+            except KeyError:
+                existing = None
+            if existing is not None and existing.current_statement_id == decision.statement_id:
+                return decision.existing_handle
             self._handle_store.put(decision.statement_id, decision.existing_handle)
             return decision.existing_handle
         if decision.action == "new":

@@ -6,8 +6,7 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from nollm_access import AccessDecision, AccessRecallRequest, AccessRuntime, FileHandleStore, FileStatementStore, MemoryStatement
-from nollm_core import AtomHandle, BridgeSpec, CoreRuntime, GeometryAddress, GeometryAnchor, RecallBudget
+from nollm_access import AccessMemoryLoop, MemoryStatement
 
 from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
@@ -17,7 +16,6 @@ PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_recall_v1"
 CURSOR_SCHEMA_VERSION = "nollm_openclaw_memory_cursor_v1"
 _CURSOR_LIMIT = 8
-_RECALL_BUDGET = RecallBudget(2, 12, 1, 1, 1, 16)
 
 
 def _canonical(value: object) -> bytes:
@@ -28,15 +26,6 @@ def _workspace(path: object) -> Path:
     if type(path) is not str or not path:
         raise FormationAdapterError("invalid_workspace", "memory workspace is required")
     return Path(path).resolve()
-
-
-def _open_access(root: Path) -> tuple[CoreRuntime, AccessRuntime]:
-    core = CoreRuntime(root)
-    try:
-        return core, AccessRuntime(core, FileStatementStore(root), FileHandleStore(root))
-    except Exception:
-        core.close()
-        raise
 
 
 def _cursor_path(root: Path) -> Path:
@@ -65,38 +54,38 @@ def _cursor_state(root: Path) -> tuple[dict[str, list[object]], dict[str, list[o
     return {key: list(items) for key, items in value["sessions"].items()}, {key: list(items) for key, items in agents.items()}
 
 
-def _cells(raw: list[object]) -> tuple[GeometryAddress, ...]:
-    cells = tuple(GeometryAddress.from_mapping(item) for item in raw)
-    if len(cells) > _CURSOR_LIMIT or len(set(cells)) != len(cells):
-        raise FormationAdapterError("invalid_cursor", "MemoryCursor cells are invalid")
-    return cells
+def _cells(raw: list[object]) -> list[dict[str, object]]:
+    try:
+        return AccessMemoryLoop(".").cursor_cells(raw)
+    except (TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_cursor", "MemoryCursor cells are invalid") from exc
 
 
-def _load_cursor(root: Path, session_key: object) -> tuple[GeometryAddress, ...]:
+def _load_cursor(root: Path, session_key: object) -> list[dict[str, object]]:
     if type(session_key) is not str or not session_key:
         raise FormationAdapterError("invalid_session", "session_key is required")
     sessions, _ = _cursor_state(root)
     return _cells(sessions.get(session_key, []))
 
 
-def _load_agent_cursor(root: Path, session_key: object) -> tuple[GeometryAddress, ...]:
+def _load_agent_cursor(root: Path, session_key: object) -> list[dict[str, object]]:
     _, agents = _cursor_state(root)
     return _cells(agents.get(_agent_cursor_key(session_key), []))
 
 
-def _recall_cursor(root: Path, session_key: object) -> tuple[tuple[GeometryAddress, ...], str]:
+def _recall_cursor(root: Path, session_key: object) -> tuple[list[dict[str, object]], str]:
     session = _load_cursor(root, session_key)
     return (session, "session") if session else (_load_agent_cursor(root, session_key), "agent")
 
 
-def _store_cursor(root: Path, session_key: str, cell: GeometryAddress) -> tuple[GeometryAddress, ...]:
+def _store_cursor(root: Path, session_key: str, cell: dict[str, object]) -> list[dict[str, object]]:
     path = _cursor_path(root)
     sessions, agents = _cursor_state(root)
     previous = list(_cells(sessions.get(session_key, [])))
     ordered = [item for item in previous if item != cell]
     ordered.append(cell)
     ordered = ordered[-_CURSOR_LIMIT:]
-    mapped = [item.to_mapping() for item in ordered]
+    mapped = ordered
     sessions[session_key] = mapped
     agents[_agent_cursor_key(session_key)] = mapped
     payload = _canonical({"schema_version": CURSOR_SCHEMA_VERSION, "sessions": dict(sorted(sessions.items())), "agents": dict(sorted(agents.items()))})
@@ -111,7 +100,7 @@ def _store_cursor(root: Path, session_key: str, cell: GeometryAddress) -> tuple[
     finally:
         if temporary.exists():
             temporary.unlink()
-    return tuple(ordered)
+    return ordered
 
 
 def _statement(value: object) -> MemoryStatement:
@@ -121,34 +110,14 @@ def _statement(value: object) -> MemoryStatement:
         raise FormationAdapterError("invalid_statement", str(exc)) from exc
 
 
-def _context(access: AccessRuntime, cursor: tuple[GeometryAddress, ...], request_id: str) -> list[dict[str, object]]:
-    if not cursor:
-        return []
-    result = access.recall(AccessRecallRequest(request_id, tuple(sorted(cursor, key=lambda item: item.stable_key())), (), ("bridge", "coverage_down", "coverage_up", "lateral"), _RECALL_BUDGET))
-    return [
-        {
-            "statement_id": item.statement_id,
-            "content_utf8": item.evidence_utf8,
-            "handle": item.handle.to_mapping(),
-            "address": item.handle.geometry_address.to_mapping(),
-            "fallback_error": item.fallback_error,
-        }
-        for item in result.items
-        if item.evidence_utf8 is not None
-    ]
-
-
 def build_placement_prompt(statement_value: object, session_key: object, memory_workspace: object, request_id: object) -> dict[str, object]:
     statement = _statement(statement_value)
     if type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_request", "request_id is required")
     root = _workspace(memory_workspace)
-    core, access = _open_access(root)
-    try:
-        cursor = _load_cursor(root, session_key)
-        nearby = _context(access, cursor, request_id + ":placement-context")
-    finally:
-        access.close(); core.close()
+    cursor = _load_cursor(root, session_key)
+    with AccessMemoryLoop(root) as loop:
+        nearby = loop.local_context(cursor, request_id + ":placement-context")
     prompt = f"""You are a private background geometry placement agent. The user will never see this run.
 Decide one explicit placement action for this newly formed memory statement. You may only use the supplied local MemoryCursor and local geometry context. Do not infer a global topic, entity, source, graph, vector, or semantic index. Core validates and executes, you only decide.
 Return exactly one raw JSON object with no markdown.
@@ -156,37 +125,9 @@ Schema version: {PLACEMENT_SCHEMA_VERSION}
 For a new memory, `decision.statement_id` MUST be exactly `{statement.statement_id}`. Copy that literal value unchanged; do not use a placeholder, a draft id, or the statement text. The exact new-memory object is {{\"schema_version\":\"{PLACEMENT_SCHEMA_VERSION}\",\"outcome\":\"apply\",\"decision\":{{\"statement_id\":\"{statement.statement_id}\",\"action\":\"new\",\"target_cell\":{{\"profile_id\":\"eisenstein_exact_v1\",\"chart_id\":\"default\",\"layer\":0,\"q\":0,\"r\":0,\"phase\":null}},\"reason_text\":\"brief\"}}}}
 For a known equivalent or revision, use action reuse, revision_current, move, or revision_keep_history with one supplied existing_handle where required. For no safe action use {{\"schema_version\":\"{PLACEMENT_SCHEMA_VERSION}\",\"outcome\":\"defer\",\"reason_text\":\"brief\"}}. Do not invent handles. Do not call tools.
 statement: {json.dumps(statement.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
-memory_cursor: {json.dumps([cell.to_mapping() for cell in cursor], ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
+memory_cursor: {json.dumps(cursor, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 local_geometry_context: {json.dumps(nearby, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
     return {"prompt": prompt, "schema_version": PLACEMENT_SCHEMA_VERSION, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
-
-
-def _decision(raw: object, statement: MemoryStatement, request_id: str) -> AccessDecision | None:
-    if type(raw) is not dict or raw.get("schema_version") != PLACEMENT_SCHEMA_VERSION or type(raw.get("outcome")) is not str:
-        raise FormationAdapterError("invalid_placement", "invalid placement envelope")
-    if raw["outcome"] == "defer":
-        if set(raw) != {"schema_version", "outcome", "reason_text"} or type(raw["reason_text"]) is not str:
-            raise FormationAdapterError("invalid_placement", "invalid deferred placement")
-        return None
-    if raw["outcome"] != "apply" or set(raw) != {"schema_version", "outcome", "decision"} or type(raw["decision"]) is not dict:
-        raise FormationAdapterError("invalid_placement", "invalid placement outcome")
-    value = raw["decision"]
-    if value.get("statement_id") != statement.statement_id or type(value.get("action")) is not str or type(value.get("reason_text")) is not str:
-        raise FormationAdapterError("invalid_placement", "decision does not bind the formed statement")
-    action = value["action"]
-    try:
-        target = GeometryAddress.from_mapping(value["target_cell"]) if value.get("target_cell") is not None else None
-        handle = AtomHandle.from_mapping(value["existing_handle"]) if value.get("existing_handle") is not None else None
-        if action == "stitch":
-            spec_value = value.get("bridge_spec")
-            if type(spec_value) is not dict:
-                raise ValueError("stitch requires bridge_spec")
-            bridge = BridgeSpec.from_mapping(spec_value)
-        else:
-            bridge = None
-    except (KeyError, TypeError, ValueError) as exc:
-        raise FormationAdapterError("invalid_schema", str(exc)) from exc
-    return AccessDecision(f"placement:{request_id}:{statement.statement_id}", statement.statement_id, action, target, handle, bridge, value["reason_text"], "llm")
 
 
 def apply_placement(raw_response: object, statement_value: object, session_key: object, memory_workspace: object, request_id: object) -> dict[str, object]:
@@ -199,41 +140,22 @@ def apply_placement(raw_response: object, statement_value: object, session_key: 
         raw = json.loads(repaired)
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
-    decision = _decision(raw, statement, request_id)
-    if decision is None:
-        return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "json_repair": diagnostics}
-    core, access = _open_access(root)
-    statement_store = FileStatementStore(root)
-    existed_before = statement_store.exists(statement.statement_id)
-    try:
-        access.capture(statement)
-        try:
-            result = access.apply(decision)
-        except Exception:
-            if not existed_before:
-                statement_store.discard_new(statement)
-            raise
-        if isinstance(result, AtomHandle):
-            cursor = _store_cursor(root, session_key, result.geometry_address)
-            handle = result.to_mapping()
-        else:
-            cursor = _load_cursor(root, session_key)
-            handle = None
-    finally:
-        access.close(); core.close()
-    return {"outcome": "applied", "statement_id": statement.statement_id, "action": decision.action, "handle": handle, "cursor": [cell.to_mapping() for cell in cursor], "core_write_count": 1 if decision.action in {"new", "move", "revision_current", "revision_keep_history", "stitch"} else 0, "json_repair": diagnostics}
+    with AccessMemoryLoop(root) as loop:
+        result = loop.apply_placement(statement, raw, request_id)
+    if result["outcome"] == "applied" and type(result["handle"]) is dict:
+        cursor = _store_cursor(root, session_key, result["handle"]["geometry_address"])
+    else:
+        cursor = _load_cursor(root, session_key)
+    return {**result, "cursor": cursor, "json_repair": diagnostics}
 
 
 def build_recall_prompt(query: object, session_key: object, memory_workspace: object, request_id: object) -> dict[str, object]:
     if type(query) is not str or not query or type(session_key) is not str or not session_key or type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_request", "recall request fields are invalid")
     root = _workspace(memory_workspace)
-    core, access = _open_access(root)
-    try:
-        cursor, cursor_source = _recall_cursor(root, session_key)
-        candidates = _context(access, cursor, request_id)
-    finally:
-        access.close(); core.close()
+    cursor, cursor_source = _recall_cursor(root, session_key)
+    with AccessMemoryLoop(root) as loop:
+        candidates = loop.local_context(cursor, request_id)
     if not candidates:
         return {"available": False, "candidate_count": 0, "cursor_source": cursor_source}
     prompt = f"""You are a private background memory recall agent. The user will never see this run.
@@ -244,7 +166,7 @@ inject: {{\"schema_version\":\"{RECALL_SCHEMA_VERSION}\",\"outcome\":\"inject\",
 none: {{\"schema_version\":\"{RECALL_SCHEMA_VERSION}\",\"outcome\":\"none\",\"statement_ids\":[]}}
 query: {json.dumps(query, ensure_ascii=False)}
 recalled_candidates: {json.dumps(candidates, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
-    return {"available": True, "prompt": prompt, "candidates": candidates, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "cursor_source": cursor_source, "entry_cells": [cell.to_mapping() for cell in cursor]}
+    return {"available": True, "prompt": prompt, "candidates": candidates, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "cursor_source": cursor_source, "entry_cells": cursor}
 
 
 def render_recall_injection(raw_response: object, candidates: object) -> dict[str, object]:

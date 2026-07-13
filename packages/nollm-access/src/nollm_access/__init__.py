@@ -25,6 +25,7 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
+from .memory_loop import AccessMemoryLoop
 from .placement_contract import ACTIONS, AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .runtime import AccessConsistencyError, AccessRuntime
@@ -34,6 +35,7 @@ from .statement_store import FileStatementStore, StatementStore
 __all__ = [
     "ACTIONS",
     "AccessDecision",
+    "AccessMemoryLoop",
     "AccessRecallItem",
     "AccessRecallRequest",
     "AccessRecallResult",
