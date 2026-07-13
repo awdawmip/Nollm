@@ -4,75 +4,69 @@ Date: 2026-07-13
 
 ## Status
 
-`CAOLD_CROSS_SESSION_LOOP_IN_PROGRESS`.
-
-This is a Windows/OpenClaw engineering checkpoint, not a claim of semantic
+`CAOLD_CROSS_SESSION_LOOP_COMPLETED` for the bounded Windows/OpenClaw
+checkpoint defined by the current Rev.1 task. This is not a claim of semantic
 accuracy, long-term stability, release readiness, security completion, or
-complete cross-session acceptance.
+cross-provider portability.
 
 ## Verified Facts
 
 - Branch: `codex/cstaold-real-memory-loop`.
-- Checkpoint commit: `1beb751e81a79559bd063c146e2f9337b8e1d31e`.
+- Historical checkpoint commit: `1beb751e81a79559bd063c146e2f9337b8e1d31e`.
 - Windows bridge encoding fix: `338b47c2`.
-- Targeted regression after the fix: Python `32 passed`; Node `14 passed`.
+- Targeted regression: Python `32 passed`; Node `14 passed`.
 - The active OpenClaw plugin is enabled, uses `dream-json-p1`, and points at
-  the current worktree with `meituan/LongCat-2.0`.
-- Gateway restart and health probe completed successfully after the fix.
-- The initial real write sequence completed ten normal main-agent turns. Its
-  event subset contains nine Formation completion records: seven successful
-  and two `invalid_input` records. The failed records did not interrupt later
-  main-agent turns.
-- Real event records before and during this checkpoint show successful
-  Placement/Core writes and Placement errors that did not stop chat delivery.
-- `MemoryCursor` persisted a bounded `agent:main` GeometryAddress entry and
-  retained prior session entries. No topic, entity, source, vector, graph, or
-  global lookup was added.
-- Two new main-agent sessions were run after the first Gateway restart. Both
-  returned normally. Their complete Recall injection/natural-use proof remains
-  unverified in this checkpoint.
+  this worktree with `meituan/LongCat-2.0`.
+- Gateway health probes passed before and after the continuation restart.
+- A serial real main-agent write session completed after restart. Its bounded
+  Formation sequence produced Statement
+  `dream:0113e3ea0b48355f0f683e30508354ce2a48e3324caadb46c93d400b7cc1304a`;
+  Placement applied it with `core_write_count=1`, created its Handle binding,
+  and persisted the bounded session and `agent:main` GeometryAddress cursor.
+- Gateway was restarted after that write. A distinct related main-agent
+  session entered Recall through the agent cursor. The exact Recall request
+  selected the Statement above, returned hidden context with
+  `visible_message_count=0`, and the visible main-agent response used the
+  requested Chinese, risks-before-progress structure without mentioning
+  Nollm.
+- A second distinct session asked an unrelated France-capital question. It
+  returned only the direct answer and no Recall injection was observed. The
+  subsequent Formation result was `defer` with zero Statement writes.
+- Continuation reconciliation found both Statements formed in this serial
+  continuation to have a canonical Handle binding and a matching Core atom.
+  The unrelated turn formed none. Therefore
+  `orphan_statement_count=0` for this continuation.
 
-## Bridge Root Cause And Fix
+## Bridge And Failure Boundary
 
-Node sends the bridge envelope as UTF-8 JSON. On this Windows host, the Python
-child inherited `gbk` for stdin/stdout. A valid Chinese Formation JSON was
-therefore decoded incorrectly at the Node-to-Python boundary and surfaced as
-`invalid_input`, even though direct strict JSON parsing succeeded.
+Node sends UTF-8 bridge envelopes. On this Windows host, the Python child had
+inherited `gbk` for stdin/stdout, causing valid Chinese Formation JSON to be
+misclassified at the Node-to-Python boundary. The bridge child now receives
+`PYTHONUTF8=1`.
 
-The bridge child now receives `PYTHONUTF8=1`. A replay using the exact logged
-Chinese failure sample successfully parsed and formed two Statements after the
-fix. `invalid_input` remains non-retryable; the fix does not coerce invalid
-model output or broaden schema acceptance.
+The serial write's first two model outputs still produced recorded engineering
+input errors before the final bounded Formation result succeeded. The main
+agent remained available throughout. This report records that observed retry
+sequence; it does not reinterpret those errors as semantic results or claim a
+quality rate from one continuation.
 
-## Current Live Continuation
+## Evidence Limits
 
-After the encoding fix and Gateway restart, ten independent normal sessions
-were initiated. During the bounded observation window, five background
-Formation runs started but had not produced completion records. Gateway health
-remained good. This is recorded as `NOT_VERIFIED`, not as a Formation failure
-or success.
-
-## Evidence Availability
-
-- P0/P1 historical matrix statistics are preserved from the prior checkpoint.
+- The installed hook traces successful Recall injection, but its `none`
+  branch is intentionally silent. The unrelated-session result is therefore
+  recorded as observed `no-injection`, which is sufficient for the task's
+  `NONE or no injection` requirement; it is not represented as a separately
+  traced raw Recall-agent `NONE` response.
 - P2/P3 historical direct-run prompt hashes are not recoverable:
   `prompt_sha256 = null`, `evidence_status = "not_available"`, reason:
   `historical live run did not persist prompt hash`.
 - No prompt hash has been reconstructed or substituted for those attempts.
-- The current report intentionally does not include full chats or hidden
-  reasoning.
-
-## Remaining Work In This Same Loop
-
-1. Wait for or rerun a bounded post-fix live batch until completed Formation,
-   Placement/Core binding, and failure-continuation counts are observable.
-2. Restart Gateway, then verify one new-session related Recall, hidden
-   injection, and natural main-agent use; separately verify a NONE path.
-3. Record only observed results, count orphan Statements as zero only after
-   directly reconciling Statement/Handle/Core state, then issue the next
-   checkpoint bundle.
+- The report intentionally excludes full chats and hidden reasoning. The
+  related-session output demonstrates formatting preference use only; it is
+  not evidence that any additional project facts in that output are accurate.
 
 ## Data And Plugin State
 
 The plugin remains enabled. Existing Statement, Core, Handle, and Cursor data
-were preserved and were not reset or cleared during this checkpoint.
+were preserved and were not reset or cleared. No source/topic/entity route,
+vector, graph, global lookup, or Python semantic placement was added.
