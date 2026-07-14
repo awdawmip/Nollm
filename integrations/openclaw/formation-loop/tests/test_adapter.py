@@ -236,10 +236,10 @@ def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
     assert "bad\ufffdtext" in result["prompt"]
 
 
-def test_bridge_base64_framing_preserves_windows_unicode():
+def test_bridge_base64_framing_preserves_windows_unicode(tmp_path):
     envelope = {
-        "action": "build_recall_prompt", "query": "项目周会 📅", "session_key": "agent:main:test",
-        "memory_workspace": str(Path.cwd()), "request_id": "r-base64",
+        "action": "build_recall_prompt", "query": "项目周会 📅",
+        "memory_workspace": str(tmp_path), "request_id": "r-base64",
     }
     wire = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
     completed = subprocess.run(
