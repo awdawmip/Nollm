@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Invisible Dream Agent",
   "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "activation": {
     "onStartup": true
   },
@@ -39,17 +39,17 @@
       "max_statement_chars": { "type": "integer", "minimum": 1, "default": 4096 },
       "max_total_chars": { "type": "integer", "minimum": 1, "default": 8192 },
       "surface_page_size": { "type": "integer", "minimum": 1, "maximum": 8, "default": 8 },
-      "surface_max_order": { "type": "integer", "minimum": 0, "maximum": 2, "default": 2 },
+      "surface_max_order": { "type": "integer", "minimum": 0, "maximum": 8, "default": 8 },
       "surface_page_overhead_units": { "type": "integer", "minimum": 1, "default": 8 },
       "surface_cell_preview_units": { "type": "integer", "minimum": 1, "default": 4 },
       "recall_surface_max_pages": { "type": "integer", "minimum": 1, "default": 4 },
       "recall_surface_max_cells": { "type": "integer", "minimum": 1, "default": 32 },
       "recall_surface_max_projection_units": { "type": "integer", "minimum": 1, "default": 160 },
-      "recall_surface_max_calls": { "type": "integer", "minimum": 1, "default": 12 },
+      "recall_surface_max_calls": { "type": "integer", "minimum": 1, "default": 24 },
       "placement_surface_max_pages": { "type": "integer", "minimum": 1, "default": 6 },
       "placement_surface_max_cells": { "type": "integer", "minimum": 1, "default": 48 },
       "placement_surface_max_projection_units": { "type": "integer", "minimum": 1, "default": 240 },
-      "placement_surface_max_calls": { "type": "integer", "minimum": 1, "default": 16 }
+      "placement_surface_max_calls": { "type": "integer", "minimum": 1, "default": 32 }
     },
     "additionalProperties": false
   },

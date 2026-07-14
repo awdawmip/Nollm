@@ -18,7 +18,7 @@ from nollm_openclaw_formation.memory_loop import (
 
 
 STATEMENT = {"statement_id": "dream:test", "content_utf8": "The release window is Wednesday at 3 PM.", "source_handle": None, "context_refs": []}
-CELL = {"profile_id": "eisenstein_exact_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
+CELL = {"profile_id": "default_dream_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
 
 
 def placement(statement_id: str, action: str, candidate_id: str) -> str:
@@ -34,14 +34,6 @@ def navigation(action: str, candidate_id: str | None = None) -> str:
     if candidate_id is not None:
         value["candidate_id"] = candidate_id
     return json.dumps(value)
-
-
-def multi_navigation(*candidate_ids: str) -> str:
-    return json.dumps({
-        "schema_version": TRAVERSAL_SCHEMA_VERSION,
-        "action": "select_entries",
-        "candidate_ids": list(candidate_ids),
-    })
 
 
 def place_initial(workspace) -> dict[str, object]:
@@ -80,7 +72,10 @@ def test_recall_traverses_surface_then_renders_hidden_context(tmp_path):
         str(tmp_path),
     )
     assert recalled["status"] == "recall_decision"
-    assert len(recalled["per_entry_core_recall"]) == 1
+    assert recalled["entry_cell"] == CELL
+    assert set(recalled["core_recall"]) == {"budget_exhausted"}
+    assert "entry_cells" not in recalled
+    assert "per_entry_core_recall" not in recalled
     rendered = render_recall_injection(json.dumps({
         "schema_version": RECALL_SCHEMA_VERSION,
         "outcome": "inject",
@@ -105,13 +100,13 @@ def test_forced_coarse_surface_uses_coverage_descent(tmp_path):
     budget = {
         "page_size": 8, "max_pages": 1, "max_surface_cells": 1,
         "page_overhead_units": 8, "cell_preview_units": 4,
-        "max_projection_units": 1, "selected_entries_limit": 3,
-        "max_descent_depth": 2, "hard_max_order": 2, "max_calls": 12,
+        "max_projection_units": 1,
+        "max_descent_depth": 8, "hard_max_order": 8, "max_calls": 24,
     }
     result = build_recall_prompt("release", str(tmp_path), "recall:coarse", budget)
-    assert result["surface"]["active_order"] == 2
+    assert result["surface"]["active_order"] == 8
     assert result["surface"]["overflow"] is True
-    for expected_order in (1, 0):
+    for expected_order in range(7, -1, -1):
         candidate = result["surface"]["surface_cells"][0]["candidate_id"]
         result = advance_recall_traversal("release", result["traversal_state"], navigation("open_surface_cell", candidate), str(tmp_path))
         assert result["surface"]["current_order"] == expected_order
@@ -129,7 +124,7 @@ def test_unshown_candidate_and_malformed_navigation_do_not_execute(tmp_path):
         advance_recall_traversal("release", built["traversal_state"], json.dumps({"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "none", "candidate_id": "x"}), str(tmp_path))
 
 
-def test_recall_multi_entry_selection_is_shown_unique_and_budget_bounded(tmp_path):
+def test_recall_rejects_multi_entry_and_propagates_from_one_entry(tmp_path):
     place_initial(tmp_path)
     second = {"statement_id": "dream:second", "content_utf8": "The risk review is Tuesday.", "source_handle": None, "context_refs": []}
     with AccessMemoryLoop(tmp_path) as loop:
@@ -141,23 +136,18 @@ def test_recall_multi_entry_selection_is_shown_unique_and_budget_bounded(tmp_pat
         )
     built = build_recall_prompt("release", str(tmp_path), "recall:multi")
     shown = [item["candidate_id"] for item in built["surface"]["surface_cells"]]
-    recalled = advance_recall_traversal(
-        "release", built["traversal_state"], multi_navigation(*shown), str(tmp_path)
-    )
-    assert len(recalled["entry_cells"]) == 2
-    assert len(recalled["per_entry_core_recall"]) == 2
-    assert {item["statement_id"] for item in recalled["candidates"]} == {"dream:test", "dream:second"}
+    invalid_multi = json.dumps({
+        "schema_version": TRAVERSAL_SCHEMA_VERSION,
+        "action": "select_entries",
+        "candidate_ids": shown,
+    })
     with pytest.raises(FormationAdapterError, match="fields"):
-        advance_recall_traversal(
-            "release", built["traversal_state"], multi_navigation(shown[0], shown[0]), str(tmp_path)
-        )
-    with pytest.raises(FormationAdapterError, match="fixed budget"):
-        advance_recall_traversal(
-            "release",
-            built["traversal_state"],
-            multi_navigation(shown[0], "surface:missing-1", "surface:missing-2", "surface:missing-3"),
-            str(tmp_path),
-        )
+        advance_recall_traversal("release", built["traversal_state"], invalid_multi, str(tmp_path))
+    recalled = advance_recall_traversal(
+        "release", built["traversal_state"], navigation("select_entry", shown[0]), str(tmp_path)
+    )
+    assert recalled["entry_cell"]["profile_id"] == "default_dream_v1"
+    assert {item["statement_id"] for item in recalled["candidates"]} == {"dream:test", "dream:second"}
 
 
 def test_none_and_failed_placement_leave_no_pollution(tmp_path):

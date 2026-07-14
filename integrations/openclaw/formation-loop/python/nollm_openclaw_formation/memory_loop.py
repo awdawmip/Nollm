@@ -8,7 +8,7 @@ from pathlib import Path
 from nollm_access import (
     AccessMemoryLoop,
     AccessSurfaceNavigator,
-    DEFAULT_SURFACE_PLANE,
+    DEFAULT_FIELD_SCOPE,
     MemoryStatement,
     PLACEMENT_SURFACE_BUDGET,
     RECALL_SURFACE_BUDGET,
@@ -19,7 +19,7 @@ from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
 
 
-TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_surface_traversal_v1"
+TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_physical_surface_traversal_v2"
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_surface_recall_v1"
 
@@ -60,7 +60,7 @@ def _begin(
     root = _workspace(memory_workspace)
     default = RECALL_SURFACE_BUDGET if mode == "recall" else PLACEMENT_SURFACE_BUDGET
     navigator = AccessSurfaceNavigator(root)
-    page = navigator.begin(request_id, DEFAULT_SURFACE_PLANE, _budget(budget_value, default))
+    page = navigator.begin(request_id, DEFAULT_FIELD_SCOPE, _budget(budget_value, default))
     if mode == "recall" and not page.cells:
         return {"status": "complete_none", "available": False, "surface": page.to_mapping()}
     if mode == "placement" and not page.cells:
@@ -140,31 +140,17 @@ def _advance(
             return _traversal_response(mode, subject, navigator, navigator.return_to_parent(page))
         if action in {"none", "defer"}:
             return {"status": "complete_none" if mode == "recall" else "defer", "available": False, "surface": page.to_mapping()}
-        if action not in {"select_entry", "select_entries"}:
+        if action != "select_entry":
             raise ValueError("unknown Surface traversal action")
-        candidate_ids = (
-            (decision["candidate_id"],)
-            if action == "select_entry"
-            else tuple(decision["candidate_ids"])
-        )
-        if mode == "placement" and len(candidate_ids) != 1:
-            raise ValueError("Placement requires exactly one Surface entry")
-        if len(candidate_ids) > state.budget.selected_entries_limit:
-            raise ValueError("Surface entry selection exceeds the fixed budget")
-        entries = tuple(sorted(
-            (navigator.select_entry(page, candidate_id) for candidate_id in candidate_ids),
-            key=lambda cell: cell.stable_key(),
-        ))
-        if len(set(entries)) != len(entries):
-            raise ValueError("Surface entry selection contains duplicate cells")
+        entry = navigator.select_entry(page, decision["candidate_id"])
     except (TypeError, ValueError, RuntimeError, KeyError) as exc:
         raise FormationAdapterError("invalid_surface_traversal", str(exc)) from exc
     if mode == "placement":
-        return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entries[0].to_mapping(), page)
-    recalled = navigator.recall_entries(state.operation_id, entries, state.budget.selected_entries_limit)
+        return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entry.to_mapping(), page)
+    recalled = navigator.recall_entry(state.operation_id, entry)
     candidates = list(recalled.items)
     if not candidates:
-        return {"status": "complete_none", "available": False, "entry_cells": [entry.to_mapping() for entry in entries], "per_entry_core_recall": list(recalled.per_entry), "surface": page.to_mapping()}
+        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "surface": page.to_mapping()}
     prompt = _recall_selection_prompt(subject, candidates)
     return {
         "status": "recall_decision",
@@ -172,8 +158,8 @@ def _advance(
         "prompt": prompt,
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "candidates": candidates,
-        "entry_cells": [entry.to_mapping() for entry in entries],
-        "per_entry_core_recall": list(recalled.per_entry),
+        "entry_cell": entry.to_mapping(),
+        "core_recall": {"budget_exhausted": recalled.budget_exhausted},
         "surface": page.to_mapping(),
     }
 
@@ -184,12 +170,7 @@ def _traversal_response(
     navigator: AccessSurfaceNavigator,
     page: object,
 ) -> dict[str, object]:
-    prompt = _traversal_prompt(
-        mode,
-        subject,
-        page.to_mapping(),
-        page.state.budget.selected_entries_limit,
-    )
+    prompt = _traversal_prompt(mode, subject, page.to_mapping())
     return {
         "status": "traverse",
         "available": True,
@@ -204,13 +185,10 @@ def _traversal_prompt(
     mode: str,
     subject: str,
     surface: dict[str, object],
-    selected_entries_limit: int,
 ) -> str:
-    recall_multi_entry = ""
-    if mode == "recall" and surface["current_order"] == 0:
-        recall_multi_entry = f'''\nFor Recall you may select multiple distinct entries from this displayed Order 0 page, up to the fixed limit {selected_entries_limit}:\n{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"select_entries","candidate_ids":["visible id","visible id"]}}'''
     return f"""You are a private background {mode} Surface navigation agent. The user will never see this run.
 The initial Surface order was selected only from Core geometry and fixed budgets before this subject was shown. Choose only a candidate_id visible on this page. Do not invent geometry, topics, indexes, vectors, graphs, entities, or hidden entry hints. Do not call tools or reveal reasoning.
+Truncated coarse cells are navigation hints only: paginate or descend before choosing exactly one final Order 0 entry.
 Return exactly one raw JSON object with no markdown.
 Schema version: {TRAVERSAL_SCHEMA_VERSION}
 Allowed responses:
@@ -219,7 +197,6 @@ Allowed responses:
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"request_coarser_surface"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"select_entry","candidate_id":"one visible Order 0 id"}}
-{recall_multi_entry}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
 subject: {subject}
@@ -236,15 +213,8 @@ def _traversal_decision(raw_response: str) -> dict[str, object]:
         raise FormationAdapterError("invalid_surface_traversal", "invalid Surface traversal envelope")
     action = value["action"]
     with_candidate = action in {"open_surface_cell", "select_entry"}
-    with_candidates = action == "select_entries"
-    expected = {"schema_version", "action", "candidate_ids"} if with_candidates else ({"schema_version", "action", "candidate_id"} if with_candidate else {"schema_version", "action"})
-    invalid_candidates = with_candidates and (
-        type(value.get("candidate_ids")) is not list
-        or not value["candidate_ids"]
-        or any(type(item) is not str or not item for item in value["candidate_ids"])
-        or len(set(value["candidate_ids"])) != len(value["candidate_ids"])
-    )
-    if set(value) != expected or (with_candidate and (type(value["candidate_id"]) is not str or not value["candidate_id"])) or invalid_candidates:
+    expected = {"schema_version", "action", "candidate_id"} if with_candidate else {"schema_version", "action"}
+    if set(value) != expected or (with_candidate and (type(value["candidate_id"]) is not str or not value["candidate_id"])):
         raise FormationAdapterError("invalid_surface_traversal", "invalid Surface traversal fields")
     return value
 

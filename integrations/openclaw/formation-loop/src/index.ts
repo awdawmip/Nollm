@@ -30,10 +30,10 @@ const JSON_SCHEMA = {
     max_statements: { type: "integer", minimum: 1, default: 8 }, max_statement_chars: { type: "integer", minimum: 1, default: 4096 },
     max_total_chars: { type: "integer", minimum: 1, default: 8192 }, persist_subagent_transcripts: { type: "boolean", const: false, default: false },
     debug_trace: { type: "boolean", default: false }, evidence_path: { type: "string" },
-    surface_page_size: { type: "integer", minimum: 1, maximum: 8, default: 8 }, surface_max_order: { type: "integer", minimum: 0, maximum: 2, default: 2 },
+    surface_page_size: { type: "integer", minimum: 1, maximum: 8, default: 8 }, surface_max_order: { type: "integer", minimum: 0, maximum: 8, default: 8 },
     surface_page_overhead_units: { type: "integer", minimum: 1, default: 8 }, surface_cell_preview_units: { type: "integer", minimum: 1, default: 4 },
-    recall_surface_max_pages: { type: "integer", minimum: 1, default: 4 }, recall_surface_max_cells: { type: "integer", minimum: 1, default: 32 }, recall_surface_max_projection_units: { type: "integer", minimum: 1, default: 160 }, recall_surface_max_calls: { type: "integer", minimum: 1, default: 12 },
-    placement_surface_max_pages: { type: "integer", minimum: 1, default: 6 }, placement_surface_max_cells: { type: "integer", minimum: 1, default: 48 }, placement_surface_max_projection_units: { type: "integer", minimum: 1, default: 240 }, placement_surface_max_calls: { type: "integer", minimum: 1, default: 16 },
+    recall_surface_max_pages: { type: "integer", minimum: 1, default: 4 }, recall_surface_max_cells: { type: "integer", minimum: 1, default: 32 }, recall_surface_max_projection_units: { type: "integer", minimum: 1, default: 160 }, recall_surface_max_calls: { type: "integer", minimum: 1, default: 24 },
+    placement_surface_max_pages: { type: "integer", minimum: 1, default: 6 }, placement_surface_max_cells: { type: "integer", minimum: 1, default: 48 }, placement_surface_max_projection_units: { type: "integer", minimum: 1, default: 240 }, placement_surface_max_calls: { type: "integer", minimum: 1, default: 32 },
   },
 } as const;
 
@@ -46,10 +46,9 @@ export function surfaceBudget(config: DreamConfig, mode: "recall" | "placement")
     page_overhead_units: config.surface_page_overhead_units ?? 8,
     cell_preview_units: config.surface_cell_preview_units ?? 4,
     max_projection_units: recall ? config.recall_surface_max_projection_units ?? 160 : config.placement_surface_max_projection_units ?? 240,
-    selected_entries_limit: recall ? 3 : 1,
-    max_descent_depth: config.surface_max_order ?? 2,
-    hard_max_order: config.surface_max_order ?? 2,
-    max_calls: recall ? config.recall_surface_max_calls ?? 12 : config.placement_surface_max_calls ?? 16,
+    max_descent_depth: config.surface_max_order ?? 8,
+    hard_max_order: config.surface_max_order ?? 8,
+    max_calls: recall ? config.recall_surface_max_calls ?? 24 : config.placement_surface_max_calls ?? 32,
   };
 }
 
@@ -195,7 +194,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     let built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace, surface_budget: surfaceBudget(config, "recall") });
     const surfacePath: unknown[] = [];
     let traversal = 0;
-    while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 12)) {
+    while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 24)) {
       surfacePath.push(built.surface);
       const step = await runHiddenAgent(built.prompt, model!, `${requestId}:surface:${traversal}`);
       if (!step.raw) { await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt }); return; }
@@ -203,7 +202,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       traversal += 1;
     }
     if (built.ok === true && built.status === "complete_none") {
-      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cells: built.entry_cells ?? [], per_entry_core_recall: built.per_entry_core_recall ?? [], surface_path: surfacePath, visible_message_count: 0 });
+      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0 });
       return;
     }
     if (built.ok !== true || built.status !== "recall_decision" || typeof built.prompt !== "string") {
@@ -214,11 +213,11 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!selected.raw) { await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt }); return; }
     const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
     if (rendered.ok === true && rendered.outcome === "none") {
-      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cells: built.entry_cells, per_entry_core_recall: built.per_entry_core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
+      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
       return;
     }
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
-    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, entry_cells: built.entry_cells, per_entry_core_recall: built.per_entry_core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
+    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {
@@ -415,7 +414,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   let built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, memory_workspace: config.memory_workspace ?? config.statement_store_workspace, surface_budget: surfaceBudget(config, "placement") });
   const surfacePath: unknown[] = [];
   let traversal = 0;
-  while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.placement_surface_max_calls ?? 16)) {
+  while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.placement_surface_max_calls ?? 32)) {
     surfacePath.push(built.surface);
     const step = await runDreamSubagent(api, config, built.prompt, model, `${requestId}:surface:${traversal}`);
     if (!step?.raw) { await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId }); return; }
