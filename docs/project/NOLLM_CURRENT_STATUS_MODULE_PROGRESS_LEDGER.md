@@ -8,15 +8,15 @@ do not define this active ledger.
 
 | Module | Before | Target | Actual | Lifecycle | Confidence | Evidence | Main gap |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- |
-| CORE | 75% | 90% | 75% | `IMPLEMENTED` | medium-high | canonical state, occupancy, atomic writes, bounded Recall, transitional rebuildable Surface | hard physical profile, certified coverage, address separation, real coarsening |
+| CORE | 75% | 90% | 90% | `IMPLEMENTED` | high | certified 8-phase profile, separate physical/observation identity, Orders 0-8, single-entry propagation | PB scale and full multi-layer Placement |
 | SNAPSHOT | 50% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests; SnapshotDiff unchanged | version migration and incremental snapshots |
 | TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests; state isolation unchanged | deeper performance visualization |
-| ACCESS | 80% | 90% | 80% | `IMPLEMENTED` | medium-high | structural-budget selection, bounded navigation, atomic placement | remove multi-entry compensation and consume physical Surface |
+| ACCESS | 80% | 90% | 90% | `IMPLEMENTED` | high | real physical projections, single-entry navigation/Recall, atomic layer-0 Placement | full multi-layer Placement and long-term quality |
 | HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
 | AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
-| OPENCLAW | 80% | 85% | 80% | `CAPABILITY_VALIDATED` | medium-high | real model, hidden Recall, Formation and Placement | single-entry physical Surface live closure |
-| LAB | 75% | 90% | 75% | `IMPLEMENTED` | medium | parity and Core capability | 22.5-degree/beta certification and real dense coarsening |
-| DISTRIBUTIONS | 65% | 70% | 65% | `IMPLEMENTED` | medium-high | enabled Access-only plugin v0.6.0 | physical profile/wire version and migration |
+| OPENCLAW | 80% | 85% | 85% | `CAPABILITY_VALIDATED` | high | real R1/R2/R3/P1, hidden single-entry Recall, restart persistence | long-duration and multi-model validation |
+| LAB | 75% | 90% | 90% | `IMPLEMENTED` | high | decimal-72 physics, certified Coverage, dense/sparse coarsening, migration | large-scale and long-duration performance |
+| DISTRIBUTIONS | 65% | 70% | 70% | `IMPLEMENTED` | high | enabled Access-only plugin v0.7.0 with profile/contract diagnostics | formal release and cross-platform validation |
 
 Previous task actual vector:
 
@@ -25,20 +25,20 @@ CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS 0% |
 HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +5% | DISTRIBUTIONS +5%
 ```
 
-V3.7 rotated physical field correction baseline (`IN_PROGRESS`):
+V3.7 rotated physical field correction actual (`COMPLETED`):
 
 ```text
-CORE 75% | SNAPSHOT 50% | TRACE 40% | ACCESS 80% |
-HISTORY 10% | AUDIT 10% | OPENCLAW 80% |
-LAB 75% | DISTRIBUTIONS 65%
+CORE 90% | SNAPSHOT 50% | TRACE 40% | ACCESS 90% |
+HISTORY 10% | AUDIT 10% | OPENCLAW 85% |
+LAB 90% | DISTRIBUTIONS 70%
 ```
 
 V3.6 is retained as a transitional checkpoint. Its Order 0/1/2 Surface and
 multi-entry live results do not establish the mandatory rotated physical
 profile, physical/observation address separation, real coarsening, or
-single-entry geometric propagation. The planned V3.7 vector is Core +15,
-Access +10, OpenClaw +5, Lab +15, and Distributions +5; actual credit remains
-at the corrected baseline until the corresponding Gates pass.
+single-entry geometric propagation. The actual V3.7 vector is Core +15,
+Access +10, OpenClaw +5, Lab +15, and Distributions +5. All corresponding
+Gates passed; layer-0-only Placement and the limits in the final report remain.
 
 ALD external recomputation:
 
