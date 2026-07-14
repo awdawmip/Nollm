@@ -36,22 +36,18 @@ embedding
 
 ## 2. 不可动摇的原则
 
-### 2.1 Evidence and semantic-memory ownership (V3.3 amended)
+### 2.1 Evidence first
 
 ```text
-Host-owned conversation material is temporary semantic input by default.
-Nollm's canonical persistent semantic unit is `MemoryStatement`; it may be
-rewritten, split, or merged by a real LLM. Nollm guarantees structural and
-state correctness, not model semantic accuracy. Optional transcript and
-exact-span provenance belong to Host, History, Audit, debug, or migration
-policy and are not an active default persistence requirement.
+原始 Evidence 是事实源。
+解释、位置、覆盖、路径和召回结果都不能替代原文。
 ```
 
 必须始终成立：
 
 ```text
-Conversation Material ≠ MemoryStatement
-MemoryStatement ≠ Placement
+Evidence ≠ Interpretation
+Interpretation ≠ Placement
 Placement ≠ Fact confirmation
 Recall path ≠ Proof
 ```
@@ -149,8 +145,7 @@ Nollm Core
   负责验证、执行、存储和几何传播
 ```
 
-OpenClaw 不是事实源，LLM 判断也不是事实本身；Host-owned conversation
-material 默认不进入 Nollm 持久状态。
+OpenClaw 不是事实源，LLM 判断也不是事实本身；原始 Evidence 始终保留。
 
 ### 2.6 Capture、Placement、Admission、Recall 分离
 
@@ -379,7 +374,7 @@ Original Evidence fallback
 开始任何新任务前，逐项检查：
 
 ```text
-1. 它是否遵守 ConversationMaterial 临时性与 MemoryStatement 持久边界？
+1. 它是否保留原始 Evidence？
 
 2. 关系来自几何结构，还是另建索引？
 
@@ -412,10 +407,9 @@ Original Evidence fallback
 
 ## 6. 当前执行顺序
 
-下列 GRF8 顺序是历史阶段背景。当前调度由 `docs/project/ACTIVE_PROJECT.md`
-指向的授权任务书决定，且不得覆盖本文件的架构原则。
+GRF8 已在执行，不中途打断。
 
-历史优先顺序：
+GRF8 完成后，下一阶段必须优先：
 
 ```text
 1. 审计 GRF8 中所有 Index / Route / Lookup / Cache；
@@ -463,4 +457,207 @@ Windows 10/11 + PowerShell
 
 ## 8. 最终一句话
 
-> **Nollm 不是用索引找到记忆后再展示几何，而是让 LLM 把 MemoryStatement 放入几何关系场，使几何结构本身成为记忆关系和召回路径。**
+> **Nollm 不是用索引找到记忆后再展示几何，而是让 LLM 把证据放入几何关系场，使几何结构本身成为记忆关系和召回路径。**
+---
+
+## 9. 2026-07-14 数学真值、历史资产复用与独立 Oracle 修订
+
+本节是最高约束的组成部分。其目的不是增加外围治理，而是防止数学内核在局部实现中被简化、重写或由同源测试自证。
+
+### 9.1 先复用、后重建
+
+开始任何几何、Coverage、Surface、坐标变换或多尺度任务前，必须先审计仓库现有数学资产。
+
+至少检查：
+
+```text
+reference/python/nollm/dream_geometry/geometry/**
+reference/python/tests/fixtures/gvr1/**
+reference/python/tests/fixtures/gra1/**
+reference/python/tests/fixtures/grc1/**
+reference/python/tests/fixtures/gkd1/**
+reference/python/tests/fixtures/gpr1/**
+validation/gvr1/**
+validation/gra1/**
+validation/grc1/**
+validation/gkd1/**
+validation/gpr1/**
+```
+
+未经书面差距分析，不得重新实现：
+
+```text
+正六边形 world transform；
+axial/world 双向变换；
+凸多边形相交；
+Coverage candidate；
+Coverage distribution；
+残差质量；
+旋转—尺度 schedule；
+平移变化验证；
+双向 Coverage；
+phase recurrence；
+共振/非共振诊断。
+```
+
+历史代码不是因为位于 `reference/` 或旧分支就自动错误。应按以下分类：
+
+```text
+REUSE_AS_ORACLE：
+  数学逻辑正确，可直接作为独立真值或回归 Oracle。
+
+PORT_WITH_ADAPTATION：
+  数学逻辑可复用，但需改为当前类型、精度或模块边界。
+
+REFERENCE_ONLY：
+  只保留实验设计、数据窗口或失败教训，不直接进入生产。
+```
+
+### 9.2 数学真值不能由同源实现自证
+
+任何标记为：
+
+```text
+physical
+certified
+exact
+validated
+```
+
+的几何能力，至少需要两个相互独立的实现路径交叉验证。
+
+最低要求：
+
+```text
+Oracle A：
+  历史纯几何 world transform + polygon overlap 实现。
+
+Oracle B：
+  独立 Decimal、区间、整数固定点或有理实现。
+```
+
+禁止：
+
+```text
+编译器调用函数 F；
+测试再次调用同一个函数 F；
+二者结果一致；
+因此宣称数学真值已认证。
+```
+
+Parity 只证明实现一致，不自动证明物理正确。
+
+### 9.3 Origin-only、phase-only 验证不足
+
+当旋转角和尺度比不是格自同构时，Coverage 权重通常依赖完整平移余量。
+
+因此：
+
+```text
+8 个 layer phase
+≠
+全平面 Coverage 权重表。
+```
+
+必须验证：
+
+```text
+多个正负 q/r；
+多个 layer；
+两个 Coverage 方向；
+全部旋转 phase；
+候选完整性；
+零重叠误传播；
+非零重叠遗漏；
+权重误差；
+残差质量。
+```
+
+原点只能是一个样本，不能代表全格。
+
+### 9.4 正确性优先于“运行时禁止多边形”的局部限制
+
+以下属于实现策略，不是第一性原理：
+
+```text
+Core 运行时绝不做 polygon；
+Core 运行时只能查静态模板；
+每个 phase 只能有一组固定权重。
+```
+
+若这些策略导致物理关系错误，应先采用可复现、确定性的真实 overlap 计算，再研究缓存和加速。
+
+允许的正确性优先路径包括：
+
+```text
+固定上下文 Decimal；
+整数固定点；
+有理数；
+区间算术；
+预编译顶点常量；
+可删除的 residue cache。
+```
+
+不得为了微秒级 lookup 固化错误 Coverage。
+
+### 9.5 数学 Gate 必须先于 Live Gate
+
+执行顺序必须是：
+
+```text
+历史资产盘点
+→ 独立 Oracle
+→ 全平移数学验证
+→ Core runtime
+→ Surface
+→ 单入口跨层 Recall
+→ OpenClaw Live。
+```
+
+数学 Gate 未通过时：
+
+```text
+不得以聊天回答正确；
+不得以 R1/R2/R3 通过；
+不得以插件启用；
+不得以 Tag；
+```
+
+替代物理几何证明。
+
+### 9.6 能力名称必须包含真实边界
+
+如果只验证：
+
+```text
+地址分离；
+单入口 Wire；
+无 Cursor；
+同层 Recall；
+```
+
+就只能以这些能力命名。
+
+不得扩大为：
+
+```text
+rotated physical field validated；
+certified Coverage；
+full multi-scale；
+exact geometry。
+```
+
+### 9.7 完整权威文档必须进入 Git
+
+活动架构书、路线书、任务书和 `AGENTS.md` 必须以完整正文进入仓库。
+
+禁止：
+
+```text
+只提交数千字节摘要替代完整架构书；
+聊天附件存在但 Git 中缺失；
+ACTIVE_PROJECT 指向不存在的任务；
+状态先写 COMPLETED，数学报告后补。
+```
+
+> **已有正确数学资产必须成为下一实现的起点；新代码必须证明自己比历史 Oracle 更正确，而不是只证明自己能通过自己编写的测试。**
