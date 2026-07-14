@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .fixed_point import Q16_ONE
 from .geometry import GeometryAddress
-from .profiles import runtime_profile
+from .profiles import DEFAULT_PROFILE_ID, GEOMETRY_CONTRACT_VERSION, runtime_profile
 
 COVERAGE_UP = "coverage_up"
 COVERAGE_DOWN = "coverage_down"
@@ -22,6 +22,11 @@ class KernelEntry:
     weight_q16: int
     kernel_type: str = "coverage_template"
     flags: tuple[str, ...] = ()
+    intersection_area_lower: str = "0"
+    intersection_area_upper: str = "0"
+    source_share_q16: int = 0
+    target_share_q16: int = 0
+    certification_residual_q16: int = 0
 
     def __post_init__(self) -> None:
         for name in ("layer_delta", "dq", "dr", "weight_q16"):
@@ -33,9 +38,15 @@ class KernelEntry:
             raise TypeError("flags must be a tuple of strings")
         if tuple(sorted(set(self.flags))) != self.flags:
             raise ValueError("flags must be sorted and unique")
+        if any(type(getattr(self, name)) is not str or not getattr(self, name) for name in ("intersection_area_lower", "intersection_area_upper")):
+            raise TypeError("intersection interval bounds must be strings")
+        for name in ("source_share_q16", "target_share_q16", "certification_residual_q16"):
+            value = getattr(self, name)
+            if type(value) is not int or not 0 <= value <= Q16_ONE:
+                raise ValueError(f"{name} must be a Q16 integer")
 
     def to_mapping(self) -> dict[str, object]:
-        return {"layer_delta": self.layer_delta, "dq": self.dq, "dr": self.dr, "weight_q16": self.weight_q16, "kernel_type": self.kernel_type, "flags": list(self.flags)}
+        return {"layer_delta": self.layer_delta, "dq": self.dq, "dr": self.dr, "weight_q16": self.weight_q16, "kernel_type": self.kernel_type, "flags": list(self.flags), "intersection_area_lower": self.intersection_area_lower, "intersection_area_upper": self.intersection_area_upper, "source_share_q16": self.source_share_q16, "target_share_q16": self.target_share_q16, "certification_residual_q16": self.certification_residual_q16}
 
 
 @dataclass(frozen=True)
@@ -50,6 +61,9 @@ class CoverageTemplate:
     normalization_residual_q16: int
     approximation_residual_q16: int
     compiler: CompilerMetadata
+    transform_q32: tuple[int, int, int, int]
+    source_target_scale_relation: str
+    certification: str
 
     def __post_init__(self) -> None:
         runtime_profile(self.profile_id)
@@ -65,6 +79,10 @@ class CoverageTemplate:
             raise ValueError("CoverageTemplate weight metadata mismatch")
         if type(self.compiler) is not CompilerMetadata:
             raise TypeError("compiler must be CompilerMetadata")
+        if type(self.transform_q32) is not tuple or len(self.transform_q32) != 4 or any(type(value) is not int for value in self.transform_q32):
+            raise TypeError("transform_q32 must contain four integers")
+        if type(self.source_target_scale_relation) is not str or not self.source_target_scale_relation or type(self.certification) is not str or not self.certification:
+            raise TypeError("physical template metadata must be non-empty strings")
         delta = -1 if self.direction == COVERAGE_UP else 1 if self.direction == COVERAGE_DOWN else 0
         if self.to_layer_mod != self.from_layer_mod + delta or any(entry.layer_delta != delta for entry in self.entries):
             raise ValueError("coverage layer contract mismatch")
@@ -73,20 +91,42 @@ class CoverageTemplate:
             raise ValueError("coverage entries are not canonical or exceed fanout")
         profile = runtime_profile(self.profile_id)
         expected_flags = tuple(sorted({flag for entry in self.entries for flag in entry.flags}))
-        expected_method = "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
+        expected_method = "decimal_interval_rotated_hex_envelope_v1" if self.profile_id == DEFAULT_PROFILE_ID else "symbolic_research_template_with_residual" if self.profile_id == "dream_quasi_v1" else "integer_template_lookup"
         if self.compiler.compiler_id != "grf1a_coverage_template_compiler" or self.compiler.flags != expected_flags or self.compiler.method != expected_method or self.compiler.weight_format != profile.weight_format or self.compiler.layer_index_direction != LAYER_INDEX_DIRECTION:
             raise ValueError("coverage compiler metadata mismatch")
-        if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 != Q16_ONE // 16) or (self.profile_id != "dream_quasi_v1" and self.approximation_residual_q16 != 0):
+        if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 != Q16_ONE // 16) or (self.profile_id not in ("dream_quasi_v1", DEFAULT_PROFILE_ID) and self.approximation_residual_q16 != 0):
             raise ValueError("profile approximation residual mismatch")
+        if self.profile_id == DEFAULT_PROFILE_ID:
+            if not 0 <= self.from_layer_mod < 8 or self.compiler.geometry_contract_version != GEOMETRY_CONTRACT_VERSION:
+                raise ValueError("rotated physical template phase contract mismatch")
 
     def to_mapping(self) -> dict[str, object]:
-        return {"profile_id": self.profile_id, "direction": self.direction, "from_layer_mod": self.from_layer_mod, "to_layer_mod": self.to_layer_mod, "source_phase": self.source_phase, "entries": [entry.to_mapping() for entry in self.entries], "sum_weight_q16": self.sum_weight_q16, "normalization_residual_q16": self.normalization_residual_q16, "approximation_residual_q16": self.approximation_residual_q16, "compiler": self.compiler.to_mapping()}
+        return {"profile_id": self.profile_id, "direction": self.direction, "from_layer_mod": self.from_layer_mod, "to_layer_mod": self.to_layer_mod, "source_phase": self.source_phase, "entries": [entry.to_mapping() for entry in self.entries], "sum_weight_q16": self.sum_weight_q16, "normalization_residual_q16": self.normalization_residual_q16, "approximation_residual_q16": self.approximation_residual_q16, "compiler": self.compiler.to_mapping(), "transform_q32": list(self.transform_q32), "source_target_scale_relation": self.source_target_scale_relation, "certification": self.certification}
 
 
 def expand_template(cell: GeometryAddress, template: CoverageTemplate, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> tuple[tuple[GeometryAddress, int], ...]:
     if cell.profile_id != template.profile_id or len(template.entries) > fanout_limit:
         raise ValueError("template cannot be expanded")
-    return tuple(sorted(((GeometryAddress(cell.profile_id, cell.chart_id, cell.layer + entry.layer_delta, cell.q + entry.dq, cell.r + entry.dr, cell.phase), entry.weight_q16) for entry in template.entries), key=lambda item: (item[0].stable_key(), item[1])))
+    q, r = _transform_axial_q32(cell.q, cell.r, template.transform_q32)
+    return tuple(sorted(((GeometryAddress(cell.profile_id, cell.chart_id, cell.layer + entry.layer_delta, q + entry.dq, r + entry.dr, cell.phase), entry.weight_q16) for entry in template.entries), key=lambda item: (item[0].stable_key(), item[1])))
+
+
+def _transform_axial_q32(q: int, r: int, matrix: tuple[int, int, int, int]) -> tuple[int, int]:
+    one = 1 << 32
+    qn = matrix[0] * q + matrix[1] * r
+    rn = matrix[2] * q + matrix[3] * r
+    xn, zn, yn = qn, rn, -qn - rn
+
+    def nearest(value: int) -> int:
+        return (value + one // 2) // one if value >= 0 else -((-value + one // 2) // one)
+
+    x, z, y = nearest(xn), nearest(zn), nearest(yn)
+    dx, dz, dy = abs(x * one - xn), abs(z * one - zn), abs(y * one - yn)
+    if dx >= dz and dx >= dy:
+        x = -y - z
+    elif dz >= dy:
+        z = -x - y
+    return x, z
 
 
 def validate_lateral_ring(ring: int, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> None:
@@ -106,9 +146,11 @@ class CompilerMetadata:
     fanout_limit: int
     layer_index_direction: str
     flags: tuple[str, ...]
+    geometry_contract_version: str
+    compiler_version: str
 
     def __post_init__(self) -> None:
-        if any(type(getattr(self, name)) is not str or not getattr(self, name) for name in ("compiler_id", "method", "weight_format", "layer_index_direction")):
+        if any(type(getattr(self, name)) is not str or not getattr(self, name) for name in ("compiler_id", "method", "weight_format", "layer_index_direction", "geometry_contract_version", "compiler_version")):
             raise TypeError("compiler string fields must be non-empty")
         if type(self.fanout_limit) is not int or self.fanout_limit <= 0:
             raise ValueError("compiler fanout_limit must be positive")
@@ -119,7 +161,7 @@ class CompilerMetadata:
         return getattr(self, key)
 
     def to_mapping(self) -> dict[str, object]:
-        return {"compiler_id": self.compiler_id, "method": self.method, "weight_format": self.weight_format, "fanout_limit": self.fanout_limit, "layer_index_direction": self.layer_index_direction, "flags": list(self.flags)}
+        return {"compiler_id": self.compiler_id, "method": self.method, "weight_format": self.weight_format, "fanout_limit": self.fanout_limit, "layer_index_direction": self.layer_index_direction, "flags": list(self.flags), "geometry_contract_version": self.geometry_contract_version, "compiler_version": self.compiler_version}
 
 
 def template_from_mapping(value: object) -> CoverageTemplate:
@@ -136,6 +178,8 @@ def template_from_mapping(value: object) -> CoverageTemplate:
         compiler["fanout_limit"],
         compiler["layer_index_direction"],
         tuple(compiler["flags"]),
+        compiler["geometry_contract_version"],
+        compiler["compiler_version"],
     )
     kernel_entries = tuple(
         KernelEntry(
@@ -145,6 +189,11 @@ def template_from_mapping(value: object) -> CoverageTemplate:
             entry["weight_q16"],
             entry["kernel_type"],
             tuple(entry["flags"]),
+            entry["intersection_area_lower"],
+            entry["intersection_area_upper"],
+            entry["source_share_q16"],
+            entry["target_share_q16"],
+            entry["certification_residual_q16"],
         )
         for entry in entries
     )
@@ -159,4 +208,7 @@ def template_from_mapping(value: object) -> CoverageTemplate:
         value["normalization_residual_q16"],
         value["approximation_residual_q16"],
         metadata,
+        tuple(value["transform_q32"]),
+        value["source_target_scale_relation"],
+        value["certification"],
     )

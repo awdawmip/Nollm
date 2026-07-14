@@ -29,6 +29,11 @@ class CompileKernelEntry:
     weight_q16: int
     kernel_type: str
     flags: tuple[str, ...]
+    intersection_area_lower: str
+    intersection_area_upper: str
+    source_share_q16: int
+    target_share_q16: int
+    certification_residual_q16: int
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -38,6 +43,11 @@ class CompileKernelEntry:
             "weight_q16": self.weight_q16,
             "kernel_type": self.kernel_type,
             "flags": list(self.flags),
+            "intersection_area_lower": self.intersection_area_lower,
+            "intersection_area_upper": self.intersection_area_upper,
+            "source_share_q16": self.source_share_q16,
+            "target_share_q16": self.target_share_q16,
+            "certification_residual_q16": self.certification_residual_q16,
         }
 
 
@@ -49,6 +59,8 @@ class CompileMetadata:
     fanout_limit: int
     layer_index_direction: str
     flags: tuple[str, ...]
+    geometry_contract_version: str
+    compiler_version: str
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -58,6 +70,8 @@ class CompileMetadata:
             "fanout_limit": self.fanout_limit,
             "layer_index_direction": self.layer_index_direction,
             "flags": list(self.flags),
+            "geometry_contract_version": self.geometry_contract_version,
+            "compiler_version": self.compiler_version,
         }
 
 
@@ -73,6 +87,9 @@ class CompileTemplate:
     normalization_residual_q16: int
     approximation_residual_q16: int
     compiler: CompileMetadata
+    transform_q32: tuple[int, int, int, int]
+    source_target_scale_relation: str
+    certification: str
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -86,4 +103,7 @@ class CompileTemplate:
             "normalization_residual_q16": self.normalization_residual_q16,
             "approximation_residual_q16": self.approximation_residual_q16,
             "compiler": self.compiler.to_mapping(),
+            "transform_q32": list(self.transform_q32),
+            "source_target_scale_relation": self.source_target_scale_relation,
+            "certification": self.certification,
         }

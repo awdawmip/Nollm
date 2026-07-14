@@ -17,11 +17,12 @@ DIRECTIONS = ("coverage_up", "coverage_down", "lateral")
 def canonical_document() -> bytes:
     compiler = CoverageTemplateCompiler()
     document = {
-        "schema_version": "nollm_compiled_geometry_templates_v1",
+        "schema_version": "nollm_compiled_geometry_templates_v2",
         "templates": [
-            compiler.compile(profile.profile_id, direction).to_mapping()
+            compiler.compile(profile.profile_id, direction, phase).to_mapping()
             for profile in research_profiles()
             for direction in DIRECTIONS
+            for phase in (range(8) if profile.profile_id == "default_dream_v1" else (0,))
         ],
     }
     return json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"

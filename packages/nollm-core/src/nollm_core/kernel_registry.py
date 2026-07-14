@@ -8,7 +8,7 @@ from .compiled_templates import COMPILED_TEMPLATES_JSON, COMPILED_TEMPLATES_SHA2
 from .coverage_template import DEFAULT_FANOUT_LIMIT, CoverageTemplate, template_from_mapping
 from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest
 
-KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v2"
+KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v3"
 
 
 class KernelRegistry:
@@ -19,10 +19,10 @@ class KernelRegistry:
         if sha256(COMPILED_TEMPLATES_JSON).hexdigest() != COMPILED_TEMPLATES_SHA256:
             raise ValueError("compiled geometry template artifact digest mismatch")
         document = json.loads(COMPILED_TEMPLATES_JSON.decode("utf-8"))
-        if document.get("schema_version") != "nollm_compiled_geometry_templates_v1":
+        if document.get("schema_version") != "nollm_compiled_geometry_templates_v2":
             raise ValueError("unsupported compiled geometry template artifact")
         templates = tuple(template_from_mapping(value) for value in document["templates"])
-        object.__setattr__(self, "_templates", MappingProxyType({(template.profile_id, template.direction): template for template in templates}))
+        object.__setattr__(self, "_templates", MappingProxyType({(template.profile_id, template.direction, template.from_layer_mod): template for template in templates}))
         object.__setattr__(self, "compiled_artifact_sha256", COMPILED_TEMPLATES_SHA256)
         object.__setattr__(self, "_sealed", True)
 
@@ -31,9 +31,13 @@ class KernelRegistry:
             raise AttributeError("KernelRegistry is immutable")
         object.__setattr__(self, name, value)
 
-    def coverage_template(self, profile_id: str, direction: str) -> CoverageTemplate:
+    def coverage_template(self, profile_id: str, direction: str, from_layer: int = 0) -> CoverageTemplate:
+        if type(from_layer) is not int:
+            raise TypeError("from_layer must be an integer")
+        from .profiles import runtime_profile
+        phase = from_layer % runtime_profile(profile_id).phase_period
         try:
-            return self._templates[(profile_id, direction)]
+            return self._templates[(profile_id, direction, phase)]
         except KeyError as error:
             raise ValueError("unknown coverage template") from error
 

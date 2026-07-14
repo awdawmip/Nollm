@@ -19,6 +19,7 @@ class ResearchProfile:
 
 
 _PROFILES = {
+    "default_dream_v1": ResearchProfile("default_dream_v1", "production", "integer_axial_cube_q32_transform", "beta=positive_root(x^4-2)", "theta_step=1/16_turn_phase8", WEIGHT_FORMAT, False, False, "Mandatory V3.7 pointy-top rotated physical field profile."),
     "eisenstein_exact_v1": ResearchProfile("eisenstein_exact_v1", "production_candidate", "integer_axial_cube", "eisenstein_integer_norm", "eisenstein_integer_matrix", WEIGHT_FORMAT, False, False, "Performance main candidate for exact integer template lookup."),
     "aligned_baseline_v1": ResearchProfile("aligned_baseline_v1", "baseline", "integer_axial_cube", "unit_layer", "aligned_identity", WEIGHT_FORMAT, False, False, "Control profile for aligned integer coverage templates."),
     "dream_quasi_v1": ResearchProfile("dream_quasi_v1", "research", "integer_axial_cube", "symbolic_quasi", "symbolic_phase", WEIGHT_FORMAT, False, False, "Research profile with explicit residual and boundary ambiguity."),
