@@ -1,18 +1,18 @@
 # Nollm CAOLD 真实修订闭环任务书
 
-**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`  
-**日期**：2026-07-13  
-**任务文件名**：`NOLLM_CAOLD_REAL_REVISION_LOOP_TASK_20260713.md`  
-**性质**：“工作得对”阶段的第一个真实端到端能力  
-**输入Bundle**：`nollm_caold_cross_session_memory_loop_20260713_c3354743_validated.bundle`  
-**输入Bundle SHA-256**：`bfcc55e87b126fca9e46bf72a5203d3b5d359a2d4b0f6248a776316f4308d485`  
-**输入分支**：`codex/cstaold-real-memory-loop`  
-**输入HEAD**：`c3354743482e50477052c5095b0b8a30e1bbd1ee`  
-**已验证能力**：`REAL_OPENCLAW_CROSS_SESSION_MEMORY_LOOP_VALIDATED_AT_c3354743482e50477052c5095b0b8a30e1bbd1ee`  
-**建议分支**：`codex/caold-real-revision-loop`  
-**主环境**：真实Windows 10/11 + 当前OpenClaw  
-**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle  
-**成功后环境**：插件保持安装和启用，已有Nollm数据保留，交给用户继续正常聊天测试  
+**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`
+**日期**：2026-07-13
+**任务文件名**：`NOLLM_CAOLD_REAL_REVISION_LOOP_TASK_20260713.md`
+**性质**：“工作得对”阶段的第一个真实端到端能力
+**输入Bundle**：`nollm_caold_cross_session_memory_loop_20260713_c3354743_validated.bundle`
+**输入Bundle SHA-256**：`bfcc55e87b126fca9e46bf72a5203d3b5d359a2d4b0f6248a776316f4308d485`
+**输入分支**：`codex/cstaold-real-memory-loop`
+**输入HEAD**：`c3354743482e50477052c5095b0b8a30e1bbd1ee`
+**已验证能力**：`REAL_OPENCLAW_CROSS_SESSION_MEMORY_LOOP_VALIDATED_AT_c3354743482e50477052c5095b0b8a30e1bbd1ee`
+**建议分支**：`codex/caold-real-revision-loop`
+**主环境**：真实Windows 10/11 + 当前OpenClaw
+**交付形式**：所有修改提交、工作树干净、仓库外单一完整历史Git Bundle
+**成功后环境**：插件保持安装和启用，已有Nollm数据保留，交给用户继续正常聊天测试
 **结论边界**：验证一个真实修订能力；不宣称全部语义质量、长期稳定、发布或完整安全。
 
 ---

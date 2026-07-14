@@ -1,18 +1,18 @@
 # Nollm CAOLD 真实几何簇闭环任务书
 
-**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`  
-**日期**：2026-07-14  
-**任务文件名**：`NOLLM_CAOLD_REAL_GEOMETRIC_CLUSTER_LOOP_TASK_20260714.md`  
-**性质**：“工作得对”阶段的真实几何关系能力  
-**输入Bundle**：`nollm_caold_real_revision_loop_20260713_a1a368d1.bundle`  
-**输入Bundle SHA-256**：`979eb3212f94f6a4053d41cbb127cb61d8f93ca9a944e7b3d375a21394e1f20a`  
-**输入分支**：`codex/caold-real-revision-loop`  
-**输入HEAD**：`a1a368d115f133b973011e5275fa15fb8f66b990`  
-**已验证能力**：`REAL_OPENCLAW_REVISION_LOOP_VALIDATED_AT_a1a368d115f133b973011e5275fa15fb8f66b990`  
-**建议分支**：`codex/caold-real-geometric-cluster-loop`  
-**主环境**：真实Windows 10/11 + 当前OpenClaw  
-**交付形式**：所有真实进展提交、工作树干净、仓库外单一完整历史Git Bundle  
-**成功后环境**：插件保持安装和启用，现有Nollm数据保留，交给用户继续正常聊天测试  
+**模块缩写**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`
+**日期**：2026-07-14
+**任务文件名**：`NOLLM_CAOLD_REAL_GEOMETRIC_CLUSTER_LOOP_TASK_20260714.md`
+**性质**：“工作得对”阶段的真实几何关系能力
+**输入Bundle**：`nollm_caold_real_revision_loop_20260713_a1a368d1.bundle`
+**输入Bundle SHA-256**：`979eb3212f94f6a4053d41cbb127cb61d8f93ca9a944e7b3d375a21394e1f20a`
+**输入分支**：`codex/caold-real-revision-loop`
+**输入HEAD**：`a1a368d115f133b973011e5275fa15fb8f66b990`
+**已验证能力**：`REAL_OPENCLAW_REVISION_LOOP_VALIDATED_AT_a1a368d115f133b973011e5275fa15fb8f66b990`
+**建议分支**：`codex/caold-real-geometric-cluster-loop`
+**主环境**：真实Windows 10/11 + 当前OpenClaw
+**交付形式**：所有真实进展提交、工作树干净、仓库外单一完整历史Git Bundle
+**成功后环境**：插件保持安装和启用，现有Nollm数据保留，交给用户继续正常聊天测试
 **结论边界**：验证有限真实几何簇形成与Recall；不宣称全局语义质量、规模、发布或完整安全。
 
 ---
