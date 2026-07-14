@@ -51,6 +51,12 @@ test("recall NONE paths emit explicit audit evidence", () => {
   assert.equal((source.match(/status: "completed_none", stage: "recall"/g) ?? []).length, 2);
 });
 
+test("placement evidence carries the bounded Surface traversal path", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /stage: "placement_apply"[^\n]+surface_path: surfacePath/);
+  assert.match(source, /surfacePath\.push\(built\.surface\)/);
+});
+
 test("ConversationMaterial uses real role messages and excludes system content", () => {
   const messages = [
     { role: "system", content: "hidden bootstrap" },

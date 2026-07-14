@@ -410,14 +410,16 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
   const requestId = `placement-${createHash("sha256").update(`${stableId}\0${statementId}`).digest("hex")}`;
   let built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, memory_workspace: config.memory_workspace ?? config.statement_store_workspace, surface_budget: surfaceBudget(config, "placement") });
+  const surfacePath: unknown[] = [];
   let traversal = 0;
   while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.placement_surface_max_calls ?? 16)) {
+    surfacePath.push(built.surface);
     const step = await runDreamSubagent(api, config, built.prompt, model, `${requestId}:surface:${traversal}`);
     if (!step?.raw) { await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId }); return; }
     built = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
     traversal += 1;
   }
-  if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, ...built }); return; }
+  if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, surface_path: surfacePath, ...built }); return; }
   const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
   const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
   try {
@@ -442,7 +444,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
       applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, built.selected_entry);
       attemptKind = `full_retry_${index}`;
     }
-    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
+    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
   } catch (error) {
     await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error) });
   } finally {
