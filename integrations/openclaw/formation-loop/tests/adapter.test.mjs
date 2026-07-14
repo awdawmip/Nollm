@@ -49,6 +49,7 @@ test("recall NONE paths emit explicit audit evidence", () => {
   assert.match(source, /built\.status === "complete_none"/);
   assert.match(source, /rendered\.outcome === "none"/);
   assert.equal((source.match(/status: "completed_none", stage: "recall"/g) ?? []).length, 2);
+  assert.match(source, /stage: "recall_surface_terminal"/);
 });
 
 test("placement evidence carries the bounded Surface traversal path", () => {

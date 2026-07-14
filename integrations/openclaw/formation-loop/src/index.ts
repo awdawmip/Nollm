@@ -206,7 +206,10 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cells: built.entry_cells ?? [], per_entry_core_recall: built.per_entry_core_recall ?? [], surface_path: surfacePath, visible_message_count: 0 });
       return;
     }
-    if (built.ok !== true || built.status !== "recall_decision" || typeof built.prompt !== "string") return;
+    if (built.ok !== true || built.status !== "recall_decision" || typeof built.prompt !== "string") {
+      await trace(config, { status: "defer", stage: "recall_surface_terminal", request_id: requestId, bridge_status: built.status, bridge_error: built.error, bridge_code: built.code, surface_path: surfacePath, visible_message_count: 0 });
+      return;
+    }
     const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:recall-selection`);
     if (!selected.raw) { await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt }); return; }
     const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
