@@ -47,6 +47,16 @@ def test_new_session_uses_bounded_agent_cursor_after_reopen(tmp_path):
     assert len(reopened["entry_cells"]) == 1
 
 
+def test_new_session_placement_receives_bounded_agent_context(tmp_path):
+    test_placement_uses_explicit_llm_geometry_and_persists_cursor(tmp_path)
+    built = build_placement_prompt(
+        {**STATEMENT, "statement_id": "dream:revision", "content_utf8": "The release window moved to Thursday at 4 PM."},
+        "agent:main:new-session", str(tmp_path), "placement-cross-session",
+    )
+    assert "dream:test" in built["prompt"]
+    assert '"local_atom_id":"dream:test"' in built["prompt"]
+
+
 def test_recall_without_cursor_is_none_without_global_discovery(tmp_path):
     built = build_recall_prompt("What do you remember?", "new-session", str(tmp_path), "recall-empty")
     assert built == {"available": False, "candidate_count": 0, "cursor_source": "agent"}

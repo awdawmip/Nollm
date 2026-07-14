@@ -115,7 +115,7 @@ def build_placement_prompt(statement_value: object, session_key: object, memory_
     if type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_request", "request_id is required")
     root = _workspace(memory_workspace)
-    cursor = _load_cursor(root, session_key)
+    cursor, _cursor_source = _recall_cursor(root, session_key)
     with AccessMemoryLoop(root) as loop:
         nearby = loop.local_context(cursor, request_id + ":placement-context")
     prompt = f"""You are a private background geometry placement agent. The user will never see this run.

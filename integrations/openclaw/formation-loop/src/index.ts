@@ -50,9 +50,9 @@ function pythonPath(config: DreamConfig): string {
 }
 
 async function bridge(config: DreamConfig, envelope: object): Promise<Record<string, unknown>> {
-  const wire = JSON.stringify(envelope, (_key, value: unknown) => typeof value === "string" ? wellFormedText(value) : value);
-  // Node pipes UTF-8 JSON. Windows Python otherwise inherits the console code page.
-  const result = await run(config.python_executable!, ["-m", "nollm_openclaw_formation.bridge"], wire, config.timeout_ms, { ...process.env, PYTHONUTF8: "1", PYTHONPATH: pythonPath(config) });
+  const wire = asciiJson(envelope);
+  const framed = Buffer.from(wire, "utf8").toString("base64");
+  const result = await run(config.python_executable!, ["-m", "nollm_openclaw_formation.bridge"], framed, config.timeout_ms, { ...process.env, NOLLM_BRIDGE_BASE64: "1", PYTHONUTF8: "1", PYTHONPATH: pythonPath(config) });
   if (result.code !== 0) return { ok: false, error: "bridge_process_error", detail: result.stderr };
   try { return JSON.parse(result.stdout); } catch { return { ok: false, error: "bridge_invalid_json", detail: result.stderr }; }
 }
@@ -68,6 +68,11 @@ export function wellFormedText(value: string): string {
     const unit = character.charCodeAt(0);
     return character.length === 1 && unit >= 0xd800 && unit <= 0xdfff ? "\ufffd" : character;
   }).join("");
+}
+
+export function asciiJson(value: object): string {
+  const json = JSON.stringify(value, (_key, item: unknown) => typeof item === "string" ? wellFormedText(item) : item);
+  return json.replace(/[^\x00-\x7f]/g, character => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`);
 }
 
 export function boundedTurns(users: Turn[], assistant: string, budget: number): Turn[] {

@@ -1,4 +1,6 @@
 import json
+import base64
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -232,3 +234,17 @@ def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
     result = json.loads(completed.stdout)
     assert result["ok"] is True
     assert "bad\ufffdtext" in result["prompt"]
+
+
+def test_bridge_base64_framing_preserves_windows_unicode():
+    envelope = {
+        "action": "build_recall_prompt", "query": "项目周会 📅", "session_key": "agent:main:test",
+        "memory_workspace": str(Path.cwd()), "request_id": "r-base64",
+    }
+    wire = json.dumps(envelope, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+    completed = subprocess.run(
+        [sys.executable, "-m", "nollm_openclaw_formation.bridge"],
+        input=base64.b64encode(wire).decode("ascii"), text=True, capture_output=True, check=True,
+        env={**os.environ, "NOLLM_BRIDGE_BASE64": "1"},
+    )
+    assert json.loads(completed.stdout)["ok"] is True

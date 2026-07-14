@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -13,6 +13,13 @@ test("manifest exposes no main-agent Formation tool", () => {
 
 test("wire text replaces isolated UTF-16 surrogates before UTF-8 encoding", () => {
   assert.equal(wellFormedText("valid \udc94 text"), "valid \ufffd text");
+});
+
+test("Python bridge wire is ASCII-safe and lossless for Windows pipes", () => {
+  const value = { text: "项目周会 📅 每周二上午九点" };
+  const wire = asciiJson(value);
+  assert.equal(/[^\x00-\x7f]/.test(wire), false);
+  assert.deepEqual(JSON.parse(wire), value);
 });
 
 test("plugin registers channel delivery, recall preparation, and Gateway completion hooks with no tool", () => {

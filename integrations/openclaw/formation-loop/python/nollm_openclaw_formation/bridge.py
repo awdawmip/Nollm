@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import json
+import os
 import sys
 
 from .adapter import (
@@ -35,7 +37,10 @@ def _config(envelope: dict[str, object]) -> OpenClawFormationConfig:
 
 def main() -> None:
     try:
-        envelope = _well_formed(json.load(sys.stdin))
+        wire = sys.stdin.read()
+        if os.environ.get("NOLLM_BRIDGE_BASE64") == "1":
+            wire = base64.b64decode(wire, validate=True).decode("utf-8")
+        envelope = _well_formed(json.loads(wire))
         action = envelope.get("action")
         if action in {"build_dream_prompt", "parse_dream_result", "build_dream_format_repair_prompt"}:
             if action == "build_dream_format_repair_prompt":
