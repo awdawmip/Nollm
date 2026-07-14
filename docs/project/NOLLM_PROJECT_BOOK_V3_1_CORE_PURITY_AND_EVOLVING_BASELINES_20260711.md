@@ -98,6 +98,9 @@ the production graph remains acyclic.
   the project book, status, ledger, authorized task, and latest report.
 - Superseded books, tasks, and reports remain historical references and cannot
   override active governance.
+- The active V3.6 route may add rebuildable semantic-blind Surface projections
+  and bounded Access navigation while preserving these ownership and dependency
+  rules.
 - Completion estimates use five-percent increments or explicit ranges and do
   not imply permanence or authorization for later work.
 - Each new capability or route requires a separately authorized task and fresh

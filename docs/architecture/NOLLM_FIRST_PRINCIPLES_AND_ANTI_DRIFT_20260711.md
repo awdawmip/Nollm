@@ -412,9 +412,10 @@ Original Evidence fallback
 
 ## 6. 当前执行顺序
 
-GRF8 已在执行，不中途打断。
+下列 GRF8 顺序是历史阶段背景。当前调度由 `docs/project/ACTIVE_PROJECT.md`
+指向的授权任务书决定，且不得覆盖本文件的架构原则。
 
-GRF8 完成后，下一阶段必须优先：
+历史优先顺序：
 
 ```text
 1. 审计 GRF8 中所有 Index / Route / Lookup / Cache；
