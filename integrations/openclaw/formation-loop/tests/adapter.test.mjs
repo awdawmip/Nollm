@@ -44,6 +44,13 @@ test("plugin registers channel delivery, recall preparation, and Gateway complet
   assert.equal(toolCount, 0);
 });
 
+test("recall NONE paths emit explicit audit evidence", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /built\.status === "complete_none"/);
+  assert.match(source, /rendered\.outcome === "none"/);
+  assert.equal((source.match(/status: "completed_none", stage: "recall"/g) ?? []).length, 2);
+});
+
 test("ConversationMaterial uses real role messages and excludes system content", () => {
   const messages = [
     { role: "system", content: "hidden bootstrap" },
