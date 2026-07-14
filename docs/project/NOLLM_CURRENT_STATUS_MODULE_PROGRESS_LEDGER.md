@@ -8,15 +8,15 @@ do not define this active ledger.
 
 | Module | Before | Target | Actual | Lifecycle | Confidence | Evidence | Main gap |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- |
-| CORE | 90% | 100% | 90% | `CAPABILITY_VALIDATED` | high | deterministic current state, Coverage kernels, bounded Recall | rebuildable Order 0/1/2 Surface projections |
+| CORE | 90% | 100% | 100% | `CAPABILITY_VALIDATED` | high | deterministic state, Coverage, bounded Recall, rebuildable Order 0/1/2 Surface | large-scale performance |
 | SNAPSHOT | 50% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests; SnapshotDiff unchanged | version migration and incremental snapshots |
 | TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests; state isolation unchanged | deeper performance visualization |
-| ACCESS | 85% | 95% | 85% | `CAPABILITY_VALIDATED` | high | atomic placement/revision and bounded composition | structural-budget Surface selection and cursor-free navigation |
+| ACCESS | 85% | 95% | 95% | `CAPABILITY_VALIDATED` | high | structural-budget selection, bounded navigation, multi-entry Recall, atomic placement | multi-plane selection |
 | HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
 | AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
-| OPENCLAW | 75% | 85% | 75% | `CAPABILITY_VALIDATED` | high | real model formation/placement/recall and hidden injection | cursor-free bounded Surface traversal |
-| LAB | 85% | 90% | 85% | `IMPLEMENTED` | high | Coverage, Core capability, and real Windows validation | Surface order/descent/rebuild validation |
-| DISTRIBUTIONS | 65% | 70% | 65% | `IMPLEMENTED` | high | enabled Access-only plugin v0.5.0 | Surface wire and cursor-free configuration |
+| OPENCLAW | 75% | 85% | 85% | `CAPABILITY_VALIDATED` | high | real bounded Surface traversal, hidden Recall, Formation and Placement | long-term stability |
+| LAB | 85% | 90% | 90% | `IMPLEMENTED` | high | parity, Core capability, adaptive Surface, Windows live validation | cross-platform validation |
+| DISTRIBUTIONS | 65% | 70% | 70% | `IMPLEMENTED` | high | enabled Access-only plugin v0.6.0 with Surface wire | release packaging |
 
 Previous task actual vector:
 
@@ -113,7 +113,7 @@ and `(0,1)`, and B at anchor `(8,0)` with entry `(7,0)`. Direct Core Recall
 from each anchor returned only its own cluster. Fresh sessions R1 and R2 used
 hidden Recall; R3 and the post-failure control had zero injected context.
 
-CAOLD adaptive Surface Recall planned vector (`IN_PROGRESS`):
+CAOLD adaptive Surface Recall actual vector (`COMPLETED`):
 
 ```text
 CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +10% |
@@ -121,6 +121,9 @@ HISTORY 0% | AUDIT 0% | OPENCLAW +10% |
 LAB +5% | DISTRIBUTIONS +5%
 ```
 
-The V3.6 rebaseline removes persistent cursor and explicit cluster-anchor
-routing from target capability credit. It does not invalidate the input code
-or its historical evidence.
+The actual vector matches the planned vector with zero measured module deviation.
+V3.6 removes persistent cursor and explicit cluster-anchor routing from active
+capability credit while preserving the input data and historical evidence.
+Core Surface, Access bounded navigation, OpenClaw scale scan, real R1/R2/R3,
+post-restart Recall, and continued Placement are validated. The next candidate
+capability requires a separately authorized taskbook.
