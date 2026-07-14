@@ -6,11 +6,10 @@ V3.4 continues the first-principles architecture: the Host LLM owns semantic
 formation and placement choices; Core owns deterministic validation, geometry,
 file-first persistence, and bounded recall.
 
-The active engineering route is the CAOLD real cross-session memory loop. Its
+The active engineering route is the CAOLD real geometric cluster loop. Its
 current state is an engineering checkpoint, not a production release or a
 claim of semantic accuracy. The work is limited to Windows OpenClaw bridge
-transport, bounded Cursor entry, Placement/Core binding, and observable
-cross-session Recall. No external semantic index, vector, graph, or global
-discovery is authorized.
+transport, finite content-independent placement candidates, bounded cluster
+anchors, Placement/Core binding, and observable per-anchor Recall. No external semantic index, vector, graph, or global discovery is authorized.
 
-Current task: `NOLLM_CAOLD_CROSS_SESSION_MEMORY_LOOP_REV1_TASK_20260713.md`.
+Current task: `NOLLM_CAOLD_REAL_GEOMETRIC_CLUSTER_LOOP_TASK_20260714.md`.

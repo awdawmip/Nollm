@@ -8,15 +8,15 @@ do not define this active ledger.
 
 | Module | Before | Target | Actual | Lifecycle | Confidence | Evidence | Main gap |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- |
-| CORE | 85% | 90% | 90% | `CAPABILITY_VALIDATED` | high | real revision replaces the current Atom and survives reopen | scale and long-term recovery |
+| CORE | 90% | 95% | 95% | `CAPABILITY_VALIDATED` | high | real multi-Cell clusters, reopen, and isolated per-anchor Recall | scale and cross-cluster stitching |
 | SNAPSHOT | 50% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests; SnapshotDiff unchanged | version migration and incremental snapshots |
 | TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests; state isolation unchanged | deeper performance visualization |
-| ACCESS | 90% | 100% | 100% | `CAPABILITY_VALIDATED` | high | AccessMemoryLoop; atomic revision and rollback; current-only Recall | future charter extensions |
+| ACCESS | 95% | 100% | 100% | `CAPABILITY_VALIDATED` | high | finite content-independent candidates; deterministic mapping; cluster allocation and rollback | future charter extensions |
 | HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
 | AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
-| OPENCLAW | 70% | 80% | 80% | `CAPABILITY_VALIDATED` | high | natural correction, duplicate/distinct controls, restart and hidden current Recall | other models and long-term quality |
-| LAB | 80% | 85% | 85% | `IMPLEMENTED` | high | bounded live revision/failure/control report | broader quality matrix |
-| DISTRIBUTIONS | 60% | 65% | 65% | `IMPLEMENTED` | high | enabled Access-only plugin; manifest and boundaries clean | release/version negotiation |
+| OPENCLAW | 80% | 90% | 90% | `CAPABILITY_VALIDATED` | high | real candidate selection, two clusters, restart, hidden Recall, and NONE | other models and long-term quality |
+| LAB | 85% | 90% | 90% | `IMPLEMENTED` | high | bounded live geometric cluster and failure report | broader quality matrix |
+| DISTRIBUTIONS | 65% | 70% | 70% | `IMPLEMENTED` | high | enabled Access-only plugin v0.5.0 and placement v2 contract | release/version negotiation |
 
 Previous task actual vector:
 
@@ -99,3 +99,16 @@ controlled binding failure with rollback, duplicate reuse, similar-distinct
 creation, multiple Gateway restarts, and current-only Recall in fresh
 sessions. OpenClaw has no direct Core dependency. Ownership validation reports
 zero production violations and zero production cycles.
+
+CAOLD real geometric cluster loop actual vector:
+
+```text
+CORE +5% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +10% |
+LAB +5% | DISTRIBUTIONS +5%
+```
+
+The Windows live gate formed A at anchor `(0,0)` with ring-1 entries `(-1,0)`
+and `(0,1)`, and B at anchor `(8,0)` with entry `(7,0)`. Direct Core Recall
+from each anchor returned only its own cluster. Fresh sessions R1 and R2 used
+hidden Recall; R3 and the post-failure control had zero injected context.
