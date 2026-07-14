@@ -4,6 +4,10 @@
   "adapter": "integrations/openclaw/formation-loop",
   "live_activation": "invisible-dream-agent",
   "validation_gate": "openclaw:dream-agent-live",
+  "surfaceWire": "single-entry-v2",
+  "geometryProfile": "default_dream_v1",
+  "geometryContractVersion": "nollm_rotated_physical_field_v1",
+  "writePhysicalLayer": 0,
   "dreamAgent": {
     "enabled": true,
     "mode": "background",
@@ -15,5 +19,5 @@
   "externalApi": {"required": false},
   "requires": ["nollm-access", "openclaw>=2026.6.11", "statement-store"],
   "diagnose": "integrations/openclaw/formation-loop/scripts/diagnose.ps1",
-  "forbidden": ["legacy-grf-runtime-entrypoint", "core-write", "placement", "python-semantic-fallback"]
+  "forbidden": ["legacy-grf-runtime-entrypoint", "direct-core-import", "multi-entry-recall", "python-semantic-fallback"]
 }

@@ -9,6 +9,9 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
+  assert.equal(manifest.configSchema.properties.geometry_profile.const, "default_dream_v1");
+  assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_rotated_physical_field_v1");
+  assert.equal(manifest.contracts.surfaceWire, "single-entry-v2");
   assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
   assert.equal(manifest.configSchema.properties.surface_max_order.maximum, 8);
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);

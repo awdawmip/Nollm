@@ -58,9 +58,20 @@ def test_expand_surface_is_geometry_only_and_respects_minimum_distance(tmp_path)
         second = apply(loop, "same-shape-different-id", "unrelated", "expand_surface", candidate["candidate_id"], first["handle"]["geometry_address"])
     left = first["handle"]["geometry_address"]
     right = second["handle"]["geometry_address"]
-    dq, dr = left["q"] - right["q"], left["r"] - right["r"]
-    assert max(abs(dq), abs(dr), abs(dq + dr)) >= 4
+    assert AccessMemoryLoop._physical_distance_squared_q32(
+        AccessMemoryLoop._cell(left), AccessMemoryLoop._cell(right)
+    ) >= 3 * 4 * 4 * (1 << 32)
     assert "statement" not in inspect.signature(AccessMemoryLoop._expand_surface_frontier).parameters
+
+
+def test_physical_frontier_metric_rejects_nondefault_or_nonzero_layer():
+    origin = AccessMemoryLoop._cell(ORIGIN)
+    for invalid in (
+        {**ORIGIN, "profile_id": "eisenstein_exact_v1"},
+        {**ORIGIN, "layer": 1},
+    ):
+        with pytest.raises(ValueError, match="physical plane"):
+            AccessMemoryLoop._physical_distance_squared_q32(origin, AccessMemoryLoop._cell(invalid))
 
 
 def test_surface_entries_recall_separated_localities(tmp_path):

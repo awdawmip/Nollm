@@ -3,7 +3,8 @@ param(
   [ValidateSet("inherit", "dedicated")][string]$ModelMode = "inherit",
   [string]$Model = "",
   [ValidateSet("shadow", "statement-store")][string]$WriteMode = "shadow",
-  [string]$StatementWorkspace = ""
+  [string]$StatementWorkspace = "",
+  [string]$MemoryWorkspace = ""
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -26,8 +27,11 @@ if (-not (Test-Path $pythonExecutable)) { throw "Python executable not found: $p
 & $OpenClaw config set plugins.entries.nollm-formation.config.write_mode $WriteMode
 & $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-json-p1
 & $OpenClaw config set plugins.entries.nollm-formation.config.persist_subagent_transcripts false
+& $OpenClaw config set plugins.entries.nollm-formation.config.geometry_profile default_dream_v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.geometry_contract_version nollm_rotated_physical_field_v1
 if ($Model) { & $OpenClaw config set plugins.entries.nollm-formation.config.model $Model }
 if ($StatementWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.statement_store_workspace $StatementWorkspace }
+if ($MemoryWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.memory_workspace $MemoryWorkspace }
 & $OpenClaw plugins enable nollm-formation
 & $OpenClaw config set plugins.entries.nollm-formation.hooks.allowConversationAccess true
 & $OpenClaw config set plugins.entries.nollm-formation.subagent.allowModelOverride true

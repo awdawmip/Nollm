@@ -17,6 +17,8 @@
       },
       "statement_store_workspace": { "type": "string" },
       "memory_workspace": { "type": "string" },
+      "geometry_profile": { "type": "string", "const": "default_dream_v1", "default": "default_dream_v1" },
+      "geometry_contract_version": { "type": "string", "const": "nollm_rotated_physical_field_v1", "default": "nollm_rotated_physical_field_v1" },
       "write_mode": { "type": "string", "enum": ["shadow", "statement-store"], "default": "shadow" },
       "model_mode": { "type": "string", "enum": ["inherit", "dedicated"], "default": "inherit" },
       "model": { "type": "string" },
@@ -53,5 +55,5 @@
     },
     "additionalProperties": false
   },
-  "contracts": { "tools": [] }
+  "contracts": { "tools": [], "surfaceWire": "single-entry-v2", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_rotated_physical_field_v1" }
 }

@@ -10,6 +10,7 @@ export type DreamConfig = {
   enabled?: boolean; python_executable?: string; nollm_repo_root?: string;
   statement_store_workspace?: string; write_mode?: "shadow" | "statement-store";
   memory_workspace?: string;
+  geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_rotated_physical_field_v1";
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -24,6 +25,7 @@ const JSON_SCHEMA = {
   properties: {
     enabled: { type: "boolean", default: true }, python_executable: { type: "string" }, nollm_repo_root: { type: "string" },
     statement_store_workspace: { type: "string" }, memory_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
+    geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_rotated_physical_field_v1", default: "nollm_rotated_physical_field_v1" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },

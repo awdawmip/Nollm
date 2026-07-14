@@ -14,7 +14,9 @@ from .surface_navigation import AccessSurfaceNavigator
 
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 DEFAULT_FIELD_SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
-_MIN_FRONTIER_DISTANCE = 4
+_Q32_ONE = 1 << 32
+_MIN_FRONTIER_RING = 4
+_MIN_FRONTIER_DISTANCE_SQUARED_Q32 = 3 * _MIN_FRONTIER_RING * _MIN_FRONTIER_RING * _Q32_ONE
 _MAX_FRONTIER_RADIUS = 1024
 
 
@@ -244,14 +246,27 @@ class AccessMemoryLoop:
             return origin
         for ring in range(1, _MAX_FRONTIER_RADIUS + 1):
             for candidate in sorted(origin.lateral(ring), key=lambda item: item.stable_key()):
-                if all(AccessMemoryLoop._distance(candidate, cell) >= _MIN_FRONTIER_DISTANCE for cell in occupied):
+                if all(
+                    AccessMemoryLoop._physical_distance_squared_q32(candidate, cell)
+                    >= _MIN_FRONTIER_DISTANCE_SQUARED_Q32
+                    for cell in occupied
+                ):
                     return candidate
         raise RuntimeError("no bounded Surface frontier is available")
 
     @staticmethod
-    def _distance(left: GeometryAddress, right: GeometryAddress) -> int:
+    def _physical_distance_squared_q32(left: GeometryAddress, right: GeometryAddress) -> int:
+        if (
+            left.profile_id != "default_dream_v1"
+            or right.profile_id != "default_dream_v1"
+            or left.chart_id != right.chart_id
+            or left.layer != 0
+            or right.layer != 0
+        ):
+            raise ValueError("frontier distance requires one default_dream_v1 layer 0 physical plane")
         dq, dr = left.q - right.q, left.r - right.r
-        return max(abs(dq), abs(dr), abs(dq + dr))
+        # Pointy-top axial centers: distance^2 = 3 * (dq^2 + dq*dr + dr^2) * s0^2.
+        return 3 * (dq * dq + dq * dr + dr * dr) * _Q32_ONE
 
     @staticmethod
     def _handle_key(value: dict[str, object]) -> tuple[object, ...]:
