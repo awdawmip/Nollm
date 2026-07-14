@@ -31,6 +31,13 @@ from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .runtime import AccessConsistencyError, AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore, StatementStore
+from .surface_selection import (
+    ActiveSurfaceSelection,
+    PLACEMENT_SURFACE_BUDGET,
+    RECALL_SURFACE_BUDGET,
+    SurfaceBudgetProfile,
+    select_active_surface,
+)
 
 __all__ = [
     "ACTIONS",
@@ -40,6 +47,7 @@ __all__ = [
     "AccessRecallRequest",
     "AccessRecallResult",
     "AccessRuntime",
+    "ActiveSurfaceSelection",
     "AccessConsistencyError",
     "EvidenceStore",
     "EvidenceSpan",
@@ -53,7 +61,10 @@ __all__ = [
     "MAX_STATEMENTS",
     "FormedMemoryStatement",
     "MemoryStatement",
+    "PLACEMENT_SURFACE_BUDGET",
+    "RECALL_SURFACE_BUDGET",
     "StatementStore",
+    "SurfaceBudgetProfile",
     "DREAM_ACTORS",
     "DREAM_OUTCOMES",
     "DREAM_SCHEMA_VERSION",
@@ -70,4 +81,5 @@ __all__ = [
     "StatementSelection",
     "assemble_formed_statements",
     "validate_formation_decision",
+    "select_active_surface",
 ]
