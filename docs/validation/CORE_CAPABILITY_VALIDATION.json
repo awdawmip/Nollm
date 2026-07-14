@@ -21,8 +21,8 @@
     "malicious Trace callbacks",
     "concurrent direct Store mutation outside the owning composition"
   ],
-  "validated_code_commit": "7ff9690edeca71806bf5783787ef81367b9eb167",
-  "validated_code_tree_digest": "b8a17134c494d3610c306723281bcdede7c130de41ec010d290a02e093ecbd27",
+  "validated_code_commit": "3d04684e6895a0f143551612423f48f1ac43cdc2",
+  "validated_code_tree_digest": "3b4f9b3c02cc895f0676b48de54c19b60d3b00424dd90d717a090dede3cda3fe",
   "validation_command": "python lab/nollm-lab/m1/run_core_capability_validation.py --check",
   "validation_schema": "nollm_core_capability_validation_v2",
   "verified_capabilities": {

@@ -417,6 +417,7 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "run_geometry_parity.py": "lab:geometry-parity",
             "run_core_capability_validation.py": "lab:core-capability",
             "run_m1_minimal_e2e.py": "lab:minimal-e2e",
+            "run_adaptive_surface_validation.py": "lab:adaptive-surface",
         }
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Explicit current final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", gates[name])
     if p.startswith("reference/python/tests/m0/"):
