@@ -163,7 +163,15 @@ def validate(root: Path) -> dict[str, object]:
 
     geometry = CoreRuntime(root / "geometry")
     templates = geometry.kernel_registry.templates()
-    verified["compiled_templates_9_of_9"] = len(templates) == 9 and len({(value.profile_id, value.direction) for value in templates}) == 9
+    legacy_templates = tuple(value for value in templates if value.profile_id != "default_dream_v1")
+    physical_templates = tuple(value for value in templates if value.profile_id == "default_dream_v1")
+    verified["compiled_templates_33_of_33"] = (
+        len(templates) == 33
+        and len(legacy_templates) == 9
+        and len(physical_templates) == 24
+        and {(value.direction, value.from_layer_mod) for value in physical_templates}
+        == {(direction, phase) for direction in ("coverage_up", "coverage_down", "lateral") for phase in range(8)}
+    )
     entry = cell(1, -4, 2, "phase:x")
     up = expand_template(entry, geometry.kernel_registry.coverage_template(entry.profile_id, "coverage_up"))[0][0]
     down = expand_template(entry, geometry.kernel_registry.coverage_template(entry.profile_id, "coverage_down"))[0][0]

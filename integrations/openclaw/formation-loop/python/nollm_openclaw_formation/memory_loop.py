@@ -268,8 +268,11 @@ def apply_placement(
         raw = json.loads(repaired)
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
-    with AccessMemoryLoop(root) as loop:
-        result = loop.apply_placement(statement, raw, request_id, selected_entry)
+    try:
+        with AccessMemoryLoop(root) as loop:
+            result = loop.apply_placement(statement, raw, request_id, selected_entry)
+    except (TypeError, ValueError, KeyError) as exc:
+        raise FormationAdapterError("invalid_schema", str(exc)) from exc
     return {**result, "json_repair": diagnostics}
 
 

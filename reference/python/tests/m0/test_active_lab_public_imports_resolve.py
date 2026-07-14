@@ -72,6 +72,9 @@ def test_lab_asset_classes_follow_stable_directories() -> None:
         elif path.startswith("lab/nollm-lab/openclaw/datasets/"):
             assert row["lifecycle_status"] == "HISTORICAL" and row["asset_class"] == "LEGACY_REFERENCE"
         elif path.startswith("lab/nollm-lab/m1/"):
-            assert row["lifecycle_status"] == "ACTIVE" and row["asset_class"] == "ACTIVE_VALIDATION"
+            if path.endswith("run_adaptive_surface_validation.py"):
+                assert row["lifecycle_status"] == "HISTORICAL" and row["asset_class"] == "LEGACY_REFERENCE"
+            else:
+                assert row["lifecycle_status"] == "ACTIVE" and row["asset_class"] == "ACTIVE_VALIDATION"
         elif path.startswith("lab/nollm-lab/geometry/"):
             assert row["lifecycle_status"] == "ACTIVE" and row["asset_class"] in {"ACTIVE_LIBRARY", "ACTIVE_TOOL"}

@@ -153,10 +153,41 @@ def test_recall_rejects_multi_entry_and_propagates_from_one_entry(tmp_path):
 def test_none_and_failed_placement_leave_no_pollution(tmp_path):
     assert build_recall_prompt("What do you remember?", str(tmp_path), "recall-empty")["status"] == "complete_none"
     built = build_placement_prompt(STATEMENT, str(tmp_path), "placement-failure")
-    with pytest.raises(ValueError, match="unavailable candidate"):
+    with pytest.raises(FormationAdapterError, match="unavailable candidate"):
         apply_placement(placement("dream:test", "expand_surface", "outside:99"), STATEMENT, str(tmp_path), "placement-failure", built["selected_entry"])
     assert not list((tmp_path / "access" / "statements").rglob("*.json"))
     assert not (tmp_path / "openclaw" / "memory_cursor.json").exists()
+
+
+def test_malformed_existing_handle_is_retryable_schema_failure_without_orphan(tmp_path):
+    place_initial(tmp_path)
+    second = {"statement_id": "dream:malformed", "content_utf8": "Malformed placement must not persist.", "source_handle": None, "context_refs": []}
+    built = build_placement_prompt(second, str(tmp_path), "placement-malformed")
+    surface_candidate = built["surface"]["surface_cells"][0]["candidate_id"]
+    built = advance_placement_traversal(
+        second,
+        built["traversal_state"],
+        navigation("select_entry", surface_candidate),
+        str(tmp_path),
+    )
+    candidate = built["candidates"][0]
+    raw = json.dumps({
+        "schema_version": PLACEMENT_SCHEMA_VERSION,
+        "outcome": "apply",
+        "decision": {
+            "statement_id": "dream:malformed",
+            "action": "reuse",
+            "candidate_id": candidate["candidate_id"],
+            "existing_handle": "not-an-atom-handle",
+            "reason_text": "malformed model output",
+        },
+    })
+    with pytest.raises(FormationAdapterError) as error:
+        apply_placement(raw, second, str(tmp_path), "placement-malformed", built["selected_entry"])
+    assert error.value.category == "invalid_schema"
+    with AccessMemoryLoop(tmp_path) as loop:
+        with pytest.raises(KeyError):
+            loop.binding("dream:malformed")
 
 
 def test_placement_uses_limited_json_repair(tmp_path):

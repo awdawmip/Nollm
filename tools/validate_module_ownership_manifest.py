@@ -45,7 +45,8 @@ VALIDATION_GATES = {
     "package:core", "package:snapshot", "package:trace", "package:access",
     "governance:m0", "governance:architecture", "compatibility:grf",
     "lab:compiled-templates", "lab:geometry-parity", "lab:core-capability",
-    "lab:minimal-e2e", "lab:adaptive-surface", "repository:manifest", "repository:boundary",
+    "lab:minimal-e2e", "lab:adaptive-surface", "lab:rotated-layer0-migration",
+    "lab:rotated-surface-coarsening", "repository:manifest", "repository:boundary",
     "lab:statement-formation-corpus", "lab:statement-formation-fixtures",
     "openclaw:formation-live", "openclaw:dream-agent-live",
 }
@@ -62,6 +63,8 @@ GATE_TARGETS = {
     "lab:core-capability": "lab/nollm-lab/m1/run_core_capability_validation.py",
     "lab:minimal-e2e": "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
     "lab:adaptive-surface": "lab/nollm-lab/m1/run_adaptive_surface_validation.py",
+    "lab:rotated-layer0-migration": "lab/nollm-lab/m1/run_rotated_layer0_workspace_migration.py",
+    "lab:rotated-surface-coarsening": "lab/nollm-lab/m1/run_rotated_surface_coarsening_validation.py",
     "repository:manifest": "tools/generate_module_ownership_manifest.py",
     "repository:boundary": "tools/check_module_boundaries.py",
     "lab:statement-formation-corpus": "lab/nollm-lab/statement_formation/validate_corpus.py",

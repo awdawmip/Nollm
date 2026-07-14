@@ -14,7 +14,7 @@ from uuid import uuid4
 ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT / "packages/nollm-core/src"), str(ROOT / "packages/nollm-access/src")]
 
-from nollm_access import FileHandleStore, FileStatementStore  # noqa: E402
+from nollm_access import FileHandleStore, FileStatementStore, MemoryStatement  # noqa: E402
 from nollm_core import CoreRuntime, KernelRegistry  # noqa: E402
 
 
@@ -189,7 +189,7 @@ def _fixture(root: Path, layer: int = 0) -> None:
     (root / "access").mkdir(parents=True)
     (root / "core/current_state.json").write_bytes(_canonical(core))
     (root / "access/bindings.json").write_bytes(_canonical(binding))
-    FileStatementStore(root).put(__import__("nollm_access").MemoryStatement(atom_id, "fixture"))
+    FileStatementStore(root).put(MemoryStatement(atom_id, "fixture"))
 
 
 def self_check() -> dict[str, object]:

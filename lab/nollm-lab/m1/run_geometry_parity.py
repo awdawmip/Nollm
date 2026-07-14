@@ -16,11 +16,16 @@ from research_profiles import research_profile  # noqa: E402
 
 
 def template_contract(template):
+    compiler = template.compiler.to_mapping() if hasattr(template.compiler, "to_mapping") else {**template.compiler, "flags": list(template.compiler["flags"])}
+    legacy_compiler_keys = (
+        "compiler_id", "method", "weight_format", "fanout_limit",
+        "layer_index_direction", "flags",
+    )
     return {
         "identity": (template.profile_id, template.direction, template.from_layer_mod, template.to_layer_mod, template.source_phase),
         "entries": tuple((e.layer_delta, e.dq, e.dr, e.weight_q16, e.kernel_type, e.flags) for e in template.entries),
         "weights": (template.sum_weight_q16, template.normalization_residual_q16, template.approximation_residual_q16),
-        "compiler": template.compiler.to_mapping() if hasattr(template.compiler, "to_mapping") else {**template.compiler, "flags": list(template.compiler["flags"])},
+        "compiler": {key: compiler[key] for key in legacy_compiler_keys},
     }
 
 
@@ -43,14 +48,14 @@ def main() -> None:
             research_profile(profile_id).weight_format,
         )
         for direction in ("coverage_up", "coverage_down", "lateral"):
-            old = legacy.compile(profile_id, direction, 3, "phase:x")
-            new = active.compile(profile_id, direction, 3, "phase:x")
+            old = legacy.compile(profile_id, direction, 0, None)
+            new = active.compile(profile_id, direction, 0, None)
             assert template_contract(new) == template_contract(old)
             old_cell = CellAddress(profile_id, "chart", 3, -4, 2, "phase:x")
             new_cell = GeometryAddress(profile_id, "chart", 3, -4, 2, "phase:x")
             old_expanded = tuple((cell.stable_key(), weight) for cell, weight in legacy_expand(old_cell, old))
             public_template = registry.coverage_template(profile_id, direction)
-            assert new.to_mapping() == public_template.to_mapping() | {"from_layer_mod": 3, "to_layer_mod": 3 + (-1 if direction == "coverage_up" else 1 if direction == "coverage_down" else 0), "source_phase": "phase:x"}
+            assert new.to_mapping() == public_template.to_mapping()
             new_expanded = tuple((cell.stable_key(), weight) for cell, weight in expand_template(new_cell, public_template))
             assert new_expanded == old_expanded
             count += 1

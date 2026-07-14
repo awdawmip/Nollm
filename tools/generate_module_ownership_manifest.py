@@ -413,11 +413,15 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active fixture", "versioned schema definition", "development", "Canonical Dream Formation output schema fixture.", evidence="AOLD V3.3 schema authority.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_FIXTURE", "openclaw:dream-agent-live")
         return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Frozen three-round Dream Agent evidence and reports are replay inputs, not production state.", evidence="AOLD V3.3 final live gate.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
     if p.startswith("lab/nollm-lab/m1/"):
+        if name == "run_adaptive_surface_validation.py":
+            return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical validation", "frozen adaptive Surface checkpoint", "none", "Preserved V3.6 adaptive Surface validator; superseded by the V3.7 physical field validators.", evidence="V3.7 route supersedes the transitional V3.6 Surface contract.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "LEGACY_REFERENCE")
         gates = {
             "run_geometry_parity.py": "lab:geometry-parity",
             "run_core_capability_validation.py": "lab:core-capability",
             "run_m1_minimal_e2e.py": "lab:minimal-e2e",
             "run_adaptive_surface_validation.py": "lab:adaptive-surface",
+            "run_rotated_layer0_workspace_migration.py": "lab:rotated-layer0-migration",
+            "run_rotated_surface_coarsening_validation.py": "lab:rotated-surface-coarsening",
         }
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Explicit current final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", gates[name])
     if p.startswith("reference/python/tests/m0/"):
