@@ -55,12 +55,12 @@ def axial_transform_q32(direction: str) -> tuple[int, int, int, int]:
     source_side, target_side = layer_side(source_layer), layer_side(target_layer)
     sine, cosine = sin_cos(layer_angle(source_layer) - layer_angle(target_layer))
     root3 = Decimal(3).sqrt()
-    # B^-1 R(delta) (source_side / target_side) B for pointy-top axial B.
+    # Target-chart inverse composed with the source-chart world transform.
     scale = source_side / target_side
-    a = scale * (cosine + sine / root3)
-    b = scale * (Decimal(2) * sine / root3)
-    c = scale * (-Decimal(2) * sine / root3)
-    d = scale * (cosine - sine / root3)
+    a = scale * (cosine - sine / root3)
+    b = scale * (-Decimal(2) * sine / root3)
+    c = scale * (Decimal(2) * sine / root3)
+    d = scale * (cosine + sine / root3)
     return tuple(int((value * Q32_ONE).to_integral_value(rounding="ROUND_HALF_EVEN")) for value in (a, b, c, d))
 
 
