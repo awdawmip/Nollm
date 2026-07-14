@@ -118,15 +118,32 @@ def build_placement_prompt(statement_value: object, session_key: object, memory_
     cursor, _cursor_source = _recall_cursor(root, session_key)
     with AccessMemoryLoop(root) as loop:
         nearby = loop.local_context(cursor, request_id + ":placement-context")
+    candidate_action_examples = [
+        {
+            "candidate_statement_id": item["statement_id"],
+            "revision_current": {
+                "schema_version": PLACEMENT_SCHEMA_VERSION,
+                "outcome": "apply",
+                "decision": {"statement_id": statement.statement_id, "action": "revision_current", "existing_handle": item["handle"], "reason_text": "brief"},
+            },
+            "reuse": {
+                "schema_version": PLACEMENT_SCHEMA_VERSION,
+                "outcome": "apply",
+                "decision": {"statement_id": statement.statement_id, "action": "reuse", "existing_handle": item["handle"], "reason_text": "brief"},
+            },
+        }
+        for item in nearby
+    ]
     prompt = f"""You are a private background geometry placement agent. The user will never see this run.
 Decide one explicit placement action for this newly formed memory statement. You may only use the supplied local MemoryCursor and local geometry context. Do not infer a global topic, entity, source, graph, vector, or semantic index. Core validates and executes, you only decide.
 Return exactly one raw JSON object with no markdown.
 Schema version: {PLACEMENT_SCHEMA_VERSION}
 For a new memory, `decision.statement_id` MUST be exactly `{statement.statement_id}`. Copy that literal value unchanged; do not use a placeholder, a draft id, or the statement text. The exact new-memory object is {{\"schema_version\":\"{PLACEMENT_SCHEMA_VERSION}\",\"outcome\":\"apply\",\"decision\":{{\"statement_id\":\"{statement.statement_id}\",\"action\":\"new\",\"target_cell\":{{\"profile_id\":\"eisenstein_exact_v1\",\"chart_id\":\"default\",\"layer\":0,\"q\":0,\"r\":0,\"phase\":null}},\"reason_text\":\"brief\"}}}}
-For a known equivalent or revision, use action reuse, revision_current, move, or revision_keep_history with one supplied existing_handle where required. When the new statement explicitly supersedes, corrects, cancels, or replaces one supplied local candidate, choose revision_current with that candidate's handle instead of new. This is an LLM decision from the supplied statements, not a keyword rule. For no safe action use {{\"schema_version\":\"{PLACEMENT_SCHEMA_VERSION}\",\"outcome\":\"defer\",\"reason_text\":\"brief\"}}. Do not invent handles. Do not call tools.
+For a known equivalent or revision, use action reuse, revision_current, move, or revision_keep_history with one supplied existing_handle where required. When the new statement explicitly supersedes, corrects, cancels, or replaces one supplied local candidate, choose revision_current with that candidate's handle instead of new. For revision_current the decision object has exactly statement_id, action, existing_handle, and reason_text; omit target_cell and bridge_spec. For reuse use the same exact fields with action reuse. This is an LLM decision from the supplied statements, not a keyword rule. For no safe action use {{\"schema_version\":\"{PLACEMENT_SCHEMA_VERSION}\",\"outcome\":\"defer\",\"reason_text\":\"brief\"}}. Do not invent handles. Do not call tools.
 statement: {json.dumps(statement.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 memory_cursor: {json.dumps(cursor, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
-local_geometry_context: {json.dumps(nearby, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+local_geometry_context: {json.dumps(nearby, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
+candidate_action_examples: {json.dumps(candidate_action_examples, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
     return {"prompt": prompt, "schema_version": PLACEMENT_SCHEMA_VERSION, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest()}
 
 

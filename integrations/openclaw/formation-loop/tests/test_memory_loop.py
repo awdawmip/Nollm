@@ -55,6 +55,10 @@ def test_new_session_placement_receives_bounded_agent_context(tmp_path):
     )
     assert "dream:test" in built["prompt"]
     assert '"local_atom_id":"dream:test"' in built["prompt"]
+    assert "For revision_current" in built["prompt"]
+    assert "omit target_cell and bridge_spec" in built["prompt"]
+    assert "candidate_action_examples:" in built["prompt"]
+    assert '"candidate_statement_id":"dream:test"' in built["prompt"]
 
 
 def test_recall_without_cursor_is_none_without_global_discovery(tmp_path):
