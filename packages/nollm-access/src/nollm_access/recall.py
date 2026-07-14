@@ -39,6 +39,11 @@ class AccessRecallItem:
     evidence_utf8: str | None
     score_q16: int
     fallback_error: str | None = None
+    path: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if type(self.path) is not tuple or any(type(kernel) is not str or kernel not in {"coverage_up", "coverage_down", "lateral", "bridge"} for kernel in self.path):
+            raise TypeError("Access Recall path must be a string tuple")
 
 
 @dataclass(frozen=True)

@@ -76,6 +76,8 @@ def test_recall_traverses_surface_then_renders_hidden_context(tmp_path):
     assert set(recalled["core_recall"]) == {"budget_exhausted"}
     assert "entry_cells" not in recalled
     assert "per_entry_core_recall" not in recalled
+    assert recalled["candidates"][0]["path"] == []
+    assert recalled["candidates"][0]["path_is_not_truth_proof"] is True
     rendered = render_recall_injection(json.dumps({
         "schema_version": RECALL_SCHEMA_VERSION,
         "outcome": "inject",

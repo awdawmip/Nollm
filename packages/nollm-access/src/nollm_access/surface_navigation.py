@@ -418,4 +418,6 @@ class AccessSurfaceNavigator:
             "address": item.handle.geometry_address.to_mapping(),
             "score_q16": item.score_q16,
             "fallback_error": item.fallback_error,
+            "path": list(item.path),
+            "path_is_not_truth_proof": True,
         }

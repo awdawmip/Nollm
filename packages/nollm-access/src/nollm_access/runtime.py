@@ -166,17 +166,17 @@ class AccessRuntime:
                 try:
                     statement_id = self._handle_store.statement_for_handle(item.handle)
                 except KeyError:
-                    items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing"))
+                    items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing", item.path))
                     continue
                 try:
                     statement = self._get_statement(statement_id)
                 except FileNotFoundError:
-                    items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing"))
+                    items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing", item.path))
                 else:
                     if statement.content_utf8 != item.atom.payload_utf8:
-                        items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch"))
+                        items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch", item.path))
                     else:
-                        items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16))
+                        items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16, path=item.path))
             return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:

@@ -57,6 +57,11 @@ class CoreRecallItem:
     handle: AtomHandle
     atom: MemoryAtom
     score_q16: int
+    path: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.path) is not tuple or any(type(kernel) is not str or kernel not in ALLOWED_KERNELS for kernel in self.path):
+            raise TypeError("Recall path must be a kernel tuple")
 
 
 @dataclass(frozen=True)
@@ -70,38 +75,40 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
     runtime._emit_trace(CoreTraceEvent("core.recall.begin", {"request_id": request.request_id, "entry_count": len(request.entry_cells)}, "stable"))
     if request.budget.max_lateral_ring > 1:
         raise ValueError("only registered lateral ring 1 is supported")
-    frontier = [(cell, Q16_ONE, 0, 0) for cell in sorted(request.entry_cells, key=lambda item: item.stable_key())]
-    best: dict[GeometryAddress, int] = {}
+    frontier = [(cell, Q16_ONE, 0, ()) for cell in sorted(request.entry_cells, key=lambda item: item.stable_key())]
+    best: dict[GeometryAddress, tuple[int, tuple[str, ...]]] = {}
     found: dict[AtomHandle, CoreRecallItem] = {}
     entry_layers = tuple(cell.layer for cell in request.entry_cells)
     step = 0
     truncated_by_budget = False
     while frontier and step <= request.budget.max_steps:
         merged: dict[GeometryAddress, tuple[int, int]] = {}
-        for cell, score, _, bridge_steps in frontier:
-            if score <= best.get(cell, -1):
+        for cell, score, bridge_steps, path in frontier:
+            previous_cell = best.get(cell)
+            if previous_cell is not None and (score < previous_cell[0] or (score == previous_cell[0] and path >= previous_cell[1])):
                 continue
-            best[cell] = score
+            best[cell] = score, path
             for handle, atom in runtime._atoms_at_locked(cell):
                 current = found.get(handle)
-                if current is None or score > current.score_q16:
-                    found[handle] = CoreRecallItem(handle, atom, score)
+                if current is None or score > current.score_q16 or (score == current.score_q16 and path < current.path):
+                    found[handle] = CoreRecallItem(handle, atom, score, path)
             if step == request.budget.max_steps:
                 if _targets(runtime, cell, request, bridge_steps):
                     truncated_by_budget = True
                 continue
-            for target, weight, next_bridge_steps in _targets(runtime, cell, request, bridge_steps):
+            for target, weight, next_bridge_steps, kernel in _targets(runtime, cell, request, bridge_steps):
                 if min(abs(target.layer - layer) for layer in entry_layers) > request.budget.max_layer_delta:
                     continue
                 target_score = score * weight // Q16_ONE
+                target_path = (*path, kernel)
                 previous = merged.get(target)
-                if previous is None or target_score > previous[0]:
-                    merged[target] = (target_score, next_bridge_steps)
+                if previous is None or target_score > previous[0] or (target_score == previous[0] and target_path < previous[2]):
+                    merged[target] = (target_score, next_bridge_steps, target_path)
         runtime._emit_trace(CoreTraceEvent("core.recall.frontier", {"step": step, "cell_count": len(frontier)}, "internal"))
         frontier = [
-            (cell, score, step + 1, bridge_steps)
-            for cell, (score, bridge_steps) in sorted(merged.items(), key=lambda item: (-item[1][0], item[0].stable_key()))[: request.budget.beam]
-            if score > best.get(cell, -1)
+            (cell, score, bridge_steps, path)
+            for cell, (score, bridge_steps, path) in sorted(merged.items(), key=lambda item: (-item[1][0], item[1][2], item[0].stable_key()))[: request.budget.beam]
+            if cell not in best or score > best[cell][0] or (score == best[cell][0] and path < best[cell][1])
         ]
         step += 1
     items = tuple(sorted(found.values(), key=lambda item: (-item.score_q16, item.handle.geometry_address.stable_key(), item.handle.local_atom_id))[: request.budget.max_results])
@@ -111,21 +118,21 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
     return result
 
 
-def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest, bridge_steps: int) -> tuple[tuple[GeometryAddress, int, int], ...]:
-    output: list[tuple[GeometryAddress, int, int]] = []
+def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest, bridge_steps: int) -> tuple[tuple[GeometryAddress, int, int, str], ...]:
+    output: list[tuple[GeometryAddress, int, int, str]] = []
     if "coverage_up" in request.allowed_kernels:
-        output.extend((target, weight, bridge_steps) for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_up"))
+        output.extend((target, weight, bridge_steps, "coverage_up") for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_up"))
     if "coverage_down" in request.allowed_kernels:
-        output.extend((target, weight, bridge_steps) for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_down"))
+        output.extend((target, weight, bridge_steps, "coverage_down") for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_down"))
     if "lateral" in request.allowed_kernels:
         for ring in range(1, request.budget.max_lateral_ring + 1):
             validate_lateral_ring(ring, runtime.kernel_registry.fanout_limit)
             template = runtime.kernel_registry.coverage_template(cell.profile_id, "lateral", cell.layer)
-            output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
+            output.extend((target, weight, bridge_steps, "lateral") for target, weight in expand_template(cell, template))
     if "bridge" in request.allowed_kernels and bridge_steps < request.budget.max_bridge_steps:
         for bridge in runtime._bridges_locked():
             if cell not in bridge.from_anchor.cells or bridge_steps >= bridge.max_steps:
                 continue
             for target in sorted(bridge.to_anchor.cells, key=lambda item: item.stable_key())[: bridge.max_fanout]:
-                output.append((target, bridge.weight_q16, bridge_steps + 1))
+                output.append((target, bridge.weight_q16, bridge_steps + 1, "bridge"))
     return tuple(output)
