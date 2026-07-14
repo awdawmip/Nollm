@@ -154,6 +154,75 @@ class AccessSurfaceNavigator:
         state = SurfaceTraversalState(operation_id, plane, budget, selection.info.order)
         return self.page(state)
 
+    @staticmethod
+    def state_to_mapping(state: SurfaceTraversalState) -> dict[str, object]:
+        AccessSurfaceNavigator._require_state(state)
+        return {
+            "operation_id": state.operation_id,
+            "plane": {
+                "profile_id": state.plane.profile_id,
+                "chart_id": state.plane.chart_id,
+                "phase": state.plane.phase,
+                "base_layer": state.plane.base_layer,
+            },
+            "budget": {
+                name: getattr(state.budget, name)
+                for name in SurfaceBudgetProfile.__dataclass_fields__
+            },
+            "order": state.order,
+            "parent_order": state.parent_order,
+            "parent_address": state.parent_address.to_mapping() if state.parent_address else None,
+            "after": state.after.to_mapping() if state.after else None,
+            "stack": [
+                {
+                    "order": frame.order,
+                    "parent_order": frame.parent_order,
+                    "parent_address": frame.parent_address.to_mapping() if frame.parent_address else None,
+                    "after": frame.after.to_mapping() if frame.after else None,
+                }
+                for frame in state.stack
+            ],
+            "call_count": state.call_count,
+        }
+
+    @staticmethod
+    def state_from_mapping(value: object) -> SurfaceTraversalState:
+        required = {"operation_id", "plane", "budget", "order", "parent_order", "parent_address", "after", "stack", "call_count"}
+        if type(value) is not dict or set(value) != required:
+            raise ValueError("invalid Surface traversal state")
+        plane_value = value["plane"]
+        budget_value = value["budget"]
+        if type(plane_value) is not dict or set(plane_value) != {"profile_id", "chart_id", "phase", "base_layer"}:
+            raise ValueError("invalid Surface traversal plane")
+        if type(budget_value) is not dict or set(budget_value) != set(SurfaceBudgetProfile.__dataclass_fields__):
+            raise ValueError("invalid Surface traversal budget")
+        if type(value["stack"]) is not list:
+            raise ValueError("invalid Surface traversal stack")
+        plane = SurfacePlane(plane_value["profile_id"], plane_value["chart_id"], plane_value["phase"], plane_value["base_layer"])
+        budget = SurfaceBudgetProfile(**budget_value)
+
+        def address(item: object) -> GeometryAddress | None:
+            return None if item is None else GeometryAddress.from_mapping(item)
+
+        frames = []
+        for item in value["stack"]:
+            if type(item) is not dict or set(item) != {"order", "parent_order", "parent_address", "after"}:
+                raise ValueError("invalid Surface traversal frame")
+            frames.append(_TraversalFrame(item["order"], item["parent_order"], address(item["parent_address"]), address(item["after"])))
+        state = SurfaceTraversalState(
+            value["operation_id"],
+            plane,
+            budget,
+            value["order"],
+            value["parent_order"],
+            address(value["parent_address"]),
+            address(value["after"]),
+            tuple(frames),
+            value["call_count"],
+        )
+        AccessSurfaceNavigator._require_state(state)
+        return state
+
     def page(self, state: SurfaceTraversalState) -> SurfaceTraversalPage:
         self._require_state(state)
         if state.call_count >= state.budget.max_calls:
@@ -349,6 +418,14 @@ class AccessSurfaceNavigator:
     def _require_state(state: SurfaceTraversalState) -> None:
         if type(state) is not SurfaceTraversalState:
             raise TypeError("state must be SurfaceTraversalState")
+        if type(state.operation_id) is not str or not state.operation_id:
+            raise ValueError("Surface traversal operation_id is required")
+        if type(state.plane) is not SurfacePlane or type(state.budget) is not SurfaceBudgetProfile:
+            raise TypeError("Surface traversal plane and budget are invalid")
+        if type(state.order) is not int or not 0 <= state.order <= state.budget.hard_max_order:
+            raise ValueError("Surface traversal order is invalid")
+        if type(state.call_count) is not int or state.call_count < 0:
+            raise ValueError("Surface traversal call_count is invalid")
 
     @staticmethod
     def _require_depth(state: SurfaceTraversalState) -> None:

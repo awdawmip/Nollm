@@ -14,7 +14,14 @@ from .dream_adapter import (
     DREAM_PROMPT_VERSION, build_dream_format_repair_prompt, build_dream_prompt, dream_schema_bytes,
     process_dream_result, request_from_mapping, sha256_hex as dream_sha256_hex,
 )
-from .memory_loop import apply_placement, build_placement_prompt, build_recall_prompt, render_recall_injection
+from .memory_loop import (
+    advance_placement_traversal,
+    advance_recall_traversal,
+    apply_placement,
+    build_placement_prompt,
+    build_recall_prompt,
+    render_recall_injection,
+)
 
 
 def _well_formed(value: object) -> object:
@@ -70,15 +77,23 @@ def main() -> None:
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "build_placement_prompt":
-            result = build_placement_prompt(envelope["statement"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            result = build_placement_prompt(envelope["statement"], envelope["memory_workspace"], envelope["request_id"], envelope.get("surface_budget"))
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "advance_placement_traversal":
+            result = advance_placement_traversal(envelope["statement"], envelope["traversal_state"], envelope["raw_model_response"], envelope["memory_workspace"])
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "apply_placement":
-            result = apply_placement(envelope["raw_model_response"], envelope["statement"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            result = apply_placement(envelope["raw_model_response"], envelope["statement"], envelope["memory_workspace"], envelope["request_id"], envelope.get("selected_entry"))
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "build_recall_prompt":
-            result = build_recall_prompt(envelope["query"], envelope["session_key"], envelope["memory_workspace"], envelope["request_id"])
+            result = build_recall_prompt(envelope["query"], envelope["memory_workspace"], envelope["request_id"], envelope.get("surface_budget"))
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "advance_recall_traversal":
+            result = advance_recall_traversal(envelope["query"], envelope["traversal_state"], envelope["raw_model_response"], envelope["memory_workspace"])
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "render_recall_injection":

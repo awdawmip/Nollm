@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, surfaceBudget, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -9,6 +9,21 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
+  assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
+  assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 12);
+  assert.equal(manifest.configSchema.properties.placement_surface_max_calls.default, 16);
+  assert.equal(JSON.stringify(manifest.configSchema).includes("cursor"), false);
+});
+
+test("Surface budgets are fixed structural values with bounded calls", () => {
+  const recall = surfaceBudget({}, "recall");
+  const placement = surfaceBudget({}, "placement");
+  assert.deepEqual(Object.keys(recall), Object.keys(placement));
+  assert.equal(recall.page_size, 8);
+  assert.equal(recall.max_calls, 12);
+  assert.equal(placement.max_calls, 16);
+  assert.equal("query" in recall, false);
+  assert.equal("session" in recall, false);
 });
 
 test("wire text replaces isolated UTF-16 surrogates before UTF-8 encoding", () => {

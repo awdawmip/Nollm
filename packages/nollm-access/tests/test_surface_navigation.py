@@ -74,6 +74,16 @@ def test_pagination_return_and_call_limits_are_temporary(tmp_path) -> None:
     assert not (tmp_path / "access" / "surface_state.json").exists()
 
 
+def test_traversal_state_round_trips_without_query_or_session(tmp_path) -> None:
+    place(tmp_path, "s", "statement", 0)
+    navigator = AccessSurfaceNavigator(tmp_path)
+    page = navigator.begin("operation-only", PLANE, BUDGET)
+    mapping = navigator.state_to_mapping(page.state)
+    assert "query" not in str(mapping).lower()
+    assert "session" not in str(mapping).lower()
+    assert navigator.state_from_mapping(mapping) == page.state
+
+
 def test_multi_entry_recall_is_canonical_bounded_and_deduplicated(tmp_path) -> None:
     place(tmp_path, "a", "Alpha one", 0)
     place(tmp_path, "b", "Alpha two", 1)

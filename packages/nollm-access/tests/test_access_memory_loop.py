@@ -10,15 +10,15 @@ def placement(statement_id: str, action: str, candidate_id: str, *, handle: dict
     decision = {"statement_id": statement_id, "action": action, "candidate_id": candidate_id, "reason_text": "explicit fixture decision"}
     if handle is not None:
         decision["existing_handle"] = handle
-    return {"schema_version": "nollm_openclaw_placement_v2", "outcome": "apply", "decision": decision}
+    return {"schema_version": "nollm_openclaw_surface_placement_v1", "outcome": "apply", "decision": decision}
 
 
 def test_revision_replaces_current_binding_and_recall_after_reopen(tmp_path) -> None:
     old = MemoryStatement("meeting:tuesday", "Project weekly meeting is Tuesday at 9 AM.")
     new = MemoryStatement("meeting:thursday", "Project weekly meeting is Thursday at 3 PM; Tuesday is cancelled.")
     with AccessMemoryLoop(tmp_path) as loop:
-        first = loop.apply_placement(old, placement(old.statement_id, "new_cluster", "new_cluster:0"), "new")
-        revised = loop.apply_placement(new, placement(new.statement_id, "revision_current", "existing_cell:0", handle=first["handle"]), "revision", [CELL], [CELL])
+        first = loop.apply_placement(old, placement(old.statement_id, "expand_surface", "placement:expand:0"), "new")
+        revised = loop.apply_placement(new, placement(new.statement_id, "revision_current", "placement:existing:0", handle=first["handle"]), "revision", CELL)
         assert revised["handle"] == first["handle"]
         assert loop.binding(new.statement_id)["current_statement_id"] == new.statement_id
         with pytest.raises(KeyError):
@@ -32,9 +32,9 @@ def test_duplicate_reuses_current_and_similar_distinct_creates_new_binding(tmp_p
     current = MemoryStatement("meeting:thursday", "Project weekly meeting is Thursday at 3 PM.")
     distinct = MemoryStatement("review:tuesday", "Project technical review remains Tuesday at 9 AM.")
     with AccessMemoryLoop(tmp_path) as loop:
-        first = loop.apply_placement(current, placement(current.statement_id, "new_cluster", "new_cluster:0"), "new")
-        duplicate = loop.apply_placement(current, placement(current.statement_id, "reuse", "existing_cell:0", handle=first["handle"]), "duplicate", [CELL], [CELL])
-        other = loop.apply_placement(distinct, placement(distinct.statement_id, "new_local", "lateral_ring_1:5"), "distinct", [CELL], [CELL])
+        first = loop.apply_placement(current, placement(current.statement_id, "expand_surface", "placement:expand:0"), "new")
+        duplicate = loop.apply_placement(current, placement(current.statement_id, "reuse", "placement:existing:0", handle=first["handle"]), "duplicate", CELL)
+        other = loop.apply_placement(distinct, placement(distinct.statement_id, "new_local", "placement:lateral:5"), "distinct", CELL)
         assert duplicate["handle"] == first["handle"]
         assert loop.binding(current.statement_id)["handle"] == first["handle"]
         assert loop.binding(distinct.statement_id)["handle"] == other["handle"]
@@ -45,12 +45,12 @@ def test_revision_binding_failure_restores_old_current_and_discards_new_statemen
     old = MemoryStatement("meeting:tuesday", "Project weekly meeting is Tuesday at 9 AM.")
     new = MemoryStatement("meeting:thursday", "Project weekly meeting is Thursday at 3 PM; Tuesday is cancelled.")
     with AccessMemoryLoop(tmp_path) as loop:
-        first = loop.apply_placement(old, placement(old.statement_id, "new_cluster", "new_cluster:0"), "new")
+        first = loop.apply_placement(old, placement(old.statement_id, "expand_surface", "placement:expand:0"), "new")
         def fail(*_args: object) -> None:
             raise OSError("injected binding failure")
         monkeypatch.setattr(FileHandleStore, "revise_current", fail)
         with pytest.raises(OSError, match="injected binding failure"):
-            loop.apply_placement(new, placement(new.statement_id, "revision_current", "existing_cell:0", handle=first["handle"]), "revision-failure", [CELL], [CELL])
+            loop.apply_placement(new, placement(new.statement_id, "revision_current", "placement:existing:0", handle=first["handle"]), "revision-failure", CELL)
         assert loop.binding(old.statement_id)["current_statement_id"] == old.statement_id
         assert loop.local_context([first["handle"]["geometry_address"]], "after-failure")[0]["content_utf8"] == old.content_utf8
     assert not FileStatementStore(tmp_path).exists(new.statement_id)

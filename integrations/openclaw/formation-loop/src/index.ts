@@ -14,21 +14,44 @@ export type DreamConfig = {
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
   persist_subagent_transcripts?: boolean; debug_trace?: boolean; evidence_path?: string;
+  surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
+  recall_surface_max_pages?: number; recall_surface_max_cells?: number; recall_surface_max_projection_units?: number; recall_surface_max_calls?: number;
+  placement_surface_max_pages?: number; placement_surface_max_cells?: number; placement_surface_max_projection_units?: number; placement_surface_max_calls?: number;
 };
 
 const JSON_SCHEMA = {
   type: "object", additionalProperties: false,
   properties: {
     enabled: { type: "boolean", default: true }, python_executable: { type: "string" }, nollm_repo_root: { type: "string" },
-    statement_store_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
+    statement_store_workspace: { type: "string" }, memory_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
     max_statements: { type: "integer", minimum: 1, default: 8 }, max_statement_chars: { type: "integer", minimum: 1, default: 4096 },
     max_total_chars: { type: "integer", minimum: 1, default: 8192 }, persist_subagent_transcripts: { type: "boolean", const: false, default: false },
     debug_trace: { type: "boolean", default: false }, evidence_path: { type: "string" },
+    surface_page_size: { type: "integer", minimum: 1, maximum: 8, default: 8 }, surface_max_order: { type: "integer", minimum: 0, maximum: 2, default: 2 },
+    surface_page_overhead_units: { type: "integer", minimum: 1, default: 8 }, surface_cell_preview_units: { type: "integer", minimum: 1, default: 4 },
+    recall_surface_max_pages: { type: "integer", minimum: 1, default: 4 }, recall_surface_max_cells: { type: "integer", minimum: 1, default: 32 }, recall_surface_max_projection_units: { type: "integer", minimum: 1, default: 160 }, recall_surface_max_calls: { type: "integer", minimum: 1, default: 12 },
+    placement_surface_max_pages: { type: "integer", minimum: 1, default: 6 }, placement_surface_max_cells: { type: "integer", minimum: 1, default: 48 }, placement_surface_max_projection_units: { type: "integer", minimum: 1, default: 240 }, placement_surface_max_calls: { type: "integer", minimum: 1, default: 16 },
   },
 } as const;
+
+export function surfaceBudget(config: DreamConfig, mode: "recall" | "placement"): Record<string, number> {
+  const recall = mode === "recall";
+  return {
+    page_size: config.surface_page_size ?? 8,
+    max_pages: recall ? config.recall_surface_max_pages ?? 4 : config.placement_surface_max_pages ?? 6,
+    max_surface_cells: recall ? config.recall_surface_max_cells ?? 32 : config.placement_surface_max_cells ?? 48,
+    page_overhead_units: config.surface_page_overhead_units ?? 8,
+    cell_preview_units: config.surface_cell_preview_units ?? 4,
+    max_projection_units: recall ? config.recall_surface_max_projection_units ?? 160 : config.placement_surface_max_projection_units ?? 240,
+    selected_entries_limit: recall ? 3 : 1,
+    max_descent_depth: config.surface_max_order ?? 2,
+    hard_max_order: config.surface_max_order ?? 2,
+    max_calls: recall ? config.recall_surface_max_calls ?? 12 : config.placement_surface_max_calls ?? 16,
+  };
+}
 
 export function run(command: string, args: string[], input?: string, timeoutMs = 120000, env?: NodeJS.ProcessEnv): Promise<RunResult> {
   return new Promise((resolve) => {
@@ -169,13 +192,22 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
     if (!usableModel(model)) return;
     const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
-    const built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, session_key: ctx.sessionKey, memory_workspace: memoryWorkspace });
-    if (built.ok !== true || built.available !== true || typeof built.prompt !== "string") return;
-    const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:agent`);
+    let built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace, surface_budget: surfaceBudget(config, "recall") });
+    const surfacePath: unknown[] = [];
+    let traversal = 0;
+    while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 12)) {
+      surfacePath.push(built.surface);
+      const step = await runHiddenAgent(built.prompt, model!, `${requestId}:surface:${traversal}`);
+      if (!step.raw) { await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt }); return; }
+      built = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
+      traversal += 1;
+    }
+    if (built.ok !== true || built.status !== "recall_decision" || typeof built.prompt !== "string") return;
+    const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:recall-selection`);
     if (!selected.raw) { await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt }); return; }
     const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
-    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, visible_message_count: 0, ...selected.resolved });
+    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, entry_cells: built.entry_cells, per_entry_core_recall: built.per_entry_core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {
@@ -369,8 +401,15 @@ async function runDreamSubagent(api: OpenClawPluginApi, config: DreamConfig, pro
 async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, sessionKey: string, statement: unknown, model: string, stableId: string): Promise<void> {
   const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
   const requestId = `placement-${createHash("sha256").update(`${stableId}\0${statementId}`).digest("hex")}`;
-  const built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
-  if (built.ok !== true || typeof built.prompt !== "string") { await trace(config, { status: "error", stage: "placement_prompt", request_id: requestId, ...built }); return; }
+  let built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, memory_workspace: config.memory_workspace ?? config.statement_store_workspace, surface_budget: surfaceBudget(config, "placement") });
+  let traversal = 0;
+  while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.placement_surface_max_calls ?? 16)) {
+    const step = await runDreamSubagent(api, config, built.prompt, model, `${requestId}:surface:${traversal}`);
+    if (!step?.raw) { await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId }); return; }
+    built = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+    traversal += 1;
+  }
+  if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, ...built }); return; }
   const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
   const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
   try {
@@ -380,19 +419,19 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
     const raw = extractAssistantText(session.messages);
     if (!raw) { await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output" }); return; }
-    let applied = await applyPlacementAttempt(config, requestId, raw, statement, sessionKey);
+    let applied = await applyPlacementAttempt(config, requestId, raw, statement, built.selected_entry);
     let attemptKind = "initial";
     if (placementRetryable(applied)) {
       const repaired = await runFormatRepair(api, config, raw, String(applied.error ?? "invalid_json"), model, `${requestId}:format-repair`);
       if (repaired) {
-        applied = await applyPlacementAttempt(config, requestId, repaired.raw, statement, sessionKey);
+        applied = await applyPlacementAttempt(config, requestId, repaired.raw, statement, built.selected_entry);
         attemptKind = "format_repair";
       }
     }
     for (let index = 1; index <= 2 && placementRetryable(applied); index += 1) {
       const retry = await runDreamSubagent(api, config, String(built.prompt), model, `${requestId}:retry:${index}`);
       if (!retry) break;
-      applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, sessionKey);
+      applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, built.selected_entry);
       attemptKind = `full_retry_${index}`;
     }
     await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, visible_message_count: 0, ...applied, ...extractResolvedModel(session.messages) });
@@ -403,10 +442,10 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   }
 }
 
-async function applyPlacementAttempt(config: DreamConfig, requestId: string, raw: string, statement: unknown, sessionKey: string): Promise<Record<string, unknown>> {
+async function applyPlacementAttempt(config: DreamConfig, requestId: string, raw: string, statement: unknown, selectedEntry: unknown): Promise<Record<string, unknown>> {
   return bridge(config, {
     action: "apply_placement", request_id: requestId, raw_model_response: raw, statement,
-    session_key: sessionKey, memory_workspace: config.memory_workspace ?? config.statement_store_workspace,
+    selected_entry: selectedEntry, memory_workspace: config.memory_workspace ?? config.statement_store_workspace,
   });
 }
 
