@@ -24,7 +24,8 @@ from .surface import (
     CoverageDescentPage,
     SurfaceOrderInfo,
     SurfacePage,
-    SurfacePlane,
+    PhysicalFieldScope,
+    SurfaceAggregateAddress,
     build_surface_orders,
     descent_page,
     order_info,
@@ -214,33 +215,32 @@ class CoreRuntime:
                 raise TypeError("request must be CoreRecallRequest")
             return resolve_recall(self, request)
 
-    def surface_orders(self, plane: SurfacePlane, max_order: int) -> tuple[SurfaceOrderInfo, ...]:
+    def surface_orders(self, scope: PhysicalFieldScope, max_order: int) -> tuple[SurfaceOrderInfo, ...]:
         with self._operation():
-            orders = self._surface_orders_locked(plane, max_order)
-            return tuple(order_info(plane, records, order) for order, records in enumerate(orders))
+            orders = self._surface_orders_locked(scope, max_order)
+            return tuple(order_info(scope, records, order) for order, records in enumerate(orders))
 
     def surface_page(
         self,
-        plane: SurfacePlane,
+        scope: PhysicalFieldScope,
         order: int,
-        after: GeometryAddress | None,
+        after: SurfaceAggregateAddress | None,
         limit: int,
     ) -> SurfacePage:
         with self._operation():
-            orders = self._surface_orders_locked(plane, order)
-            return surface_page(plane, order, orders[order], after, limit)
+            orders = self._surface_orders_locked(scope, order)
+            return surface_page(scope, order, orders[order], after, limit)
 
     def surface_descend(
         self,
-        plane: SurfacePlane,
-        parent_order: int,
-        parent_address: GeometryAddress,
-        after: GeometryAddress | None,
+        scope: PhysicalFieldScope,
+        parent_address: SurfaceAggregateAddress,
+        after: SurfaceAggregateAddress | None,
         limit: int,
     ) -> CoverageDescentPage:
         with self._operation():
-            orders = self._surface_orders_locked(plane, parent_order)
-            return descent_page(plane, parent_order, parent_address, orders, after, limit)
+            orders = self._surface_orders_locked(scope, parent_address.aggregation_order)
+            return descent_page(scope, parent_address, orders, after, limit)
 
     def export_state_bytes(self) -> bytes:
         with self._operation():
@@ -260,9 +260,9 @@ class CoreRuntime:
     def _state_bytes_locked(self) -> bytes:
         return canonical_state_bytes(self._document(self._cells, self._bridges))
 
-    def _surface_orders_locked(self, plane: SurfacePlane, max_order: int):
-        if type(plane) is not SurfacePlane:
-            raise TypeError("plane must be SurfacePlane")
+    def _surface_orders_locked(self, scope: PhysicalFieldScope, max_order: int):
+        if type(scope) is not PhysicalFieldScope:
+            raise TypeError("scope must be PhysicalFieldScope")
         occupancy = {address: len(atoms) for address, atoms in self._cells.items()}
         endpoints = frozenset(
             cell
@@ -270,7 +270,7 @@ class CoreRuntime:
             for anchor in (bridge.from_anchor, bridge.to_anchor)
             for cell in anchor.cells
         )
-        return build_surface_orders(plane, max_order, occupancy, endpoints, self._kernel_registry)
+        return build_surface_orders(scope, max_order, occupancy, endpoints, self._kernel_registry)
 
     def _atoms_at_locked(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
         return self._cell_store.atoms_at(address)

@@ -19,10 +19,12 @@ from .state import CoreRuntime
 from .surface import (
     CoverageDescentCell,
     CoverageDescentPage,
+    PhysicalFieldScope,
+    SurfaceAggregateAddress,
     SurfaceCellProjection,
+    SurfaceGridSpec,
     SurfaceOrderInfo,
     SurfacePage,
-    SurfacePlane,
 )
 
 
@@ -39,6 +41,7 @@ __all__ = [
     "CoverageTemplate",
     "CoverageDescentCell",
     "CoverageDescentPage",
+    "PhysicalFieldScope",
     "GeometryAddress",
     "GeometryAnchor",
     "KernelEntry",
@@ -51,10 +54,11 @@ __all__ = [
     "RemoveCommand",
     "ReplaceCommand",
     "TraceSink",
+    "SurfaceAggregateAddress",
     "SurfaceCellProjection",
+    "SurfaceGridSpec",
     "SurfaceOrderInfo",
     "SurfacePage",
-    "SurfacePlane",
     "expand_template",
     "available_profile_ids",
     "runtime_profile",
