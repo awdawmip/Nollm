@@ -38,6 +38,14 @@ from .surface_selection import (
     SurfaceBudgetProfile,
     select_active_surface,
 )
+from .surface_navigation import (
+    AccessSurfaceNavigator,
+    SurfaceCellView,
+    SurfaceRecallResult,
+    SurfaceStatementPreview,
+    SurfaceTraversalPage,
+    SurfaceTraversalState,
+)
 
 __all__ = [
     "ACTIONS",
@@ -47,6 +55,7 @@ __all__ = [
     "AccessRecallRequest",
     "AccessRecallResult",
     "AccessRuntime",
+    "AccessSurfaceNavigator",
     "ActiveSurfaceSelection",
     "AccessConsistencyError",
     "EvidenceStore",
@@ -65,6 +74,11 @@ __all__ = [
     "RECALL_SURFACE_BUDGET",
     "StatementStore",
     "SurfaceBudgetProfile",
+    "SurfaceCellView",
+    "SurfaceRecallResult",
+    "SurfaceStatementPreview",
+    "SurfaceTraversalPage",
+    "SurfaceTraversalState",
     "DREAM_ACTORS",
     "DREAM_OUTCOMES",
     "DREAM_SCHEMA_VERSION",
