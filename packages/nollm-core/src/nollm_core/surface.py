@@ -18,7 +18,6 @@ OBSERVATION_AREA_RATIO_Q32 = (
     4294967296, 6074001000, 8589934592, 12148002000, 17179869184,
     24296004000, 34359738368, 48592008000, 68719476736,
 )
-_NEIGHBORS = ((-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0))
 
 
 @dataclass(frozen=True)
@@ -160,6 +159,7 @@ class SurfaceOrderInfo:
     page_count_hint: int
     native_atom_count: int
     aggregate_mass_q16: int
+    coverage_residual_q16: int
     max_descent_depth: int
     overflow: bool = False
 
@@ -208,33 +208,41 @@ def build_surface_orders(
 ) -> tuple[tuple[_SurfaceRecord, ...], ...]:
     _require_order(max_order)
     native = {address: count for address, count in occupancy.items() if scope.contains(address)}
-    grouped_zero: dict[tuple[int, int], list[GeometryAddress]] = {}
+    grouped_zero: dict[tuple[int, int], dict[GeometryAddress, tuple[int, int, int]]] = {}
     for address in sorted(native, key=lambda item: item.stable_key()):
-        q, r = _physical_to_reference(address, scope.reference_layer, registry)
-        grouped_zero.setdefault((q, r), []).append(address)
+        projected, _residual = _physical_to_reference(address, scope.reference_layer, registry)
+        distributed = _distribute_mass(native[address] * Q16_ONE, tuple(weight for _q, _r, weight in projected))
+        count_owner = max(projected, key=lambda item: (item[2], -item[0], -item[1]))[:2]
+        for (q, r, weight), mass in zip(projected, distributed):
+            grouped_zero.setdefault((q, r), {})[address] = (weight, mass, native[address] if (q, r) == count_owner else 0)
     order_zero = []
-    for (q, r), source_list in sorted(grouped_zero.items()):
-        sources = tuple(source_list)
-        aggregate_count = sum(native[source] for source in sources)
+    for (q, r), source_map in sorted(grouped_zero.items()):
+        sources = tuple(sorted(source_map, key=lambda item: item.stable_key()))
+        aggregate_count = sum(source_map[source][2] for source in sources)
         native_count = sum(native[source] for source in sources if source.layer == scope.reference_layer and (source.q, source.r) == (q, r))
+        aggregate_mass = sum(source_map[source][1] for source in sources)
         address = _surface_address(scope, 0, q, r)
-        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_count * Q16_ONE, sources, False, any(source in bridge_endpoints for source in sources)), ()))
+        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources)), ()))
     orders: list[tuple[_SurfaceRecord, ...]] = [tuple(order_zero)]
     for order in range(1, max_order + 1):
         lower = orders[-1]
         lower_by_address = {record.projection.address: record for record in lower}
-        template = registry.coverage_template(scope.profile_id, "coverage_up", scope.reference_layer - order + 1)
-        grouped: dict[SurfaceAggregateAddress, dict[SurfaceAggregateAddress, tuple[int, tuple[str, ...]]]] = {}
+        grouped: dict[SurfaceAggregateAddress, dict[SurfaceAggregateAddress, tuple[int, tuple[str, ...], int]]] = {}
         for record in lower:
-            for q, r, weight, flags in _observation_targets(record.projection.address.q, record.projection.address.r, template):
+            source = GeometryAddress(scope.profile_id, scope.chart_id, scope.reference_layer - order + 1, record.projection.address.q, record.projection.address.r)
+            targets = registry.expand_coverage(source, "coverage_up")
+            distributed = _distribute_mass(record.projection.aggregate_mass_q16, tuple(weight for _target, weight in targets))
+            for (physical_target, weight), mass in zip(targets, distributed):
+                q, r = physical_target.q, physical_target.r
+                flags = ("physical_overlap_projection", "translation_covariant")
                 target = _surface_address(scope, order, q, r)
-                grouped.setdefault(target, {})[record.projection.address] = (weight, flags)
+                grouped.setdefault(target, {})[record.projection.address] = (weight, flags, mass)
         records = []
         for target, edge_map in sorted(grouped.items(), key=lambda item: item[0].stable_key()):
             members = tuple((address, edge_map[address][0], edge_map[address][1]) for address in sorted(edge_map, key=lambda item: item.stable_key()))
             source_cells = tuple(sorted({source for address, _weight, _flags in members for source in lower_by_address[address].projection.source_cells}, key=lambda item: item.stable_key()))
             aggregate_count = sum(lower_by_address[address].projection.aggregate_atom_count for address, _weight, _flags in members)
-            aggregate_mass = sum(lower_by_address[address].projection.aggregate_mass_q16 * weight // Q16_ONE for address, weight, _flags in members)
+            aggregate_mass = sum(edge_map[address][2] for address, _weight, _flags in members)
             records.append(_SurfaceRecord(_projection(scope, target, 0, aggregate_count, aggregate_mass, source_cells, True, any(source in bridge_endpoints for source in source_cells)), members))
         orders.append(tuple(records))
     return tuple(orders)
@@ -243,7 +251,7 @@ def build_surface_orders(
 def order_info(scope: PhysicalFieldScope, records: tuple[_SurfaceRecord, ...], order: int) -> SurfaceOrderInfo:
     source_cells = {source for record in records for source in record.projection.source_cells}
     native_atom_count = sum(max(record.projection.native_atom_count, 0) for record in records) if order == 0 else len(source_cells)
-    return SurfaceOrderInfo(scope, _grid(scope, order), len(records), (len(records) + DEFAULT_PAGE_SIZE - 1) // DEFAULT_PAGE_SIZE, native_atom_count, sum(record.projection.aggregate_mass_q16 for record in records), order)
+    return SurfaceOrderInfo(scope, _grid(scope, order), len(records), (len(records) + DEFAULT_PAGE_SIZE - 1) // DEFAULT_PAGE_SIZE, native_atom_count, sum(record.projection.aggregate_mass_q16 for record in records), 0, order)
 
 
 def surface_page(scope: PhysicalFieldScope, order: int, records: tuple[_SurfaceRecord, ...], after: SurfaceAggregateAddress | None, limit: int) -> SurfacePage:
@@ -284,58 +292,38 @@ def _surface_address(scope: PhysicalFieldScope, order: int, q: int, r: int) -> S
     return SurfaceAggregateAddress(scope.profile_id, scope.chart_id, scope.identity, scope.reference_layer, order, q, r, (scope.reference_layer - order) % 8)
 
 
-def _physical_to_reference(address: GeometryAddress, reference_layer: int, registry: KernelRegistry) -> tuple[int, int]:
-    q, r, layer = address.q, address.r, address.layer
+def _physical_to_reference(address: GeometryAddress, reference_layer: int, registry: KernelRegistry) -> tuple[tuple[tuple[int, int, int], ...], int]:
+    frontier = {address: Q16_ONE}
+    layer = address.layer
     while layer > reference_layer:
-        template = registry.coverage_template(address.profile_id, "coverage_up", layer)
-        q, r = _nearest_transform(q, r, template.transform_q32)
+        frontier = _project_frontier(frontier, registry, "coverage_up")
         layer -= 1
     while layer < reference_layer:
-        template = registry.coverage_template(address.profile_id, "coverage_down", layer)
-        q, r = _nearest_transform(q, r, template.transform_q32)
+        frontier = _project_frontier(frontier, registry, "coverage_down")
         layer += 1
-    return q, r
+    ordered = tuple((cell.q, cell.r, weight) for cell, weight in sorted(frontier.items(), key=lambda item: item[0].stable_key()))
+    return ordered, Q16_ONE - sum(weight for _q, _r, weight in ordered)
 
 
-def _observation_targets(q: int, r: int, template: object) -> tuple[tuple[int, int, int, tuple[str, ...]], ...]:
-    raw_q, raw_r = _raw_transform(q, r, template.transform_q32)
-    candidates = []
-    base_q, base_r = _nearest_from_raw(raw_q, raw_r)
-    for dq, dr in ((0, 0), *_NEIGHBORS):
-        target_q, target_r = base_q + dq, base_r + dr
-        distance = max(abs(raw_q - target_q * Q32_ONE), abs(raw_r - target_r * Q32_ONE), abs((-raw_q - raw_r) - (-target_q - target_r) * Q32_ONE))
-        candidates.append((distance, dq, dr, target_q, target_r))
-    candidates.sort()
-    selected = candidates[:1]
-    if candidates[1][0] * 4 <= Q32_ONE * 3:
-        selected.append(candidates[1])
-    entry_weights = {(entry.dq, entry.dr): entry.weight_q16 for entry in template.entries}
-    raw_weights = [max(1, entry_weights.get((item[1], item[2]), 1)) for item in selected]
-    total = sum(raw_weights)
-    weights = [value * Q16_ONE // total for value in raw_weights]
-    weights[0] += Q16_ONE - sum(weights)
-    return tuple((item[3], item[4], weight, ("certified_overlap_projection",) if len(selected) == 1 else ("boundary_overlap_projection", "certified_overlap_projection")) for item, weight in zip(selected, weights))
+def _project_frontier(frontier: dict[GeometryAddress, int], registry: KernelRegistry, direction: str) -> dict[GeometryAddress, int]:
+    projected: dict[GeometryAddress, int] = {}
+    for source, source_mass in sorted(frontier.items(), key=lambda item: item[0].stable_key()):
+        targets = registry.expand_coverage(source, direction)
+        masses = _distribute_mass(source_mass, tuple(weight for _target, weight in targets))
+        for (target, _weight), mass in zip(targets, masses):
+            projected[target] = projected.get(target, 0) + mass
+    return projected
 
 
-def _raw_transform(q: int, r: int, matrix: tuple[int, int, int, int]) -> tuple[int, int]:
-    return matrix[0] * q + matrix[1] * r, matrix[2] * q + matrix[3] * r
-
-
-def _nearest_transform(q: int, r: int, matrix: tuple[int, int, int, int]) -> tuple[int, int]:
-    return _nearest_from_raw(*_raw_transform(q, r, matrix))
-
-
-def _nearest_from_raw(qn: int, rn: int) -> tuple[int, int]:
-    def nearest(value: int) -> int:
-        return (value + Q32_ONE // 2) // Q32_ONE if value >= 0 else -((-value + Q32_ONE // 2) // Q32_ONE)
-    xn, zn, yn = qn, rn, -qn - rn
-    x, z, y = nearest(xn), nearest(zn), nearest(yn)
-    dx, dz, dy = abs(x * Q32_ONE - xn), abs(z * Q32_ONE - zn), abs(y * Q32_ONE - yn)
-    if dx >= dz and dx >= dy:
-        x = -y - z
-    elif dz >= dy:
-        z = -x - y
-    return x, z
+def _distribute_mass(mass: int, weights: tuple[int, ...]) -> tuple[int, ...]:
+    if mass < 0 or not weights or any(weight <= 0 for weight in weights):
+        raise ValueError("surface mass distribution is invalid")
+    total = sum(weights)
+    output = [mass * weight // total for weight in weights]
+    order = sorted(range(len(weights)), key=lambda index: (-((mass * weights[index]) % total), index))
+    for index in order[: mass - sum(output)]:
+        output[index] += 1
+    return tuple(output)
 
 
 def _require_order(order: int) -> None:

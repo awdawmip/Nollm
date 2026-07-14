@@ -12,6 +12,7 @@ from .coverage_template import CoverageTemplate, KernelEntry, expand_template, v
 from .geometry import GeometryAddress
 from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
+from .physical_coverage import PhysicalCoverageExpansion, PhysicalCoverageMember, clear_physical_coverage_cache, expand_physical_coverage
 from .ports import CoreTraceEvent, TraceSink
 from .profiles import available_profile_ids, runtime_profile
 from .recall import CoreRecallItem, CoreRecallRequest, CoreRecallResult, RecallBudget
@@ -42,6 +43,8 @@ __all__ = [
     "CoverageDescentCell",
     "CoverageDescentPage",
     "PhysicalFieldScope",
+    "PhysicalCoverageExpansion",
+    "PhysicalCoverageMember",
     "GeometryAddress",
     "GeometryAnchor",
     "KernelEntry",
@@ -60,6 +63,8 @@ __all__ = [
     "SurfaceOrderInfo",
     "SurfacePage",
     "expand_template",
+    "expand_physical_coverage",
+    "clear_physical_coverage_cache",
     "available_profile_ids",
     "runtime_profile",
     "validate_lateral_ring",

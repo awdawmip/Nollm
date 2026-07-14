@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from .fixed_point import Q16_ONE
 from .geometry import GeometryAddress
-from .profiles import DEFAULT_PROFILE_ID, GEOMETRY_CONTRACT_VERSION, runtime_profile
+from .profiles import DEFAULT_PROFILE_ID, LEGACY_ROTATED_TEMPLATE_CONTRACT_VERSION, runtime_profile
 
 COVERAGE_UP = "coverage_up"
 COVERAGE_DOWN = "coverage_down"
@@ -97,7 +97,7 @@ class CoverageTemplate:
         if (self.profile_id == "dream_quasi_v1" and self.approximation_residual_q16 != Q16_ONE // 16) or (self.profile_id not in ("dream_quasi_v1", DEFAULT_PROFILE_ID) and self.approximation_residual_q16 != 0):
             raise ValueError("profile approximation residual mismatch")
         if self.profile_id == DEFAULT_PROFILE_ID:
-            if not 0 <= self.from_layer_mod < 8 or self.compiler.geometry_contract_version != GEOMETRY_CONTRACT_VERSION:
+            if not 0 <= self.from_layer_mod < 8 or self.compiler.geometry_contract_version != LEGACY_ROTATED_TEMPLATE_CONTRACT_VERSION:
                 raise ValueError("rotated physical template phase contract mismatch")
 
     def to_mapping(self) -> dict[str, object]:

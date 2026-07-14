@@ -6,9 +6,10 @@ import json
 
 from .fixed_point import WEIGHT_FORMAT
 
-PROFILE_REGISTRY_VERSION = "nollm_geometry_profiles_v3"
+PROFILE_REGISTRY_VERSION = "nollm_geometry_profiles_v4"
 DEFAULT_PROFILE_ID = "default_dream_v1"
-GEOMETRY_CONTRACT_VERSION = "nollm_rotated_physical_field_v1"
+GEOMETRY_CONTRACT_VERSION = "nollm_translation_covariant_physical_coverage_v1"
+LEGACY_ROTATED_TEMPLATE_CONTRACT_VERSION = "nollm_rotated_physical_field_v1"
 
 
 @dataclass(frozen=True, order=True)
@@ -64,9 +65,9 @@ _RUNTIME_PROFILES = {
     "aligned_baseline_v1": _legacy("aligned_baseline_v1"),
     DEFAULT_PROFILE_ID: RuntimeProfile(
         DEFAULT_PROFILE_ID,
-        "integer_axial_cube_q32_transform",
+        "integer_axial_with_decimal_physical_overlap",
         WEIGHT_FORMAT,
-        False,
+        True,
         False,
         GEOMETRY_CONTRACT_VERSION,
         1,

@@ -114,11 +114,9 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
 def _targets(runtime: object, cell: GeometryAddress, request: CoreRecallRequest, bridge_steps: int) -> tuple[tuple[GeometryAddress, int, int], ...]:
     output: list[tuple[GeometryAddress, int, int]] = []
     if "coverage_up" in request.allowed_kernels:
-        template = runtime.kernel_registry.coverage_template(cell.profile_id, "coverage_up", cell.layer)
-        output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
+        output.extend((target, weight, bridge_steps) for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_up"))
     if "coverage_down" in request.allowed_kernels:
-        template = runtime.kernel_registry.coverage_template(cell.profile_id, "coverage_down", cell.layer)
-        output.extend((target, weight, bridge_steps) for target, weight in expand_template(cell, template))
+        output.extend((target, weight, bridge_steps) for target, weight in runtime.kernel_registry.expand_coverage(cell, "coverage_down"))
     if "lateral" in request.allowed_kernels:
         for ring in range(1, request.budget.max_lateral_ring + 1):
             validate_lateral_ring(ring, runtime.kernel_registry.fanout_limit)

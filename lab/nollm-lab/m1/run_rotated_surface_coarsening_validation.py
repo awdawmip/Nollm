@@ -35,11 +35,31 @@ def _fixture(radius: int) -> dict[str, object]:
         counts = [info.occupied_cell_count for info in infos]
         budget = SurfaceBudgetProfile(8, 20, counts[1], 8, 4, 100000, 8, 8, 24)
         selected = select_active_surface(infos, budget)
-        return {"radius": radius, "native": native, "counts": counts, "areas_q32": [info.grid.observation_area_ratio_q32 for info in infos], "selected_order": selected.info.order, "overflow": selected.overflow}
+        return {
+            "radius": radius,
+            "native": native,
+            "counts": counts,
+            "areas_q32": [info.grid.observation_area_ratio_q32 for info in infos],
+            "mass_q16": [info.aggregate_mass_q16 for info in infos],
+            "residual_q16": [info.coverage_residual_q16 for info in infos],
+            "selected_order": selected.info.order,
+            "selected_within_budget": not selected.overflow,
+            "overflow": selected.overflow,
+        }
+
+
+def _overflow_fixture() -> dict[str, object]:
+    with TemporaryDirectory(prefix="nollm-translation-overflow-") as temporary:
+        with CoreRuntime(temporary) as runtime:
+            _populate_disk(runtime, 2, "overflow")
+            infos = runtime.surface_orders(SCOPE, 8)
+        selected = select_active_surface(infos, SurfaceBudgetProfile(8, 20, 1, 3, 5, 1, 8, 8, 24))
+        return {"selected_order": selected.info.order, "selected_within_budget": not selected.overflow, "overflow": selected.overflow}
 
 
 def validate() -> dict[str, object]:
     dense = [_fixture(5), _fixture(8)]
+    overflow = _overflow_fixture()
     with TemporaryDirectory(prefix="nollm-rotated-sparse-") as temporary:
         with CoreRuntime(temporary) as runtime:
             for index, q in enumerate((0, 100, 200)):
@@ -50,18 +70,25 @@ def validate() -> dict[str, object]:
         "observation_area_strictly_grows": all(all(right > left for left, right in zip(item["areas_q32"], item["areas_q32"][1:])) for item in dense),
         "dense_real_coarsening": all(any(count < item["counts"][0] for count in item["counts"][1:]) for item in dense),
         "real_budget_selects_coarser_without_overflow": all(item["selected_order"] > 0 and not item["overflow"] for item in dense),
+        "mass_and_residual_preserved": all(len(set(item["mass_q16"])) == 1 and set(item["residual_q16"]) == {0} for item in dense),
         "sparse_not_forced_monotonic": len(sparse_counts) == 9,
+        "overflow_separate_from_within_budget": overflow["overflow"] and not overflow["selected_within_budget"],
     }
     if not all(checks.values()):
         raise AssertionError({"checks": checks, "dense": dense, "sparse_counts": sparse_counts})
-    return {"schema_version": "nollm_rotated_surface_coarsening_validation_v1", "checks": checks, "dense": dense, "sparse_counts": sparse_counts}
+    return {"schema_version": "nollm_translation_covariant_surface_validation_v2", "status": "pass", "checks": checks, "dense": dense, "sparse_counts": sparse_counts, "overflow_fixture": overflow}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
-    parser.parse_args()
-    print(json.dumps(validate(), sort_keys=True, separators=(",", ":")))
+    parser.add_argument("--output")
+    arguments = parser.parse_args()
+    document = validate()
+    payload = json.dumps(document, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+    if arguments.output:
+        Path(arguments.output).write_text(payload, encoding="utf-8", newline="\n")
+    print(json.dumps(document, ensure_ascii=True, sort_keys=True))
 
 
 if __name__ == "__main__":

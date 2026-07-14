@@ -20,6 +20,8 @@
     "KernelRegistry",
     "MemoryAtom",
     "MoveCommand",
+    "PhysicalCoverageExpansion",
+    "PhysicalCoverageMember",
     "PhysicalFieldScope",
     "PutCommand",
     "Q16_ONE",
@@ -33,6 +35,8 @@
     "SurfacePage",
     "TraceSink",
     "available_profile_ids",
+    "clear_physical_coverage_cache",
+    "expand_physical_coverage",
     "expand_template",
     "runtime_profile",
     "validate_lateral_ring"

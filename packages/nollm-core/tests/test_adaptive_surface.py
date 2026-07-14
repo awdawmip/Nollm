@@ -114,3 +114,22 @@ def test_surface_contract_is_query_free_and_rejects_unsupported_scope(tmp_path) 
             runtime.surface_orders(SCOPE, 9)
         with pytest.raises(TypeError, match="SurfaceAggregateAddress"):
             runtime.surface_page(SCOPE, 0, cell(0, 0, 0), 8)
+
+
+def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> None:
+    from nollm_core import expand_physical_coverage
+
+    source = cell(0, -7, 5)
+    expected = expand_physical_coverage(source, "coverage_up")
+    with CoreRuntime(tmp_path) as runtime:
+        runtime.put(MemoryAtom("source", "source"), source)
+        page = runtime.surface_page(SCOPE, 1, None, 256)
+        order_zero = runtime.surface_page(SCOPE, 0, None, 256).cells[0].address
+        target_addresses = {(member.target.q, member.target.r) for member in expected.members}
+        assert {(projection.address.q, projection.address.r) for projection in page.cells} == target_addresses
+        assert sum(projection.aggregate_mass_q16 for projection in page.cells) == 65536
+        assert runtime.surface_orders(SCOPE, 1)[1].coverage_residual_q16 == 0
+        for projection in page.cells:
+            descent = runtime.surface_descend(SCOPE, projection.address, None, 256)
+            assert descent.cells[0].projection.address == order_zero
+            assert descent.cells[0].flags == ("physical_overlap_projection", "translation_covariant")
