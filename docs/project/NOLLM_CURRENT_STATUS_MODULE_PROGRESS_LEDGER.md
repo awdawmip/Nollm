@@ -1,6 +1,6 @@
 # Nollm Current Module Progress Ledger
 
-Date: 2026-07-13
+Date: 2026-07-14
 
 Percentages use five-percent increments and estimate capability against current
 charters. Historical reports retain their original finer-grained vectors but
@@ -8,15 +8,15 @@ do not define this active ledger.
 
 | Module | Before | Target | Actual | Lifecycle | Confidence | Evidence | Main gap |
 | --- | ---: | ---: | ---: | --- | --- | --- | --- |
-| CORE | 80% | 80% | 80% | `CAPABILITY_VALIDATED` | high | code `7ff9690e`; tree `b8a17134`; no Lab private consumers | cross-process recovery and scale |
+| CORE | 85% | 90% | 90% | `CAPABILITY_VALIDATED` | high | real revision replaces the current Atom and survives reopen | scale and long-term recovery |
 | SNAPSHOT | 50% | 50% | 50% | `IMPLEMENTED` | medium-high | 7 package tests; SnapshotDiff unchanged | version migration and incremental snapshots |
 | TRACE | 40% | 40% | 40% | `IMPLEMENTED` | medium | 3 package tests; state isolation unchanged | deeper performance visualization |
-| ACCESS | 75% | 75% | 75% | `CAPABILITY_VALIDATED` | high | Dream Formation contract; canonical StatementStore; legacy EvidenceStore reopen/migration | Placement and multi-process coordination |
+| ACCESS | 90% | 100% | 100% | `CAPABILITY_VALIDATED` | high | AccessMemoryLoop; atomic revision and rollback; current-only Recall | future charter extensions |
 | HISTORY | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
 | AUDIT | 10% | 10% | 10% | `PROPOSED` | low | boundary unchanged | no implementation |
-| OPENCLAW | 40% | 50% | 50% | `CAPABILITY_VALIDATED` | high | distinct AFTER_TURN/AFTER_DELIVERY hooks; nonblocking background scope; actual inherit/dedicated child model | Placement, Recall, product integration |
-| LAB | 65% | 70% | 70% | `IMPLEMENTED` | high | raw enabled/disabled Host envelopes; read-only runtime verifier and mutation tests | broader channel and real-user samples |
-| DISTRIBUTIONS | 50% | 55% | 55% | `IMPLEMENTED` | high | truthful V3.3 state; explicit Host override policy and diagnostics | release/version negotiation |
+| OPENCLAW | 70% | 80% | 80% | `CAPABILITY_VALIDATED` | high | natural correction, duplicate/distinct controls, restart and hidden current Recall | other models and long-term quality |
+| LAB | 80% | 85% | 85% | `IMPLEMENTED` | high | bounded live revision/failure/control report | broader quality matrix |
+| DISTRIBUTIONS | 60% | 65% | 65% | `IMPLEMENTED` | high | enabled Access-only plugin; manifest and boundaries clean | release/version negotiation |
 
 Previous task actual vector:
 
@@ -85,3 +85,17 @@ The completed 48-run comparison selected P1, and active-instance evidence
 includes successful StatementStore, Placement/Core, cursor, and Recall stages.
 The vector is final for Formation JSON resilience only; CSTAOLD remains a
 separate broader closure claim.
+
+CAOLD real revision loop actual vector:
+
+```text
+CORE +5% | SNAPSHOT 0% | TRACE 0% | ACCESS +10% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +10% |
+LAB +5% | DISTRIBUTIONS +5%
+```
+
+The Windows live gate used real Formation and Placement model runs, a
+controlled binding failure with rollback, duplicate reuse, similar-distinct
+creation, multiple Gateway restarts, and current-only Recall in fresh
+sessions. OpenClaw has no direct Core dependency. Ownership validation reports
+zero production violations and zero production cycles.

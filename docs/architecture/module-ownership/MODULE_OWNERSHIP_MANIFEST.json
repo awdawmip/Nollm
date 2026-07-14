@@ -6961,6 +6961,30 @@
   },
   {
     "asset_class": "",
+    "classification_evidence": "Resolved from docs/project/ACTIVE_PROJECT.md.",
+    "confidence": "HIGH",
+    "current_namespace": "docs/project",
+    "file_type": "md",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "none",
+    "owner": "DISTRIBUTION",
+    "path": "docs/project/CAOLD_REAL_REVISION_LOOP_REPORT.md",
+    "public_api": "governance",
+    "reason": "Linked from the single active project basis.",
+    "review_status": "CODE_REVIEWED",
+    "reviewed_at": "2026-07-12",
+    "runtime_role": "active repository governance",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": ""
+  },
+  {
+    "asset_class": "",
     "classification_evidence": "Documentation is outside current M0C1 governance paths.",
     "confidence": "MEDIUM",
     "current_namespace": "docs/project",
@@ -7561,6 +7585,30 @@
   },
   {
     "asset_class": "",
+    "classification_evidence": "Resolved from docs/project/ACTIVE_PROJECT.md.",
+    "confidence": "HIGH",
+    "current_namespace": "docs/project",
+    "file_type": "md",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "none",
+    "owner": "DISTRIBUTION",
+    "path": "docs/project/NOLLM_PROJECT_BOOK_V3_4_CORE_FUNCTION_PRIORITY_20260713.md",
+    "public_api": "governance",
+    "reason": "Linked from the single active project basis.",
+    "review_status": "CODE_REVIEWED",
+    "reviewed_at": "2026-07-12",
+    "runtime_role": "active repository governance",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": ""
+  },
+  {
+    "asset_class": "",
     "classification_evidence": "Documentation is outside current M0C1 governance paths.",
     "confidence": "MEDIUM",
     "current_namespace": "docs/project",
@@ -7718,6 +7766,30 @@
     "owned_state": "none",
     "owner": "LEGACY",
     "path": "docs/project/tasks/NOLLM_AOLD_OPENCLAW_FORMATION_LOOP_TASK_20260712.md",
+    "public_api": "none",
+    "reason": "Preserved historical or superseded documentation.",
+    "review_status": "AUTO_CANDIDATE",
+    "reviewed_at": "",
+    "runtime_role": "historical documentation",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": ""
+  },
+  {
+    "asset_class": "",
+    "classification_evidence": "Documentation is outside current M0C1 governance paths.",
+    "confidence": "MEDIUM",
+    "current_namespace": "docs/project/tasks",
+    "file_type": "md",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [],
+    "lifecycle_status": "HISTORICAL",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "none",
+    "owner": "LEGACY",
+    "path": "docs/project/tasks/NOLLM_CAOLD_CROSS_SESSION_MEMORY_LOOP_REV1_TASK_20260713.md",
     "public_api": "none",
     "reason": "Preserved historical or superseded documentation.",
     "review_status": "AUTO_CANDIDATE",
@@ -15482,10 +15554,12 @@
     "imported_by": [],
     "imports": [
       "__future__",
+      "base64",
       "integrations.openclaw.formation-loop.python.nollm_openclaw_formation.adapter",
       "integrations.openclaw.formation-loop.python.nollm_openclaw_formation.dream_adapter",
       "integrations.openclaw.formation-loop.python.nollm_openclaw_formation.memory_loop",
       "json",
+      "os",
       "sys"
     ],
     "lifecycle_status": "ACTIVE",
@@ -15555,7 +15629,6 @@
       "integrations.openclaw.formation-loop.python.nollm_openclaw_formation.dream_adapter",
       "json",
       "nollm_access",
-      "nollm_core",
       "os",
       "pathlib",
       "uuid"
@@ -15800,10 +15873,12 @@
     "forbidden_feature_evidence": [],
     "imported_by": [],
     "imports": [
+      "base64",
       "json",
       "nollm_access",
       "nollm_openclaw_formation.adapter",
       "nollm_openclaw_formation.dream_adapter",
+      "os",
       "pathlib",
       "pytest",
       "subprocess",
@@ -15834,7 +15909,7 @@
     "imported_by": [],
     "imports": [
       "json",
-      "nollm_core",
+      "nollm_access",
       "nollm_openclaw_formation.memory_loop"
     ],
     "lifecycle_status": "ACTIVE",
@@ -23576,7 +23651,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['nollm_access.dream', 'nollm_access.evidence_store', 'nollm_access.formation', 'nollm_access.handle_store', 'nollm_access.placement_contract', 'nollm_access.recall', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store'].",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['nollm_access.dream', 'nollm_access.evidence_store', 'nollm_access.formation', 'nollm_access.handle_store', 'nollm_access.memory_loop', 'nollm_access.placement_contract', 'nollm_access.recall', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-access/src/nollm_access",
     "file_type": "py",
@@ -23586,6 +23661,7 @@
       "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/dream_adapter.py",
       "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/memory_loop.py",
       "integrations/openclaw/formation-loop/tests/test_adapter.py",
+      "integrations/openclaw/formation-loop/tests/test_memory_loop.py",
       "lab/nollm-lab/dream_agent/reports/verify_live_evidence.py",
       "lab/nollm-lab/history/m1/reproduce_m1c8_input_blockers.py",
       "lab/nollm-lab/history/m1/run_m1_public_api_adversarial_matrix.py",
@@ -23597,6 +23673,7 @@
       "packages/nollm-access/tests/test_access_evidence_resolution.py",
       "packages/nollm-access/tests/test_access_exception_atomicity.py",
       "packages/nollm-access/tests/test_access_forbidden_semantics.py",
+      "packages/nollm-access/tests/test_access_memory_loop.py",
       "packages/nollm-access/tests/test_access_public_contract_strict_types.py",
       "packages/nollm-access/tests/test_access_recall_canonical_contract.py",
       "packages/nollm-access/tests/test_access_rejects_closed_core.py",
@@ -23617,6 +23694,7 @@
       "nollm_access.evidence_store",
       "nollm_access.formation",
       "nollm_access.handle_store",
+      "nollm_access.memory_loop",
       "nollm_access.placement_contract",
       "nollm_access.recall",
       "nollm_access.runtime",
@@ -23743,6 +23821,7 @@
     "forbidden_feature_evidence": [],
     "imported_by": [
       "packages/nollm-access/src/nollm_access/__init__.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/runtime.py"
     ],
     "imports": [
@@ -23771,6 +23850,42 @@
   },
   {
     "asset_class": "",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'nollm_access.handle_store', 'nollm_access.placement_contract', 'nollm_access.recall', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store', 'nollm_core', 'pathlib'].",
+    "confidence": "HIGH",
+    "current_namespace": "packages/nollm-access/src/nollm_access",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [
+      "packages/nollm-access/src/nollm_access/__init__.py"
+    ],
+    "imports": [
+      "__future__",
+      "nollm_access.handle_store",
+      "nollm_access.placement_contract",
+      "nollm_access.recall",
+      "nollm_access.runtime",
+      "nollm_access.statement",
+      "nollm_access.statement_store",
+      "nollm_core",
+      "pathlib"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "module-owned state or public contracts",
+    "owner": "ACCESS",
+    "path": "packages/nollm-access/src/nollm_access/memory_loop.py",
+    "public_api": "public",
+    "reason": "Target package asset with explicit package ownership.",
+    "review_status": "DEPENDENCY_REVIEWED",
+    "reviewed_at": "2026-07-12",
+    "runtime_role": "module package",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": ""
+  },
+  {
+    "asset_class": "",
     "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'dataclasses', 'nollm_core'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-access/src/nollm_access",
@@ -23778,6 +23893,7 @@
     "forbidden_feature_evidence": [],
     "imported_by": [
       "packages/nollm-access/src/nollm_access/__init__.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/runtime.py"
     ],
     "imports": [
@@ -23809,6 +23925,7 @@
     "forbidden_feature_evidence": [],
     "imported_by": [
       "packages/nollm-access/src/nollm_access/__init__.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/runtime.py"
     ],
     "imports": [
@@ -23839,7 +23956,8 @@
     "file_type": "py",
     "forbidden_feature_evidence": [],
     "imported_by": [
-      "packages/nollm-access/src/nollm_access/__init__.py"
+      "packages/nollm-access/src/nollm_access/__init__.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py"
     ],
     "imports": [
       "__future__",
@@ -23881,6 +23999,7 @@
       "packages/nollm-access/src/nollm_access/dream.py",
       "packages/nollm-access/src/nollm_access/evidence_store.py",
       "packages/nollm-access/src/nollm_access/formation.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/runtime.py",
       "packages/nollm-access/src/nollm_access/statement_store.py"
     ],
@@ -23913,6 +24032,7 @@
     "imported_by": [
       "packages/nollm-access/src/nollm_access/__init__.py",
       "packages/nollm-access/src/nollm_access/evidence_store.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/runtime.py"
     ],
     "imports": [
@@ -24075,6 +24195,33 @@
     "owned_state": "development-only state",
     "owner": "LAB",
     "path": "packages/nollm-access/tests/test_access_forbidden_semantics.py",
+    "public_api": "development",
+    "reason": "Package tests verify only public dependencies and are not production implementation.",
+    "review_status": "DEPENDENCY_REVIEWED",
+    "reviewed_at": "2026-07-12",
+    "runtime_role": "package-local independent test",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": "package:access"
+  },
+  {
+    "asset_class": "ACTIVE_TEST",
+    "classification_evidence": "Package test path with direct imports ['nollm_access', 'pytest'].",
+    "confidence": "HIGH",
+    "current_namespace": "packages/nollm-access/tests",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [
+      "nollm_access",
+      "pytest"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "development-only state",
+    "owner": "LAB",
+    "path": "packages/nollm-access/tests/test_access_memory_loop.py",
     "public_api": "development",
     "reason": "Package tests verify only public dependencies and are not production implementation.",
     "review_status": "DEPENDENCY_REVIEWED",
@@ -24581,14 +24728,13 @@
     "file_type": "py",
     "forbidden_feature_evidence": [],
     "imported_by": [
-      "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/memory_loop.py",
-      "integrations/openclaw/formation-loop/tests/test_memory_loop.py",
       "lab/nollm-lab/history/m1/reproduce_m1c8_input_blockers.py",
       "lab/nollm-lab/history/m1/run_m1_public_api_adversarial_matrix.py",
       "lab/nollm-lab/m1/run_core_capability_validation.py",
       "lab/nollm-lab/m1/run_geometry_parity.py",
       "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
       "packages/nollm-access/src/nollm_access/handle_store.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
       "packages/nollm-access/src/nollm_access/placement_contract.py",
       "packages/nollm-access/src/nollm_access/recall.py",
       "packages/nollm-access/src/nollm_access/runtime.py",
