@@ -1,6 +1,6 @@
 # Nollm Current Status
 
-Date: 2026-07-14
+Date: 2026-07-15
 
 Current route:
 
@@ -42,42 +42,40 @@ real Formation/Placement/Recall integration；
 atomic state and data preservation。
 ```
 
-Current mathematical blocker:
+Validated in this task:
 
 ```text
-default physical Coverage is not translation-covariant.
+translation-covariant polygon Coverage for arbitrary q/r;
+two independent geometry Oracles;
+complete bounded candidate enumeration;
+Q16 weights and explicit residuals;
+real multi-layer Surface;
+canonical Recall kernel paths;
+controlled single-entry cross-layer Live Recall.
 ```
 
-The current implementation uses origin-derived phase weights for arbitrary
-source q/r, while the true overlap pattern changes with translation residue.
-The production transform direction, candidate set, and Surface projection
-therefore cannot carry physical completion credit.
+Current Live blocker:
 
-Reusable historical mathematics remains present in the current worktree:
+P1 Formation completed twice but neither attempt reached placement_apply within
+five minutes. No binding or Core placement was written, and no completion
+evidence was fabricated.
+
+Actual progress vector:
 
 ```text
-world-coordinate charts；
-hex construction；
-convex polygon overlap；
-directed Coverage；
-translation variation；
-rotation-scale resonance；
-bidirectional Coverage；
-profile-regime validation。
+CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +3% |
+LAB +15% | DISTRIBUTIONS +5%
 ```
 
-The fast historical geometry gate has been independently rerun:
+Gate 6 remains IN_PROGRESS because P1 did not complete placement.
+
+Current legal status name:
 
 ```text
-46 passed
+CAOLD_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_REUSE_IN_PROGRESS_AT_<HEAD>
 ```
 
-Current legal capability name:
-
-```text
-ROTATED_PROFILE_ADDRESS_SEPARATION_AND_SINGLE_ENTRY_WIRE_IN_PROGRESS_AT_ac8ebaa4
-```
-
-The next task must reuse the historical geometry implementation as an
-independent Oracle and must not start Live validation before all-translation
-Coverage validation passes.
+The mathematical Gates and controlled cross-layer Recall are retained evidence.
+The completion tag remains prohibited until P1 and the remaining final delivery
+checks pass.

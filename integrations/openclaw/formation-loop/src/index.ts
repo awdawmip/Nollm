@@ -10,7 +10,7 @@ export type DreamConfig = {
   enabled?: boolean; python_executable?: string; nollm_repo_root?: string;
   statement_store_workspace?: string; write_mode?: "shadow" | "statement-store";
   memory_workspace?: string;
-  geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_rotated_physical_field_v1";
+  geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_translation_covariant_physical_coverage_v1";
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -25,7 +25,7 @@ const JSON_SCHEMA = {
   properties: {
     enabled: { type: "boolean", default: true }, python_executable: { type: "string" }, nollm_repo_root: { type: "string" },
     statement_store_workspace: { type: "string" }, memory_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
-    geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_rotated_physical_field_v1", default: "nollm_rotated_physical_field_v1" },
+    geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_translation_covariant_physical_coverage_v1", default: "nollm_translation_covariant_physical_coverage_v1" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
@@ -52,6 +52,17 @@ export function surfaceBudget(config: DreamConfig, mode: "recall" | "placement")
     hard_max_order: config.surface_max_order ?? 8,
     max_calls: recall ? config.recall_surface_max_calls ?? 24 : config.placement_surface_max_calls ?? 32,
   };
+}
+
+export function selectedRecallPaths(candidates: unknown, selectedIds: unknown): Array<{ statement_id: string; path: string[]; path_is_not_truth_proof: true }> {
+  if (!Array.isArray(candidates) || !Array.isArray(selectedIds) || selectedIds.some((value) => typeof value !== "string")) return [];
+  const wanted = new Set(selectedIds as string[]);
+  return candidates.flatMap((candidate) => {
+    if (typeof candidate !== "object" || candidate === null) return [];
+    const item = candidate as Record<string, unknown>;
+    if (typeof item.statement_id !== "string" || !wanted.has(item.statement_id) || !Array.isArray(item.path) || item.path.some((value) => typeof value !== "string")) return [];
+    return [{ statement_id: item.statement_id, path: item.path as string[], path_is_not_truth_proof: true as const }];
+  });
 }
 
 export function run(command: string, args: string[], input?: string, timeoutMs = 120000, env?: NodeJS.ProcessEnv): Promise<RunResult> {
@@ -219,7 +230,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       return;
     }
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
-    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
+    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {

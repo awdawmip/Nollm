@@ -1,26 +1,27 @@
 # Nollm V3.8 模块进度账
 
-**日期**：2026-07-14
+**日期**：2026-07-15
 **基线 HEAD**：`ac8ebaa44cda35e1d2f73e0bfc95055bae425a86`
 
 | 模块 | 生命周期状态 | 当前完成度 | 置信度 | 已验证能力 | 主要缺口 | 本任务目标 |
 |---|---|---:|---|---|---|---:|
-| CORE | IMPLEMENTED | 80% | 中 | 地址分离、状态、Surface API、Recall API | 平移协变 Coverage、真实 Surface | 90% |
+| CORE | IMPLEMENTED | 90% | 高 | 平移协变 Coverage、真实多层 Surface、canonical path | PB scale | 90% |
 | SNAPSHOT | IMPLEMENTED | 50% | 中高 | 7 tests | 版本迁移 | 50% |
-| TRACE | IMPLEMENTED | 40% | 中 | 状态隔离 | kernel path 观察 | 40% |
-| ACCESS | IMPLEMENTED | 85% | 中高 | 固定预算、单入口、原子协调 | 依赖错误 Coverage | 90% |
+| TRACE | IMPLEMENTED | 40% | 中 | 状态隔离、最小 path 观察 | 完整追踪产品化 | 40% |
+| ACCESS | IMPLEMENTED | 90% | 高 | 真实 Surface、单入口跨层 Recall、原子协调 | 更大规模 Live | 90% |
 | HISTORY | PROPOSED | 10% | 低 | 章程 | 暂停 | 10% |
 | AUDIT | PROPOSED | 10% | 低 | 章程 | 暂停 | 10% |
-| OPENCLAW | CAPABILITY_VALIDATED | 85% | 中高 | 真实单入口 Live | 跨层 Coverage Live | 90% |
-| LAB | IMPLEMENTED | 80% | 中高 | 历史 Oracle、新 Decimal 原型 | 独立交叉认证 | 95% |
-| DISTRIBUTIONS | IMPLEMENTED | 70% | 中高 | 插件 v0.7.0 | profile/能力名纠偏 | 75% |
+| OPENCLAW | CAPABILITY_VALIDATED | 88% | 中高 | R1/R2/R3、受控跨层 Live | P1 未完成 placement | 90% |
+| LAB | IMPLEMENTED | 95% | 高 | 双 Oracle、全平移认证、迁移/Live fixture | PB scale | 95% |
+| DISTRIBUTIONS | IMPLEMENTED | 75% | 高 | 插件 v0.8.0、V3.8 contract/wire | 正式发布 | 75% |
 
-预计推进向量：
+实际推进向量：
 
 ```text
 CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
-HISTORY 0% | AUDIT 0% | OPENCLAW +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +3% |
 LAB +15% | DISTRIBUTIONS +5%
 ```
 
-上一报告的 Core/Lab 90% 因数学真值被推翻而重算，不表示已保留工程能力消失。
+P1 两次完成 Formation 但未进入 placement_apply，因此 OPENCLAW 不计满目标，
+总状态保持 `IN_PROGRESS`。

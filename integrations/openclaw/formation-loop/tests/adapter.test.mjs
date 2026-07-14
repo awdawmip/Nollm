@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, shouldApplyPlacement, surfaceBudget, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -10,8 +10,8 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
   assert.equal(manifest.configSchema.properties.geometry_profile.const, "default_dream_v1");
-  assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_rotated_physical_field_v1");
-  assert.equal(manifest.contracts.surfaceWire, "single-entry-v2");
+  assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_translation_covariant_physical_coverage_v1");
+  assert.equal(manifest.contracts.surfaceWire, "single-entry-v3-path");
   assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
   assert.equal(manifest.configSchema.properties.surface_max_order.maximum, 8);
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);
@@ -30,6 +30,15 @@ test("Surface budgets are fixed structural values with bounded calls", () => {
   assert.equal("selected_entries_limit" in recall, false);
   assert.equal("query" in recall, false);
   assert.equal("session" in recall, false);
+});
+
+test("selected Recall paths remain observational and statement-bound", () => {
+  const paths = selectedRecallPaths([
+    { statement_id: "entry", path: [], path_is_not_truth_proof: true },
+    { statement_id: "target", path: ["coverage_down"], path_is_not_truth_proof: true },
+  ], ["target"]);
+  assert.deepEqual(paths, [{ statement_id: "target", path: ["coverage_down"], path_is_not_truth_proof: true }]);
+  assert.deepEqual(selectedRecallPaths({}, ["target"]), []);
 });
 
 test("wire text replaces isolated UTF-16 surrogates before UTF-8 encoding", () => {
