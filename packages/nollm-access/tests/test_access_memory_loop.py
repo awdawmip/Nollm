@@ -3,7 +3,7 @@ import pytest
 from nollm_access import AccessMemoryLoop, FileHandleStore, FileStatementStore, MemoryStatement
 
 
-CELL = {"profile_id": "eisenstein_exact_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
+CELL = {"profile_id": "default_dream_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
 
 
 def placement(statement_id: str, action: str, candidate_id: str, *, handle: dict[str, object] | None = None) -> dict[str, object]:

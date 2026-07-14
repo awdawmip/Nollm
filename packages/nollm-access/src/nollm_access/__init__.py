@@ -25,7 +25,7 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
-from .memory_loop import AccessMemoryLoop, DEFAULT_SURFACE_PLANE
+from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE
 from .placement_contract import ACTIONS, AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .runtime import AccessConsistencyError, AccessRuntime
@@ -82,7 +82,7 @@ __all__ = [
     "DREAM_ACTORS",
     "DREAM_OUTCOMES",
     "DREAM_SCHEMA_VERSION",
-    "DEFAULT_SURFACE_PLANE",
+    "DEFAULT_FIELD_SCOPE",
     "ConversationMaterial",
     "ConversationTurn",
     "DreamFormationRequest",

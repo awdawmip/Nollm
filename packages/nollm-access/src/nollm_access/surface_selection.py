@@ -13,29 +13,22 @@ class SurfaceBudgetProfile:
     page_overhead_units: int
     cell_preview_units: int
     max_projection_units: int
-    selected_entries_limit: int
     max_descent_depth: int
-    hard_max_order: int = 2
-    max_calls: int = 12
+    hard_max_order: int = 8
+    max_calls: int = 24
 
     def __post_init__(self) -> None:
         values = (
-            self.page_size,
-            self.max_pages,
-            self.max_surface_cells,
-            self.page_overhead_units,
-            self.cell_preview_units,
-            self.max_projection_units,
-            self.selected_entries_limit,
-            self.max_descent_depth,
-            self.max_calls,
+            self.page_size, self.max_pages, self.max_surface_cells,
+            self.page_overhead_units, self.cell_preview_units,
+            self.max_projection_units, self.max_descent_depth, self.max_calls,
         )
         if any(type(value) is not int or value <= 0 for value in values):
             raise ValueError("Surface budget values must be positive integers")
         if self.page_size > 8:
             raise ValueError("Surface page_size cannot exceed 8")
-        if type(self.hard_max_order) is not int or not 0 <= self.hard_max_order <= 2:
-            raise ValueError("hard_max_order must be between 0 and 2")
+        if type(self.hard_max_order) is not int or not 0 <= self.hard_max_order <= 8:
+            raise ValueError("hard_max_order must be between 0 and 8")
         if self.max_descent_depth > self.hard_max_order:
             raise ValueError("max_descent_depth cannot exceed hard_max_order")
 
@@ -48,14 +41,11 @@ class ActiveSurfaceSelection:
     overflow: bool
 
 
-RECALL_SURFACE_BUDGET = SurfaceBudgetProfile(8, 4, 32, 8, 4, 160, 3, 2, 2, 12)
-PLACEMENT_SURFACE_BUDGET = SurfaceBudgetProfile(8, 6, 48, 8, 4, 240, 1, 2, 2, 16)
+RECALL_SURFACE_BUDGET = SurfaceBudgetProfile(8, 4, 32, 8, 4, 160, 8, 8, 24)
+PLACEMENT_SURFACE_BUDGET = SurfaceBudgetProfile(8, 6, 48, 8, 4, 240, 8, 8, 32)
 
 
-def select_active_surface(
-    infos: tuple[SurfaceOrderInfo, ...],
-    budget: SurfaceBudgetProfile,
-) -> ActiveSurfaceSelection:
+def select_active_surface(infos: tuple[SurfaceOrderInfo, ...], budget: SurfaceBudgetProfile) -> ActiveSurfaceSelection:
     if type(infos) is not tuple or not infos or any(type(info) is not SurfaceOrderInfo for info in infos):
         raise TypeError("infos must be a non-empty SurfaceOrderInfo tuple")
     if type(budget) is not SurfaceBudgetProfile:
@@ -63,8 +53,8 @@ def select_active_surface(
     eligible = tuple(info for info in infos if info.order <= budget.hard_max_order)
     if not eligible or tuple(info.order for info in eligible) != tuple(range(len(eligible))):
         raise ValueError("Surface order infos must be canonical and contiguous")
-    if any(info.plane != eligible[0].plane for info in eligible):
-        raise ValueError("Surface order infos must describe one plane")
+    if any(info.scope != eligible[0].scope for info in eligible):
+        raise ValueError("Surface order infos must describe one FieldScope")
     for info in eligible:
         pages, units = _cost(info, budget)
         if pages <= budget.max_pages and info.occupied_cell_count <= budget.max_surface_cells and units <= budget.max_projection_units:

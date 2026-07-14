@@ -8,9 +8,10 @@ from nollm_core import (
     AtomHandle,
     CoreRuntime,
     GeometryAddress,
+    PhysicalFieldScope,
     RecallBudget,
+    SurfaceAggregateAddress,
     SurfaceCellProjection,
-    SurfacePlane,
 )
 
 from .handle_store import FileHandleStore
@@ -42,13 +43,12 @@ class SurfaceStatementPreview:
 class SurfaceCellView:
     candidate_id: str
     order: int
-    address: GeometryAddress
-    native_occupancy_count: int
-    aggregate_occupancy_count: int
-    occupied_member_count: int
+    address: SurfaceAggregateAddress
+    native_atom_count: int
+    aggregate_atom_count: int
+    physical_source_cell_count: int
     density_q16: int
-    dispersion_q16: int
-    boundary_mass_q16: int
+    observation_area_ratio_q32: int
     has_deeper_locality: bool
     has_bridge_endpoint: bool
     statements: tuple[SurfaceStatementPreview, ...]
@@ -59,13 +59,12 @@ class SurfaceCellView:
         return {
             "candidate_id": self.candidate_id,
             "order": self.order,
-            "geometry_address": self.address.to_mapping(),
-            "native_occupancy_count": self.native_occupancy_count,
-            "aggregate_occupancy_count": self.aggregate_occupancy_count,
-            "occupied_member_count": self.occupied_member_count,
+            "surface_address": self.address.to_mapping(),
+            "native_atom_count": self.native_atom_count,
+            "aggregate_atom_count": self.aggregate_atom_count,
+            "physical_source_cell_count": self.physical_source_cell_count,
             "density_q16": self.density_q16,
-            "dispersion_q16": self.dispersion_q16,
-            "boundary_mass_q16": self.boundary_mass_q16,
+            "observation_area_ratio_q32": self.observation_area_ratio_q32,
             "has_deeper_locality": self.has_deeper_locality,
             "has_bridge_endpoint": self.has_bridge_endpoint,
             "statements": [item.to_mapping() for item in self.statements],
@@ -78,19 +77,19 @@ class SurfaceCellView:
 class _TraversalFrame:
     order: int
     parent_order: int | None
-    parent_address: GeometryAddress | None
-    after: GeometryAddress | None
+    parent_address: SurfaceAggregateAddress | None
+    after: SurfaceAggregateAddress | None
 
 
 @dataclass(frozen=True)
 class SurfaceTraversalState:
     operation_id: str
-    plane: SurfacePlane
+    scope: PhysicalFieldScope
     budget: SurfaceBudgetProfile
     order: int
     parent_order: int | None = None
-    parent_address: GeometryAddress | None = None
-    after: GeometryAddress | None = None
+    parent_address: SurfaceAggregateAddress | None = None
+    after: SurfaceAggregateAddress | None = None
     stack: tuple[_TraversalFrame, ...] = ()
     call_count: int = 0
 
@@ -101,7 +100,7 @@ class SurfaceTraversalPage:
     selection: ActiveSurfaceSelection
     cells: tuple[SurfaceCellView, ...]
     has_more: bool
-    next_after: GeometryAddress | None
+    next_after: SurfaceAggregateAddress | None
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -122,9 +121,9 @@ class SurfaceTraversalPage:
 
 @dataclass(frozen=True)
 class SurfaceRecallResult:
-    entry_cells: tuple[GeometryAddress, ...]
+    entry_cell: GeometryAddress
     items: tuple[dict[str, object], ...]
-    per_entry: tuple[dict[str, object], ...]
+    budget_exhausted: bool
 
 
 class AccessSurfaceNavigator:
@@ -144,14 +143,14 @@ class AccessSurfaceNavigator:
     def begin(
         self,
         operation_id: str,
-        plane: SurfacePlane,
+        scope: PhysicalFieldScope,
         budget: SurfaceBudgetProfile,
     ) -> SurfaceTraversalPage:
         if type(operation_id) is not str or not operation_id:
             raise ValueError("operation_id is required")
         with CoreRuntime(self._workspace) as core:
-            selection = select_active_surface(core.surface_orders(plane, budget.hard_max_order), budget)
-        state = SurfaceTraversalState(operation_id, plane, budget, selection.info.order)
+            selection = select_active_surface(core.surface_orders(scope, budget.hard_max_order), budget)
+        state = SurfaceTraversalState(operation_id, scope, budget, selection.info.order)
         return self.page(state)
 
     @staticmethod
@@ -159,12 +158,7 @@ class AccessSurfaceNavigator:
         AccessSurfaceNavigator._require_state(state)
         return {
             "operation_id": state.operation_id,
-            "plane": {
-                "profile_id": state.plane.profile_id,
-                "chart_id": state.plane.chart_id,
-                "phase": state.plane.phase,
-                "base_layer": state.plane.base_layer,
-            },
+            "scope": state.scope.to_mapping(),
             "budget": {
                 name: getattr(state.budget, name)
                 for name in SurfaceBudgetProfile.__dataclass_fields__
@@ -187,22 +181,22 @@ class AccessSurfaceNavigator:
 
     @staticmethod
     def state_from_mapping(value: object) -> SurfaceTraversalState:
-        required = {"operation_id", "plane", "budget", "order", "parent_order", "parent_address", "after", "stack", "call_count"}
+        required = {"operation_id", "scope", "budget", "order", "parent_order", "parent_address", "after", "stack", "call_count"}
         if type(value) is not dict or set(value) != required:
             raise ValueError("invalid Surface traversal state")
-        plane_value = value["plane"]
+        scope_value = value["scope"]
         budget_value = value["budget"]
-        if type(plane_value) is not dict or set(plane_value) != {"profile_id", "chart_id", "phase", "base_layer"}:
-            raise ValueError("invalid Surface traversal plane")
+        if type(scope_value) is not dict:
+            raise ValueError("invalid Surface traversal scope")
         if type(budget_value) is not dict or set(budget_value) != set(SurfaceBudgetProfile.__dataclass_fields__):
             raise ValueError("invalid Surface traversal budget")
         if type(value["stack"]) is not list:
             raise ValueError("invalid Surface traversal stack")
-        plane = SurfacePlane(plane_value["profile_id"], plane_value["chart_id"], plane_value["phase"], plane_value["base_layer"])
+        scope = PhysicalFieldScope.from_mapping(scope_value)
         budget = SurfaceBudgetProfile(**budget_value)
 
-        def address(item: object) -> GeometryAddress | None:
-            return None if item is None else GeometryAddress.from_mapping(item)
+        def address(item: object) -> SurfaceAggregateAddress | None:
+            return None if item is None else SurfaceAggregateAddress.from_mapping(item)
 
         frames = []
         for item in value["stack"]:
@@ -211,7 +205,7 @@ class AccessSurfaceNavigator:
             frames.append(_TraversalFrame(item["order"], item["parent_order"], address(item["parent_address"]), address(item["after"])))
         state = SurfaceTraversalState(
             value["operation_id"],
-            plane,
+            scope,
             budget,
             value["order"],
             value["parent_order"],
@@ -228,14 +222,13 @@ class AccessSurfaceNavigator:
         if state.call_count >= state.budget.max_calls:
             raise RuntimeError("Surface traversal call limit reached")
         with CoreRuntime(self._workspace) as core:
-            selection = select_active_surface(core.surface_orders(state.plane, state.budget.hard_max_order), state.budget)
+            selection = select_active_surface(core.surface_orders(state.scope, state.budget.hard_max_order), state.budget)
             if state.parent_address is None:
-                raw_page = core.surface_page(state.plane, state.order, state.after, state.budget.page_size)
+                raw_page = core.surface_page(state.scope, state.order, state.after, state.budget.page_size)
                 projections = raw_page.cells
             else:
                 raw_page = core.surface_descend(
-                    state.plane,
-                    state.parent_order,
+                    state.scope,
                     state.parent_address,
                     state.after,
                     state.budget.page_size,
@@ -297,41 +290,28 @@ class AccessSurfaceNavigator:
         selected = self._shown(page, candidate_id)
         if page.state.order != 0:
             raise ValueError("Recall entry selection requires Order 0")
-        return selected.address
+        if not selected.statements:
+            raise ValueError("Recall entry candidate has no current physical Handle")
+        return min((item.handle.geometry_address for item in selected.statements), key=lambda address: address.stable_key())
 
-    def recall_entries(
-        self,
-        request_id: str,
-        entry_cells: tuple[GeometryAddress, ...],
-        limit: int,
-    ) -> SurfaceRecallResult:
+    def recall_entry(self, request_id: str, entry_cell: GeometryAddress) -> SurfaceRecallResult:
         if type(request_id) is not str or not request_id:
             raise ValueError("request_id is required")
-        if type(entry_cells) is not tuple or not entry_cells or any(type(cell) is not GeometryAddress for cell in entry_cells):
-            raise TypeError("entry_cells must be a non-empty GeometryAddress tuple")
-        canonical = tuple(sorted(set(entry_cells), key=lambda cell: cell.stable_key()))
-        if canonical != entry_cells or type(limit) is not int or limit < 1 or len(entry_cells) > limit:
-            raise ValueError("entry_cells must be canonical, unique, and within the selection limit")
-        merged: dict[str, dict[str, object]] = {}
-        per_entry = []
-        recall_budget = RecallBudget(1, 12, 0, 1, 0, 16)
+        if type(entry_cell) is not GeometryAddress:
+            raise TypeError("entry_cell must be GeometryAddress")
+        recall_budget = RecallBudget(4, 64, 2, 1, 1, 16)
         with self._runtime() as access:
-            for index, entry in enumerate(entry_cells):
-                result = access.recall(AccessRecallRequest(
-                    f"{request_id}:entry:{index}",
-                    (entry,),
-                    (),
-                    ("lateral",),
-                    recall_budget,
-                ))
-                items = tuple(self._recall_item(item) for item in result.items if item.evidence_utf8 is not None)
-                per_entry.append({"entry_cell": entry.to_mapping(), "items": items, "budget_exhausted": result.budget_exhausted})
-                for item in items:
-                    previous = merged.get(item["statement_id"])
-                    if previous is None or item["score_q16"] > previous["score_q16"]:
-                        merged[item["statement_id"]] = item
-        items = tuple(sorted(merged.values(), key=lambda item: (-item["score_q16"], item["statement_id"])))
-        return SurfaceRecallResult(entry_cells, items, tuple(per_entry))
+            result = access.recall(AccessRecallRequest(request_id, (entry_cell,), (), ("bridge", "coverage_down", "coverage_up", "lateral"), recall_budget))
+        by_statement: dict[str, dict[str, object]] = {}
+        for raw in result.items:
+            if raw.evidence_utf8 is None:
+                continue
+            item = self._recall_item(raw)
+            previous = by_statement.get(item["statement_id"])
+            if previous is None or item["score_q16"] > previous["score_q16"]:
+                by_statement[item["statement_id"]] = item
+        items = tuple(sorted(by_statement.values(), key=lambda item: (-item["score_q16"], item["statement_id"])))
+        return SurfaceRecallResult(entry_cell, items, result.budget_exhausted)
 
     def _view(
         self,
@@ -340,7 +320,7 @@ class AccessSurfaceNavigator:
         projection: SurfaceCellProjection,
         index: int,
     ) -> SurfaceCellView:
-        entry_cells = self._order_zero_members(core, state.plane, projection)
+        entry_cells = projection.source_cells
         handles = tuple(
             handle
             for address in entry_cells
@@ -367,12 +347,11 @@ class AccessSurfaceNavigator:
             candidate_id,
             projection.order,
             projection.address,
-            projection.native_occupancy_count,
-            projection.aggregate_occupancy_count,
-            projection.occupied_member_count,
+            projection.native_atom_count,
+            projection.aggregate_atom_count,
+            projection.physical_source_cell_count,
             projection.density_q16,
-            projection.dispersion_q16,
-            projection.boundary_mass_q16,
+            projection.grid.observation_area_ratio_q32,
             projection.has_deeper_locality,
             projection.has_bridge_endpoint,
             shown,
@@ -380,28 +359,8 @@ class AccessSurfaceNavigator:
             remaining,
         )
 
-    def _order_zero_members(
-        self,
-        core: CoreRuntime,
-        plane: SurfacePlane,
-        projection: SurfaceCellProjection,
-    ) -> tuple[GeometryAddress, ...]:
-        current = (projection.address,)
-        for parent_order in range(projection.order, 0, -1):
-            lower = []
-            for parent in current:
-                after = None
-                while True:
-                    page = core.surface_descend(plane, parent_order, parent, after, 256)
-                    lower.extend(cell.projection.address for cell in page.cells)
-                    if not page.has_more:
-                        break
-                    after = page.next_after
-            current = tuple(sorted(set(lower), key=lambda item: item.stable_key()))
-        return current
-
     @staticmethod
-    def _candidate_id(state: SurfaceTraversalState, address: GeometryAddress, index: int) -> str:
+    def _candidate_id(state: SurfaceTraversalState, address: SurfaceAggregateAddress, index: int) -> str:
         material = f"{state.operation_id}\0{state.call_count}\0{state.order}\0{index}\0{address.stable_key()}"
         return "surface:" + sha256(material.encode("utf-8")).hexdigest()[:20]
 
@@ -420,8 +379,8 @@ class AccessSurfaceNavigator:
             raise TypeError("state must be SurfaceTraversalState")
         if type(state.operation_id) is not str or not state.operation_id:
             raise ValueError("Surface traversal operation_id is required")
-        if type(state.plane) is not SurfacePlane or type(state.budget) is not SurfaceBudgetProfile:
-            raise TypeError("Surface traversal plane and budget are invalid")
+        if type(state.scope) is not PhysicalFieldScope or type(state.budget) is not SurfaceBudgetProfile:
+            raise TypeError("Surface traversal scope and budget are invalid")
         if type(state.order) is not int or not 0 <= state.order <= state.budget.hard_max_order:
             raise ValueError("Surface traversal order is invalid")
         if type(state.call_count) is not int or state.call_count < 0:

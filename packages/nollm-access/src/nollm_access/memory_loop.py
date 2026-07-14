@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, SurfacePlane
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, PhysicalFieldScope
 
 from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
@@ -13,7 +13,7 @@ from .surface_navigation import AccessSurfaceNavigator
 
 
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
-DEFAULT_SURFACE_PLANE = SurfacePlane("eisenstein_exact_v1", "default", None, 0)
+DEFAULT_FIELD_SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
 _MIN_FRONTIER_DISTANCE = 4
 _MAX_FRONTIER_RADIUS = 1024
 
@@ -55,22 +55,22 @@ class AccessMemoryLoop:
         self,
         selected_entry: object,
         request_id: str,
-        plane: SurfacePlane = DEFAULT_SURFACE_PLANE,
+        scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
     ) -> list[dict[str, object]]:
         self._require_request(request_id)
-        if type(plane) is not SurfacePlane:
-            raise TypeError("plane must be SurfacePlane")
+        if type(scope) is not PhysicalFieldScope:
+            raise TypeError("scope must be PhysicalFieldScope")
         entry = None if selected_entry is None else self._cell(selected_entry)
-        if entry is not None and not plane.contains(entry):
-            raise ValueError("selected_entry must belong to the Surface Plane")
+        if entry is not None and not scope.contains(entry):
+            raise ValueError("selected_entry must belong to the Physical FieldScope")
         with CoreRuntime(self._workspace) as core:
-            occupied = tuple(cell for cell in core.occupied_cells() if plane.contains(cell))
+            occupied = tuple(cell for cell in core.occupied_cells() if scope.contains(cell))
             candidates: list[dict[str, object]] = []
             if entry is not None:
                 candidates.append(self._candidate(core, "placement:existing:0", "existing_cell", entry))
                 for index, address in enumerate(entry.lateral(1)):
                     candidates.append(self._candidate(core, f"placement:lateral:{index}", "lateral_ring_1", address))
-            frontier = self._expand_surface_frontier(plane, occupied)
+            frontier = self._expand_surface_frontier(scope, occupied)
             candidates.append(self._candidate(core, "placement:expand:0", "expand_surface", frontier))
         if len(candidates) > 8 or len({item["candidate_id"] for item in candidates}) != len(candidates):
             raise AssertionError("placement candidates must be unique and bounded")
@@ -103,12 +103,10 @@ class AccessMemoryLoop:
 
     def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
         self._require_request(request_id)
-        if type(entry_cells) is not list:
-            raise TypeError("entry_cells must be a list")
+        if type(entry_cells) is not list or len(entry_cells) != 1:
+            raise TypeError("entry_cells must contain exactly one entry")
         cells = tuple(sorted((self._cell(item) for item in entry_cells), key=lambda item: item.stable_key()))
-        if not cells:
-            return []
-        result = self.navigator().recall_entries(request_id, cells, 3)
+        result = self.navigator().recall_entry(request_id, cells[0])
         return list(result.items)
 
     def apply_placement(
@@ -117,12 +115,12 @@ class AccessMemoryLoop:
         placement: object,
         request_id: str,
         selected_entry: object = None,
-        plane: SurfacePlane = DEFAULT_SURFACE_PLANE,
+        scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
     ) -> dict[str, object]:
         if type(statement) is not MemoryStatement:
             raise TypeError("statement must be MemoryStatement")
         self._require_request(request_id)
-        candidates = self.placement_candidates(selected_entry, request_id + ":candidates", plane)
+        candidates = self.placement_candidates(selected_entry, request_id + ":candidates", scope)
         decision, public_action, selected = self._decision(placement, statement, request_id, candidates)
         if decision is None:
             return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0}
@@ -238,10 +236,10 @@ class AccessMemoryLoop:
 
     @staticmethod
     def _expand_surface_frontier(
-        plane: SurfacePlane,
+        scope: PhysicalFieldScope,
         occupied: tuple[GeometryAddress, ...],
     ) -> GeometryAddress:
-        origin = GeometryAddress(plane.profile_id, plane.chart_id, plane.base_layer, 0, 0, plane.phase)
+        origin = GeometryAddress(scope.profile_id, scope.chart_id, scope.reference_layer, 0, 0)
         if not occupied:
             return origin
         for ring in range(1, _MAX_FRONTIER_RADIUS + 1):

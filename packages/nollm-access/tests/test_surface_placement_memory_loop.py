@@ -6,7 +6,7 @@ from nollm_access import AccessMemoryLoop, FileHandleStore, FileStatementStore, 
 from nollm_core import CoreRuntime
 
 
-ORIGIN = {"profile_id": "eisenstein_exact_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
+ORIGIN = {"profile_id": "default_dream_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": None}
 
 
 def placement(statement_id: str, action: str, candidate_id: str) -> dict[str, object]:
