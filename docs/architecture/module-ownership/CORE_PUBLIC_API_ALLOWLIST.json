@@ -11,6 +11,8 @@
     "CoreRecallResult",
     "CoreRuntime",
     "CoreTraceEvent",
+    "CoverageDescentCell",
+    "CoverageDescentPage",
     "CoverageTemplate",
     "GeometryAddress",
     "GeometryAnchor",
@@ -23,6 +25,10 @@
     "RecallBudget",
     "RemoveCommand",
     "ReplaceCommand",
+    "SurfaceCellProjection",
+    "SurfaceOrderInfo",
+    "SurfacePage",
+    "SurfacePlane",
     "TraceSink",
     "available_profile_ids",
     "expand_template",
@@ -47,6 +53,9 @@
     "put",
     "recall",
     "remove",
-    "replace"
+    "replace",
+    "surface_descend",
+    "surface_orders",
+    "surface_page"
   ]
 }

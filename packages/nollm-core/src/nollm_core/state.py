@@ -20,6 +20,16 @@ from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
 from .ports import CoreTraceEvent, TraceSink
 from .storage import SCHEMA_VERSION, _FileCoreStateStore, canonical_state_bytes
+from .surface import (
+    CoverageDescentPage,
+    SurfaceOrderInfo,
+    SurfacePage,
+    SurfacePlane,
+    build_surface_orders,
+    descent_page,
+    order_info,
+    surface_page,
+)
 from .workspace_owner import claim, release
 
 
@@ -204,6 +214,34 @@ class CoreRuntime:
                 raise TypeError("request must be CoreRecallRequest")
             return resolve_recall(self, request)
 
+    def surface_orders(self, plane: SurfacePlane, max_order: int) -> tuple[SurfaceOrderInfo, ...]:
+        with self._operation():
+            orders = self._surface_orders_locked(plane, max_order)
+            return tuple(order_info(plane, records, order) for order, records in enumerate(orders))
+
+    def surface_page(
+        self,
+        plane: SurfacePlane,
+        order: int,
+        after: GeometryAddress | None,
+        limit: int,
+    ) -> SurfacePage:
+        with self._operation():
+            orders = self._surface_orders_locked(plane, order)
+            return surface_page(plane, order, orders[order], after, limit)
+
+    def surface_descend(
+        self,
+        plane: SurfacePlane,
+        parent_order: int,
+        parent_address: GeometryAddress,
+        after: GeometryAddress | None,
+        limit: int,
+    ) -> CoverageDescentPage:
+        with self._operation():
+            orders = self._surface_orders_locked(plane, parent_order)
+            return descent_page(plane, parent_order, parent_address, orders, after, limit)
+
     def export_state_bytes(self) -> bytes:
         with self._operation():
             payload = self._state_bytes_locked()
@@ -221,6 +259,18 @@ class CoreRuntime:
 
     def _state_bytes_locked(self) -> bytes:
         return canonical_state_bytes(self._document(self._cells, self._bridges))
+
+    def _surface_orders_locked(self, plane: SurfacePlane, max_order: int):
+        if type(plane) is not SurfacePlane:
+            raise TypeError("plane must be SurfacePlane")
+        occupancy = {address: len(atoms) for address, atoms in self._cells.items()}
+        endpoints = frozenset(
+            cell
+            for bridge in self._bridges.values()
+            for anchor in (bridge.from_anchor, bridge.to_anchor)
+            for cell in anchor.cells
+        )
+        return build_surface_orders(plane, max_order, occupancy, endpoints, self._kernel_registry)
 
     def _atoms_at_locked(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
         return self._cell_store.atoms_at(address)

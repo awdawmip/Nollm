@@ -16,6 +16,14 @@ from .ports import CoreTraceEvent, TraceSink
 from .profiles import available_profile_ids, runtime_profile
 from .recall import CoreRecallItem, CoreRecallRequest, CoreRecallResult, RecallBudget
 from .state import CoreRuntime
+from .surface import (
+    CoverageDescentCell,
+    CoverageDescentPage,
+    SurfaceCellProjection,
+    SurfaceOrderInfo,
+    SurfacePage,
+    SurfacePlane,
+)
 
 
 __all__ = [
@@ -29,6 +37,8 @@ __all__ = [
     "CoreRuntime",
     "CoreTraceEvent",
     "CoverageTemplate",
+    "CoverageDescentCell",
+    "CoverageDescentPage",
     "GeometryAddress",
     "GeometryAnchor",
     "KernelEntry",
@@ -41,6 +51,10 @@ __all__ = [
     "RemoveCommand",
     "ReplaceCommand",
     "TraceSink",
+    "SurfaceCellProjection",
+    "SurfaceOrderInfo",
+    "SurfacePage",
+    "SurfacePlane",
     "expand_template",
     "available_profile_ids",
     "runtime_profile",
