@@ -202,6 +202,15 @@ test("Traversal evidence distinguishes correction, singleton skip, and provider 
   assert.match(source, /correction_attempt_count\) >= TRAVERSAL_CORRECTION_MAX_ATTEMPTS/);
 });
 
+test("a run satisfied by hidden Recall cannot re-form the recalled fact", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /type Candidate[\s\S]+const recallSatisfiedSessions = new Set<string>\(\);[\s\S]+export function registerDreamAgent/);
+  assert.match(source, /recallSatisfiedSessions\.add\(ctx\.sessionKey\)/);
+  assert.match(source, /api\.on\("agent_turn_prepare"[\s\S]+recallSatisfiedSessions\.delete\(ctx\.sessionKey\)/);
+  assert.match(source, /recallSatisfiedSessions\.has\(sessionKey\)/);
+  assert.match(source, /reason: "same_run_satisfied_by_recall"/);
+});
+
 test("plugin entry is an ordinary hook plugin", () => {
   assert.equal(plugin.id, "nollm-formation");
   assert.equal(typeof plugin.register, "function");

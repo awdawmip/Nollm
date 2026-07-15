@@ -122,6 +122,9 @@ type UserObservation = Turn & { identity: string };
 type Pending = { users: UserObservation[]; resolvedModel?: string; runId?: string };
 type Candidate = { sessionKey: string; runId?: string; assistant: string; phase: TriggerPhase; sourceHook: "message_sent" | "agent_end"; observedAt: number; users?: Turn[]; resolvedModel?: string };
 
+// Gateway hook dispatch can cross plugin registration instances within one turn.
+const recallSatisfiedSessions = new Set<string>();
+
 export function wellFormedText(value: string): string {
   return Array.from(value, character => {
     const unit = character.charCodeAt(0);
@@ -223,6 +226,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   };
   api.on("agent_turn_prepare", async (event, ctx) => {
     const observedAt = Date.now();
+    if (ctx.sessionKey) recallSatisfiedSessions.delete(ctx.sessionKey);
     const memoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
     if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !memoryWorkspace || !config.python_executable || !config.nollm_repo_root || !event.prompt.trim()) return;
     const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
@@ -299,6 +303,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
     await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
+    recallSatisfiedSessions.add(ctx.sessionKey);
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {
@@ -332,6 +337,18 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const launch = async (candidate: Candidate) => {
     const { sessionKey, assistant, sourceHook, observedAt, phase } = candidate;
     if (config.enabled === false || !assistant.trim() || inFlight.has(sessionKey)) return;
+    if (recallSatisfiedSessions.has(sessionKey)) {
+      pending.delete(sessionKey);
+      await trace(config, {
+        status: "suppressed",
+        stage: "formation",
+        reason: "same_run_satisfied_by_recall",
+        session_key: sessionKey,
+        run_id: candidate.runId,
+        visible_message_count: 0,
+      });
+      return;
+    }
     if (!config.python_executable || !config.nollm_repo_root) { await trace(config, { status: "defer", reason: "explicit_configuration_required", trigger_phase: phase }); return; }
     const fallbackUsers: UserObservation[] = (candidate.users ?? []).map((turn, index) => ({ role: turn.role, content_utf8: turn.content_utf8, identity: `${candidate.runId ?? "fallback"}:${index}:${createHash("sha256").update(turn.content_utf8).digest("hex")}` }));
     const current = pending.get(sessionKey) ?? { users: fallbackUsers, resolvedModel: candidate.resolvedModel, runId: candidate.runId };
