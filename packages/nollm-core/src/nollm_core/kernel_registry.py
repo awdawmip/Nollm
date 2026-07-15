@@ -10,7 +10,7 @@ from .profiles import PROFILE_REGISTRY_VERSION, profile_registry_digest
 from .geometry import GeometryAddress
 from .physical_coverage import expand_physical_coverage
 
-KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v4"
+KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v5"
 
 
 class KernelRegistry:

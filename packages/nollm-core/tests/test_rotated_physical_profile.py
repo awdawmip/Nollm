@@ -3,7 +3,7 @@ from nollm_core import GeometryAddress, KernelRegistry, clear_physical_coverage_
 
 def test_default_profile_has_mandatory_physical_identity() -> None:
     profile = runtime_profile("default_dream_v1")
-    assert profile.geometry_contract_version == "nollm_translation_covariant_physical_coverage_v1"
+    assert profile.geometry_contract_version == "nollm_translation_normalized_physical_coverage_v1"
     assert (profile.theta_step_turn_numerator, profile.theta_step_turn_denominator) == (1, 16)
     assert profile.beta_algebraic == "beta=positive_root(x^4-2)"
     assert profile.orientation == "pointy_top"
@@ -13,7 +13,7 @@ def test_default_profile_has_mandatory_physical_identity() -> None:
         (7, 48), (2, 48), (5, 48), (0, 48),
     ]
     assert profile.runtime_polygon and not profile.runtime_float_allowed
-    assert profile.coordinate_model == "integer_axial_with_decimal_physical_overlap"
+    assert profile.coordinate_model == "integer_axial_with_translation_normalized_decimal_overlap"
 
 
 def test_rotated_coverage_is_phase_complete_and_physically_described() -> None:

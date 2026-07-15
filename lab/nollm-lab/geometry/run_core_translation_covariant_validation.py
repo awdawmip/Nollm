@@ -32,13 +32,15 @@ def validate() -> dict[str, object]:
     max_b_share_error = Decimal(0)
     max_q16_error = 0
     max_quantization_residual = 0
+    max_partition_residual = Decimal(0)
+    max_candidate_residual = Decimal(0)
     rows = []
     for direction, delta, layers in (("coverage_up", -1, range(1, 9)), ("coverage_down", 1, range(0, 8))):
         for source_layer in layers:
             for q in range(-4, 5):
                 for r in range(-4, 5):
                     samples += 1
-                    source = GeometryAddress("default_dream_v1", "oracle", source_layer, q, r)
+                    source = GeometryAddress("default_dream_v1", "default", source_layer, q, r)
                     runtime = expand_physical_coverage(source, direction)
                     runtime_members = {(member.target.q, member.target.r): member for member in runtime.members}
                     a = oracle_a(schedule, source_layer, q, r, source_layer + delta)
@@ -52,7 +54,23 @@ def validate() -> dict[str, object]:
                         expected_q16 = int((b[target] * 65536).to_integral_value(rounding=ROUND_HALF_EVEN))
                         max_q16_error = max(max_q16_error, abs(runtime_members[target].weight_q16 - expected_q16))
                     max_quantization_residual = max(max_quantization_residual, runtime.max_quantization_residual_q16)
+                    max_partition_residual = max(max_partition_residual, Decimal(runtime.raw_partition_residual))
+                    max_candidate_residual = max(max_candidate_residual, Decimal(runtime.candidate_window_residual))
                     rows.append((direction, source_layer, q, r, tuple((member.target.q, member.target.r, member.weight_q16) for member in runtime.members)))
+    large_support_mismatches = 0
+    large_samples = 0
+    for source_layer in range(8):
+        for q, r in ((10**14, 0), (-10**14, 0), (10**14, -10**14), (-10**14, 10**14)):
+            for direction, delta in (("coverage_up", -1), ("coverage_down", 1)):
+                large_samples += 1
+                source = GeometryAddress("default_dream_v1", "default", source_layer, q, r)
+                runtime = expand_physical_coverage(source, direction)
+                oracle = oracle_b_coverage(source_layer, q, r, source_layer + delta)
+                large_support_mismatches += {
+                    (member.target.q, member.target.r) for member in runtime.members
+                } != {(member.q, member.r) for member in oracle}
+                max_partition_residual = max(max_partition_residual, Decimal(runtime.raw_partition_residual))
+                max_candidate_residual = max(max_candidate_residual, Decimal(runtime.candidate_window_residual))
     before_clear = _digest(rows)
     clear_physical_coverage_cache()
     replay_rows = []
@@ -60,7 +78,7 @@ def validate() -> dict[str, object]:
         for source_layer in layers:
             for q in range(-4, 5):
                 for r in range(-4, 5):
-                    source = GeometryAddress("default_dream_v1", "oracle", source_layer, q, r)
+                    source = GeometryAddress("default_dream_v1", "default", source_layer, q, r)
                     runtime = expand_physical_coverage(source, direction)
                     replay_rows.append((direction, source_layer, q, r, tuple((member.target.q, member.target.r, member.weight_q16) for member in runtime.members)))
     after_clear = _digest(replay_rows)
@@ -72,20 +90,27 @@ def validate() -> dict[str, object]:
         "q16_error_bounded": max_q16_error <= 1,
         "quantization_residual_bounded": max_quantization_residual <= 1,
         "cache_clear_deterministic": before_clear == after_clear,
+        "large_coordinate_support_equal_oracle_b": large_support_mismatches == 0,
+        "raw_partition_mass_certified": max_partition_residual <= Decimal("1e-72"),
+        "candidate_window_complete": max_candidate_residual <= Decimal("1e-72"),
     }
     if not all(checks.values()):
         raise AssertionError({key: value for key, value in checks.items() if not value})
     return {
-        "schema_version": "nollm_core_translation_covariant_runtime_validation_v1",
+        "schema_version": "nollm_core_translation_normalized_runtime_validation_v1",
         "status": "pass",
         "checks": checks,
         "samples": samples,
+        "large_coordinate_samples": large_samples,
+        "large_coordinate_support_mismatch_count": large_support_mismatches,
         "support_mismatch_count": support_mismatches,
         "positive_weight_on_zero_overlap_count": positive_weight_on_zero_overlap,
         "max_oracle_a_source_share_error": format(max_a_share_error, "e"),
         "max_oracle_b_source_share_error": format(max_b_share_error, "e"),
         "max_q16_error": max_q16_error,
         "max_quantization_residual_q16": max_quantization_residual,
+        "max_raw_partition_residual": format(max_partition_residual, "e"),
+        "max_candidate_window_residual": format(max_candidate_residual, "e"),
         "result_digest_before_cache_clear": before_clear,
         "result_digest_after_cache_clear": after_clear,
     }

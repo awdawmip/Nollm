@@ -104,3 +104,55 @@ Scope added: none.
 Deviation above 5%: none.
 Gate 2 authorized: yes.
 ```
+
+## Gate 2
+
+Expected vector and direction:
+
+```text
+C +10 and L +10 are the active work.
+translation-normalized Coverage -> physical residual -> explicit physical entry -> P1 closure
+```
+
+Core now validates the complete address before calculation and supports the
+explicit domain `q/r=signed-64`, physical layer `-64..64`, `chart_id=default`,
+and `phase=null`. The production overlap path constructs source-centered local
+polygons. Precision is derived from coordinate and layer digit counts with 72
+guard digits and a Decimal96 minimum. It never constructs absolute-world
+polygons.
+
+Physical mass is validated before Q16. The expansion separately exposes raw
+source mass, partition residual, candidate-window residual, threshold residual,
+numeric error bound, ambiguity, Q16 sum, and Q16 rounding residual. Certified
+positive overlaps remain in support; geometric zero overlaps never enter the
+members. Unsupported addresses and uncertified physical mass fail before
+propagation.
+
+Gate 2 evidence:
+
+```text
+Core focused tests: 9 passed
+Core complete test suite: 55 passed
+bounded Core/Oracle A/Oracle B samples: 1296
+large-coordinate Core/Oracle B samples: 64
+support mismatch: 0
+large-coordinate support mismatch: 0
+positive weight on zero overlap: 0
+max raw partition residual: 5.367e-92
+max candidate-window residual: 0
+max Core/Oracle B source-share error: 8e-96
+max Q16 error: 1
+cache-clear digest before/after: bfb09336abc05596a518d877e022a0f5dd87cba93baf250752b6820af2f0b58b
+validation report SHA-256: 0159705ffe54c5223729137cd0a2f9a042c415a5ed45ee1e939a45daf239fe82
+full validation elapsed: 427.934 seconds
+```
+
+Gate result:
+
+```text
+Actual modules affected: Core and Lab validation.
+Actual progress: C +10 and L +10 are evidenced in the declared coordinate domain.
+Scope added: none.
+Deviation above 5%: none.
+Gate 3 authorized: yes.
+```
