@@ -74,6 +74,28 @@ class SurfaceCellView:
 
 
 @dataclass(frozen=True)
+class PhysicalEntryCandidateView:
+    candidate_id: str
+    address: GeometryAddress
+    native_atom_count: int
+    current_statement_preview: SurfaceStatementPreview | None
+    truncated: bool
+    membership_weight_q16: int
+    source_surface_candidate_id: str
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "candidate_id": self.candidate_id,
+            "address": self.address.to_mapping(),
+            "native_atom_count": self.native_atom_count,
+            "current_statement_preview": self.current_statement_preview.to_mapping() if self.current_statement_preview else None,
+            "truncated": self.truncated,
+            "membership_weight_q16": self.membership_weight_q16,
+            "source_surface_candidate_id": self.source_surface_candidate_id,
+        }
+
+
+@dataclass(frozen=True)
 class _TraversalFrame:
     order: int
     parent_order: int | None
@@ -117,6 +139,35 @@ class SurfaceTraversalPage:
             "next_after": self.next_after.to_mapping() if self.next_after else None,
             "call_count": self.state.call_count,
         }
+
+
+@dataclass(frozen=True)
+class PhysicalEntryPage:
+    state: SurfaceTraversalState
+    source_surface_candidate_id: str
+    source_surface_address: SurfaceAggregateAddress
+    candidates: tuple[PhysicalEntryCandidateView, ...]
+    total_candidate_count: int
+    has_more: bool
+    next_after: GeometryAddress | None
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "source_surface_candidate_id": self.source_surface_candidate_id,
+            "source_surface_address": self.source_surface_address.to_mapping(),
+            "physical_entry_candidates": [candidate.to_mapping() for candidate in self.candidates],
+            "total_candidate_count": self.total_candidate_count,
+            "resolved_singleton": self.total_candidate_count == 1,
+            "has_more": self.has_more,
+            "next_after": self.next_after.to_mapping() if self.next_after else None,
+            "call_count": self.state.call_count,
+        }
+
+
+@dataclass(frozen=True)
+class PhysicalEntryResolution:
+    entry_cell: GeometryAddress
+    resolved_singleton: bool
 
 
 @dataclass(frozen=True)
@@ -286,13 +337,115 @@ class AccessSurfaceNavigator:
             stack=page.state.stack[:-1],
         ))
 
-    def select_entry(self, page: SurfaceTraversalPage, candidate_id: str) -> GeometryAddress:
+    def open_physical_entries(self, page: SurfaceTraversalPage, candidate_id: str) -> PhysicalEntryPage:
         selected = self._shown(page, candidate_id)
         if page.state.order != 0:
-            raise ValueError("Recall entry selection requires Order 0")
-        if not selected.statements:
-            raise ValueError("Recall entry candidate has no current physical Handle")
-        return min((item.handle.geometry_address for item in selected.statements), key=lambda address: address.stable_key())
+            raise ValueError("physical entries require an Order 0 Surface cell")
+        return self._physical_entry_page(page.state, selected.candidate_id, selected.address, None)
+
+    def continue_physical_entries(self, page: PhysicalEntryPage) -> PhysicalEntryPage:
+        if type(page) is not PhysicalEntryPage:
+            raise TypeError("page must be PhysicalEntryPage")
+        if not page.has_more or page.next_after is None:
+            raise ValueError("current physical-entry page has no continuation")
+        return self._physical_entry_page(
+            page.state,
+            page.source_surface_candidate_id,
+            page.source_surface_address,
+            page.next_after,
+        )
+
+    def reopen_physical_entries(
+        self,
+        state: SurfaceTraversalState,
+        source_surface_candidate_id: str,
+        source_surface_address: SurfaceAggregateAddress,
+        after: GeometryAddress | None,
+    ) -> PhysicalEntryPage:
+        return self._physical_entry_page(state, source_surface_candidate_id, source_surface_address, after)
+
+    def select_entry(self, page: PhysicalEntryPage, candidate_id: str) -> PhysicalEntryResolution:
+        if type(page) is not PhysicalEntryPage:
+            raise TypeError("select_entry requires a PhysicalEntryPage")
+        if type(candidate_id) is not str or not candidate_id:
+            raise ValueError("candidate_id is required")
+        matches = tuple(candidate for candidate in page.candidates if candidate.candidate_id == candidate_id)
+        if len(matches) != 1:
+            raise ValueError("decision selected an unavailable physical-entry candidate")
+        return PhysicalEntryResolution(matches[0].address, page.total_candidate_count == 1)
+
+    def _physical_entry_page(
+        self,
+        state: SurfaceTraversalState,
+        source_surface_candidate_id: str,
+        source_surface_address: SurfaceAggregateAddress,
+        after: GeometryAddress | None,
+    ) -> PhysicalEntryPage:
+        self._require_state(state)
+        if state.order != 0 or source_surface_address.aggregation_order != 0:
+            raise ValueError("physical entries require an Order 0 Surface cell")
+        if type(source_surface_candidate_id) is not str or not source_surface_candidate_id:
+            raise ValueError("source_surface_candidate_id is required")
+        if after is not None and type(after) is not GeometryAddress:
+            raise TypeError("physical-entry after must be GeometryAddress")
+        if state.call_count >= state.budget.max_calls:
+            raise RuntimeError("Surface traversal call limit reached")
+        with CoreRuntime(self._workspace) as core:
+            projection = self._projection_at(core, state.scope, source_surface_address)
+            if not projection.source_memberships:
+                raise ValueError("Order 0 Surface projection has no physical memberships")
+            all_candidates = tuple(
+                self._physical_candidate(core, state, source_surface_candidate_id, address, weight)
+                for address, weight in projection.source_memberships
+            )
+        selected = all_candidates if after is None else tuple(
+            candidate for candidate in all_candidates if candidate.address.stable_key() > after.stable_key()
+        )
+        candidates = selected[:state.budget.page_size]
+        has_more = len(selected) > state.budget.page_size
+        return PhysicalEntryPage(
+            replace(state, call_count=state.call_count + 1),
+            source_surface_candidate_id,
+            source_surface_address,
+            candidates,
+            len(all_candidates),
+            has_more,
+            candidates[-1].address if has_more and candidates else None,
+        )
+
+    @staticmethod
+    def _projection_at(core: CoreRuntime, scope: PhysicalFieldScope, address: SurfaceAggregateAddress) -> SurfaceCellProjection:
+        after = None
+        while True:
+            page = core.surface_page(scope, 0, after, 256)
+            match = next((projection for projection in page.cells if projection.address == address), None)
+            if match is not None:
+                return match
+            if not page.has_more or page.next_after is None:
+                raise ValueError("source Surface candidate is no longer available")
+            after = page.next_after
+
+    def _physical_candidate(
+        self,
+        core: CoreRuntime,
+        state: SurfaceTraversalState,
+        source_surface_candidate_id: str,
+        address: GeometryAddress,
+        membership_weight_q16: int,
+    ) -> PhysicalEntryCandidateView:
+        handles = tuple(handle for handle, _atom in core.atoms_at(address))
+        previews = self._previews(handles)
+        material = f"{state.operation_id}\0{source_surface_candidate_id}\0{address.stable_key()}"
+        candidate_id = "physical-entry:" + sha256(material.encode("utf-8")).hexdigest()[:20]
+        return PhysicalEntryCandidateView(
+            candidate_id,
+            address,
+            len(handles),
+            previews[0] if previews else None,
+            len(previews) > 1,
+            membership_weight_q16,
+            source_surface_candidate_id,
+        )
 
     def recall_entry(self, request_id: str, entry_cell: GeometryAddress) -> SurfaceRecallResult:
         if type(request_id) is not str or not request_id:
@@ -326,20 +479,7 @@ class AccessSurfaceNavigator:
             for address in entry_cells
             for handle, _atom in core.atoms_at(address)
         )
-        previews = []
-        handle_store = FileHandleStore(self._workspace)
-        statement_store = FileStatementStore(self._workspace)
-        for handle in sorted(handles, key=lambda item: (item.geometry_address.stable_key(), item.local_atom_id)):
-            try:
-                binding = handle_store.binding_for_handle(handle)
-                statement = statement_store.get(binding.current_statement_id)
-            except (KeyError, FileNotFoundError):
-                continue
-            previews.append(SurfaceStatementPreview(
-                statement.statement_id,
-                statement.content_utf8[:MAX_STATEMENT_CHARS],
-                handle,
-            ))
+        previews = self._previews(handles)
         shown = tuple(previews[:MAX_STATEMENTS_PER_CELL])
         remaining = max(0, len(previews) - len(shown))
         candidate_id = self._candidate_id(state, projection.address, index)
@@ -358,6 +498,23 @@ class AccessSurfaceNavigator:
             remaining > 0,
             remaining,
         )
+
+    def _previews(self, handles: tuple[AtomHandle, ...]) -> tuple[SurfaceStatementPreview, ...]:
+        previews = []
+        handle_store = FileHandleStore(self._workspace)
+        statement_store = FileStatementStore(self._workspace)
+        for handle in sorted(handles, key=lambda item: (item.geometry_address.stable_key(), item.local_atom_id)):
+            try:
+                binding = handle_store.binding_for_handle(handle)
+                statement = statement_store.get(binding.current_statement_id)
+            except (KeyError, FileNotFoundError):
+                continue
+            previews.append(SurfaceStatementPreview(
+                statement.statement_id,
+                statement.content_utf8[:MAX_STATEMENT_CHARS],
+                handle,
+            ))
+        return tuple(previews)
 
     @staticmethod
     def _candidate_id(state: SurfaceTraversalState, address: SurfaceAggregateAddress, index: int) -> str:

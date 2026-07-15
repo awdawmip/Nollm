@@ -40,6 +40,9 @@ from .surface_selection import (
 )
 from .surface_navigation import (
     AccessSurfaceNavigator,
+    PhysicalEntryCandidateView,
+    PhysicalEntryPage,
+    PhysicalEntryResolution,
     SurfaceCellView,
     SurfaceRecallResult,
     SurfaceStatementPreview,
@@ -56,6 +59,9 @@ __all__ = [
     "AccessRecallResult",
     "AccessRuntime",
     "AccessSurfaceNavigator",
+    "PhysicalEntryCandidateView",
+    "PhysicalEntryPage",
+    "PhysicalEntryResolution",
     "ActiveSurfaceSelection",
     "AccessConsistencyError",
     "EvidenceStore",

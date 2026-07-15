@@ -199,3 +199,30 @@ Scope added: none.
 Deviation above 5%: none.
 Gate 4 authorized after complete Core regression.
 ```
+
+## Gate 4 Access
+
+Order 0 Core projections now expose their already-computed physical source
+memberships. Access does not recompute geometry. `PhysicalEntryCandidateView`
+contains an operation-local candidate ID, exact `GeometryAddress`, native Atom
+count, current Statement preview, truncation flag, membership Q16 weight, and
+the source Surface candidate ID.
+
+Physical candidates are finite and paged with the existing operation budget.
+`select_entry` accepts only `PhysicalEntryPage`; selecting an Order 0 Surface
+candidate directly is a type error. Multiple physical candidates require one
+shown physical candidate ID. A single candidate is returned with
+`resolved_singleton=true`. No candidate state is persisted.
+
+Access evidence:
+
+```text
+Core/Access focused physical-entry tests: 7 passed
+Access complete test suite: 77 passed, 8 existing deprecation warnings
+multi-entry fixture candidate count: 2
+invented physical-entry candidate: rejected
+direct Surface-to-entry fallback: removed
+operation-local state file: absent
+```
+
+OpenClaw Wire adaptation remains pending before Gate 4 can close.

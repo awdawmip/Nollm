@@ -148,6 +148,7 @@ class SurfaceCellProjection:
     coverage_residual_q16: int = 0
     coverage_ambiguous_count: int = 0
     coverage_invalid_count: int = 0
+    source_memberships: tuple[tuple[GeometryAddress, int], ...] = ()
     truncated: bool = False
     overflow: bool = False
 
@@ -242,7 +243,8 @@ def build_surface_orders(
         invalid_count = sum(source_map[source][5] for source in sources)
         address = _surface_address(scope, 0, q, r)
         source_counts = tuple((source, native[source]) for source in sources)
-        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources), coverage_residual, ambiguous_count, invalid_count), (), source_counts))
+        memberships = tuple((source, source_map[source][0]) for source in sources)
+        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources), coverage_residual, ambiguous_count, invalid_count, memberships), (), source_counts))
     orders: list[tuple[_SurfaceRecord, ...]] = [tuple(order_zero)]
     for order in range(1, max_order + 1):
         lower = orders[-1]
@@ -331,10 +333,10 @@ def descent_page(scope: PhysicalFieldScope, parent_address: SurfaceAggregateAddr
     return CoverageDescentPage(scope, parent_address, page_cells, has_more, page_cells[-1].projection.address if has_more and page_cells else None)
 
 
-def _projection(scope, address, native_count, aggregate_count, mass, sources, deeper, bridge, residual=0, ambiguous=0, invalid=0):
+def _projection(scope, address, native_count, aggregate_count, mass, sources, deeper, bridge, residual=0, ambiguous=0, invalid=0, memberships=()):
     area = OBSERVATION_AREA_RATIO_Q32[address.aggregation_order]
     density = mass * Q32_ONE // area
-    return SurfaceCellProjection(address, _grid(scope, address.aggregation_order), native_count, aggregate_count, len(sources), mass, density, sources, deeper, bridge, residual, ambiguous, invalid)
+    return SurfaceCellProjection(address, _grid(scope, address.aggregation_order), native_count, aggregate_count, len(sources), mass, density, sources, deeper, bridge, residual, ambiguous, invalid, memberships)
 
 
 def _grid(scope: PhysicalFieldScope, order: int) -> SurfaceGridSpec:

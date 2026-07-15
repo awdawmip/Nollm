@@ -1,7 +1,7 @@
 import pytest
 
 from nollm_access import AccessDecision, AccessRuntime, AccessSurfaceNavigator, FileHandleStore, FileStatementStore, MemoryStatement, SurfaceBudgetProfile
-from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope
+from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope, expand_physical_coverage
 
 
 SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
@@ -9,11 +9,15 @@ BUDGET = SurfaceBudgetProfile(2, 20, 100, 1, 1, 1000, 8, 8, 24)
 
 
 def place(workspace, statement_id: str, content: str, q: int) -> None:
+    place_at(workspace, statement_id, content, GeometryAddress("default_dream_v1", "default", 0, q, 0))
+
+
+def place_at(workspace, statement_id: str, content: str, address: GeometryAddress) -> None:
     core = CoreRuntime(workspace)
     access = AccessRuntime(core, FileStatementStore(workspace), FileHandleStore(workspace))
     statement = MemoryStatement(statement_id, content)
     access.capture(statement)
-    access.apply(AccessDecision(f"d:{statement_id}", statement_id, "new", GeometryAddress("default_dream_v1", "default", 0, q, 0), reason_text="fixture", decided_by="fixture"))
+    access.apply(AccessDecision(f"d:{statement_id}", statement_id, "new", address, reason_text="fixture", decided_by="fixture"))
     access.close()
     core.close()
 
@@ -40,8 +44,41 @@ def test_traversal_accepts_only_shown_candidates_and_reaches_one_physical_entry(
         navigator.open_surface_cell(page, "surface:invented")
     while page.state.order > 0:
         page = navigator.open_surface_cell(page, page.cells[0].candidate_id)
-    entry = navigator.select_entry(page, page.cells[0].candidate_id)
-    assert entry == GeometryAddress("default_dream_v1", "default", 0, 0, 0)
+    physical = navigator.open_physical_entries(page, page.cells[0].candidate_id)
+    resolution = navigator.select_entry(physical, physical.candidates[0].candidate_id)
+    assert resolution.entry_cell == GeometryAddress("default_dream_v1", "default", 0, 0, 0)
+    assert resolution.resolved_singleton
+    with pytest.raises(TypeError, match="PhysicalEntryPage"):
+        navigator.select_entry(page, page.cells[0].candidate_id)
+
+
+def test_multiple_physical_entries_require_an_explicit_shown_choice(tmp_path) -> None:
+    source = GeometryAddress("default_dream_v1", "default", 1, 0, 0)
+    target = expand_physical_coverage(source, "coverage_up").members[0].target
+    place_at(tmp_path, "fine", "fine physical source", source)
+    core = CoreRuntime(tmp_path)
+    access = AccessRuntime(core, FileStatementStore(tmp_path), FileHandleStore(tmp_path))
+    statement = MemoryStatement("coarse", "coarse physical source")
+    access.capture(statement)
+    access.apply(AccessDecision("d:coarse", "coarse", "new", target, reason_text="fixture", decided_by="fixture"))
+    access.close()
+    core.close()
+
+    scope = PhysicalFieldScope("default_dream_v1", "default", (0, 1), 0, max_relative_layer_delta=1)
+    navigator = AccessSurfaceNavigator(tmp_path)
+    page = navigator.begin("multi", scope, BUDGET)
+    surface = next(cell for cell in page.cells if cell.physical_source_cell_count == 2)
+    physical = navigator.open_physical_entries(page, surface.candidate_id)
+    assert physical.total_candidate_count == 2 and not physical.to_mapping()["resolved_singleton"]
+    assert {candidate.address for candidate in physical.candidates} == {source, target}
+    assert all(candidate.native_atom_count == 1 for candidate in physical.candidates)
+    assert all(candidate.current_statement_preview is not None for candidate in physical.candidates)
+    assert all(candidate.membership_weight_q16 > 0 for candidate in physical.candidates)
+    with pytest.raises(ValueError, match="unavailable physical-entry"):
+        navigator.select_entry(physical, "physical-entry:invented")
+    selected = next(candidate for candidate in physical.candidates if candidate.address == source)
+    resolution = navigator.select_entry(physical, selected.candidate_id)
+    assert resolution.entry_cell == source and not resolution.resolved_singleton
 
 
 def test_pagination_return_call_limits_and_state_are_temporary(tmp_path) -> None:

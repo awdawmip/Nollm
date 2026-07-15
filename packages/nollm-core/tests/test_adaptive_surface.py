@@ -48,6 +48,16 @@ def test_order_zero_includes_every_native_physical_layer_in_scope(tmp_path) -> N
     visible = {source for projection in page.cells for source in projection.source_cells}
     assert visible == set(expected)
     assert sum(projection.aggregate_atom_count for projection in page.cells) == 3
+    membership_sums = {
+        source: sum(
+            weight
+            for projection in page.cells
+            for address, weight in projection.source_memberships
+            if address == source
+        )
+        for source in expected
+    }
+    assert membership_sums == {source: 65536 for source in expected}
 
 
 def test_orders_zero_through_eight_really_coarsen_dense_field(tmp_path) -> None:
