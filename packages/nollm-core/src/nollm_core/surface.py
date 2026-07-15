@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_CEILING
 from hashlib import sha256
 import json
 
@@ -397,13 +396,7 @@ def _expand_with_truth(source: GeometryAddress, direction: str, registry: Kernel
 
 
 def _coverage_residual_q16(expansion: PhysicalCoverageExpansion) -> int:
-    physical_residual = (
-        max(Decimal(expansion.raw_partition_residual) - Decimal(expansion.numeric_error_bound), Decimal(0))
-        + Decimal(expansion.candidate_window_residual)
-        + Decimal(expansion.threshold_residual)
-    )
-    physical_q16 = int((physical_residual * Q16_ONE).to_integral_value(rounding=ROUND_CEILING))
-    return physical_q16 + expansion.q16_rounding_residual
+    return expansion.threshold_residual_q16 + expansion.q16_rounding_residual
 
 
 def _distribute_mass(mass: int, weights: tuple[int, ...]) -> tuple[int, ...]:

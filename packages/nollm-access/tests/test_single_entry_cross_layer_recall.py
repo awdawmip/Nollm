@@ -66,7 +66,7 @@ def test_single_entry_cross_layer_recall_path_and_wire_reopen(tmp_path) -> None:
 
 
 def test_large_coordinate_single_entry_cross_layer_recall_is_reopen_stable(tmp_path) -> None:
-    source = GeometryAddress("default_dream_v1", "default", 4, 10**14, -10**14)
+    source = GeometryAddress("default_dream_v1", "default", 4, 10**9, -10**9)
     expansion = expand_physical_coverage(source, "coverage_up")
     target = max(expansion.members, key=lambda member: (member.weight_q16, member.target.stable_key())).target
     with CoreRuntime(tmp_path) as core:

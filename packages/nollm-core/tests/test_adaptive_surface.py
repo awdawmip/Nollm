@@ -137,12 +137,11 @@ def test_surface_contract_is_query_free_and_rejects_unsupported_scope(tmp_path) 
             runtime.surface_page(SCOPE, 0, cell(0, 0, 0), 8)
 
 
-def test_surface_fails_explicitly_for_uncertified_chart(tmp_path) -> None:
-    scope = PhysicalFieldScope("default_dream_v1", "uncertified", (0, 1), 0, max_relative_layer_delta=1)
+def test_default_profile_rejects_uncertified_chart_before_state_write(tmp_path) -> None:
+    with pytest.raises(ValueError, match="chart_id=default"):
+        GeometryAddress("default_dream_v1", "uncertified", 1, 0, 0)
     with CoreRuntime(tmp_path) as runtime:
-        runtime.put(MemoryAtom("a", "a"), GeometryAddress("default_dream_v1", "uncertified", 1, 0, 0))
-        with pytest.raises(ValueError, match="chart_id=default"):
-            runtime.surface_orders(scope, 1)
+        assert runtime.placement_count() == 0
 
 
 def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> None:
@@ -158,7 +157,7 @@ def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> N
         assert {(projection.address.q, projection.address.r) for projection in page.cells} == target_addresses
         assert sum(projection.aggregate_mass_q16 for projection in page.cells) == 65536
         info = runtime.surface_orders(SCOPE, 1)[1]
-        assert info.coverage_residual_q16 == expected.q16_rounding_residual
+        assert info.coverage_residual_q16 == expected.threshold_residual_q16 + expected.q16_rounding_residual
         assert info.coverage_residual_q16 > 0
         assert info.coverage_ambiguous_count == 0 and info.coverage_invalid_count == 0
         assert sum(projection.coverage_residual_q16 for projection in page.cells) == info.coverage_residual_q16

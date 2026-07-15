@@ -22,6 +22,13 @@ class GeometryAddress:
             exact_int(value, name)
         if self.phase is not None:
             exact_str(self.phase, "phase")
+        if self.profile_id == "default_dream_v1":
+            if self.chart_id != "default" or self.phase is not None:
+                raise ValueError("default_dream_v1 requires chart_id=default and phase=null")
+            if not -64 <= self.layer <= 64:
+                raise ValueError("default_dream_v1 layer is outside [-64,64]")
+            if max(abs(self.q), abs(self.r), abs(self.q + self.r)) > (1 << 31) - 1:
+                raise ValueError("default_dream_v1 address is outside active hex radius")
 
     def stable_key(self) -> tuple[str, str, int, int, int, str]:
         return self.profile_id, self.chart_id, self.layer, self.q, self.r, self.phase or ""
