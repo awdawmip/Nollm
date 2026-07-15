@@ -74,7 +74,9 @@ test("recall NONE paths emit explicit audit evidence", () => {
 test("placement evidence carries the bounded Surface traversal path", () => {
   const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
   assert.match(source, /stage: "placement_apply"[^\n]+surface_path: surfacePath/);
+  assert.match(source, /\.\.\.applied, operation_timing: timing/);
   assert.match(source, /surfacePath\.push\(built\.surface \?\? built\.physical_entries\)/);
+  assert.equal((source.match(/built\.status === "traverse" \|\| built\.status === "physical_entry"/g) ?? []).length, 2);
   for (const field of ["formation_ms", "surface_build_ms", "placement_subagent_ms", "physical_entry_resolution_ms", "placement_apply_ms", "handle_bind_ms", "total_operation_ms", "timeout_stage"]) {
     assert.equal(source.includes(field), true);
   }

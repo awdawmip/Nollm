@@ -213,8 +213,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     let built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace, surface_budget: surfaceBudget(config, "recall") });
     const surfacePath: unknown[] = [];
     let traversal = 0;
-    while (built.ok === true && built.status === "traverse" && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 24)) {
-      surfacePath.push(built.surface);
+    while (built.ok === true && (built.status === "traverse" || built.status === "physical_entry") && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 24)) {
+      surfacePath.push(built.surface ?? built.physical_entries);
       const step = await runHiddenAgent(built.prompt, model!, `${requestId}:surface:${traversal}`);
       if (!step.raw) { await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt }); return; }
       built = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
@@ -497,7 +497,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     for (const key of ["statement_persist_ms", "decision_validation_ms", "placement_apply_ms", "handle_bind_ms"]) if (typeof accessTiming[key] === "number") timing[key] = accessTiming[key];
     timing.total_operation_ms = Date.now() - operationStartedAt;
     if (applied.ok !== true) timing.timeout_stage = "placement_apply";
-    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...applied, ...extractResolvedModel(session.messages) });
+    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, ...applied, operation_timing: timing, ...extractResolvedModel(session.messages) });
   } catch (error) {
     timing.timeout_stage = "placement"; timing.total_operation_ms = Date.now() - operationStartedAt;
     await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error), operation_timing: timing });
