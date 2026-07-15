@@ -17,23 +17,23 @@ Surface Order 0..8 API；
 原子失败回滚。
 ```
 
-## 当前根本限制
+## 已完成
 
 ```text
-生产 Coverage 每 Cell 约 0.12 秒；
-Surface eager 构建全部 Orders；
-小数据也出现分钟级几何耗时；
-精确面积和 signed-64 全闭包超出当前需求；
-尚未进入 Stitch 和多物理层语义 Placement。
+K=96 固定点等面积 quadrature 通过误差 Gate；
+生产 Coverage 无 Decimal/polygon 动态路径；
+Surface 按需逐阶构建并可删除缓存；
+11-cell 27.829ms，217-cell 823.615ms；
+真实 R1/R2/R3/P1 和重启召回通过；
+旧数据经非破坏 v5 -> v6 registry 迁移保留。
 ```
 
-## 新决定
+## 当前状态
 
 ```text
-精确 polygon/Decimal → Lab Oracle；
-生产 Coverage → 固定点等面积 quadrature；
-允许阈值以下 support 误差；
-用 weighted error Gate；
-产品坐标域限制为 hex radius <= 2^31-1；
-Surface 改为惰性构建。
+FAST_BOUNDED_APPROXIMATE_COVERAGE_SURFACE_VALIDATED_AT_<FINAL_DELIVERY_HEAD>
 ```
+
+最终 HEAD 由不可变完成 Tag 和 Bundle heads 提供。活动域仍为 hex radius
+`<= 2^31-1`、default chart、null phase；Stitch、多层语义 Placement、PB 和
+持久 Surface cache 未开启。

@@ -2,15 +2,15 @@
 
 | 模块 | 生命周期状态 | 当前完成度 | 置信度 | 已验证能力 | 当前缺口 | 下一候选动作 |
 |---|---|---:|---|---|---|---|
-| CORE | IMPLEMENTED | 85% | 中高 | 原子状态、物理地址、单入口 Recall、精确 Oracle 路径 | 生产 Coverage 过慢；Surface eager | 近似固定点 Coverage + lazy Surface |
+| CORE | IMPLEMENTED | 95% | 高 | 原子状态、物理地址、K=96 有界 Coverage、lazy Surface | 有界域；无持久 Surface cache | 保持封板 |
 | SNAPSHOT | IMPLEMENTED | 50% | 中高 | state bytes 回归 | 增量 Snapshot | 仅回归 |
 | TRACE | IMPLEMENTED | 40% | 中 | 状态隔离 | 长期性能观察 | 仅回归 |
-| ACCESS | IMPLEMENTED | 90% | 高 | physical entry、Surface 编排、原子协调 | 依赖慢 Surface | 适配 lazy API |
+| ACCESS | IMPLEMENTED | 95% | 高 | physical entry、lazy Surface 编排、原子协调 | 多层语义 Placement 暂停 | 保持封板 |
 | HISTORY | PROPOSED | 10% | 低 | 章程 | 暂停 | 无 |
 | AUDIT | PROPOSED | 10% | 低 | 章程 | 暂停 | 无 |
-| OPENCLAW | CAPABILITY_VALIDATED | 88% | 中高 | P1、R1/R2/R3、单入口 | 几何耗时影响用户体验 | 组合回归与 timing |
-| LAB | IMPLEMENTED | 90% | 高 | 历史 Oracle、Decimal Oracle、fixtures | 缺近似核校准矩阵 | quadrature/atlas 比较 |
-| DISTRIBUTIONS | IMPLEMENTED | 75% | 中高 | v0.9 前组合基础 | 缺 approximation contract | 更新 profile/wire/budget |
+| OPENCLAW | CAPABILITY_VALIDATED | 93% | 高 | P1、R1/R2/R3、重启召回、单入口 | provider latency | 保持封板 |
+| LAB | IMPLEMENTED | 100% | 高 | 独立 Oracle、K54/K96 校准、两档 benchmark、迁移 | 无当前 Gate 缺口 | 保持 Oracle |
+| DISTRIBUTIONS | IMPLEMENTED | 80% | 高 | v0.10 approximation/profile/wire/budget | 发布流程未开启 | 保持封板 |
 
 预计推进向量：
 
@@ -19,3 +19,6 @@ CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
 HISTORY 0% | AUDIT 0% | OPENCLAW +5% |
 LAB +10% | DISTRIBUTIONS +5%
 ```
+
+实际推进向量与预计一致。最终 Gate：R1/R2/R3/P1 通过，Manifest
+`unclassified=0`，production violations/cycles 均为 0。

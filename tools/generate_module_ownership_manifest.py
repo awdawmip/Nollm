@@ -422,9 +422,10 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "run_adaptive_surface_validation.py": "lab:adaptive-surface",
             "run_rotated_layer0_workspace_migration.py": "lab:rotated-layer0-migration",
             "run_rotated_surface_coarsening_validation.py": "lab:rotated-surface-coarsening",
-                "run_translation_covariant_workspace_migration.py": "lab:translation-covariant-migration",
-                "run_translation_normalized_workspace_migration.py": "lab:translation-normalized-migration",
-                "seed_translation_covariant_live_fixture.py": "lab:translation-covariant-live",
+            "run_translation_covariant_workspace_migration.py": "lab:translation-covariant-migration",
+            "run_translation_normalized_workspace_migration.py": "lab:translation-normalized-migration",
+            "run_bounded_approximate_workspace_migration.py": "lab:bounded-approximate-migration",
+            "seed_translation_covariant_live_fixture.py": "lab:translation-covariant-live",
         }
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Explicit current final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", gates[name])
     if p.startswith("reference/python/tests/m0/"):
