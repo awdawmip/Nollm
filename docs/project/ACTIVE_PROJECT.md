@@ -5,13 +5,13 @@
 - Active route: [V3.9 Fast Structural Geometry](NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md)
 - Current status: [Current Status](NOLLM_CURRENT_STATUS.md)
 - Module ledger: [Canonical Module Progress Ledger](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current task: [Broad Residue Safe Field Dense Locality Recall](tasks/NOLLM_C_A_O_L_D_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_RECALL_TASK_20260715.md)
-- Input checkpoint: `5a453847747a7f460ce37df044dec50c554b494b`
+- Current task: [Write Policy Legal Traversal P1 Dense Live Closure](tasks/NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md)
+- Input checkpoint: `2e779764cde6fbb1ef228444edfd55bd157b2b52`
 
 Current state:
 
 ```text
-CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_IN_PROGRESS
+CAOLD_LEGAL_TRAVERSAL_P1_DENSE_LIVE_IN_PROGRESS
 ```
 
-The `5a45384` capability remains a validated checkpoint. Broad Oracle calibration, the separate writable field, occupancy semantics, dense synthetic Surface, and dense single-entry Recall are implemented. Real R1/R2/R3 passed, while new P1 and dense OpenClaw Live remain incomplete under recorded model failures. Exact Decimal/polygon Coverage remains a Lab Oracle, not the production route.
+The `2e779764` checkpoint preserves broad calibration, safe-field proof, dense synthetic Surface, dense single-entry Recall, and truthful failed Live evidence. This task separates Core storage validity from Access active semantic write policy, derives legal traversal actions from state, adds bounded correction and singleton resolution, and retries P1/dense Live without duplicating the failed P1 Statement.

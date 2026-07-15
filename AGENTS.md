@@ -1,12 +1,12 @@
-# Nollm V3.9 Broad Calibration And Dense Locality Rules
+# Nollm V3.9 Legal Traversal And Live Closure Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
 - Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_9_BOUNDED_APPROXIMATE_HEX_COVERAGE_20260715.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_RECALL_TASK_20260715.md`.
-- `5a45384` is the input checkpoint. Preserve its physical/Surface address separation, single-entry Wire, source-centered Oracle and P1 evidence, but do not preserve Decimal polygon Coverage as the production path.
+- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md`.
+- `2e779764` is the input checkpoint. Preserve its calibrated Coverage, safe-field proof, dense Surface, single-entry Recall, failed P1 Statement, and live evidence.
 
 ## Hard physical contract
 
@@ -58,6 +58,18 @@
 - Natural reachability from multiple entries is an observation, not an invariant or persisted fact-to-entry mapping.
 - No `select_entries`, Cursor, Topic/Source route, graph/vector/embedding or Python semantic placement.
 - Current Placement policy remains physical layer 0; no Stitch or multi-layer semantic Placement in this task.
+
+## Active write and traversal policy
+
+- Core storage validity and Access/OpenClaw active semantic write policy are different contracts.
+- Active semantic Placement remains `default_dream_v1/default/layer0/phase=null` and active writable radius only.
+- Surface prompts must be generated from state-derived `legal_actions`; never advertise impossible actions.
+- Invalid model navigation is recoverable only through a bounded operation-local correction loop with zero state mutation.
+- Mechanical singleton physical-entry resolution is allowed only when the total visible candidate universe contains exactly one entry; otherwise the LLM selects one visible candidate.
+- Existing failed P1 Statement/Evidence must be reused when valid; do not create duplicate facts merely to retry Placement.
+- Provider latency and model failures must be reported separately from Surface/Core timing.
+- No Stitch, multi-layer semantic Placement, Cursor, semantic route, graph/vector/embedding, exact polygon production path, or persistent traversal state.
+- Final delivery commit must be included in the ownership manifest before bundle creation.
 
 ## Gate discipline
 

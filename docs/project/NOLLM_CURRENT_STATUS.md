@@ -4,9 +4,9 @@ Date: 2026-07-15
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_C_A_O_L_D_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_RECALL_TASK_20260715.md
-status: CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_IN_PROGRESS
-input HEAD: 5a453847747a7f460ce37df044dec50c554b494b
+task: NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md
+status: CAOLD_LEGAL_TRAVERSAL_P1_DENSE_LIVE_IN_PROGRESS
+input HEAD: 2e779764cde6fbb1ef228444edfd55bd157b2b52
 ```
 
 Preserved checkpoint capability:
@@ -95,4 +95,14 @@ no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding
 
 The broad Policy, safe writable radius, dense synthetic evidence, and plugin
 contract are established. P1 and dense OpenClaw Live remain open. Progress is
-recorded in `docs/project/CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_REPORT.md`.
+recorded in `docs/project/CAOLD_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_REPORT.md`.
+
+Current closure audit:
+
+```text
+the input manifest omitted validation/caold_openclaw_live_validation.json;
+Core currently enforces the active writable radius during generic mutation;
+Surface prompts currently advertise actions that are illegal in some states;
+the failed P1 Statement dream:b93c2e97...5745 must be inventoried and reused before any new Formation;
+code, deterministic fixtures, provider failures, and live outcomes remain separate evidence classes.
+```
