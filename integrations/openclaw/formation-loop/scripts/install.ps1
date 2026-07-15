@@ -28,7 +28,10 @@ if (-not (Test-Path $pythonExecutable)) { throw "Python executable not found: $p
 & $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-json-p1
 & $OpenClaw config set plugins.entries.nollm-formation.config.persist_subagent_transcripts false
 & $OpenClaw config set plugins.entries.nollm-formation.config.geometry_profile default_dream_v1
-& $OpenClaw config set plugins.entries.nollm-formation.config.geometry_contract_version nollm_rotated_physical_field_v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.geometry_contract_version nollm_translation_normalized_physical_coverage_v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.coordinate_domain_version nollm_signed64_default_chart_null_phase_v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.physical_residual_schema_version nollm_physical_coverage_residual_v1
+& $OpenClaw config set plugins.entries.nollm-formation.config.surface_wire_version nollm_openclaw_translation_normalized_surface_traversal_v1
 if ($Model) { & $OpenClaw config set plugins.entries.nollm-formation.config.model $Model }
 if ($StatementWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.statement_store_workspace $StatementWorkspace }
 if ($MemoryWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.config.memory_workspace $MemoryWorkspace }

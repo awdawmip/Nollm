@@ -43,6 +43,8 @@ def test_candidates_are_unique_bounded_content_independent_and_have_six_laterals
 def test_new_local_rejects_an_occupied_lateral_without_writing(tmp_path):
     with AccessMemoryLoop(tmp_path) as loop:
         first = apply(loop, "a1", "origin", "expand_surface", "placement:expand:0")
+        assert set(first["operation_timing"]) == {"decision_validation_ms", "statement_persist_ms", "placement_apply_ms", "handle_bind_ms"}
+        assert all(type(value) is int and value >= 0 for value in first["operation_timing"].values())
         entry = first["handle"]["geometry_address"]
         occupied = apply(loop, "a2", "occupied", "new_local", "placement:lateral:0", entry)
         with pytest.raises(ValueError, match="occupied candidate"):

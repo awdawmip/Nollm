@@ -117,10 +117,14 @@ def test_forced_coarse_surface_uses_coverage_descent(tmp_path):
     result = build_recall_prompt("release", str(tmp_path), "recall:coarse", budget)
     assert result["surface"]["active_order"] == 8
     assert result["surface"]["overflow"] is True
+    assert '"action":"open_surface_cell"' in result["prompt"]
+    assert '"action":"open_physical_entries"' not in result["prompt"]
     for expected_order in range(7, -1, -1):
         candidate = result["surface"]["surface_cells"][0]["candidate_id"]
         result = advance_recall_traversal("release", result["traversal_state"], navigation("open_surface_cell", candidate), str(tmp_path))
         assert result["surface"]["current_order"] == expected_order
+    assert '"action":"open_physical_entries"' in result["prompt"]
+    assert '"action":"open_surface_cell"' not in result["prompt"]
     candidate = result["surface"]["surface_cells"][0]["candidate_id"]
     result = advance_recall_traversal("release", result["traversal_state"], navigation("open_physical_entries", candidate), str(tmp_path))
     entry_candidate = result["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]

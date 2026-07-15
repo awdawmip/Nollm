@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from time import perf_counter_ns
 
 from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, PhysicalFieldScope
 
@@ -122,20 +123,32 @@ class AccessMemoryLoop:
         if type(statement) is not MemoryStatement:
             raise TypeError("statement must be MemoryStatement")
         self._require_request(request_id)
+        decision_started = perf_counter_ns()
         candidates = self.placement_candidates(selected_entry, request_id + ":candidates", scope)
         decision, public_action, selected = self._decision(placement, statement, request_id, candidates)
+        decision_validation_ms = (perf_counter_ns() - decision_started) // 1_000_000
         if decision is None:
-            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0}
+            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0}}
         statement_store = FileStatementStore(self._workspace)
         existed_before = statement_store.exists(statement.statement_id)
         with self._runtime() as access:
+            persist_started = perf_counter_ns()
             access.capture(statement)
+            statement_persist_ms = (perf_counter_ns() - persist_started) // 1_000_000
             try:
+                apply_started = perf_counter_ns()
                 result = access.apply(decision)
+                placement_apply_ms = (perf_counter_ns() - apply_started) // 1_000_000
             except Exception:
                 if not existed_before:
                     statement_store.discard_new(statement)
                 raise
+            bind_started = perf_counter_ns()
+            if type(result) is AtomHandle:
+                binding = access.handle_store.binding_for_handle(result)
+                if binding.current_statement_id != statement.statement_id:
+                    raise RuntimeError("placement HandleBinding verification failed")
+            handle_bind_ms = (perf_counter_ns() - bind_started) // 1_000_000
         return {
             "outcome": "applied",
             "statement_id": statement.statement_id,
@@ -143,6 +156,12 @@ class AccessMemoryLoop:
             "candidate_id": selected["candidate_id"] if selected is not None else None,
             "handle": result.to_mapping() if type(result) is AtomHandle else None,
             "core_write_count": 1 if public_action in {"new_local", "expand_surface", "revision_current"} else 0,
+            "operation_timing": {
+                "decision_validation_ms": decision_validation_ms,
+                "statement_persist_ms": statement_persist_ms,
+                "placement_apply_ms": placement_apply_ms,
+                "handle_bind_ms": handle_bind_ms,
+            },
         }
 
     def binding(self, statement_id: str) -> dict[str, object]:

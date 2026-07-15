@@ -245,17 +245,24 @@ def _traversal_prompt(
     subject: str,
     surface: dict[str, object],
 ) -> str:
+    current_order = surface.get("current_order")
+    if type(current_order) is not int or current_order < 0:
+        raise FormationAdapterError("invalid_surface", "Surface current_order is invalid")
+    locality_action = (
+        f'{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_physical_entries","candidate_id":"one visible Order 0 Surface id"}}'
+        if current_order == 0
+        else f'{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_surface_cell","candidate_id":"one visible id"}}'
+    )
     return f"""You are a private background {mode} Surface navigation agent. The user will never see this run.
 The initial Surface order was selected only from Core geometry and fixed budgets before this subject was shown. Choose only a candidate_id visible on this page. Do not invent geometry, topics, indexes, vectors, graphs, entities, or hidden entry hints. Do not call tools or reveal reasoning.
-Truncated coarse cells are navigation hints only. At Order 0, open physical entries before choosing an entry.
+Truncated coarse cells are navigation hints only. The listed actions are the complete legal action set for current_order={current_order}.
 Return exactly one raw JSON object with no markdown.
 Schema version: {TRAVERSAL_SCHEMA_VERSION}
 Allowed responses:
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"continue_page"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_surface_cell","candidate_id":"one visible id"}}
+{locality_action}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"request_coarser_surface"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_physical_entries","candidate_id":"one visible Order 0 Surface id"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
 subject: {subject}
