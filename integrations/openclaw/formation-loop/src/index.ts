@@ -10,10 +10,10 @@ export type DreamConfig = {
   enabled?: boolean; python_executable?: string; nollm_repo_root?: string;
   statement_store_workspace?: string; write_mode?: "shadow" | "statement-store";
   memory_workspace?: string;
-  geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_translation_normalized_physical_coverage_v1";
-  coordinate_domain_version?: "nollm_signed64_default_chart_null_phase_v1";
-  physical_residual_schema_version?: "nollm_physical_coverage_residual_v1";
-  surface_wire_version?: "nollm_openclaw_translation_normalized_surface_traversal_v1";
+  geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_bounded_approximate_hex_coverage_v1";
+  coordinate_domain_version?: "nollm_hex_radius_2p31_default_chart_null_phase_v1";
+  physical_residual_schema_version?: "nollm_bounded_approximate_coverage_residual_v1";
+  surface_wire_version?: "nollm_openclaw_bounded_approximate_surface_traversal_v1";
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -28,10 +28,10 @@ const JSON_SCHEMA = {
   properties: {
     enabled: { type: "boolean", default: true }, python_executable: { type: "string" }, nollm_repo_root: { type: "string" },
     statement_store_workspace: { type: "string" }, memory_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
-    geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_translation_normalized_physical_coverage_v1", default: "nollm_translation_normalized_physical_coverage_v1" },
-    coordinate_domain_version: { type: "string", const: "nollm_signed64_default_chart_null_phase_v1", default: "nollm_signed64_default_chart_null_phase_v1" },
-    physical_residual_schema_version: { type: "string", const: "nollm_physical_coverage_residual_v1", default: "nollm_physical_coverage_residual_v1" },
-    surface_wire_version: { type: "string", const: "nollm_openclaw_translation_normalized_surface_traversal_v1", default: "nollm_openclaw_translation_normalized_surface_traversal_v1" },
+    geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_bounded_approximate_hex_coverage_v1", default: "nollm_bounded_approximate_hex_coverage_v1" },
+    coordinate_domain_version: { type: "string", const: "nollm_hex_radius_2p31_default_chart_null_phase_v1", default: "nollm_hex_radius_2p31_default_chart_null_phase_v1" },
+    physical_residual_schema_version: { type: "string", const: "nollm_bounded_approximate_coverage_residual_v1", default: "nollm_bounded_approximate_coverage_residual_v1" },
+    surface_wire_version: { type: "string", const: "nollm_openclaw_bounded_approximate_surface_traversal_v1", default: "nollm_openclaw_bounded_approximate_surface_traversal_v1" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },

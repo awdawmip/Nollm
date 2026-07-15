@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Invisible Dream Agent",
   "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "activation": {
     "onStartup": true
   },
@@ -18,10 +18,10 @@
       "statement_store_workspace": { "type": "string" },
       "memory_workspace": { "type": "string" },
       "geometry_profile": { "type": "string", "const": "default_dream_v1", "default": "default_dream_v1" },
-      "geometry_contract_version": { "type": "string", "const": "nollm_translation_normalized_physical_coverage_v1", "default": "nollm_translation_normalized_physical_coverage_v1" },
-      "coordinate_domain_version": { "type": "string", "const": "nollm_signed64_default_chart_null_phase_v1", "default": "nollm_signed64_default_chart_null_phase_v1" },
-      "physical_residual_schema_version": { "type": "string", "const": "nollm_physical_coverage_residual_v1", "default": "nollm_physical_coverage_residual_v1" },
-      "surface_wire_version": { "type": "string", "const": "nollm_openclaw_translation_normalized_surface_traversal_v1", "default": "nollm_openclaw_translation_normalized_surface_traversal_v1" },
+      "geometry_contract_version": { "type": "string", "const": "nollm_bounded_approximate_hex_coverage_v1", "default": "nollm_bounded_approximate_hex_coverage_v1" },
+      "coordinate_domain_version": { "type": "string", "const": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "default": "nollm_hex_radius_2p31_default_chart_null_phase_v1" },
+      "physical_residual_schema_version": { "type": "string", "const": "nollm_bounded_approximate_coverage_residual_v1", "default": "nollm_bounded_approximate_coverage_residual_v1" },
+      "surface_wire_version": { "type": "string", "const": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "default": "nollm_openclaw_bounded_approximate_surface_traversal_v1" },
       "write_mode": { "type": "string", "enum": ["shadow", "statement-store"], "default": "shadow" },
       "model_mode": { "type": "string", "enum": ["inherit", "dedicated"], "default": "inherit" },
       "model": { "type": "string" },
@@ -58,5 +58,5 @@
     },
     "additionalProperties": false
   },
-  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_translation_normalized_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_translation_normalized_physical_coverage_v1", "coordinateDomainVersion": "nollm_signed64_default_chart_null_phase_v1", "physicalResidualSchemaVersion": "nollm_physical_coverage_residual_v1" }
+  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
 }

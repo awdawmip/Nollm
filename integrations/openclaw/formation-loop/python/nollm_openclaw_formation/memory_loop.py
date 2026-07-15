@@ -19,7 +19,7 @@ from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
 
 
-TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_translation_normalized_surface_traversal_v1"
+TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_bounded_approximate_surface_traversal_v1"
 PHYSICAL_ENTRY_SCHEMA_VERSION = "nollm_openclaw_single_physical_entry_recall_v1"
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_surface_recall_v1"
