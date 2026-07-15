@@ -397,6 +397,7 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "generate_compiled_templates.py": "lab:compiled-templates",
             "run_broad_residue_coverage_calibration.py": "lab:broad-residue-calibration",
             "run_safe_writable_field_validation.py": "lab:safe-writable-field",
+            "run_dense_locality_surface_validation.py": "lab:dense-locality-surface",
         }
         role = "active tool" if name in active_tools else "active library"
         asset_class = "ACTIVE_TOOL" if role == "active tool" else "ACTIVE_LIBRARY"

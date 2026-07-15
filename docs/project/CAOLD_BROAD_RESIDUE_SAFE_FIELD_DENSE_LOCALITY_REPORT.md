@@ -31,11 +31,10 @@ These values are audit inputs, not substituted Full Gate results. Gate 1 must re
 | 0 authority and status | complete | active pointers and canonical ledger corrected |
 | 1 broad calibration | complete | 2,048 exact fixtures and 20k diagnostics passed |
 | 2 safe writable field | complete | 48 boundary sources and two-step closure passed |
-| 3 occupancy semantics | pending | none |
-| 4 dense field | pending | none |
-| 5 dense single-entry Recall | pending | none |
-| 6 OpenClaw live | pending | none |
-| 7 final evidence and delivery | pending | none |
+| 3 occupancy semantics and dense field | complete | count bands and 300-cell/1000-atom fixtures passed |
+| 4 dense single-entry Recall | pending | none |
+| 5 OpenClaw live | pending | none |
+| 6 final evidence and delivery | pending | none |
 
 ## Portability
 
@@ -63,3 +62,20 @@ The public contract `nollm_hex_storage_2p31_writable_2p30_depth2_v1` separates s
 `validation/caold_safe_writable_field_validation.json` covers six hex boundary directions across all eight phases. It traversed 336 single-step and 816 second-step retained members. The maximum second-step radius was 1,693,666,955, leaving a storage margin of 453,816,692. All checks passed, including atomic rejection and Q40-kernel closure.
 
 The existing live workspace `C:\Users\Administrator\.openclaw\memory\nollm-v39-bounded-approximate-v1-migrated` was inventoried read-only: 12 occupied cells, maximum radius 24, and zero storage-only cells. Its state SHA-256 remained `249DBD8ED87395EBD2BE123882106B7F4E5089AAF58A666C86E85EA7845249BD` before and after inspection.
+
+## Gate 3: Occupancy And Dense Surface
+
+The former `density_state` API and wire field were removed. Core now exposes `occupancy_band`, whose `normal`, `dense`, and `overloaded` labels are determined only by exact atom counts. Access candidates expose `occupancy: {count, band}` and make no physical-density, importance, confidence, or semantic-crowding claim.
+
+The first dense run exposed repeated full `bindings.json` reads for every handle. `FileHandleStore.bindings_for_handles` now performs one canonical load per bounded preview operation; Surface output is unchanged. The optimized targeted regressions passed 11/11.
+
+The canonical evidence is `validation/caold_dense_locality_surface_validation.json`.
+
+| Fixture | Occupied cells | Atoms | Selected order | Overflow | Cold begin | Max continuation |
+|---|---:|---:|---:|---|---:|---:|
+| dense cells | 300 | 300 | 8 | true | 1,116.24 ms | 95.50 ms |
+| dense atoms | 300 | 1,000 | 8 | true | 533.35 ms | 259.90 ms |
+
+For the 1,000-atom fixture, `N0..N8` occupied counts were `300, 248, 210, 175, 153, 138, 130, 120, 112`; every order retained aggregate mass `65,536,000`. The result exposed 31 truncated Surface cells, a one-candidate physical-entry page, exact cache-clear/reopen identity, and correct mutation invalidation. The fallback remained truthfully overflowed because Order 8 still exceeded the 48-cell active budget.
+
+The structural fixture additionally covered six sparse cells, two 19-cell unrelated localities with no Bridge, and six boundary cells at radius `1,073,737,727`, all inside the writable field. No semantic index or persisted locality mapping was used.

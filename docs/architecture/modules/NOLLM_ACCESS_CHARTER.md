@@ -4,6 +4,7 @@ Purpose: form statements, decide placement/recall entry, format recall, and own 
 
 - Persistent state: Core handles, policy configuration, optional current/history references.
 - Temporary state: bounded candidate context and pending decisions.
+- Dense-locality views expose finite Statement previews and truthful occupancy count/band fields. Access does not reinterpret them as physical or semantic density.
 - Public API: reuse/new/revision/stitch/defer/forget mappings to Core public commands.
 - Dream formation: a real Host LLM may rewrite, split, merge, or defer bounded temporary `ConversationMaterial`; Access validates only schema, exact types, canonical ordering, identity, and character/count budgets.
 - Persistent semantic contract: `StatementStore` stores canonical `MemoryStatement` bytes. `EvidenceStore` and exact-span Formation remain compatibility/migration assets and new compatibility writes use the statement schema.

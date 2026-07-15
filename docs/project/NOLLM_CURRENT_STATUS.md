@@ -49,6 +49,17 @@ dominant agreement 98.97%, max fanout 7, Q16 partition error 0;
 17,036 diagnostics valid, 2,964 boundary unsupported, 651 hit mismatches.
 ```
 
+Dense locality result:
+
+```text
+density_state removed; candidate occupancy is exact {count, band};
+300 occupied cells and 1,000 atoms validated;
+300-cell cold/continuation 1.116s/95.5ms;
+1,000-atom cold/continuation 0.533s/259.9ms;
+31 truncated Surface cells; reopen identity and mutation invalidation passed;
+Order 8 overflow remains truthful at 112 aggregate cells.
+```
+
 Current legal boundary:
 
 ```text
