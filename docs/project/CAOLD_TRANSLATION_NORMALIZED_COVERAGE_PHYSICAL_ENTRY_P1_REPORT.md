@@ -272,3 +272,42 @@ Scope added: none.
 Deviation above 5%: none.
 Gate 5 authorized after the final focused assertion rerun.
 ```
+
+## Gate 5
+
+The synthetic cross-layer fixture has no Bridge and does not allow lateral
+substitution in its direct control request. With Coverage disabled, only the
+entry Statement is returned. With `coverage_down` enabled, the adjacent-layer
+Statement is returned with path `("coverage_down",)`; a far physical target is
+not returned.
+
+The same fixture is projected into an Order 0 Surface Cell containing at least
+two physical candidates. Access explicitly selects the source-layer physical
+candidate and performs one-entry Recall. Cache deletion and runtime reopen
+produce the same statement/path sequence. A second fixture at
+`q=10^14,r=-10^14` proves `coverage_up` Recall and reopen inside the declared
+signed-64 domain.
+
+Gate 5 evidence:
+
+```text
+cross-layer focused tests: 2 passed
+entry count per Recall request: 1
+multi-physical candidate count: >=2
+Coverage disabled cross-layer hit: absent
+Coverage enabled cross-layer path: coverage_down
+large-coordinate path: coverage_up
+Bridge fixture count: 0
+wrong far candidate hit: absent
+cache-clear/reopen statement-path sequence: identical
+```
+
+Gate result:
+
+```text
+Actual modules affected: Access/Lab-style synthetic tests and report only.
+Actual progress: C/A/O/L single physical-entry composition is evidenced.
+Scope added: none.
+Deviation above 5%: none.
+Gate 6 authorized: yes.
+```
