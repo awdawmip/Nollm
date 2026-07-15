@@ -44,7 +44,7 @@ GATED_ASSET_CLASSES = {
 VALIDATION_GATES = {
     "package:core", "package:snapshot", "package:trace", "package:access",
     "governance:m0", "governance:architecture", "compatibility:grf",
-    "lab:compiled-templates", "lab:geometry-parity", "lab:broad-residue-calibration", "lab:safe-writable-field", "lab:dense-locality-surface", "lab:core-capability",
+    "lab:compiled-templates", "lab:geometry-parity", "lab:broad-residue-calibration", "lab:safe-writable-field", "lab:dense-locality-surface", "lab:dense-single-entry-recall", "lab:natural-multi-entry-observation", "lab:core-capability",
     "lab:minimal-e2e", "lab:adaptive-surface", "lab:rotated-layer0-migration",
     "lab:rotated-surface-coarsening", "lab:translation-covariant-migration",
     "lab:translation-normalized-migration", "lab:bounded-approximate-migration",
@@ -65,6 +65,8 @@ GATE_TARGETS = {
     "lab:broad-residue-calibration": "lab/nollm-lab/geometry/run_broad_residue_coverage_calibration.py",
     "lab:safe-writable-field": "lab/nollm-lab/geometry/run_safe_writable_field_validation.py",
     "lab:dense-locality-surface": "lab/nollm-lab/geometry/run_dense_locality_surface_validation.py",
+    "lab:dense-single-entry-recall": "lab/nollm-lab/geometry/run_dense_single_entry_recall_validation.py",
+    "lab:natural-multi-entry-observation": "lab/nollm-lab/geometry/run_natural_multi_entry_observation.py",
     "lab:core-capability": "lab/nollm-lab/m1/run_core_capability_validation.py",
     "lab:minimal-e2e": "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
     "lab:adaptive-surface": "lab/nollm-lab/m1/run_adaptive_surface_validation.py",

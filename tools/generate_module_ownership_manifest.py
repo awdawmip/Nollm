@@ -398,6 +398,8 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "run_broad_residue_coverage_calibration.py": "lab:broad-residue-calibration",
             "run_safe_writable_field_validation.py": "lab:safe-writable-field",
             "run_dense_locality_surface_validation.py": "lab:dense-locality-surface",
+            "run_dense_single_entry_recall_validation.py": "lab:dense-single-entry-recall",
+            "run_natural_multi_entry_observation.py": "lab:natural-multi-entry-observation",
         }
         role = "active tool" if name in active_tools else "active library"
         asset_class = "ACTIVE_TOOL" if role == "active tool" else "ACTIVE_LIBRARY"

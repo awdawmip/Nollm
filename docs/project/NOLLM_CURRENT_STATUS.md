@@ -60,6 +60,17 @@ density_state removed; candidate occupancy is exact {count, band};
 Order 8 overflow remains truthful at 112 aggregate cells.
 ```
 
+Dense single-entry Recall result:
+
+```text
+301 occupied cells and 1,000 atoms;
+one entry A, 59 unique bounded results, target score 49,152;
+target path coverage_down; disabled kernels do not reach target;
+direct and coverage_down+lateral geometry deduplicates to one target item;
+natural entry B did not emerge; observation minimum is zero;
+no combined request, semantic index, or persisted fact-to-entry mapping.
+```
+
 Current legal boundary:
 
 ```text

@@ -26,6 +26,8 @@ class AccessRecallRequest:
         if len(set(projected)) != len(projected): raise ValueError("entry cell projections must be unique")
         if not self.entry_cells and not self.entry_handles:
             raise ValueError("explicit entry_cells or entry_handles are required")
+        if any(cell.profile_id == "default_dream_v1" for cell in projected) and len(projected) != 1:
+            raise ValueError("active default_dream_v1 Recall requires exactly one physical entry")
 
     def to_core_request(self) -> CoreRecallRequest:
         cells = tuple(sorted((*self.entry_cells, *(handle.geometry_address for handle in self.entry_handles)), key=lambda item: item.stable_key()))

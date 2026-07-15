@@ -32,7 +32,7 @@ These values are audit inputs, not substituted Full Gate results. Gate 1 must re
 | 1 broad calibration | complete | 2,048 exact fixtures and 20k diagnostics passed |
 | 2 safe writable field | complete | 48 boundary sources and two-step closure passed |
 | 3 occupancy semantics and dense field | complete | count bands and 300-cell/1000-atom fixtures passed |
-| 4 dense single-entry Recall | pending | none |
+| 4 dense single-entry Recall | complete | kernel on/off, dedup, and nonblocking observation passed |
 | 5 OpenClaw live | pending | none |
 | 6 final evidence and delivery | pending | none |
 
@@ -79,3 +79,11 @@ The canonical evidence is `validation/caold_dense_locality_surface_validation.js
 For the 1,000-atom fixture, `N0..N8` occupied counts were `300, 248, 210, 175, 153, 138, 130, 120, 112`; every order retained aggregate mass `65,536,000`. The result exposed 31 truncated Surface cells, a one-candidate physical-entry page, exact cache-clear/reopen identity, and correct mutation invalidation. The fallback remained truthfully overflowed because Order 8 still exceeded the 48-cell active budget.
 
 The structural fixture additionally covered six sparse cells, two 19-cell unrelated localities with no Bridge, and six boundary cells at radius `1,073,737,727`, all inside the writable field. No semantic index or persisted locality mapping was used.
+
+## Gate 4: Dense Single-Entry Recall
+
+`validation/caold_dense_single_entry_recall_validation.json` contains a deterministic fixture with 301 occupied physical cells and 1,000 atoms. Only 63 bounded Statements were bound for readable output; the remaining atoms are structural interference and are not semantic routes.
+
+Entry A was submitted alone with `coverage_down` and `lateral`. Recall returned 59 unique handles within the 64-result budget, including the target at score 49,152 with canonical path `coverage_down`. The target Cell also has `coverage_down+lateral` alternatives through neighboring first-step targets, but the target appeared once. With all geometry kernels disabled, Recall returned only the direct entry and did not reach the target. `budget_exhausted=true` truthfully reports further structural interference beyond the bounded result set.
+
+The active `default_dream_v1` Access request now rejects more than one final physical entry. The separate natural-entry observation is replayed by `run_natural_multi_entry_observation.py` and stored in `validation/caold_natural_multi_entry_observation.json`. Entry A reached the target; no independent entry B emerged. The minimum required count is zero, and the runner confirms no combined A+B request and no persisted fact-to-entry mapping. This absence is not a failure and no fact was copied to manufacture a second entry.
