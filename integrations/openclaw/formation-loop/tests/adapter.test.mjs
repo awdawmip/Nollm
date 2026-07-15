@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -21,6 +21,10 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.contracts.physicalEntryWire, "nollm_openclaw_single_physical_entry_recall_v1");
   assert.equal(manifest.contracts.surfaceWire, "nollm_openclaw_bounded_approximate_surface_traversal_v1");
   assert.equal(manifest.configSchema.properties.surface_wire_version.const, manifest.contracts.surfaceWire);
+  assert.equal(manifest.configSchema.properties.active_semantic_write_policy_version.const, manifest.contracts.activeSemanticWritePolicyVersion);
+  assert.equal(manifest.configSchema.properties.surface_legal_actions_contract_version.const, manifest.contracts.surfaceLegalActionsContractVersion);
+  assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
+  assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
   assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
   assert.equal(manifest.configSchema.properties.surface_max_order.maximum, 8);
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);
@@ -178,6 +182,24 @@ test("Placement retries only JSON and schema failures", () => {
   assert.equal(placementRetryable({ ok: false, error: "invalid_schema" }), true);
   assert.equal(placementRetryable({ ok: false, error: "invalid_input" }), false);
   assert.equal(placementRetryable({ ok: false, error: "bridge_process_error" }), false);
+});
+
+test("Traversal correction is bounded to recoverable model decisions", () => {
+  assert.equal(traversalRetryable({ ok: false, error: "invalid_json" }), true);
+  assert.equal(traversalRetryable({ ok: false, error: "invalid_surface_traversal" }), true);
+  assert.equal(traversalRetryable({ ok: false, error: "bridge_process_error" }), false);
+  const prompt = traversalCorrectionPrompt("Allowed responses:\n{\"action\":\"none\"}", "bad", { error: "invalid_surface_traversal", message: "not legal" }, 1);
+  assert.match(prompt, /Correction attempt 1 of 2/);
+  assert.match(prompt, /Allowed responses/);
+  assert.match(prompt, /without changing traversal or memory state/);
+});
+
+test("Traversal evidence distinguishes correction, singleton skip, and provider timeout", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  for (const field of ["model_call_count", "invalid_decision_count", "correction_attempt_count", "correction_success", "provider_timeout_stage", "physical_entry_model_call_skipped"]) {
+    assert.equal(source.includes(field), true);
+  }
+  assert.match(source, /correction_attempt_count\) >= TRAVERSAL_CORRECTION_MAX_ATTEMPTS/);
 });
 
 test("plugin entry is an ordinary hook plugin", () => {

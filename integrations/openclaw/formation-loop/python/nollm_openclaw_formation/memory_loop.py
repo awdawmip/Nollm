@@ -139,7 +139,7 @@ def _advance(
         if action == "open_surface_cell":
             return _traversal_response(mode, subject, navigator, navigator.open_surface_cell(page, decision["candidate_id"]))
         if action == "open_physical_entries":
-            return _physical_entry_response(mode, subject, navigator, navigator.open_physical_entries(page, decision["candidate_id"]))
+            return _physical_entry_response(mode, subject, root, navigator, navigator.open_physical_entries(page, decision["candidate_id"]))
         if action == "request_coarser_surface":
             return _traversal_response(mode, subject, navigator, navigator.request_coarser_surface(page))
         if action == "return_to_parent":
@@ -174,7 +174,7 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
     decision = _traversal_decision(raw_response, page.legal_actions)
     action = decision["action"]
     if action == "continue_page":
-        return _physical_entry_response(mode, subject, navigator, navigator.continue_physical_entries(page))
+        return _physical_entry_response(mode, subject, root, navigator, navigator.continue_physical_entries(page))
     if action == "return_to_parent":
         return _traversal_response(mode, subject, navigator, navigator.page(page.state))
     if action in {"none", "defer"}:
@@ -183,20 +183,52 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
         raise ValueError("physical-entry traversal requires one shown entry selection")
     started = perf_counter()
     resolution = navigator.select_entry(page, decision["candidate_id"])
-    physical_entry_resolution_ms = round((perf_counter() - started) * 1000)
+    return _resolved_physical_entry(
+        mode,
+        subject,
+        root,
+        navigator,
+        page,
+        resolution,
+        round((perf_counter() - started) * 1000),
+        physical_entry_model_call_skipped=False,
+    )
+
+
+def _resolved_physical_entry(
+    mode,
+    subject,
+    root,
+    navigator,
+    page,
+    resolution,
+    physical_entry_resolution_ms,
+    *,
+    physical_entry_model_call_skipped,
+):
     entry = resolution.entry_cell
     if mode == "placement":
-        return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entry.to_mapping(), page, resolution.resolved_singleton)
+        return _placement_decision(
+            root,
+            _statement(json.loads(subject)),
+            page.state.operation_id,
+            entry.to_mapping(),
+            page,
+            resolution.resolved_singleton,
+            resolution.resolution_policy_id,
+            physical_entry_model_call_skipped,
+        )
     started = perf_counter()
-    recalled = navigator.recall_entry(state.operation_id, entry)
+    recalled = navigator.recall_entry(page.state.operation_id, entry)
     recall_core_ms = round((perf_counter() - started) * 1000)
     operation_timing = {
         "physical_entry_resolution_ms": physical_entry_resolution_ms,
+        "physical_entry_model_call_skipped": physical_entry_model_call_skipped,
         "recall_core_ms": recall_core_ms,
     }
     candidates = list(recalled.items)
     if not candidates:
-        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "resolved_singleton": resolution.resolved_singleton, "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "physical_entries": page.to_mapping(), "operation_timing": operation_timing}
+        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "resolved_singleton": resolution.resolved_singleton, "resolution_policy_id": resolution.resolution_policy_id, "physical_entry_model_call_skipped": physical_entry_model_call_skipped, "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "physical_entries": page.to_mapping(), "operation_timing": operation_timing}
     prompt = _recall_selection_prompt(subject, candidates)
     return {
         "status": "recall_decision",
@@ -206,6 +238,8 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
         "candidates": candidates,
         "entry_cell": entry.to_mapping(),
         "resolved_singleton": resolution.resolved_singleton,
+        "resolution_policy_id": resolution.resolution_policy_id,
+        "physical_entry_model_call_skipped": physical_entry_model_call_skipped,
         "core_recall": {"budget_exhausted": recalled.budget_exhausted},
         "operation_timing": operation_timing,
         "physical_entries": page.to_mapping(),
@@ -229,8 +263,21 @@ def _traversal_response(
     }
 
 
-def _physical_entry_response(mode, subject, navigator, page):
+def _physical_entry_response(mode, subject, root, navigator, page):
     physical = page.to_mapping()
+    if page.total_candidate_count == 1 and len(page.candidates) == 1 and not page.has_more:
+        started = perf_counter()
+        resolution = navigator.resolve_singleton_entry(page)
+        return _resolved_physical_entry(
+            mode,
+            subject,
+            root,
+            navigator,
+            page,
+            resolution,
+            round((perf_counter() - started) * 1000),
+            physical_entry_model_call_skipped=True,
+        )
     prompt = _physical_entry_prompt(mode, subject, physical)
     state = {
         "surface_state": navigator.state_to_mapping(page.state),
@@ -336,6 +383,8 @@ def _placement_decision(
     selected_entry: object,
     page: object,
     resolved_singleton: bool | None = None,
+    resolution_policy_id: str | None = None,
+    physical_entry_model_call_skipped: bool = False,
 ) -> dict[str, object]:
     with AccessMemoryLoop(root) as loop:
         candidates = loop.placement_candidates(selected_entry, request_id + ":placement-candidates")
@@ -360,6 +409,8 @@ placement_candidates: {json.dumps(prompt_candidates, ensure_ascii=False, sort_ke
         "candidates": prompt_candidates,
         "selected_entry": selected_entry,
         "resolved_singleton": resolved_singleton,
+        "resolution_policy_id": resolution_policy_id,
+        "physical_entry_model_call_skipped": physical_entry_model_call_skipped,
     }
     result["physical_entries" if resolved_singleton is not None else "surface"] = page.to_mapping()
     return result

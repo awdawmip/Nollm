@@ -71,20 +71,15 @@ def test_recall_traverses_surface_then_renders_hidden_context(tmp_path):
         navigation("open_physical_entries", candidate),
         str(tmp_path),
     )
-    assert physical["status"] == "physical_entry"
-    entry_candidate = physical["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]
-    recalled = advance_recall_traversal(
-        "When is the release window?",
-        physical["traversal_state"],
-        navigation("select_entry", entry_candidate),
-        str(tmp_path),
-    )
+    recalled = physical
     assert recalled["status"] == "recall_decision"
     assert recalled["entry_cell"] == CELL
     assert recalled["resolved_singleton"] is True
     assert set(recalled["core_recall"]) == {"budget_exhausted"}
-    assert set(recalled["operation_timing"]) == {"physical_entry_resolution_ms", "recall_core_ms"}
-    assert all(value >= 0 for value in recalled["operation_timing"].values())
+    assert set(recalled["operation_timing"]) == {"physical_entry_resolution_ms", "physical_entry_model_call_skipped", "recall_core_ms"}
+    assert recalled["operation_timing"]["physical_entry_model_call_skipped"] is True
+    assert recalled["physical_entry_model_call_skipped"] is True
+    assert recalled["resolution_policy_id"] == "mechanical_singleton_physical_entry_v1"
     assert "entry_cells" not in recalled
     assert "per_entry_core_recall" not in recalled
     assert recalled["candidates"][0]["path"] == []
@@ -134,8 +129,6 @@ def test_forced_coarse_surface_uses_coverage_descent(tmp_path):
     assert "open_physical_entries" in result["surface"]["legal_actions"]
     candidate = result["surface"]["surface_cells"][0]["candidate_id"]
     result = advance_recall_traversal("release", result["traversal_state"], navigation("open_physical_entries", candidate), str(tmp_path))
-    entry_candidate = result["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]
-    result = advance_recall_traversal("release", result["traversal_state"], navigation("select_entry", entry_candidate), str(tmp_path))
     assert result["status"] == "recall_decision"
 
 
@@ -148,8 +141,7 @@ def test_unshown_candidate_and_malformed_navigation_do_not_execute(tmp_path):
     with pytest.raises(FormationAdapterError, match="not legal for the current page"):
         advance_recall_traversal("release", built["traversal_state"], navigation("select_entry", surface_candidate), str(tmp_path))
     physical = advance_recall_traversal("release", built["traversal_state"], navigation("open_physical_entries", surface_candidate), str(tmp_path))
-    with pytest.raises(FormationAdapterError, match="unavailable physical-entry"):
-        advance_recall_traversal("release", physical["traversal_state"], navigation("select_entry", "physical-entry:invented"), str(tmp_path))
+    assert physical["physical_entry_model_call_skipped"] is True
     with pytest.raises(FormationAdapterError, match="fields"):
         advance_recall_traversal("release", built["traversal_state"], json.dumps({"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "none", "candidate_id": "x"}), str(tmp_path))
 
@@ -176,8 +168,7 @@ def test_recall_rejects_multi_entry_and_propagates_from_one_entry(tmp_path):
     physical = advance_recall_traversal(
         "release", built["traversal_state"], navigation("open_physical_entries", shown[0]), str(tmp_path)
     )
-    entry_candidate = physical["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]
-    recalled = advance_recall_traversal("release", physical["traversal_state"], navigation("select_entry", entry_candidate), str(tmp_path))
+    recalled = physical
     assert recalled["entry_cell"]["profile_id"] == "default_dream_v1"
     assert {item["statement_id"] for item in recalled["candidates"]} == {"dream:test", "dream:second"}
 
@@ -202,8 +193,8 @@ def test_malformed_existing_handle_is_retryable_schema_failure_without_orphan(tm
         navigation("open_physical_entries", surface_candidate),
         str(tmp_path),
     )
-    entry_candidate = physical["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]
-    built = advance_placement_traversal(second, physical["traversal_state"], navigation("select_entry", entry_candidate), str(tmp_path))
+    built = physical
+    assert built["physical_entry_model_call_skipped"] is True
     candidate = built["candidates"][0]
     raw = json.dumps({
         "schema_version": PLACEMENT_SCHEMA_VERSION,

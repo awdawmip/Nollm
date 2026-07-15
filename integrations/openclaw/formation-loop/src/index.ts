@@ -17,6 +17,10 @@ export type DreamConfig = {
   storage_hex_radius?: 2147483647; active_writable_hex_radius?: 1073741823; max_coverage_down_steps?: 2;
   physical_residual_schema_version?: "nollm_bounded_approximate_coverage_residual_v1";
   surface_wire_version?: "nollm_openclaw_bounded_approximate_surface_traversal_v1";
+  active_semantic_write_policy_version?: "nollm_default_dream_layer0_safe_write_v1";
+  surface_legal_actions_contract_version?: "nollm_access_state_derived_surface_legal_actions_v1";
+  physical_entry_resolution_policy_version?: "mechanical_singleton_physical_entry_v1";
+  traversal_correction_max_attempts?: 2;
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -40,6 +44,10 @@ const JSON_SCHEMA = {
     max_coverage_down_steps: { type: "integer", const: 2, default: 2 },
     physical_residual_schema_version: { type: "string", const: "nollm_bounded_approximate_coverage_residual_v1", default: "nollm_bounded_approximate_coverage_residual_v1" },
     surface_wire_version: { type: "string", const: "nollm_openclaw_bounded_approximate_surface_traversal_v1", default: "nollm_openclaw_bounded_approximate_surface_traversal_v1" },
+    active_semantic_write_policy_version: { type: "string", const: "nollm_default_dream_layer0_safe_write_v1", default: "nollm_default_dream_layer0_safe_write_v1" },
+    surface_legal_actions_contract_version: { type: "string", const: "nollm_access_state_derived_surface_legal_actions_v1", default: "nollm_access_state_derived_surface_legal_actions_v1" },
+    physical_entry_resolution_policy_version: { type: "string", const: "mechanical_singleton_physical_entry_v1", default: "mechanical_singleton_physical_entry_v1" },
+    traversal_correction_max_attempts: { type: "integer", const: 2, default: 2 },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
@@ -52,6 +60,8 @@ const JSON_SCHEMA = {
     placement_surface_max_pages: { type: "integer", minimum: 1, default: 6 }, placement_surface_max_cells: { type: "integer", minimum: 1, default: 48 }, placement_surface_max_projection_units: { type: "integer", minimum: 1, default: 240 }, placement_surface_max_calls: { type: "integer", minimum: 1, default: 32 },
   },
 } as const;
+
+export const TRAVERSAL_CORRECTION_MAX_ATTEMPTS = 2;
 
 export function surfaceBudget(config: DreamConfig, mode: "recall" | "placement"): Record<string, number> {
   const recall = mode === "recall";
@@ -219,10 +229,13 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!usableModel(model)) return;
     const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
     const operationStartedAt = Date.now();
-    const timing: Record<string, number | string | null> = {
+    const timing: Record<string, number | string | boolean | null> = {
       surface_build_ms: 0, surface_order_count: 0, surface_projection_count: 0,
       surface_page_count: 0, physical_entry_resolution_ms: 0, recall_core_ms: 0,
-      recall_agent_ms: 0, total_operation_ms: 0, timeout_stage: null,
+      physical_entry_model_call_skipped: false, recall_agent_ms: 0,
+      model_call_count: 0, invalid_decision_count: 0, correction_attempt_count: 0,
+      correction_success: false, provider_timeout_stage: null,
+      total_operation_ms: 0, timeout_stage: null,
     };
     let stageStartedAt = Date.now();
     let built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace, surface_budget: surfaceBudget(config, "recall") });
@@ -236,18 +249,31 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     let traversal = 0;
     while (built.ok === true && (built.status === "traverse" || built.status === "physical_entry") && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 24)) {
       surfacePath.push(built.surface ?? built.physical_entries);
+      const current = built;
       stageStartedAt = Date.now();
-      const step = await runHiddenAgent(built.prompt, model!, `${requestId}:surface:${traversal}`);
+      let step = await runHiddenAgent(current.prompt as string, model!, `${requestId}:surface:${traversal}`);
+      timing.model_call_count = Number(timing.model_call_count) + 1;
       timing.recall_agent_ms = Number(timing.recall_agent_ms) + Date.now() - stageStartedAt;
-      if (!step.raw) { timing.timeout_stage = "recall_surface_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
-      const wasPhysical = built.status === "physical_entry";
+      if (!step.raw) { timing.timeout_stage = "recall_surface_agent"; timing.provider_timeout_stage = "recall_surface_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
       stageStartedAt = Date.now();
-      built = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
-      if (wasPhysical) {
-        const accessTiming = built.operation_timing && typeof built.operation_timing === "object" ? built.operation_timing as Record<string, number> : {};
-        timing.physical_entry_resolution_ms = accessTiming.physical_entry_resolution_ms ?? Date.now() - stageStartedAt;
-        timing.recall_core_ms = accessTiming.recall_core_ms ?? 0;
+      let advanced = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
+      while (traversalRetryable(advanced)) {
+        timing.invalid_decision_count = Number(timing.invalid_decision_count) + 1;
+        if (Number(timing.correction_attempt_count) >= TRAVERSAL_CORRECTION_MAX_ATTEMPTS) break;
+        timing.correction_attempt_count = Number(timing.correction_attempt_count) + 1;
+        stageStartedAt = Date.now();
+        step = await runHiddenAgent(traversalCorrectionPrompt(current.prompt as string, step.raw, advanced, Number(timing.correction_attempt_count)), model!, `${requestId}:surface:${traversal}:correction:${timing.correction_attempt_count}`);
+        timing.model_call_count = Number(timing.model_call_count) + 1;
+        timing.recall_agent_ms = Number(timing.recall_agent_ms) + Date.now() - stageStartedAt;
+        if (!step.raw) { timing.timeout_stage = "recall_traversal_correction"; timing.provider_timeout_stage = "recall_traversal_correction"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_traversal_correction", request_id: requestId, error: step.error, operation_timing: timing }); return; }
+        advanced = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
+        if (advanced.ok === true) timing.correction_success = true;
       }
+      built = advanced;
+      const accessTiming = built.operation_timing && typeof built.operation_timing === "object" ? built.operation_timing as Record<string, unknown> : {};
+      if (typeof accessTiming.physical_entry_resolution_ms === "number") timing.physical_entry_resolution_ms = accessTiming.physical_entry_resolution_ms;
+      if (typeof accessTiming.recall_core_ms === "number") timing.recall_core_ms = accessTiming.recall_core_ms;
+      if (typeof accessTiming.physical_entry_model_call_skipped === "boolean") timing.physical_entry_model_call_skipped = accessTiming.physical_entry_model_call_skipped;
       traversal += 1;
     }
     if (built.ok === true && built.status === "complete_none") {
@@ -262,8 +288,9 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     stageStartedAt = Date.now();
     const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:recall-selection`);
+    timing.model_call_count = Number(timing.model_call_count) + 1;
     timing.recall_agent_ms = Number(timing.recall_agent_ms) + Date.now() - stageStartedAt;
-    if (!selected.raw) { timing.timeout_stage = "recall_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
+    if (!selected.raw) { timing.timeout_stage = "recall_agent"; timing.provider_timeout_stage = "recall_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
     const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
     timing.total_operation_ms = Date.now() - operationStartedAt;
     if (rendered.ok === true && rendered.outcome === "none") {
@@ -423,6 +450,15 @@ export function placementRetryable(parsed: Record<string, unknown>): boolean {
   return parsed.ok !== true && ["invalid_json", "invalid_schema"].includes(String(parsed.error ?? ""));
 }
 
+export function traversalRetryable(parsed: Record<string, unknown>): boolean {
+  return parsed.ok !== true && ["invalid_json", "invalid_surface_traversal"].includes(String(parsed.error ?? ""));
+}
+
+export function traversalCorrectionPrompt(originalPrompt: string, raw: string, parsed: Record<string, unknown>, attempt: number): string {
+  const rejected = JSON.stringify(raw).slice(0, 4096);
+  return `${originalPrompt}\n\nCorrection attempt ${attempt} of ${TRAVERSAL_CORRECTION_MAX_ATTEMPTS}. The previous response was rejected without changing traversal or memory state. Error: ${String(parsed.message ?? parsed.error ?? "invalid traversal decision")}. Rejected response: ${rejected}. Return exactly one action from the legal action list above, using a currently visible candidate_id when required.`;
+}
+
 export function shouldApplyPlacement(config: DreamConfig, parsed: Record<string, unknown>, model?: string): boolean {
   return parsed.ok === true && config.write_mode === "statement-store" && Boolean(config.statement_store_workspace) && Boolean(model) && Array.isArray(parsed.statements);
 }
@@ -464,12 +500,15 @@ async function runDreamSubagent(api: OpenClawPluginApi, config: DreamConfig, pro
 
 async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, sessionKey: string, statement: unknown, model: string, stableId: string, formationMs: number): Promise<void> {
   const operationStartedAt = Date.now();
-  const timing: Record<string, number | string | null> = {
+  const timing: Record<string, number | string | boolean | null> = {
     formation_ms: formationMs, statement_persist_ms: 0, surface_build_ms: 0,
     surface_order_count: 0, surface_projection_count: 0, surface_page_count: 0,
     placement_prompt_build_ms: 0, placement_subagent_ms: 0, placement_json_repair_ms: 0,
-    physical_entry_resolution_ms: 0, decision_validation_ms: 0, placement_apply_ms: 0,
-    handle_bind_ms: 0, total_operation_ms: 0, timeout_stage: null,
+    physical_entry_resolution_ms: 0, physical_entry_model_call_skipped: false,
+    decision_validation_ms: 0, placement_apply_ms: 0, handle_bind_ms: 0,
+    model_call_count: 0, invalid_decision_count: 0, correction_attempt_count: 0,
+    correction_success: false, provider_timeout_stage: null,
+    total_operation_ms: 0, timeout_stage: null,
   };
   const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
   const requestId = `placement-${createHash("sha256").update(`${stableId}\0${statementId}`).digest("hex")}`;
@@ -485,16 +524,32 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   let traversal = 0;
   while (built.ok === true && (built.status === "traverse" || built.status === "physical_entry") && typeof built.prompt === "string" && traversal < (config.placement_surface_max_calls ?? 32)) {
     surfacePath.push(built.surface ?? built.physical_entries);
+    const current = built;
     stageStartedAt = Date.now();
-    const step = await runDreamSubagent(api, config, built.prompt, model, `${requestId}:surface:${traversal}`);
+    let step = await runDreamSubagent(api, config, current.prompt as string, model, `${requestId}:surface:${traversal}`);
+    timing.model_call_count = Number(timing.model_call_count) + 1;
     timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + Date.now() - stageStartedAt;
-    if (!step?.raw) { timing.timeout_stage = "placement_surface_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId, operation_timing: timing }); return; }
-    const wasPhysical = built.status === "physical_entry";
+    if (!step?.raw) { timing.timeout_stage = "placement_surface_agent"; timing.provider_timeout_stage = "placement_surface_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId, operation_timing: timing }); return; }
     stageStartedAt = Date.now();
-    built = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+    let advanced = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+    while (traversalRetryable(advanced)) {
+      timing.invalid_decision_count = Number(timing.invalid_decision_count) + 1;
+      if (Number(timing.correction_attempt_count) >= TRAVERSAL_CORRECTION_MAX_ATTEMPTS) break;
+      timing.correction_attempt_count = Number(timing.correction_attempt_count) + 1;
+      stageStartedAt = Date.now();
+      step = await runDreamSubagent(api, config, traversalCorrectionPrompt(current.prompt as string, step.raw, advanced, Number(timing.correction_attempt_count)), model, `${requestId}:surface:${traversal}:correction:${timing.correction_attempt_count}`);
+      timing.model_call_count = Number(timing.model_call_count) + 1;
+      timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + Date.now() - stageStartedAt;
+      if (!step?.raw) { timing.timeout_stage = "placement_traversal_correction"; timing.provider_timeout_stage = "placement_traversal_correction"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_traversal_correction", request_id: requestId, operation_timing: timing }); return; }
+      advanced = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
+      if (advanced.ok === true) timing.correction_success = true;
+    }
+    built = advanced;
     const bridgeMs = Date.now() - stageStartedAt;
     timing.placement_prompt_build_ms = Number(timing.placement_prompt_build_ms) + bridgeMs;
-    if (wasPhysical) timing.physical_entry_resolution_ms = Number(timing.physical_entry_resolution_ms) + bridgeMs;
+    const accessTiming = built.operation_timing && typeof built.operation_timing === "object" ? built.operation_timing as Record<string, unknown> : {};
+    if (typeof accessTiming.physical_entry_resolution_ms === "number") timing.physical_entry_resolution_ms = accessTiming.physical_entry_resolution_ms;
+    if (typeof accessTiming.physical_entry_model_call_skipped === "boolean") timing.physical_entry_model_call_skipped = accessTiming.physical_entry_model_call_skipped;
     traversal += 1;
   }
   if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { timing.timeout_stage = "placement_prompt"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, surface_path: surfacePath, operation_timing: timing, ...built }); return; }
@@ -505,10 +560,11 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     const spawned = await api.runtime.subagent.run({ sessionKey: childSessionKey, message: built.prompt, ...(override ?? {}), lightContext: true, deliver: false, idempotencyKey: `${requestId}:agent` });
     const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
     timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + Date.now() - stageStartedAt;
-    if (waited.status !== "ok") { timing.timeout_stage = "placement_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: waited.error ?? waited.status, operation_timing: timing }); return; }
+    timing.model_call_count = Number(timing.model_call_count) + 1;
+    if (waited.status !== "ok") { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: waited.error ?? waited.status, operation_timing: timing }); return; }
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
     const raw = extractAssistantText(session.messages);
-    if (!raw) { timing.timeout_stage = "placement_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output", operation_timing: timing }); return; }
+    if (!raw) { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output", operation_timing: timing }); return; }
     stageStartedAt = Date.now();
     let applied = await applyPlacementAttempt(config, requestId, raw, statement, built.selected_entry);
     timing.placement_apply_ms = Date.now() - stageStartedAt;
@@ -516,6 +572,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     if (placementRetryable(applied)) {
       stageStartedAt = Date.now();
       const repaired = await runFormatRepair(api, config, raw, String(applied.error ?? "invalid_json"), model, `${requestId}:format-repair`);
+      if (repaired) timing.model_call_count = Number(timing.model_call_count) + 1;
       timing.placement_json_repair_ms = Date.now() - stageStartedAt;
       if (repaired) {
         applied = await applyPlacementAttempt(config, requestId, repaired.raw, statement, built.selected_entry);
@@ -524,6 +581,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     }
     for (let index = 1; index <= 2 && placementRetryable(applied); index += 1) {
       const retry = await runDreamSubagent(api, config, String(built.prompt), model, `${requestId}:retry:${index}`);
+      timing.model_call_count = Number(timing.model_call_count) + 1;
       if (!retry) break;
       applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, built.selected_entry);
       attemptKind = `full_retry_${index}`;

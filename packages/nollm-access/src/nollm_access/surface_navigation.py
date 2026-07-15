@@ -23,6 +23,7 @@ from .surface_selection import ActiveSurfaceSelection, SurfaceBudgetProfile, sel
 
 MAX_STATEMENTS_PER_CELL = 3
 MAX_STATEMENT_CHARS = 256
+MECHANICAL_SINGLETON_RESOLUTION_POLICY_ID = "mechanical_singleton_physical_entry_v1"
 
 
 @dataclass(frozen=True)
@@ -162,7 +163,8 @@ class PhysicalEntryPage:
             "after": self.after.to_mapping() if self.after else None,
             "physical_entry_candidates": [candidate.to_mapping() for candidate in self.candidates],
             "total_candidate_count": self.total_candidate_count,
-            "resolved_singleton": self.total_candidate_count == 1,
+            "singleton_eligible": self.total_candidate_count == 1 and len(self.candidates) == 1 and not self.has_more,
+            "resolved_singleton": False,
             "has_more": self.has_more,
             "next_after": self.next_after.to_mapping() if self.next_after else None,
             "legal_actions": list(self.legal_actions),
@@ -174,6 +176,7 @@ class PhysicalEntryPage:
 class PhysicalEntryResolution:
     entry_cell: GeometryAddress
     resolved_singleton: bool
+    resolution_policy_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -414,6 +417,17 @@ class AccessSurfaceNavigator:
         if len(matches) != 1:
             raise ValueError("decision selected an unavailable physical-entry candidate")
         return PhysicalEntryResolution(matches[0].address, page.total_candidate_count == 1)
+
+    def resolve_singleton_entry(self, page: PhysicalEntryPage) -> PhysicalEntryResolution:
+        if type(page) is not PhysicalEntryPage:
+            raise TypeError("resolve_singleton_entry requires a PhysicalEntryPage")
+        if page.total_candidate_count != 1 or len(page.candidates) != 1 or page.has_more:
+            raise ValueError("physical-entry universe is not an eligible singleton")
+        return PhysicalEntryResolution(
+            page.candidates[0].address,
+            True,
+            MECHANICAL_SINGLETON_RESOLUTION_POLICY_ID,
+        )
 
     def _physical_entry_page(
         self,

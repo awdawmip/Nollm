@@ -40,6 +40,7 @@ from .surface_selection import (
 )
 from .surface_navigation import (
     AccessSurfaceNavigator,
+    MECHANICAL_SINGLETON_RESOLUTION_POLICY_ID,
     PhysicalEntryCandidateView,
     PhysicalEntryPage,
     PhysicalEntryResolution,
@@ -67,6 +68,7 @@ __all__ = [
     "AccessRecallResult",
     "AccessRuntime",
     "AccessSurfaceNavigator",
+    "MECHANICAL_SINGLETON_RESOLUTION_POLICY_ID",
     "ActiveSemanticWritePolicy",
     "ActiveSemanticWritePolicyError",
     "PhysicalEntryCandidateView",

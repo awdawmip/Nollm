@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Invisible Dream Agent",
   "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "activation": {
     "onStartup": true
   },
@@ -27,6 +27,10 @@
       "max_coverage_down_steps": { "type": "integer", "const": 2, "default": 2 },
       "physical_residual_schema_version": { "type": "string", "const": "nollm_bounded_approximate_coverage_residual_v1", "default": "nollm_bounded_approximate_coverage_residual_v1" },
       "surface_wire_version": { "type": "string", "const": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "default": "nollm_openclaw_bounded_approximate_surface_traversal_v1" },
+      "active_semantic_write_policy_version": { "type": "string", "const": "nollm_default_dream_layer0_safe_write_v1", "default": "nollm_default_dream_layer0_safe_write_v1" },
+      "surface_legal_actions_contract_version": { "type": "string", "const": "nollm_access_state_derived_surface_legal_actions_v1", "default": "nollm_access_state_derived_surface_legal_actions_v1" },
+      "physical_entry_resolution_policy_version": { "type": "string", "const": "mechanical_singleton_physical_entry_v1", "default": "mechanical_singleton_physical_entry_v1" },
+      "traversal_correction_max_attempts": { "type": "integer", "const": 2, "default": 2 },
       "write_mode": { "type": "string", "enum": ["shadow", "statement-store"], "default": "shadow" },
       "model_mode": { "type": "string", "enum": ["inherit", "dedicated"], "default": "inherit" },
       "model": { "type": "string" },
@@ -63,5 +67,5 @@
     },
     "additionalProperties": false
   },
-  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
+  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
 }

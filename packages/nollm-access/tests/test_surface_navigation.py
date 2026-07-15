@@ -56,6 +56,9 @@ def test_traversal_accepts_only_shown_candidates_and_reaches_one_physical_entry(
     assert "return_to_parent" in page.legal_actions
     physical = navigator.open_physical_entries(page, page.cells[0].candidate_id)
     assert physical.legal_actions == ("return_to_parent", "select_entry", "none", "defer")
+    assert physical.to_mapping()["singleton_eligible"] is True
+    singleton = navigator.resolve_singleton_entry(physical)
+    assert singleton.resolution_policy_id == "mechanical_singleton_physical_entry_v1"
     resolution = navigator.select_entry(physical, physical.candidates[0].candidate_id)
     assert resolution.entry_cell == GeometryAddress("default_dream_v1", "default", 0, 0, 0)
     assert resolution.resolved_singleton
@@ -82,6 +85,9 @@ def test_multiple_physical_entries_require_an_explicit_shown_choice(tmp_path) ->
     surface = next(cell for cell in page.cells if cell.physical_source_cell_count == 2)
     physical = navigator.open_physical_entries(page, surface.candidate_id)
     assert physical.total_candidate_count == 2 and not physical.to_mapping()["resolved_singleton"]
+    assert physical.to_mapping()["singleton_eligible"] is False
+    with pytest.raises(ValueError, match="not an eligible singleton"):
+        navigator.resolve_singleton_entry(physical)
     assert {candidate.address for candidate in physical.candidates} == {source, target}
     assert all(candidate.native_atom_count == 1 for candidate in physical.candidates)
     assert all(candidate.current_statement_preview is not None for candidate in physical.candidates)
