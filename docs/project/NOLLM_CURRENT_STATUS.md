@@ -4,12 +4,12 @@ Date: 2026-07-15
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_C_A_O_L_D_BOUNDED_APPROXIMATE_HEX_COVERAGE_LAZY_SURFACE_TASK_20260715.md
-status: FAST_BOUNDED_APPROXIMATE_COVERAGE_SURFACE_VALIDATED_AT_<FINAL_DELIVERY_HEAD>
-input HEAD: 871f78203a7ef05584abf893ea0059640c7e2829
+task: NOLLM_C_A_O_L_D_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_RECALL_TASK_20260715.md
+status: CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_IN_PROGRESS
+input HEAD: 5a453847747a7f460ce37df044dec50c554b494b
 ```
 
-Validated capability:
+Preserved checkpoint capability:
 
 ```text
 K=96 bounded approximate fixed-point Coverage;
@@ -29,6 +29,16 @@ non-destructive registry migration v5 -> v6; physical addresses unchanged
 Statement and HandleBinding bytes preserved from the accepted source
 ```
 
+Independent audit correction:
+
+```text
+512 broad fixtures: 434 valid and 78 boundary-unsupported;
+missed p99 about 2.1371%, TV p99 about 2.8102%, false max 0, fanout max 7;
+20,000 fast fixtures: 17,091 valid, 2,909 boundary-unsupported;
+production/prototype hit mismatch 683, requiring separate Oracle scoring;
+the transport radius 2^31-1 is not the active two-step writable radius.
+```
+
 Current legal boundary:
 
 ```text
@@ -38,7 +48,6 @@ exact Decimal/polygon only as Lab Oracle;
 no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding.
 ```
 
-The immutable final HEAD is supplied by the completion tag and verified
-full-history bundle. The detailed evidence is in
-`docs/project/CAOLD_BOUNDED_APPROXIMATE_COVERAGE_LAZY_SURFACE_REPORT.md`.
-No follow-on capability is authorized without a new taskbook.
+The active policy choice, safe writable radius, dense-field evidence, and final
+HEAD have not yet been established. Progress is recorded in
+`docs/project/CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_REPORT.md`.

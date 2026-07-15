@@ -259,6 +259,14 @@ PhysicalCoverageExpansion residual schema：简化保留
 signed-64 closure：退出活动主任务
 ```
 
-# 11. 最终架构概括
+# 11. Broad calibration and writable-field correction
+
+The 96-fixture checkpoint demonstrates the production method but does not establish broad-domain percentiles. Active approximation thresholds and minimum hit count must be versioned from deterministic, residue-stratified exact-Oracle calibration. Production/prototype sample differences are scored independently against the Oracle.
+
+The storage and transport radius identifies serializable cells. A smaller active writable radius must be closed under every Coverage step available to the configured Recall depth. Mutation rejects unsafe source cells before any partial propagation. Occupancy bands describe deterministic atom counts only; they are not physical-density or semantic-density claims.
+
+One traversal still chooses exactly one final physical entry. Reachability from multiple entries is a non-persistent observation and has no minimum count.
+
+# 12. 最终架构概括
 
 > **Nollm 的突破来自几何关系场，而不是相交面积小数点后的真值。只要局部关系、质量、误差和传播稳定，快速近似 Coverage 比生产路径中的高精度 polygon 更符合项目第一性原理。**

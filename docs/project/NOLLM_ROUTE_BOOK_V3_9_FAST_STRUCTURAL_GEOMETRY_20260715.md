@@ -117,6 +117,15 @@ Stitch；
 PB 性能。
 ```
 
+## R7: Broad residue, safe field, and dense locality
+
+- Run at least 2,048 deterministic exact-Oracle fixtures across phase, direction, residue, sign, and boundary buckets.
+- Run 20,000 production/prototype diagnostics and score each kernel against the Oracle instead of requiring hit-count identity.
+- Compare minimum hit counts 1 and 2 while keeping K=96, then version the selected policy from evidence.
+- Separate transport radius from a two-step Coverage-closed writable radius.
+- Validate truthful occupancy on at least 300 occupied cells and dense locality on at least 1,000 atoms.
+- Preserve exactly one final physical entry per Recall traversal. Natural multi-entry reachability remains observation-only.
+
 # 4. 进入后续阶段的条件
 
 ```text
