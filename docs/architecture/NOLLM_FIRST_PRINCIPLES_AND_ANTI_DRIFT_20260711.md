@@ -672,3 +672,108 @@ ACTIVE_PROJECT 指向不存在的任务；
 ```
 
 > **已有正确数学资产必须成为下一实现的起点；新代码必须证明自己比历史 Oracle 更正确，而不是只证明自己能通过自己编写的测试。**
+
+---
+
+## 10. 2026-07-15 结构正确优先于面积精确修订
+
+本节纠正上一阶段把“真实几何”误解为“生产运行必须逐 Cell 高精度计算精确多边形相交”的过度收敛。
+
+### 10.1 Coverage 的第一职责是稳定关系，不是测量学真值
+
+Nollm Coverage 的产品职责是：
+
+```text
+从真实旋转、尺度和坐标产生局部稀疏关系；
+保持质量近似守恒；
+控制误传播和漏传播的总权重；
+让 Surface、Recall 和未来 Stitch 获得稳定几何骨架。
+```
+
+Coverage 不要求在生产运行时逐次恢复精确相交面积。允许：
+
+```text
+低于声明阈值的小面积真实重叠被省略；
+低于声明阈值的小权重近邻被保守加入；
+权重在声明总变差界内偏离 polygon Oracle；
+候选支持因离散采样产生小幅边界抖动。
+```
+
+前提是误差有界、无长程跳跃、与语义无关、可复现且经过独立 Oracle 校准。
+
+### 10.2 硬几何与近似 Coverage 分离
+
+不可改变：
+
+```text
+Δθ = 22.5°；
+θL = L × 22.5° mod 60°；
+β = 2^(1/4)；
+β² = √2；
+Physical Memory Layer 与 Aggregation Order 分离。
+```
+
+允许近似：
+
+```text
+Cell overlap support；
+Coverage weight；
+阈值以下边界关系；
+Surface aggregate mass。
+```
+
+不得通过改变硬物理参数换取性能。
+
+### 10.3 精确 Oracle 与生产核分工
+
+```text
+Lab Oracle：
+  polygon / Decimal / high precision；
+  用于校准、抽样验证和误差报告；
+  不进入每次聊天主路径。
+
+Production Coverage：
+  固定点坐标变换；
+  等面积采样或经认证的 residue atlas；
+  有界 fanout；
+  固定时间；
+  可丢弃缓存。
+```
+
+### 10.4 允许的误差必须按权重而不是边数量定义
+
+不得要求：
+
+```text
+所有真实非零 overlap 均命中；
+所有零 overlap target 均绝对排除；
+生产核与精确 Oracle 支持集逐项相等。
+```
+
+必须限制：
+
+```text
+missed_mass；
+false_mass；
+total_variation_distance；
+partition_mass_error；
+max_fanout；
+max_spatial_radius；
+dominant_target_agreement。
+```
+
+默认阈值由 V3.9 架构和任务书规定，并可通过新证据版本化调整。
+
+### 10.5 产品地址域按容量需求确定
+
+数学格可以无限；活动产品地址域是资源 `POLICY`，不需要为 signed-64 全闭包支付主路径复杂度。
+
+默认活动域：
+
+```text
+hex_radius = max(|q|, |r|, |q+r|) <= 2^31 - 1
+```
+
+单层约可表达 `1 + 3R(R+1) ≈ 1.38×10^19` 个 Cell，远高于 PB 级需要。跨语言 Wire 在该域内可安全使用标准整数。
+
+> **Nollm 要求几何关系真实地来自几何，不要求每条几何边都具有测量学级精确面积；结构稳定和运算可持续高于无必要的数值完美。**
