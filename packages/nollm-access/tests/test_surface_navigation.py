@@ -1,7 +1,7 @@
 import pytest
 
 from nollm_access import AccessDecision, AccessRuntime, AccessSurfaceNavigator, FileHandleStore, FileStatementStore, MemoryStatement, SurfaceBudgetProfile
-from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope, expand_physical_coverage
+from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom, PhysicalFieldScope, expand_physical_coverage
 
 
 SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
@@ -17,7 +17,11 @@ def place_at(workspace, statement_id: str, content: str, address: GeometryAddres
     access = AccessRuntime(core, FileStatementStore(workspace), FileHandleStore(workspace))
     statement = MemoryStatement(statement_id, content)
     access.capture(statement)
-    access.apply(AccessDecision(f"d:{statement_id}", statement_id, "new", address, reason_text="fixture", decided_by="fixture"))
+    if address.profile_id == "default_dream_v1" and address.layer == 0:
+        access.apply(AccessDecision(f"d:{statement_id}", statement_id, "new", address, reason_text="fixture", decided_by="fixture"))
+    else:
+        handle = core.put(MemoryAtom(statement_id, content), address)
+        access.handle_store.put(statement_id, handle)
     access.close()
     core.close()
 
@@ -60,7 +64,8 @@ def test_multiple_physical_entries_require_an_explicit_shown_choice(tmp_path) ->
     access = AccessRuntime(core, FileStatementStore(tmp_path), FileHandleStore(tmp_path))
     statement = MemoryStatement("coarse", "coarse physical source")
     access.capture(statement)
-    access.apply(AccessDecision("d:coarse", "coarse", "new", target, reason_text="fixture", decided_by="fixture"))
+    coarse_handle = core.put(MemoryAtom("coarse", "coarse physical source"), target)
+    access.handle_store.put("coarse", coarse_handle)
     access.close()
     core.close()
 

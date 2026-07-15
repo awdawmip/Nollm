@@ -8,12 +8,13 @@ from nollm_access import (
     MemoryStatement,
     SurfaceBudgetProfile,
 )
-from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope, RecallBudget, clear_physical_coverage_cache, expand_physical_coverage
+from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom, PhysicalFieldScope, RecallBudget, clear_physical_coverage_cache, expand_physical_coverage
 
 
 def _place(access: AccessRuntime, statement_id: str, content: str, target: GeometryAddress) -> None:
     access.capture(MemoryStatement(statement_id, content))
-    access.apply(AccessDecision(f"decision:{statement_id}", statement_id, "new", target_cell=target, reason_text="cross-layer fixture", decided_by="fixture"))
+    handle = access.core.put(MemoryAtom(statement_id, content), target)
+    access.handle_store.put(statement_id, handle)
 
 
 def test_single_entry_cross_layer_recall_path_and_wire_reopen(tmp_path) -> None:

@@ -31,18 +31,6 @@ class AmbiguousPhysicalCoverage(ValueError):
     """Compatibility error for callers that handled the former exact kernel."""
 
 
-class UnsafeWritableAddress(ValueError):
-    def __init__(self, address: GeometryAddress, required_radius: int) -> None:
-        self.address = address
-        self.required_radius = required_radius
-        self.active_writable_radius = ACTIVE_WRITABLE_HEX_RADIUS
-        self.contract_id = WRITABLE_FIELD_CONTRACT_ID
-        super().__init__(
-            f"address requires hex radius {required_radius}, exceeds active writable radius "
-            f"{ACTIVE_WRITABLE_HEX_RADIUS} under {WRITABLE_FIELD_CONTRACT_ID}"
-        )
-
-
 @dataclass(frozen=True)
 class ApproximateCoveragePolicy:
     policy_id: str
@@ -65,17 +53,6 @@ ACTIVE_APPROXIMATION_POLICY = ApproximateCoveragePolicy(
     max_coverage_down_steps=CURRENT_MAX_COVERAGE_DOWN_STEPS,
     writable_field_contract_id=WRITABLE_FIELD_CONTRACT_ID,
 )
-
-
-def validate_active_writable_address(address: object) -> GeometryAddress:
-    if type(address) is not GeometryAddress:
-        raise TypeError("address must be GeometryAddress")
-    if address.profile_id != "default_dream_v1":
-        return address
-    required_radius = max(abs(address.q), abs(address.r), abs(address.q + address.r))
-    if required_radius > ACTIVE_WRITABLE_HEX_RADIUS:
-        raise UnsafeWritableAddress(address, required_radius)
-    return address
 
 
 @dataclass(frozen=True, order=True)

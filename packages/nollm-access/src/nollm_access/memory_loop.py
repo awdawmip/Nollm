@@ -11,6 +11,7 @@ from .runtime import AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore
 from .surface_navigation import AccessSurfaceNavigator
+from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
 
 
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
@@ -246,6 +247,7 @@ class AccessMemoryLoop:
         relation_kind: str,
         address: GeometryAddress,
     ) -> dict[str, object]:
+        ACTIVE_SEMANTIC_WRITE_POLICY.validate(address)
         handles = [handle.to_mapping() for handle, _atom in core.atoms_at(address)]
         return {
             "candidate_id": candidate_id,

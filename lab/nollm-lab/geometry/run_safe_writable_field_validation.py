@@ -8,12 +8,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 
+from nollm_access import (  # noqa: E402
+    ACTIVE_SEMANTIC_WRITE_POLICY,
+    ActiveSemanticWritePolicyError,
+)
 from nollm_core import (  # noqa: E402
     ACTIVE_APPROXIMATION_POLICY,
     GeometryAddress,
-    UnsafeWritableAddress,
     expand_physical_coverage,
-    validate_active_writable_address,
 )
 
 
@@ -31,7 +33,9 @@ def validate() -> dict[str, object]:
     for phase in range(8):
         for q, r in corners:
             source = GeometryAddress("default_dream_v1", "default", phase, q, r)
-            validate_active_writable_address(source)
+            ACTIVE_SEMANTIC_WRITE_POLICY.validate(
+                GeometryAddress("default_dream_v1", "default", 0, q, r)
+            )
             for direction in ("coverage_up", "coverage_down"):
                 first = expand_physical_coverage(source, direction)
                 first_step_count += len(first.members)
@@ -53,11 +57,11 @@ def validate() -> dict[str, object]:
     rejected_radius = radius + 1
     rejected = GeometryAddress("default_dream_v1", "default", 0, rejected_radius, 0)
     try:
-        validate_active_writable_address(rejected)
-    except UnsafeWritableAddress as error:
+        ACTIVE_SEMANTIC_WRITE_POLICY.validate(rejected)
+    except ActiveSemanticWritePolicyError as error:
         rejection = {
-            "required_radius": error.required_radius,
-            "active_writable_radius": error.active_writable_radius,
+            "required_radius": error.actual,
+            "active_writable_radius": policy.active_writable_hex_radius,
             "contract_id": error.contract_id,
         }
     else:

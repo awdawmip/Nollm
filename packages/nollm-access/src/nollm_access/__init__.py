@@ -49,9 +49,17 @@ from .surface_navigation import (
     SurfaceTraversalPage,
     SurfaceTraversalState,
 )
+from .write_policy import (
+    ACTIVE_SEMANTIC_WRITE_POLICY,
+    ACTIVE_SEMANTIC_WRITE_POLICY_ID,
+    ActiveSemanticWritePolicy,
+    ActiveSemanticWritePolicyError,
+)
 
 __all__ = [
     "ACTIONS",
+    "ACTIVE_SEMANTIC_WRITE_POLICY",
+    "ACTIVE_SEMANTIC_WRITE_POLICY_ID",
     "AccessDecision",
     "AccessMemoryLoop",
     "AccessRecallItem",
@@ -59,6 +67,8 @@ __all__ = [
     "AccessRecallResult",
     "AccessRuntime",
     "AccessSurfaceNavigator",
+    "ActiveSemanticWritePolicy",
+    "ActiveSemanticWritePolicyError",
     "PhysicalEntryCandidateView",
     "PhysicalEntryPage",
     "PhysicalEntryResolution",

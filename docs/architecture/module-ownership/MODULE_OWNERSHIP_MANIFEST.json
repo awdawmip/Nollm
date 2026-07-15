@@ -23149,6 +23149,7 @@
       "__future__",
       "argparse",
       "json",
+      "nollm_access",
       "nollm_core",
       "pathlib",
       "sys"
@@ -25488,7 +25489,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['nollm_access.dream', 'nollm_access.evidence_store', 'nollm_access.formation', 'nollm_access.handle_store', 'nollm_access.memory_loop', 'nollm_access.placement_contract', 'nollm_access.recall', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store', 'nollm_access.surface_navigation', 'nollm_access.surface_selection'].",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['nollm_access.dream', 'nollm_access.evidence_store', 'nollm_access.formation', 'nollm_access.handle_store', 'nollm_access.memory_loop', 'nollm_access.placement_contract', 'nollm_access.recall', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store', 'nollm_access.surface_navigation', 'nollm_access.surface_selection', 'nollm_access.write_policy'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-access/src/nollm_access",
     "file_type": "py",
@@ -25503,6 +25504,7 @@
       "lab/nollm-lab/geometry/run_dense_locality_surface_validation.py",
       "lab/nollm-lab/geometry/run_dense_single_entry_recall_validation.py",
       "lab/nollm-lab/geometry/run_lazy_surface_benchmark.py",
+      "lab/nollm-lab/geometry/run_safe_writable_field_validation.py",
       "lab/nollm-lab/history/m1/reproduce_m1c8_input_blockers.py",
       "lab/nollm-lab/history/m1/run_m1_public_api_adversarial_matrix.py",
       "lab/nollm-lab/m1/run_adaptive_surface_validation.py",
@@ -25556,7 +25558,8 @@
       "nollm_access.statement",
       "nollm_access.statement_store",
       "nollm_access.surface_navigation",
-      "nollm_access.surface_selection"
+      "nollm_access.surface_selection",
+      "nollm_access.write_policy"
     ],
     "lifecycle_status": "ACTIVE",
     "migration_action": "KEEP",
@@ -25708,7 +25711,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'nollm_access.handle_store', 'nollm_access.placement_contract', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store', 'nollm_access.surface_navigation', 'nollm_core', 'pathlib', 'time'].",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'nollm_access.handle_store', 'nollm_access.placement_contract', 'nollm_access.runtime', 'nollm_access.statement', 'nollm_access.statement_store', 'nollm_access.surface_navigation', 'nollm_access.write_policy', 'nollm_core', 'pathlib', 'time'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-access/src/nollm_access",
     "file_type": "py",
@@ -25724,6 +25727,7 @@
       "nollm_access.statement",
       "nollm_access.statement_store",
       "nollm_access.surface_navigation",
+      "nollm_access.write_policy",
       "nollm_core",
       "pathlib",
       "time"
@@ -25745,7 +25749,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'dataclasses', 'nollm_core'].",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'dataclasses', 'nollm_access.write_policy', 'nollm_core'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-access/src/nollm_access",
     "file_type": "py",
@@ -25758,6 +25762,7 @@
     "imports": [
       "__future__",
       "dataclasses",
+      "nollm_access.write_policy",
       "nollm_core"
     ],
     "lifecycle_status": "ACTIVE",
@@ -26014,6 +26019,38 @@
     "owned_state": "module-owned state or public contracts",
     "owner": "ACCESS",
     "path": "packages/nollm-access/src/nollm_access/workspace_lock.py",
+    "public_api": "public",
+    "reason": "Target package asset with explicit package ownership.",
+    "review_status": "DEPENDENCY_REVIEWED",
+    "reviewed_at": "2026-07-12",
+    "runtime_role": "module package",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": ""
+  },
+  {
+    "asset_class": "",
+    "classification_evidence": "Path is inside packages/nollm-access and direct imports are ['__future__', 'dataclasses', 'nollm_core'].",
+    "confidence": "HIGH",
+    "current_namespace": "packages/nollm-access/src/nollm_access",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [
+      "packages/nollm-access/src/nollm_access/__init__.py",
+      "packages/nollm-access/src/nollm_access/memory_loop.py",
+      "packages/nollm-access/src/nollm_access/placement_contract.py"
+    ],
+    "imports": [
+      "__future__",
+      "dataclasses",
+      "nollm_core"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "module-owned state or public contracts",
+    "owner": "ACCESS",
+    "path": "packages/nollm-access/src/nollm_access/write_policy.py",
     "public_api": "public",
     "reason": "Target package asset with explicit package ownership.",
     "review_status": "DEPENDENCY_REVIEWED",
@@ -26857,6 +26894,7 @@
       "packages/nollm-access/src/nollm_access/runtime.py",
       "packages/nollm-access/src/nollm_access/surface_navigation.py",
       "packages/nollm-access/src/nollm_access/surface_selection.py",
+      "packages/nollm-access/src/nollm_access/write_policy.py",
       "packages/nollm-access/tests/test_access_decision_field_exclusivity.py",
       "packages/nollm-access/tests/test_access_evidence_resolution.py",
       "packages/nollm-access/tests/test_access_exception_atomicity.py",
@@ -27355,7 +27393,6 @@
     "imported_by": [
       "packages/nollm-core/src/nollm_core/__init__.py",
       "packages/nollm-core/src/nollm_core/kernel_registry.py",
-      "packages/nollm-core/src/nollm_core/state.py",
       "packages/nollm-core/src/nollm_core/surface.py",
       "packages/nollm-core/tests/test_translation_covariant_physical_coverage.py"
     ],
@@ -27487,7 +27524,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Path is inside packages/nollm-core and direct imports are ['__future__', 'contextlib', 'functools', 'json', 'nollm_core.atom', 'nollm_core.bridge', 'nollm_core.command', 'nollm_core.geometry', 'nollm_core.handle', 'nollm_core.kernel_registry', 'nollm_core.physical_coverage', 'nollm_core.ports', 'nollm_core.recall', 'nollm_core.storage', 'nollm_core.surface', 'nollm_core.workspace_owner', 'pathlib', 'threading'].",
+    "classification_evidence": "Path is inside packages/nollm-core and direct imports are ['__future__', 'contextlib', 'functools', 'json', 'nollm_core.atom', 'nollm_core.bridge', 'nollm_core.command', 'nollm_core.geometry', 'nollm_core.handle', 'nollm_core.kernel_registry', 'nollm_core.ports', 'nollm_core.recall', 'nollm_core.storage', 'nollm_core.surface', 'nollm_core.workspace_owner', 'pathlib', 'threading'].",
     "confidence": "HIGH",
     "current_namespace": "packages/nollm-core/src/nollm_core",
     "file_type": "py",
@@ -27507,7 +27544,6 @@
       "nollm_core.geometry",
       "nollm_core.handle",
       "nollm_core.kernel_registry",
-      "nollm_core.physical_coverage",
       "nollm_core.ports",
       "nollm_core.recall",
       "nollm_core.storage",

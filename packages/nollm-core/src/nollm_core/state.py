@@ -20,7 +20,6 @@ from .geometry import GeometryAddress
 from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
 from .ports import CoreTraceEvent, TraceSink
-from .physical_coverage import validate_active_writable_address
 from .storage import SCHEMA_VERSION, _FileCoreStateStore, canonical_state_bytes
 from .surface import (
     CoverageDescentPage,
@@ -180,9 +179,6 @@ class CoreRuntime:
     def _apply_batch_locked(self, commands: tuple[CoreCommand, ...]) -> tuple[object, ...]:
         if type(commands) is not tuple or not commands:
             raise ValueError("batch must contain at least one command")
-        for command in commands:
-            if type(command) in (PutCommand, MoveCommand):
-                validate_active_writable_address(command.target_cell)
         cells = {address: dict(atoms) for address, atoms in self._cells.items()}
         bridges = dict(self._bridges)
         results: list[object] = []

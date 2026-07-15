@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from nollm_core import AtomHandle, BridgeSpec, GeometryAddress, validate_active_writable_address
+from nollm_core import AtomHandle, BridgeSpec, GeometryAddress
+
+from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
 
 
 ACTIONS = frozenset({"reuse", "new", "move", "revision_current", "revision_keep_history", "stitch", "unstitch", "defer", "forget"})
@@ -24,8 +26,6 @@ class AccessDecision:
         if any(type(value) is not str or not value for value in (self.decision_id,self.statement_id,self.action,self.reason_text,self.decided_by)):
             raise ValueError("decision_id, statement_id, and reason_text are required")
         if self.target_cell is not None and type(self.target_cell) is not GeometryAddress: raise TypeError("target_cell must be GeometryAddress")
-        if self.target_cell is not None:
-            validate_active_writable_address(self.target_cell)
         if self.existing_handle is not None and type(self.existing_handle) is not AtomHandle: raise TypeError("existing_handle must be AtomHandle")
         if self.bridge_spec is not None and type(self.bridge_spec) is not BridgeSpec: raise TypeError("bridge_spec must be BridgeSpec")
         if self.action not in ACTIONS:
@@ -55,3 +55,7 @@ class AccessDecision:
         }[self.action]
         if not all(allowed):
             raise ValueError("AccessDecision contains conflicting or unrelated fields")
+        if self.target_cell is not None:
+            ACTIVE_SEMANTIC_WRITE_POLICY.validate(self.target_cell)
+        if self.action == "revision_current" and self.existing_handle is not None:
+            ACTIVE_SEMANTIC_WRITE_POLICY.validate(self.existing_handle.geometry_address)

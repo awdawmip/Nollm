@@ -18,7 +18,7 @@ from nollm_core import (
 
 
 def cell(q: int, r: int) -> GeometryAddress:
-    return GeometryAddress("eisenstein_exact_v1", "chart", 1, q, r)
+    return GeometryAddress("default_dream_v1", "default", 0, q, r)
 
 
 def runtime(tmp_path) -> tuple[AccessRuntime, CoreRuntime]:
@@ -70,15 +70,18 @@ def test_revision_current_and_keep_history_are_access_semantics(tmp_path) -> Non
     assert historical != current
     assert core.placement_count() == 2
 
-    result = access.recall(
-        AccessRecallRequest(
-            "recall",
-            entry_cells=(cell(0, 0), cell(1, 0)),
-            allowed_kernels=(),
-            budget=RecallBudget(0, 4, 0, 0, 0, 4),
+    results = tuple(
+        access.recall(
+            AccessRecallRequest(
+                f"recall:{index}",
+                entry_cells=(entry,),
+                allowed_kernels=(),
+                budget=RecallBudget(0, 4, 0, 0, 0, 4),
+            )
         )
+        for index, entry in enumerate((cell(0, 0), cell(1, 0)))
     )
-    assert {(item.statement_id, item.evidence_utf8) for item in result.items} == {
+    assert {(item.statement_id, item.evidence_utf8) for result in results for item in result.items} == {
         ("current", "version two"),
         ("history", "version retained separately"),
     }

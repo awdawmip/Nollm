@@ -5,7 +5,7 @@ from nollm_core import AtomHandle, CoreRuntime, GeometryAddress
 
 
 def cell(q: int) -> GeometryAddress:
-    return GeometryAddress("eisenstein_exact_v1", "chart", 0, q, 0)
+    return GeometryAddress("default_dream_v1", "default", 0, q, 0)
 
 
 def decision(statement_id: str, action: str, **values: object) -> AccessDecision:
@@ -33,7 +33,7 @@ def test_binding_failure_rolls_back_core(tmp_path) -> None:
     access.capture(MemoryStatement("s", "payload"))
     core_before, binding_before = core.export_state_bytes(), store.state_bytes()
     fail_next_write(store)
-    decision = AccessDecision("d", "s", "new", target_cell=GeometryAddress("eisenstein_exact_v1", "c", 0, 0, 0), reason_text="fixture", decided_by="fixture")
+    decision = AccessDecision("d", "s", "new", target_cell=cell(0), reason_text="fixture", decided_by="fixture")
     with pytest.raises(OSError, match="binding failure"):
         access.apply(decision)
     assert core.export_state_bytes() == core_before

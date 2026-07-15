@@ -9,11 +9,7 @@ from nollm_core import (
     GeometryAddress,
     CoreRuntime,
     MemoryAtom,
-    MoveCommand,
-    PutCommand,
     UnsupportedPhysicalCoverage,
-    UnsafeWritableAddress,
-    validate_active_writable_address,
 )
 
 
@@ -21,41 +17,28 @@ def _address(radius: int) -> GeometryAddress:
     return GeometryAddress("default_dream_v1", "default", 0, radius, 0)
 
 
-def test_public_policy_separates_storage_and_writable_domains() -> None:
+def test_public_coverage_policy_describes_storage_and_proven_safe_domains() -> None:
     policy = ACTIVE_APPROXIMATION_POLICY
     assert policy.storage_hex_radius == (1 << 31) - 1
     assert policy.active_writable_hex_radius == (1 << 30) - 1
     assert policy.max_coverage_down_steps == 2
     assert policy.writable_field_contract_id == "nollm_hex_storage_2p31_writable_2p30_depth2_v1"
-    assert validate_active_writable_address(_address(policy.active_writable_hex_radius))
-    with pytest.raises(UnsafeWritableAddress) as captured:
-        validate_active_writable_address(_address(policy.active_writable_hex_radius + 1))
-    assert captured.value.required_radius == policy.active_writable_hex_radius + 1
 
 
-def test_batch_rejects_every_unsafe_target_before_any_write(tmp_path) -> None:
+def test_generic_core_mutation_accepts_storage_valid_research_addresses(tmp_path) -> None:
     runtime = CoreRuntime(tmp_path)
-    safe = _address(0)
-    unsafe = _address(ACTIVE_APPROXIMATION_POLICY.active_writable_hex_radius + 1)
-    before = runtime.export_state_bytes()
-    with pytest.raises(UnsafeWritableAddress):
-        runtime.apply_batch((
-            PutCommand(MemoryAtom("safe", "safe"), safe),
-            PutCommand(MemoryAtom("unsafe", "unsafe"), unsafe),
-        ))
-    assert runtime.export_state_bytes() == before
-    assert runtime.placement_count() == 0
+    storage_only = GeometryAddress("default_dream_v1", "default", 7, ACTIVE_APPROXIMATION_POLICY.active_writable_hex_radius + 1, 0)
+    handle = runtime.put(MemoryAtom("research", "research"), storage_only)
+    assert runtime.get(handle).payload_utf8 == "research"
 
 
-def test_move_rejection_preserves_existing_handle(tmp_path) -> None:
+def test_generic_core_move_accepts_storage_valid_target(tmp_path) -> None:
     runtime = CoreRuntime(tmp_path)
     handle = runtime.put(MemoryAtom("existing", "payload"), _address(0))
-    before = runtime.export_state_bytes()
-    unsafe = _address(ACTIVE_APPROXIMATION_POLICY.active_writable_hex_radius + 1)
-    with pytest.raises(UnsafeWritableAddress):
-        runtime.apply_batch((MoveCommand(handle, unsafe),))
-    assert runtime.export_state_bytes() == before
-    assert runtime.get(handle).payload_utf8 == "payload"
+    storage_only = _address(ACTIVE_APPROXIMATION_POLICY.active_writable_hex_radius + 1)
+    moved = runtime.move(handle, storage_only)
+    assert moved.geometry_address == storage_only
+    assert runtime.get(moved).payload_utf8 == "payload"
 
 
 def test_storage_only_legacy_state_reopens_without_deletion(tmp_path) -> None:
@@ -84,3 +67,11 @@ def test_storage_boundary_coverage_failure_reports_atomic_context() -> None:
     assert "direction=coverage_down" in message
     assert "required_radius=" in message
     assert "contract_id=nollm_hex_radius_2p31_default_chart_null_phase_v1" in message
+
+
+@pytest.mark.parametrize(("layer", "direction"), ((-64, "coverage_up"), (64, "coverage_down")))
+def test_physical_layer_boundary_reports_unsupported_direction(layer: int, direction: str) -> None:
+    from nollm_core import expand_physical_coverage
+
+    with pytest.raises(UnsupportedPhysicalCoverage):
+        expand_physical_coverage(GeometryAddress("default_dream_v1", "default", layer, 0, 0), direction)

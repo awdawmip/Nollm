@@ -8,8 +8,6 @@ from .coverage_contract import (
     PhysicalCoverageExpansion,
     PhysicalCoverageMember,
     UnsupportedPhysicalCoverage,
-    UnsafeWritableAddress,
-    validate_active_writable_address,
 )
 
 
@@ -24,8 +22,6 @@ __all__ = [
     "PhysicalCoverageExpansion",
     "PhysicalCoverageMember",
     "UnsupportedPhysicalCoverage",
-    "UnsafeWritableAddress",
     "clear_physical_coverage_cache",
     "expand_physical_coverage",
-    "validate_active_writable_address",
 ]
