@@ -74,7 +74,7 @@ class _CellStore:
     def placement_count(self) -> int:
         return sum(len(atoms) for atoms in self._cells.values())
 
-    def density_state(self, address: GeometryAddress) -> str:
+    def occupancy_band(self, address: GeometryAddress) -> str:
         count = len(self.atoms_at(address))
         return "overloaded" if count >= 32 else "dense" if count >= 8 else "normal"
 
@@ -235,9 +235,9 @@ class CoreRuntime:
         with self._operation():
             return self._cell_store.placement_count()
 
-    def density_state(self, address: GeometryAddress) -> str:
+    def occupancy_band(self, address: GeometryAddress) -> str:
         with self._operation():
-            return self._cell_store.density_state(address)
+            return self._cell_store.occupancy_band(address)
 
     def recall(self, request: object) -> object:
         with self._operation():

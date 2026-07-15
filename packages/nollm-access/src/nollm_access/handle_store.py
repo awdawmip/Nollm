@@ -109,6 +109,12 @@ class FileHandleStore:
         bindings = self._load()
         return bindings[self._index_for_handle(list(bindings), handle)]
 
+    def bindings_for_handles(self, handles: tuple[AtomHandle, ...]) -> tuple[HandleBinding, ...]:
+        if type(handles) is not tuple or any(type(handle) is not AtomHandle for handle in handles):
+            raise TypeError("handles must be an AtomHandle tuple")
+        by_handle = {binding.handle: binding for binding in self._load()}
+        return tuple(by_handle[handle] for handle in handles if handle in by_handle)
+
     def remove_handle(self, handle: AtomHandle) -> None:
         bindings = list(self._load())
         del bindings[self._index_for_handle(bindings, handle)]

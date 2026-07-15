@@ -251,7 +251,7 @@ class AccessMemoryLoop:
             "candidate_id": candidate_id,
             "relation_kind": relation_kind,
             "geometry_address": address.to_mapping(),
-            "occupancy": {"count": len(handles), "density_state": core.density_state(address)},
+            "occupancy": {"count": len(handles), "band": core.occupancy_band(address)},
             "existing_handles": handles,
         }
 

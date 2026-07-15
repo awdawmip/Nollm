@@ -531,9 +531,14 @@ class AccessSurfaceNavigator:
         previews = []
         handle_store = FileHandleStore(self._workspace)
         statement_store = FileStatementStore(self._workspace)
-        for handle in sorted(handles, key=lambda item: (item.geometry_address.stable_key(), item.local_atom_id)):
+        ordered_handles = tuple(sorted(handles, key=lambda item: (item.geometry_address.stable_key(), item.local_atom_id)))
+        bindings = {
+            binding.handle: binding
+            for binding in handle_store.bindings_for_handles(ordered_handles)
+        }
+        for handle in ordered_handles:
             try:
-                binding = handle_store.binding_for_handle(handle)
+                binding = bindings[handle]
                 statement = statement_store.get(binding.current_statement_id)
             except (KeyError, FileNotFoundError):
                 continue

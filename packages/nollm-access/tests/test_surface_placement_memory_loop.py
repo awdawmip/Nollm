@@ -36,6 +36,8 @@ def test_candidates_are_unique_bounded_content_independent_and_have_six_laterals
         again = loop.placement_candidates(ORIGIN, "candidates:different-query-not-input")
     assert candidates == again
     assert len(candidates) == 8
+    assert all(set(item["occupancy"]) == {"count", "band"} for item in candidates)
+    assert all("density_state" not in item["occupancy"] for item in candidates)
     laterals = [item["geometry_address"] for item in candidates if item["relation_kind"] == "lateral_ring_1"]
     assert [(item["q"], item["r"]) for item in laterals] == [(-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0)]
 
