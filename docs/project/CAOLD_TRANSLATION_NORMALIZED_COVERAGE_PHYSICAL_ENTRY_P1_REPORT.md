@@ -50,3 +50,57 @@ Scope added: none.
 Deviation above 5%: none.
 Status: IN_PROGRESS.
 ```
+
+## Gate 1
+
+Expected vector and direction:
+
+```text
+L +10 is primary; C +10 waits for the mathematics contract.
+translation-normalized Coverage -> physical residual -> explicit physical entry -> P1 closure
+```
+
+The input absolute-world Decimal80 path was reproduced at `q/r=+/-10^14`.
+Across eight layer phases and both directions it produced `DivisionByZero`, no
+positive overlap, Q16 normalization failure, and raw source-share mass as high
+as 5. Q16 output could still report a forced total of 65536 for other invalid
+raw partitions.
+
+The selected contract is:
+
+```text
+q/r: signed 64-bit
+physical layer: -64..64
+chart_id: default only
+phase: null only
+span: adjacent physical layer
+numeric frame: source-side normalized local coordinates
+precision: independent Lab Oracle B Decimal96
+```
+
+Oracle B independently derives target fractional axial coordinates and clips
+local polygons without importing Core or Oracle A. Oracle C uses partition
+mass, radius-4/radius-6 support equality, and reciprocal intersection-area
+invariants; it does not use Core as its truth source.
+
+Gate 1 evidence:
+
+```text
+Oracle B unit tests: passed
+Oracle A/B bounded report: 1296 samples, support mismatch=0, false negatives=0
+Oracle A/B report SHA-256: 5b4f3655ca20820c472fb460faee6ed5b41f306a18bf74b5cc147e9a7503a88e
+Oracle C: 96 samples, candidate mismatch=0, reciprocal mismatch=0
+Oracle C max partition mass error: 3.164e-92
+Oracle C report SHA-256: a90f12a0ae4aa37b6d80c166f9b2ee7b5a2006951de143ddd5ce4a3d1116c629
+historical reusable asset hashes: 17 matched, 0 failures
+```
+
+Gate result:
+
+```text
+Actual modules affected: Lab and V3.8 governance.
+Actual progress: L +10 contract evidence established; C remains uncredited until Gate 2.
+Scope added: none.
+Deviation above 5%: none.
+Gate 2 authorized: yes.
+```

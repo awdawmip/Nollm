@@ -257,6 +257,29 @@ Core 不 import Lab/reference。
 
 “运行时无 polygon”降为未来优化目标，不再是硬架构条件。
 
+## 6.1 Translation-normalized numeric contract
+
+The active default profile supports:
+
+```text
+q/r: signed 64-bit integers
+physical layer: -64 through 64
+chart_id: default
+phase: null
+adjacent Coverage span only
+```
+
+Non-default chart and non-null phase are explicitly unsupported in this stage
+and must be rejected before geometry work. The default Coverage path constructs
+source and target polygons in a source-side-normalized local frame. The target
+center is derived from bounded fractional target-lattice residue; it does not
+add unit-scale vertices to a large absolute world center.
+
+Raw overlap partition mass is validated before Q16 conversion. Physical output
+separately reports candidate-window residual, threshold residual, numeric error
+bound and ambiguity, raw partition residual, and Q16 quantization residual.
+Q16 conversion must not normalize invalid raw physical mass to 65536.
+
 # 7. 可丢弃加速
 
 允许：

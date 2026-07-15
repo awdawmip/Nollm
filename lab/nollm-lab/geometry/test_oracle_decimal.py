@@ -17,3 +17,21 @@ def test_coverage_support_is_translation_covariant_not_phase_constant() -> None:
     assert 4 <= len(translated) <= 7
     assert origin != translated
     assert sum(item.source_share for item in coverage(0, -4, 1, 1)) <= Decimal(1) + Decimal("1e-26")
+
+
+def test_source_centered_oracle_preserves_large_coordinate_partition_mass() -> None:
+    for layer in range(8):
+        for q, r in ((10**14, 10**14), (10**14, -10**14), (-10**14, 10**14)):
+            for delta in (-1, 1):
+                mass = sum((item.source_share for item in coverage(layer, q, r, layer + delta, 6)), Decimal(0))
+                assert abs(Decimal(1) - mass) < Decimal("1e-70")
+
+
+def test_oracle_rejects_out_of_contract_coordinates_and_layers() -> None:
+    for args in ((0, 1 << 63, 0, 1), (0, 0, -(1 << 63) - 1, 1), (64, 0, 0, 65)):
+        try:
+            coverage(*args)
+        except ValueError as error:
+            assert "supported" in str(error)
+        else:
+            raise AssertionError("unsupported coordinate was accepted")

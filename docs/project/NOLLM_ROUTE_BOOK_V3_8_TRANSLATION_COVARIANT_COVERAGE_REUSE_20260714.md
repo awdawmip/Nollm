@@ -131,6 +131,17 @@ derived cache 可选；
 legacy profile 保留。
 ```
 
+Before R3 implementation credit, the active correction route requires:
+
+```text
+source-centered Decimal Oracle B;
+partition/reciprocal/window invariant Oracle C;
+q/r magnitude 10^14 stress across eight phases and both directions;
+an explicit supported coordinate domain;
+raw partition mass validation before Q16;
+final-HEAD Manifest regeneration after all reports are tracked.
+```
+
 ## R4：真实 Surface
 
 ```text
