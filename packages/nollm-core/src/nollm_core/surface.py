@@ -213,39 +213,42 @@ def build_surface_orders(
     occupancy: dict[GeometryAddress, int],
     bridge_endpoints: frozenset[GeometryAddress],
     registry: KernelRegistry,
+    existing_orders: tuple[tuple[_SurfaceRecord, ...], ...] = (),
 ) -> tuple[tuple[_SurfaceRecord, ...], ...]:
     _require_order(max_order)
     native = {address: count for address, count in occupancy.items() if scope.contains(address)}
-    grouped_zero: dict[tuple[int, int], dict[GeometryAddress, tuple[int, int, int, int, int, int]]] = {}
-    for address in sorted(native, key=lambda item: item.stable_key()):
-        projected, residual, ambiguous_count, invalid_count = _physical_to_reference(address, scope.reference_layer, registry)
-        distributed = _distribute_mass(native[address] * Q16_ONE, tuple(weight for _q, _r, weight in projected))
-        count_owner = max(projected, key=lambda item: (item[2], -item[0], -item[1]))[:2]
-        for (q, r, weight), mass in zip(projected, distributed):
-            owned = (q, r) == count_owner
-            grouped_zero.setdefault((q, r), {})[address] = (
-                weight,
-                mass,
-                native[address] if owned else 0,
-                residual if owned else 0,
-                ambiguous_count if owned else 0,
-                invalid_count if owned else 0,
-            )
-    order_zero = []
-    for (q, r), source_map in sorted(grouped_zero.items()):
-        sources = tuple(sorted(source_map, key=lambda item: item.stable_key()))
-        aggregate_count = sum(source_map[source][2] for source in sources)
-        native_count = sum(source_map[source][2] for source in sources)
-        aggregate_mass = sum(source_map[source][1] for source in sources)
-        coverage_residual = sum(source_map[source][3] for source in sources)
-        ambiguous_count = sum(source_map[source][4] for source in sources)
-        invalid_count = sum(source_map[source][5] for source in sources)
-        address = _surface_address(scope, 0, q, r)
-        source_counts = tuple((source, native[source]) for source in sources)
-        memberships = tuple((source, source_map[source][0]) for source in sources)
-        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources), coverage_residual, ambiguous_count, invalid_count, memberships), (), source_counts))
-    orders: list[tuple[_SurfaceRecord, ...]] = [tuple(order_zero)]
-    for order in range(1, max_order + 1):
+    orders: list[tuple[_SurfaceRecord, ...]] = list(existing_orders)
+    if not orders:
+        grouped_zero: dict[tuple[int, int], dict[GeometryAddress, tuple[int, int, int, int, int, int]]] = {}
+        for address in sorted(native, key=lambda item: item.stable_key()):
+            projected, residual, ambiguous_count, invalid_count = _physical_to_reference(address, scope.reference_layer, registry)
+            distributed = _distribute_mass(native[address] * Q16_ONE, tuple(weight for _q, _r, weight in projected))
+            count_owner = max(projected, key=lambda item: (item[2], -item[0], -item[1]))[:2]
+            for (q, r, weight), mass in zip(projected, distributed):
+                owned = (q, r) == count_owner
+                grouped_zero.setdefault((q, r), {})[address] = (
+                    weight,
+                    mass,
+                    native[address] if owned else 0,
+                    residual if owned else 0,
+                    ambiguous_count if owned else 0,
+                    invalid_count if owned else 0,
+                )
+        order_zero = []
+        for (q, r), source_map in sorted(grouped_zero.items()):
+            sources = tuple(sorted(source_map, key=lambda item: item.stable_key()))
+            aggregate_count = sum(source_map[source][2] for source in sources)
+            native_count = sum(source_map[source][2] for source in sources)
+            aggregate_mass = sum(source_map[source][1] for source in sources)
+            coverage_residual = sum(source_map[source][3] for source in sources)
+            ambiguous_count = sum(source_map[source][4] for source in sources)
+            invalid_count = sum(source_map[source][5] for source in sources)
+            address = _surface_address(scope, 0, q, r)
+            source_counts = tuple((source, native[source]) for source in sources)
+            memberships = tuple((source, source_map[source][0]) for source in sources)
+            order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources), coverage_residual, ambiguous_count, invalid_count, memberships), (), source_counts))
+        orders.append(tuple(order_zero))
+    for order in range(len(orders), max_order + 1):
         lower = orders[-1]
         lower_by_address = {record.projection.address: record for record in lower}
         grouped: dict[SurfaceAggregateAddress, dict[SurfaceAggregateAddress, tuple[int, tuple[str, ...], int, int, int, int]]] = {}
@@ -256,7 +259,7 @@ def build_surface_orders(
             truth_owner = max(targets, key=lambda item: (item[1], -item[0].q, -item[0].r))[0]
             for (physical_target, weight), mass in zip(targets, distributed):
                 q, r = physical_target.q, physical_target.r
-                flags = ("physical_overlap_projection", "translation_normalized")
+                flags = ("bounded_approximate_quadrature", "physical_overlap_projection")
                 target = _surface_address(scope, order, q, r)
                 owned = physical_target == truth_owner
                 grouped.setdefault(target, {})[record.projection.address] = (

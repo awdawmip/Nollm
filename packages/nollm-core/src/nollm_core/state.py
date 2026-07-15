@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 from threading import RLock
 
@@ -32,6 +33,30 @@ from .surface import (
     surface_page,
 )
 from .workspace_owner import claim, release
+
+
+@lru_cache(maxsize=256)
+def _cached_surface_orders(
+    scope: PhysicalFieldScope,
+    max_order: int,
+    occupancy_items: tuple[tuple[GeometryAddress, int], ...],
+    endpoints: tuple[GeometryAddress, ...],
+):
+    previous = () if max_order == 0 else _cached_surface_orders(
+        scope, max_order - 1, occupancy_items, endpoints
+    )
+    return build_surface_orders(
+        scope,
+        max_order,
+        dict(occupancy_items),
+        frozenset(endpoints),
+        KernelRegistry(),
+        previous,
+    )
+
+
+def clear_surface_order_cache() -> None:
+    _cached_surface_orders.cache_clear()
 
 
 class _CellStore:
@@ -77,6 +102,7 @@ class CoreRuntime:
             release(self._owner_key, self)
             raise
         self._cell_store = _CellStore(self._cells)
+        self._surface_order_cache: dict[str, tuple[tuple[object, ...], ...]] = {}
 
     def close(self) -> None:
         with self._lock:
@@ -170,6 +196,8 @@ class CoreRuntime:
         self._cells = cells
         self._bridges = bridges
         self._cell_store = _CellStore(self._cells)
+        self._surface_order_cache.clear()
+        clear_surface_order_cache()
         for event in events:
             self._emit_trace(event)
         self._emit_trace(CoreTraceEvent("core.batch.commit", {"command_count": len(commands)}, "stable"))
@@ -255,6 +283,8 @@ class CoreRuntime:
             self._cells = cells
             self._bridges = bridges
             self._cell_store = _CellStore(self._cells)
+            self._surface_order_cache.clear()
+            clear_surface_order_cache()
             self._emit_trace(CoreTraceEvent("core.state.import", {"size_bytes": len(payload)}, "stable"))
 
     def _state_bytes_locked(self) -> bytes:
@@ -263,14 +293,22 @@ class CoreRuntime:
     def _surface_orders_locked(self, scope: PhysicalFieldScope, max_order: int):
         if type(scope) is not PhysicalFieldScope:
             raise TypeError("scope must be PhysicalFieldScope")
-        occupancy = {address: len(atoms) for address, atoms in self._cells.items()}
-        endpoints = frozenset(
+        occupancy_items = tuple(sorted(
+            ((address, len(atoms)) for address, atoms in self._cells.items()),
+            key=lambda item: item[0].stable_key(),
+        ))
+        endpoints = tuple(sorted((
             cell
             for bridge in self._bridges.values()
             for anchor in (bridge.from_anchor, bridge.to_anchor)
             for cell in anchor.cells
-        )
-        return build_surface_orders(scope, max_order, occupancy, endpoints, self._kernel_registry)
+        ), key=lambda item: item.stable_key()))
+        cached = self._surface_order_cache.get(scope.identity, ())
+        if len(cached) > max_order:
+            return cached[: max_order + 1]
+        orders = _cached_surface_orders(scope, max_order, occupancy_items, endpoints)
+        self._surface_order_cache[scope.identity] = orders
+        return orders
 
     def _atoms_at_locked(self, address: GeometryAddress) -> tuple[tuple[AtomHandle, MemoryAtom], ...]:
         return self._cell_store.atoms_at(address)

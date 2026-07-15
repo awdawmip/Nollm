@@ -164,4 +164,4 @@ def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> N
         for projection in page.cells:
             descent = runtime.surface_descend(SCOPE, projection.address, None, 256)
             assert descent.cells[0].projection.address == order_zero
-            assert descent.cells[0].flags == ("physical_overlap_projection", "translation_normalized")
+            assert descent.cells[0].flags == ("bounded_approximate_quadrature", "physical_overlap_projection")

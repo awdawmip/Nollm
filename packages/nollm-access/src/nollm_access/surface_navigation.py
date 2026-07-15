@@ -202,7 +202,7 @@ class AccessSurfaceNavigator:
         if type(operation_id) is not str or not operation_id:
             raise ValueError("operation_id is required")
         with CoreRuntime(self._workspace) as core:
-            selection = select_active_surface(core.surface_orders(scope, budget.hard_max_order), budget)
+            selection = self._select_active_surface(core, scope, budget)
         state = SurfaceTraversalState(operation_id, scope, budget, selection.info.order)
         return self.page(state)
 
@@ -275,7 +275,7 @@ class AccessSurfaceNavigator:
         if state.call_count >= state.budget.max_calls:
             raise RuntimeError("Surface traversal call limit reached")
         with CoreRuntime(self._workspace) as core:
-            selection = select_active_surface(core.surface_orders(state.scope, state.budget.hard_max_order), state.budget)
+            selection = self._select_active_surface(core, state.scope, state.budget)
             if state.parent_address is None:
                 raw_page = core.surface_page(state.scope, state.order, state.after, state.budget.page_size)
                 projections = raw_page.cells
@@ -298,6 +298,20 @@ class AccessSurfaceNavigator:
             raw_page.has_more,
             raw_page.next_after,
         )
+
+    @staticmethod
+    def _select_active_surface(
+        core: CoreRuntime,
+        scope: PhysicalFieldScope,
+        budget: SurfaceBudgetProfile,
+    ) -> ActiveSurfaceSelection:
+        infos = []
+        for order in range(budget.hard_max_order + 1):
+            infos.append(core.surface_orders(scope, order)[-1])
+            selection = select_active_surface(tuple(infos), budget)
+            if not selection.overflow:
+                return selection
+        return selection
 
     def continue_page(self, page: SurfaceTraversalPage) -> SurfaceTraversalPage:
         if not page.has_more or page.next_after is None:

@@ -16,7 +16,7 @@ from .physical_coverage import PhysicalCoverageExpansion, PhysicalCoverageMember
 from .ports import CoreTraceEvent, TraceSink
 from .profiles import available_profile_ids, runtime_profile
 from .recall import CoreRecallItem, CoreRecallRequest, CoreRecallResult, RecallBudget
-from .state import CoreRuntime
+from .state import CoreRuntime, clear_surface_order_cache
 from .surface import (
     CoverageDescentCell,
     CoverageDescentPage,
@@ -65,6 +65,7 @@ __all__ = [
     "expand_template",
     "expand_physical_coverage",
     "clear_physical_coverage_cache",
+    "clear_surface_order_cache",
     "available_profile_ids",
     "runtime_profile",
     "validate_lateral_ring",

@@ -36,6 +36,7 @@
     "TraceSink",
     "available_profile_ids",
     "clear_physical_coverage_cache",
+    "clear_surface_order_cache",
     "expand_physical_coverage",
     "expand_template",
     "runtime_profile",
