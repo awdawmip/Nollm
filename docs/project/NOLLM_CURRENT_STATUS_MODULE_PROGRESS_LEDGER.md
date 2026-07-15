@@ -14,8 +14,8 @@ This is the only active module ledger. Versioned ledgers are historical evidence
 | ACCESS | CAPABILITY_VALIDATED | 95% | high for dense single-entry path | finite dense previews, exact-one active entry, kernel-dependent dense Recall, safe-target preflight | live Host validation | +3% |
 | HISTORY | PROPOSED | 10% | low | charter | paused | 0% |
 | AUDIT | PROPOSED | 10% | low | charter | paused | 0% |
-| OPENCLAW | CAPABILITY_VALIDATED | 90% | medium-high | R1/R2/R3/P1, restart Recall, single entry | dense live Recall and provider latency | +5% |
+| OPENCLAW | CAPABILITY_VALIDATED | 92% | medium-high | R1/R2/R3, plugin 0.11 safe-field schema, single-entry timing | new P1 and dense Live failed under provider/navigation limits | +2% |
 | LAB | IMPLEMENTED | 95% | high for current structural gates | broad calibration, safe-domain proof, dense Surface and single-entry Recall fixtures | live observation | +2% |
-| DISTRIBUTIONS | IMPLEMENTED | 83% | medium-high | broad policy and writable-field metadata, v0.10 composition | plugin schema and final migration | +2% |
+| DISTRIBUTIONS | IMPLEMENTED | 85% | high for current composition | broad policy, writable-field metadata, and plugin 0.11 schema | formal release | +5% |
 
 No percentage denotes permanent completion. Multi-layer semantic Placement, Stitch, persistent Surface caches, PB validation, and formal release remain outside this task.

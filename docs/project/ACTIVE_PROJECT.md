@@ -14,4 +14,4 @@ Current state:
 CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_IN_PROGRESS
 ```
 
-The `5a45384` capability remains a validated checkpoint. This task broadens Oracle calibration, separates transport and writable address policy, corrects occupancy semantics, and validates dense single-entry locality. Exact Decimal/polygon Coverage remains a Lab Oracle, not the production route.
+The `5a45384` capability remains a validated checkpoint. Broad Oracle calibration, the separate writable field, occupancy semantics, dense synthetic Surface, and dense single-entry Recall are implemented. Real R1/R2/R3 passed, while new P1 and dense OpenClaw Live remain incomplete under recorded model failures. Exact Decimal/polygon Coverage remains a Lab Oracle, not the production route.

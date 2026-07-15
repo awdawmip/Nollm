@@ -16374,7 +16374,8 @@
       "integrations.openclaw.formation-loop.python.nollm_openclaw_formation.dream_adapter",
       "json",
       "nollm_access",
-      "pathlib"
+      "pathlib",
+      "time"
     ],
     "lifecycle_status": "ACTIVE",
     "migration_action": "KEEP",

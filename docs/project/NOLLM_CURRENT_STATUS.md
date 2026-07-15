@@ -24,9 +24,9 @@ P1 core_write_count=1 and restart Recall answer BX-3917.
 Active live workspace:
 
 ```text
-C:\Users\Administrator\.openclaw\memory\nollm-v39-bounded-approximate-v1-migrated
-non-destructive registry migration v5 -> v6; physical addresses unchanged
-Statement and HandleBinding bytes preserved from the accepted source
+C:\Users\Administrator\.openclaw\memory\nollm-caold-broad-residue-safe-field-dense-locality-v1
+non-destructive copy of the accepted V3.9 workspace; original remains unchanged
+plugin 0.11.0 enabled with broad Policy, safe writable field, and Recall timing
 ```
 
 Independent audit correction:
@@ -71,6 +71,17 @@ natural entry B did not emerge; observation minimum is zero;
 no combined request, semantic index, or persisted fact-to-entry mapping.
 ```
 
+OpenClaw live result:
+
+```text
+R1 Alpha, R2 Office, and R3 NONE passed through the real Gateway;
+R2 Surface/Core were 427ms/112ms versus 100.574s hidden model time;
+new P1 Formation succeeded but Placement rejected invalid root navigation with zero writes;
+P1 retry timed out in the provider and restart Recall selected the wrong Alpha locality;
+dense coral Live produced no delivered response or coral Statement;
+status remains IN_PROGRESS; no completion tag is authorized.
+```
+
 Current legal boundary:
 
 ```text
@@ -82,6 +93,6 @@ exact Decimal/polygon only as Lab Oracle;
 no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding.
 ```
 
-The active policy choice, safe writable radius, dense-field evidence, and final
-HEAD have not yet been established. Progress is recorded in
-`docs/project/CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_REPORT.md`.
+The broad Policy, safe writable radius, dense synthetic evidence, and plugin
+contract are established. P1 and dense OpenClaw Live remain open. Progress is
+recorded in `docs/project/CAOLD_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_REPORT.md`.

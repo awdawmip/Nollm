@@ -6,7 +6,7 @@
 - Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_9_BOUNDED_APPROXIMATE_HEX_COVERAGE_20260715.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
 - Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_BROAD_RESIDUE_SAFE_FIELD_DENSE_LOCALITY_RECALL_TASK_20260715.md`.
-- `871f7820` is the input checkpoint. Preserve its physical/Surface address separation, single-entry Wire, source-centered Oracle and P1 evidence, but do not preserve Decimal polygon Coverage as the production path.
+- `5a45384` is the input checkpoint. Preserve its physical/Surface address separation, single-entry Wire, source-centered Oracle and P1 evidence, but do not preserve Decimal polygon Coverage as the production path.
 
 ## Hard physical contract
 

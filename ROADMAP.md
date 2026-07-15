@@ -19,8 +19,9 @@ to Access. This is capability validation, not a final or sealed M1 API.
 
 OpenClaw Live, real model calls, statement/placement corpora, semantic quality
 evaluation, History/Audit products, PB-scale partitioning, and physical GitHub
-splitting require separately approved later tasks. M1 does not prove LLM
-placement quality and does not activate any model or host integration.
+splitting require separately approved later tasks.
+M1 does not prove LLM placement quality and does not activate any model or host
+integration.
 
 The next stage must preserve addressed Handles, explicit geometry Recall,
 Evidence first, and the absence of graph/vector/embedding or external relation
