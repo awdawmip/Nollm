@@ -63,6 +63,17 @@ def test_orders_zero_through_eight_really_coarsen_dense_field(tmp_path) -> None:
     assert all(info.scope == SCOPE for info in infos)
 
 
+def test_higher_orders_count_native_atoms_not_source_cells(tmp_path) -> None:
+    with CoreRuntime(tmp_path) as runtime:
+        runtime.put(MemoryAtom("a", "a"), cell(0, 0, 0))
+        runtime.put(MemoryAtom("b", "b"), cell(0, 0, 0))
+        infos = runtime.surface_orders(SCOPE, 3)
+        pages = tuple(runtime.surface_page(SCOPE, order, None, 256) for order in range(4))
+    assert all(info.native_atom_count == 2 for info in infos)
+    assert all(max(projection.native_atom_count for projection in page.cells) == 2 for page in pages)
+    assert all(info.coverage_ambiguous_count == 0 and info.coverage_invalid_count == 0 for info in infos)
+
+
 def test_overlap_descent_has_no_unique_parent(tmp_path) -> None:
     with CoreRuntime(tmp_path) as runtime:
         dense(runtime, 4)
@@ -116,6 +127,14 @@ def test_surface_contract_is_query_free_and_rejects_unsupported_scope(tmp_path) 
             runtime.surface_page(SCOPE, 0, cell(0, 0, 0), 8)
 
 
+def test_surface_fails_explicitly_for_uncertified_chart(tmp_path) -> None:
+    scope = PhysicalFieldScope("default_dream_v1", "uncertified", (0, 1), 0, max_relative_layer_delta=1)
+    with CoreRuntime(tmp_path) as runtime:
+        runtime.put(MemoryAtom("a", "a"), GeometryAddress("default_dream_v1", "uncertified", 1, 0, 0))
+        with pytest.raises(ValueError, match="chart_id=default"):
+            runtime.surface_orders(scope, 1)
+
+
 def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> None:
     from nollm_core import expand_physical_coverage
 
@@ -128,8 +147,12 @@ def test_surface_order_one_contains_every_physical_overlap_member(tmp_path) -> N
         target_addresses = {(member.target.q, member.target.r) for member in expected.members}
         assert {(projection.address.q, projection.address.r) for projection in page.cells} == target_addresses
         assert sum(projection.aggregate_mass_q16 for projection in page.cells) == 65536
-        assert runtime.surface_orders(SCOPE, 1)[1].coverage_residual_q16 == 0
+        info = runtime.surface_orders(SCOPE, 1)[1]
+        assert info.coverage_residual_q16 == expected.q16_rounding_residual
+        assert info.coverage_residual_q16 > 0
+        assert info.coverage_ambiguous_count == 0 and info.coverage_invalid_count == 0
+        assert sum(projection.coverage_residual_q16 for projection in page.cells) == info.coverage_residual_q16
         for projection in page.cells:
             descent = runtime.surface_descend(SCOPE, projection.address, None, 256)
             assert descent.cells[0].projection.address == order_zero
-            assert descent.cells[0].flags == ("physical_overlap_projection", "translation_covariant")
+            assert descent.cells[0].flags == ("physical_overlap_projection", "translation_normalized")

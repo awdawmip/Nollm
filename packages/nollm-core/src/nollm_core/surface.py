@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_CEILING
 from hashlib import sha256
 import json
 
 from .fixed_point import Q16_ONE
 from .geometry import GeometryAddress
 from .kernel_registry import KernelRegistry
+from .physical_coverage import PhysicalCoverageExpansion, expand_physical_coverage
 from .validation import exact_int, exact_mapping, exact_str
 
 
@@ -143,6 +145,9 @@ class SurfaceCellProjection:
     source_cells: tuple[GeometryAddress, ...]
     has_deeper_locality: bool
     has_bridge_endpoint: bool
+    coverage_residual_q16: int = 0
+    coverage_ambiguous_count: int = 0
+    coverage_invalid_count: int = 0
     truncated: bool = False
     overflow: bool = False
 
@@ -161,6 +166,8 @@ class SurfaceOrderInfo:
     aggregate_mass_q16: int
     coverage_residual_q16: int
     max_descent_depth: int
+    coverage_ambiguous_count: int = 0
+    coverage_invalid_count: int = 0
     overflow: bool = False
 
     @property
@@ -197,6 +204,7 @@ class CoverageDescentPage:
 class _SurfaceRecord:
     projection: SurfaceCellProjection
     members: tuple[tuple[SurfaceAggregateAddress, int, tuple[str, ...]], ...]
+    source_native_counts: tuple[tuple[GeometryAddress, int], ...]
 
 
 def build_surface_orders(
@@ -208,50 +216,95 @@ def build_surface_orders(
 ) -> tuple[tuple[_SurfaceRecord, ...], ...]:
     _require_order(max_order)
     native = {address: count for address, count in occupancy.items() if scope.contains(address)}
-    grouped_zero: dict[tuple[int, int], dict[GeometryAddress, tuple[int, int, int]]] = {}
+    grouped_zero: dict[tuple[int, int], dict[GeometryAddress, tuple[int, int, int, int, int, int]]] = {}
     for address in sorted(native, key=lambda item: item.stable_key()):
-        projected, _residual = _physical_to_reference(address, scope.reference_layer, registry)
+        projected, residual, ambiguous_count, invalid_count = _physical_to_reference(address, scope.reference_layer, registry)
         distributed = _distribute_mass(native[address] * Q16_ONE, tuple(weight for _q, _r, weight in projected))
         count_owner = max(projected, key=lambda item: (item[2], -item[0], -item[1]))[:2]
         for (q, r, weight), mass in zip(projected, distributed):
-            grouped_zero.setdefault((q, r), {})[address] = (weight, mass, native[address] if (q, r) == count_owner else 0)
+            owned = (q, r) == count_owner
+            grouped_zero.setdefault((q, r), {})[address] = (
+                weight,
+                mass,
+                native[address] if owned else 0,
+                residual if owned else 0,
+                ambiguous_count if owned else 0,
+                invalid_count if owned else 0,
+            )
     order_zero = []
     for (q, r), source_map in sorted(grouped_zero.items()):
         sources = tuple(sorted(source_map, key=lambda item: item.stable_key()))
         aggregate_count = sum(source_map[source][2] for source in sources)
-        native_count = sum(native[source] for source in sources if source.layer == scope.reference_layer and (source.q, source.r) == (q, r))
+        native_count = sum(source_map[source][2] for source in sources)
         aggregate_mass = sum(source_map[source][1] for source in sources)
+        coverage_residual = sum(source_map[source][3] for source in sources)
+        ambiguous_count = sum(source_map[source][4] for source in sources)
+        invalid_count = sum(source_map[source][5] for source in sources)
         address = _surface_address(scope, 0, q, r)
-        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources)), ()))
+        source_counts = tuple((source, native[source]) for source in sources)
+        order_zero.append(_SurfaceRecord(_projection(scope, address, native_count, aggregate_count, aggregate_mass, sources, False, any(source in bridge_endpoints for source in sources), coverage_residual, ambiguous_count, invalid_count), (), source_counts))
     orders: list[tuple[_SurfaceRecord, ...]] = [tuple(order_zero)]
     for order in range(1, max_order + 1):
         lower = orders[-1]
         lower_by_address = {record.projection.address: record for record in lower}
-        grouped: dict[SurfaceAggregateAddress, dict[SurfaceAggregateAddress, tuple[int, tuple[str, ...], int]]] = {}
+        grouped: dict[SurfaceAggregateAddress, dict[SurfaceAggregateAddress, tuple[int, tuple[str, ...], int, int, int, int]]] = {}
         for record in lower:
             source = GeometryAddress(scope.profile_id, scope.chart_id, scope.reference_layer - order + 1, record.projection.address.q, record.projection.address.r)
-            targets = registry.expand_coverage(source, "coverage_up")
+            targets, expansion_residual, expansion_ambiguous, expansion_invalid = _expand_with_truth(source, "coverage_up", registry)
             distributed = _distribute_mass(record.projection.aggregate_mass_q16, tuple(weight for _target, weight in targets))
+            truth_owner = max(targets, key=lambda item: (item[1], -item[0].q, -item[0].r))[0]
             for (physical_target, weight), mass in zip(targets, distributed):
                 q, r = physical_target.q, physical_target.r
-                flags = ("physical_overlap_projection", "translation_covariant")
+                flags = ("physical_overlap_projection", "translation_normalized")
                 target = _surface_address(scope, order, q, r)
-                grouped.setdefault(target, {})[record.projection.address] = (weight, flags, mass)
+                owned = physical_target == truth_owner
+                grouped.setdefault(target, {})[record.projection.address] = (
+                    weight,
+                    flags,
+                    mass,
+                    record.projection.coverage_residual_q16 + expansion_residual if owned else 0,
+                    record.projection.coverage_ambiguous_count + expansion_ambiguous if owned else 0,
+                    record.projection.coverage_invalid_count + expansion_invalid if owned else 0,
+                )
         records = []
         for target, edge_map in sorted(grouped.items(), key=lambda item: item[0].stable_key()):
             members = tuple((address, edge_map[address][0], edge_map[address][1]) for address in sorted(edge_map, key=lambda item: item.stable_key()))
             source_cells = tuple(sorted({source for address, _weight, _flags in members for source in lower_by_address[address].projection.source_cells}, key=lambda item: item.stable_key()))
+            source_count_map = {
+                source: count
+                for address, _weight, _flags in members
+                for source, count in lower_by_address[address].source_native_counts
+            }
             aggregate_count = sum(lower_by_address[address].projection.aggregate_atom_count for address, _weight, _flags in members)
             aggregate_mass = sum(edge_map[address][2] for address, _weight, _flags in members)
-            records.append(_SurfaceRecord(_projection(scope, target, 0, aggregate_count, aggregate_mass, source_cells, True, any(source in bridge_endpoints for source in source_cells)), members))
+            native_count = sum(source_count_map.values())
+            coverage_residual = sum(edge_map[address][3] for address in edge_map)
+            ambiguous_count = sum(edge_map[address][4] for address in edge_map)
+            invalid_count = sum(edge_map[address][5] for address in edge_map)
+            source_counts = tuple(sorted(source_count_map.items(), key=lambda item: item[0].stable_key()))
+            records.append(_SurfaceRecord(_projection(scope, target, native_count, aggregate_count, aggregate_mass, source_cells, True, any(source in bridge_endpoints for source in source_cells), coverage_residual, ambiguous_count, invalid_count), members, source_counts))
         orders.append(tuple(records))
     return tuple(orders)
 
 
 def order_info(scope: PhysicalFieldScope, records: tuple[_SurfaceRecord, ...], order: int) -> SurfaceOrderInfo:
-    source_cells = {source for record in records for source in record.projection.source_cells}
-    native_atom_count = sum(max(record.projection.native_atom_count, 0) for record in records) if order == 0 else len(source_cells)
-    return SurfaceOrderInfo(scope, _grid(scope, order), len(records), (len(records) + DEFAULT_PAGE_SIZE - 1) // DEFAULT_PAGE_SIZE, native_atom_count, sum(record.projection.aggregate_mass_q16 for record in records), 0, order)
+    source_counts = {
+        source: count
+        for record in records
+        for source, count in record.source_native_counts
+    }
+    return SurfaceOrderInfo(
+        scope,
+        _grid(scope, order),
+        len(records),
+        (len(records) + DEFAULT_PAGE_SIZE - 1) // DEFAULT_PAGE_SIZE,
+        sum(source_counts.values()),
+        sum(record.projection.aggregate_mass_q16 for record in records),
+        sum(record.projection.coverage_residual_q16 for record in records),
+        order,
+        sum(record.projection.coverage_ambiguous_count for record in records),
+        sum(record.projection.coverage_invalid_count for record in records),
+    )
 
 
 def surface_page(scope: PhysicalFieldScope, order: int, records: tuple[_SurfaceRecord, ...], after: SurfaceAggregateAddress | None, limit: int) -> SurfacePage:
@@ -278,10 +331,10 @@ def descent_page(scope: PhysicalFieldScope, parent_address: SurfaceAggregateAddr
     return CoverageDescentPage(scope, parent_address, page_cells, has_more, page_cells[-1].projection.address if has_more and page_cells else None)
 
 
-def _projection(scope, address, native_count, aggregate_count, mass, sources, deeper, bridge):
+def _projection(scope, address, native_count, aggregate_count, mass, sources, deeper, bridge, residual=0, ambiguous=0, invalid=0):
     area = OBSERVATION_AREA_RATIO_Q32[address.aggregation_order]
     density = mass * Q32_ONE // area
-    return SurfaceCellProjection(address, _grid(scope, address.aggregation_order), native_count, aggregate_count, len(sources), mass, density, sources, deeper, bridge)
+    return SurfaceCellProjection(address, _grid(scope, address.aggregation_order), native_count, aggregate_count, len(sources), mass, density, sources, deeper, bridge, residual, ambiguous, invalid)
 
 
 def _grid(scope: PhysicalFieldScope, order: int) -> SurfaceGridSpec:
@@ -292,27 +345,63 @@ def _surface_address(scope: PhysicalFieldScope, order: int, q: int, r: int) -> S
     return SurfaceAggregateAddress(scope.profile_id, scope.chart_id, scope.identity, scope.reference_layer, order, q, r, (scope.reference_layer - order) % 8)
 
 
-def _physical_to_reference(address: GeometryAddress, reference_layer: int, registry: KernelRegistry) -> tuple[tuple[tuple[int, int, int], ...], int]:
+def _physical_to_reference(address: GeometryAddress, reference_layer: int, registry: KernelRegistry) -> tuple[tuple[tuple[int, int, int], ...], int, int, int]:
     frontier = {address: Q16_ONE}
     layer = address.layer
+    residual = 0
+    ambiguous_count = 0
+    invalid_count = 0
     while layer > reference_layer:
-        frontier = _project_frontier(frontier, registry, "coverage_up")
+        frontier, step_residual, step_ambiguous, step_invalid = _project_frontier(frontier, registry, "coverage_up")
+        residual += step_residual
+        ambiguous_count += step_ambiguous
+        invalid_count += step_invalid
         layer -= 1
     while layer < reference_layer:
-        frontier = _project_frontier(frontier, registry, "coverage_down")
+        frontier, step_residual, step_ambiguous, step_invalid = _project_frontier(frontier, registry, "coverage_down")
+        residual += step_residual
+        ambiguous_count += step_ambiguous
+        invalid_count += step_invalid
         layer += 1
     ordered = tuple((cell.q, cell.r, weight) for cell, weight in sorted(frontier.items(), key=lambda item: item[0].stable_key()))
-    return ordered, Q16_ONE - sum(weight for _q, _r, weight in ordered)
+    residual += abs(Q16_ONE - sum(weight for _q, _r, weight in ordered))
+    return ordered, residual, ambiguous_count, invalid_count
 
 
-def _project_frontier(frontier: dict[GeometryAddress, int], registry: KernelRegistry, direction: str) -> dict[GeometryAddress, int]:
+def _project_frontier(frontier: dict[GeometryAddress, int], registry: KernelRegistry, direction: str) -> tuple[dict[GeometryAddress, int], int, int, int]:
     projected: dict[GeometryAddress, int] = {}
+    residual = 0
+    ambiguous_count = 0
+    invalid_count = 0
     for source, source_mass in sorted(frontier.items(), key=lambda item: item[0].stable_key()):
-        targets = registry.expand_coverage(source, direction)
+        targets, expansion_residual, expansion_ambiguous, expansion_invalid = _expand_with_truth(source, direction, registry)
+        residual += expansion_residual
+        ambiguous_count += expansion_ambiguous
+        invalid_count += expansion_invalid
         masses = _distribute_mass(source_mass, tuple(weight for _target, weight in targets))
         for (target, _weight), mass in zip(targets, masses):
             projected[target] = projected.get(target, 0) + mass
-    return projected
+    return projected, residual, ambiguous_count, invalid_count
+
+
+def _expand_with_truth(source: GeometryAddress, direction: str, registry: KernelRegistry):
+    if source.profile_id != "default_dream_v1":
+        targets = registry.expand_coverage(source, direction)
+        return targets, abs(Q16_ONE - sum(weight for _target, weight in targets)), 0, 0
+    expansion = expand_physical_coverage(source, direction)
+    if registry.expand_coverage(source, direction) != expansion.targets():
+        raise ValueError("Surface physical expansion disagrees with the Core registry")
+    return expansion.targets(), _coverage_residual_q16(expansion), int(expansion.ambiguous), 0
+
+
+def _coverage_residual_q16(expansion: PhysicalCoverageExpansion) -> int:
+    physical_residual = (
+        max(Decimal(expansion.raw_partition_residual) - Decimal(expansion.numeric_error_bound), Decimal(0))
+        + Decimal(expansion.candidate_window_residual)
+        + Decimal(expansion.threshold_residual)
+    )
+    physical_q16 = int((physical_residual * Q16_ONE).to_integral_value(rounding=ROUND_CEILING))
+    return physical_q16 + expansion.q16_rounding_residual
 
 
 def _distribute_mass(mass: int, weights: tuple[int, ...]) -> tuple[int, ...]:

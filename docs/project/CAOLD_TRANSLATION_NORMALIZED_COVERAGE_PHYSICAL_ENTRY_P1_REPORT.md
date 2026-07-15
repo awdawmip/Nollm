@@ -156,3 +156,46 @@ Scope added: none.
 Deviation above 5%: none.
 Gate 3 authorized: yes.
 ```
+
+## Gate 3
+
+Expected vector and direction:
+
+```text
+C +10 remains primary; A +5 begins adaptation.
+physical residual -> truthful Surface projection -> explicit physical entry
+```
+
+Surface records now carry an immutable source-Cell-to-native-Atom occupancy
+mapping. Every higher-order projection computes `native_atom_count` from that
+mapping, and order summaries deduplicate the source mapping before totaling it.
+No order uses `len(source_cells)` as an Atom count.
+
+Each certified physical expansion contributes its physical and Q16 residual
+once to a deterministic owner projection, so overlap fanout cannot multiply the
+same residual. `SurfaceCellProjection` and `SurfaceOrderInfo` expose
+`coverage_residual_q16`, `coverage_ambiguous_count`, and
+`coverage_invalid_count`. Unsupported chart/phase/domain input fails through
+the Core physical guard; no nearest-cell fallback is present.
+
+Gate 3 focused evidence:
+
+```text
+adaptive Surface focused tests: 9 passed
+Core complete test suite: 57 passed
+multi-Atom same-Cell native count at orders 0..3: 2 at every order
+single expansion order residual: equals physical expansion Q16 rounding residual
+projection residual sum: equals order residual
+certified ambiguity count: 0
+certified invalid count: 0
+```
+
+Gate result:
+
+```text
+Actual modules affected: Core Surface and its tests.
+Actual progress: C +10 Surface truth is evidenced; A remains pending Gate 4.
+Scope added: none.
+Deviation above 5%: none.
+Gate 4 authorized after complete Core regression.
+```
