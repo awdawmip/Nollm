@@ -80,3 +80,13 @@ validation/gpr1/**
 - Update the expected vector at each Gate. If a module deviates by more than 5%, update task scope and status.
 - Real progress must be committed. An incomplete result still requires a clean tree and one full-history Git bundle.
 - Windows-first. Use PowerShell commands in the delivery report.
+
+## 2026-07-15 Closure State
+
+- The declared active domain is signed-64 q/r, physical layers -64..64, `chart_id=default`, and `phase=null`.
+- Default Coverage uses source-centered bounded coordinates and validates raw partition mass before Q16.
+- Surface native Atom counts and physical residuals come from current Core truth.
+- Recall and Placement both continue through a finite physical-entry page; the Host selects exactly one displayed candidate.
+- The normalized P1 Formation-to-Placement-to-restart-Recall loop is validated at implementation HEAD `9296869`.
+- Do not reopen this closure or add multi-entry, multi-physical-layer semantic Placement, Stitch, density relocation, or persistent Surface cache without a new taskbook.
+- Final delivery still requires final-HEAD Manifest equality, full regression, a clean tree, and one verified full-history bundle.

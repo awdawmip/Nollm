@@ -311,3 +311,194 @@ Scope added: none.
 Deviation above 5%: none.
 Gate 6 authorized: yes.
 ```
+
+## Gate 6
+
+Expected vector and direction:
+
+```text
+O +5 is primary; A/C/D support the timed write and reopen loop.
+explicit physical entry -> P1 write -> Gateway restart -> new-session Recall
+```
+
+The accepted V3.8 workspace was migrated non-destructively into a new V3.9
+workspace. Migration changed only the Core geometry registry from v4 to v5.
+The source workspace remained in place. Statement-tree and HandleBinding bytes
+are identical across source and target.
+
+```text
+source: C:\Users\Administrator\.openclaw\memory\nollm-caold-translation-covariant-v1
+target: C:\Users\Administrator\.openclaw\memory\nollm-caold-translation-normalized-v1-migrated
+cells=11 atoms=13 bindings=13 statement_files=20 bridges=0
+Statement tree SHA-256: 110dfd287d99e573018db9fcf807baf792b9e258aa8c1cf71ca64a31086f2222
+HandleBinding SHA-256: 3784f10d7fb8e58ba2683504ed75baa19e4b9d272ab1095b0f61dfca73d71f08
+migration receipt SHA-256: 5cc8b0a403f53a3aed390a24d2538693d571ad20179ff650eaf27b51190ecf92
+```
+
+The first empty-workspace attempt reached `placement_apply` and failed with
+`new_local requires a selected locality`; it wrote no Statement or Handle. A
+migrated-workspace attempt exposed an invalid Wire prompt that offered
+`open_physical_entries` at Order 1. The validator rejected it. The prompt now
+exposes only actions legal for its current order. A second Host defect stopped
+Recall at the physical-entry page; Recall now continues through the same
+explicit physical-entry state as Placement. Neither fix weakens candidate
+validation or introduces a Python-selected entry.
+
+The final P1 used ordinary natural chat and the real inherited
+`meituan/LongCat-2.0` model. Formation produced
+`dream:09adbf112797b51f45925c8b429c21a64c6ae6e90ebba9bf2e0e51e8ed1775a1`.
+The model selected an Order 0 Surface Cell, explicitly selected its one shown
+physical entry at `layer=0,q=-12,r=9`, then selected a supplied lateral
+locality. Access applied `new_local` at `layer=0,q=-13,r=9`, persisted the
+Statement, bound its real AtomHandle, and reported one Core write.
+
+Successful operation timing:
+
+```text
+formation_ms=16918
+surface_build_ms=70623
+surface_order_count=1
+surface_projection_count=10
+surface_page_count=2
+placement_prompt_build_ms=70381
+placement_subagent_ms=103359
+physical_entry_resolution_ms=310
+decision_validation_ms=10
+statement_persist_ms=2
+placement_apply_ms=9
+handle_bind_ms=0
+total_operation_ms=247409
+timeout_stage=null
+```
+
+The Gateway restart CLI waited past its own 120-second command window, but an
+independent status probe confirmed the replacement process was running,
+write-capable, and connected on OpenClaw `2026.6.11`. Plugin inspection showed
+version `0.9.0` loaded from this worktree. A new Session selected the exact new
+Statement through the physical entry at `layer=0,q=-13,r=9`, injected it with
+`visible_message_count=0`, and the main agent answered `QN-7426`.
+
+Live regressions:
+
+```text
+R1: completed; hidden Alpha release-window injection; correct visible answer
+R2: completed on bounded retry; entry=(layer0,q7,r0); local visitor facts plus lateral cafe fact
+R3: completed_none for 17*19; visible answer 323
+P1: Formation -> Surface -> physical entry -> PlacementDecision -> Access apply -> HandleBinding -> Core write
+Restart Recall: selected only dream:09adbf...; visible answer QN-7426
+Cursor/entry hint: absent
+OpenClaw direct Core import: absent
+```
+
+The external JSONL contains 156 canonical JSON lines at evidence-finalization
+time. Its SHA-256 is
+`a55de22d03d2855e0fc7328280df36be683437837b83bb2fd982e93dc6dd022c`.
+It records earlier failed attempts as well as the successful closure; failures
+were not overwritten.
+
+Gate result:
+
+```text
+Actual modules affected: OpenClaw, Access timing, Lab migration, and distribution composition.
+Actual progress: O +5 and A/C/D support are evidenced; P1 and restart Recall closed.
+Scope added: none; migration and timing are Gate 6 work.
+Deviation above 5%: none.
+Gate 7 authorized: yes.
+Implementation HEAD before authority/Manifest closure: 9296869281cf3d7d8a68fcf00a4628e75f5915c8
+```
+
+## Gate 7 Pre-Manifest Record
+
+Actual task vector:
+
+```text
+CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +5% |
+LAB +10% | DISTRIBUTIONS +5%
+```
+
+No Snapshot, public Trace, History, Audit, Stitch, multi-entry placement,
+semantic index, vector, embedding, or persistent Surface cache scope was added.
+
+Known limitations:
+
+```text
+q/r is signed 64-bit and physical layer is -64..64.
+Only chart_id=default and phase=null are supported by active physical Coverage.
+OpenClaw provider latency was high; successful end-to-end operations took minutes.
+The main Host also has an older non-Nollm project file; exact unique-code Recall proved Nollm injection without deleting it.
+Cross-platform portability was not validated in this Windows-first stage.
+Multi-physical-layer semantic Placement, Stitch, persistent Surface cache, and PB scale remain paused.
+```
+
+## Gate 7 Regression Record
+
+The pre-Manifest regression pass used Python 3.14.6 and Node 24.17.0. Package
+tests used package-minimal `PYTHONPATH` values because this independent clone
+does not install editable monorepo packages. The two attempted aggregate
+pytest commands exceeded their command-wide time limits and returned no usable
+suite evidence; every suite below was then rerun independently to a conclusive
+exit code.
+
+| Suite | Result |
+|---|---:|
+| `packages/nollm-core/tests` | 57 passed |
+| `packages/nollm-snapshot/tests` | 7 passed |
+| `packages/nollm-trace/tests` | 3 passed |
+| `packages/nollm-access/tests` | 78 passed, 8 deprecation warnings |
+| `integrations/openclaw/formation-loop/tests` | 37 passed |
+| `reference/python/tests/m0` | 45 passed |
+| DG1 focused geometry tests | 46 passed |
+| normalized migration and Decimal Oracle | 6 passed |
+| OpenClaw Node tests | 19 passed |
+| OpenClaw `plugin:check` | passed |
+| reusable geometry assets | 17 matched, 0 failures |
+| V3.8 authority and no-shortcut check | passed |
+| `git diff --check` | passed |
+
+External runner evidence is under
+`C:\Users\chaos\nollm_caold_translation_normalized_gate7_outputs`:
+
+```text
+translation_normalized.json a90f12a0ae4aa37b6d80c166f9b2ee7b5a2006951de143ddd5ce4a3d1116c629
+gvr1.json 06d01f464a871c9847f58c2165326e10330987f034d9bc2ecbbccdb6b2868cb0
+gra1.json 8f16323a76f71dd15490f5cbf9cff3358020eb3386d1f3405e4264de6592304d
+grc1.json cc3ffed1f1b84d3f8e7ce553be46e8f0cfca05fcd6d3bad1c1dc74bd7d38cb04
+gkd1.json f424a2f9bfd2cd414ba67754263dbdd8bde1246c8fe5f3545f5084eea9218276
+gpr1.json 09c128dff42a5ea89ad2981f65226d3e736e498343f744a5f6688d7ff24d71f6
+```
+
+The independent normalized Oracle C report passed 96 samples, all eight
+phases and both directions, large-coordinate stress, radius-4/radius-6 support
+identity, reciprocal intersection, and partition mass. Candidate and
+reciprocal mismatch counts are zero; maximum partition mass error is
+`3.164e-92`.
+
+Post-report Gate 7 checks established:
+
+```text
+Git tracked files=1818
+ownership Manifest rows=1818
+unclassified=0
+production boundary violations=0
+production cycles=[]
+OpenClaw direct nollm_core imports=0
+production Cursor/cluster_anchor/select_entries=0
+```
+
+The complete post-Manifest regression repeated every package suite, focused
+suite, external runner, governance tool, Node test, and plugin check listed
+above. Counts were unchanged, all six external runner hashes were byte-for-byte
+identical to the pre-Manifest pass, and `git diff --check` passed. Manifest
+generation/check/validation and tracked-row equality are repeated after the
+delivery commit as required by Gate 7.
+
+The final legal
+tag has form
+`TRANSLATION_NORMALIZED_PHYSICAL_COVERAGE_SINGLE_ENTRY_P1_VALIDATED_AT_<FINAL_HEAD>`.
+The complete-history bundle has form
+`nollm_caold_translation_normalized_coverage_physical_entry_p1_20260715_<shorthead>.bundle`.
+Its final SHA-256 is necessarily external delivery evidence: embedding that
+hash in a tracked report included by the same bundle would make the bundle
+hash self-referential. The exact final HEAD, tag, bundle filename, and bundle
+SHA-256 are therefore reported with the verified delivery artifact.

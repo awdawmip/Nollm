@@ -4,7 +4,7 @@
 **日期**：2026-07-14
 **性质**：当前活动目标架构；修正 V3.7 中“8 phase 固定权重足以覆盖全平面”的错误假设
 **输入检查点**：`ac8ebaa44cda35e1d2f73e0bfc95055bae425a86`
-**状态**：目标架构，不表示已经实现
+**状态**：活动架构；2026-07-15 声明域内实现与 P1 组合已验证
 **配套路线书**：`NOLLM_ROUTE_BOOK_V3_8_TRANSLATION_COVARIANT_COVERAGE_REUSE_20260714.md`
 
 # 0. 架构结论
@@ -430,3 +430,53 @@ CURSOR_FREE_TRAVERSAL_VALIDATED。
 # 12. 最终架构概括
 
 > **rotation phase 不是 translation residue；固定模板不是全平面物理关系；历史数学 Oracle 必须复用；正确性路径先成立，缓存和模板优化后置。**
+
+# 13. 2026-07-15 平移归一化闭合合同
+
+活动 `default_dream_v1` 的公开支持域是：
+
+```text
+q/r: signed 64-bit
+physical layer: -64..64
+chart_id: default
+phase: null
+span: one adjacent physical layer per Coverage expansion
+```
+
+超出域必须显式拒绝。活动 Runtime 在 source-centered 局部坐标中构造
+source polygon，并仅用 target candidate 相对 source center 的有界坐标做
+裁剪；不得先构造两个巨大 absolute-world polygon 再相减。Decimal 精度
+由输入幅度和 layer 推导，至少 Decimal96，并保留 guard digits。
+
+物理质量必须先于 Q16。每次 expansion 分别公开：
+
+```text
+raw_source_share_sum
+raw_partition_residual
+candidate_window_residual
+threshold_residual
+numeric_error_bound / numeric_ambiguity
+q16_sum / q16_rounding_residual
+candidate strategy and contract identities
+```
+
+原始 partition mass 未落在声明误差界内时，不得进入 Q16 强制归一化或
+Recall propagation。几何零 overlap 不得以正权成员出现。
+
+Surface 的 `native_atom_count` 来自真实 source Cell occupancy，不是 source
+Cell 数。Coverage residual 和 ambiguity/invalid count 从 Core expansion
+确定性投影，不允许常量零。
+
+OpenClaw/Access 入口流程是：
+
+```text
+finite Surface page
+-> Order 0 Surface candidate
+-> finite physical-entry page
+-> Host selects exactly one visible physical-entry candidate_id
+-> finite PlacementDecision or RecallDecision
+```
+
+operation-local candidate ID 不持久化；重开时从当前 Core/Access truth 重建。
+`select_entries`、stable-key final-entry fallback、Cursor、entry hint 和
+fact-to-entry map 均不属于活动合同。

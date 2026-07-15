@@ -10,7 +10,7 @@
 Current state:
 
 ```text
-CAOLD_TRANSLATION_NORMALIZED_COVERAGE_PHYSICAL_ENTRY_P1_IN_PROGRESS
+TRANSLATION_NORMALIZED_PHYSICAL_COVERAGE_SINGLE_ENTRY_P1_VALIDATED
 ```
 
 Input checkpoint:
@@ -37,5 +37,26 @@ explicit physical residuals；
 LLM-selected unique physical entry；
 P1 Formation-to-restart-Recall closure。
 ```
+
+Those input-checkpoint gaps are closed by the current branch at implementation
+HEAD `9296869281cf3d7d8a68fcf00a4628e75f5915c8`. The active evidence is recorded
+in `docs/project/CAOLD_TRANSLATION_NORMALIZED_COVERAGE_PHYSICAL_ENTRY_P1_REPORT.md`.
+
+Current declared boundary:
+
+```text
+signed-64 q/r; physical layer -64..64; chart_id=default; phase=null;
+source-centered Coverage; explicit physical residual;
+one Host-selected physical entry; P1 write and restart Recall.
+```
+
+Gate 7 records 1818 tracked files, 1818 ownership rows, zero unclassified
+files, zero production boundary violations, zero production cycles, and a
+complete post-Manifest regression pass. Final delivery identity is supplied by
+the immutable commit, tag, and verified bundle. No follow-on capability is
+authorized by this status file.
+
+The next candidate is PB-scale performance research, but it requires a new,
+separately approved taskbook. It is not opened by this closure.
 
 V3.7 and its completion Tag remain historical. They do not override V3.8.

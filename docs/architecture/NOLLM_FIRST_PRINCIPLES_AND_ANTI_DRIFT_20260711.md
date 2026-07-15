@@ -407,12 +407,13 @@ Original Evidence fallback
 
 ## 6. 当前执行顺序
 
-GRF8 已在执行，不中途打断。
+日期化执行顺序只记录历史阶段上下文，不再授权活动工作。当前排期只由
+`ACTIVE_PROJECT.md` 指向的任务书控制，且不得覆盖本文件的架构不变量。
 
-GRF8 完成后，下一阶段必须优先：
+当前活动方向必须优先：
 
 ```text
-1. 审计 GRF8 中所有 Index / Route / Lookup / Cache；
+1. 审计活动路径中的 Index / Route / Lookup / Cache；
 
 2. 删除所有承担关系和召回正确性的外置索引；
 
@@ -427,6 +428,16 @@ GRF8 完成后，下一阶段必须优先：
 7. 让 LLM 判断 duplicate / similar / revision / reuse / new / stitch / defer；
 
 8. 重新测试无关系索引条件下的效率和召回质量。
+```
+
+截至 2026-07-15，活动物理 Coverage 路径还必须遵守：
+
+```text
+source-centered / residue-centered bounded arithmetic；
+raw physical partition mass 在 Q16 前验证；
+candidate-window、threshold、numeric 和 Q16 residual 分离；
+Host 从有限页明确选择一个 physical entry；
+Python/Core 不以 stable-key 或关键词代替最终语义选择。
 ```
 
 ---

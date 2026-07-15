@@ -2,9 +2,9 @@
 
 **版本**：V3.8
 **日期**：2026-07-14
-**当前输入**：`ac8ebaa44cda35e1d2f73e0bfc95055bae425a86`
-**输入 Bundle SHA-256**：`4dd31eafe7e0a33ec9116a14a18fc9fb44f01c16d319dbb56fcc31e902a8bb64`
-**性质**：V3.7 数学 Gate 失败后的活动纠偏路线
+**当前输入**：`66684dc51339544ad4a846614ed31aa52c7ddc24`
+**输入 Bundle SHA-256**：`2a56dad3164d468169d8ff27a4dd7512041956c5eaa6ba0f64ef5c94897213da`
+**性质**：V3.7 数学 Gate 失败后的活动纠偏路线；2026-07-15 声明域闭合
 
 # 0. 当前定性
 
@@ -236,3 +236,31 @@ PB 性能；
 持久 Surface cache；
 正式发布。
 ```
+
+# 8. 2026-07-15 路线闭合
+
+本轮完成状态：
+
+```text
+R0 authority/status correction: completed
+R1 historical asset reuse: completed
+R2 independent source-centered Oracle and invariant Gate: completed
+R3 signed-64 translation-normalized Core runtime: completed
+R4 truthful Surface atom/residual projection: completed
+R5 explicit one-entry cross-layer synthetic Recall: completed
+R6 OpenClaw P1 write, restart Recall, and R1/R2/R3: completed
+R7 final report/authority/Manifest/bundle: active until final delivery commands pass
+```
+
+实际推进向量：
+
+```text
+CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +5% |
+LAB +10% | DISTRIBUTIONS +5%
+```
+
+本路线闭合只授权声明支持域内的 translation-normalized Coverage、显式
+physical residual、单一 Host-selected physical entry 与 P1 组合能力。多物理
+层语义 Placement、Stitch、density relocation、PB scale、持久 Surface cache
+和正式发布继续暂停，必须由新任务书重新评估。
