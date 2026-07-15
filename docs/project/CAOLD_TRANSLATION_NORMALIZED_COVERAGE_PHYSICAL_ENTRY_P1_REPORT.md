@@ -226,3 +226,49 @@ operation-local state file: absent
 ```
 
 OpenClaw Wire adaptation remains pending before Gate 4 can close.
+
+## Gate 4 OpenClaw
+
+The OpenClaw traversal Wire is now
+`nollm_openclaw_translation_normalized_surface_traversal_v1`. An Order 0
+Surface decision can only open physical entries. Final selection occurs on a
+separate `nollm_openclaw_single_physical_entry_recall_v1` page and accepts one
+visible `physical-entry:*` ID. Recall and Placement share this exact boundary.
+
+Physical traversal state contains only operation-local Surface state, source
+Surface address, source candidate ID, and page position. Every continuation
+reopens current Core/Access truth. No entry hint, query mapping, or session state
+is persisted. OpenClaw imports only Access; it does not import Core.
+
+Distribution identity is now:
+
+```text
+plugin version: 0.9.0
+geometry contract: nollm_translation_normalized_physical_coverage_v1
+coordinate domain: nollm_signed64_default_chart_null_phase_v1
+physical residual schema: nollm_physical_coverage_residual_v1
+Surface Wire: nollm_openclaw_translation_normalized_surface_traversal_v1
+physical-entry Wire: nollm_openclaw_single_physical_entry_recall_v1
+```
+
+Gate 4 evidence:
+
+```text
+OpenClaw Python tests: 37 passed
+OpenClaw Node 24 tests: 19 passed
+TypeScript build: passed
+OpenClaw Python direct Core imports: 0
+invented physical-entry candidate: rejected
+Surface candidate direct select_entry: rejected
+select_entries production action: absent
+```
+
+Gate result:
+
+```text
+Actual modules affected: Access, OpenClaw, and distribution contract metadata.
+Actual progress: A +5 and O +5 explicit physical-entry boundary evidenced.
+Scope added: none.
+Deviation above 5%: none.
+Gate 5 authorized after the final focused assertion rerun.
+```

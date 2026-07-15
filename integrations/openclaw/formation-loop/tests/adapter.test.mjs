@@ -10,8 +10,12 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
   assert.equal(manifest.configSchema.properties.geometry_profile.const, "default_dream_v1");
-  assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_translation_covariant_physical_coverage_v1");
-  assert.equal(manifest.contracts.surfaceWire, "single-entry-v3-path");
+  assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_translation_normalized_physical_coverage_v1");
+  assert.equal(manifest.configSchema.properties.coordinate_domain_version.const, "nollm_signed64_default_chart_null_phase_v1");
+  assert.equal(manifest.configSchema.properties.physical_residual_schema_version.const, "nollm_physical_coverage_residual_v1");
+  assert.equal(manifest.contracts.physicalEntryWire, "nollm_openclaw_single_physical_entry_recall_v1");
+  assert.equal(manifest.contracts.surfaceWire, "nollm_openclaw_translation_normalized_surface_traversal_v1");
+  assert.equal(manifest.configSchema.properties.surface_wire_version.const, manifest.contracts.surfaceWire);
   assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
   assert.equal(manifest.configSchema.properties.surface_max_order.maximum, 8);
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);

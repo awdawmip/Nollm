@@ -146,6 +146,7 @@ class PhysicalEntryPage:
     state: SurfaceTraversalState
     source_surface_candidate_id: str
     source_surface_address: SurfaceAggregateAddress
+    after: GeometryAddress | None
     candidates: tuple[PhysicalEntryCandidateView, ...]
     total_candidate_count: int
     has_more: bool
@@ -155,6 +156,7 @@ class PhysicalEntryPage:
         return {
             "source_surface_candidate_id": self.source_surface_candidate_id,
             "source_surface_address": self.source_surface_address.to_mapping(),
+            "after": self.after.to_mapping() if self.after else None,
             "physical_entry_candidates": [candidate.to_mapping() for candidate in self.candidates],
             "total_candidate_count": self.total_candidate_count,
             "resolved_singleton": self.total_candidate_count == 1,
@@ -364,6 +366,17 @@ class AccessSurfaceNavigator:
     ) -> PhysicalEntryPage:
         return self._physical_entry_page(state, source_surface_candidate_id, source_surface_address, after)
 
+    def reopen_physical_entries_from_mapping(
+        self,
+        state: SurfaceTraversalState,
+        source_surface_candidate_id: str,
+        source_surface_address: object,
+        after: object,
+    ) -> PhysicalEntryPage:
+        address = SurfaceAggregateAddress.from_mapping(source_surface_address)
+        after_address = None if after is None else GeometryAddress.from_mapping(after)
+        return self._physical_entry_page(state, source_surface_candidate_id, address, after_address)
+
     def select_entry(self, page: PhysicalEntryPage, candidate_id: str) -> PhysicalEntryResolution:
         if type(page) is not PhysicalEntryPage:
             raise TypeError("select_entry requires a PhysicalEntryPage")
@@ -407,6 +420,7 @@ class AccessSurfaceNavigator:
             replace(state, call_count=state.call_count + 1),
             source_surface_candidate_id,
             source_surface_address,
+            after,
             candidates,
             len(all_candidates),
             has_more,

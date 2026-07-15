@@ -19,7 +19,8 @@ from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
 
 
-TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_physical_surface_traversal_v2"
+TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_translation_normalized_surface_traversal_v1"
+PHYSICAL_ENTRY_SCHEMA_VERSION = "nollm_openclaw_single_physical_entry_recall_v1"
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_surface_recall_v1"
 
@@ -124,6 +125,8 @@ def _advance(
     root = _workspace(memory_workspace)
     navigator = AccessSurfaceNavigator(root)
     try:
+        if _is_physical_state(traversal_state):
+            return _advance_physical(mode, subject, traversal_state, raw_response, root, navigator)
         state = navigator.state_from_mapping(traversal_state)
         if state.call_count < 1:
             raise ValueError("Surface state has no displayed page")
@@ -134,23 +137,57 @@ def _advance(
             return _traversal_response(mode, subject, navigator, navigator.continue_page(page))
         if action == "open_surface_cell":
             return _traversal_response(mode, subject, navigator, navigator.open_surface_cell(page, decision["candidate_id"]))
+        if action == "open_physical_entries":
+            return _physical_entry_response(mode, subject, navigator, navigator.open_physical_entries(page, decision["candidate_id"]))
         if action == "request_coarser_surface":
             return _traversal_response(mode, subject, navigator, navigator.request_coarser_surface(page))
         if action == "return_to_parent":
             return _traversal_response(mode, subject, navigator, navigator.return_to_parent(page))
         if action in {"none", "defer"}:
             return {"status": "complete_none" if mode == "recall" else "defer", "available": False, "surface": page.to_mapping()}
-        if action != "select_entry":
-            raise ValueError("unknown Surface traversal action")
-        entry = navigator.select_entry(page, decision["candidate_id"])
+        raise ValueError("Surface traversal must open physical entries before selection")
     except (TypeError, ValueError, RuntimeError, KeyError) as exc:
         raise FormationAdapterError("invalid_surface_traversal", str(exc)) from exc
+    raise AssertionError("unreachable Surface traversal state")
+
+
+def _is_physical_state(value: object) -> bool:
+    return type(value) is dict and set(value) == {"surface_state", "physical_entry"}
+
+
+def _advance_physical(mode, subject, traversal_state, raw_response, root, navigator):
+    physical_state = traversal_state["physical_entry"]
+    if type(physical_state) is not dict or set(physical_state) != {
+        "source_surface_candidate_id", "source_surface_address", "after"
+    }:
+        raise ValueError("invalid physical-entry traversal state")
+    state = navigator.state_from_mapping(traversal_state["surface_state"])
+    if state.call_count < 1:
+        raise ValueError("physical-entry state has no displayed page")
+    page = navigator.reopen_physical_entries_from_mapping(
+        replace(state, call_count=state.call_count - 1),
+        physical_state["source_surface_candidate_id"],
+        physical_state["source_surface_address"],
+        physical_state["after"],
+    )
+    decision = _traversal_decision(raw_response)
+    action = decision["action"]
+    if action == "continue_page":
+        return _physical_entry_response(mode, subject, navigator, navigator.continue_physical_entries(page))
+    if action == "return_to_parent":
+        return _traversal_response(mode, subject, navigator, navigator.page(page.state))
+    if action in {"none", "defer"}:
+        return {"status": "complete_none" if mode == "recall" else "defer", "available": False, "physical_entries": page.to_mapping()}
+    if action != "select_entry":
+        raise ValueError("physical-entry traversal requires one shown entry selection")
+    resolution = navigator.select_entry(page, decision["candidate_id"])
+    entry = resolution.entry_cell
     if mode == "placement":
-        return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entry.to_mapping(), page)
+        return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entry.to_mapping(), page, resolution.resolved_singleton)
     recalled = navigator.recall_entry(state.operation_id, entry)
     candidates = list(recalled.items)
     if not candidates:
-        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "surface": page.to_mapping()}
+        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "resolved_singleton": resolution.resolved_singleton, "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "physical_entries": page.to_mapping()}
     prompt = _recall_selection_prompt(subject, candidates)
     return {
         "status": "recall_decision",
@@ -159,8 +196,9 @@ def _advance(
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "candidates": candidates,
         "entry_cell": entry.to_mapping(),
+        "resolved_singleton": resolution.resolved_singleton,
         "core_recall": {"budget_exhausted": recalled.budget_exhausted},
-        "surface": page.to_mapping(),
+        "physical_entries": page.to_mapping(),
     }
 
 
@@ -181,6 +219,27 @@ def _traversal_response(
     }
 
 
+def _physical_entry_response(mode, subject, navigator, page):
+    physical = page.to_mapping()
+    prompt = _physical_entry_prompt(mode, subject, physical)
+    state = {
+        "surface_state": navigator.state_to_mapping(page.state),
+        "physical_entry": {
+            "source_surface_candidate_id": page.source_surface_candidate_id,
+            "source_surface_address": page.source_surface_address.to_mapping(),
+            "after": page.after.to_mapping() if page.after else None,
+        },
+    }
+    return {
+        "status": "physical_entry",
+        "available": True,
+        "prompt": prompt,
+        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        "traversal_state": state,
+        "physical_entries": physical,
+    }
+
+
 def _traversal_prompt(
     mode: str,
     subject: str,
@@ -188,7 +247,7 @@ def _traversal_prompt(
 ) -> str:
     return f"""You are a private background {mode} Surface navigation agent. The user will never see this run.
 The initial Surface order was selected only from Core geometry and fixed budgets before this subject was shown. Choose only a candidate_id visible on this page. Do not invent geometry, topics, indexes, vectors, graphs, entities, or hidden entry hints. Do not call tools or reveal reasoning.
-Truncated coarse cells are navigation hints only: paginate or descend before choosing exactly one final Order 0 entry.
+Truncated coarse cells are navigation hints only. At Order 0, open physical entries before choosing an entry.
 Return exactly one raw JSON object with no markdown.
 Schema version: {TRAVERSAL_SCHEMA_VERSION}
 Allowed responses:
@@ -196,11 +255,27 @@ Allowed responses:
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_surface_cell","candidate_id":"one visible id"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"request_coarser_surface"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"select_entry","candidate_id":"one visible Order 0 id"}}
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_physical_entries","candidate_id":"one visible Order 0 Surface id"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
 {{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
 subject: {subject}
 surface_page: {json.dumps(surface, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+
+
+def _physical_entry_prompt(mode: str, subject: str, physical: dict[str, object]) -> str:
+    return f"""You are a private background {mode} physical-entry selection agent. The user will never see this run.
+Choose exactly one candidate_id visible on this physical-entry page, or paginate, return, choose none, or defer. Never derive or invent an address. Do not call tools or reveal reasoning.
+Return exactly one raw JSON object with no markdown.
+Schema version: {TRAVERSAL_SCHEMA_VERSION}
+Allowed responses:
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"continue_page"}}
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"select_entry","candidate_id":"one visible physical-entry id"}}
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
+{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
+physical_entry_contract: {PHYSICAL_ENTRY_SCHEMA_VERSION}
+subject: {subject}
+physical_entry_page: {json.dumps(physical, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
 
 
 def _traversal_decision(raw_response: str) -> dict[str, object]:
@@ -212,7 +287,7 @@ def _traversal_decision(raw_response: str) -> dict[str, object]:
     if type(value) is not dict or value.get("schema_version") != TRAVERSAL_SCHEMA_VERSION or type(value.get("action")) is not str:
         raise FormationAdapterError("invalid_surface_traversal", "invalid Surface traversal envelope")
     action = value["action"]
-    with_candidate = action in {"open_surface_cell", "select_entry"}
+    with_candidate = action in {"open_surface_cell", "open_physical_entries", "select_entry"}
     expected = {"schema_version", "action", "candidate_id"} if with_candidate else {"schema_version", "action"}
     if set(value) != expected or (with_candidate and (type(value["candidate_id"]) is not str or not value["candidate_id"])):
         raise FormationAdapterError("invalid_surface_traversal", "invalid Surface traversal fields")
@@ -225,6 +300,7 @@ def _placement_decision(
     request_id: str,
     selected_entry: object,
     page: object,
+    resolved_singleton: bool | None = None,
 ) -> dict[str, object]:
     with AccessMemoryLoop(root) as loop:
         candidates = loop.placement_candidates(selected_entry, request_id + ":placement-candidates")
@@ -241,15 +317,17 @@ For defer: {{"schema_version":"{PLACEMENT_SCHEMA_VERSION}","outcome":"defer","re
 statement: {json.dumps(statement.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 selected_entry: {json.dumps(selected_entry, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 placement_candidates: {json.dumps(prompt_candidates, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
-    return {
+    result = {
         "status": "placement_decision",
         "available": True,
         "prompt": prompt,
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "candidates": prompt_candidates,
         "selected_entry": selected_entry,
-        "surface": page.to_mapping(),
+        "resolved_singleton": resolved_singleton,
     }
+    result["physical_entries" if resolved_singleton is not None else "surface"] = page.to_mapping()
+    return result
 
 
 def apply_placement(
