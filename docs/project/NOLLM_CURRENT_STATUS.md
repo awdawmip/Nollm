@@ -11,7 +11,7 @@ NOLLM_ROUTE_BOOK_V3_8_TRANSLATION_COVARIANT_COVERAGE_REUSE_20260714.md
 Current task:
 
 ```text
-NOLLM_C_A_O_L_D_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_REUSE_TASK_20260714.md
+NOLLM_C_A_O_L_D_TRANSLATION_NORMALIZED_COVERAGE_PHYSICAL_RESIDUAL_ENTRY_AND_P1_CLOSURE_TASK_20260715.md
 ```
 
 Status:
@@ -20,62 +20,51 @@ Status:
 IN_PROGRESS
 ```
 
-Input Bundle:
+Input:
 
 ```text
-nollm_caold_rotated_physical_field_single_entry_surface_20260714_ac8ebaa4.bundle
-SHA-256:
-4dd31eafe7e0a33ec9116a14a18fc9fb44f01c16d319dbb56fcc31e902a8bb64
-HEAD:
-ac8ebaa44cda35e1d2f73e0bfc95055bae425a86
+Bundle: nollm_caold_translation_covariant_coverage_reuse_20260715_66684dc5.bundle
+SHA-256: 2a56dad3164d468169d8ff27a4dd7512041956c5eaa6ba0f64ef5c94897213da
+HEAD: 66684dc51339544ad4a846614ed31aa52c7ddc24
 ```
 
-Retained verified engineering capabilities:
+Retained evidence:
 
 ```text
-Profile constants for 22.5 degrees and beta=2^(1/4)；
-Physical and Surface address separation；
-Order 0..8 API；
-single-entry OpenClaw Wire；
-no Cursor or semantic entry route；
-real Formation/Placement/Recall integration；
-atomic state and data preservation。
+V3.8 authority and historical geometry inventory;
+complete-address physical Coverage implementation;
+bounded-window Oracle A/B agreement;
+real multi-layer Surface implementation;
+canonical cross-layer Recall paths;
+controlled single-entry cross-layer OpenClaw Recall;
+old workspaces and user data preserved.
 ```
 
-Validated in this task:
+Audit corrections now active:
 
 ```text
-translation-covariant polygon Coverage for arbitrary q/r;
-two independent geometry Oracles;
-complete bounded candidate enumeration;
-Q16 weights and explicit residuals;
-real multi-layer Surface;
-canonical Recall kernel paths;
-controlled single-entry cross-layer Live Recall.
+Core 85%, not 90%: absolute-world Decimal80 loses mass at large q/r.
+Access 85%, not 90%: Order 0 can choose a physical entry by stable-key fallback.
+OpenClaw 85%: P1 Formation did not reach placement_apply.
+Lab 90%, not 95%: both prior Oracles share the absolute-coordinate weakness.
+Distribution 75%: v0.8.0 does not declare residual/coordinate contracts.
+Manifest is stale at the input HEAD: 1813 tracked files, 1812 rows.
 ```
 
-Current Live blocker:
-
-P1 Formation completed twice but neither attempt reached placement_apply within
-five minutes. No binding or Core placement was written, and no completion
-evidence was fabricated.
-
-Actual progress vector:
+Protected live workspace inventory:
 
 ```text
-CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
-HISTORY 0% | AUDIT 0% | OPENCLAW +3% |
-LAB +15% | DISTRIBUTIONS +5%
+workspace: C:\Users\Administrator\.openclaw\memory\nollm-caold-translation-covariant-v1
+cells=11 atoms=13 bindings=13 statement_files=20 bridges=0
+layers: layer0 cells=10 atoms=12; layer1 cells=1 atoms=1
+chart_id=default only; phase=null only
+q=-12..24; r=0..14
+core SHA-256: 7f15148469f6d378bc710848fb4dac4e260d81ad362cbf86236ade5c8e3b7dcd
+bindings SHA-256: 3784f10d7fb8e58ba2683504ed75baa19e4b9d272ab1095b0f61dfca73d71f08
 ```
 
-Gate 6 remains IN_PROGRESS because P1 did not complete placement.
-
-Current legal status name:
+Current legal status:
 
 ```text
-CAOLD_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_REUSE_IN_PROGRESS_AT_<HEAD>
+CAOLD_TRANSLATION_NORMALIZED_COVERAGE_PHYSICAL_ENTRY_P1_IN_PROGRESS_AT_<HEAD>
 ```
-
-The mathematical Gates and controlled cross-layer Recall are retained evidence.
-The completion tag remains prohibited until P1 and the remaining final delivery
-checks pass.

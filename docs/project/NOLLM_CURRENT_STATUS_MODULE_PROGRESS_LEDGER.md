@@ -1,27 +1,34 @@
-# Nollm V3.8 模块进度账
+# Nollm V3.8 Translation-Normalized Closure Module Ledger
 
-**日期**：2026-07-15
-**基线 HEAD**：`ac8ebaa44cda35e1d2f73e0bfc95055bae425a86`
+**Date**: 2026-07-15
+**Input HEAD**: `66684dc51339544ad4a846614ed31aa52c7ddc24`
+**Status**: `IN_PROGRESS`
 
-| 模块 | 生命周期状态 | 当前完成度 | 置信度 | 已验证能力 | 主要缺口 | 本任务目标 |
+| Module | Lifecycle | Audited baseline | Confidence | Retained capability | Current gap | Target |
 |---|---|---:|---|---|---|---:|
-| CORE | IMPLEMENTED | 90% | 高 | 平移协变 Coverage、真实多层 Surface、canonical path | PB scale | 90% |
-| SNAPSHOT | IMPLEMENTED | 50% | 中高 | 7 tests | 版本迁移 | 50% |
-| TRACE | IMPLEMENTED | 40% | 中 | 状态隔离、最小 path 观察 | 完整追踪产品化 | 40% |
-| ACCESS | IMPLEMENTED | 90% | 高 | 真实 Surface、单入口跨层 Recall、原子协调 | 更大规模 Live | 90% |
-| HISTORY | PROPOSED | 10% | 低 | 章程 | 暂停 | 10% |
-| AUDIT | PROPOSED | 10% | 低 | 章程 | 暂停 | 10% |
-| OPENCLAW | CAPABILITY_VALIDATED | 88% | 中高 | R1/R2/R3、受控跨层 Live | P1 未完成 placement | 90% |
-| LAB | IMPLEMENTED | 95% | 高 | 双 Oracle、全平移认证、迁移/Live fixture | PB scale | 95% |
-| DISTRIBUTIONS | IMPLEMENTED | 75% | 高 | 插件 v0.8.0、V3.8 contract/wire | 正式发布 | 75% |
+| CORE | IMPLEMENTED | 85% | medium-high | canonical state, complete-address Coverage, Surface, cross-layer path | large-coordinate cancellation; physical residual; chart/phase boundary | 95% |
+| SNAPSHOT | IMPLEMENTED | 50% | medium-high | state bytes, 7 tests | version migration | 50% |
+| TRACE | IMPLEMENTED | 40% | medium | isolated observation | product Trace paused | 40% |
+| ACCESS | IMPLEMENTED | 85% | medium-high | Surface navigation, atomic composition | stable-key physical-entry fallback; residual projection | 90% |
+| HISTORY | PROPOSED | 10% | low | charter | paused | 10% |
+| AUDIT | PROPOSED | 10% | low | charter | paused | 10% |
+| OPENCLAW | CAPABILITY_VALIDATED | 85% | medium-high | R1/R2/R3, controlled cross-layer Recall | explicit physical entry; P1 placement/restart Recall | 90% |
+| LAB | IMPLEMENTED | 90% | medium-high | historical assets, two bounded Oracles | source-centered and invariant Oracle; large coordinates | 100% |
+| DISTRIBUTIONS | IMPLEMENTED | 75% | medium-high | plugin v0.8.0 | coordinate/residual/wire contract; stale manifest | 80% |
 
-实际推进向量：
+Expected vector:
 
 ```text
 CORE +10% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
-HISTORY 0% | AUDIT 0% | OPENCLAW +3% |
-LAB +15% | DISTRIBUTIONS +5%
+HISTORY 0% | AUDIT 0% | OPENCLAW +5% |
+LAB +10% | DISTRIBUTIONS +5%
 ```
 
-P1 两次完成 Formation 但未进入 placement_apply，因此 OPENCLAW 不计满目标，
-总状态保持 `IN_PROGRESS`。
+Primary direction:
+
+```text
+translation-normalized Coverage
+-> physical residual
+-> explicit physical entry
+-> P1 closure
+```

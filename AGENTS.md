@@ -5,8 +5,8 @@
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
 - Current architecture: `docs/architecture/NOLLM_ARCHITECTURE_BOOK_V3_8_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_20260714.md`.
 - Current route: `docs/project/NOLLM_ROUTE_BOOK_V3_8_TRANSLATION_COVARIANT_COVERAGE_REUSE_20260714.md`.
-- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_REUSE_TASK_20260714.md`.
-- `ac8ebaa4` is an IN_PROGRESS checkpoint. Do not preserve its physical-Coverage completion claim.
+- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_TRANSLATION_NORMALIZED_COVERAGE_PHYSICAL_RESIDUAL_ENTRY_AND_P1_CLOSURE_TASK_20260715.md`.
+- `66684dc5` is an IN_PROGRESS checkpoint. Do not preserve its large-coordinate Coverage, physical-residual, final-entry, governance, or P1 completion claims.
 - A taskbook may describe only this task's delta. It cannot redefine the architecture.
 
 ## Hard physical contract
@@ -50,6 +50,9 @@ validation/gpr1/**
 - Zero false negatives above the declared overlap threshold are mandatory.
 - Zero positive-weight propagation to geometrically zero-overlap targets is mandatory.
 - Weight and residual errors must have explicit numeric bounds.
+- Default Coverage computes overlap in a source-centered or residue-centered local frame; large absolute world coordinates must not be clipped directly.
+- Raw partition mass is validated before Q16 conversion. Q16 normalization cannot hide invalid physical mass.
+- Physical residual distinguishes candidate-window, threshold, numeric ambiguity, unsupported span, and quantization components.
 - Synthetic `SurfaceOrderInfo` is allowed for selector unit tests, not for physical capability claims.
 - Do not start OpenClaw Live until the independent mathematics Gate passes.
 
@@ -65,6 +68,7 @@ validation/gpr1/**
 
 - Surface aggregation must use all certified nonzero-overlap members, not nearest-cell rounding.
 - Once per traversal, OpenClaw selects exactly one final physical entry.
+- When an Order 0 Surface cell contains multiple physical candidates, the Host must explicitly select one displayed operation-local physical candidate; stable-key fallback is forbidden.
 - The final Recall fixture must require a real CoverageUp or CoverageDown step; a lateral-only pass is insufficient.
 - Natural multi-entry reachability is optional observation only. Never create `select_entries`, `selected_entries_limit`, or per-entry fanout.
 
