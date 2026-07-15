@@ -44,11 +44,18 @@ def test_traversal_accepts_only_shown_candidates_and_reaches_one_physical_entry(
     coarse_budget = SurfaceBudgetProfile(8, 1, 1, 1, 1, 1, 8, 8, 24)
     page = navigator.begin("op", SCOPE, coarse_budget)
     assert page.state.order == 8 and page.selection.overflow
+    assert "return_to_parent" not in page.legal_actions
+    assert "request_coarser_surface" not in page.legal_actions
+    assert "open_surface_cell" in page.legal_actions
     with pytest.raises(ValueError, match="unavailable"):
         navigator.open_surface_cell(page, "surface:invented")
     while page.state.order > 0:
         page = navigator.open_surface_cell(page, page.cells[0].candidate_id)
+    assert "open_physical_entries" in page.legal_actions
+    assert "open_surface_cell" not in page.legal_actions
+    assert "return_to_parent" in page.legal_actions
     physical = navigator.open_physical_entries(page, page.cells[0].candidate_id)
+    assert physical.legal_actions == ("return_to_parent", "select_entry", "none", "defer")
     resolution = navigator.select_entry(physical, physical.candidates[0].candidate_id)
     assert resolution.entry_cell == GeometryAddress("default_dream_v1", "default", 0, 0, 0)
     assert resolution.resolved_singleton
@@ -91,11 +98,13 @@ def test_pagination_return_call_limits_and_state_are_temporary(tmp_path) -> None
         place(tmp_path, f"s{q}", str(q), q)
     navigator = AccessSurfaceNavigator(tmp_path)
     page = navigator.begin("operation-only", SCOPE, BUDGET)
+    assert ("continue_page" in page.legal_actions) == page.has_more
     mapping = navigator.state_to_mapping(page.state)
     assert "query" not in str(mapping).lower() and "session" not in str(mapping).lower()
     assert navigator.state_from_mapping(mapping) == page.state
     coarse = navigator.request_coarser_surface(page)
     opened = navigator.open_surface_cell(coarse, coarse.cells[0].candidate_id)
+    assert "return_to_parent" in opened.legal_actions
     assert navigator.return_to_parent(opened).state.order == coarse.state.order
     limited = SurfaceBudgetProfile(8, 20, 100, 1, 1, 1000, 8, 8, 1)
     first = navigator.begin("limited", SCOPE, limited)

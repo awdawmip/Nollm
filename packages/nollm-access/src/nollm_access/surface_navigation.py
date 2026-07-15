@@ -123,6 +123,7 @@ class SurfaceTraversalPage:
     cells: tuple[SurfaceCellView, ...]
     has_more: bool
     next_after: SurfaceAggregateAddress | None
+    legal_actions: tuple[str, ...]
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -137,6 +138,7 @@ class SurfaceTraversalPage:
             "surface_cells": [cell.to_mapping() for cell in self.cells],
             "has_more": self.has_more,
             "next_after": self.next_after.to_mapping() if self.next_after else None,
+            "legal_actions": list(self.legal_actions),
             "call_count": self.state.call_count,
         }
 
@@ -151,6 +153,7 @@ class PhysicalEntryPage:
     total_candidate_count: int
     has_more: bool
     next_after: GeometryAddress | None
+    legal_actions: tuple[str, ...]
 
     def to_mapping(self) -> dict[str, object]:
         return {
@@ -162,6 +165,7 @@ class PhysicalEntryPage:
             "resolved_singleton": self.total_candidate_count == 1,
             "has_more": self.has_more,
             "next_after": self.next_after.to_mapping() if self.next_after else None,
+            "legal_actions": list(self.legal_actions),
             "call_count": self.state.call_count,
         }
 
@@ -291,12 +295,15 @@ class AccessSurfaceNavigator:
                 self._view(core, state, projection, index)
                 for index, projection in enumerate(projections)
             )
+        next_state = replace(state, call_count=state.call_count + 1)
+        legal_actions = self._surface_legal_actions(next_state, views, raw_page.has_more)
         return SurfaceTraversalPage(
-            replace(state, call_count=state.call_count + 1),
+            next_state,
             selection,
             views,
             raw_page.has_more,
             raw_page.next_after,
+            legal_actions,
         )
 
     @staticmethod
@@ -314,11 +321,13 @@ class AccessSurfaceNavigator:
         return selection
 
     def continue_page(self, page: SurfaceTraversalPage) -> SurfaceTraversalPage:
+        self._require_legal_action(page.legal_actions, "continue_page")
         if not page.has_more or page.next_after is None:
             raise ValueError("current Surface page has no continuation")
         return self.page(replace(page.state, after=page.next_after))
 
     def open_surface_cell(self, page: SurfaceTraversalPage, candidate_id: str) -> SurfaceTraversalPage:
+        self._require_legal_action(page.legal_actions, "open_surface_cell")
         selected = self._shown(page, candidate_id)
         if page.state.order == 0 or not selected.has_deeper_locality:
             raise ValueError("candidate has no deeper Surface locality")
@@ -335,12 +344,14 @@ class AccessSurfaceNavigator:
         return self.page(state)
 
     def request_coarser_surface(self, page: SurfaceTraversalPage) -> SurfaceTraversalPage:
+        self._require_legal_action(page.legal_actions, "request_coarser_surface")
         order = page.state.order + 1
         if order > page.state.budget.hard_max_order:
             raise ValueError("no coarser Surface order is available")
         return self.page(replace(page.state, order=order, parent_order=None, parent_address=None, after=None, stack=()))
 
     def return_to_parent(self, page: SurfaceTraversalPage) -> SurfaceTraversalPage:
+        self._require_legal_action(page.legal_actions, "return_to_parent")
         if not page.state.stack:
             raise ValueError("Surface traversal has no parent")
         frame = page.state.stack[-1]
@@ -354,6 +365,7 @@ class AccessSurfaceNavigator:
         ))
 
     def open_physical_entries(self, page: SurfaceTraversalPage, candidate_id: str) -> PhysicalEntryPage:
+        self._require_legal_action(page.legal_actions, "open_physical_entries")
         selected = self._shown(page, candidate_id)
         if page.state.order != 0:
             raise ValueError("physical entries require an Order 0 Surface cell")
@@ -362,6 +374,7 @@ class AccessSurfaceNavigator:
     def continue_physical_entries(self, page: PhysicalEntryPage) -> PhysicalEntryPage:
         if type(page) is not PhysicalEntryPage:
             raise TypeError("page must be PhysicalEntryPage")
+        self._require_legal_action(page.legal_actions, "continue_page")
         if not page.has_more or page.next_after is None:
             raise ValueError("current physical-entry page has no continuation")
         return self._physical_entry_page(
@@ -394,6 +407,7 @@ class AccessSurfaceNavigator:
     def select_entry(self, page: PhysicalEntryPage, candidate_id: str) -> PhysicalEntryResolution:
         if type(page) is not PhysicalEntryPage:
             raise TypeError("select_entry requires a PhysicalEntryPage")
+        self._require_legal_action(page.legal_actions, "select_entry")
         if type(candidate_id) is not str or not candidate_id:
             raise ValueError("candidate_id is required")
         matches = tuple(candidate for candidate in page.candidates if candidate.candidate_id == candidate_id)
@@ -430,8 +444,10 @@ class AccessSurfaceNavigator:
         )
         candidates = selected[:state.budget.page_size]
         has_more = len(selected) > state.budget.page_size
+        next_state = replace(state, call_count=state.call_count + 1)
+        legal_actions = self._physical_legal_actions(candidates, has_more)
         return PhysicalEntryPage(
-            replace(state, call_count=state.call_count + 1),
+            next_state,
             source_surface_candidate_id,
             source_surface_address,
             after,
@@ -439,7 +455,47 @@ class AccessSurfaceNavigator:
             len(all_candidates),
             has_more,
             candidates[-1].address if has_more and candidates else None,
+            legal_actions,
         )
+
+    @staticmethod
+    def _surface_legal_actions(
+        state: SurfaceTraversalState,
+        cells: tuple[SurfaceCellView, ...],
+        has_more: bool,
+    ) -> tuple[str, ...]:
+        actions = []
+        if has_more:
+            actions.append("continue_page")
+        if state.order == 0 and cells:
+            actions.append("open_physical_entries")
+        elif state.order > 0 and any(cell.has_deeper_locality for cell in cells):
+            actions.append("open_surface_cell")
+        if state.order < state.budget.hard_max_order:
+            actions.append("request_coarser_surface")
+        if state.stack:
+            actions.append("return_to_parent")
+        actions.extend(("none", "defer"))
+        return tuple(actions)
+
+    @staticmethod
+    def _physical_legal_actions(
+        candidates: tuple[PhysicalEntryCandidateView, ...],
+        has_more: bool,
+    ) -> tuple[str, ...]:
+        actions = []
+        if has_more:
+            actions.append("continue_page")
+        actions.append("return_to_parent")
+        if candidates:
+            actions.append("select_entry")
+        actions.extend(("none", "defer"))
+        return tuple(actions)
+
+    @staticmethod
+    def _require_legal_action(legal_actions: tuple[str, ...], action: str) -> None:
+        if action not in legal_actions:
+            raise ValueError(f"{action} is not legal for the current page")
 
     @staticmethod
     def _projection_at(core: CoreRuntime, scope: PhysicalFieldScope, address: SurfaceAggregateAddress) -> SurfaceCellProjection:

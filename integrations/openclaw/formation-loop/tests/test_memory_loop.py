@@ -119,6 +119,10 @@ def test_forced_coarse_surface_uses_coverage_descent(tmp_path):
     result = build_recall_prompt("release", str(tmp_path), "recall:coarse", budget)
     assert result["surface"]["active_order"] == 8
     assert result["surface"]["overflow"] is True
+    assert "return_to_parent" not in result["surface"]["legal_actions"]
+    assert "request_coarser_surface" not in result["surface"]["legal_actions"]
+    assert '"action":"return_to_parent"' not in result["prompt"]
+    assert '"action":"request_coarser_surface"' not in result["prompt"]
     assert '"action":"open_surface_cell"' in result["prompt"]
     assert '"action":"open_physical_entries"' not in result["prompt"]
     for expected_order in range(7, -1, -1):
@@ -127,6 +131,7 @@ def test_forced_coarse_surface_uses_coverage_descent(tmp_path):
         assert result["surface"]["current_order"] == expected_order
     assert '"action":"open_physical_entries"' in result["prompt"]
     assert '"action":"open_surface_cell"' not in result["prompt"]
+    assert "open_physical_entries" in result["surface"]["legal_actions"]
     candidate = result["surface"]["surface_cells"][0]["candidate_id"]
     result = advance_recall_traversal("release", result["traversal_state"], navigation("open_physical_entries", candidate), str(tmp_path))
     entry_candidate = result["physical_entries"]["physical_entry_candidates"][0]["candidate_id"]
@@ -140,7 +145,7 @@ def test_unshown_candidate_and_malformed_navigation_do_not_execute(tmp_path):
     with pytest.raises(FormationAdapterError, match="unavailable"):
         advance_recall_traversal("release", built["traversal_state"], navigation("open_physical_entries", "surface:invented"), str(tmp_path))
     surface_candidate = built["surface"]["surface_cells"][0]["candidate_id"]
-    with pytest.raises(FormationAdapterError, match="open physical entries"):
+    with pytest.raises(FormationAdapterError, match="not legal for the current page"):
         advance_recall_traversal("release", built["traversal_state"], navigation("select_entry", surface_candidate), str(tmp_path))
     physical = advance_recall_traversal("release", built["traversal_state"], navigation("open_physical_entries", surface_candidate), str(tmp_path))
     with pytest.raises(FormationAdapterError, match="unavailable physical-entry"):

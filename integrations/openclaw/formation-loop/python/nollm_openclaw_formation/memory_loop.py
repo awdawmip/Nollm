@@ -132,7 +132,7 @@ def _advance(
         if state.call_count < 1:
             raise ValueError("Surface state has no displayed page")
         page = navigator.page(replace(state, call_count=state.call_count - 1))
-        decision = _traversal_decision(raw_response)
+        decision = _traversal_decision(raw_response, page.legal_actions)
         action = decision["action"]
         if action == "continue_page":
             return _traversal_response(mode, subject, navigator, navigator.continue_page(page))
@@ -171,7 +171,7 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
         physical_state["source_surface_address"],
         physical_state["after"],
     )
-    decision = _traversal_decision(raw_response)
+    decision = _traversal_decision(raw_response, page.legal_actions)
     action = decision["action"]
     if action == "continue_page":
         return _physical_entry_response(mode, subject, navigator, navigator.continue_physical_entries(page))
@@ -258,44 +258,60 @@ def _traversal_prompt(
     current_order = surface.get("current_order")
     if type(current_order) is not int or current_order < 0:
         raise FormationAdapterError("invalid_surface", "Surface current_order is invalid")
-    locality_action = (
-        f'{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_physical_entries","candidate_id":"one visible Order 0 Surface id"}}'
-        if current_order == 0
-        else f'{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"open_surface_cell","candidate_id":"one visible id"}}'
-    )
+    legal_actions = _legal_actions(surface)
+    responses = _allowed_responses(legal_actions, physical=False)
     return f"""You are a private background {mode} Surface navigation agent. The user will never see this run.
 The initial Surface order was selected only from Core geometry and fixed budgets before this subject was shown. Choose only a candidate_id visible on this page. Do not invent geometry, topics, indexes, vectors, graphs, entities, or hidden entry hints. Do not call tools or reveal reasoning.
 Truncated coarse cells are navigation hints only. The listed actions are the complete legal action set for current_order={current_order}.
 Return exactly one raw JSON object with no markdown.
 Schema version: {TRAVERSAL_SCHEMA_VERSION}
 Allowed responses:
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"continue_page"}}
-{locality_action}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"request_coarser_surface"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
+{responses}
 subject: {subject}
 surface_page: {json.dumps(surface, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
 
 
 def _physical_entry_prompt(mode: str, subject: str, physical: dict[str, object]) -> str:
+    legal_actions = _legal_actions(physical)
+    responses = _allowed_responses(legal_actions, physical=True)
     return f"""You are a private background {mode} physical-entry selection agent. The user will never see this run.
 Choose exactly one candidate_id visible on this physical-entry page, or paginate, return, choose none, or defer. Never derive or invent an address. Do not call tools or reveal reasoning.
 Return exactly one raw JSON object with no markdown.
 Schema version: {TRAVERSAL_SCHEMA_VERSION}
 Allowed responses:
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"continue_page"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"return_to_parent"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"select_entry","candidate_id":"one visible physical-entry id"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"none"}}
-{{"schema_version":"{TRAVERSAL_SCHEMA_VERSION}","action":"defer"}}
+{responses}
 physical_entry_contract: {PHYSICAL_ENTRY_SCHEMA_VERSION}
 subject: {subject}
 physical_entry_page: {json.dumps(physical, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
 
 
-def _traversal_decision(raw_response: str) -> dict[str, object]:
+def _legal_actions(page: dict[str, object]) -> tuple[str, ...]:
+    value = page.get("legal_actions")
+    if type(value) is not list or not value or any(type(action) is not str for action in value):
+        raise FormationAdapterError("invalid_surface", "page legal_actions are invalid")
+    if len(value) != len(set(value)):
+        raise FormationAdapterError("invalid_surface", "page legal_actions must be unique")
+    return tuple(value)
+
+
+def _allowed_responses(legal_actions: tuple[str, ...], *, physical: bool) -> str:
+    examples = {
+        "continue_page": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "continue_page"},
+        "open_surface_cell": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "open_surface_cell", "candidate_id": "one visible id"},
+        "open_physical_entries": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "open_physical_entries", "candidate_id": "one visible Order 0 Surface id"},
+        "request_coarser_surface": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "request_coarser_surface"},
+        "return_to_parent": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "return_to_parent"},
+        "select_entry": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "select_entry", "candidate_id": "one visible physical-entry id"},
+        "none": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "none"},
+        "defer": {"schema_version": TRAVERSAL_SCHEMA_VERSION, "action": "defer"},
+    }
+    allowed = {"continue_page", "return_to_parent", "select_entry", "none", "defer"} if physical else set(examples) - {"select_entry"}
+    if any(action not in allowed for action in legal_actions):
+        raise FormationAdapterError("invalid_surface", "page advertises an unknown legal action")
+    return "\n".join(json.dumps(examples[action], ensure_ascii=False, separators=(",", ":")) for action in legal_actions)
+
+
+def _traversal_decision(raw_response: str, legal_actions: tuple[str, ...]) -> dict[str, object]:
     try:
         repaired, _diagnostics = repair_dream_json(raw_response)
         value = json.loads(repaired)
@@ -308,6 +324,8 @@ def _traversal_decision(raw_response: str) -> dict[str, object]:
     expected = {"schema_version", "action", "candidate_id"} if with_candidate else {"schema_version", "action"}
     if set(value) != expected or (with_candidate and (type(value["candidate_id"]) is not str or not value["candidate_id"])):
         raise FormationAdapterError("invalid_surface_traversal", "invalid Surface traversal fields")
+    if action not in legal_actions:
+        raise FormationAdapterError("invalid_surface_traversal", f"action {action} is not legal for the current page")
     return value
 
 
