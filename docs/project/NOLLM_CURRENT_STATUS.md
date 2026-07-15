@@ -1,12 +1,13 @@
 # Nollm Current Status
 
-Date: 2026-07-15
+Date: 2026-07-16
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
 task: NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md
 status: CAOLD_LEGAL_TRAVERSAL_P1_DENSE_LIVE_IN_PROGRESS
 input HEAD: 2e779764cde6fbb1ef228444edfd55bd157b2b52
+validated implementation/evidence HEAD: d85bd5f6c85cf071dc959dbbd4318a0ad24151f9
 ```
 
 Preserved checkpoint capability:
@@ -24,9 +25,9 @@ P1 core_write_count=1 and restart Recall answer BX-3917.
 Active live workspace:
 
 ```text
-C:\Users\Administrator\.openclaw\memory\nollm-caold-broad-residue-safe-field-dense-locality-v1
-non-destructive copy of the accepted V3.9 workspace; original remains unchanged
-plugin 0.11.0 enabled with broad Policy, safe writable field, and Recall timing
+C:\Users\Administrator\.openclaw\memory\nollm-caold-write-policy-legal-traversal-p1-dense-live-v5
+non-destructive copy of the accepted V3.9 workspace; source and failed V1-V4 copies remain unchanged
+plugin 0.12.0 enabled with legal actions, bounded correction, singleton resolution, and Recall fence
 ```
 
 Independent audit correction:
@@ -74,11 +75,11 @@ no combined request, semantic index, or persisted fact-to-entry mapping.
 OpenClaw live result:
 
 ```text
-R1 Alpha, R2 Office, and R3 NONE passed through the real Gateway;
-R2 Surface/Core were 427ms/112ms versus 100.574s hidden model time;
-new P1 Formation succeeded but Placement rejected invalid root navigation with zero writes;
-P1 retry timed out in the provider and restart Recall selected the wrong Alpha locality;
-dense coral Live produced no delivered response or coral Statement;
+R1 Alpha, R2 Office, and R3 NONE remain preserved;
+P1 V5 performed exactly one revision_current Core write and canonical binding;
+restart Recall selected dream:82b8b33...68d9 and visibly answered CR-7159;
+the same turn recorded formation suppression and no second write;
+dense real Live was not started, so no live truncated locality is claimed;
 status remains IN_PROGRESS; no completion tag is authorized.
 ```
 
@@ -94,15 +95,15 @@ no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding
 ```
 
 The broad Policy, safe writable radius, dense synthetic evidence, and plugin
-contract are established. P1 and dense OpenClaw Live remain open. Progress is
+contract are established. P1 is closed; dense OpenClaw Live remains open. Progress is
 recorded in `docs/project/CAOLD_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_REPORT.md`.
 
 Current closure audit:
 
 ```text
-the input manifest omitted validation/caold_openclaw_live_validation.json;
-Core currently enforces the active writable radius during generic mutation;
-Surface prompts currently advertise actions that are illegal in some states;
-the failed P1 Statement dream:b93c2e97...5745 must be inventoried and reused before any new Formation;
-code, deterministic fixtures, provider failures, and live outcomes remain separate evidence classes.
+the input manifest omission was repaired;
+Core storage validity and Access active semantic write policy are separated;
+Surface prompts expose state-derived legal actions;
+P1 source and V1-V4 failed attempts are inventoried and preserved;
+code, deterministic fixtures, Provider latency, and live outcomes remain separate evidence classes.
 ```
