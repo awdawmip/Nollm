@@ -83,6 +83,8 @@ def test_recall_traverses_surface_then_renders_hidden_context(tmp_path):
     assert recalled["entry_cell"] == CELL
     assert recalled["resolved_singleton"] is True
     assert set(recalled["core_recall"]) == {"budget_exhausted"}
+    assert set(recalled["operation_timing"]) == {"physical_entry_resolution_ms", "recall_core_ms"}
+    assert all(value >= 0 for value in recalled["operation_timing"].values())
     assert "entry_cells" not in recalled
     assert "per_entry_core_recall" not in recalled
     assert recalled["candidates"][0]["path"] == []

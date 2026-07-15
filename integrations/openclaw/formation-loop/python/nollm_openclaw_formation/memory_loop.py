@@ -4,6 +4,7 @@ from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
+from time import perf_counter
 
 from nollm_access import (
     AccessMemoryLoop,
@@ -180,14 +181,22 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
         return {"status": "complete_none" if mode == "recall" else "defer", "available": False, "physical_entries": page.to_mapping()}
     if action != "select_entry":
         raise ValueError("physical-entry traversal requires one shown entry selection")
+    started = perf_counter()
     resolution = navigator.select_entry(page, decision["candidate_id"])
+    physical_entry_resolution_ms = round((perf_counter() - started) * 1000)
     entry = resolution.entry_cell
     if mode == "placement":
         return _placement_decision(root, _statement(json.loads(subject)), state.operation_id, entry.to_mapping(), page, resolution.resolved_singleton)
+    started = perf_counter()
     recalled = navigator.recall_entry(state.operation_id, entry)
+    recall_core_ms = round((perf_counter() - started) * 1000)
+    operation_timing = {
+        "physical_entry_resolution_ms": physical_entry_resolution_ms,
+        "recall_core_ms": recall_core_ms,
+    }
     candidates = list(recalled.items)
     if not candidates:
-        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "resolved_singleton": resolution.resolved_singleton, "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "physical_entries": page.to_mapping()}
+        return {"status": "complete_none", "available": False, "entry_cell": entry.to_mapping(), "resolved_singleton": resolution.resolved_singleton, "core_recall": {"budget_exhausted": recalled.budget_exhausted}, "physical_entries": page.to_mapping(), "operation_timing": operation_timing}
     prompt = _recall_selection_prompt(subject, candidates)
     return {
         "status": "recall_decision",
@@ -198,6 +207,7 @@ def _advance_physical(mode, subject, traversal_state, raw_response, root, naviga
         "entry_cell": entry.to_mapping(),
         "resolved_singleton": resolution.resolved_singleton,
         "core_recall": {"budget_exhausted": recalled.budget_exhausted},
+        "operation_timing": operation_timing,
         "physical_entries": page.to_mapping(),
     }
 

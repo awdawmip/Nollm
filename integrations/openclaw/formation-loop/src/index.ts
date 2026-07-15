@@ -12,6 +12,9 @@ export type DreamConfig = {
   memory_workspace?: string;
   geometry_profile?: "default_dream_v1"; geometry_contract_version?: "nollm_bounded_approximate_hex_coverage_v1";
   coordinate_domain_version?: "nollm_hex_radius_2p31_default_chart_null_phase_v1";
+  coverage_policy_version?: "nollm_broad_residue_min_hit_1_v1";
+  writable_field_contract_version?: "nollm_hex_storage_2p31_writable_2p30_depth2_v1";
+  storage_hex_radius?: 2147483647; active_writable_hex_radius?: 1073741823; max_coverage_down_steps?: 2;
   physical_residual_schema_version?: "nollm_bounded_approximate_coverage_residual_v1";
   surface_wire_version?: "nollm_openclaw_bounded_approximate_surface_traversal_v1";
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
@@ -30,6 +33,11 @@ const JSON_SCHEMA = {
     statement_store_workspace: { type: "string" }, memory_workspace: { type: "string" }, write_mode: { type: "string", enum: ["shadow", "statement-store"], default: "shadow" },
     geometry_profile: { type: "string", const: "default_dream_v1", default: "default_dream_v1" }, geometry_contract_version: { type: "string", const: "nollm_bounded_approximate_hex_coverage_v1", default: "nollm_bounded_approximate_hex_coverage_v1" },
     coordinate_domain_version: { type: "string", const: "nollm_hex_radius_2p31_default_chart_null_phase_v1", default: "nollm_hex_radius_2p31_default_chart_null_phase_v1" },
+    coverage_policy_version: { type: "string", const: "nollm_broad_residue_min_hit_1_v1", default: "nollm_broad_residue_min_hit_1_v1" },
+    writable_field_contract_version: { type: "string", const: "nollm_hex_storage_2p31_writable_2p30_depth2_v1", default: "nollm_hex_storage_2p31_writable_2p30_depth2_v1" },
+    storage_hex_radius: { type: "integer", const: 2147483647, default: 2147483647 },
+    active_writable_hex_radius: { type: "integer", const: 1073741823, default: 1073741823 },
+    max_coverage_down_steps: { type: "integer", const: 2, default: 2 },
     physical_residual_schema_version: { type: "string", const: "nollm_bounded_approximate_coverage_residual_v1", default: "nollm_bounded_approximate_coverage_residual_v1" },
     surface_wire_version: { type: "string", const: "nollm_openclaw_bounded_approximate_surface_traversal_v1", default: "nollm_openclaw_bounded_approximate_surface_traversal_v1" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
@@ -210,33 +218,60 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
     if (!usableModel(model)) return;
     const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
+    const operationStartedAt = Date.now();
+    const timing: Record<string, number | string | null> = {
+      surface_build_ms: 0, surface_order_count: 0, surface_projection_count: 0,
+      surface_page_count: 0, physical_entry_resolution_ms: 0, recall_core_ms: 0,
+      recall_agent_ms: 0, total_operation_ms: 0, timeout_stage: null,
+    };
+    let stageStartedAt = Date.now();
     let built = await bridge(config, { action: "build_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace, surface_budget: surfaceBudget(config, "recall") });
+    timing.surface_build_ms = Date.now() - stageStartedAt;
+    const firstSurface = built.surface as Record<string, unknown> | undefined;
+    const statistics = firstSurface?.order_statistics as Record<string, unknown> | undefined;
+    timing.surface_order_count = typeof firstSurface?.active_order === "number" ? firstSurface.active_order + 1 : 0;
+    timing.surface_projection_count = typeof statistics?.occupied_cell_count === "number" ? statistics.occupied_cell_count : 0;
+    timing.surface_page_count = typeof statistics?.estimated_pages === "number" ? statistics.estimated_pages : 0;
     const surfacePath: unknown[] = [];
     let traversal = 0;
     while (built.ok === true && (built.status === "traverse" || built.status === "physical_entry") && typeof built.prompt === "string" && traversal < (config.recall_surface_max_calls ?? 24)) {
       surfacePath.push(built.surface ?? built.physical_entries);
+      stageStartedAt = Date.now();
       const step = await runHiddenAgent(built.prompt, model!, `${requestId}:surface:${traversal}`);
-      if (!step.raw) { await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt }); return; }
+      timing.recall_agent_ms = Number(timing.recall_agent_ms) + Date.now() - stageStartedAt;
+      if (!step.raw) { timing.timeout_stage = "recall_surface_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_surface_agent", request_id: requestId, error: step.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
+      const wasPhysical = built.status === "physical_entry";
+      stageStartedAt = Date.now();
       built = await bridge(config, { action: "advance_recall_traversal", query: event.prompt, traversal_state: built.traversal_state, raw_model_response: step.raw, memory_workspace: memoryWorkspace });
+      if (wasPhysical) {
+        const accessTiming = built.operation_timing && typeof built.operation_timing === "object" ? built.operation_timing as Record<string, number> : {};
+        timing.physical_entry_resolution_ms = accessTiming.physical_entry_resolution_ms ?? Date.now() - stageStartedAt;
+        timing.recall_core_ms = accessTiming.recall_core_ms ?? 0;
+      }
       traversal += 1;
     }
     if (built.ok === true && built.status === "complete_none") {
-      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0 });
+      timing.total_operation_ms = Date.now() - operationStartedAt;
+      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing });
       return;
     }
     if (built.ok !== true || built.status !== "recall_decision" || typeof built.prompt !== "string") {
-      await trace(config, { status: "defer", stage: "recall_surface_terminal", request_id: requestId, bridge_status: built.status, bridge_error: built.error, bridge_code: built.code, surface_path: surfacePath, visible_message_count: 0 });
+      timing.timeout_stage = "recall_surface_terminal"; timing.total_operation_ms = Date.now() - operationStartedAt;
+      await trace(config, { status: "defer", stage: "recall_surface_terminal", request_id: requestId, bridge_status: built.status, bridge_error: built.error, bridge_code: built.code, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing });
       return;
     }
+    stageStartedAt = Date.now();
     const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:recall-selection`);
-    if (!selected.raw) { await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt }); return; }
+    timing.recall_agent_ms = Number(timing.recall_agent_ms) + Date.now() - stageStartedAt;
+    if (!selected.raw) { timing.timeout_stage = "recall_agent"; timing.total_operation_ms = Date.now() - operationStartedAt; await trace(config, { status: "defer", stage: "recall_agent", request_id: requestId, error: selected.error, hook_observed_at: observedAt, operation_timing: timing }); return; }
     const rendered = await bridge(config, { action: "render_recall_injection", raw_model_response: selected.raw, candidates: built.candidates });
+    timing.total_operation_ms = Date.now() - operationStartedAt;
     if (rendered.ok === true && rendered.outcome === "none") {
-      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
+      await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
       return;
     }
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
-    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, ...selected.resolved });
+    await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {

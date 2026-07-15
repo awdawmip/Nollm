@@ -12,6 +12,11 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.geometry_profile.const, "default_dream_v1");
   assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_bounded_approximate_hex_coverage_v1");
   assert.equal(manifest.configSchema.properties.coordinate_domain_version.const, "nollm_hex_radius_2p31_default_chart_null_phase_v1");
+  assert.equal(manifest.configSchema.properties.coverage_policy_version.const, manifest.contracts.coveragePolicyVersion);
+  assert.equal(manifest.configSchema.properties.writable_field_contract_version.const, manifest.contracts.writableFieldContractVersion);
+  assert.equal(manifest.configSchema.properties.storage_hex_radius.const, manifest.contracts.storageHexRadius);
+  assert.equal(manifest.configSchema.properties.active_writable_hex_radius.const, manifest.contracts.activeWritableHexRadius);
+  assert.equal(manifest.configSchema.properties.max_coverage_down_steps.const, manifest.contracts.maxCoverageDownSteps);
   assert.equal(manifest.configSchema.properties.physical_residual_schema_version.const, "nollm_bounded_approximate_coverage_residual_v1");
   assert.equal(manifest.contracts.physicalEntryWire, "nollm_openclaw_single_physical_entry_recall_v1");
   assert.equal(manifest.contracts.surfaceWire, "nollm_openclaw_bounded_approximate_surface_traversal_v1");
@@ -69,6 +74,9 @@ test("recall NONE paths emit explicit audit evidence", () => {
   assert.match(source, /rendered\.outcome === "none"/);
   assert.equal((source.match(/status: "completed_none", stage: "recall"/g) ?? []).length, 2);
   assert.match(source, /stage: "recall_surface_terminal"/);
+  for (const field of ["surface_build_ms", "surface_order_count", "surface_projection_count", "surface_page_count", "physical_entry_resolution_ms", "recall_core_ms", "recall_agent_ms", "total_operation_ms"]) {
+    assert.equal(source.includes(field), true);
+  }
 });
 
 test("placement evidence carries the bounded Surface traversal path", () => {
