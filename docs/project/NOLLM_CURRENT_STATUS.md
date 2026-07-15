@@ -52,7 +52,9 @@ dominant agreement 98.97%, max fanout 7, Q16 partition error 0;
 Current legal boundary:
 
 ```text
-hex radius <= 2^31-1; physical layer -64..64;
+storage/transport hex radius <= 2^31-1;
+active writable hex radius <= 2^30-1 with max coverage-down depth 2;
+physical layer -64..64;
 chart_id=default; phase=null; semantic Placement layer 0;
 exact Decimal/polygon only as Lab Oracle;
 no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding.

@@ -586,6 +586,8 @@ Parity 只证明实现一致，不自动证明物理正确。
 
 原点只能是一个样本，不能代表全格。
 
+The exact-support requirement in this section governs Oracle truth and method calibration. Production approximate Coverage is evaluated under section 10 by weighted missed mass, false mass, total variation, dominant-target agreement, fanout, locality, and Q16 conservation. This distinction does not authorize production polygon work and does not remove the independent Oracle.
+
 ### 9.4 正确性优先于“运行时禁止多边形”的局部限制
 
 以下属于实现策略，不是第一性原理：
@@ -773,6 +775,8 @@ dominant_target_agreement。
 ```text
 hex_radius = max(|q|, |r|, |q+r|) <= 2^31 - 1
 ```
+
+This bound is the storage and transport domain. The active writable field is a separate policy and is currently `hex_radius <= 2^30 - 1`, closed under two consecutive `coverage_down` steps. Active mutation must reject a larger target before any write; existing storage-only state remains readable and is never silently deleted.
 
 单层约可表达 `1 + 3R(R+1) ≈ 1.38×10^19` 个 Cell，远高于 PB 级需要。跨语言 Wire 在该域内可安全使用标准整数。
 

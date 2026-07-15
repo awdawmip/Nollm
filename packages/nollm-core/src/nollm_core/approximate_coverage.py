@@ -86,8 +86,13 @@ def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageE
         raise AmbiguousPhysicalCoverage("bounded quadrature produced no relation above threshold")
     if len(retained) > 8:
         raise AmbiguousPhysicalCoverage("bounded quadrature exceeded fanout 8")
-    if any(_hex_radius(q, r) > MAX_ACTIVE_HEX_RADIUS for (q, r), _count in retained):
-        raise UnsupportedPhysicalCoverage("physical coverage target is outside active hex radius")
+    required_radius = max(_hex_radius(q, r) for (q, r), _count in retained)
+    if required_radius > MAX_ACTIVE_HEX_RADIUS:
+        raise UnsupportedPhysicalCoverage(
+            "physical coverage target is outside storage radius: "
+            f"source={source.to_mapping()}, direction={direction}, "
+            f"required_radius={required_radius}, contract_id={ACTIVE_COORDINATE_CONTRACT_ID}"
+        )
 
     retained_mass = sum(count for _target, count in retained)
     pruned_mass = SAMPLE_COUNT - retained_mass

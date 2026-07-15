@@ -19,8 +19,10 @@ from .physical_coverage import (
     PhysicalCoverageExpansion,
     PhysicalCoverageMember,
     UnsupportedPhysicalCoverage,
+    UnsafeWritableAddress,
     clear_physical_coverage_cache,
     expand_physical_coverage,
+    validate_active_writable_address,
 )
 from .ports import CoreTraceEvent, TraceSink
 from .profiles import available_profile_ids, runtime_profile
@@ -70,6 +72,7 @@ __all__ = [
     "ReplaceCommand",
     "TraceSink",
     "UnsupportedPhysicalCoverage",
+    "UnsafeWritableAddress",
     "SurfaceAggregateAddress",
     "SurfaceCellProjection",
     "SurfaceGridSpec",
@@ -82,4 +85,5 @@ __all__ = [
     "available_profile_ids",
     "runtime_profile",
     "validate_lateral_ring",
+    "validate_active_writable_address",
 ]

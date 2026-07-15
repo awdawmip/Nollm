@@ -2,6 +2,13 @@
   "name": "nollm-bare",
   "runtime": ["nollm-core"],
   "entrypoint": "nollm_core.CoreRuntime",
+  "coverage": {
+    "method": "equal_area_hex_microtriangle_q40_m4_v1",
+    "policy": "nollm_broad_residue_min_hit_1_v1",
+    "storageHexRadius": 2147483647,
+    "activeWritableHexRadius": 1073741823,
+    "maxCoverageDownSteps": 2
+  },
   "capabilities": ["put", "remove", "replace", "move", "bridge", "explicit-cell-recall"],
   "forbidden": ["evidence-store", "access", "snapshot-implementation", "trace-implementation", "legacy-grf"]
 }

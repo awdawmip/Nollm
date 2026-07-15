@@ -37,6 +37,7 @@
     "SurfaceOrderInfo",
     "SurfacePage",
     "TraceSink",
+    "UnsafeWritableAddress",
     "UnsupportedPhysicalCoverage",
     "available_profile_ids",
     "clear_physical_coverage_cache",
@@ -44,6 +45,7 @@
     "expand_physical_coverage",
     "expand_template",
     "runtime_profile",
+    "validate_active_writable_address",
     "validate_lateral_ring"
   ],
   "core_runtime_operations": [

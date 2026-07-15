@@ -30,7 +30,7 @@ These values are audit inputs, not substituted Full Gate results. Gate 1 must re
 |---|---|---|
 | 0 authority and status | complete | active pointers and canonical ledger corrected |
 | 1 broad calibration | complete | 2,048 exact fixtures and 20k diagnostics passed |
-| 2 safe writable field | pending | none |
+| 2 safe writable field | complete | 48 boundary sources and two-step closure passed |
 | 3 occupancy semantics | pending | none |
 | 4 dense field | pending | none |
 | 5 dense single-entry Recall | pending | none |
@@ -55,3 +55,11 @@ The canonical result is `validation/caold_broad_residue_coverage_calibration.jso
 The selected policy is `nollm_broad_residue_min_hit_1_v1`. It materially reduces missed mass without increasing false mass, fanout, support distance, or production cost. Production Q16 partition error was zero. Exact-Oracle mean time was 75.2142 ms per cell; production mean/p95/max were 0.4645/0.5523/2.3424 ms.
 
 The 20,000-fixture diagnostic contained 17,036 valid expansions and 2,964 atomic boundary rejections. Production and float prototype hit counts differed in 651 valid cases (3.8213%). This is reported as fixed-point quantization evidence, not a mathematical failure; both paths were separately scored against the Oracle.
+
+## Gate 2: Coverage-Safe Writable Field
+
+The public contract `nollm_hex_storage_2p31_writable_2p30_depth2_v1` separates storage/transport radius `2^31-1` from active writable radius `2^30-1` and declares two `coverage_down` steps. Core preflights every Put/Move target in a batch before staging any command. Access preflights every target-bearing decision. Storage-only state still decodes and reopens, while new active writes there are rejected with structured radius and contract fields.
+
+`validation/caold_safe_writable_field_validation.json` covers six hex boundary directions across all eight phases. It traversed 336 single-step and 816 second-step retained members. The maximum second-step radius was 1,693,666,955, leaving a storage margin of 453,816,692. All checks passed, including atomic rejection and Q40-kernel closure.
+
+The existing live workspace `C:\Users\Administrator\.openclaw\memory\nollm-v39-bounded-approximate-v1-migrated` was inventoried read-only: 12 occupied cells, maximum radius 24, and zero storage-only cells. Its state SHA-256 remained `249DBD8ED87395EBD2BE123882106B7F4E5089AAF58A666C86E85EA7845249BD` before and after inspection.
