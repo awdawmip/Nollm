@@ -7,8 +7,10 @@ from .coverage_contract import (
     AmbiguousPhysicalCoverage,
     APPROXIMATE_COVERAGE_CONTRACT_ID,
     APPROXIMATE_COVERAGE_METHOD_ID,
+    APPROXIMATION_POLICY_ID,
     MAX_ACTIVE_HEX_RADIUS,
     MAX_PHYSICAL_LAYER,
+    MIN_HIT_COUNT,
     MIN_PHYSICAL_LAYER,
     PhysicalCoverageExpansion,
     PhysicalCoverageMember,
@@ -78,7 +80,7 @@ def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageE
     retained = tuple(
         (target, count)
         for target, count in sorted(hits.items())
-        if count * Q16_ONE >= RELATION_THRESHOLD_Q16 * SAMPLE_COUNT
+        if count >= MIN_HIT_COUNT
     )
     if not retained:
         raise AmbiguousPhysicalCoverage("bounded quadrature produced no relation above threshold")
@@ -117,6 +119,8 @@ def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageE
         q16_sum=sum(member.weight_q16 for member in ordered),
         coordinate_contract_id=ACTIVE_COORDINATE_CONTRACT_ID,
         approximation_contract_id=APPROXIMATE_COVERAGE_CONTRACT_ID,
+        approximation_policy_id=APPROXIMATION_POLICY_ID,
+        min_hit_count=MIN_HIT_COUNT,
     )
 
 

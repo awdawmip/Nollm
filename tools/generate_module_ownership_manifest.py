@@ -393,9 +393,13 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             evidence="No current final-gate consumer.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
         ), "LEGACY_REFERENCE")
     if p.startswith("lab/nollm-lab/geometry/"):
-        role = "active tool" if name == "generate_compiled_templates.py" else "active library"
+        active_tools = {
+            "generate_compiled_templates.py": "lab:compiled-templates",
+            "run_broad_residue_coverage_calibration.py": "lab:broad-residue-calibration",
+        }
+        role = "active tool" if name in active_tools else "active library"
         asset_class = "ACTIVE_TOOL" if role == "active tool" else "ACTIVE_LIBRARY"
-        gate = "lab:compiled-templates" if role == "active tool" else "lab:geometry-parity"
+        gate = active_tools[name] if role == "active tool" else "lab:geometry-parity"
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", role, "compile-time geometry definitions", "development", "Current geometry generation and compile support.", evidence="Stable Lab geometry directory convention.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), asset_class, gate)
     if p.startswith("lab/nollm-lab/statement_formation/"):
         gate = "lab:statement-formation-fixtures" if "/fixtures/" in p or name == "evaluate_fixture_decisions.py" else "lab:statement-formation-corpus"

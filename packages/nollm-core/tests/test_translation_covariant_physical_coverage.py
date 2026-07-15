@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from nollm_core import (
+    ACTIVE_APPROXIMATION_POLICY,
     CoreRuntime,
     GeometryAddress,
     KernelRegistry,
@@ -18,6 +19,9 @@ def address(layer: int, q: int, r: int) -> GeometryAddress:
 
 
 def test_all_phases_and_directions_use_bounded_quadrature_contract() -> None:
+    assert ACTIVE_APPROXIMATION_POLICY.policy_id == "nollm_broad_residue_min_hit_1_v1"
+    assert ACTIVE_APPROXIMATION_POLICY.sample_count == 96
+    assert ACTIVE_APPROXIMATION_POLICY.storage_hex_radius == (1 << 31) - 1
     registry = KernelRegistry()
     for layer in range(8):
         for direction in ("coverage_up", "coverage_down"):
@@ -28,14 +32,16 @@ def test_all_phases_and_directions_use_bounded_quadrature_contract() -> None:
             assert expansion.approximation_contract_id == "nollm_bounded_approximate_hex_coverage_v1"
             assert expansion.coordinate_contract_id == "nollm_hex_radius_2p31_default_chart_null_phase_v1"
             assert expansion.sample_count == 96
-            assert expansion.relation_threshold_q16 == 1311
+            assert expansion.relation_threshold_q16 == 683
+            assert expansion.min_hit_count == 1
+            assert expansion.approximation_policy_id == "nollm_broad_residue_min_hit_1_v1"
             assert 1 <= expansion.fanout == len(expansion.members) <= 8
             assert expansion.sum_weight_q16 == 65536
             assert expansion.normalization_residual_q16 == 0
             assert expansion.max_quantization_residual_q16 <= 1
             assert 0 <= expansion.threshold_residual_q16 <= 65536
             assert not expansion.ambiguous
-            assert all(member.weight_q16 > 0 and member.hit_count >= 2 for member in expansion.members)
+            assert all(member.weight_q16 > 0 and member.hit_count >= 1 for member in expansion.members)
             assert all(member.classification == "bounded_equal_area_quadrature" for member in expansion.members)
 
 

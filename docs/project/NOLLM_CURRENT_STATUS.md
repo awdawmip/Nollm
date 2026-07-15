@@ -39,6 +39,16 @@ production/prototype hit mismatch 683, requiring separate Oracle scoring;
 the transport radius 2^31-1 is not the active two-step writable radius.
 ```
 
+Broad calibration result:
+
+```text
+2048 exact fixtures and 20,000 diagnostics passed;
+selected policy nollm_broad_residue_min_hit_1_v1;
+production missed p99 1.2411%, TV p95 2.0776%, false max 0;
+dominant agreement 98.97%, max fanout 7, Q16 partition error 0;
+17,036 diagnostics valid, 2,964 boundary unsupported, 651 hit mismatches.
+```
+
 Current legal boundary:
 
 ```text

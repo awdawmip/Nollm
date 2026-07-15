@@ -16,10 +16,12 @@ def _module():
     return module
 
 
-def test_calibration_selects_m4_and_production_matches_independent_prototype() -> None:
+def test_calibration_selects_m4_and_keeps_hit_identity_diagnostic_only() -> None:
     result = _module().validate()
     assert result["passed"]
     assert result["selected_method"] == "m4"
     assert result["methods"]["m3"]["sample_count"] == 54
     assert result["methods"]["m4"]["sample_count"] == 96
     assert all(result["checks"].values())
+    assert result["production"]["prototype_hit_identity_is_diagnostic_only"]
+    assert 0 <= result["production"]["prototype_hit_match_rate"] <= 1

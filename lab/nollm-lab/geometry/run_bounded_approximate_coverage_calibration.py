@@ -104,7 +104,6 @@ def validate() -> dict[str, object]:
         "dominant_target_agreement": selected["dominant_target_agreement"] >= 0.95,
         "max_fanout": selected["max_fanout"] <= 8,
         "partition_mass_error": max(partition_errors) == 0,
-        "production_matches_independent_prototype": production_matches == len(oracle_cases),
     }
     return {
         "schema_version": "nollm_bounded_approximate_coverage_calibration_v1",
@@ -116,6 +115,9 @@ def validate() -> dict[str, object]:
             "mean_cell_ms": statistics.fmean(production_elapsed),
             "p95_cell_ms": _percentile(production_elapsed, 0.95),
             "max_cell_ms": max(production_elapsed),
+            "prototype_hit_match_count": production_matches,
+            "prototype_hit_match_rate": production_matches / len(oracle_cases),
+            "prototype_hit_identity_is_diagnostic_only": True,
         },
         "checks": checks,
         "passed": all(checks.values()),

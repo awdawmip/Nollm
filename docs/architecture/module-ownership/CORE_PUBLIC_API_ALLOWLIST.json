@@ -2,6 +2,9 @@
   "schema_version": 1,
   "module": "nollm_core",
   "symbols": [
+    "ACTIVE_APPROXIMATION_POLICY",
+    "AmbiguousPhysicalCoverage",
+    "ApproximateCoveragePolicy",
     "AtomHandle",
     "BridgeAddCommand",
     "BridgeRemoveCommand",
@@ -34,6 +37,7 @@
     "SurfaceOrderInfo",
     "SurfacePage",
     "TraceSink",
+    "UnsupportedPhysicalCoverage",
     "available_profile_ids",
     "clear_physical_coverage_cache",
     "clear_surface_order_cache",

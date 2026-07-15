@@ -263,6 +263,8 @@ signed-64 closure：退出活动主任务
 
 The 96-fixture checkpoint demonstrates the production method but does not establish broad-domain percentiles. Active approximation thresholds and minimum hit count must be versioned from deterministic, residue-stratified exact-Oracle calibration. Production/prototype sample differences are scored independently against the Oracle.
 
+The 2026-07-15 Full Gate selected `nollm_broad_residue_min_hit_1_v1` with K=96. Its relation threshold is one retained sample (`683` in rounded-up Q16 reporting), and retention uses the exact integer rule `hit_count >= 1`. On 2,048 exact fixtures, production missed-mass p99 was 1.2411%, TV p95 was 2.0776%, false-mass max was zero, dominant agreement was 98.97%, and maximum fanout was seven. The alternative `min_hit=2` missed-mass p99 was 2.5466% without improving false mass, fanout, or dominant agreement.
+
 The storage and transport radius identifies serializable cells. A smaller active writable radius must be closed under every Coverage step available to the configured Recall depth. Mutation rejects unsafe source cells before any partial propagation. Occupancy bands describe deterministic atom counts only; they are not physical-density or semantic-density claims.
 
 One traversal still chooses exactly one final physical entry. Reachability from multiple entries is a non-persistent observation and has no minimum count.

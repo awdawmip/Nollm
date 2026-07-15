@@ -12,7 +12,16 @@ from .coverage_template import CoverageTemplate, KernelEntry, expand_template, v
 from .geometry import GeometryAddress
 from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
-from .physical_coverage import PhysicalCoverageExpansion, PhysicalCoverageMember, clear_physical_coverage_cache, expand_physical_coverage
+from .physical_coverage import (
+    ACTIVE_APPROXIMATION_POLICY,
+    AmbiguousPhysicalCoverage,
+    ApproximateCoveragePolicy,
+    PhysicalCoverageExpansion,
+    PhysicalCoverageMember,
+    UnsupportedPhysicalCoverage,
+    clear_physical_coverage_cache,
+    expand_physical_coverage,
+)
 from .ports import CoreTraceEvent, TraceSink
 from .profiles import available_profile_ids, runtime_profile
 from .recall import CoreRecallItem, CoreRecallRequest, CoreRecallResult, RecallBudget
@@ -31,6 +40,9 @@ from .surface import (
 
 __all__ = [
     "AtomHandle",
+    "ACTIVE_APPROXIMATION_POLICY",
+    "AmbiguousPhysicalCoverage",
+    "ApproximateCoveragePolicy",
     "BridgeAddCommand",
     "BridgeRemoveCommand",
     "BridgeSpec",
@@ -57,6 +69,7 @@ __all__ = [
     "RemoveCommand",
     "ReplaceCommand",
     "TraceSink",
+    "UnsupportedPhysicalCoverage",
     "SurfaceAggregateAddress",
     "SurfaceCellProjection",
     "SurfaceGridSpec",

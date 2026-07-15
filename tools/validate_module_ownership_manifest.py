@@ -44,7 +44,7 @@ GATED_ASSET_CLASSES = {
 VALIDATION_GATES = {
     "package:core", "package:snapshot", "package:trace", "package:access",
     "governance:m0", "governance:architecture", "compatibility:grf",
-    "lab:compiled-templates", "lab:geometry-parity", "lab:core-capability",
+    "lab:compiled-templates", "lab:geometry-parity", "lab:broad-residue-calibration", "lab:core-capability",
     "lab:minimal-e2e", "lab:adaptive-surface", "lab:rotated-layer0-migration",
     "lab:rotated-surface-coarsening", "lab:translation-covariant-migration",
     "lab:translation-normalized-migration", "lab:bounded-approximate-migration",
@@ -62,6 +62,7 @@ GATE_TARGETS = {
     "compatibility:grf": "reference/python/tests/grf",
     "lab:compiled-templates": "lab/nollm-lab/geometry/generate_compiled_templates.py",
     "lab:geometry-parity": "lab/nollm-lab/m1/run_geometry_parity.py",
+    "lab:broad-residue-calibration": "lab/nollm-lab/geometry/run_broad_residue_coverage_calibration.py",
     "lab:core-capability": "lab/nollm-lab/m1/run_core_capability_validation.py",
     "lab:minimal-e2e": "lab/nollm-lab/m1/run_m1_minimal_e2e.py",
     "lab:adaptive-surface": "lab/nollm-lab/m1/run_adaptive_surface_validation.py",

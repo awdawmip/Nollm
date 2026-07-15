@@ -29,7 +29,7 @@ These values are audit inputs, not substituted Full Gate results. Gate 1 must re
 | Gate | State | Evidence |
 |---|---|---|
 | 0 authority and status | complete | active pointers and canonical ledger corrected |
-| 1 broad calibration | pending | none |
+| 1 broad calibration | complete | 2,048 exact fixtures and 20k diagnostics passed |
 | 2 safe writable field | pending | none |
 | 3 occupancy semantics | pending | none |
 | 4 dense field | pending | none |
@@ -40,3 +40,18 @@ These values are audit inputs, not substituted Full Gate results. Gate 1 must re
 ## Portability
 
 Windows 10/11, PowerShell, Python for Windows, and Git for Windows are the primary acceptance environment. Cross-platform portability is not claimed by this task.
+
+## Gate 1: Broad Residue Calibration
+
+The canonical result is `validation/caold_broad_residue_coverage_calibration.json`. The runner uses fixed seeds `0x0ca01d39` and `0x0ca01d20`, 128 exact fixtures in each of the 16 phase/direction buckets, and independent Decimal polygon Oracle results. Production fixed-point and float prototype distributions are scored separately.
+
+| Kernel / policy | missed p99 | TV p95 | false max | dominant | max fanout |
+|---|---:|---:|---:|---:|---:|
+| production min-hit 1 | 1.2411% | 2.0776% | 0 | 98.97% | 7 |
+| production min-hit 2 | 2.5466% | 2.4613% | 0 | 98.97% | 7 |
+| prototype min-hit 1 | 1.2411% | 2.0765% | 0 | 99.02% | 7 |
+| prototype min-hit 2 | 2.5466% | 2.4613% | 0 | 99.02% | 7 |
+
+The selected policy is `nollm_broad_residue_min_hit_1_v1`. It materially reduces missed mass without increasing false mass, fanout, support distance, or production cost. Production Q16 partition error was zero. Exact-Oracle mean time was 75.2142 ms per cell; production mean/p95/max were 0.4645/0.5523/2.3424 ms.
+
+The 20,000-fixture diagnostic contained 17,036 valid expansions and 2,964 atomic boundary rejections. Production and float prototype hit counts differed in 651 valid cases (3.8213%). This is reported as fixed-point quantization evidence, not a mathematical failure; both paths were separately scored against the Oracle.

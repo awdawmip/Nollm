@@ -8,11 +8,14 @@ from .geometry import GeometryAddress
 
 APPROXIMATE_COVERAGE_METHOD_ID = "equal_area_hex_microtriangle_q40_m4_v1"
 APPROXIMATE_COVERAGE_CONTRACT_ID = "nollm_bounded_approximate_hex_coverage_v1"
+APPROXIMATION_POLICY_ID = "nollm_broad_residue_min_hit_1_v1"
 ACTIVE_COORDINATE_CONTRACT_ID = "nollm_hex_radius_2p31_default_chart_null_phase_v1"
 SAMPLE_SUBDIVISION = 4
 SAMPLE_COUNT = 6 * SAMPLE_SUBDIVISION * SAMPLE_SUBDIVISION
-RELATION_THRESHOLD_Q16 = 1311
-MAX_ACTIVE_HEX_RADIUS = (1 << 31) - 1
+MIN_HIT_COUNT = 1
+RELATION_THRESHOLD_Q16 = (Q16_ONE + SAMPLE_COUNT - 1) // SAMPLE_COUNT
+STORAGE_HEX_RADIUS = (1 << 31) - 1
+MAX_ACTIVE_HEX_RADIUS = STORAGE_HEX_RADIUS
 MIN_PHYSICAL_LAYER = -64
 MAX_PHYSICAL_LAYER = 64
 
@@ -23,6 +26,24 @@ class UnsupportedPhysicalCoverage(ValueError):
 
 class AmbiguousPhysicalCoverage(ValueError):
     """Compatibility error for callers that handled the former exact kernel."""
+
+
+@dataclass(frozen=True)
+class ApproximateCoveragePolicy:
+    policy_id: str
+    sample_count: int
+    min_hit_count: int
+    relation_threshold_q16: int
+    storage_hex_radius: int
+
+
+ACTIVE_APPROXIMATION_POLICY = ApproximateCoveragePolicy(
+    policy_id=APPROXIMATION_POLICY_ID,
+    sample_count=SAMPLE_COUNT,
+    min_hit_count=MIN_HIT_COUNT,
+    relation_threshold_q16=RELATION_THRESHOLD_Q16,
+    storage_hex_radius=STORAGE_HEX_RADIUS,
+)
 
 
 @dataclass(frozen=True, order=True)
@@ -52,6 +73,8 @@ class PhysicalCoverageExpansion:
     q16_sum: int
     coordinate_contract_id: str
     approximation_contract_id: str
+    approximation_policy_id: str
+    min_hit_count: int
     ambiguous: bool = False
 
     @property
