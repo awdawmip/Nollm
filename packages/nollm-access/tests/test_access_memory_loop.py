@@ -58,6 +58,22 @@ def test_duplicate_reuses_current_and_similar_distinct_creates_new_binding(tmp_p
         assert other["handle"] != first["handle"]
 
 
+def test_reuse_with_distinct_statement_identity_verifies_supporting_binding(tmp_path) -> None:
+    current = MemoryStatement("meeting:canonical", "Project weekly meeting is Thursday at 3 PM.")
+    duplicate = MemoryStatement("meeting:duplicate", "Project weekly meeting is Thursday at 3 PM.")
+    with AccessMemoryLoop(tmp_path) as loop:
+        first = loop.apply_placement(current, placement(current.statement_id, "expand_surface", "placement:expand:0"), "new")
+        reused = loop.apply_placement(
+            duplicate,
+            placement(duplicate.statement_id, "reuse", "placement:existing:0", handle=first["handle"]),
+            "reuse", CELL,
+        )
+        binding = loop.binding(duplicate.statement_id)
+    assert reused["handle"] == first["handle"]
+    assert binding["current_statement_id"] == current.statement_id
+    assert binding["supporting_statement_ids"] == [duplicate.statement_id]
+
+
 def test_revision_binding_failure_restores_old_current_and_discards_new_statement(tmp_path, monkeypatch) -> None:
     old = MemoryStatement("meeting:tuesday", "Project weekly meeting is Tuesday at 9 AM.")
     new = MemoryStatement("meeting:thursday", "Project weekly meeting is Thursday at 3 PM; Tuesday is cancelled.")

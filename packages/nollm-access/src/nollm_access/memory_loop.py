@@ -182,7 +182,14 @@ class AccessMemoryLoop:
             bind_started = perf_counter_ns()
             if type(result) is AtomHandle:
                 binding = access.handle_store.binding_for_handle(result)
-                if binding.current_statement_id != statement.statement_id:
+                statement_is_bound = (
+                    binding.current_statement_id == statement.statement_id
+                    or (
+                        public_action == "reuse"
+                        and statement.statement_id in binding.supporting_statement_ids
+                    )
+                )
+                if not statement_is_bound:
                     raise RuntimeError("placement HandleBinding verification failed")
             handle_bind_ms = (perf_counter_ns() - bind_started) // 1_000_000
         return {
