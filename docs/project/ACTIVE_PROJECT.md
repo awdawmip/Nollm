@@ -6,6 +6,7 @@
 - Current task: [Semantic Revision Integrity Dense Live Closure](tasks/NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md)
 - Input checkpoint: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`
 - Implementation checkpoint through Gate 5: `930f363cede7cd69bbf827fa497456f11e74318b`
+- Evidence/report checkpoint: `7f30ed82731ba76f5876b6cc563439a6045796c5`
 - Report: [AOLD Semantic Revision Integrity Dense Live Report](AOLD_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_REPORT.md)
 
 Current state:

@@ -3,6 +3,7 @@
 **Date**: 2026-07-16
 **Input HEAD**: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`
 **Implementation checkpoint**: `930f363cede7cd69bbf827fa497456f11e74318b`
+**Evidence/report checkpoint**: `7f30ed82731ba76f5876b6cc563439a6045796c5`
 **Status**: `AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS`
 
 This is the only active module ledger. Percentages are current planning estimates, never permanent completion claims.

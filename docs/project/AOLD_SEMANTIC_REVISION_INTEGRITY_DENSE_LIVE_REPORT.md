@@ -9,6 +9,7 @@ Input SHA-256: `e1f9b2d70551266eb40c83213d5949065c6e128a9fdc5b78423b714721055084
 Input HEAD: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`  
 Branch: `codex/aold-semantic-revision-integrity-dense-live-closure`  
 Implementation checkpoint through Gate 5: `930f363cede7cd69bbf827fa497456f11e74318b`
+Evidence/report checkpoint: `7f30ed82731ba76f5876b6cc563439a6045796c5`
 
 The planned vector was strict Placement semantics, destructive revision confirmation, V6 P1 repair, Provider-backed dense formation, hidden-preview Recall, and frozen evidence. All functional gates were reached. Final status remains `IN_PROGRESS` because the latest real-model C5 contrast rerun drifted to a forbidden destructive action.
 
@@ -96,6 +97,7 @@ Lab 14 passed
 Node 23 passed
 plugin:check passed
 surface legal-action, traversal correction, P1 read-only, and Dense state runners passed
+canonical ownership Manifest and module boundary checks passed
 latest real contrast rerun failed C5 while remaining zero-write
 ```
 

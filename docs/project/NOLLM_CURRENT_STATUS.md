@@ -8,6 +8,7 @@ task: NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716
 status: AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS
 input HEAD: f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d
 implementation checkpoint: 930f363cede7cd69bbf827fa497456f11e74318b
+evidence/report checkpoint: 7f30ed82731ba76f5876b6cc563439a6045796c5
 ```
 
 Active result:
@@ -41,7 +42,7 @@ Regression truth:
 Core 70, Snapshot 7, Trace 3, Access 93, OpenClaw Python 39, M0 45, Lab 14, Node 23 passed;
 plugin:check passed;
 P1 read-only and Dense state runners passed;
-Manifest and boundary checks are regenerated only after the final tracked evidence/report set is fixed.
+canonical ownership Manifest and boundary checks passed after the tracked evidence/report set was fixed.
 ```
 
 The active boundary remains file-first and evidence-first. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, or hidden-reasoning persistence was added.
