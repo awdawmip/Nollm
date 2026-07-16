@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+from tempfile import TemporaryDirectory
 from time import perf_counter
 from uuid import uuid4
 
@@ -207,11 +208,15 @@ def run(workspace: Path, timeout_seconds: int = 240) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("--workspace", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=int, default=240)
     args = parser.parse_args()
-    result = run(args.workspace, args.timeout_seconds)
+    if args.workspace is None:
+        with TemporaryDirectory(prefix="nollm-semantic-contrast-") as raw_workspace:
+            result = run(Path(raw_workspace), args.timeout_seconds)
+    else:
+        result = run(args.workspace, args.timeout_seconds)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
     return 0 if result["passed"] else 1
