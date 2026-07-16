@@ -1,9 +1,9 @@
 # Nollm AOLD：真实对话记忆提交与召回端到端延迟基线任务书
 
-**任务文件名**：`NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md`  
-**日期**：2026-07-16  
-**受影响模块**：`A=Access | O=OpenClaw | L=Lab | D=Distributions`  
-**任务性质**：真实运行测量、时间语义纠正和瓶颈定位；不新增记忆能力，不修改几何路线  
+**任务文件名**：`NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md`
+**日期**：2026-07-16
+**受影响模块**：`A=Access | O=OpenClaw | L=Lab | D=Distributions`
+**任务性质**：真实运行测量、时间语义纠正和瓶颈定位；不新增记忆能力，不修改几何路线
 **核心问题**：
 
 ```text
@@ -20,16 +20,16 @@
    还是消耗在真实 LLM Formation、Placement、Recall 和主代理调用？
 ```
 
-**输入 Bundle**：`nollm_aold_semantic_revision_integrity_dense_live_20260716_26bd0ae.bundle`  
-**输入 Bundle SHA-256**：`6ea6998752c50bdda6057b2dba2d1cc8ed9e6c4e76c193a75f1d4e3a15ae8298`  
-**输入分支**：`codex/aold-semantic-revision-integrity-dense-live-closure`  
-**输入 HEAD**：`26bd0ae68470ef8d1396014884e305cc1c3ab7ef`  
-**输入 Tag**：`AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS_AT_26bd0ae68470ef8d1396014884e305cc1c3ab7ef`  
-**建议工作分支**：`codex/aold-real-memory-commit-recall-latency-baseline`  
-**主执行环境**：Windows 10/11、PowerShell、Node 24、当前真实 OpenClaw / LongCat-2.0 环境  
-**交付方式**：所有真实进展 commit；工作树 clean；仓库外生成并验证单一完整历史 Git Bundle  
-**插件最终状态**：保持安装和启用  
-**数据最终状态**：旧工作区全部保留；新建独立延迟测量工作区，不覆盖 V1～V6  
+**输入 Bundle**：`nollm_aold_semantic_revision_integrity_dense_live_20260716_26bd0ae.bundle`
+**输入 Bundle SHA-256**：`6ea6998752c50bdda6057b2dba2d1cc8ed9e6c4e76c193a75f1d4e3a15ae8298`
+**输入分支**：`codex/aold-semantic-revision-integrity-dense-live-closure`
+**输入 HEAD**：`26bd0ae68470ef8d1396014884e305cc1c3ab7ef`
+**输入 Tag**：`AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS_AT_26bd0ae68470ef8d1396014884e305cc1c3ab7ef`
+**建议工作分支**：`codex/aold-real-memory-commit-recall-latency-baseline`
+**主执行环境**：Windows 10/11、PowerShell、Node 24、当前真实 OpenClaw / LongCat-2.0 环境
+**交付方式**：所有真实进展 commit；工作树 clean；仓库外生成并验证单一完整历史 Git Bundle
+**插件最终状态**：保持安装和启用
+**数据最终状态**：旧工作区全部保留；新建独立延迟测量工作区，不覆盖 V1～V6
 **能力结论边界**：只形成真实延迟基线和瓶颈分类；不宣称完成性能优化、长期吞吐、PB 规模、多物理层 Placement、Stitch 或正式发布
 
 ---
