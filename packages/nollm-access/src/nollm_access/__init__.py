@@ -25,12 +25,15 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
-from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE
+from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE, RevisionTargetExcludedError
 from .placement_contract import (
     ACTIONS,
     PLACEMENT_ACTION_SEMANTICS,
     PLACEMENT_ACTION_SEMANTICS_VERSION,
+    REVISION_CONFIRMATION_SCHEMA_VERSION,
     AccessDecision,
+    ProvisionalRevisionDecision,
+    RevisionConfirmationResult,
     placement_action_semantics_prompt,
 )
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
@@ -67,6 +70,7 @@ __all__ = [
     "ACTIONS",
     "PLACEMENT_ACTION_SEMANTICS",
     "PLACEMENT_ACTION_SEMANTICS_VERSION",
+    "REVISION_CONFIRMATION_SCHEMA_VERSION",
     "ACTIVE_SEMANTIC_WRITE_POLICY",
     "ACTIVE_SEMANTIC_WRITE_POLICY_ID",
     "AccessDecision",
@@ -82,6 +86,9 @@ __all__ = [
     "PhysicalEntryCandidateView",
     "PhysicalEntryPage",
     "PhysicalEntryResolution",
+    "ProvisionalRevisionDecision",
+    "RevisionConfirmationResult",
+    "RevisionTargetExcludedError",
     "ActiveSurfaceSelection",
     "AccessConsistencyError",
     "EvidenceStore",

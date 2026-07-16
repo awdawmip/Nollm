@@ -14,6 +14,10 @@ from nollm_access import (
     PLACEMENT_SURFACE_BUDGET,
     PLACEMENT_ACTION_SEMANTICS_VERSION,
     RECALL_SURFACE_BUDGET,
+    REVISION_CONFIRMATION_SCHEMA_VERSION,
+    ProvisionalRevisionDecision,
+    RevisionConfirmationResult,
+    RevisionTargetExcludedError,
     SurfaceBudgetProfile,
     placement_action_semantics_prompt,
 )
@@ -427,6 +431,8 @@ def apply_placement(
     memory_workspace: object,
     request_id: object,
     selected_entry: object = None,
+    revision_confirmation: object = None,
+    excluded_revision_targets: object = None,
 ) -> dict[str, object]:
     if type(raw_response) is not str or type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_request", "placement request fields are invalid")
@@ -439,10 +445,84 @@ def apply_placement(
         raise FormationAdapterError("invalid_json", str(exc)) from exc
     try:
         with AccessMemoryLoop(root) as loop:
-            result = loop.apply_placement(statement, raw, request_id, selected_entry)
+            result = loop.apply_placement(
+                statement, raw, request_id, selected_entry,
+                revision_confirmation=revision_confirmation,
+                excluded_revision_targets=excluded_revision_targets,
+            )
+    except RevisionTargetExcludedError as exc:
+        raise FormationAdapterError("revision_target_excluded", str(exc)) from exc
     except (TypeError, ValueError, KeyError) as exc:
         raise FormationAdapterError("invalid_schema", str(exc)) from exc
     return {**result, "json_repair": diagnostics}
+
+
+def build_revision_confirmation_prompt(provisional_value: object) -> dict[str, object]:
+    try:
+        provisional = ProvisionalRevisionDecision.from_mapping(provisional_value)
+    except (TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_revision_provisional", str(exc)) from exc
+    prompt = f"""You are a private revision confirmation agent. The user will never see this run.
+The proposed revision_current is destructive. Confirm it only when all three conditions are true: the Statements concern the same subject or referent; they occupy the same proposition slot; and the proposed value explicitly supersedes the current value. Similar wording, analogous fields on different subjects, the same document type, the same locality, or an additive fact is not enough. When uncertain, defer. Do not call tools or reveal hidden reasoning.
+Return exactly one raw JSON object with no markdown.
+Schema version: {REVISION_CONFIRMATION_SCHEMA_VERSION}
+Fields: schema_version, outcome, relation.
+confirm_revision requires relation same_subject_same_slot_supersedes.
+reject_revision requires relation different_subject_or_non_superseding.
+defer requires relation uncertain.
+provisional_revision: {json.dumps(provisional.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+    return {
+        "status": "revision_confirmation",
+        "prompt": prompt,
+        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        "provisional_revision": provisional.to_mapping(),
+    }
+
+
+def parse_revision_confirmation(raw_response: object, provisional_value: object) -> dict[str, object]:
+    if type(raw_response) is not str:
+        raise FormationAdapterError("invalid_request", "revision confirmation response must be a string")
+    try:
+        provisional = ProvisionalRevisionDecision.from_mapping(provisional_value)
+        repaired, diagnostics = repair_dream_json(raw_response)
+        confirmation = RevisionConfirmationResult.from_wire_mapping(
+            json.loads(repaired), provisional.provisional_id,
+        )
+    except json.JSONDecodeError as exc:
+        raise FormationAdapterError("invalid_json", str(exc)) from exc
+    except (TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_revision_confirmation", str(exc)) from exc
+    if confirmation.provisional_id != provisional.provisional_id:
+        raise FormationAdapterError("invalid_revision_confirmation", "confirmation does not bind the provisional decision")
+    return {"confirmation": confirmation.to_mapping(), "json_repair": diagnostics}
+
+
+def build_revision_redecision_prompt(
+    original_prompt: object,
+    provisional_value: object,
+    confirmation_value: object,
+) -> dict[str, object]:
+    if type(original_prompt) is not str or not original_prompt:
+        raise FormationAdapterError("invalid_request", "original placement prompt is required")
+    try:
+        provisional = ProvisionalRevisionDecision.from_mapping(provisional_value)
+        confirmation = RevisionConfirmationResult.from_mapping(confirmation_value)
+    except (TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_revision_redecision", str(exc)) from exc
+    if confirmation.provisional_id != provisional.provisional_id or confirmation.confirmed:
+        raise FormationAdapterError("invalid_revision_redecision", "redecision requires a rejected or deferred exact provisional revision")
+    prompt = f"""{original_prompt}
+
+The provisional revision_current below was rejected without changing Statement, Handle, or Core state. The exact existing_handle is blacklisted for revision_current for this operation. Make one new decision using new_local, expand_surface, reuse only if materially identical, or defer. Do not select revision_current because the bounded confirmation call has been consumed.
+rejected_provisional_id: {provisional.provisional_id}
+blacklisted_revision_handle: {json.dumps(provisional.existing_handle.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
+Return exactly one placement JSON object."""
+    return {
+        "status": "revision_redecision",
+        "prompt": prompt,
+        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        "excluded_revision_targets": [provisional.existing_handle.to_mapping()],
+    }
 
 
 def _recall_selection_prompt(query: str, candidates: list[dict[str, object]]) -> str:

@@ -18,8 +18,11 @@ from .memory_loop import (
     advance_placement_traversal,
     advance_recall_traversal,
     apply_placement,
+    build_revision_confirmation_prompt,
+    build_revision_redecision_prompt,
     build_placement_prompt,
     build_recall_prompt,
+    parse_revision_confirmation,
     render_recall_injection,
 )
 
@@ -85,7 +88,23 @@ def main() -> None:
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "apply_placement":
-            result = apply_placement(envelope["raw_model_response"], envelope["statement"], envelope["memory_workspace"], envelope["request_id"], envelope.get("selected_entry"))
+            result = apply_placement(
+                envelope["raw_model_response"], envelope["statement"], envelope["memory_workspace"],
+                envelope["request_id"], envelope.get("selected_entry"), envelope.get("revision_confirmation"),
+                envelope.get("excluded_revision_targets"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_revision_confirmation_prompt":
+            result = build_revision_confirmation_prompt(envelope["provisional_revision"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "parse_revision_confirmation":
+            result = parse_revision_confirmation(envelope["raw_model_response"], envelope["provisional_revision"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_revision_redecision_prompt":
+            result = build_revision_redecision_prompt(envelope["original_prompt"], envelope["provisional_revision"], envelope["confirmation"])
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "build_recall_prompt":

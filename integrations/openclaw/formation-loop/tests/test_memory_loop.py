@@ -13,6 +13,9 @@ from nollm_openclaw_formation.memory_loop import (
     apply_placement,
     build_placement_prompt,
     build_recall_prompt,
+    build_revision_confirmation_prompt,
+    build_revision_redecision_prompt,
+    parse_revision_confirmation,
     render_recall_injection,
 )
 
@@ -231,3 +234,43 @@ def test_placement_prompt_defines_strict_revision_boundaries(tmp_path):
     assert "explicitly supersedes" in prompt
     assert "Different subjects with analogous attributes must remain distinct" in prompt
     assert "An additive fact about the same subject is not a revision" in prompt
+
+
+def test_revision_confirmation_wire_rejects_without_write_and_blacklists_target(tmp_path):
+    old = MemoryStatement("alpha:bx", "Alpha V3.9 release code is BX-3917.")
+    new = {"statement_id": "caold:cr", "content_utf8": "CAOLD broad-residue acceptance code is CR-7159.", "source_handle": None, "context_refs": []}
+    with AccessMemoryLoop(tmp_path) as loop:
+        first = loop.apply_placement(old, json.loads(placement(old.statement_id, "expand_surface", "placement:expand:0")), "old")
+    raw = json.dumps({
+        "schema_version": PLACEMENT_SCHEMA_VERSION,
+        "outcome": "apply",
+        "decision": {
+            "statement_id": new["statement_id"],
+            "action": "revision_current",
+            "candidate_id": "placement:existing:0",
+            "existing_handle": first["handle"],
+            "reason_text": "analogous field was incorrectly treated as revision",
+        },
+    })
+    provisional_result = apply_placement(raw, new, str(tmp_path), "wrong", CELL)
+    provisional = provisional_result["provisional_revision"]
+    assert provisional_result["outcome"] == "revision_confirmation_required"
+    assert provisional_result["core_write_count"] == 0
+    built = build_revision_confirmation_prompt(provisional)
+    assert "same subject or referent" in built["prompt"]
+    reject_raw = json.dumps({
+        "schema_version": "nollm_openclaw_revision_confirmation_v1",
+        "outcome": "reject_revision",
+        "relation": "different_subject_or_non_superseding",
+    })
+    parsed = parse_revision_confirmation(reject_raw, provisional)
+    rejected = apply_placement(raw, new, str(tmp_path), "wrong", CELL, parsed["confirmation"])
+    assert rejected["outcome"] == "revision_rejected"
+    assert rejected["core_write_count"] == 0
+    redecision = build_revision_redecision_prompt("original placement prompt", provisional, parsed["confirmation"])
+    assert redecision["excluded_revision_targets"] == [first["handle"]]
+    with pytest.raises(FormationAdapterError) as error:
+        apply_placement(raw, new, str(tmp_path), "wrong", CELL, None, redecision["excluded_revision_targets"])
+    assert error.value.category == "revision_target_excluded"
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding(old.statement_id)["current_statement_id"] == old.statement_id

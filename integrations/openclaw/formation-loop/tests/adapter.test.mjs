@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -25,6 +25,11 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.surface_legal_actions_contract_version.const, manifest.contracts.surfaceLegalActionsContractVersion);
   assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
   assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
+  assert.equal(manifest.version, "0.13.0");
+  assert.equal(manifest.configSchema.properties.revision_confirmation_schema_version.const, manifest.contracts.revisionConfirmationWire);
+  assert.equal(manifest.configSchema.properties.revision_confirmation_max_calls.const, 1);
+  assert.equal(manifest.configSchema.properties.revision_redecision_max_calls.const, 1);
+  assert.equal(manifest.configSchema.properties.revision_confirmation_model_mode.const, "inherit");
   assert.equal(manifest.configSchema.properties.surface_page_size.maximum, 8);
   assert.equal(manifest.configSchema.properties.surface_max_order.maximum, 8);
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);
@@ -200,6 +205,21 @@ test("Traversal evidence distinguishes correction, singleton skip, and provider 
     assert.equal(source.includes(field), true);
   }
   assert.match(source, /correction_attempt_count\) >= TRAVERSAL_CORRECTION_MAX_ATTEMPTS/);
+});
+
+test("destructive revision uses one confirmation and at most one redecision", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.equal(REVISION_CONFIRMATION_MAX_CALLS, 1);
+  assert.equal(REVISION_REDECISION_MAX_CALLS, 1);
+  assert.match(source, /applied\.outcome === "revision_confirmation_required"/);
+  assert.match(source, /action: "build_revision_confirmation_prompt"/);
+  assert.match(source, /confirmation\.outcome === "confirm_revision"/);
+  assert.match(source, /confirmation\.outcome === "reject_revision"/);
+  assert.match(source, /action: "build_revision_redecision_prompt"/);
+  assert.match(source, /revision_confirmation_call_consumed/);
+  for (const field of ["revision_confirmation_count", "revision_confirmation_ms", "revision_confirmation_outcome", "revision_redecision_count", "revision_redecision_ms", "revision_target_blacklisted"]) {
+    assert.equal(source.includes(field), true);
+  }
 });
 
 test("a run satisfied by hidden Recall cannot re-form the recalled fact", () => {

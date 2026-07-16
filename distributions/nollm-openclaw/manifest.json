@@ -9,6 +9,10 @@
   "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1",
   "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1",
   "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1",
+  "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1",
+  "revisionConfirmationMaxCalls": 1,
+  "revisionRedecisionMaxCalls": 1,
+  "evidenceFilenameContract": "caold_semantic_revision_dense_live_20260716",
   "writePhysicalLayer": 0,
   "dreamAgent": {
     "enabled": true,

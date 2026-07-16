@@ -21,6 +21,9 @@ export type DreamConfig = {
   surface_legal_actions_contract_version?: "nollm_access_state_derived_surface_legal_actions_v1";
   physical_entry_resolution_policy_version?: "mechanical_singleton_physical_entry_v1";
   traversal_correction_max_attempts?: 2;
+  revision_confirmation_schema_version?: "nollm_openclaw_revision_confirmation_v1";
+  revision_confirmation_max_calls?: 1; revision_redecision_max_calls?: 1;
+  revision_confirmation_model_mode?: "inherit";
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
@@ -48,6 +51,10 @@ const JSON_SCHEMA = {
     surface_legal_actions_contract_version: { type: "string", const: "nollm_access_state_derived_surface_legal_actions_v1", default: "nollm_access_state_derived_surface_legal_actions_v1" },
     physical_entry_resolution_policy_version: { type: "string", const: "mechanical_singleton_physical_entry_v1", default: "mechanical_singleton_physical_entry_v1" },
     traversal_correction_max_attempts: { type: "integer", const: 2, default: 2 },
+    revision_confirmation_schema_version: { type: "string", const: "nollm_openclaw_revision_confirmation_v1", default: "nollm_openclaw_revision_confirmation_v1" },
+    revision_confirmation_max_calls: { type: "integer", const: 1, default: 1 },
+    revision_redecision_max_calls: { type: "integer", const: 1, default: 1 },
+    revision_confirmation_model_mode: { type: "string", const: "inherit", default: "inherit" },
     model_mode: { type: "string", enum: ["inherit", "dedicated"], default: "inherit" }, model: { type: "string" },
     allowed_models: { type: "array", items: { type: "string" }, default: [] }, prompt_version: { type: "string", default: "dream-json-p1" },
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
@@ -62,6 +69,8 @@ const JSON_SCHEMA = {
 } as const;
 
 export const TRAVERSAL_CORRECTION_MAX_ATTEMPTS = 2;
+export const REVISION_CONFIRMATION_MAX_CALLS = 1;
+export const REVISION_REDECISION_MAX_CALLS = 1;
 
 export function surfaceBudget(config: DreamConfig, mode: "recall" | "placement"): Record<string, number> {
   const recall = mode === "recall";
@@ -525,6 +534,9 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     decision_validation_ms: 0, placement_apply_ms: 0, handle_bind_ms: 0,
     model_call_count: 0, invalid_decision_count: 0, correction_attempt_count: 0,
     correction_success: false, provider_timeout_stage: null,
+    revision_confirmation_count: 0, revision_confirmation_ms: 0,
+    revision_confirmation_outcome: null, revision_redecision_count: 0,
+    revision_redecision_ms: 0, revision_target_blacklisted: false,
     total_operation_ms: 0, timeout_stage: null,
   };
   const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
@@ -603,11 +615,76 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
       applied = await applyPlacementAttempt(config, requestId, retry.raw, statement, built.selected_entry);
       attemptKind = `full_retry_${index}`;
     }
+    if (applied.ok === true && applied.outcome === "revision_confirmation_required") {
+      const provisional = applied.provisional_revision;
+      const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: provisional });
+      if (confirmationBuilt.ok !== true || typeof confirmationBuilt.prompt !== "string") {
+        timing.timeout_stage = "revision_confirmation_prompt";
+        timing.total_operation_ms = Date.now() - operationStartedAt;
+        await trace(config, { status: "defer", stage: "revision_confirmation_prompt", request_id: requestId, surface_path: surfacePath, operation_timing: timing, ...confirmationBuilt });
+        return;
+      }
+      stageStartedAt = Date.now();
+      const confirmationAttempt = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${requestId}:revision-confirmation`);
+      timing.revision_confirmation_count = 1;
+      timing.model_call_count = Number(timing.model_call_count) + 1;
+      timing.revision_confirmation_ms = Date.now() - stageStartedAt;
+      if (!confirmationAttempt?.raw) {
+        timing.timeout_stage = "revision_confirmation_agent";
+        timing.provider_timeout_stage = "revision_confirmation_agent";
+        timing.total_operation_ms = Date.now() - operationStartedAt;
+        await trace(config, { status: "defer", stage: "revision_confirmation_agent", request_id: requestId, provisional_revision: provisional, operation_timing: timing });
+        return;
+      }
+      const parsedConfirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationAttempt.raw, provisional_revision: provisional });
+      if (parsedConfirmation.ok !== true || typeof parsedConfirmation.confirmation !== "object" || parsedConfirmation.confirmation === null) {
+        timing.revision_confirmation_outcome = "invalid";
+        timing.timeout_stage = "revision_confirmation_parse";
+        timing.total_operation_ms = Date.now() - operationStartedAt;
+        await trace(config, { status: "defer", stage: "revision_confirmation_parse", request_id: requestId, provisional_revision: provisional, operation_timing: timing, ...parsedConfirmation });
+        return;
+      }
+      const confirmation = parsedConfirmation.confirmation as Record<string, unknown>;
+      timing.revision_confirmation_outcome = String(confirmation.outcome ?? "invalid");
+      if (confirmation.outcome === "confirm_revision") {
+        applied = await applyPlacementAttempt(config, requestId, raw, statement, built.selected_entry, confirmation);
+        attemptKind = "confirmed_revision";
+      } else if (confirmation.outcome === "reject_revision") {
+        const redecisionBuilt = await bridge(config, { action: "build_revision_redecision_prompt", original_prompt: built.prompt, provisional_revision: provisional, confirmation });
+        if (redecisionBuilt.ok !== true || typeof redecisionBuilt.prompt !== "string" || !Array.isArray(redecisionBuilt.excluded_revision_targets)) {
+          timing.timeout_stage = "revision_redecision_prompt";
+          timing.total_operation_ms = Date.now() - operationStartedAt;
+          await trace(config, { status: "defer", stage: "revision_redecision_prompt", request_id: requestId, operation_timing: timing, ...redecisionBuilt });
+          return;
+        }
+        timing.revision_target_blacklisted = true;
+        stageStartedAt = Date.now();
+        const redecisionAttempt = await runDreamSubagent(api, config, redecisionBuilt.prompt, model, `${requestId}:revision-redecision`);
+        timing.revision_redecision_count = 1;
+        timing.model_call_count = Number(timing.model_call_count) + 1;
+        timing.revision_redecision_ms = Date.now() - stageStartedAt;
+        if (!redecisionAttempt?.raw) {
+          timing.timeout_stage = "revision_redecision_agent";
+          timing.provider_timeout_stage = "revision_redecision_agent";
+          timing.total_operation_ms = Date.now() - operationStartedAt;
+          await trace(config, { status: "defer", stage: "revision_redecision_agent", request_id: requestId, operation_timing: timing });
+          return;
+        }
+        applied = await applyPlacementAttempt(config, requestId, redecisionAttempt.raw, statement, built.selected_entry, undefined, redecisionBuilt.excluded_revision_targets);
+        attemptKind = "revision_redecision";
+        if (applied.ok === true && applied.outcome === "revision_confirmation_required") {
+          applied = { ok: true, outcome: "defer", reason: "revision_confirmation_call_consumed", core_write_count: 0 };
+        }
+      } else {
+        applied = { ok: true, outcome: "defer", reason: "revision_confirmation_deferred", core_write_count: 0 };
+      }
+    }
     const accessTiming = applied.operation_timing && typeof applied.operation_timing === "object" ? applied.operation_timing as Record<string, number> : {};
     for (const key of ["statement_persist_ms", "decision_validation_ms", "placement_apply_ms", "handle_bind_ms"]) if (typeof accessTiming[key] === "number") timing[key] = accessTiming[key];
     timing.total_operation_ms = Date.now() - operationStartedAt;
     if (applied.ok !== true) timing.timeout_stage = "placement_apply";
-    await trace(config, { status: applied.ok === true ? "completed" : "error", stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, ...applied, operation_timing: timing, ...extractResolvedModel(session.messages) });
+    const placementStatus = applied.ok !== true ? "error" : applied.outcome === "applied" ? "completed" : "defer";
+    await trace(config, { status: placementStatus, stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, ...applied, operation_timing: timing, ...extractResolvedModel(session.messages) });
   } catch (error) {
     timing.timeout_stage = "placement"; timing.total_operation_ms = Date.now() - operationStartedAt;
     await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error), operation_timing: timing });
@@ -616,10 +693,11 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   }
 }
 
-async function applyPlacementAttempt(config: DreamConfig, requestId: string, raw: string, statement: unknown, selectedEntry: unknown): Promise<Record<string, unknown>> {
+async function applyPlacementAttempt(config: DreamConfig, requestId: string, raw: string, statement: unknown, selectedEntry: unknown, revisionConfirmation?: unknown, excludedRevisionTargets?: unknown): Promise<Record<string, unknown>> {
   return bridge(config, {
     action: "apply_placement", request_id: requestId, raw_model_response: raw, statement,
     selected_entry: selectedEntry, memory_workspace: config.memory_workspace ?? config.statement_store_workspace,
+    revision_confirmation: revisionConfirmation, excluded_revision_targets: excludedRevisionTargets,
   });
 }
 

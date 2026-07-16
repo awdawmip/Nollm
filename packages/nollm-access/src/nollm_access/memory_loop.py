@@ -6,7 +6,7 @@ from time import perf_counter_ns
 from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, PhysicalFieldScope
 
 from .handle_store import FileHandleStore
-from .placement_contract import AccessDecision
+from .placement_contract import AccessDecision, ProvisionalRevisionDecision, RevisionConfirmationResult
 from .runtime import AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore
@@ -20,6 +20,10 @@ _Q32_ONE = 1 << 32
 _MIN_FRONTIER_RING = 4
 _MIN_FRONTIER_DISTANCE_SQUARED_Q32 = 3 * _MIN_FRONTIER_RING * _MIN_FRONTIER_RING * _Q32_ONE
 _MAX_FRONTIER_RADIUS = 1024
+
+
+class RevisionTargetExcludedError(ValueError):
+    pass
 
 
 class AccessMemoryLoop:
@@ -120,6 +124,8 @@ class AccessMemoryLoop:
         request_id: str,
         selected_entry: object = None,
         scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
+        revision_confirmation: object = None,
+        excluded_revision_targets: object = None,
     ) -> dict[str, object]:
         if type(statement) is not MemoryStatement:
             raise TypeError("statement must be MemoryStatement")
@@ -129,7 +135,36 @@ class AccessMemoryLoop:
         decision, public_action, selected = self._decision(placement, statement, request_id, candidates)
         decision_validation_ms = (perf_counter_ns() - decision_started) // 1_000_000
         if decision is None:
-            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0}}
+            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "revision_confirmation_count": 0, "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0}}
+        confirmation_count = 0
+        if decision.action == "revision_current":
+            provisional = self._provisional_revision(statement, decision, selected)
+            excluded = self._excluded_revision_target_keys(excluded_revision_targets)
+            if self._handle_key(provisional.existing_handle.to_mapping()) in excluded:
+                raise RevisionTargetExcludedError("revision target was rejected earlier in this operation")
+            if revision_confirmation is None:
+                return {
+                    "outcome": "revision_confirmation_required",
+                    "statement_id": statement.statement_id,
+                    "provisional_revision": provisional.to_mapping(),
+                    "core_write_count": 0,
+                    "revision_confirmation_count": 0,
+                    "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0},
+                }
+            confirmation = RevisionConfirmationResult.from_mapping(revision_confirmation)
+            confirmation_count = 1
+            if confirmation.provisional_id != provisional.provisional_id:
+                raise ValueError("revision confirmation does not bind the provisional decision")
+            if not confirmation.confirmed:
+                return {
+                    "outcome": "revision_rejected",
+                    "statement_id": statement.statement_id,
+                    "provisional_revision": provisional.to_mapping(),
+                    "revision_confirmation": confirmation.to_mapping(),
+                    "core_write_count": 0,
+                    "revision_confirmation_count": 1,
+                    "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0},
+                }
         statement_store = FileStatementStore(self._workspace)
         existed_before = statement_store.exists(statement.statement_id)
         with self._runtime() as access:
@@ -157,6 +192,7 @@ class AccessMemoryLoop:
             "candidate_id": selected["candidate_id"] if selected is not None else None,
             "handle": result.to_mapping() if type(result) is AtomHandle else None,
             "core_write_count": 1 if public_action in {"new_local", "expand_surface", "revision_current"} else 0,
+            "revision_confirmation_count": confirmation_count,
             "operation_timing": {
                 "decision_validation_ms": decision_validation_ms,
                 "statement_persist_ms": statement_persist_ms,
@@ -164,6 +200,38 @@ class AccessMemoryLoop:
                 "handle_bind_ms": handle_bind_ms,
             },
         }
+
+    def _provisional_revision(
+        self,
+        statement: MemoryStatement,
+        decision: AccessDecision,
+        selected: dict[str, object] | None,
+    ) -> ProvisionalRevisionDecision:
+        if decision.existing_handle is None or selected is None:
+            raise AssertionError("revision decision must bind one existing Handle")
+        handle_store = FileHandleStore(self._workspace)
+        statement_store = FileStatementStore(self._workspace)
+        binding = handle_store.binding_for_handle(decision.existing_handle)
+        current = statement_store.get(binding.current_statement_id)
+        return ProvisionalRevisionDecision.create(
+            statement.statement_id,
+            current.statement_id,
+            selected["candidate_id"],
+            decision.existing_handle,
+            statement.content_utf8,
+            current.content_utf8,
+        )
+
+    @classmethod
+    def _excluded_revision_target_keys(cls, value: object) -> frozenset[tuple[object, ...]]:
+        if value is None:
+            return frozenset()
+        if type(value) is not list or len(value) > 1:
+            raise TypeError("excluded_revision_targets must be a list with at most one Handle")
+        try:
+            return frozenset(cls._handle_key(AtomHandle.from_mapping(item).to_mapping()) for item in value)
+        except (KeyError, TypeError, ValueError) as exc:
+            raise TypeError("excluded revision target is invalid") from exc
 
     def binding(self, statement_id: str) -> dict[str, object]:
         if type(statement_id) is not str or not statement_id:
