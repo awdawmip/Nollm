@@ -4,10 +4,14 @@
 
 `AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS`
 
-Input bundle: `nollm_caold_write_policy_legal_traversal_p1_dense_live_20260715_f61efd5.bundle`  
-Input SHA-256: `e1f9b2d70551266eb40c83213d5949065c6e128a9fdc5b78423b714721055084`  
-Input HEAD: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`  
-Branch: `codex/aold-semantic-revision-integrity-dense-live-closure`  
+Input bundle: `nollm_caold_write_policy_legal_traversal_p1_dense_live_20260715_f61efd5.bundle`
+
+Input SHA-256: `e1f9b2d70551266eb40c83213d5949065c6e128a9fdc5b78423b714721055084`
+
+Input HEAD: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`
+
+Branch: `codex/aold-semantic-revision-integrity-dense-live-closure`
+
 Implementation checkpoint through Gate 5: `930f363cede7cd69bbf827fa497456f11e74318b`
 Evidence/report checkpoint: `7f30ed82731ba76f5876b6cc563439a6045796c5`
 
@@ -77,9 +81,12 @@ The visible answer supplied Shen Zhou, `QL-27`, and Friday 16:00/Xu Chuan. Its S
 
 ## Evidence And Tests
 
-Frozen evidence: `validation/caold_semantic_revision_dense_live_20260716.jsonl`  
-Lines: 160  
-Size: 374,849 bytes  
+Frozen evidence: `validation/caold_semantic_revision_dense_live_20260716.jsonl`
+
+Lines: 160
+
+Size: 374,849 bytes
+
 SHA-256: `56eda45669a85bc8a36ea8679c26920bc9e8d963346997beef6942901b570a21`
 
 Freeze summary: `validation/caold_semantic_revision_dense_live_summary_20260716.json`. It records provider/model, workspace identities, BX/CR bindings, contrast outcomes, dense counts, final entry, selected Statements, visible-answer SHA, and regression receipt.
