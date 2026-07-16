@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -122,6 +122,15 @@ test("TurnKey prefers run identity and is stable across hooks", () => {
   assert.notEqual(turnKey("s", "run-1"), turnKey("s", "run-2"));
 });
 
+test("latency scenario labels come only from bounded validation session tags", () => {
+  assert.equal(latencyScenario({}, "agent:main:aold-latency-W_NEW_MULTI-01"), "W_NEW_MULTI");
+  assert.equal(latencyScenario({}, "agent:main:aold-latency-R_DENSE_HIDDEN_PREVIEW-02"), "R_DENSE_HIDDEN_PREVIEW");
+  assert.equal(latencyScenario({}, "agent:main:aold-latency-PREHEAT-01"), "PREHEAT");
+  assert.equal(latencyScenario({}, "agent:main:explicit:aold-latency-r_none-01"), "R_NONE");
+  assert.equal(latencyScenario({ latency_scenario_id: "configured" }, "ordinary-session"), "configured");
+  assert.equal(latencyScenario({}, "W_INVENTED"), "unspecified");
+});
+
 test("canonical model refs project to Host provider and model fields", () => {
   assert.deepEqual(modelOverride("meituan/LongCat-2.0"), { provider: "meituan", model: "LongCat-2.0" });
   assert.equal(modelOverride("missing-provider"), undefined);
@@ -232,6 +241,13 @@ test("a run satisfied by hidden Recall cannot re-form the recalled fact", () => 
   assert.match(source, /api\.on\("agent_turn_prepare"[\s\S]+recallSatisfiedSessions\.delete\(ctx\.sessionKey\)/);
   assert.match(source, /recallSatisfiedSessions\.has\(sessionKey\)/);
   assert.match(source, /reason: "same_run_satisfied_by_recall"/);
+});
+
+test("Recall-to-visible pending correlation is process-wide but memory-only", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /const pendingRecallLatencyByRun = new Map<string, PendingRecallLatency>\(\)/);
+  assert.match(source, /correlation_failure: "message_sent_not_observed"/);
+  assert.equal(source.includes("pendingRecallLatencyByRun.json"), false);
 });
 
 test("plugin entry is an ordinary hook plugin", () => {

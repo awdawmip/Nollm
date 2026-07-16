@@ -138,6 +138,7 @@ type PendingRecallLatency = { requestId: string; mainRunId?: string; queryPrepar
 
 // Gateway hook dispatch can cross plugin registration instances within one turn.
 const recallSatisfiedSessions = new Set<string>();
+const pendingRecallLatencyByRun = new Map<string, PendingRecallLatency>();
 
 export function wellFormedText(value: string): string {
   return Array.from(value, character => {
@@ -194,6 +195,11 @@ export function turnKey(sessionKey: string, runId?: string, messageId?: string, 
   return `${sessionKey}\0${marker}`;
 }
 
+export function latencyScenario(config: DreamConfig, sessionKey: string): string {
+  const match = sessionKey.match(/(?:^|[-:])(PREHEAT|W_(?:NEW_SINGLE|NEW_MULTI|REUSE|REVISION_TRUE|ADDITIVE|NO_MEMORY|COLD_AFTER_RESTART|DENSE_LOCALITY)|R_(?:RELEVANT_WARM|RELEVANT_COLD|DENSE_HIDDEN_PREVIEW|NONE|REPEATED_TOPIC|MULTI_FACT))(?:[-:]|$)/i);
+  return match?.[1].toUpperCase() ?? config.latency_scenario_id ?? "unspecified";
+}
+
 export function modelOverride(ref?: string): { provider: string; model: string } | undefined {
   if (!ref) return undefined;
   const separator = ref.indexOf("/");
@@ -213,7 +219,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const inFlight = new Set<string>();
   const scheduled = new Set<string>();
   const childParents = new Map<string, { parentRunId?: string; requestedModel?: string }>();
-  const pendingRecallLatency = new Map<string, PendingRecallLatency>();
   let duplicateHookObservationCount = 0;
   let duplicateDreamSuppressedCount = 0;
   const backgroundScope = new AsyncResource("nollm-formation-background");
@@ -305,8 +310,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (built.ok === true && built.status === "complete_none") {
       timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
       const injectionReadyEpochMs = Date.now();
-      pendingRecallLatency.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "none" });
-      await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_none_terminal_ms: timing.total_operation_ms, recall_outcome: "none", selected_statement_count: 0, hidden_injection_created: false, operation_timing: timing });
+      pendingRecallLatencyByRun.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "none" });
+      await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey), event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_none_terminal_ms: timing.total_operation_ms, recall_outcome: "none", selected_statement_count: 0, hidden_injection_created: false, operation_timing: timing });
       await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing });
       return;
     }
@@ -328,16 +333,16 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
     if (rendered.ok === true && rendered.outcome === "none") {
       const injectionReadyEpochMs = Date.now();
-      pendingRecallLatency.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "none" });
-      await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_none_terminal_ms: timing.total_operation_ms, recall_outcome: "none", selected_statement_count: 0, hidden_injection_created: false, operation_timing: timing, ...selected.resolved });
+      pendingRecallLatencyByRun.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "none" });
+      await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey), event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_none_terminal_ms: timing.total_operation_ms, recall_outcome: "none", selected_statement_count: 0, hidden_injection_created: false, operation_timing: timing, ...selected.resolved });
       await trace(config, { status: "completed_none", stage: "recall", request_id: requestId, entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
       return;
     }
     if (rendered.ok !== true || rendered.outcome !== "inject" || typeof rendered.injection !== "string") return;
     const injectionReadyEpochMs = Date.now();
     const injectionHash = sha256Text(rendered.injection);
-    pendingRecallLatency.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "inject", injectionHash });
-    await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_injection_ready_ms: timing.total_operation_ms, recall_outcome: "inject", selected_statement_ids: rendered.statement_ids, selected_statement_count: Array.isArray(rendered.statement_ids) ? rendered.statement_ids.length : 0, injection_hash: injectionHash, hidden_injection_created: true, operation_timing: timing, ...selected.resolved });
+    pendingRecallLatencyByRun.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "inject", injectionHash });
+    await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey), event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_injection_ready_ms: timing.total_operation_ms, recall_outcome: "inject", selected_statement_ids: rendered.statement_ids, selected_statement_count: Array.isArray(rendered.statement_ids) ? rendered.statement_ids.length : 0, injection_hash: injectionHash, hidden_injection_created: true, operation_timing: timing, ...selected.resolved });
     await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
     recallSatisfiedSessions.add(ctx.sessionKey);
     return { appendContext: rendered.injection };
@@ -426,9 +431,9 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         lightContext: true, deliver: false, idempotencyKey,
       });
       const turnId = turnCorrelationId(sessionKey, candidate.runId ?? current.runId, assistant);
-      await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { event_type: "formation_started", turn_correlation_id: turnId, formation_request_id: requestId, formation_run_id: spawned.runId, session_key_sha256: sha256Text(sessionKey), main_run_id: candidate.runId ?? current.runId, turn_visible_epoch_ms: observedAt, background_started_epoch_ms: dreamStartedAt, background_queue_wait_ms: backgroundQueueWaitMs, formation_prompt_build_us: formationPromptBuildUs, visible_assistant_message_hash: sha256Text(assistant), requested_model: model });
+      await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "formation_started", turn_correlation_id: turnId, formation_request_id: requestId, formation_run_id: spawned.runId, session_key_sha256: sha256Text(sessionKey), main_run_id: candidate.runId ?? current.runId, source_hook: sourceHook, turn_visible_source_valid: sourceHook === "message_sent", turn_visible_epoch_ms: observedAt, background_started_epoch_ms: dreamStartedAt, background_queue_wait_ms: backgroundQueueWaitMs, formation_prompt_build_us: formationPromptBuildUs, visible_assistant_message_hash: sha256Text(assistant), requested_model: model });
       await trace(config, { status: "started", request_id: requestId, turn_key_sha256: createHash("sha256").update(key).digest("hex"), session_key: sessionKey, parent_run_id: candidate.runId ?? current.runId, child_session_key: childSessionKey, run_id: spawned.runId, requested_model: model, model_mode: config.model_mode ?? "inherit", prompt_version: built.prompt_version, prompt_sha256: built.prompt_sha256, schema_sha256: built.schema_sha256, source_hook: sourceHook, trigger_phase: phase, hook_observed_at: observedAt, background_scheduled_at: dreamStartedAt, prompt_build_started_at: dreamStartedAt, subagent_started_at: Date.now(), deliver: false, material: request.material, duplicate_hook_observation_count: duplicateHookObservationCount, duplicate_dream_suppressed_count: duplicateDreamSuppressedCount });
-      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt, formationProviderStartedMonoNs, formationPromptBuildUs, idempotencyKey, turnId, observedAt, model);
+      void completeDream(api, config, sessionKey, childSessionKey, spawned.runId, request, built, inFlight, dreamStartedAt, formationProviderStartedMonoNs, formationPromptBuildUs, idempotencyKey, turnId, observedAt, sourceHook, model);
     } catch (error) {
       inFlight.delete(sessionKey);
       await trace(config, { status: "error", stage: "spawn", request_id: requestId, error: String(error), trigger_phase: phase });
@@ -441,15 +446,15 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!event.success || !sessionKey || !event.content.trim()) { recordHandler("message_sent", observedAt, observedMonoNs, { success: event.success }); return; }
     const current = pending.get(sessionKey); const runId = event.runId ?? ctx.runId ?? current?.runId;
     const recallKey = `${sessionKey}\0${runId ?? ""}`;
-    const recall = pendingRecallLatency.get(recallKey);
+    const recall = pendingRecallLatencyByRun.get(recallKey);
     if (recall) {
-      pendingRecallLatency.delete(recallKey);
-      queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { event_type: "visible_answer", recall_request_id: recall.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, recall_outcome: recall.outcome, injection_hash: recall.injectionHash, main_message_sent_epoch_ms: observedAt, query_to_visible_answer_ms: observedAt - recall.queryPrepareEpochMs, injection_to_visible_answer_ms: observedAt - recall.injectionReadyEpochMs, visible_answer_correlated: true, visible_answer_hash: sha256Text(event.content), visible_message_count: 1 }); });
+      pendingRecallLatencyByRun.delete(recallKey);
+      queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "visible_answer", recall_request_id: recall.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, recall_outcome: recall.outcome, injection_hash: recall.injectionHash, main_message_sent_epoch_ms: observedAt, query_to_visible_answer_ms: observedAt - recall.queryPrepareEpochMs, injection_to_visible_answer_ms: observedAt - recall.injectionReadyEpochMs, visible_answer_correlated: true, visible_answer_hash: sha256Text(event.content), visible_message_count: 1 }); });
     } else {
-      for (const [key, unmatched] of pendingRecallLatency) {
+      for (const [key, unmatched] of pendingRecallLatencyByRun) {
         if (!key.startsWith(`${sessionKey}\0`)) continue;
-        pendingRecallLatency.delete(key);
-        queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { event_type: "visible_answer", recall_request_id: unmatched.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, expected_main_run_id: unmatched.mainRunId, recall_outcome: unmatched.outcome, main_message_sent_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "main_run_id_mismatch", visible_message_count: 1 }); });
+        pendingRecallLatencyByRun.delete(key);
+        queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "visible_answer", recall_request_id: unmatched.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, expected_main_run_id: unmatched.mainRunId, recall_outcome: unmatched.outcome, main_message_sent_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "main_run_id_mismatch", visible_message_count: 1 }); });
       }
     }
     queue(() => { void launch({ sessionKey, runId, assistant: wellFormedText(event.content), phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt, observedMonoNs }); });
@@ -464,6 +469,12 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const model = ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined;
     const content = wellFormedText(assistant);
     const runId = event.runId ?? ctx.runId;
+    const recallKey = `${ctx.sessionKey}\0${runId ?? ""}`;
+    const recall = pendingRecallLatencyByRun.get(recallKey);
+    if (recall) {
+      pendingRecallLatencyByRun.delete(recallKey);
+      queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey!), event_type: "visible_answer", recall_request_id: recall.requestId, session_key_sha256: sha256Text(ctx.sessionKey!), main_run_id: runId, recall_outcome: recall.outcome, agent_end_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "message_sent_not_observed", visible_message_count: 0 }); });
+    }
     queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: extractUserTurns(event.messages), resolvedModel: model }); });
     recordHandler("agent_end", observedAt, observedMonoNs, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
   });
@@ -478,7 +489,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   });
 }
 
-async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number, providerStartedMonoNs: bigint, formationPromptBuildUs: number, stableId: string, turnId: string, turnVisibleEpochMs: number, model?: string): Promise<void> {
+async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parentSession: string, childSession: string, runId: string, request: object, built: Record<string, unknown>, inFlight: Set<string>, startedAt: number, providerStartedMonoNs: bigint, formationPromptBuildUs: number, stableId: string, turnId: string, turnVisibleEpochMs: number, sourceHook: "message_sent" | "agent_end", model?: string): Promise<void> {
   let formationProviderTotalMs = 0;
   let formationParseUs = 0;
   let formationModelCallCount = 1;
@@ -517,9 +528,9 @@ async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parent
     const formationCompletedEpochMs = Date.now();
     const statements = Array.isArray(parsed.statements) ? parsed.statements as unknown[] : [];
     const formationLocalTotalMs = (formationPromptBuildUs + formationParseUs) / 1_000;
-    await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { event_type: "formation_completed", turn_correlation_id: turnId, formation_run_id: runId, turn_visible_epoch_ms: turnVisibleEpochMs, formation_completed_epoch_ms: formationCompletedEpochMs, formation_prompt_build_us: formationPromptBuildUs, formation_provider_total_ms: formationProviderTotalMs, formation_parse_us: formationParseUs, formation_local_total_ms: formationLocalTotalMs, turn_to_formation_complete_ms: formationCompletedEpochMs - turnVisibleEpochMs, formation_model_call_count: formationModelCallCount, formation_statement_count: statements.length, formation_terminal_status: parsed.ok === true ? "completed" : "error", resolved_provider: resolved.resolved_provider, resolved_model: resolved.resolved_model });
+    await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, parentSession), event_type: "formation_completed", turn_correlation_id: turnId, formation_run_id: runId, source_hook: sourceHook, turn_visible_source_valid: sourceHook === "message_sent", turn_visible_epoch_ms: turnVisibleEpochMs, formation_completed_epoch_ms: formationCompletedEpochMs, formation_prompt_build_us: formationPromptBuildUs, formation_provider_total_ms: formationProviderTotalMs, formation_parse_us: formationParseUs, formation_local_total_ms: formationLocalTotalMs, turn_to_formation_complete_ms: formationCompletedEpochMs - turnVisibleEpochMs, formation_model_call_count: formationModelCallCount, formation_statement_count: statements.length, formation_terminal_status: parsed.ok === true ? "completed" : "error", resolved_provider: resolved.resolved_provider, resolved_model: resolved.resolved_model });
     if (shouldApplyPlacement(config, parsed, model)) {
-      for (const [statementIndex, statement] of statements.entries()) await completePlacement(api, config, parentSession, statement, model!, stableId, { turnId, turnVisibleEpochMs, statementIndex, statementCount: statements.length, formationProviderTotalMs, formationLocalTotalMs, deprecatedCumulativeFormationMs: Date.now() - startedAt });
+      for (const [statementIndex, statement] of statements.entries()) await completePlacement(api, config, parentSession, statement, model!, stableId, { turnId, turnVisibleEpochMs, turnVisibleSourceValid: sourceHook === "message_sent", statementIndex, statementCount: statements.length, formationProviderTotalMs, formationLocalTotalMs, deprecatedCumulativeFormationMs: Date.now() - startedAt });
     }
   } catch (error) {
     await trace(config, { status: "error", stage: "completion", run_id: runId, dream_completed_at: Date.now(), error: String(error), visible_message_count: 0 });
@@ -596,7 +607,7 @@ async function runDreamSubagent(api: OpenClawPluginApi, config: DreamConfig, pro
   }
 }
 
-type PlacementLatencyContext = { turnId: string; turnVisibleEpochMs: number; statementIndex: number; statementCount: number; formationProviderTotalMs: number; formationLocalTotalMs: number; deprecatedCumulativeFormationMs: number };
+type PlacementLatencyContext = { turnId: string; turnVisibleEpochMs: number; turnVisibleSourceValid: boolean; statementIndex: number; statementCount: number; formationProviderTotalMs: number; formationLocalTotalMs: number; deprecatedCumulativeFormationMs: number };
 
 async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, sessionKey: string, statement: unknown, model: string, stableId: string, context: PlacementLatencyContext): Promise<void> {
   const operationStartedMonoNs = systemLatencyClock.monotonicNs();
@@ -620,6 +631,19 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
   };
   const statementId = statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? (statement as Record<string, unknown>).statement_id : "unknown";
   const requestId = `placement-${createHash("sha256").update(`${stableId}\0${statementId}`).digest("hex")}`;
+  const recordPlacementTerminal = async (finalOutcome: "defer" | "error", terminalReason: string, error?: unknown): Promise<void> => {
+    await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, {
+      scenario_id: latencyScenario(config, sessionKey), event_type: "placement_terminal",
+      turn_correlation_id: context.turnId, turn_visible_source_valid: context.turnVisibleSourceValid,
+      placement_request_id: requestId, statement_id: statementId, statement_index: context.statementIndex,
+      statement_count: context.statementCount, statement_start_epoch_ms: statementStartedEpochMs,
+      statement_start_offset_ms: timing.statement_start_offset_ms, final_outcome: finalOutcome,
+      terminal_reason: terminalReason, error: error === undefined ? undefined : String(error),
+      placement_provider_total_ms: timing.placement_subagent_ms,
+      placement_local_total_ms: Number(timing.total_operation_ms) - Number(timing.placement_subagent_ms),
+      operation_timing: timing,
+    });
+  };
   let stageStartedMonoNs = systemLatencyClock.monotonicNs();
   let built = await bridge(config, { action: "build_placement_prompt", request_id: requestId, statement, memory_workspace: config.memory_workspace ?? config.statement_store_workspace, surface_budget: surfaceBudget(config, "placement") });
   timing.surface_build_ms = durationMs(stageStartedMonoNs, systemLatencyClock.monotonicNs());
@@ -637,7 +661,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     let step = await runDreamSubagent(api, config, current.prompt as string, model, `${requestId}:surface:${traversal}`);
     timing.model_call_count = Number(timing.model_call_count) + 1;
     timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + durationMs(stageStartedMonoNs, systemLatencyClock.monotonicNs());
-    if (!step?.raw) { timing.timeout_stage = "placement_surface_agent"; timing.provider_timeout_stage = "placement_surface_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId, operation_timing: timing }); return; }
+    if (!step?.raw) { timing.timeout_stage = "placement_surface_agent"; timing.provider_timeout_stage = "placement_surface_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await recordPlacementTerminal("defer", "placement_surface_agent"); await trace(config, { status: "defer", stage: "placement_surface_agent", request_id: requestId, operation_timing: timing }); return; }
     stageStartedMonoNs = systemLatencyClock.monotonicNs();
     let advanced = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
     while (traversalRetryable(advanced)) {
@@ -648,7 +672,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
       step = await runDreamSubagent(api, config, traversalCorrectionPrompt(current.prompt as string, step.raw, advanced, Number(timing.correction_attempt_count)), model, `${requestId}:surface:${traversal}:correction:${timing.correction_attempt_count}`);
       timing.model_call_count = Number(timing.model_call_count) + 1;
       timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + durationMs(stageStartedMonoNs, systemLatencyClock.monotonicNs());
-      if (!step?.raw) { timing.timeout_stage = "placement_traversal_correction"; timing.provider_timeout_stage = "placement_traversal_correction"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await trace(config, { status: "defer", stage: "placement_traversal_correction", request_id: requestId, operation_timing: timing }); return; }
+      if (!step?.raw) { timing.timeout_stage = "placement_traversal_correction"; timing.provider_timeout_stage = "placement_traversal_correction"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await recordPlacementTerminal("defer", "placement_traversal_correction"); await trace(config, { status: "defer", stage: "placement_traversal_correction", request_id: requestId, operation_timing: timing }); return; }
       advanced = await bridge(config, { action: "advance_placement_traversal", statement, traversal_state: current.traversal_state, raw_model_response: step.raw, memory_workspace: config.memory_workspace ?? config.statement_store_workspace });
       if (advanced.ok === true) timing.correction_success = true;
     }
@@ -660,7 +684,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     if (typeof accessTiming.physical_entry_model_call_skipped === "boolean") timing.physical_entry_model_call_skipped = accessTiming.physical_entry_model_call_skipped;
     traversal += 1;
   }
-  if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { timing.timeout_stage = "placement_prompt"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, surface_path: surfacePath, operation_timing: timing, ...built }); return; }
+  if (built.ok !== true || built.status !== "placement_decision" || typeof built.prompt !== "string") { timing.timeout_stage = "placement_prompt"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await recordPlacementTerminal("defer", "placement_prompt", built.error); await trace(config, { status: "defer", stage: "placement_prompt", request_id: requestId, surface_path: surfacePath, operation_timing: timing, ...built }); return; }
   const childSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
   const override = config.model_mode === "dedicated" ? modelOverride(model) : undefined;
   try {
@@ -669,10 +693,10 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
     timing.placement_subagent_ms = Number(timing.placement_subagent_ms) + durationMs(stageStartedMonoNs, systemLatencyClock.monotonicNs());
     timing.model_call_count = Number(timing.model_call_count) + 1;
-    if (waited.status !== "ok") { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: waited.error ?? waited.status, operation_timing: timing }); return; }
+    if (waited.status !== "ok") { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await recordPlacementTerminal("defer", "placement_agent", waited.error ?? waited.status); await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: waited.error ?? waited.status, operation_timing: timing }); return; }
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey: childSessionKey, limit: 20 });
     const raw = extractAssistantText(session.messages);
-    if (!raw) { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output", operation_timing: timing }); return; }
+    if (!raw) { timing.timeout_stage = "placement_agent"; timing.provider_timeout_stage = "placement_agent"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()); await recordPlacementTerminal("defer", "placement_agent", "empty_output"); await trace(config, { status: "defer", stage: "placement_agent", request_id: requestId, error: "empty_output", operation_timing: timing }); return; }
     stageStartedMonoNs = systemLatencyClock.monotonicNs();
     let applied = await applyPlacementAttempt(config, requestId, raw, statement, built.selected_entry);
     timing.placement_apply_ms = durationMs(stageStartedMonoNs, systemLatencyClock.monotonicNs());
@@ -700,6 +724,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
       if (confirmationBuilt.ok !== true || typeof confirmationBuilt.prompt !== "string") {
         timing.timeout_stage = "revision_confirmation_prompt";
         timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+        await recordPlacementTerminal("defer", "revision_confirmation_prompt", confirmationBuilt.error);
         await trace(config, { status: "defer", stage: "revision_confirmation_prompt", request_id: requestId, surface_path: surfacePath, operation_timing: timing, ...confirmationBuilt });
         return;
       }
@@ -712,6 +737,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
         timing.timeout_stage = "revision_confirmation_agent";
         timing.provider_timeout_stage = "revision_confirmation_agent";
         timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+        await recordPlacementTerminal("defer", "revision_confirmation_agent");
         await trace(config, { status: "defer", stage: "revision_confirmation_agent", request_id: requestId, provisional_revision: provisional, operation_timing: timing });
         return;
       }
@@ -720,6 +746,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
         timing.revision_confirmation_outcome = "invalid";
         timing.timeout_stage = "revision_confirmation_parse";
         timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+        await recordPlacementTerminal("defer", "revision_confirmation_parse", parsedConfirmation.error);
         await trace(config, { status: "defer", stage: "revision_confirmation_parse", request_id: requestId, provisional_revision: provisional, operation_timing: timing, ...parsedConfirmation });
         return;
       }
@@ -733,6 +760,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
         if (redecisionBuilt.ok !== true || typeof redecisionBuilt.prompt !== "string" || !Array.isArray(redecisionBuilt.excluded_revision_targets)) {
           timing.timeout_stage = "revision_redecision_prompt";
           timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+          await recordPlacementTerminal("defer", "revision_redecision_prompt", redecisionBuilt.error);
           await trace(config, { status: "defer", stage: "revision_redecision_prompt", request_id: requestId, operation_timing: timing, ...redecisionBuilt });
           return;
         }
@@ -746,6 +774,7 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
           timing.timeout_stage = "revision_redecision_agent";
           timing.provider_timeout_stage = "revision_redecision_agent";
           timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+          await recordPlacementTerminal("defer", "revision_redecision_agent");
           await trace(config, { status: "defer", stage: "revision_redecision_agent", request_id: requestId, operation_timing: timing });
           return;
         }
@@ -765,10 +794,11 @@ async function completePlacement(api: OpenClawPluginApi, config: DreamConfig, se
     const placementStatus = applied.ok !== true ? "error" : applied.outcome === "applied" ? "completed" : "defer";
     const durableCommit = applied.durable_commit && typeof applied.durable_commit === "object" ? applied.durable_commit as Record<string, unknown> : undefined;
     const statementDurableEpochMs = placementStatus === "completed" && durableCommit?.verified === true ? Date.now() : undefined;
-    await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { event_type: "placement_terminal", turn_correlation_id: context.turnId, placement_request_id: requestId, statement_id: statementId, statement_index: context.statementIndex, statement_count: context.statementCount, statement_start_epoch_ms: statementStartedEpochMs, statement_start_offset_ms: timing.statement_start_offset_ms, statement_durable_epoch_ms: statementDurableEpochMs, statement_to_durable_ms: statementDurableEpochMs === undefined ? undefined : timing.total_operation_ms, turn_to_statement_durable_ms: statementDurableEpochMs === undefined ? undefined : statementDurableEpochMs - context.turnVisibleEpochMs, placement_provider_total_ms: timing.placement_subagent_ms, placement_local_total_ms: Number(timing.total_operation_ms) - Number(timing.placement_subagent_ms), final_action: applied.action, final_outcome: applied.outcome, terminal_reason: applied.reason, durable_commit: durableCommit, operation_timing: timing, resolved_provider: extractResolvedModel(session.messages).resolved_provider, resolved_model: extractResolvedModel(session.messages).resolved_model });
+    await appendLatencyEvent(config, COMMIT_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "placement_terminal", turn_correlation_id: context.turnId, turn_visible_source_valid: context.turnVisibleSourceValid, placement_request_id: requestId, statement_id: statementId, statement_index: context.statementIndex, statement_count: context.statementCount, statement_start_epoch_ms: statementStartedEpochMs, statement_start_offset_ms: timing.statement_start_offset_ms, statement_durable_epoch_ms: statementDurableEpochMs, statement_to_durable_ms: statementDurableEpochMs === undefined ? undefined : timing.total_operation_ms, turn_to_statement_durable_ms: statementDurableEpochMs === undefined || !context.turnVisibleSourceValid ? undefined : statementDurableEpochMs - context.turnVisibleEpochMs, placement_provider_total_ms: timing.placement_subagent_ms, placement_local_total_ms: Number(timing.total_operation_ms) - Number(timing.placement_subagent_ms), final_action: applied.action, final_outcome: applied.outcome, terminal_reason: applied.reason, durable_commit: durableCommit, operation_timing: timing, resolved_provider: extractResolvedModel(session.messages).resolved_provider, resolved_model: extractResolvedModel(session.messages).resolved_model });
     await trace(config, { status: placementStatus, stage: "placement_apply", placement_attempt: attemptKind, request_id: requestId, surface_path: surfacePath, visible_message_count: 0, ...applied, operation_timing: timing, ...extractResolvedModel(session.messages) });
   } catch (error) {
     timing.timeout_stage = "placement"; timing.total_operation_ms = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+    await recordPlacementTerminal("error", "placement", error);
     await trace(config, { status: "error", stage: "placement", request_id: requestId, error: String(error), operation_timing: timing });
   } finally {
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
