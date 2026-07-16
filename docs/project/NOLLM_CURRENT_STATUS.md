@@ -4,10 +4,9 @@ Date: 2026-07-16
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md
-status: CAOLD_LEGAL_TRAVERSAL_P1_DENSE_LIVE_IN_PROGRESS
-input HEAD: 2e779764cde6fbb1ef228444edfd55bd157b2b52
-validated implementation/evidence HEAD: d85bd5f6c85cf071dc959dbbd4318a0ad24151f9
+task: NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md
+status: AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS
+input HEAD: f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d
 ```
 
 Preserved checkpoint capability:
@@ -28,6 +27,17 @@ Active live workspace:
 C:\Users\Administrator\.openclaw\memory\nollm-caold-write-policy-legal-traversal-p1-dense-live-v5
 non-destructive copy of the accepted V3.9 workspace; source and failed V1-V4 copies remain unchanged
 plugin 0.12.0 enabled with legal actions, bounded correction, singleton resolution, and Recall fence
+```
+
+Semantic revision audit:
+
+```text
+the supplemental V5 evidence has 24 lines, 51,111 bytes, and SHA-256 95bd1ced...aa7e;
+the prior report described an earlier 18-line snapshot with SHA-256 dfc6134d...4880;
+the appended records show CR-7159 replaced the current BX-3917 binding through revision_current;
+these are different subjects with analogous slots and must be distinct current facts;
+V5 has 38 files, 35 Statement files, 24,304 bytes, and canonical inventory SHA-256 58af2e2d...a45c;
+the named V3.7 long-form authority is absent from the input bundle; no substitute authority was invented.
 ```
 
 Independent audit correction:
@@ -94,9 +104,9 @@ exact Decimal/polygon only as Lab Oracle;
 no Stitch, persistent Surface cache, PB run, multi-Chart, graph/vector/embedding.
 ```
 
-The broad Policy, safe writable radius, dense synthetic evidence, and plugin
-contract are established. P1 is closed; dense OpenClaw Live remains open. Progress is
-recorded in `docs/project/CAOLD_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_REPORT.md`.
+The broad Policy, safe writable radius, dense synthetic evidence, legal traversal,
+and singleton contracts remain established. Semantic P1 integrity and real dense
+Live are open under the active AOLD task.
 
 Current closure audit:
 

@@ -5,14 +5,13 @@
 - Active route: [V3.9 Fast Structural Geometry](NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md)
 - Current status: [Current Status](NOLLM_CURRENT_STATUS.md)
 - Module ledger: [Canonical Module Progress Ledger](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current task: [Write Policy Legal Traversal P1 Dense Live Closure](tasks/NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md)
-- Input checkpoint: `2e779764cde6fbb1ef228444edfd55bd157b2b52`
-- Validated implementation/evidence HEAD: `d85bd5f6c85cf071dc959dbbd4318a0ad24151f9`
+- Current task: [Semantic Revision Integrity Dense Live Closure](tasks/NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md)
+- Input checkpoint: `f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d`
 
 Current state:
 
 ```text
-CAOLD_LEGAL_TRAVERSAL_P1_DENSE_LIVE_IN_PROGRESS
+AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS
 ```
 
-The current branch separates Core storage validity from Access active semantic write policy, derives legal traversal actions from state, and adds bounded correction and singleton resolution. P1 V5 completed one valid `revision_current` write, canonical binding, restart Recall of `CR-7159`, and Recall-side Formation suppression. Dense synthetic regressions pass, but dense real Live was not started, so the route remains `IN_PROGRESS`.
+The input checkpoint preserves legal traversal, bounded correction, singleton physical-entry resolution, and P1 V5 evidence. The appended 24-line V5 evidence proves that BX-3917 and CR-7159 were incorrectly merged through destructive `revision_current`; this task adds bounded real-LLM revision confirmation, repairs the two facts in a V6 copy, and attempts Provider-backed dense Live without forced placement.

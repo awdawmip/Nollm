@@ -1,12 +1,12 @@
-# Nollm V3.9 Legal Traversal And Live Closure Rules
+# Nollm V3.9 Semantic Revision Integrity And Dense Live Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
 - Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_9_BOUNDED_APPROXIMATE_HEX_COVERAGE_20260715.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_WRITE_POLICY_LEGAL_TRAVERSAL_P1_DENSE_LIVE_CLOSURE_TASK_20260715.md`.
-- `2e779764` is the input checkpoint. Preserve its calibrated Coverage, safe-field proof, dense Surface, single-entry Recall, failed P1 Statement, and live evidence.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md`.
+- `f61efd5` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, P1 workspaces, Statements, Handles, Core state, and live evidence.
 
 ## Hard physical contract
 
@@ -70,6 +70,22 @@
 - Provider latency and model failures must be reported separately from Surface/Core timing.
 - No Stitch, multi-layer semantic Placement, Cursor, semantic route, graph/vector/embedding, exact polygon production path, or persistent traversal state.
 - Final delivery commit must be included in the ownership manifest before bundle creation.
+
+## Semantic placement and revision policy
+
+- Placement action semantics are LLM-owned but must be precisely defined.
+- `reuse` means the new Statement is materially the same current fact.
+- `revision_current` is destructive to the current Handle binding and is allowed only for the same subject or referent, the same proposition slot, and a new value that supersedes the current value.
+- Similar wording, the same field label, the same document type, or the same locality is not enough for revision.
+- Different subjects with analogous attributes must remain distinct current facts.
+- Additive facts about the same subject use `new_local` or another non-destructive action, not `revision_current`.
+- Every `revision_current` decision is provisional until one bounded real-LLM confirmation succeeds.
+- Rejected revision confirmation causes zero mutation and excludes that revision target for the operation-local retry.
+- Python and Core must not infer subject identity or proposition equality by keywords, hashes, regexes, embeddings, or fixed scores.
+- The V5 BX-3917/CR-7159 binding is a known semantic repair target; repair only in a non-destructive V6 copy using public Access operations.
+- Dense Live must be formed from normal conversation, not direct Store injection or forced Cell addresses.
+- Freeze Live evidence before writing the report; do not append to a hashed evidence file afterward.
+- No Stitch, multi-layer semantic Placement, persistent Surface cache, semantic route, graph/vector/embedding, or PB validation.
 
 ## Gate discipline
 
