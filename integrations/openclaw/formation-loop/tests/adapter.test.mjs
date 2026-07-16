@@ -9,6 +9,9 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
+  assert.equal(manifest.configSchema.properties.latency_validation_enabled.default, false);
+  assert.equal(manifest.contracts.latencyCommitSchema, "nollm_memory_commit_latency_v1");
+  assert.equal(manifest.contracts.latencyRecallSchema, "nollm_memory_recall_latency_v1");
   assert.equal(manifest.configSchema.properties.geometry_profile.const, "default_dream_v1");
   assert.equal(manifest.configSchema.properties.geometry_contract_version.const, "nollm_bounded_approximate_hex_coverage_v1");
   assert.equal(manifest.configSchema.properties.coordinate_domain_version.const, "nollm_hex_radius_2p31_default_chart_null_phase_v1");
