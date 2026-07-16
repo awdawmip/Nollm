@@ -1,12 +1,30 @@
-# Nollm V3.9 Semantic Revision Integrity And Dense Live Rules
+# Nollm V3.9 Real Memory Latency Baseline Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
 - Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_9_BOUNDED_APPROXIMATE_HEX_COVERAGE_20260715.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md`.
-- `f61efd5` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, P1 workspaces, Statements, Handles, Core state, and live evidence.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md`.
+- `26bd0ae68470ef8d1396014884e305cc1c3ab7ef` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and live evidence.
+
+## Latency measurement contract
+
+- The active task measures the existing layer-0 memory loop; it does not add new memory architecture.
+- "Conversation becomes remembered" means Statement + current HandleBinding + Core Atom are durably committed and readable after reopen.
+- Formation output alone is not remembered memory.
+- "Recall ready" means the hidden injection payload is ready for the main agent.
+- "Visible recall latency" ends when the correlated main-agent `message_sent` event is observed.
+- Use monotonic clocks for durations inside one process.
+- Use epoch timestamps only for cross-process/cross-hook correlation; never subtract unrelated monotonic clocks.
+- Existing `formation_ms` is semantically cumulative and must not be used as pure Formation provider latency.
+- Separate queue wait, prompt build, provider wait, parsing, Surface, Core, persistence, confirmation, and main-agent time.
+- Do not optimize the system in the same task unless a measurement defect itself blocks truthful timing.
+- Do not add a Trace product, telemetry service, database, daemon, persistent correlation index, or hidden-reasoning storage.
+- Timing evidence must contain hashes/IDs and durations, not full conversations unless already required by the existing Live evidence contract.
+- Measurement overhead must be quantified and disabled by default outside debug validation mode.
+- Report warm, cold, dense, hidden-preview, NONE, multi-Statement, reuse, revision, defer, and failure samples separately.
+- No latency threshold may be promoted to a permanent architecture invariant from one Provider or one workstation.
 
 ## Hard physical contract
 

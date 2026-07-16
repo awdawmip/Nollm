@@ -4,45 +4,41 @@ Date: 2026-07-16
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_A_O_L_D_SEMANTIC_REVISION_INTEGRITY_DENSE_LIVE_CLOSURE_TASK_20260716.md
-status: AOLD_SEMANTIC_REVISION_DENSE_LIVE_IN_PROGRESS
-input HEAD: f61efd5dcb46ffc8c8c79a5ca0ae588562346f8d
-implementation checkpoint: 930f363cede7cd69bbf827fa497456f11e74318b
-evidence/report checkpoint: 7f30ed82731ba76f5876b6cc563439a6045796c5
+task: NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md
+status: AOLD_REAL_MEMORY_COMMIT_RECALL_LATENCY_BASELINE_IN_PROGRESS
+input HEAD: 26bd0ae68470ef8d1396014884e305cc1c3ab7ef
+Gate 0 checkpoint: pending
+evidence/report checkpoint: pending
 ```
 
 Active result:
 
 ```text
-plugin 0.13.0; strict revision confirmation Wire v1;
-one confirmation call and at most one post-rejection redecision;
-V5 source preserved; V6 BX and CR have distinct current Handles;
-BX Recall entry (-13,9), answer BX-3917;
-CR Recall entry (15,0), answer CR-7159;
-five normal-chat turns produced 12 current Qinglan Statements and one supporting Statement;
-dense cells (4,0), (5,0), and (6,0); cell (5,0) has 10 atoms;
-Surface preview count 3, truncated=true, remaining_count=7;
-hidden-preview Recall used one entry (5,0), selected three Statements, and answered all three facts;
-frozen Evidence: 160 lines, 374849 bytes, SHA-256 56eda45669a85bc8a36ea8679c26920bc9e8d963346997beef6942901b570a21.
+input bundle and tagged HEAD verified;
+timing semantics are being frozen before instrumentation;
+no write-turn or recall-query latency sample has been accepted yet;
+existing V1-V6 workspaces and frozen Evidence are preserved;
+formal latency Evidence, summary, percentiles, and bottleneck classification are pending.
 ```
 
-Semantic revision truth:
+Basis limitation: the taskbook names `docs/architecture/NOLLM_ARCHITECTURE_BOOK_V3_7_ROTATED_MULTI_SCALE_PHYSICAL_MEMORY_FIELD_20260714.md`, but that file is absent from the verified input tree. No substitute document is treated as that authority.
+
+Measurement truth:
 
 ```text
-the accepted real-model C1-C5 run passed, including C3/C4 new_local and C5 defer;
-the first final rerun returned an empty non-JSON Provider payload;
-the second final rerun passed C1-C4 but returned revision_current for C5;
-both reruns were no-write, and the failed C5 receipt is retained;
-therefore no completion tag is authorized.
+Formation output is not durable memory;
+durable memory requires Statement + current HandleBinding + Core Atom and readback;
+recall-ready ends at hidden injection readiness;
+visible recall ends only at a correlated main-agent message_sent event;
+monotonic clocks measure in-process durations and epoch timestamps correlate hooks/processes;
+the legacy cumulative formation_ms field is excluded from formal statistics.
 ```
 
-Regression truth:
+Gate truth:
 
 ```text
-Core 70, Snapshot 7, Trace 3, Access 93, OpenClaw Python 39, M0 45, Lab 14, Node 23 passed;
-plugin:check passed;
-P1 read-only and Dense state runners passed;
-canonical ownership Manifest and boundary checks passed after the tracked evidence/report set was fixed.
+Gate 0 is in progress;
+instrumentation, deterministic timing tests, Live writes, Live recalls, analysis, regression, and final bundle remain pending.
 ```
 
-The active boundary remains file-first and evidence-first. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, or hidden-reasoning persistence was added.
+The active boundary remains measurement-only and layer-0. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, hidden-reasoning persistence, or performance optimization is authorized.
