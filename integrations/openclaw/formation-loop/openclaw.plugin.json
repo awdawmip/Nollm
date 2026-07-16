@@ -47,6 +47,10 @@
       "persist_subagent_transcripts": { "type": "boolean", "const": false, "default": false },
       "debug_trace": { "type": "boolean", "default": false },
       "evidence_path": { "type": "string" },
+      "latency_validation_enabled": { "type": "boolean", "default": false },
+      "latency_evidence_path": { "type": "string" },
+      "latency_scenario_id": { "type": "string" },
+      "latency_validation_run_id": { "type": "string" },
       "timeout_ms": {
         "type": "integer",
         "minimum": 1000,
@@ -71,5 +75,5 @@
     },
     "additionalProperties": false
   },
-  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1", "revisionConfirmationMaxCalls": 1, "revisionRedecisionMaxCalls": 1, "evidenceFilenameContract": "caold_semantic_revision_dense_live_20260716", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
+  "contracts": { "tools": [], "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1", "revisionConfirmationMaxCalls": 1, "revisionRedecisionMaxCalls": 1, "evidenceFilenameContract": "caold_semantic_revision_dense_live_20260716", "latencyCommitSchema": "nollm_memory_commit_latency_v1", "latencyRecallSchema": "nollm_memory_recall_latency_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
 }
