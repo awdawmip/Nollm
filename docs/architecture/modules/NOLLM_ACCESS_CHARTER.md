@@ -7,6 +7,8 @@ Purpose: form statements, decide placement/recall entry, format recall, and own 
 - Dense-locality views expose finite Statement previews and truthful occupancy count/band fields. Access does not reinterpret them as physical or semantic density.
 - Active `default_dream_v1` Recall accepts exactly one final physical entry. Separate-entry observations are separate requests and never a combined fanout or persisted fact-to-entry map.
 - Public API: reuse/new/revision/stitch/defer/forget mappings to Core public commands.
+- Placement action semantics are explicit but LLM-owned. Access validates the action Wire and candidate identity; it does not infer subjects, proposition slots, or supersession from content.
+- `revision_current` is a provisional destructive action until an exact bounded confirmation result authorizes atomic application.
 - Dream formation: a real Host LLM may rewrite, split, merge, or defer bounded temporary `ConversationMaterial`; Access validates only schema, exact types, canonical ordering, identity, and character/count budgets.
 - Persistent semantic contract: `StatementStore` stores canonical `MemoryStatement` bytes. `EvidenceStore` and exact-span Formation remain compatibility/migration assets and new compatibility writes use the statement schema.
 - Formation boundary: Access does not make semantic decisions, choose placement, persist conversation material, or write Formation results implicitly.

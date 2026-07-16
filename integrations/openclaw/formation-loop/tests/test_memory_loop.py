@@ -220,3 +220,14 @@ def test_placement_uses_limited_json_repair(tmp_path):
     response = "JSON: " + placement("dream:test", "expand_surface", built["candidates"][0]["candidate_id"])
     applied = apply_placement(response, STATEMENT, str(tmp_path), "placement-repair", None)
     assert applied["json_repair"]["repair_types"] == ["single_object_outer_text"]
+
+
+def test_placement_prompt_defines_strict_revision_boundaries(tmp_path):
+    built = build_placement_prompt(STATEMENT, str(tmp_path), "placement-semantics")
+    prompt = built["prompt"]
+    assert "nollm_access_semantic_placement_actions_v1" in prompt
+    assert "same subject or referent" in prompt
+    assert "same proposition slot" in prompt
+    assert "explicitly supersedes" in prompt
+    assert "Different subjects with analogous attributes must remain distinct" in prompt
+    assert "An additive fact about the same subject is not a revision" in prompt

@@ -12,8 +12,10 @@ from nollm_access import (
     DEFAULT_FIELD_SCOPE,
     MemoryStatement,
     PLACEMENT_SURFACE_BUDGET,
+    PLACEMENT_ACTION_SEMANTICS_VERSION,
     RECALL_SURFACE_BUDGET,
     SurfaceBudgetProfile,
+    placement_action_semantics_prompt,
 )
 
 from .adapter import FormationAdapterError
@@ -392,7 +394,10 @@ def _placement_decision(
     statements = {item["candidate_id"]: item["statements"] for item in contexts}
     prompt_candidates = [{**item, "statements": statements[item["candidate_id"]]} for item in candidates]
     prompt = f"""You are a private background Surface placement agent. The user will never see this run.
-Choose only a supplied candidate_id. Semantic reuse, revision, locality, expansion, or defer is your decision; Python and Core do not decide it. Do not invent coordinates, topics, indexes, vectors, graphs, or handles. Do not call tools or reveal reasoning.
+Choose only a supplied candidate_id. Semantic reuse, revision, locality, expansion, or defer is your decision; Python and Core do not decide it. Similar wording, the same field label, the same document type, or the same locality is never enough for revision. Different subjects with analogous attributes must remain distinct current facts. An additive fact about the same subject is not a revision.
+Action semantics ({PLACEMENT_ACTION_SEMANTICS_VERSION}):
+{placement_action_semantics_prompt()}
+Do not invent coordinates, topics, indexes, vectors, graphs, or handles. Do not call tools or reveal reasoning.
 Return exactly one raw JSON object with no markdown.
 Schema version: {PLACEMENT_SCHEMA_VERSION}
 For new_local or expand_surface: {{"schema_version":"{PLACEMENT_SCHEMA_VERSION}","outcome":"apply","decision":{{"statement_id":"{statement.statement_id}","action":"new_local","candidate_id":"one supplied id","reason_text":"brief"}}}}

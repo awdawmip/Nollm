@@ -9,6 +9,18 @@ from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
 
 ACTIONS = frozenset({"reuse", "new", "move", "revision_current", "revision_keep_history", "stitch", "unstitch", "defer", "forget"})
 DECIDED_BY = frozenset({"host", "llm", "human", "fixture"})
+PLACEMENT_ACTION_SEMANTICS_VERSION = "nollm_access_semantic_placement_actions_v1"
+PLACEMENT_ACTION_SEMANTICS = (
+    ("reuse", "The new Statement is materially the same current fact; reuse its exact current Handle without changing the current fact."),
+    ("revision_current", "Destructive: only the same subject or referent, the same proposition slot, and a new value that explicitly supersedes the current value. The decision remains provisional until bounded real-LLM confirmation."),
+    ("new_local", "Use for a distinct fact, a different subject with an analogous field, or an additive fact about the same subject when a supplied locality is suitable."),
+    ("expand_surface", "Use for a distinct or additive fact when none of the supplied local candidates is suitable."),
+    ("defer", "Use when subject identity, proposition identity, supersession, or placement remains uncertain."),
+)
+
+
+def placement_action_semantics_prompt() -> str:
+    return "\n".join(f"{action}: {meaning}" for action, meaning in PLACEMENT_ACTION_SEMANTICS)
 
 
 @dataclass(frozen=True)

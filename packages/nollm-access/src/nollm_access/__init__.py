@@ -26,7 +26,13 @@ from .formation import (
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
 from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE
-from .placement_contract import ACTIONS, AccessDecision
+from .placement_contract import (
+    ACTIONS,
+    PLACEMENT_ACTION_SEMANTICS,
+    PLACEMENT_ACTION_SEMANTICS_VERSION,
+    AccessDecision,
+    placement_action_semantics_prompt,
+)
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .runtime import AccessConsistencyError, AccessRuntime
 from .statement import MemoryStatement
@@ -59,6 +65,8 @@ from .write_policy import (
 
 __all__ = [
     "ACTIONS",
+    "PLACEMENT_ACTION_SEMANTICS",
+    "PLACEMENT_ACTION_SEMANTICS_VERSION",
     "ACTIVE_SEMANTIC_WRITE_POLICY",
     "ACTIVE_SEMANTIC_WRITE_POLICY_ID",
     "AccessDecision",
@@ -114,5 +122,6 @@ __all__ = [
     "StatementSelection",
     "assemble_formed_statements",
     "validate_formation_decision",
+    "placement_action_semantics_prompt",
     "select_active_surface",
 ]

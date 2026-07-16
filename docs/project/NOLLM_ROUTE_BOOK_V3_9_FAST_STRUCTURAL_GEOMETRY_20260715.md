@@ -126,6 +126,14 @@ PB 性能。
 - Validate truthful occupancy on at least 300 occupied cells and dense locality on at least 1,000 atoms.
 - Preserve exactly one final physical entry per Recall traversal. Natural multi-entry reachability remains observation-only.
 
+## R8: Semantic revision integrity and provider-backed dense locality
+
+- Keep semantic action choice in the real Host LLM while defining exact action meanings.
+- Treat `revision_current` as provisional and destructive; require one bounded confirmation before mutation.
+- On reject or timeout, preserve all Statement, Handle, and Core bytes and blacklist the exact revision target for one operation-local redecision.
+- Repair the V5 BX-3917/CR-7159 semantic merge only in a copied workspace through public Access operations.
+- Form dense locality through normal conversation without direct Store injection or forced coordinates.
+
 # 4. 进入后续阶段的条件
 
 ```text

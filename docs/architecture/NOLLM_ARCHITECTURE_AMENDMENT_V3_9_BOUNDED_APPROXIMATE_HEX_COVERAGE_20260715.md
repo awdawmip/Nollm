@@ -271,4 +271,8 @@ One traversal still chooses exactly one final physical entry. Reachability from 
 
 # 12. 最终架构概括
 
+## 12.1 Semantic placement action boundary
+
+Semantic action selection remains Host-LLM-owned. `reuse` means materially the same current fact. `revision_current` is destructive and is valid only when the new Statement has the same subject or referent, the same proposition slot, and a new value that explicitly supersedes the current value. Similar wording, an analogous field on another subject, or an additive fact is insufficient. A destructive revision is provisional until one bounded real-LLM confirmation succeeds; reject, timeout, or ambiguity performs zero mutation. Python and Core validate only the exact Wire, candidate identity, budgets, and atomic application.
+
 > **Nollm 的突破来自几何关系场，而不是相交面积小数点后的真值。只要局部关系、质量、误差和传播稳定，快速近似 Coverage 比生产路径中的高精度 polygon 更符合项目第一性原理。**
