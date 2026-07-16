@@ -133,9 +133,20 @@ class AccessMemoryLoop:
         decision_started = perf_counter_ns()
         candidates = self.placement_candidates(selected_entry, request_id + ":candidates", scope)
         decision, public_action, selected = self._decision(placement, statement, request_id, candidates)
-        decision_validation_ms = (perf_counter_ns() - decision_started) // 1_000_000
+        decision_validation_us = (perf_counter_ns() - decision_started) // 1_000
+        empty_timing = {
+            "decision_validation_us": decision_validation_us,
+            "decision_validation_ms": decision_validation_us // 1_000,
+            "statement_persist_us": 0,
+            "statement_persist_ms": 0,
+            "core_apply_us": 0,
+            "placement_apply_ms": 0,
+            "handle_bind_us": 0,
+            "handle_bind_ms": 0,
+            "durable_readback_us": 0,
+        }
         if decision is None:
-            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "revision_confirmation_count": 0, "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0}}
+            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "revision_confirmation_count": 0, "durable_commit": None, "operation_timing": empty_timing}
         confirmation_count = 0
         if decision.action == "revision_current":
             provisional = self._provisional_revision(statement, decision, selected)
@@ -149,7 +160,8 @@ class AccessMemoryLoop:
                     "provisional_revision": provisional.to_mapping(),
                     "core_write_count": 0,
                     "revision_confirmation_count": 0,
-                    "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0},
+                    "durable_commit": None,
+                    "operation_timing": empty_timing,
                 }
             confirmation = RevisionConfirmationResult.from_mapping(revision_confirmation)
             confirmation_count = 1
@@ -163,18 +175,19 @@ class AccessMemoryLoop:
                     "revision_confirmation": confirmation.to_mapping(),
                     "core_write_count": 0,
                     "revision_confirmation_count": 1,
-                    "operation_timing": {"decision_validation_ms": decision_validation_ms, "statement_persist_ms": 0, "placement_apply_ms": 0, "handle_bind_ms": 0},
+                    "durable_commit": None,
+                    "operation_timing": empty_timing,
                 }
         statement_store = FileStatementStore(self._workspace)
         existed_before = statement_store.exists(statement.statement_id)
         with self._runtime() as access:
             persist_started = perf_counter_ns()
             access.capture(statement)
-            statement_persist_ms = (perf_counter_ns() - persist_started) // 1_000_000
+            statement_persist_us = (perf_counter_ns() - persist_started) // 1_000
             try:
                 apply_started = perf_counter_ns()
                 result = access.apply(decision)
-                placement_apply_ms = (perf_counter_ns() - apply_started) // 1_000_000
+                core_apply_us = (perf_counter_ns() - apply_started) // 1_000
             except Exception:
                 if not existed_before:
                     statement_store.discard_new(statement)
@@ -191,21 +204,58 @@ class AccessMemoryLoop:
                 )
                 if not statement_is_bound:
                     raise RuntimeError("placement HandleBinding verification failed")
-            handle_bind_ms = (perf_counter_ns() - bind_started) // 1_000_000
+            handle_bind_us = (perf_counter_ns() - bind_started) // 1_000
+        durable_started = perf_counter_ns()
+        durable_commit = self._durable_readback(statement, result)
+        durable_readback_us = (perf_counter_ns() - durable_started) // 1_000
         return {
             "outcome": "applied",
             "statement_id": statement.statement_id,
             "action": public_action,
             "candidate_id": selected["candidate_id"] if selected is not None else None,
             "handle": result.to_mapping() if type(result) is AtomHandle else None,
+            "durable_commit": durable_commit,
             "core_write_count": 1 if public_action in {"new_local", "expand_surface", "revision_current"} else 0,
             "revision_confirmation_count": confirmation_count,
             "operation_timing": {
-                "decision_validation_ms": decision_validation_ms,
-                "statement_persist_ms": statement_persist_ms,
-                "placement_apply_ms": placement_apply_ms,
-                "handle_bind_ms": handle_bind_ms,
+                "decision_validation_us": decision_validation_us,
+                "decision_validation_ms": decision_validation_us // 1_000,
+                "statement_persist_us": statement_persist_us,
+                "statement_persist_ms": statement_persist_us // 1_000,
+                "core_apply_us": core_apply_us,
+                "placement_apply_ms": core_apply_us // 1_000,
+                "handle_bind_us": handle_bind_us,
+                "handle_bind_ms": handle_bind_us // 1_000,
+                "durable_readback_us": durable_readback_us,
             },
+        }
+
+    def _durable_readback(self, statement: MemoryStatement, result: object) -> dict[str, object]:
+        if type(result) is not AtomHandle:
+            raise RuntimeError("applied placement did not return an AtomHandle")
+        statement_store = FileStatementStore(self._workspace)
+        persisted = statement_store.get(statement.statement_id)
+        if persisted != statement:
+            raise RuntimeError("durable Statement readback mismatch")
+        binding = FileHandleStore(self._workspace).binding_for_handle(result)
+        statement_is_bound = (
+            binding.current_statement_id == statement.statement_id
+            or statement.statement_id in binding.supporting_statement_ids
+        )
+        if not statement_is_bound:
+            raise RuntimeError("durable HandleBinding readback mismatch")
+        current = statement_store.get(binding.current_statement_id)
+        with CoreRuntime(self._workspace) as core:
+            atom = core.get(result)
+        if atom.payload_utf8 != current.content_utf8:
+            raise RuntimeError("durable Core Atom readback mismatch")
+        return {
+            "verified": True,
+            "reopen_verified": True,
+            "statement_id": statement.statement_id,
+            "current_statement_id": binding.current_statement_id,
+            "atom_id": atom.atom_id,
+            "handle": result.to_mapping(),
         }
 
     def _provisional_revision(

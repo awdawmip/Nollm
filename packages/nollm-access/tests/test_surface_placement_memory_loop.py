@@ -45,14 +45,38 @@ def test_candidates_are_unique_bounded_content_independent_and_have_six_laterals
 def test_new_local_rejects_an_occupied_lateral_without_writing(tmp_path):
     with AccessMemoryLoop(tmp_path) as loop:
         first = apply(loop, "a1", "origin", "expand_surface", "placement:expand:0")
-        assert set(first["operation_timing"]) == {"decision_validation_ms", "statement_persist_ms", "placement_apply_ms", "handle_bind_ms"}
+        assert set(first["operation_timing"]) == {
+            "decision_validation_us", "decision_validation_ms",
+            "statement_persist_us", "statement_persist_ms",
+            "core_apply_us", "placement_apply_ms",
+            "handle_bind_us", "handle_bind_ms", "durable_readback_us",
+        }
         assert all(type(value) is int and value >= 0 for value in first["operation_timing"].values())
+        assert first["durable_commit"]["verified"] is True
+        assert first["durable_commit"]["reopen_verified"] is True
+        assert first["durable_commit"]["statement_id"] == "a1"
+        assert first["durable_commit"]["atom_id"] == "a1"
         entry = first["handle"]["geometry_address"]
         occupied = apply(loop, "a2", "occupied", "new_local", "placement:lateral:0", entry)
         with pytest.raises(ValueError, match="occupied candidate"):
             apply(loop, "bad", "must not persist", "new_local", "placement:lateral:0", entry)
     assert not FileStatementStore(tmp_path).exists("bad")
     assert occupied["core_write_count"] == 1
+
+
+def test_readback_failure_never_returns_completed_durable_memory(tmp_path, monkeypatch):
+    original_get = CoreRuntime.get
+
+    def failed_readback(core, handle):
+        raise OSError("readback unavailable")
+
+    monkeypatch.setattr(CoreRuntime, "get", failed_readback)
+    with AccessMemoryLoop(tmp_path) as loop:
+        with pytest.raises(OSError, match="readback unavailable"):
+            apply(loop, "readback", "durable payload", "expand_surface", "placement:expand:0")
+    monkeypatch.setattr(CoreRuntime, "get", original_get)
+    assert FileStatementStore(tmp_path).exists("readback")
+    assert FileHandleStore(tmp_path).exists("readback")
 
 
 def test_expand_surface_is_geometry_only_and_respects_minimum_distance(tmp_path):
