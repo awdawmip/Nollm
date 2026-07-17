@@ -34,6 +34,7 @@ export type DreamConfig = {
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
   capture_single_user_mode?: true;
   absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number;
+  dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v1"; locality_atlas_candidate_limit?: number;
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
   recall_hidden_call_budget?: 1;
   surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
@@ -77,6 +78,8 @@ const JSON_SCHEMA = {
     absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
     absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
     absorption_retry_backoff_ms: { type: "integer", minimum: 100, default: 1000 },
+    dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v1", default: "nollm_openclaw_dream_sculptor_v1" },
+    locality_atlas_candidate_limit: { type: "integer", minimum: 1, maximum: 64, default: 32 },
     pending_fallback_enabled: { type: "boolean", default: true }, pending_fallback_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
     pending_fallback_max_chars: { type: "integer", minimum: 1, default: 6000 }, pending_fallback_max_age_ms: { type: "integer", minimum: 1000, default: 604800000 },
     recall_hidden_call_budget: { type: "integer", const: 1, default: 1 },
@@ -309,7 +312,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }));
     const built = await bridge(config, {
       action: "build_dream_sculptor_prompt", request_id: requestId, captures,
-      memory_workspace: configuredMemoryWorkspace, candidate_limit: 32,
+      memory_workspace: configuredMemoryWorkspace, candidate_limit: config.locality_atlas_candidate_limit ?? 32,
       max_statements: config.max_statements ?? 8,
     });
     if (built.ok !== true || typeof built.prompt !== "string" || !built.atlas) {
@@ -416,7 +419,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       turnIdentity: runId ?? createHash("sha256").update(`${user}\0${assistant}`).digest("hex"),
       userUtf8: user, assistantUtf8: assistant, modelRef: configuredModel(model),
       profileId: config.capture_scope_id ?? "local-default-user", mainRunIdentity: runId ?? sessionKey,
-      endpointKind: "visible_assistant_delivery", pluginVersion: "0.13.0",
+      endpointKind: "visible_assistant_delivery", pluginVersion: "0.14.0",
     });
     await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
     scheduleAbsorption();

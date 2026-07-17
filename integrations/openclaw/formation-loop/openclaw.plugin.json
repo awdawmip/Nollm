@@ -2,7 +2,7 @@
   "id": "nollm-formation",
   "name": "Nollm Invisible Dream Agent",
   "description": "Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "activation": {
     "onStartup": true
   },
@@ -59,6 +59,9 @@
       "absorption_batch_max_chars": { "type": "integer", "minimum": 1, "default": 24000 },
       "absorption_max_wait_ms": { "type": "integer", "minimum": 0, "default": 250 },
       "absorption_stale_claim_ms": { "type": "integer", "minimum": 1000, "default": 300000 },
+      "absorption_retry_backoff_ms": { "type": "integer", "minimum": 100, "default": 1000 },
+      "dream_sculptor_schema_version": { "type": "string", "const": "nollm_openclaw_dream_sculptor_v1", "default": "nollm_openclaw_dream_sculptor_v1" },
+      "locality_atlas_candidate_limit": { "type": "integer", "minimum": 1, "maximum": 64, "default": 32 },
       "pending_fallback_enabled": { "type": "boolean", "default": true },
       "pending_fallback_max_captures": { "type": "integer", "minimum": 1, "maximum": 16, "default": 4 },
       "pending_fallback_max_chars": { "type": "integer", "minimum": 1, "default": 6000 },
@@ -88,5 +91,5 @@
     },
     "additionalProperties": false
   },
-  "contracts": { "tools": [], "captureWire": "nollm_openclaw_durable_capture_v1", "captureStateWire": "nollm_openclaw_capture_state_event_v1", "captureProviderCalls": 0, "captureBridgeCalls": 0, "captureCoreCalls": 0, "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1", "revisionConfirmationMaxCalls": 1, "revisionRedecisionMaxCalls": 1, "evidenceFilenameContract": "aold_durable_capture_async_absorption_20260717", "latencyCommitSchema": "nollm_memory_commit_latency_v1", "latencyRecallSchema": "nollm_memory_recall_latency_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
+  "contracts": { "tools": [], "captureWire": "nollm_openclaw_durable_capture_v1", "captureStateWire": "nollm_openclaw_capture_state_event_v1", "captureProviderCalls": 0, "captureBridgeCalls": 0, "captureCoreCalls": 0, "dreamSculptorWire": "nollm_openclaw_dream_sculptor_v1", "dreamSculptorCommonProviderCalls": 1, "recallLensesPersistent": false, "maxRecallLensesPerStatement": 4, "junctionCandidateLimit": 8, "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1", "revisionConfirmationMaxCalls": 1, "revisionRedecisionMaxCalls": 1, "evidenceFilenameContract": "aold_durable_capture_async_absorption_20260717", "latencyCommitSchema": "nollm_memory_commit_latency_v1", "latencyRecallSchema": "nollm_memory_recall_latency_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
 }

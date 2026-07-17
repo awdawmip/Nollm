@@ -3,7 +3,6 @@ import json
 import pytest
 
 from nollm_access import AccessMemoryLoop
-from nollm_core import CoreRuntime
 from nollm_openclaw_formation.adapter import FormationAdapterError
 from nollm_openclaw_formation.sculptor import (
     apply_dream_sculptor_result,
@@ -89,8 +88,8 @@ def test_one_sculptor_result_applies_two_capture_bound_statements_via_core_junct
     assert [item["outcome"] for item in applied["outcomes"]] == ["applied", "applied"]
     assert all(item["durable_commit"]["reopen_verified"] for item in applied["outcomes"])
     assert applied["outcomes"][0]["junction"]["cell"] != applied["outcomes"][1]["junction"]["cell"]
-    with CoreRuntime(tmp_path) as core:
-        assert len(core.occupied_cells()) == 2
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert all(loop.binding(item["statement_id"])["current_statement_id"] == item["statement_id"] for item in applied["outcomes"])
     durable_text = "\n".join(path.read_text("utf-8") for path in tmp_path.rglob("*.json"))
     assert "future query" not in durable_text
     assert "lens-d" not in durable_text
@@ -106,3 +105,44 @@ def test_sculptor_rejects_stale_atlas_before_any_plan_write(tmp_path):
     apply_dream_sculptor_result(mutation, CAPTURES[:1], atlas.to_mapping(), str(tmp_path), "mutation")
     with pytest.raises(ValueError, match="Atlas changed"):
         apply_dream_sculptor_result(raw, CAPTURES[:1], built["atlas"], str(tmp_path), "stale")
+
+
+def test_sculptor_revision_requires_bound_confirmation_and_keeps_one_handle(tmp_path):
+    built = build_dream_sculptor_prompt(CAPTURES[:1], str(tmp_path), "initial")
+    candidate = built["atlas"]["candidates"][0]["candidate_id"]
+    initial_raw = _wire([_plan("d1", CAPTURES[0], "Tokyo weather is rainy.", candidate)])
+    initial = apply_dream_sculptor_result(initial_raw, CAPTURES[:1], built["atlas"], str(tmp_path), "initial")
+    handle = initial["outcomes"][0]["durable_commit"]["handle"]
+
+    revision_capture = [{**CAPTURES[0], "capture_id": "capture-revision", "user_utf8": "Correction: Tokyo weather is sunny."}]
+    revision_built = build_dream_sculptor_prompt(revision_capture, str(tmp_path), "revision")
+    occupied = next(item for item in revision_built["atlas"]["candidates"] if item["occupied"])
+    revision_plan = _plan("d1", revision_capture[0], "Tokyo weather is sunny.", occupied["candidate_id"])
+    revision_plan.update({
+        "action": "revision_current",
+        "existing_handle": handle,
+    })
+    revision_raw = _wire([revision_plan])
+    provisional_result = apply_dream_sculptor_result(
+        revision_raw, revision_capture, revision_built["atlas"], str(tmp_path), "revision",
+    )
+    provisional = provisional_result["outcomes"][0]
+    assert provisional["outcome"] == "revision_confirmation_required"
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding(initial["outcomes"][0]["statement_id"])["current_statement_id"] == initial["outcomes"][0]["statement_id"]
+
+    confirmation = {
+        "schema_version": "nollm_openclaw_revision_confirmation_v1",
+        "provisional_id": provisional["provisional_revision"]["provisional_id"],
+        "outcome": "confirm_revision",
+        "relation": "same_subject_same_slot_supersedes",
+    }
+    statement_id = provisional["statement_id"]
+    applied = apply_dream_sculptor_result(
+        revision_raw, revision_capture, revision_built["atlas"], str(tmp_path), "revision",
+        {statement_id: confirmation}, [statement_id],
+    )
+    assert applied["outcomes"][0]["outcome"] == "applied"
+    assert applied["outcomes"][0]["durable_commit"]["handle"] == handle
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding(statement_id)["current_statement_id"] == statement_id

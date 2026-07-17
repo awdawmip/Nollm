@@ -31,7 +31,13 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.surface_legal_actions_contract_version.const, manifest.contracts.surfaceLegalActionsContractVersion);
   assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
   assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
-  assert.equal(manifest.version, "0.13.0");
+  assert.equal(manifest.version, "0.14.0");
+  assert.equal(manifest.configSchema.properties.dream_sculptor_schema_version.const, manifest.contracts.dreamSculptorWire);
+  assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 64);
+  assert.equal(manifest.contracts.dreamSculptorCommonProviderCalls, 1);
+  assert.equal(manifest.contracts.recallLensesPersistent, false);
+  assert.equal(manifest.contracts.maxRecallLensesPerStatement, 4);
+  assert.equal(manifest.contracts.junctionCandidateLimit, 8);
   assert.equal(manifest.configSchema.properties.revision_confirmation_schema_version.const, manifest.contracts.revisionConfirmationWire);
   assert.equal(manifest.configSchema.properties.revision_confirmation_max_calls.const, 1);
   assert.equal(manifest.configSchema.properties.revision_redecision_max_calls.const, 1);
@@ -281,4 +287,17 @@ test("Recall-to-visible pending correlation is process-wide but memory-only", ()
 test("plugin entry is an ordinary hook plugin", () => {
   assert.equal(plugin.id, "nollm-formation");
   assert.equal(typeof plugin.register, "function");
+});
+
+test("background absorption uses one Dream Sculptor call and per-Capture outcomes", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf("const absorbCapturedBatch");
+  const end = source.indexOf("const absorptionWorker", start);
+  const body = source.slice(start, end);
+  assert.match(body, /action: "build_dream_sculptor_prompt"/);
+  assert.match(body, /action: "apply_dream_sculptor_result"/);
+  assert.equal(body.includes('action: "build_batch_placement_prompt"'), false);
+  assert.equal(body.includes(":placement`"), false);
+  assert.match(body, /source_capture_ids\.includes\(record\.capture_id\)/);
+  assert.match(body, /common_one_call: providerCalls === 1/);
 });

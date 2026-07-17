@@ -3,7 +3,7 @@
 Purpose: typed hooks, durable visible-turn Capture, recoverable absorption workers, invisible background Dream agents, statement formation, placement workflow, pending/admitted recall injection, install/update/logging diagnostics.
 
 - Persistent state: adapter configuration, immutable raw Capture files, append-only Capture state events, and bounded worker claims; no Core facts.
-- Temporary state: bounded conversation material, hook queues, Dream run correlation, bounded placement requests, recall context.
+- Temporary state: bounded conversation material, hook queues, Dream run correlation, frozen Locality Atlas, Dream Sculptor plans, and recall context.
 - Temporary state includes at most one provisional revision confirmation and one exact-target blacklist for the current Placement operation; neither is persistent.
 - Public API: native OpenClaw hooks/subagent runtime and Access public API. Channel `message_sent` is `AFTER_DELIVERY`; CLI/webchat `agent_end` is `AFTER_TURN`. Default Formation is `deliver=false` and absent from the main agent tool table.
 - Forbidden API: Core private access, memory-provider ownership, direct provider HTTP, Python semantic placement.
@@ -18,3 +18,5 @@ Purpose: typed hooks, durable visible-turn Capture, recoverable absorption worke
 - Capture identity is deterministic for one scope, turn identity, and exact user/assistant bytes. Duplicate Hooks replay the same immutable file.
 - Pending fallback scans only bounded scope/time/count/character windows and never owns a semantic or relation index.
 - One spool has one active worker. Processing claims expire and are recovered from immutable Capture plus state events after restart.
+- The common background absorption path uses one Dream Sculptor provider call to form Statements, simulate future Recall Lenses, and choose supplied Localities. Strict-output correction and revision confirmation are bounded exceptional calls.
+- Capture-to-Statement provenance is per Statement and per Capture; partial success does not re-admit already verified Statements.

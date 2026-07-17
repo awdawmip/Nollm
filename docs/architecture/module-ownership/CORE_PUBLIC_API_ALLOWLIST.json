@@ -19,6 +19,8 @@
     "CoverageTemplate",
     "GeometryAddress",
     "GeometryAnchor",
+    "JunctionCandidate",
+    "JunctionRequest",
     "KernelEntry",
     "KernelRegistry",
     "MemoryAtom",
@@ -44,6 +46,7 @@
     "expand_physical_coverage",
     "expand_template",
     "runtime_profile",
+    "solve_junction_candidates",
     "validate_lateral_ring"
   ],
   "core_runtime_operations": [
@@ -57,6 +60,7 @@
     "export_state_bytes",
     "get",
     "import_state_bytes",
+    "junction_candidates",
     "move",
     "occupancy_band",
     "occupied_cells",
