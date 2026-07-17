@@ -20,7 +20,13 @@ test("Capture publishes exact immutable bytes and duplicate hooks replay", () =>
   assert.equal(replay.record.capture_id, first.record.capture_id);
   assert.equal(replay.replayed, true);
   assert.equal(await readFile(store.capturePath(first.record.capture_id), "utf8"), bytes);
-  assert.equal((await store.read(first.record.capture_id)).user_utf8, "原文 user\nline 2");
+  const record = await store.read(first.record.capture_id);
+  assert.equal(record.user_utf8, "原文 user\nline 2");
+  assert.deepEqual(record.turn_order, ["user", "assistant"]);
+  assert.equal(record.user_utf8_bytes, Buffer.byteLength(record.user_utf8, "utf8"));
+  assert.equal(record.assistant_utf8_bytes, Buffer.byteLength(record.assistant_utf8, "utf8"));
+  assert.equal(record.visible_endpoint_kind, "visible_assistant_delivery");
+  assert.equal(record.plugin_version, "0.13.0");
 }));
 
 test("missing sidecar is reconstructed from immutable Capture", () => workspace(async root => {

@@ -2,13 +2,14 @@ import json
 
 import pytest
 
-from nollm_access import AccessMemoryLoop, MemoryStatement
+from nollm_access import AccessMemoryLoop, AccessRuntime, MemoryStatement
 from nollm_openclaw_formation.adapter import FormationAdapterError
 from nollm_openclaw_formation.memory_loop import (
     PLACEMENT_SCHEMA_VERSION,
     RECALL_SCHEMA_VERSION,
     TRAVERSAL_SCHEMA_VERSION,
     FAST_RECALL_SCHEMA_VERSION,
+    BATCH_PLACEMENT_SCHEMA_VERSION,
     advance_placement_traversal,
     advance_recall_traversal,
     apply_placement,
@@ -20,6 +21,8 @@ from nollm_openclaw_formation.memory_loop import (
     render_recall_injection,
     build_fast_recall_prompt,
     apply_fast_recall_selection,
+    build_batch_placement_prompt,
+    apply_batch_placement,
 )
 
 
@@ -92,6 +95,66 @@ def test_fast_recall_selects_one_geometry_entry_then_injects_without_second_sele
     assert result["hidden_call_count"] == 1
     assert result["status"] == "complete_inject"
     assert "dream:test" in result["statement_ids"]
+
+
+def test_batch_placement_uses_one_frozen_geometry_view_and_durable_atomic_apply(tmp_path):
+    statements = [
+        STATEMENT,
+        {"statement_id": "dream:second", "content_utf8": "The deployment color is green.", "source_handle": None, "context_refs": []},
+    ]
+    built = build_batch_placement_prompt(statements, str(tmp_path), "batch-one")
+    empty = [item for item in built["candidates"] if item["occupancy"]["count"] == 0]
+    decisions = [
+        {"statement_id": statement["statement_id"], "outcome": "apply", "action": "expand_surface", "candidate_id": empty[index]["candidate_id"], "reason_text": "distinct durable fact"}
+        for index, statement in enumerate(statements)
+    ]
+    applied = apply_batch_placement(
+        json.dumps({"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "decisions": decisions}),
+        statements, str(tmp_path), "batch-one", built["view_fingerprint"],
+    )
+    assert [item["outcome"] for item in applied["outcomes"]] == ["applied", "applied"]
+    assert all(item["durable_commit"]["reopen_verified"] for item in applied["outcomes"])
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding("dream:test")["current_statement_id"] == "dream:test"
+        assert loop.binding("dream:second")["current_statement_id"] == "dream:second"
+
+
+def test_batch_placement_rejects_stale_view_before_any_write(tmp_path):
+    built = build_batch_placement_prompt([STATEMENT], str(tmp_path), "batch-stale")
+    place_initial(tmp_path)
+    decision = {"statement_id": "dream:test", "outcome": "apply", "action": "expand_surface", "candidate_id": built["candidates"][0]["candidate_id"], "reason_text": "stale"}
+    with pytest.raises(FormationAdapterError, match="view changed"):
+        apply_batch_placement(json.dumps({"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "decisions": [decision]}), [STATEMENT], str(tmp_path), "batch-stale", built["view_fingerprint"])
+
+
+def test_batch_placement_commits_each_statement_independently(tmp_path, monkeypatch):
+    statements = [
+        STATEMENT,
+        {"statement_id": "dream:second", "content_utf8": "The deployment color is green.", "source_handle": None, "context_refs": []},
+    ]
+    built = build_batch_placement_prompt(statements, str(tmp_path), "batch-partial")
+    empty = [item for item in built["candidates"] if item["occupancy"]["count"] == 0]
+    decisions = [
+        {"statement_id": statement["statement_id"], "outcome": "apply", "action": "expand_surface", "candidate_id": empty[index]["candidate_id"], "reason_text": "independent durable fact"}
+        for index, statement in enumerate(statements)
+    ]
+    original_apply = AccessRuntime.apply
+
+    def fail_second(runtime, decision):
+        if decision.statement_id == "dream:second":
+            raise OSError("injected second admission failure")
+        return original_apply(runtime, decision)
+
+    monkeypatch.setattr(AccessRuntime, "apply", fail_second)
+    applied = apply_batch_placement(
+        json.dumps({"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "decisions": decisions}),
+        statements, str(tmp_path), "batch-partial", built["view_fingerprint"],
+    )
+    assert [item["outcome"] for item in applied["outcomes"]] == ["applied", "error"]
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.binding("dream:test")["current_statement_id"] == "dream:test"
+        with pytest.raises(KeyError):
+            loop.binding("dream:second")
 
 
 def test_empty_surface_placement_expands_without_persistent_entry_hint(tmp_path):

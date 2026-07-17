@@ -27,6 +27,8 @@ from .memory_loop import (
     verify_admitted_statements,
     build_fast_recall_prompt,
     apply_fast_recall_selection,
+    build_batch_placement_prompt,
+    apply_batch_placement,
 )
 
 
@@ -137,6 +139,20 @@ def main() -> None:
             result = apply_fast_recall_selection(
                 envelope["raw_model_response"], envelope["entries"], envelope["memory_workspace"], envelope["request_id"],
                 envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_batch_placement_prompt":
+            result = build_batch_placement_prompt(
+                envelope["statements"], envelope["memory_workspace"], envelope["request_id"],
+                envelope.get("max_existing", 16), envelope.get("max_empty", 16),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "apply_batch_placement":
+            result = apply_batch_placement(
+                envelope["raw_model_response"], envelope["statements"], envelope["memory_workspace"],
+                envelope["request_id"], envelope["view_fingerprint"], envelope.get("max_existing", 16), envelope.get("max_empty", 16),
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

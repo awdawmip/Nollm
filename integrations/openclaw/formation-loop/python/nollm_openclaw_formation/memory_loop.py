@@ -34,6 +34,7 @@ PHYSICAL_ENTRY_SCHEMA_VERSION = "nollm_openclaw_single_physical_entry_recall_v1"
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_surface_recall_v1"
 FAST_RECALL_SCHEMA_VERSION = "nollm_openclaw_single_call_entry_recall_v1"
+BATCH_PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_batch_placement_v1"
 
 
 def verify_admitted_statements(statement_ids: object, memory_workspace: object) -> dict[str, object]:
@@ -151,6 +152,70 @@ def apply_fast_recall_selection(
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
         items = loop.local_context([selected["entry_cell"]], request_id + ":core")
     return {**_direct_locality_injection(items, max_statements, max_chars), "hidden_call_count": 1, "selected_entry": selected["entry_cell"], "json_repair": diagnostics}
+
+
+def build_batch_placement_prompt(
+    statements: object,
+    memory_workspace: object,
+    request_id: object,
+    max_existing: object = 16,
+    max_empty: object = 16,
+) -> dict[str, object]:
+    if type(statements) is not list or not statements or type(request_id) is not str or not request_id:
+        raise FormationAdapterError("invalid_batch", "batch placement requires Statements and request_id")
+    try:
+        formed = [_statement(item) for item in statements]
+    except FormationAdapterError:
+        raise
+    if len({item.statement_id for item in formed}) != len(formed):
+        raise FormationAdapterError("invalid_batch", "batch Statement identities must be unique")
+    with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
+        view = loop.batch_placement_view(request_id + ":view", max_existing, max_empty)
+    statement_wire = [item.to_mapping() for item in formed]
+    prompt = f"""You are a private background batch geometry placement agent. The user will never see this run.
+Make one independent semantic decision for every supplied Statement using only the supplied finite geometry candidates. Python and Core do not decide similarity, reuse, locality, or whether a fact is new. Different subjects with analogous attributes remain distinct. Additive facts are not revisions.
+Use new_local for a suitable existing or lateral locality, expand_surface only with a candidate whose relation_kind is expand_surface, reuse only with one exact existing_handle from that candidate, and defer when uncertain. revision_current is not available in this common batch path and must be deferred for separate confirmation.
+Do not invent coordinates, candidate IDs, handles, topics, indexes, vectors, or graphs. Do not call tools or reveal reasoning.
+Return exactly one raw JSON object with no markdown.
+schema: {{"schema_version":"{BATCH_PLACEMENT_SCHEMA_VERSION}","decisions":[...]}}
+apply new: {{"statement_id":"...","outcome":"apply","action":"new_local","candidate_id":"...","reason_text":"brief"}}
+apply reuse: {{"statement_id":"...","outcome":"apply","action":"reuse","candidate_id":"...","existing_handle":{{...}},"reason_text":"brief"}}
+defer: {{"statement_id":"...","outcome":"defer","reason_text":"brief"}}
+Decisions must be ordered exactly like Statements. Two new Statements must not choose the same empty candidate.
+statements: {json.dumps(statement_wire, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
+geometry_view: {json.dumps(view, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+    return {
+        "status": "batch_placement_decision", "prompt": prompt,
+        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+        "view_fingerprint": view["view_fingerprint"], "statements": statement_wire,
+        "candidate_count": len(view["candidates"]), "candidates": view["candidates"],
+    }
+
+
+def apply_batch_placement(
+    raw_response: object,
+    statements: object,
+    memory_workspace: object,
+    request_id: object,
+    view_fingerprint: object,
+    max_existing: object = 16,
+    max_empty: object = 16,
+) -> dict[str, object]:
+    if type(raw_response) is not str or type(statements) is not list or type(request_id) is not str or type(view_fingerprint) is not str:
+        raise FormationAdapterError("invalid_batch", "batch placement apply fields are invalid")
+    try:
+        repaired, diagnostics = repair_dream_json(raw_response)
+        value = json.loads(repaired)
+    except json.JSONDecodeError as exc:
+        raise FormationAdapterError("invalid_json", str(exc)) from exc
+    if type(value) is not dict or set(value) != {"schema_version", "decisions"} or value.get("schema_version") != BATCH_PLACEMENT_SCHEMA_VERSION or type(value.get("decisions")) is not list:
+        raise FormationAdapterError("invalid_batch", "invalid batch placement envelope")
+    try:
+        with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
+            result = loop.apply_batch_placements(statements, value["decisions"], request_id, view_fingerprint, max_existing, max_empty)
+    except (TypeError, ValueError, KeyError, RuntimeError) as exc:
+        raise FormationAdapterError("invalid_batch", str(exc)) from exc
+    return {**result, "json_repair": diagnostics}
 
 
 def _workspace(path: object) -> Path:

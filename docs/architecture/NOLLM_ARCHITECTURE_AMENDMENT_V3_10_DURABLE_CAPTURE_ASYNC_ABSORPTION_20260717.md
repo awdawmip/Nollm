@@ -16,7 +16,7 @@ visible user and assistant turn
   -> Access Statement, HandleBinding, and Core Atom
 ```
 
-Until Admission completes, a bounded time-ordered scan of recent Capture files provides read-your-recent-writes. It uses scope, age, count, and character budgets only. It has no query, keyword, topic, source, vector, graph, or object relation index. Admission or a terminal no-memory result removes a Capture from active Pending injection while preserving the immutable original.
+Until Admission completes, a bounded time-ordered scan of recent Capture files provides read-your-recent-writes. It uses scope, age, count, and character budgets only. It has no query, keyword, topic, source, vector, graph, or object relation index. Admission, terminal no-memory, or terminal defer removes a Capture from active Pending injection while preserving the immutable original.
 
 ## Ownership
 
@@ -32,9 +32,11 @@ Capture is not an Access Statement and is not a Core fact. State events never ov
 
 Pending Recall performs zero Provider, bridge, Surface, and Core calls. Admitted Recall projects a finite geometry-ordered physical entry view. A mechanical singleton uses zero hidden calls; otherwise one hidden semantic call selects one supplied entry or NONE. Core then recalls that single entry and the bounded Locality is injected directly into the main agent. No second Statement-selection agent runs.
 
-## Batch Limitation
+## Batch Admission
 
-Batch Formation is one hidden call for multiple Captures. The initial implementation preserves the existing per-Statement Placement operation and therefore does not yet satisfy the common batch Placement call budget. This is reported as an active Gate D limitation and cannot be described as validated until Provider-backed Live evidence proves the final topology.
+Batch Formation uses one hidden call for multiple Captures. Every formed Statement carries the sorted Capture references for its bounded source batch. One frozen finite geometry view feeds one batch Placement call. Access validates every decision against that view, then applies each Statement through its existing independent atomic transaction and durable reopen check. A failed Statement is reported without rolling back or contaminating successful independent Admissions. Replay recognizes an already bound Statement before attempting another Core write. Destructive revision remains on the existing separate bounded confirmation path.
+
+This topology satisfies the deterministic common-case call budget. Provider-backed Windows Live must still prove that the Host executes the same one-Formation and one-Placement topology before the task can be marked fully validated.
 
 ## Compatibility
 

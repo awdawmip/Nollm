@@ -302,15 +302,38 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!formation?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "batch Formation failed" }));
     const parsed = await parseDreamAttempt(config, request, formation.raw, `dream-result-${batchId}`, "batch", formation.runId, `capture-batch:${batchId}`, Date.now() - formation.providerMs, formation.resolved, built.prompt_version);
     if (parsed.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(parsed.error ?? "batch Formation parse failed") }));
-    const statements = Array.isArray(parsed.statements) ? parsed.statements : [];
+    const sourceCaptureRefs = records.map(record => `capture:${record.capture_id}`).sort();
+    const statements = Array.isArray(parsed.statements) ? parsed.statements.map(statement => {
+      if (!statement || typeof statement !== "object") return statement;
+      const rawContext = (statement as Record<string, unknown>).context_refs;
+      const current = Array.isArray(rawContext)
+        ? rawContext.filter((item: unknown): item is string => typeof item === "string")
+        : [];
+      return { ...(statement as Record<string, unknown>), context_refs: [...new Set([...current, ...sourceCaptureRefs])].sort() };
+    }) : [];
     if (!statements.length) return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
-    for (const [index, statement] of statements.entries()) {
-      await completePlacement(api, config, `capture-batch:${batchId}`, statement, model!, batchId, {
-        turnId: batchId, turnVisibleEpochMs: Math.min(...records.map(record => record.captured_epoch_ms)), turnVisibleSourceValid: false,
-        statementIndex: index, statementCount: statements.length, formationProviderTotalMs: formation.providerMs,
-        formationLocalTotalMs: 0, deprecatedCumulativeFormationMs: formation.providerMs,
-      });
+    const placementBuilt = await bridge(config, {
+      action: "build_batch_placement_prompt", request_id: `placement-${batchId}`, statements,
+      memory_workspace: configuredMemoryWorkspace, max_existing: 16, max_empty: 16,
+    });
+    if (placementBuilt.ok !== true || typeof placementBuilt.prompt !== "string" || typeof placementBuilt.view_fingerprint !== "string") {
+      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(placementBuilt.error ?? "batch Placement prompt failed") }));
     }
+    const placement = await runDreamSubagent(api, config, placementBuilt.prompt, model, `${batchId}:placement`);
+    if (!placement?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "batch Placement failed" }));
+    const applied = await bridge(config, {
+      action: "apply_batch_placement", request_id: `placement-${batchId}`, raw_model_response: placement.raw,
+      statements, memory_workspace: configuredMemoryWorkspace, view_fingerprint: placementBuilt.view_fingerprint,
+      max_existing: 16, max_empty: 16,
+    });
+    if (applied.ok !== true || !Array.isArray(applied.outcomes)) {
+      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(applied.message ?? applied.error ?? "batch Placement apply failed") }));
+    }
+    const errors = applied.outcomes.filter((item: unknown) => !item || typeof item !== "object" || (item as Record<string, unknown>).outcome === "error");
+    const deferred = applied.outcomes.filter((item: unknown) => item && typeof item === "object" && (item as Record<string, unknown>).outcome === "defer");
+    await trace(config, { status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch", batch_id: batchId, capture_count: records.length, statement_count: statements.length, formation_provider_calls: 1, placement_provider_calls: 1, error_statement_count: errors.length, deferred_statement_count: deferred.length, formation_provider_ms: formation.providerMs, placement_provider_ms: placement.providerMs });
+    if (errors.length) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" }));
+    if (deferred.length) return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: "one or more batch Statements deferred" }));
     const statementIds = statements.flatMap(statement => statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? [(statement as Record<string, unknown>).statement_id as string] : []);
     const verified = await bridge(config, { action: "verify_admitted_statements", statement_ids: statementIds, memory_workspace: configuredMemoryWorkspace });
     if (verified.ok !== true || verified.reopen_verified !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(verified.message ?? verified.error ?? "batch Admission incomplete") }));
@@ -336,6 +359,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       scopeKey: captureScope(context, config.capture_scope_id ?? "local-default-user"), sessionKey,
       turnIdentity: runId ?? createHash("sha256").update(`${user}\0${assistant}`).digest("hex"),
       userUtf8: user, assistantUtf8: assistant, modelRef: configuredModel(model),
+      profileId: config.capture_scope_id ?? "local-default-user", mainRunIdentity: runId ?? sessionKey,
+      endpointKind: "visible_assistant_delivery", pluginVersion: "0.13.0",
     });
     await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
     scheduleAbsorption();

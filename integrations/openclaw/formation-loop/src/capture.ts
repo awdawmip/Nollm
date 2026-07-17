@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 
 export const CAPTURE_SCHEMA = "nollm_openclaw_durable_capture_v1";
 export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
+export const CAPTURE_PLUGIN_VERSION = "0.13.0";
 
 export type CaptureInput = {
   scopeKey: string;
@@ -13,18 +14,36 @@ export type CaptureInput = {
   assistantUtf8: string;
   modelRef?: string;
   capturedEpochMs?: number;
+  profileId?: string;
+  mainRunIdentity?: string;
+  endpointKind?: string;
+  visibleEpochMs?: number;
+  hostVersion?: string;
+  pluginVersion?: string;
 };
 
 export type CaptureRecord = {
   schema_version: typeof CAPTURE_SCHEMA;
   capture_id: string;
   scope_id_sha256: string;
+  workspace_id_sha256: string;
   session_key_sha256: string;
   turn_identity_sha256: string;
+  main_run_id_sha256: string;
+  profile_id: string;
+  visible_endpoint_kind: string;
+  visible_epoch_ms: number;
   captured_epoch_ms: number;
   content_sha256: string;
+  user_role: "user";
+  assistant_role: "assistant";
+  turn_order: ["user", "assistant"];
   user_utf8: string;
   assistant_utf8: string;
+  user_utf8_bytes: number;
+  assistant_utf8_bytes: number;
+  host_version: string;
+  plugin_version: string;
   model_ref?: string;
 };
 
@@ -97,10 +116,16 @@ async function publishImmutable(path: string, bytes: string): Promise<"created" 
 
 function parseRecord(text: string): CaptureRecord {
   const value = JSON.parse(text) as CaptureRecord;
-  if (value.schema_version !== CAPTURE_SCHEMA || typeof value.capture_id !== "string" || typeof value.scope_id_sha256 !== "string" ||
+  if (value.schema_version !== CAPTURE_SCHEMA || typeof value.capture_id !== "string" || typeof value.scope_id_sha256 !== "string" || typeof value.workspace_id_sha256 !== "string" ||
       typeof value.session_key_sha256 !== "string" || typeof value.turn_identity_sha256 !== "string" ||
+      typeof value.main_run_id_sha256 !== "string" || typeof value.profile_id !== "string" ||
+      typeof value.visible_endpoint_kind !== "string" || typeof value.visible_epoch_ms !== "number" ||
       typeof value.captured_epoch_ms !== "number" || typeof value.content_sha256 !== "string" ||
-      typeof value.user_utf8 !== "string" || typeof value.assistant_utf8 !== "string" || (value.model_ref !== undefined && typeof value.model_ref !== "string")) throw new Error("invalid Capture record");
+      value.user_role !== "user" || value.assistant_role !== "assistant" || !Array.isArray(value.turn_order) || value.turn_order.join("\0") !== "user\0assistant" ||
+      typeof value.user_utf8 !== "string" || typeof value.assistant_utf8 !== "string" ||
+      value.user_utf8_bytes !== Buffer.byteLength(value.user_utf8, "utf8") || value.assistant_utf8_bytes !== Buffer.byteLength(value.assistant_utf8, "utf8") ||
+      typeof value.host_version !== "string" || typeof value.plugin_version !== "string" ||
+      (value.model_ref !== undefined && typeof value.model_ref !== "string")) throw new Error("invalid Capture record");
   return value;
 }
 
@@ -126,6 +151,13 @@ export class CaptureStore {
     const started = performance.now();
     assertText(input.scopeKey, "scopeKey"); assertText(input.sessionKey, "sessionKey"); assertText(input.turnIdentity, "turnIdentity");
     assertText(input.userUtf8, "userUtf8"); assertText(input.assistantUtf8, "assistantUtf8");
+    const profileId = input.profileId ?? "default";
+    const mainRunIdentity = input.mainRunIdentity ?? input.turnIdentity;
+    const endpointKind = input.endpointKind ?? "visible_assistant_delivery";
+    const hostVersion = input.hostVersion ?? "unknown";
+    const pluginVersion = input.pluginVersion ?? CAPTURE_PLUGIN_VERSION;
+    assertText(profileId, "profileId"); assertText(mainRunIdentity, "mainRunIdentity"); assertText(endpointKind, "endpointKind");
+    assertText(hostVersion, "hostVersion"); assertText(pluginVersion, "pluginVersion");
     const scopeHash = sha256(input.scopeKey);
     const sessionHash = sha256(input.sessionKey);
     const turnHash = sha256(input.turnIdentity);
@@ -141,10 +173,15 @@ export class CaptureStore {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
     const record: CaptureRecord = {
-      schema_version: CAPTURE_SCHEMA, capture_id: captureId, scope_id_sha256: scopeHash,
+      schema_version: CAPTURE_SCHEMA, capture_id: captureId, scope_id_sha256: scopeHash, workspace_id_sha256: scopeHash,
       session_key_sha256: sessionHash, turn_identity_sha256: turnHash,
+      main_run_id_sha256: sha256(mainRunIdentity), profile_id: profileId,
+      visible_endpoint_kind: endpointKind, visible_epoch_ms: input.visibleEpochMs ?? input.capturedEpochMs ?? Date.now(),
       captured_epoch_ms: input.capturedEpochMs ?? Date.now(), content_sha256: contentHash,
-      user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8, model_ref: input.modelRef,
+      user_role: "user", assistant_role: "assistant", turn_order: ["user", "assistant"],
+      user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8,
+      user_utf8_bytes: Buffer.byteLength(input.userUtf8, "utf8"), assistant_utf8_bytes: Buffer.byteLength(input.assistantUtf8, "utf8"),
+      host_version: hostVersion, plugin_version: pluginVersion, model_ref: input.modelRef,
     };
     const result = await publishImmutable(this.capturePath(captureId), canonical(record));
     if (result === "created") await this.appendEvent(captureId, "captured", { attempt: 0, eventEpochMs: record.captured_epoch_ms });
@@ -205,7 +242,7 @@ export class CaptureStore {
     const records = (await this.allRecords()).filter(record => record.scope_id_sha256 === scopeHash && now - record.captured_epoch_ms <= policy.maxAgeMs).reverse();
     for (const record of records) {
       const state = await this.currentState(record.capture_id);
-      if (state.status === "admitted" || state.status === "no_memory") continue;
+      if (state.status === "admitted" || state.status === "no_memory" || state.status === "deferred") continue;
       const size = record.user_utf8.length + record.assistant_utf8.length;
       if (selected.length >= policy.maxCaptures || chars + size > policy.maxChars) continue;
       selected.push(record); chars += size;
@@ -253,11 +290,13 @@ export class AbsorptionWorker {
       throw error;
     }
     try {
+      const available = await Promise.all((await this.store.allRecords()).map(async record => ({ record, state: await this.store.currentState(record.capture_id) })));
+      const retryBatchId = available.find(item => item.state.status === "retry" && item.state.batch_id)?.state.batch_id;
       const candidates: CaptureRecord[] = [];
       let chars = 0;
-      for (const record of await this.store.allRecords()) {
-        const state = await this.store.currentState(record.capture_id);
+      for (const { record, state } of available) {
         const recoverable = state.status === "captured" || state.status === "retry" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs);
+        if (retryBatchId && state.batch_id !== retryBatchId) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;
         if (!recoverable || candidates.length >= this.batchMaxCaptures || chars + size > this.batchMaxChars) continue;
         candidates.push(record); chars += size;

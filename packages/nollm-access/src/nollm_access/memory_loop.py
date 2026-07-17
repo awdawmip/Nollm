@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from time import perf_counter_ns
+import hashlib
+import json
 
 from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, PhysicalFieldScope
 
@@ -15,6 +17,7 @@ from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
 
 
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
+BATCH_PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_batch_placement_v1"
 DEFAULT_FIELD_SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
 _Q32_ONE = 1 << 32
 _MIN_FRONTIER_RING = 4
@@ -87,6 +90,15 @@ class AccessMemoryLoop:
     def candidate_statement_context(self, candidates: object) -> list[dict[str, object]]:
         if type(candidates) is not list or len(candidates) > 8:
             raise TypeError("candidates must be a bounded list")
+        return self._candidate_statement_context(candidates, 8)
+
+    def _candidate_statement_context(
+        self,
+        candidates: object,
+        max_candidates: int,
+    ) -> list[dict[str, object]]:
+        if type(candidates) is not list or len(candidates) > max_candidates:
+            raise TypeError("candidates must be a bounded list")
         handle_store = FileHandleStore(self._workspace)
         statement_store = FileStatementStore(self._workspace)
         context = []
@@ -127,7 +139,7 @@ class AccessMemoryLoop:
                 key=lambda item: item.stable_key(),
             ))[:max_entries]
             candidates = [self._candidate(core, f"physical-entry:{index}", "existing_cell", cell) for index, cell in enumerate(cells)]
-        contexts = self.candidate_statement_context(candidates)
+        contexts = self._candidate_statement_context(candidates, max_entries)
         statements = {item["candidate_id"]: item["statements"] for item in contexts}
         return [{
             "entry_id": item["candidate_id"],
@@ -135,6 +147,158 @@ class AccessMemoryLoop:
             "occupancy_count": item["occupancy"]["count"],
             "statements": statements[item["candidate_id"]],
         } for item in candidates]
+
+    def batch_placement_view(self, request_id: str, max_existing: int = 16, max_empty: int = 16) -> dict[str, object]:
+        self._require_request(request_id)
+        if type(max_existing) is not int or not 1 <= max_existing <= 32 or type(max_empty) is not int or not 1 <= max_empty <= 32:
+            raise ValueError("batch placement view budgets are invalid")
+        with CoreRuntime(self._workspace) as core:
+            state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
+            occupied = tuple(sorted(
+                (cell for cell in core.occupied_cells() if DEFAULT_FIELD_SCOPE.contains(cell)),
+                key=lambda item: item.stable_key(),
+            ))
+            selected_occupied = occupied[:max_existing]
+            candidates = [self._candidate(core, f"batch:existing:{index}", "existing_cell", cell) for index, cell in enumerate(selected_occupied)]
+            occupied_keys = {cell.stable_key() for cell in occupied}
+            empty: list[GeometryAddress] = []
+            if not occupied:
+                origin = GeometryAddress(DEFAULT_FIELD_SCOPE.profile_id, DEFAULT_FIELD_SCOPE.chart_id, DEFAULT_FIELD_SCOPE.reference_layer, 0, 0)
+                empty.append(origin)
+                empty.extend(sorted(origin.lateral(_MIN_FRONTIER_RING), key=lambda item: item.stable_key())[:max_empty - 1])
+            else:
+                for cell in selected_occupied:
+                    for candidate in sorted(cell.lateral(1), key=lambda item: item.stable_key()):
+                        if candidate.stable_key() in occupied_keys or candidate in empty:
+                            continue
+                        empty.append(candidate)
+                        if len(empty) >= max_empty:
+                            break
+                    if len(empty) >= max_empty:
+                        break
+                frontier = self._expand_surface_frontier(DEFAULT_FIELD_SCOPE, occupied)
+                if frontier not in empty:
+                    empty.append(frontier)
+            for index, cell in enumerate(empty[:max_empty]):
+                relation = "expand_surface" if all(
+                    self._physical_distance_squared_q32(cell, occupied_cell) >= _MIN_FRONTIER_DISTANCE_SQUARED_Q32
+                    for occupied_cell in occupied
+                ) else "lateral_ring_1"
+                candidates.append(self._candidate(core, f"batch:empty:{index}", relation, cell))
+        contexts = self._candidate_statement_context(candidates, max_existing + max_empty)
+        statements = {item["candidate_id"]: item["statements"] for item in contexts}
+        projected = [{**item, "statements": statements[item["candidate_id"]]} for item in candidates]
+        fingerprint = hashlib.sha256(json.dumps(
+            {"core_state_sha256": state_sha256, "candidates": projected},
+            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")).hexdigest()
+        return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "core_state_sha256": state_sha256, "view_fingerprint": fingerprint, "candidates": projected}
+
+    def apply_batch_placements(
+        self,
+        statements: object,
+        decisions: object,
+        request_id: str,
+        view_fingerprint: str,
+        max_existing: int = 16,
+        max_empty: int = 16,
+    ) -> dict[str, object]:
+        self._require_request(request_id)
+        if type(statements) is not list or not statements or type(decisions) is not list or len(decisions) != len(statements):
+            raise TypeError("batch Statements and decisions must be equal non-empty lists")
+        formed = [_statement if type(_statement) is MemoryStatement else MemoryStatement.from_mapping(_statement) for _statement in statements]
+        if len({item.statement_id for item in formed}) != len(formed):
+            raise ValueError("batch Statement identities must be unique")
+        view = self.batch_placement_view(request_id + ":view", max_existing, max_empty)
+        if type(view_fingerprint) is not str or view_fingerprint != view["view_fingerprint"]:
+            raise ValueError("batch placement view changed before apply")
+        candidates = {item["candidate_id"]: item for item in view["candidates"]}
+        operations = []
+        outcomes = []
+        used_empty = set()
+        for statement, raw in zip(formed, decisions, strict=True):
+            if type(raw) is not dict or raw.get("statement_id") != statement.statement_id or type(raw.get("outcome")) is not str or type(raw.get("reason_text")) is not str:
+                raise ValueError("batch decision does not bind its Statement")
+            if raw["outcome"] == "defer":
+                if set(raw) != {"statement_id", "outcome", "reason_text"}:
+                    raise ValueError("deferred batch decision has invalid fields")
+                outcomes.append({"statement_id": statement.statement_id, "outcome": "defer", "reason": raw["reason_text"]})
+                continue
+            if raw["outcome"] != "apply" or type(raw.get("action")) is not str or type(raw.get("candidate_id")) is not str:
+                raise ValueError("batch decision has invalid outcome")
+            try:
+                candidate = candidates[raw["candidate_id"]]
+            except KeyError as exc:
+                raise ValueError("batch decision selected an unavailable candidate") from exc
+            action = raw["action"]
+            address = GeometryAddress.from_mapping(candidate["geometry_address"])
+            if action in {"new_local", "expand_surface"}:
+                if set(raw) != {"statement_id", "outcome", "action", "candidate_id", "reason_text"}:
+                    raise ValueError("new batch placement has invalid fields")
+                if action == "expand_surface" and candidate["relation_kind"] != "expand_surface":
+                    raise ValueError("expand_surface requires a frontier candidate")
+                if candidate["occupancy"]["count"] == 0 and candidate["candidate_id"] in used_empty:
+                    raise ValueError("batch cannot place two new Statements into one empty candidate")
+                if candidate["occupancy"]["count"] == 0:
+                    used_empty.add(candidate["candidate_id"])
+                decision = AccessDecision(f"batch:{request_id}:{statement.statement_id}", statement.statement_id, "new", address, None, None, raw["reason_text"], "llm")
+            elif action == "reuse":
+                if set(raw) != {"statement_id", "outcome", "action", "candidate_id", "existing_handle", "reason_text"}:
+                    raise ValueError("reuse batch placement has invalid fields")
+                handle = AtomHandle.from_mapping(raw["existing_handle"])
+                if handle.to_mapping() not in candidate["existing_handles"]:
+                    raise ValueError("reuse Handle is not supplied by the selected candidate")
+                decision = AccessDecision(f"batch:{request_id}:{statement.statement_id}", statement.statement_id, "reuse", None, handle, None, raw["reason_text"], "llm")
+            elif action == "revision_current":
+                raise ValueError("batch revision_current requires the separate bounded confirmation path")
+            else:
+                raise ValueError("unsupported batch placement action")
+            operations.append((statement, decision))
+            outcomes.append({"statement_id": statement.statement_id, "outcome": "pending_apply", "action": action})
+        verified_by_statement = {}
+        statement_store = FileStatementStore(self._workspace)
+        for statement, decision in operations:
+            existed_before = statement_store.exists(statement.statement_id)
+            if existed_before:
+                try:
+                    with self._runtime() as access:
+                        existing_handle = access.saved_handle(statement.statement_id)
+                    durable = self._durable_readback(statement, existing_handle)
+                except KeyError:
+                    pass
+                else:
+                    verified_by_statement[statement.statement_id] = {
+                        "statement_id": statement.statement_id,
+                        "outcome": "applied",
+                        "action": "replay_existing",
+                        "durable_commit": durable,
+                    }
+                    continue
+            try:
+                with self._runtime() as access:
+                    access.capture(statement)
+                    result = access.apply(decision)
+                durable = self._durable_readback(statement, result)
+            except Exception as error:
+                if not existed_before and statement_store.exists(statement.statement_id):
+                    statement_store.discard_new(statement)
+                verified_by_statement[statement.statement_id] = {
+                    "statement_id": statement.statement_id,
+                    "outcome": "error",
+                    "error": str(error),
+                }
+            else:
+                verified_by_statement[statement.statement_id] = {
+                    "statement_id": statement.statement_id,
+                    "outcome": "applied",
+                    "action": next(item["action"] for item in outcomes if item["statement_id"] == statement.statement_id),
+                    "durable_commit": durable,
+                }
+        verified = [
+            verified_by_statement.get(outcome["statement_id"], outcome)
+            for outcome in outcomes
+        ]
+        return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "view_fingerprint": view_fingerprint, "outcomes": verified}
 
     def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
         self._require_request(request_id)
