@@ -39,8 +39,9 @@ def build_dream_prompt(request: DreamFormationRequest, prompt_version: str = DRE
     refinement = ""
     if prompt_version in {"dream-v2", "dream-json-p1", "dream-json-p2", "dream-json-p3"}:
         refinement = """
-Prefer explicit user preferences, stable constraints, and facts likely to help in a later conversation.
-Defer one-off requests, transient status, pleasantries, and facts introduced only by the assistant reply.
+Form every independent, complete, Evidence-backed proposition even when it is short-lived, ordinary, or unlikely to matter later.
+Weather, appointments, cancellations, temporary plans, and subjective observations are valid complete propositions.
+Defer only empty or tool noise, material with no standalone proposition, or an exact repetition with no new information.
 Do not turn an assistant promise to remember something into a user fact."""
     if prompt_version == "dream-json-p1":
         refinement += """
@@ -52,10 +53,10 @@ Schema discipline: the only valid envelope fields are the fields in this canonic
         refinement += """
 Before responding, silently verify that the output is one parseable JSON object with exactly the permitted fields. Emit only that verified object."""
     return f"""You are a private background memory-forming agent. The user will never see this run.
-Decide whether the bounded conversation material contains durable information worth retaining.
+Identify complete standalone propositions in the bounded conversation material. Never predict importance, durability, or future usefulness.
 You may rewrite, split, merge, remove conversational phrasing, and resolve references using only supplied material.
 Produce self-contained statements. Preserve important negation, conditions, time, and uncertainty.
-Do not invent facts. When uncertain or nothing is durable, defer. Do not reveal hidden reasoning.{refinement}
+Do not invent facts. When no complete proposition exists, defer. Do not reveal hidden reasoning.{refinement}
 Do not call tools. Return exactly one raw JSON object with no markdown or commentary.
 Schema version: {DREAM_SCHEMA_VERSION}
 emit: {{"schema_version":"{DREAM_SCHEMA_VERSION}","outcome":"emit","drafts":[{{"draft_id":"d1","content_utf8":"...","scope_hint":null,"stability_hint":null,"uncertainty_hint":null}}],"defer_reason":null}}

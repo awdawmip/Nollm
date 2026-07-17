@@ -5,10 +5,12 @@ from time import perf_counter_ns
 import hashlib
 import json
 
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, PhysicalFieldScope
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope
 
 from .handle_store import FileHandleStore
+from .locality import LocalityAtlas, LocalityCandidateRef
 from .placement_contract import AccessDecision, ProvisionalRevisionDecision, RevisionConfirmationResult
+from .recall_lens import JunctionSemanticPlan
 from .runtime import AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore
@@ -194,6 +196,48 @@ class AccessMemoryLoop:
         ).encode("utf-8")).hexdigest()
         return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "core_state_sha256": state_sha256, "view_fingerprint": fingerprint, "candidates": projected}
 
+    def build_locality_atlas(
+        self,
+        request_id: str,
+        candidate_limit: int = 32,
+        scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
+    ) -> LocalityAtlas:
+        self._require_request(request_id)
+        if type(candidate_limit) is not int or not 1 <= candidate_limit <= 64:
+            raise ValueError("candidate_limit must be in [1,64]")
+        if type(scope) is not PhysicalFieldScope:
+            raise TypeError("scope must be PhysicalFieldScope")
+        with CoreRuntime(self._workspace) as core:
+            state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
+            occupied = tuple(sorted((cell for cell in core.occupied_cells() if scope.contains(cell)), key=lambda item: item.stable_key()))
+            occupied_set = frozenset(occupied)
+            candidates: list[LocalityCandidateRef] = []
+            for index, cell in enumerate(occupied[:candidate_limit]):
+                neighbors = cell.lateral(1)
+                occupied_neighbors = sum(neighbor in occupied_set for neighbor in neighbors)
+                raw = self._candidate(core, f"locality:occupied:{index}", "existing_cell", cell)
+                context = self._candidate_statement_context([raw], 1)[0]["statements"]
+                candidates.append(LocalityCandidateRef(
+                    raw["candidate_id"], cell, True, occupied_neighbors < 6,
+                    6 - occupied_neighbors, occupied_neighbors, tuple(context),
+                ))
+            remaining = candidate_limit - len(candidates)
+            if remaining:
+                primary = occupied[: min(8, len(occupied))]
+                frontier = core.junction_candidates(JunctionRequest(scope, primary, (), 4, min(8, remaining)))
+                for item in frontier:
+                    candidates.append(LocalityCandidateRef(
+                        item.candidate_id, item.cell, False, item.boundary,
+                        item.free_face_count, item.occupied_neighbor_count, (),
+                    ))
+        payload = {
+            "field_scope": scope.to_mapping(),
+            "core_state_sha256": state_sha256,
+            "candidates": [item.to_mapping() for item in candidates],
+        }
+        fingerprint = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        return LocalityAtlas(request_id, scope, state_sha256, fingerprint, tuple(candidates))
+
     def apply_batch_placements(
         self,
         statements: object,
@@ -299,6 +343,162 @@ class AccessMemoryLoop:
             for outcome in outcomes
         ]
         return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "view_fingerprint": view_fingerprint, "outcomes": verified}
+
+    def apply_junction_plans(
+        self,
+        plans: tuple[JunctionSemanticPlan, ...],
+        atlas: LocalityAtlas,
+        request_id: str,
+        revision_confirmations: object = None,
+    ) -> dict[str, object]:
+        """Apply validated semantic plans while keeping exact Cell selection in Core."""
+        self._require_request(request_id)
+        if type(plans) is not tuple or not plans or any(type(item) is not JunctionSemanticPlan for item in plans):
+            raise TypeError("plans must be a non-empty JunctionSemanticPlan tuple")
+        if type(atlas) is not LocalityAtlas:
+            raise TypeError("atlas must be LocalityAtlas")
+        if revision_confirmations is None:
+            confirmations: dict[str, object] = {}
+        elif type(revision_confirmations) is dict and all(type(key) is str for key in revision_confirmations):
+            confirmations = revision_confirmations
+        else:
+            raise TypeError("revision_confirmations must be a Statement-keyed mapping")
+
+        confirmed_revision_replay = all(
+            plan.action == "revision_current" and plan.statement.statement_id in confirmations
+            for plan in plans
+        )
+        if not confirmed_revision_replay:
+            reopened = self.build_locality_atlas(request_id + ":reopen", len(atlas.candidates), atlas.scope)
+            if reopened.core_state_sha256 != atlas.core_state_sha256 or reopened.atlas_fingerprint != atlas.atlas_fingerprint:
+                raise ValueError("Locality Atlas changed before Junction apply")
+        candidate_map = {item.candidate_id: item for item in atlas.candidates}
+        prepared: list[tuple[JunctionSemanticPlan, AccessDecision | None, dict[str, object] | None]] = []
+        for plan in plans:
+            if plan.action == "defer":
+                prepared.append((plan, None, None))
+                continue
+            primary = candidate_map[plan.primary_candidate_id]
+            contacts = tuple(sorted(
+                (candidate_map[item].geometry_address for item in plan.contact_candidate_ids),
+                key=lambda cell: cell.stable_key(),
+            ))
+            if plan.action in {"new_local", "expand_surface"}:
+                prepared.append((plan, None, {
+                    "primary": primary.geometry_address,
+                    "contacts": contacts,
+                }))
+                continue
+            handle = plan.existing_handle
+            assert handle is not None
+            supplied = tuple(
+                item.get("handle") for item in primary.representative_statements
+                if type(item) is dict and type(item.get("handle")) is dict
+            )
+            if handle.to_mapping() not in supplied:
+                raise ValueError("existing Handle is not supplied by the selected Locality")
+            action = "reuse" if plan.action == "reuse" else "revision_current"
+            decision = AccessDecision(
+                f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
+                action, None, handle, None, plan.reason_text, "llm",
+            )
+            prepared.append((plan, decision, None))
+
+        outcomes = []
+        for plan, decision, placement in prepared:
+            if decision is None and placement is not None and "primary" in placement:
+                with CoreRuntime(self._workspace) as core:
+                    candidates = core.junction_candidates(JunctionRequest(
+                        atlas.scope, (placement["primary"],), placement["contacts"], 4, 8,
+                    ))
+                if not candidates:
+                    outcomes.append({
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "defer",
+                        "reason": "no legal Junction Cell",
+                    })
+                    continue
+                decision = AccessDecision(
+                    f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
+                    "new", candidates[0].cell, None, None, plan.reason_text, "llm",
+                )
+                placement = {"junction": candidates[0].to_mapping()}
+            if decision is None:
+                outcomes.append({
+                    "statement_id": plan.statement.statement_id,
+                    "source_capture_ids": list(plan.source_capture_ids),
+                    "outcome": "defer",
+                    "reason": plan.reason_text if placement is None else placement["reason"],
+                })
+                continue
+            confirmation_value = confirmations.get(plan.statement.statement_id)
+            if decision.action == "revision_current" and confirmation_value is None:
+                provisional = self._provisional_revision(plan.statement, decision, {"candidate_id": plan.primary_candidate_id})
+                outcomes.append({
+                    "statement_id": plan.statement.statement_id,
+                    "source_capture_ids": list(plan.source_capture_ids),
+                    "outcome": "revision_confirmation_required",
+                    "provisional_revision": provisional.to_mapping(),
+                })
+                continue
+            if decision.action == "revision_current":
+                confirmation = RevisionConfirmationResult.from_mapping(confirmation_value)
+                provisional = self._provisional_revision(plan.statement, decision, {"candidate_id": plan.primary_candidate_id})
+                if confirmation.provisional_id != provisional.provisional_id or not confirmation.confirmed:
+                    outcomes.append({
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "defer",
+                        "reason": "revision was not confirmed",
+                    })
+                    continue
+            statement_store = FileStatementStore(self._workspace)
+            existed_before = statement_store.exists(plan.statement.statement_id)
+            if existed_before:
+                try:
+                    with self._runtime() as access:
+                        existing_handle = access.saved_handle(plan.statement.statement_id)
+                    durable = self._durable_readback(plan.statement, existing_handle)
+                except KeyError:
+                    pass
+                else:
+                    outcomes.append({
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "applied",
+                        "action": "replay_existing",
+                        "durable_commit": durable,
+                    })
+                    continue
+            try:
+                with self._runtime() as access:
+                    access.capture(plan.statement)
+                    handle = access.apply(decision)
+                durable = self._durable_readback(plan.statement, handle)
+            except Exception as error:
+                if not existed_before and statement_store.exists(plan.statement.statement_id):
+                    statement_store.discard_new(plan.statement)
+                outcomes.append({
+                    "statement_id": plan.statement.statement_id,
+                    "source_capture_ids": list(plan.source_capture_ids),
+                    "outcome": "error",
+                    "error": str(error),
+                })
+            else:
+                outcomes.append({
+                    "statement_id": plan.statement.statement_id,
+                    "source_capture_ids": list(plan.source_capture_ids),
+                    "outcome": "applied",
+                    "action": plan.action,
+                    "durable_commit": durable,
+                    **({} if placement is None else placement),
+                })
+        return {
+            "schema_version": "nollm_access_junction_apply_v1",
+            "atlas_fingerprint": atlas.atlas_fingerprint,
+            "outcomes": outcomes,
+        }
 
     def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
         self._require_request(request_id)

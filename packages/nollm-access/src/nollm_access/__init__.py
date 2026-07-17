@@ -25,6 +25,7 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
+from .locality import LOCALITY_ATLAS_SCHEMA_VERSION, LocalityAtlas, LocalityCandidateRef
 from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE, RevisionTargetExcludedError
 from .placement_contract import (
     ACTIONS,
@@ -37,6 +38,7 @@ from .placement_contract import (
     placement_action_semantics_prompt,
 )
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
+from .recall_lens import DREAM_SCULPTOR_SCHEMA_VERSION, JunctionSemanticPlan, LensBasisSpan, RecallLens, validate_dream_sculptor_plans
 from .runtime import AccessConsistencyError, AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore, StatementStore
@@ -98,6 +100,14 @@ __all__ = [
     "FileHandleStore",
     "FileBindingStore",
     "HandleBinding",
+    "LOCALITY_ATLAS_SCHEMA_VERSION",
+    "LocalityAtlas",
+    "LocalityCandidateRef",
+    "DREAM_SCULPTOR_SCHEMA_VERSION",
+    "JunctionSemanticPlan",
+    "LensBasisSpan",
+    "RecallLens",
+    "validate_dream_sculptor_plans",
     "FORMATION_ACTORS",
     "FORMATION_OUTCOMES",
     "MAX_STATEMENTS",

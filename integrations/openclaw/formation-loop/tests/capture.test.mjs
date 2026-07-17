@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, unlink } from "node:fs/promises";
+import { mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AbsorptionWorker, CaptureStore } from "../dist/capture.js";
@@ -27,6 +27,26 @@ test("Capture publishes exact immutable bytes and duplicate hooks replay", () =>
   assert.equal(record.assistant_utf8_bytes, Buffer.byteLength(record.assistant_utf8, "utf8"));
   assert.equal(record.visible_endpoint_kind, "visible_assistant_delivery");
   assert.equal(record.plugin_version, "0.13.0");
+}));
+
+test("one scope workspace turn identity cannot publish conflicting content", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const first = await store.publish(input({ workspaceKey: "workspace-a" }));
+  await assert.rejects(
+    store.publish(input({ workspaceKey: "workspace-a", assistantUtf8: "different answer" })),
+    /immutable Capture conflict/,
+  );
+  assert.equal((await store.allRecords()).length, 1);
+  assert.equal((await store.allRecords())[0].capture_id, first.record.capture_id);
+}));
+
+test("corrupt Capture files are skipped with explicit diagnostics", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  await store.publish(input());
+  await writeFile(join(root, "captures", "corrupt.json"), "{bad", "utf8");
+  const scan = await store.scanRecords();
+  assert.equal(scan.records.length, 1);
+  assert.deepEqual(scan.diagnostics.map(item => item.file), ["corrupt.json"]);
 }));
 
 test("missing sidecar is reconstructed from immutable Capture", () => workspace(async root => {
@@ -71,6 +91,22 @@ test("worker batches captures, serializes execution, and records terminal states
   assert.equal((await store.currentState(two.record.capture_id)).status, "admitted");
 }));
 
+test("worker never mixes scope workspace or profile partitions", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const anchor = await store.publish(input({ workspaceKey: "workspace-a" }));
+  const otherScope = await store.publish(input({ scopeKey: "user-b", workspaceKey: "workspace-a", turnIdentity: "run-2" }));
+  const otherWorkspace = await store.publish(input({ workspaceKey: "workspace-b", turnIdentity: "run-3" }));
+  const seen = [];
+  const worker = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => {
+    seen.push(records.map(record => record.capture_id));
+    return records.map(record => ({ captureId: record.capture_id, status: "admitted", statementIds: ["dream:partition"] }));
+  });
+  await worker.runOnce(2000);
+  assert.deepEqual(seen, [[anchor.record.capture_id]]);
+  assert.equal((await store.currentState(otherScope.record.capture_id)).status, "captured");
+  assert.equal((await store.currentState(otherWorkspace.record.capture_id)).status, "captured");
+}));
+
 test("stale processing claims recover and callback failure becomes retry", () => workspace(async root => {
   const store = new CaptureStore(root);
   const { record } = await store.publish(input());
@@ -99,6 +135,21 @@ test("retry batch identity is preserved and new Captures do not join replay", ()
   assert.equal(secondRun.batchId, firstRun.batchId);
   assert.deepEqual(replayedIds, [one.record.capture_id, two.record.capture_id]);
   assert.equal((await store.currentState(fresh.record.capture_id)).status, "captured");
+}));
+
+test("retry respects bounded exponential backoff", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const { record } = await store.publish(input());
+  await store.appendEvent(record.capture_id, "retry", { attempt: 1, batchId: "batch-retry", eventEpochMs: 2000, error: "temporary" });
+  let calls = 0;
+  const worker = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 10_000, retryBackoffMs: 1000 }, async (_batch, records) => {
+    calls += 1;
+    return records.map(item => ({ captureId: item.capture_id, status: "admitted", statementIds: ["dream:retry"] }));
+  });
+  assert.equal((await worker.runOnce(2500)).status, "idle");
+  assert.equal(calls, 0);
+  assert.equal((await worker.runOnce(3000)).batchId, "batch-retry");
+  assert.equal(calls, 1);
 }));
 
 test("a live worker lock fails closed without deleting another owner lock", () => workspace(async root => {

@@ -1,12 +1,25 @@
-# Nollm V3.10 Durable Capture And Async Absorption Rules
+# Nollm V3.11 Recall Lens Junction Growth Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_10_DURABLE_CAPTURE_ASYNC_ABSORPTION_20260717.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_20260717.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_DURABLE_CAPTURE_ASYNC_ABSORPTION_READ_YOUR_WRITES_FAST_RECALL_TASK_20260717.md`.
-- `ca50a97e0b9ea6a6358ff37ececbb5cfb4eaaa61` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and frozen latency evidence.
+- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_TASK_20260717.md`.
+- `4f8b1c479a2634d3c1b6ae8039116154864275aa` is the input checkpoint. Preserve its Capture spool, calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and frozen evidence.
+
+## V3.11 operation contract
+
+- V3.11 teaches the LLM to simulate future Recall Lenses before choosing locality.
+- Do not ask whether a complete fact is important enough to remember. `no_memory` is limited to no standalone proposition, empty/tool noise, or exact no-new-information cases.
+- Recall Lenses are operation-local teaching artifacts. Do not persist axis IDs, future queries, query-to-entry or fact-to-entry mappings, contact candidate IDs, Lens text, or LLM reasoning.
+- Reuse DC1 axis/ray concepts only as ephemeral Prompt and Lab references; do not restore Cortex Store, rule registry, receipts, or fixed ontology.
+- A Dream Sculptor call may form Statements and plan Placement in one batch. It selects supplied Locality candidate IDs and never outputs coordinates.
+- Core computes geometry-only Junction candidates from distance, boundary, occupancy, and free faces.
+- Store one Statement as one Atom in one Junction Cell. Do not add multi-cell footprints, duplicated Atoms, automatic Bridge/Stitch, or multi-layer Placement.
+- Natural multi-entry is observed only after field growth through independent single-entry Recalls. The Tokyo/date/weather fixture is an observation, not a global invariant.
+- Writer/Reader/Critic self-play belongs in Lab; production common path remains one Dream Sculptor call.
+- Close V3.10 scope, turn idempotency, drain, provenance, retry, and partial-outcome gaps before Junction growth.
 
 ## Foreground and background contract
 

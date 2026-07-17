@@ -30,6 +30,7 @@ from .memory_loop import (
     build_batch_placement_prompt,
     apply_batch_placement,
 )
+from .sculptor import apply_dream_sculptor_result, build_dream_sculptor_prompt, parse_dream_sculptor_result
 
 
 def _well_formed(value: object) -> object:
@@ -57,6 +58,27 @@ def main() -> None:
             wire = base64.b64decode(wire, validate=True).decode("utf-8")
         envelope = _well_formed(json.loads(wire))
         action = envelope.get("action")
+        if action == "build_dream_sculptor_prompt":
+            result = build_dream_sculptor_prompt(
+                envelope["captures"], envelope["memory_workspace"], envelope["request_id"],
+                envelope.get("candidate_limit", 32), envelope.get("max_statements", 8),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "parse_dream_sculptor_result":
+            result = parse_dream_sculptor_result(
+                envelope["raw_model_response"], envelope["captures"], envelope["atlas"], envelope["request_id"],
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "apply_dream_sculptor_result":
+            result = apply_dream_sculptor_result(
+                envelope["raw_model_response"], envelope["captures"], envelope["atlas"],
+                envelope["memory_workspace"], envelope["request_id"], envelope.get("revision_confirmations"),
+                envelope.get("only_statement_ids"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
         if action in {"build_dream_prompt", "parse_dream_result", "build_dream_format_repair_prompt"}:
             if action == "build_dream_format_repair_prompt":
                 prompt = build_dream_format_repair_prompt(str(envelope["raw_model_response"]), str(envelope["failure"]))

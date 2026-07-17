@@ -8,6 +8,7 @@ export const CAPTURE_PLUGIN_VERSION = "0.13.0";
 
 export type CaptureInput = {
   scopeKey: string;
+  workspaceKey?: string;
   sessionKey: string;
   turnIdentity: string;
   userUtf8: string;
@@ -20,6 +21,7 @@ export type CaptureInput = {
   visibleEpochMs?: number;
   hostVersion?: string;
   pluginVersion?: string;
+  timezoneOffsetMinutes?: number;
 };
 
 export type CaptureRecord = {
@@ -45,6 +47,7 @@ export type CaptureRecord = {
   host_version: string;
   plugin_version: string;
   model_ref?: string;
+  reference_timezone_offset_minutes?: number;
 };
 
 export type CaptureStatus = "captured" | "processing" | "retry" | "deferred" | "no_memory" | "admitted";
@@ -62,6 +65,7 @@ export type CaptureStateEvent = {
 
 export type PendingPolicy = { maxCaptures: number; maxChars: number; maxAgeMs: number };
 export type AbsorptionResult = { captureId: string; status: "admitted" | "no_memory" | "deferred" | "retry"; statementIds?: string[]; error?: string };
+export type CaptureDiagnostic = { file: string; error: string };
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -125,7 +129,8 @@ function parseRecord(text: string): CaptureRecord {
       typeof value.user_utf8 !== "string" || typeof value.assistant_utf8 !== "string" ||
       value.user_utf8_bytes !== Buffer.byteLength(value.user_utf8, "utf8") || value.assistant_utf8_bytes !== Buffer.byteLength(value.assistant_utf8, "utf8") ||
       typeof value.host_version !== "string" || typeof value.plugin_version !== "string" ||
-      (value.model_ref !== undefined && typeof value.model_ref !== "string")) throw new Error("invalid Capture record");
+      (value.model_ref !== undefined && typeof value.model_ref !== "string") ||
+      (value.reference_timezone_offset_minutes !== undefined && (!Number.isInteger(value.reference_timezone_offset_minutes) || value.reference_timezone_offset_minutes < -840 || value.reference_timezone_offset_minutes > 840))) throw new Error("invalid Capture record");
   return value;
 }
 
@@ -159,13 +164,14 @@ export class CaptureStore {
     assertText(profileId, "profileId"); assertText(mainRunIdentity, "mainRunIdentity"); assertText(endpointKind, "endpointKind");
     assertText(hostVersion, "hostVersion"); assertText(pluginVersion, "pluginVersion");
     const scopeHash = sha256(input.scopeKey);
+    const workspaceHash = sha256(input.workspaceKey ?? input.scopeKey);
     const sessionHash = sha256(input.sessionKey);
     const turnHash = sha256(input.turnIdentity);
     const contentHash = sha256(canonical({ user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8 }));
-    const captureId = `capture-${sha256(canonical({ scope_id_sha256: scopeHash, turn_identity_sha256: turnHash, content_sha256: contentHash }))}`;
+    const captureId = `capture-${sha256(canonical({ scope_id_sha256: scopeHash, workspace_id_sha256: workspaceHash, turn_identity_sha256: turnHash }))}`;
     try {
       const existing = await this.read(captureId);
-      if (existing.scope_id_sha256 !== scopeHash || existing.session_key_sha256 !== sessionHash || existing.turn_identity_sha256 !== turnHash || existing.content_sha256 !== contentHash || existing.user_utf8 !== input.userUtf8 || existing.assistant_utf8 !== input.assistantUtf8) {
+      if (existing.scope_id_sha256 !== scopeHash || existing.workspace_id_sha256 !== workspaceHash || existing.session_key_sha256 !== sessionHash || existing.turn_identity_sha256 !== turnHash || existing.content_sha256 !== contentHash || existing.user_utf8 !== input.userUtf8 || existing.assistant_utf8 !== input.assistantUtf8) {
         throw new Error(`immutable Capture conflict: ${captureId}`);
       }
       return { record: existing, replayed: true, publish_ms: performance.now() - started };
@@ -173,7 +179,7 @@ export class CaptureStore {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
     const record: CaptureRecord = {
-      schema_version: CAPTURE_SCHEMA, capture_id: captureId, scope_id_sha256: scopeHash, workspace_id_sha256: scopeHash,
+      schema_version: CAPTURE_SCHEMA, capture_id: captureId, scope_id_sha256: scopeHash, workspace_id_sha256: workspaceHash,
       session_key_sha256: sessionHash, turn_identity_sha256: turnHash,
       main_run_id_sha256: sha256(mainRunIdentity), profile_id: profileId,
       visible_endpoint_kind: endpointKind, visible_epoch_ms: input.visibleEpochMs ?? input.capturedEpochMs ?? Date.now(),
@@ -182,6 +188,7 @@ export class CaptureStore {
       user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8,
       user_utf8_bytes: Buffer.byteLength(input.userUtf8, "utf8"), assistant_utf8_bytes: Buffer.byteLength(input.assistantUtf8, "utf8"),
       host_version: hostVersion, plugin_version: pluginVersion, model_ref: input.modelRef,
+      reference_timezone_offset_minutes: input.timezoneOffsetMinutes ?? -new Date(input.capturedEpochMs ?? Date.now()).getTimezoneOffset(),
     };
     const result = await publishImmutable(this.capturePath(captureId), canonical(record));
     if (result === "created") await this.appendEvent(captureId, "captured", { attempt: 0, eventEpochMs: record.captured_epoch_ms });
@@ -221,17 +228,24 @@ export class CaptureStore {
     return events[events.length - 1];
   }
 
-  async allRecords(): Promise<CaptureRecord[]> {
+  async scanRecords(): Promise<{ records: CaptureRecord[]; diagnostics: CaptureDiagnostic[] }> {
     let names: string[];
     try { names = await readdir(join(this.root, "captures")); } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return { records: [], diagnostics: [] };
       throw error;
     }
     const records: CaptureRecord[] = [];
+    const diagnostics: CaptureDiagnostic[] = [];
     for (const name of names.filter(name => name.endsWith(".json")).sort()) {
-      try { records.push(parseRecord(await readFile(join(this.root, "captures", name), "utf8"))); } catch { /* corrupt captures fail open */ }
+      try { records.push(parseRecord(await readFile(join(this.root, "captures", name), "utf8"))); }
+      catch (error) { diagnostics.push({ file: name, error: String(error) }); }
     }
-    return records.sort((left, right) => left.captured_epoch_ms - right.captured_epoch_ms || left.capture_id.localeCompare(right.capture_id));
+    records.sort((left, right) => left.captured_epoch_ms - right.captured_epoch_ms || left.capture_id.localeCompare(right.capture_id));
+    return { records, diagnostics };
+  }
+
+  async allRecords(): Promise<CaptureRecord[]> {
+    return (await this.scanRecords()).records;
   }
 
   async pending(scopeKey: string, policy: PendingPolicy, now = Date.now()): Promise<CaptureRecord[]> {
@@ -262,11 +276,12 @@ export class AbsorptionWorker {
   readonly batchMaxCaptures: number;
   readonly batchMaxChars: number;
   readonly staleClaimMs: number;
+  readonly retryBackoffMs: number;
   readonly absorb: (batchId: string, records: CaptureRecord[]) => Promise<AbsorptionResult[]>;
   private active = false;
 
-  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number }, absorb: (batchId: string, records: CaptureRecord[]) => Promise<AbsorptionResult[]>) {
-    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.absorb = absorb;
+  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number }, absorb: (batchId: string, records: CaptureRecord[]) => Promise<AbsorptionResult[]>) {
+    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.absorb = absorb;
   }
 
   async runOnce(now = Date.now()): Promise<{ status: "idle" | "busy" | "completed"; batchId?: string; captureCount: number }> {
@@ -291,18 +306,26 @@ export class AbsorptionWorker {
     }
     try {
       const available = await Promise.all((await this.store.allRecords()).map(async record => ({ record, state: await this.store.currentState(record.capture_id) })));
-      const retryBatchId = available.find(item => item.state.status === "retry" && item.state.batch_id)?.state.batch_id;
+      const retryReady = ({ state }: typeof available[number]): boolean => {
+        if (state.status !== "retry") return false;
+        const delay = Math.min(this.staleClaimMs, this.retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
+        return now - state.event_epoch_ms >= delay;
+      };
+      const retryBatchId = available.find(item => retryReady(item) && item.state.batch_id)?.state.batch_id;
+      const freshAnchor = retryBatchId ? undefined : available.find(({ state }) => state.status === "captured" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs));
       const candidates: CaptureRecord[] = [];
       let chars = 0;
       for (const { record, state } of available) {
-        const recoverable = state.status === "captured" || state.status === "retry" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs);
-        if (retryBatchId && state.batch_id !== retryBatchId) continue;
+        const recoverable = retryBatchId
+          ? retryReady({ record, state }) && state.batch_id === retryBatchId
+          : state.status === "captured" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs);
+        if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;
         if (!recoverable || candidates.length >= this.batchMaxCaptures || chars + size > this.batchMaxChars) continue;
         candidates.push(record); chars += size;
       }
       if (!candidates.length) return { status: "idle", captureCount: 0 };
-      const batchId = `batch-${sha256(canonical(candidates.map(record => record.capture_id)))}`;
+      const batchId = retryBatchId ?? `batch-${sha256(canonical(candidates.map(record => record.capture_id)))}`;
       const attempts = new Map<string, number>();
       for (const record of candidates) {
         const state = await this.store.currentState(record.capture_id);
@@ -315,7 +338,7 @@ export class AbsorptionWorker {
       const byId = new Map(results.map(result => [result.captureId, result]));
       for (const record of candidates) {
         const result = byId.get(record.capture_id) ?? { captureId: record.capture_id, status: "retry" as const, error: "missing absorption result" };
-        await this.store.appendEvent(record.capture_id, result.status, { attempt: attempts.get(record.capture_id)!, batchId, statementIds: result.statementIds, error: result.error });
+        await this.store.appendEvent(record.capture_id, result.status, { attempt: attempts.get(record.capture_id)!, batchId, statementIds: result.statementIds, error: result.error, eventEpochMs: now });
       }
       return { status: "completed", batchId, captureCount: candidates.length };
     } finally {

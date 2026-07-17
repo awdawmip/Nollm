@@ -131,9 +131,11 @@ def test_dream_prompt_allows_rewrite_and_forbids_tools():
     assert "exact span" not in prompt
 
 
-def test_dream_v2_refines_durability_without_semantic_fallback():
+def test_dream_v2_forms_complete_short_lived_facts_without_value_filter():
     prompt = build_dream_prompt(_dream_request(), "dream-v2")
-    assert "one-off requests" in prompt
+    assert "Never predict importance, durability, or future usefulness" in prompt
+    assert "Weather, appointments, cancellations" in prompt
+    assert "unlikely to matter later" in prompt
     assert "assistant promise" in prompt
     with pytest.raises(FormationAdapterError, match="unsupported Dream prompt version"):
         build_dream_prompt(_dream_request(), "dream-v3")

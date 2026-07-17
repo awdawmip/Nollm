@@ -32,7 +32,8 @@ export type DreamConfig = {
   persist_subagent_transcripts?: boolean; debug_trace?: boolean; evidence_path?: string;
   latency_validation_enabled?: boolean; latency_evidence_path?: string; latency_scenario_id?: string; latency_validation_run_id?: string;
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
-  absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number;
+  capture_single_user_mode?: true;
+  absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number;
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
   recall_hidden_call_budget?: 1;
   surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
@@ -71,9 +72,11 @@ const JSON_SCHEMA = {
     latency_validation_enabled: { type: "boolean", default: false }, latency_evidence_path: { type: "string" },
     latency_scenario_id: { type: "string" }, latency_validation_run_id: { type: "string" },
     capture_enabled: { type: "boolean", default: true }, capture_workspace: { type: "string" }, capture_scope_id: { type: "string", default: "local-default-user" },
+    capture_single_user_mode: { type: "boolean", const: true, default: true },
     absorption_enabled: { type: "boolean", default: true }, absorption_batch_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
     absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
     absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
+    absorption_retry_backoff_ms: { type: "integer", minimum: 100, default: 1000 },
     pending_fallback_enabled: { type: "boolean", default: true }, pending_fallback_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
     pending_fallback_max_chars: { type: "integer", minimum: 1, default: 6000 }, pending_fallback_max_age_ms: { type: "integer", minimum: 1000, default: 604800000 },
     recall_hidden_call_budget: { type: "integer", const: 1, default: 1 },
@@ -294,72 +297,114 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[]): Promise<AbsorptionResult[]> => {
     const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
-      return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: "absorption configuration or model unavailable" }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "absorption configuration or model temporarily unavailable" }));
     }
-    const turns = records.flatMap(record => ([
-      { role: "user" as const, content_utf8: record.user_utf8 },
-      { role: "assistant" as const, content_utf8: record.assistant_utf8 },
-    ]));
-    const request = {
-      request_id: `dream-request-${batchId}`,
-      material: { material_id: `material-${batchId}`, turns },
-      max_statements: config.max_statements ?? 8, max_statement_chars: config.max_statement_chars ?? 4096,
-      max_total_chars: config.max_total_chars ?? 8192, schema_version: "nollm_access_dream_formation_v1",
-    };
-    const built = await bridge(config, { action: "build_dream_prompt", request, prompt_version: config.prompt_version ?? "dream-json-p1" });
-    if (built.ok !== true || typeof built.prompt !== "string") return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(built.error ?? "batch prompt failed") }));
-    const formation = await runDreamSubagent(api, config, built.prompt, model, `${batchId}:formation`);
-    if (!formation?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "batch Formation failed" }));
-    const parsed = await parseDreamAttempt(config, request, formation.raw, `dream-result-${batchId}`, "batch", formation.runId, `capture-batch:${batchId}`, Date.now() - formation.providerMs, formation.resolved, built.prompt_version);
-    if (parsed.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(parsed.error ?? "batch Formation parse failed") }));
-    const sourceCaptureRefs = records.map(record => `capture:${record.capture_id}`).sort();
-    const statements = Array.isArray(parsed.statements) ? parsed.statements.map(statement => {
-      if (!statement || typeof statement !== "object") return statement;
-      const rawContext = (statement as Record<string, unknown>).context_refs;
-      const current = Array.isArray(rawContext)
-        ? rawContext.filter((item: unknown): item is string => typeof item === "string")
-        : [];
-      return { ...(statement as Record<string, unknown>), context_refs: [...new Set([...current, ...sourceCaptureRefs])].sort() };
-    }) : [];
-    if (!statements.length) return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
-    const placementBuilt = await bridge(config, {
-      action: "build_batch_placement_prompt", request_id: `placement-${batchId}`, statements,
-      memory_workspace: configuredMemoryWorkspace, max_existing: 16, max_empty: 16,
+    const requestId = `sculptor-${batchId}`;
+    const captures = records.map(record => ({
+      capture_id: record.capture_id,
+      user_utf8: record.user_utf8,
+      assistant_utf8: record.assistant_utf8,
+      captured_epoch_ms: record.captured_epoch_ms,
+      timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
+    }));
+    const built = await bridge(config, {
+      action: "build_dream_sculptor_prompt", request_id: requestId, captures,
+      memory_workspace: configuredMemoryWorkspace, candidate_limit: 32,
+      max_statements: config.max_statements ?? 8,
     });
-    if (placementBuilt.ok !== true || typeof placementBuilt.prompt !== "string" || typeof placementBuilt.view_fingerprint !== "string") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(placementBuilt.error ?? "batch Placement prompt failed") }));
+    if (built.ok !== true || typeof built.prompt !== "string" || !built.atlas) {
+      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(built.message ?? built.error ?? "Dream Sculptor prompt failed") }));
     }
-    const placement = await runDreamSubagent(api, config, placementBuilt.prompt, model, `${batchId}:placement`);
-    if (!placement?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "batch Placement failed" }));
-    const applied = await bridge(config, {
-      action: "apply_batch_placement", request_id: `placement-${batchId}`, raw_model_response: placement.raw,
-      statements, memory_workspace: configuredMemoryWorkspace, view_fingerprint: placementBuilt.view_fingerprint,
-      max_existing: 16, max_empty: 16,
+    let sculptor = await runDreamSubagent(api, config, built.prompt, model, `${batchId}:sculptor`);
+    if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Dream Sculptor failed" }));
+    let providerCalls = 1;
+    let providerMs = sculptor.providerMs;
+    let applied = await bridge(config, {
+      action: "apply_dream_sculptor_result", request_id: requestId,
+      raw_model_response: sculptor.raw, captures, atlas: built.atlas,
+      memory_workspace: configuredMemoryWorkspace,
     });
-    if (applied.ok !== true || !Array.isArray(applied.outcomes)) {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(applied.message ?? applied.error ?? "batch Placement apply failed") }));
+    if (applied.ok !== true) {
+      const retryPrompt = `${built.prompt}\nYour previous response failed strict validation: ${String(applied.message ?? applied.error ?? "invalid output")}. Return one corrected JSON object.`;
+      sculptor = await runDreamSubagent(api, config, retryPrompt, model, `${batchId}:sculptor-retry`);
+      providerCalls += 1;
+      providerMs += sculptor?.providerMs ?? 0;
+      if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Dream Sculptor correction failed" }));
+      applied = await bridge(config, {
+        action: "apply_dream_sculptor_result", request_id: requestId,
+        raw_model_response: sculptor.raw, captures, atlas: built.atlas,
+        memory_workspace: configuredMemoryWorkspace,
+      });
     }
-    const errors = applied.outcomes.filter((item: unknown) => !item || typeof item !== "object" || (item as Record<string, unknown>).outcome === "error");
-    const deferred = applied.outcomes.filter((item: unknown) => item && typeof item === "object" && (item as Record<string, unknown>).outcome === "defer");
-    await trace(config, { status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch", batch_id: batchId, capture_count: records.length, statement_count: statements.length, formation_provider_calls: 1, placement_provider_calls: 1, error_statement_count: errors.length, deferred_statement_count: deferred.length, formation_provider_ms: formation.providerMs, placement_provider_ms: placement.providerMs });
-    if (errors.length) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" }));
-    if (deferred.length) return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: "one or more batch Statements deferred" }));
-    const statementIds = statements.flatMap(statement => statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? [(statement as Record<string, unknown>).statement_id as string] : []);
-    const verified = await bridge(config, { action: "verify_admitted_statements", statement_ids: statementIds, memory_workspace: configuredMemoryWorkspace });
-    if (verified.ok !== true || verified.reopen_verified !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(verified.message ?? verified.error ?? "batch Admission incomplete") }));
-    return records.map(record => ({ captureId: record.capture_id, status: "admitted", statementIds }));
+    if (applied.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(applied.message ?? applied.error ?? "Dream Sculptor apply failed") }));
+    if (applied.outcome === "no_memory") return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
+    if (applied.outcome === "defer" || !Array.isArray(applied.outcomes)) return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: String(applied.defer_reason ?? "Dream Sculptor deferred") }));
+
+    let outcomes = applied.outcomes as Array<Record<string, unknown>>;
+    const provisional = outcomes.filter(item => item.outcome === "revision_confirmation_required");
+    if (provisional.length) {
+      const first = provisional[0];
+      const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: first.provisional_revision });
+      if (confirmationBuilt.ok === true && typeof confirmationBuilt.prompt === "string") {
+        const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${batchId}:revision-confirmation`);
+        providerCalls += 1;
+        providerMs += confirmationRun?.providerMs ?? 0;
+        if (confirmationRun?.raw) {
+          const confirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun.raw, provisional_revision: first.provisional_revision });
+          if (confirmation.ok === true && confirmation.confirmation && typeof first.statement_id === "string") {
+            const revisionApplied = await bridge(config, {
+              action: "apply_dream_sculptor_result", request_id: requestId,
+              raw_model_response: sculptor.raw, captures, atlas: built.atlas,
+              memory_workspace: configuredMemoryWorkspace,
+              revision_confirmations: { [first.statement_id]: confirmation.confirmation },
+              only_statement_ids: [first.statement_id],
+            });
+            if (revisionApplied.ok === true && Array.isArray(revisionApplied.outcomes)) {
+              const revisionOutcomes = revisionApplied.outcomes as Array<Record<string, unknown>>;
+              outcomes = outcomes.map(item => item.statement_id === first.statement_id ? revisionOutcomes[0] : item);
+            }
+          }
+        }
+      }
+    }
+    const errors = outcomes.filter(item => item.outcome === "error");
+    const deferred = outcomes.filter(item => item.outcome === "defer" || item.outcome === "revision_confirmation_required");
+    await trace(config, {
+      status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch",
+      batch_id: batchId, capture_count: records.length, statement_count: outcomes.length,
+      dream_sculptor_provider_calls: providerCalls, dream_sculptor_provider_ms: providerMs,
+      common_one_call: providerCalls === 1, error_statement_count: errors.length,
+      deferred_statement_count: deferred.length, atlas_fingerprint: built.atlas_fingerprint,
+    });
+    return records.map(record => {
+      const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
+      if (!related.length) return { captureId: record.capture_id, status: "no_memory" };
+      if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" };
+      if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "deferred", error: "one or more Capture Statements deferred" };
+      const statementIds = related.flatMap(item => typeof item.statement_id === "string" ? [item.statement_id] : []);
+      const reopenVerified = related.every(item => item.durable_commit && (item.durable_commit as Record<string, unknown>).reopen_verified === true);
+      return reopenVerified
+        ? { captureId: record.capture_id, status: "admitted" as const, statementIds }
+        : { captureId: record.capture_id, status: "retry" as const, error: "Admission reopen verification failed" };
+    });
   };
   const absorptionWorker = captureStore && config.absorption_enabled !== false ? new AbsorptionWorker(captureStore, {
     batchMaxCaptures: config.absorption_batch_max_captures ?? 4,
     batchMaxChars: config.absorption_batch_max_chars ?? 24000,
     staleClaimMs: config.absorption_stale_claim_ms ?? 300000,
+    retryBackoffMs: config.absorption_retry_backoff_ms ?? 1000,
   }, absorbCapturedBatch) : undefined;
   let absorptionTimer: NodeJS.Timeout | undefined;
   const scheduleAbsorption = () => {
     if (!absorptionWorker || absorptionTimer) return;
     absorptionTimer = setTimeout(() => {
       absorptionTimer = undefined;
-      void absorptionWorker.runOnce();
+      void (async () => {
+        const scan = captureStore ? await captureStore.scanRecords() : { diagnostics: [] };
+        if (scan.diagnostics.length) await trace(config, { status: "warning", stage: "capture_integrity", corrupt_capture_count: scan.diagnostics.length, files: scan.diagnostics.map(item => item.file) });
+        await absorptionWorker.runOnce();
+        scheduleAbsorption();
+      })();
     }, config.absorption_max_wait_ms ?? 250);
     absorptionTimer.unref?.();
   };
@@ -367,6 +412,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (!captureStore || !user?.trim() || !assistant.trim()) return undefined;
     const receipt = await captureStore.publish({
       scopeKey: captureScope(context, config.capture_scope_id ?? "local-default-user"), sessionKey,
+      workspaceKey: configuredMemoryWorkspace ?? captureRoot!,
       turnIdentity: runId ?? createHash("sha256").update(`${user}\0${assistant}`).digest("hex"),
       userUtf8: user, assistantUtf8: assistant, modelRef: configuredModel(model),
       profileId: config.capture_scope_id ?? "local-default-user", mainRunIdentity: runId ?? sessionKey,
@@ -383,6 +429,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (ctx.sessionKey) recallSatisfiedSessions.delete(ctx.sessionKey);
     const memoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
     if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !event.prompt.trim()) return;
+    let pendingInjection = "";
     if (captureStore && config.pending_fallback_enabled !== false) {
       const pendingStartedMonoNs = systemLatencyClock.monotonicNs();
       const recent = await captureStore.renderPending(captureScope(ctx, config.capture_scope_id ?? "local-default-user"), {
@@ -392,13 +439,18 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       });
       if (recent.injection) {
         await trace(config, { status: "completed", stage: "pending_fallback", capture_ids: recent.captureIds, rendered_chars: recent.chars, local_ms: durationMs(pendingStartedMonoNs, systemLatencyClock.monotonicNs()), hidden_provider_calls: 0 });
-        recallSatisfiedSessions.add(ctx.sessionKey);
-        return { appendContext: recent.injection };
+        pendingInjection = recent.injection;
       }
     }
-    if (!memoryWorkspace || !config.python_executable || !config.nollm_repo_root) return;
+    const combinedContext = (admitted = ""): { appendContext: string } | undefined => {
+      const parts = [admitted, pendingInjection].filter(Boolean);
+      if (!parts.length) return undefined;
+      if (ctx.sessionKey) recallSatisfiedSessions.add(ctx.sessionKey);
+      return { appendContext: parts.join("\n\n") };
+    };
+    if (!memoryWorkspace || !config.python_executable || !config.nollm_repo_root) return combinedContext();
     const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
-    if (!usableModel(model)) return;
+    if (!usableModel(model)) return combinedContext();
     const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
     if ((config.recall_hidden_call_budget ?? 1) === 1) {
       const built = await bridge(config, {
@@ -409,16 +461,16 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (built.ok !== true) { await trace(config, { status: "error", stage: "fast_recall_build", request_id: requestId, ...built }); return; }
       if (built.status === "complete_none") {
         await trace(config, { status: "completed_none", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
-        return;
+        return combinedContext();
       }
       if (built.status === "complete_inject" && typeof built.injection === "string") {
         recallSatisfiedSessions.add(ctx.sessionKey);
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, selected_entry: built.selected_entry, statement_ids: built.statement_ids, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
-        return { appendContext: built.injection };
+        return combinedContext(built.injection);
       }
-      if (built.status !== "entry_decision" || typeof built.prompt !== "string" || !Array.isArray(built.entries)) return;
+      if (built.status !== "entry_decision" || typeof built.prompt !== "string" || !Array.isArray(built.entries)) return combinedContext();
       const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:single-entry`);
-      if (!selected.raw) { await trace(config, { status: "defer", stage: "fast_recall_agent", request_id: requestId, hidden_provider_calls: 1, error: selected.error }); return; }
+      if (!selected.raw) { await trace(config, { status: "defer", stage: "fast_recall_agent", request_id: requestId, hidden_provider_calls: 1, error: selected.error }); return combinedContext(); }
       const applied = await bridge(config, {
         action: "apply_fast_recall_selection", request_id: requestId, raw_model_response: selected.raw,
         entries: built.entries, memory_workspace: memoryWorkspace, max_statements: config.max_statements ?? 8,
@@ -427,14 +479,14 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       const totalOperationMs = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
       if (applied.ok !== true || applied.outcome === "none") {
         await trace(config, { status: applied.ok === true ? "completed_none" : "error", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved, ...applied });
-        return;
+        return combinedContext();
       }
       if (applied.outcome === "inject" && typeof applied.injection === "string") {
         recallSatisfiedSessions.add(ctx.sessionKey);
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, selected_entry: applied.selected_entry, statement_ids: applied.statement_ids, selected_paths: applied.selected_paths, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved });
-        return { appendContext: applied.injection };
+        return combinedContext(applied.injection);
       }
-      return;
+      return combinedContext();
     }
     const timing: Record<string, number | string | boolean | null> = {
       surface_build_ms: 0, surface_order_count: 0, surface_projection_count: 0,
