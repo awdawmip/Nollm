@@ -20,10 +20,7 @@ from nollm_access import (
     RevisionTargetExcludedError,
     SurfaceBudgetProfile,
     placement_action_semantics_prompt,
-    FileHandleStore,
-    FileStatementStore,
 )
-from nollm_core import AtomHandle, CoreRuntime
 
 from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
@@ -38,31 +35,12 @@ BATCH_PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_batch_placement_v1"
 
 
 def verify_admitted_statements(statement_ids: object, memory_workspace: object) -> dict[str, object]:
-    if type(statement_ids) is not list or not statement_ids or any(type(item) is not str or not item for item in statement_ids):
-        raise FormationAdapterError("invalid_statement_ids", "statement_ids must be a non-empty string list")
-    if len(statement_ids) != len(set(statement_ids)):
-        raise FormationAdapterError("invalid_statement_ids", "statement_ids must be unique")
     root = _workspace(memory_workspace)
-    statements = FileStatementStore(root)
-    handles = FileHandleStore(root)
-    document = json.loads(handles.state_bytes().decode("utf-8"))
-    by_statement: dict[str, tuple[dict[str, object], str]] = {}
-    for item in document["bindings"]:
-        binding_ids = [item["current_statement_id"], *item["supporting_statement_ids"]]
-        for statement_id in binding_ids:
-            by_statement[statement_id] = (item["handle"], item["current_statement_id"])
-    verified = []
-    with CoreRuntime(root) as core:
-        for statement_id in statement_ids:
-            statement = statements.get(statement_id)
-            if statement_id not in by_statement:
-                raise FormationAdapterError("admission_not_durable", f"Statement has no HandleBinding: {statement_id}")
-            raw_handle, current_statement_id = by_statement[statement_id]
-            atom = core.get(AtomHandle.from_mapping(raw_handle))
-            if current_statement_id == statement_id and atom.payload_utf8 != statement.content_utf8:
-                raise FormationAdapterError("admission_not_durable", f"Core payload mismatch: {statement_id}")
-            verified.append(statement_id)
-    return {"status": "verified", "statement_ids": verified, "reopen_verified": True}
+    try:
+        with AccessMemoryLoop(root) as loop:
+            return loop.verify_admitted_statements(statement_ids)
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        raise FormationAdapterError("admission_not_durable", str(exc)) from exc
 
 
 def _direct_locality_injection(items: list[dict[str, object]], max_statements: int, max_chars: int) -> dict[str, object]:

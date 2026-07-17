@@ -36,7 +36,7 @@ Pending Recall performs zero Provider, bridge, Surface, and Core calls. Admitted
 
 Batch Formation uses one hidden call for multiple Captures. Every formed Statement carries the sorted Capture references for its bounded source batch. One frozen finite geometry view feeds one batch Placement call. Access validates every decision against that view, then applies each Statement through its existing independent atomic transaction and durable reopen check. A failed Statement is reported without rolling back or contaminating successful independent Admissions. Replay recognizes an already bound Statement before attempting another Core write. Destructive revision remains on the existing separate bounded confirmation path.
 
-This topology satisfies the deterministic common-case call budget. Provider-backed Windows Live must still prove that the Host executes the same one-Formation and one-Placement topology before the task can be marked fully validated.
+This topology satisfies the deterministic common-case call budget. Provider-backed Windows Live also executed one Formation and one Placement call for a recovered three-Capture batch. Full validation remains open because the prescribed admitted Recall Live matrix did not complete.
 
 ## Compatibility
 

@@ -48,6 +48,14 @@ test("pending fallback is cross-session, scope isolated, bounded, and admission 
   assert.equal((await store.renderPending("user-a", { maxCaptures: 4, maxChars: 500, maxAgeMs: 5000 }, 2000)).injection, "");
 }));
 
+test("terminal defer preserves Capture but exits pending fallback", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const { record } = await store.publish(input());
+  await store.appendEvent(record.capture_id, "deferred", { attempt: 1, error: "no durable memory" });
+  assert.equal((await store.renderPending("user-a", { maxCaptures: 4, maxChars: 500, maxAgeMs: 5000 }, 2000)).injection, "");
+  assert.equal((await store.read(record.capture_id)).content_sha256, record.content_sha256);
+}));
+
 test("worker batches captures, serializes execution, and records terminal states", () => workspace(async root => {
   const store = new CaptureStore(root);
   const one = await store.publish(input());
@@ -71,6 +79,26 @@ test("stale processing claims recover and callback failure becomes retry", () =>
   assert.equal((await worker.runOnce(2000)).status, "completed");
   const state = await store.currentState(record.capture_id);
   assert.equal(state.status, "retry"); assert.equal(state.attempt, 2); assert.match(state.error, /provider down/);
+}));
+
+test("retry batch identity is preserved and new Captures do not join replay", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const one = await store.publish(input());
+  const two = await store.publish(input({ turnIdentity: "run-2", userUtf8: "second" }));
+  const failed = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => (
+    records.map(record => ({ captureId: record.capture_id, status: "retry", error: "injected" }))
+  ));
+  const firstRun = await failed.runOnce(2000);
+  const fresh = await store.publish(input({ turnIdentity: "run-3", userUtf8: "fresh" }));
+  let replayedIds = [];
+  const replay = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => {
+    replayedIds = records.map(record => record.capture_id);
+    return records.map(record => ({ captureId: record.capture_id, status: "admitted", statementIds: ["dream:replay"] }));
+  });
+  const secondRun = await replay.runOnce(3000);
+  assert.equal(secondRun.batchId, firstRun.batchId);
+  assert.deepEqual(replayedIds, [one.record.capture_id, two.record.capture_id]);
+  assert.equal((await store.currentState(fresh.record.capture_id)).status, "captured");
 }));
 
 test("a live worker lock fails closed without deleting another owner lock", () => workspace(async root => {

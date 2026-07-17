@@ -79,6 +79,18 @@ def test_readback_failure_never_returns_completed_durable_memory(tmp_path, monke
     assert FileHandleStore(tmp_path).exists("readback")
 
 
+def test_admitted_statement_reopen_verification_is_access_owned(tmp_path):
+    with AccessMemoryLoop(tmp_path) as loop:
+        apply(loop, "verified", "durable payload", "expand_surface", "placement:expand:0")
+        assert loop.verify_admitted_statements(["verified"]) == {
+            "status": "verified",
+            "statement_ids": ["verified"],
+            "reopen_verified": True,
+        }
+        with pytest.raises(ValueError, match="unique"):
+            loop.verify_admitted_statements(["verified", "verified"])
+
+
 def test_expand_surface_is_geometry_only_and_respects_minimum_distance(tmp_path):
     with AccessMemoryLoop(tmp_path) as loop:
         first = apply(loop, "alpha:any-id", "alpha", "expand_surface", "placement:expand:0")

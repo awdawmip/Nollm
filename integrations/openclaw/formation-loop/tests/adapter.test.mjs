@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
 import { CaptureStore } from "../dist/capture.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
@@ -137,6 +137,12 @@ test("latency scenario labels come only from bounded validation session tags", (
 test("canonical model refs project to Host provider and model fields", () => {
   assert.deepEqual(modelOverride("meituan/LongCat-2.0"), { provider: "meituan", model: "LongCat-2.0" });
   assert.equal(modelOverride("missing-provider"), undefined);
+});
+
+test("batch absorption uses one explicit allowed model when delivery metadata is absent", () => {
+  assert.equal(batchAbsorptionModel({ model_mode: "inherit", allowed_models: ["meituan/LongCat-2.0"] }, [{ model_ref: undefined }]), "meituan/LongCat-2.0");
+  assert.equal(batchAbsorptionModel({ model_mode: "inherit", allowed_models: ["one/model", "two/model"] }, [{ model_ref: undefined }]), undefined);
+  assert.equal(batchAbsorptionModel({ model_mode: "inherit", allowed_models: ["one/model"] }, [{ model_ref: "observed/model" }]), "observed/model");
 });
 
 test("resolved child model comes from the final assistant session message", () => {

@@ -240,6 +240,16 @@ export function modelOverride(ref?: string): { provider: string; model: string }
   return { provider: ref.slice(0, separator), model: ref.slice(separator + 1) };
 }
 
+export function batchAbsorptionModel(
+  config: Pick<DreamConfig, "model_mode" | "model" | "allowed_models">,
+  records: ReadonlyArray<Pick<CaptureRecord, "model_ref">>,
+): string | undefined {
+  if (config.model_mode === "dedicated") return config.model;
+  const observed = records.map(record => record.model_ref).find(Boolean);
+  if (observed) return observed;
+  return config.allowed_models?.length === 1 ? config.allowed_models[0] : undefined;
+}
+
 async function trace(config: DreamConfig, value: object): Promise<void> {
   if (!config.debug_trace || !config.evidence_path) return;
   await mkdir(dirname(config.evidence_path), { recursive: true });
@@ -282,7 +292,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
   };
   const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[]): Promise<AbsorptionResult[]> => {
-    const model = configuredModel(records.map(record => record.model_ref).find(Boolean));
+    const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
       return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: "absorption configuration or model unavailable" }));
     }

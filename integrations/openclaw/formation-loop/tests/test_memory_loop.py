@@ -23,6 +23,7 @@ from nollm_openclaw_formation.memory_loop import (
     apply_fast_recall_selection,
     build_batch_placement_prompt,
     apply_batch_placement,
+    verify_admitted_statements,
 )
 
 
@@ -117,6 +118,11 @@ def test_batch_placement_uses_one_frozen_geometry_view_and_durable_atomic_apply(
     with AccessMemoryLoop(tmp_path) as loop:
         assert loop.binding("dream:test")["current_statement_id"] == "dream:test"
         assert loop.binding("dream:second")["current_statement_id"] == "dream:second"
+    assert verify_admitted_statements(["dream:test", "dream:second"], str(tmp_path)) == {
+        "status": "verified",
+        "statement_ids": ["dream:test", "dream:second"],
+        "reopen_verified": True,
+    }
 
 
 def test_batch_placement_rejects_stale_view_before_any_write(tmp_path):

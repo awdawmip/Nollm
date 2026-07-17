@@ -488,6 +488,29 @@ class AccessMemoryLoop:
             handle = access.saved_handle(statement_id)
             return access.handle_store.binding_for_handle(handle).to_mapping()
 
+    def verify_admitted_statements(self, statement_ids: object) -> dict[str, object]:
+        self._require_open()
+        if type(statement_ids) is not list or not statement_ids:
+            raise TypeError("statement_ids must be a non-empty string list")
+        if any(type(statement_id) is not str or not statement_id for statement_id in statement_ids):
+            raise TypeError("statement_ids must be a non-empty string list")
+        if len(statement_ids) != len(set(statement_ids)):
+            raise ValueError("statement_ids must be unique")
+        statements = FileStatementStore(self._workspace)
+        handles = FileHandleStore(self._workspace)
+        verified = []
+        with CoreRuntime(self._workspace) as core:
+            for statement_id in statement_ids:
+                statement = statements.get(statement_id)
+                handle = handles.get(statement_id)
+                binding = handles.binding_for_handle(handle)
+                current = statements.get(binding.current_statement_id)
+                atom = core.get(handle)
+                if atom.payload_utf8 != current.content_utf8:
+                    raise RuntimeError(f"durable Core Atom readback mismatch: {statement_id}")
+                verified.append(statement.statement_id)
+        return {"status": "verified", "statement_ids": verified, "reopen_verified": True}
+
     def _decision(
         self,
         raw: object,

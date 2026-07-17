@@ -4,7 +4,8 @@ param(
   [string]$Model = "",
   [ValidateSet("shadow", "statement-store")][string]$WriteMode = "shadow",
   [string]$StatementWorkspace = "",
-  [string]$MemoryWorkspace = ""
+  [string]$MemoryWorkspace = "",
+  [string]$PythonExecutable = ""
 )
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -18,9 +19,17 @@ try {
   npm run build; if ($LASTEXITCODE -ne 0) { throw "plugin build failed" }
   & $OpenClaw plugins install --link $root; if ($LASTEXITCODE -ne 0) { throw "OpenClaw plugin install failed" }
 } finally { Pop-Location }
-$pythonExecutable = (& python -c "import sys; print(sys.executable)").Trim()
-if (-not (Test-Path $pythonExecutable)) { throw "Python executable not found: $pythonExecutable" }
-& $OpenClaw config set plugins.entries.nollm-formation.config.python_executable $pythonExecutable
+if (-not $PythonExecutable) {
+  $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+  if ($pythonCommand) {
+    $PythonExecutable = (& $pythonCommand.Source -c "import sys; print(sys.executable)").Trim()
+  } else {
+    $launcher = Get-Command py -ErrorAction SilentlyContinue
+    if ($launcher) { $PythonExecutable = (& $launcher.Source -3 -c "import sys; print(sys.executable)").Trim() }
+  }
+}
+if (-not $PythonExecutable -or -not (Test-Path -LiteralPath $PythonExecutable)) { throw "Python executable not found: $PythonExecutable" }
+& $OpenClaw config set plugins.entries.nollm-formation.config.python_executable $PythonExecutable
 & $OpenClaw config set plugins.entries.nollm-formation.config.nollm_repo_root $repo
 & $OpenClaw config set plugins.entries.nollm-formation.config.enabled true
 & $OpenClaw config set plugins.entries.nollm-formation.config.model_mode $ModelMode

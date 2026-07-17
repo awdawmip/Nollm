@@ -1,0 +1,4 @@
+{"capture_bridge_calls":0,"capture_core_calls":0,"capture_count":150,"capture_provider_calls":0,"capture_publish_max_ms":10.270599999999995,"capture_publish_p50_ms":3.9248000000000047,"capture_publish_p95_ms":4.635899999999992,"event":"capture","pending_hidden_provider_calls":0,"pending_render_count":4,"pending_render_max_ms":6.5219999999999345,"pending_render_p95_ms":5.421199999999999,"replayed_same_capture":true,"schema_version":"nollm_aold_deterministic_capture_validation_v1","worker_absorption_calls":1,"worker_batch_capture_count":4}
+{"binding_count":2,"event":"batch_admission","formation_call_budget":1,"independent_applied":2,"local_ms":81.57569996546954,"placement_call_budget":1,"statement_count":2}
+{"duplicate_write_count":0,"event":"admission_replay","replayed_statement_count":2}
+{"event":"admitted_recall","hidden_call_count":1,"local_ms":103.54969999752939,"statement_count":1}

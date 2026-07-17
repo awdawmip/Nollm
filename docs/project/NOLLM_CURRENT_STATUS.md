@@ -7,8 +7,8 @@ route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
 task: NOLLM_A_O_L_D_DURABLE_CAPTURE_ASYNC_ABSORPTION_READ_YOUR_WRITES_FAST_RECALL_TASK_20260717.md
 status: AOLD_DURABLE_CAPTURE_ASYNC_ABSORPTION_IN_PROGRESS
 input HEAD: ca50a97e0b9ea6a6358ff37ececbb5cfb4eaaa61
-Gate 0/A checkpoint: pending
-evidence/report checkpoint: pending
+Gate 0/A checkpoint: 713a973
+evidence/report checkpoint: current delivery commit
 ```
 
 Active result:
@@ -19,7 +19,9 @@ OpenClaw selected as the unique Capture and worker-state owner;
 immutable Capture plus append-only state-event spool implemented;
 Pending read-your-writes is bounded and Provider-free;
 admitted Recall has a zero-call singleton and one-call common entry path;
-batch Formation is one call, while Placement call compression and Windows Live remain active gaps;
+Provider-backed batch Formation and Placement each use one call;
+Windows Live proves Capture, Pending, recovered batch Admission, and durable reopen;
+the full admitted Recall and crash-injection Live matrices remain active gaps;
 existing V1-V6 workspaces and prior frozen Evidence remain preserved.
 ```
 
@@ -39,10 +41,13 @@ background retry state never overwrites Capture bytes.
 Gate truth:
 
 ```text
-Gate 0/A architecture and owner decisions are implemented but not checkpointed;
-Gate B/C deterministic Capture and recovery code is implemented;
-Gate E/F deterministic Pending and fast Recall code is implemented;
-Gate D call-budget validation, Windows Live, final evidence, regression, and bundle remain pending.
+Gate 0/A architecture and owner decisions are checkpointed;
+Gate B/C Capture, spool recovery, and diagnostics are implemented and tested;
+Gate D Provider-backed one-Formation/one-Placement batch Admission is validated;
+Gate E cross-session and post-restart Pending Live is validated;
+Gate F deterministic fast Recall is validated, but Provider-backed admitted Recall Live is blocked;
+Gate G is partial because the 10-turn, admitted Recall, and four-point crash matrices are incomplete;
+Gate H evidence and report are frozen; final regression, commit, tag, and bundle remain.
 ```
 
 The active boundary remains layer-0. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, hidden-reasoning persistence, external queue, or database is authorized.
