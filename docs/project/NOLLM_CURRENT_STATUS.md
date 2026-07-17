@@ -1,48 +1,48 @@
 # Nollm Current Status
 
-Date: 2026-07-16
+Date: 2026-07-17
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md
-status: AOLD_REAL_MEMORY_COMMIT_RECALL_LATENCY_BASELINE_IN_PROGRESS
-input HEAD: 26bd0ae68470ef8d1396014884e305cc1c3ab7ef
-Gate 0 checkpoint: b16ca3bf979ca054341531b9df92388fc02b805f
-evidence/report checkpoint: 71ba080bf8d2ec196ced294c1392d0f02027ac3d
+task: NOLLM_A_O_L_D_DURABLE_CAPTURE_ASYNC_ABSORPTION_READ_YOUR_WRITES_FAST_RECALL_TASK_20260717.md
+status: AOLD_DURABLE_CAPTURE_ASYNC_ABSORPTION_IN_PROGRESS
+input HEAD: ca50a97e0b9ea6a6358ff37ececbb5cfb4eaaa61
+Gate 0/A checkpoint: pending
+evidence/report checkpoint: pending
 ```
 
 Active result:
 
 ```text
-input bundle and tagged HEAD verified;
-timing semantics corrected and deterministic timing tests added;
-110 frozen Evidence records cover 12 write host turns and 12 Recall host turns;
-3 Placement terminals reached durable reopen-verified state, but none had the required message_sent source endpoint;
-8 Recall queries reached hidden injection and 4 reached NONE terminal;
-visible-answer correlation is 0/12 because the CLI host emitted agent_end rather than message_sent;
+input bundle, SHA, tag, and HEAD verified;
+OpenClaw selected as the unique Capture and worker-state owner;
+immutable Capture plus append-only state-event spool implemented;
+Pending read-your-writes is bounded and Provider-free;
+admitted Recall has a zero-call singleton and one-call common entry path;
+batch Formation is one call, while Placement call compression and Windows Live remain active gaps;
 existing V1-V6 workspaces and prior frozen Evidence remain preserved.
 ```
 
 Basis limitation: the taskbook names `docs/architecture/NOLLM_ARCHITECTURE_BOOK_V3_7_ROTATED_MULTI_SCALE_PHYSICAL_MEMORY_FIELD_20260714.md`, but that file is absent from the verified input tree. No substitute document is treated as that authority.
 
-Measurement truth:
+V3.10 truth:
 
 ```text
-Formation output is not durable memory;
-durable memory requires Statement + current HandleBinding + Core Atom and readback;
-recall-ready ends at hidden injection readiness;
-visible recall ends only at a correlated main-agent message_sent event;
-monotonic clocks measure in-process durations and epoch timestamps correlate hooks/processes;
-the legacy cumulative formation_ms field is excluded from formal statistics.
+Capture preserves the exact visible user/assistant turn but is not an admitted memory Statement;
+Capture success requires an immutable fsynced file and append-only captured event;
+Admission requires Statement + HandleBinding + Core Atom and reopen readback;
+Pending fallback reads only bounded recent Capture files and makes no Provider call;
+admitted Recall selects exactly one geometry entry with zero or one hidden call;
+background retry state never overwrites Capture bytes.
 ```
 
 Gate truth:
 
 ```text
-Gate 0 through Gate 5 implementation and evidence work are complete;
-the completion gate is not met: durable correlated turns 0/8 required, visible-answer evidence absent, and cold relevant samples 1/2 required;
-full Python and Node regressions, ownership manifest, boundary verification, and diff checks pass;
-final bundle creation and clean-clone verification remain pending.
+Gate 0/A architecture and owner decisions are implemented but not checkpointed;
+Gate B/C deterministic Capture and recovery code is implemented;
+Gate E/F deterministic Pending and fast Recall code is implemented;
+Gate D call-budget validation, Windows Live, final evidence, regression, and bundle remain pending.
 ```
 
-The active boundary remains measurement-only and layer-0. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, hidden-reasoning persistence, or performance optimization is authorized.
+The active boundary remains layer-0. No semantic index, embedding, graph, Cursor, forced Cell placement, persistent Surface cache, multi-entry Recall, hidden-reasoning persistence, external queue, or database is authorized.

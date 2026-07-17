@@ -1,16 +1,22 @@
-# Nollm V3.9 Real Memory Latency Baseline Rules
+# Nollm V3.10 Durable Capture And Async Absorption Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_9_BOUNDED_APPROXIMATE_HEX_COVERAGE_20260715.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_10_DURABLE_CAPTURE_ASYNC_ABSORPTION_20260717.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_REAL_MEMORY_COMMIT_AND_RECALL_LATENCY_BASELINE_TASK_20260716.md`.
-- `26bd0ae68470ef8d1396014884e305cc1c3ab7ef` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and live evidence.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_DURABLE_CAPTURE_ASYNC_ABSORPTION_READ_YOUR_WRITES_FAST_RECALL_TASK_20260717.md`.
+- `ca50a97e0b9ea6a6358ff37ececbb5cfb4eaaa61` is the input checkpoint. Preserve its calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and frozen latency evidence.
 
-## Latency measurement contract
+## Foreground and background contract
 
-- The active task measures the existing layer-0 memory loop; it does not add new memory architecture.
+- The visible path durably publishes exact user and assistant bytes before returning from the delivery Hook.
+- Capture performs zero Provider, Python bridge, Surface, and Core calls.
+- OpenClaw owns immutable Capture and append-only state events; Access does not persist raw conversation Capture.
+- Formation, Placement, confirmation, and Admission run only through the recoverable background worker.
+- Pending read-your-writes is bounded by scope, time, count, and characters and has no query/topic/source index.
+- Admission is complete only after Statement, HandleBinding, and Core Atom reopen verification.
+- Mechanical singleton Recall uses zero hidden calls; common admitted Recall uses at most one entry-selection call and no second Statement-selection agent.
 - "Conversation becomes remembered" means Statement + current HandleBinding + Core Atom are durably committed and readable after reopen.
 - Formation output alone is not remembered memory.
 - "Recall ready" means the hidden injection payload is ready for the main agent.
