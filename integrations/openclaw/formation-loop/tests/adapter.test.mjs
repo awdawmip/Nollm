@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
+import { CaptureStore } from "../dist/capture.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
@@ -150,15 +153,34 @@ test("resolved child model comes from the final assistant session message", () =
   assert.deepEqual(extractResolvedModel([{ role: "assistant", content: "missing metadata" }]), {});
 });
 
-test("hook callbacks return synchronously and do not call runtime inline", () => {
+test("delivery hooks await only local Capture and do not call runtime inline", async () => {
   const hooks = new Map(); let spawnCount = 0;
   registerDreamAgent({ pluginConfig: {}, on(name, handler) { hooks.set(name, handler); }, runtime: { subagent: { run() { spawnCount += 1; } } } });
   hooks.get("message_received")({ content: "real user", runId: "r" }, { sessionKey: "s", runId: "r" });
-  const channelReturn = hooks.get("message_sent")({ success: true, content: "reply", runId: "r" }, { sessionKey: "s", runId: "r" });
-  const turnReturn = hooks.get("agent_end")({ success: true, runId: "r", messages: [{ role: "user", content: "real user" }, { role: "assistant", content: "reply" }] }, { sessionKey: "s", runId: "r", messageProvider: "webchat" });
-  assert.equal(channelReturn, undefined);
-  assert.equal(turnReturn, undefined);
+  await hooks.get("message_sent")({ success: true, content: "reply", runId: "r" }, { sessionKey: "s", runId: "r" });
+  await hooks.get("agent_end")({ success: true, runId: "r", messages: [{ role: "user", content: "real user" }, { role: "assistant", content: "reply" }] }, { sessionKey: "s", runId: "r", messageProvider: "webchat" });
   assert.equal(spawnCount, 0);
+});
+
+test("delivery Capture is durable before return and pending fallback crosses sessions without Provider", async () => {
+  const root = fs.mkdtempSync(join(tmpdir(), "nollm-hook-capture-"));
+  try {
+    const hooks = new Map(); let spawnCount = 0;
+    registerDreamAgent({
+      pluginConfig: { capture_workspace: root, capture_enabled: true, absorption_enabled: false, capture_scope_id: "fallback" },
+      on(name, handler) { hooks.set(name, handler); },
+      runtime: { subagent: { run() { spawnCount += 1; } } },
+    });
+    hooks.get("message_received")({ content: " exact user\n", runId: "r" }, { sessionKey: "session-one", runId: "r", userId: "u1" });
+    await hooks.get("message_sent")({ success: true, content: "exact assistant\n", runId: "r" }, { sessionKey: "session-one", runId: "r", userId: "u1" });
+    const records = await new CaptureStore(root).allRecords();
+    assert.equal(records.length, 1);
+    assert.equal(records[0].user_utf8, " exact user\n");
+    assert.equal(records[0].assistant_utf8, "exact assistant\n");
+    const prepared = await hooks.get("agent_turn_prepare")({ prompt: "what did I say?" }, { sessionKey: "session-two", runId: "q", userId: "u1" });
+    assert.match(prepared.appendContext, /exact user/);
+    assert.equal(spawnCount, 0);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
 test("missing host configuration fails open after delivery", async () => {

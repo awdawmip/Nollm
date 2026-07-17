@@ -5,6 +5,7 @@ import { AsyncResource } from "node:async_hooks";
 import { dirname, join } from "node:path";
 import { buildJsonPluginConfigSchema, definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 import { appendLatencyEvent, COMMIT_LATENCY_SCHEMA, durationMs, durationUs, RECALL_LATENCY_SCHEMA, sha256Text, systemLatencyClock, turnCorrelationId } from "./latency.js";
+import { AbsorptionWorker, CaptureStore, type AbsorptionResult, type CaptureRecord } from "./capture.js";
 
 export type RunResult = { code: number; stdout: string; stderr: string };
 export type DreamConfig = {
@@ -30,6 +31,10 @@ export type DreamConfig = {
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
   persist_subagent_transcripts?: boolean; debug_trace?: boolean; evidence_path?: string;
   latency_validation_enabled?: boolean; latency_evidence_path?: string; latency_scenario_id?: string; latency_validation_run_id?: string;
+  capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
+  absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number;
+  pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
+  recall_hidden_call_budget?: 1;
   surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
   recall_surface_max_pages?: number; recall_surface_max_cells?: number; recall_surface_max_projection_units?: number; recall_surface_max_calls?: number;
   placement_surface_max_pages?: number; placement_surface_max_cells?: number; placement_surface_max_projection_units?: number; placement_surface_max_calls?: number;
@@ -65,6 +70,13 @@ const JSON_SCHEMA = {
     debug_trace: { type: "boolean", default: false }, evidence_path: { type: "string" },
     latency_validation_enabled: { type: "boolean", default: false }, latency_evidence_path: { type: "string" },
     latency_scenario_id: { type: "string" }, latency_validation_run_id: { type: "string" },
+    capture_enabled: { type: "boolean", default: true }, capture_workspace: { type: "string" }, capture_scope_id: { type: "string", default: "local-default-user" },
+    absorption_enabled: { type: "boolean", default: true }, absorption_batch_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
+    absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
+    absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
+    pending_fallback_enabled: { type: "boolean", default: true }, pending_fallback_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
+    pending_fallback_max_chars: { type: "integer", minimum: 1, default: 6000 }, pending_fallback_max_age_ms: { type: "integer", minimum: 1000, default: 604800000 },
+    recall_hidden_call_budget: { type: "integer", const: 1, default: 1 },
     surface_page_size: { type: "integer", minimum: 1, maximum: 8, default: 8 }, surface_max_order: { type: "integer", minimum: 0, maximum: 8, default: 8 },
     surface_page_overhead_units: { type: "integer", minimum: 1, default: 8 }, surface_cell_preview_units: { type: "integer", minimum: 1, default: 4 },
     recall_surface_max_pages: { type: "integer", minimum: 1, default: 4 }, recall_surface_max_cells: { type: "integer", minimum: 1, default: 32 }, recall_surface_max_projection_units: { type: "integer", minimum: 1, default: 160 }, recall_surface_max_calls: { type: "integer", minimum: 1, default: 24 },
@@ -178,16 +190,37 @@ export function extractAssistantText(messages: unknown[]): string | undefined {
   return undefined;
 }
 
+export function extractAssistantTextExact(messages: unknown[]): string | undefined {
+  for (const item of [...messages].reverse()) {
+    if (!item || typeof item !== "object") continue;
+    const value = item as Record<string, unknown>;
+    if (value.role !== "assistant") continue;
+    if (typeof value.content === "string" && value.content.trim()) return value.content;
+    if (Array.isArray(value.content)) {
+      const text = value.content.map(part => part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string" ? (part as Record<string, unknown>).text : "").join("");
+      if (text.trim()) return text;
+    }
+  }
+  return undefined;
+}
+
 export function extractUserTurns(messages: unknown[]): Turn[] {
   return messages.flatMap(item => {
     if (!item || typeof item !== "object") return [];
     const value = item as Record<string, unknown>;
     if (value.role !== "user") return [];
-    if (typeof value.content === "string" && value.content.trim()) return [{ role: "user" as const, content_utf8: value.content.trim() }];
+    if (typeof value.content === "string" && value.content.trim()) return [{ role: "user" as const, content_utf8: value.content }];
     if (!Array.isArray(value.content)) return [];
-    const content = value.content.map(part => part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string" ? (part as Record<string, unknown>).text : "").join("").trim();
-    return content ? [{ role: "user" as const, content_utf8: content }] : [];
+    const content = value.content.map(part => part && typeof part === "object" && typeof (part as Record<string, unknown>).text === "string" ? (part as Record<string, unknown>).text : "").join("");
+    return content.trim() ? [{ role: "user" as const, content_utf8: content }] : [];
   }).slice(-2);
+}
+
+export function captureScope(context: unknown, configured = "local-default-user"): string {
+  const value = context && typeof context === "object" ? context as Record<string, unknown> : {};
+  const identity = ["accountId", "userId", "senderId"].map(key => value[key]).find(item => typeof item === "string" && item.length) as string | undefined;
+  const provider = typeof value.messageProvider === "string" ? value.messageProvider : typeof value.channelId === "string" ? value.channelId : "local";
+  return identity ? `${provider}:${identity}` : configured;
 }
 
 export function turnKey(sessionKey: string, runId?: string, messageId?: string, content = ""): string {
@@ -215,6 +248,9 @@ async function trace(config: DreamConfig, value: object): Promise<void> {
 
 export function registerDreamAgent(api: OpenClawPluginApi): void {
   const config = (api.pluginConfig ?? {}) as DreamConfig;
+  const configuredMemoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
+  const captureRoot = config.capture_workspace ?? (configuredMemoryWorkspace ? join(configuredMemoryWorkspace, "openclaw-capture-spool") : undefined);
+  const captureStore = config.capture_enabled === false || !captureRoot ? undefined : new CaptureStore(captureRoot);
   const pending = new Map<string, Pending>();
   const inFlight = new Set<string>();
   const scheduled = new Set<string>();
@@ -245,15 +281,126 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
     }
   };
+  const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[]): Promise<AbsorptionResult[]> => {
+    const model = configuredModel(records.map(record => record.model_ref).find(Boolean));
+    if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
+      return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: "absorption configuration or model unavailable" }));
+    }
+    const turns = records.flatMap(record => ([
+      { role: "user" as const, content_utf8: record.user_utf8 },
+      { role: "assistant" as const, content_utf8: record.assistant_utf8 },
+    ]));
+    const request = {
+      request_id: `dream-request-${batchId}`,
+      material: { material_id: `material-${batchId}`, turns },
+      max_statements: config.max_statements ?? 8, max_statement_chars: config.max_statement_chars ?? 4096,
+      max_total_chars: config.max_total_chars ?? 8192, schema_version: "nollm_access_dream_formation_v1",
+    };
+    const built = await bridge(config, { action: "build_dream_prompt", request, prompt_version: config.prompt_version ?? "dream-json-p1" });
+    if (built.ok !== true || typeof built.prompt !== "string") return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(built.error ?? "batch prompt failed") }));
+    const formation = await runDreamSubagent(api, config, built.prompt, model, `${batchId}:formation`);
+    if (!formation?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "batch Formation failed" }));
+    const parsed = await parseDreamAttempt(config, request, formation.raw, `dream-result-${batchId}`, "batch", formation.runId, `capture-batch:${batchId}`, Date.now() - formation.providerMs, formation.resolved, built.prompt_version);
+    if (parsed.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(parsed.error ?? "batch Formation parse failed") }));
+    const statements = Array.isArray(parsed.statements) ? parsed.statements : [];
+    if (!statements.length) return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
+    for (const [index, statement] of statements.entries()) {
+      await completePlacement(api, config, `capture-batch:${batchId}`, statement, model!, batchId, {
+        turnId: batchId, turnVisibleEpochMs: Math.min(...records.map(record => record.captured_epoch_ms)), turnVisibleSourceValid: false,
+        statementIndex: index, statementCount: statements.length, formationProviderTotalMs: formation.providerMs,
+        formationLocalTotalMs: 0, deprecatedCumulativeFormationMs: formation.providerMs,
+      });
+    }
+    const statementIds = statements.flatMap(statement => statement && typeof statement === "object" && typeof (statement as Record<string, unknown>).statement_id === "string" ? [(statement as Record<string, unknown>).statement_id as string] : []);
+    const verified = await bridge(config, { action: "verify_admitted_statements", statement_ids: statementIds, memory_workspace: configuredMemoryWorkspace });
+    if (verified.ok !== true || verified.reopen_verified !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(verified.message ?? verified.error ?? "batch Admission incomplete") }));
+    return records.map(record => ({ captureId: record.capture_id, status: "admitted", statementIds }));
+  };
+  const absorptionWorker = captureStore && config.absorption_enabled !== false ? new AbsorptionWorker(captureStore, {
+    batchMaxCaptures: config.absorption_batch_max_captures ?? 4,
+    batchMaxChars: config.absorption_batch_max_chars ?? 24000,
+    staleClaimMs: config.absorption_stale_claim_ms ?? 300000,
+  }, absorbCapturedBatch) : undefined;
+  let absorptionTimer: NodeJS.Timeout | undefined;
+  const scheduleAbsorption = () => {
+    if (!absorptionWorker || absorptionTimer) return;
+    absorptionTimer = setTimeout(() => {
+      absorptionTimer = undefined;
+      void absorptionWorker.runOnce();
+    }, config.absorption_max_wait_ms ?? 250);
+    absorptionTimer.unref?.();
+  };
+  const publishCapture = async (sessionKey: string, runId: string | undefined, user: string | undefined, assistant: string, context: unknown, model?: string) => {
+    if (!captureStore || !user?.trim() || !assistant.trim()) return undefined;
+    const receipt = await captureStore.publish({
+      scopeKey: captureScope(context, config.capture_scope_id ?? "local-default-user"), sessionKey,
+      turnIdentity: runId ?? createHash("sha256").update(`${user}\0${assistant}`).digest("hex"),
+      userUtf8: user, assistantUtf8: assistant, modelRef: configuredModel(model),
+    });
+    await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
+    scheduleAbsorption();
+    return receipt;
+  };
+  scheduleAbsorption();
   api.on("agent_turn_prepare", async (event, ctx) => {
     const observedAt = Date.now();
     const operationStartedMonoNs = systemLatencyClock.monotonicNs();
     if (ctx.sessionKey) recallSatisfiedSessions.delete(ctx.sessionKey);
     const memoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
-    if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !memoryWorkspace || !config.python_executable || !config.nollm_repo_root || !event.prompt.trim()) return;
+    if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !event.prompt.trim()) return;
+    if (captureStore && config.pending_fallback_enabled !== false) {
+      const pendingStartedMonoNs = systemLatencyClock.monotonicNs();
+      const recent = await captureStore.renderPending(captureScope(ctx, config.capture_scope_id ?? "local-default-user"), {
+        maxCaptures: config.pending_fallback_max_captures ?? 4,
+        maxChars: config.pending_fallback_max_chars ?? 6000,
+        maxAgeMs: config.pending_fallback_max_age_ms ?? 604800000,
+      });
+      if (recent.injection) {
+        await trace(config, { status: "completed", stage: "pending_fallback", capture_ids: recent.captureIds, rendered_chars: recent.chars, local_ms: durationMs(pendingStartedMonoNs, systemLatencyClock.monotonicNs()), hidden_provider_calls: 0 });
+        recallSatisfiedSessions.add(ctx.sessionKey);
+        return { appendContext: recent.injection };
+      }
+    }
+    if (!memoryWorkspace || !config.python_executable || !config.nollm_repo_root) return;
     const model = configuredModel(ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined);
     if (!usableModel(model)) return;
     const requestId = `recall-${createHash("sha256").update(`${ctx.sessionKey}\0${ctx.runId ?? event.prompt}`).digest("hex")}`;
+    if ((config.recall_hidden_call_budget ?? 1) === 1) {
+      const built = await bridge(config, {
+        action: "build_fast_recall_prompt", request_id: requestId, query: event.prompt, memory_workspace: memoryWorkspace,
+        max_entries: config.recall_surface_max_cells ?? 32, max_statements: config.max_statements ?? 8,
+        max_chars: config.max_total_chars ?? 8192,
+      });
+      if (built.ok !== true) { await trace(config, { status: "error", stage: "fast_recall_build", request_id: requestId, ...built }); return; }
+      if (built.status === "complete_none") {
+        await trace(config, { status: "completed_none", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
+        return;
+      }
+      if (built.status === "complete_inject" && typeof built.injection === "string") {
+        recallSatisfiedSessions.add(ctx.sessionKey);
+        await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, selected_entry: built.selected_entry, statement_ids: built.statement_ids, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
+        return { appendContext: built.injection };
+      }
+      if (built.status !== "entry_decision" || typeof built.prompt !== "string" || !Array.isArray(built.entries)) return;
+      const selected = await runHiddenAgent(built.prompt, model!, `${requestId}:single-entry`);
+      if (!selected.raw) { await trace(config, { status: "defer", stage: "fast_recall_agent", request_id: requestId, hidden_provider_calls: 1, error: selected.error }); return; }
+      const applied = await bridge(config, {
+        action: "apply_fast_recall_selection", request_id: requestId, raw_model_response: selected.raw,
+        entries: built.entries, memory_workspace: memoryWorkspace, max_statements: config.max_statements ?? 8,
+        max_chars: config.max_total_chars ?? 8192,
+      });
+      const totalOperationMs = durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs());
+      if (applied.ok !== true || applied.outcome === "none") {
+        await trace(config, { status: applied.ok === true ? "completed_none" : "error", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved, ...applied });
+        return;
+      }
+      if (applied.outcome === "inject" && typeof applied.injection === "string") {
+        recallSatisfiedSessions.add(ctx.sessionKey);
+        await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, selected_entry: applied.selected_entry, statement_ids: applied.statement_ids, selected_paths: applied.selected_paths, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved });
+        return { appendContext: applied.injection };
+      }
+      return;
+    }
     const timing: Record<string, number | string | boolean | null> = {
       surface_build_ms: 0, surface_order_count: 0, surface_projection_count: 0,
       surface_page_count: 0, physical_entry_resolution_ms: 0, recall_core_ms: 0,
@@ -362,7 +509,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const observedMonoNs = systemLatencyClock.monotonicNs();
     if (config.enabled === false || !ctx.sessionKey || typeof event.content !== "string" || !event.content.trim()) return;
     const current: Pending = pending.get(ctx.sessionKey) ?? { users: [] };
-    const content = wellFormedText(event.content.trim());
+    const content = wellFormedText(event.content);
     const identity = event.messageId || `${event.runId ?? ctx.runId ?? ""}:${createHash("sha256").update(content).digest("hex")}`;
     if (!current.users.some(turn => turn.identity === identity)) current.users = [...current.users, { role: "user", content_utf8: content, identity } as UserObservation].slice(-2);
     else duplicateHookObservationCount += 1;
@@ -439,12 +586,15 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       await trace(config, { status: "error", stage: "spawn", request_id: requestId, error: String(error), trigger_phase: phase });
     }
   };
-  api.on("message_sent", (event, ctx) => {
+  api.on("message_sent", async (event, ctx) => {
     const observedAt = Date.now();
     const observedMonoNs = systemLatencyClock.monotonicNs();
     const sessionKey = ctx.sessionKey ?? event.sessionKey;
     if (!event.success || !sessionKey || !event.content.trim()) { recordHandler("message_sent", observedAt, observedMonoNs, { success: event.success }); return; }
     const current = pending.get(sessionKey); const runId = event.runId ?? ctx.runId ?? current?.runId;
+    const exactAssistant = wellFormedText(event.content);
+    const exactUser = current?.users.at(-1)?.content_utf8;
+    await publishCapture(sessionKey, runId, exactUser, exactAssistant, ctx, current?.resolvedModel);
     const recallKey = `${sessionKey}\0${runId ?? ""}`;
     const recall = pendingRecallLatencyByRun.get(recallKey);
     if (recall) {
@@ -457,25 +607,27 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "visible_answer", recall_request_id: unmatched.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, expected_main_run_id: unmatched.mainRunId, recall_outcome: unmatched.outcome, main_message_sent_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "main_run_id_mismatch", visible_message_count: 1 }); });
       }
     }
-    queue(() => { void launch({ sessionKey, runId, assistant: wellFormedText(event.content), phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt, observedMonoNs }); });
+    if (!captureStore) queue(() => { void launch({ sessionKey, runId, assistant: exactAssistant, phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt, observedMonoNs }); });
     recordHandler("message_sent", observedAt, observedMonoNs, { session_key: sessionKey, run_id: runId, trigger_phase: "AFTER_DELIVERY", success: true });
   });
-  api.on("agent_end", (event, ctx) => {
+  api.on("agent_end", async (event, ctx) => {
     const observedAt = Date.now();
     const observedMonoNs = systemLatencyClock.monotonicNs();
     if (!event.success || !ctx.sessionKey || ctx.agentId === "nollm-dream-agent") return;
-    const assistant = extractAssistantText(event.messages);
+    const assistant = extractAssistantTextExact(event.messages);
     if (!assistant) return;
     const model = ctx.modelProviderId && ctx.modelId ? `${ctx.modelProviderId}/${ctx.modelId}` : undefined;
     const content = wellFormedText(assistant);
     const runId = event.runId ?? ctx.runId;
+    const exactUsers = extractUserTurns(event.messages);
+    await publishCapture(ctx.sessionKey, runId, exactUsers.at(-1)?.content_utf8, content, ctx, model);
     const recallKey = `${ctx.sessionKey}\0${runId ?? ""}`;
     const recall = pendingRecallLatencyByRun.get(recallKey);
     if (recall) {
       pendingRecallLatencyByRun.delete(recallKey);
       queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey!), event_type: "visible_answer", recall_request_id: recall.requestId, session_key_sha256: sha256Text(ctx.sessionKey!), main_run_id: runId, recall_outcome: recall.outcome, agent_end_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "message_sent_not_observed", visible_message_count: 0 }); });
     }
-    queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: extractUserTurns(event.messages), resolvedModel: model }); });
+    if (!captureStore) queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: exactUsers, resolvedModel: model }); });
     recordHandler("agent_end", observedAt, observedMonoNs, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
   });
   api.on("subagent_spawned", (event) => {
