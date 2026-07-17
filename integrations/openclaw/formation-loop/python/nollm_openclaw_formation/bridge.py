@@ -24,6 +24,9 @@ from .memory_loop import (
     build_recall_prompt,
     parse_revision_confirmation,
     render_recall_injection,
+    verify_admitted_statements,
+    build_fast_recall_prompt,
+    apply_fast_recall_selection,
 )
 
 
@@ -117,6 +120,24 @@ def main() -> None:
             return
         if action == "render_recall_injection":
             result = render_recall_injection(envelope["raw_model_response"], envelope["candidates"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "verify_admitted_statements":
+            result = verify_admitted_statements(envelope["statement_ids"], envelope["memory_workspace"])
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_fast_recall_prompt":
+            result = build_fast_recall_prompt(
+                envelope["query"], envelope["memory_workspace"], envelope["request_id"],
+                envelope.get("max_entries", 32), envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "apply_fast_recall_selection":
+            result = apply_fast_recall_selection(
+                envelope["raw_model_response"], envelope["entries"], envelope["memory_workspace"], envelope["request_id"],
+                envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+            )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         request = OpenClawEventTranslator().translate(envelope["request"])

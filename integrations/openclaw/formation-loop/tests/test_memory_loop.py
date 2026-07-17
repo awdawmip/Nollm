@@ -8,6 +8,7 @@ from nollm_openclaw_formation.memory_loop import (
     PLACEMENT_SCHEMA_VERSION,
     RECALL_SCHEMA_VERSION,
     TRAVERSAL_SCHEMA_VERSION,
+    FAST_RECALL_SCHEMA_VERSION,
     advance_placement_traversal,
     advance_recall_traversal,
     apply_placement,
@@ -17,6 +18,8 @@ from nollm_openclaw_formation.memory_loop import (
     build_revision_redecision_prompt,
     parse_revision_confirmation,
     render_recall_injection,
+    build_fast_recall_prompt,
+    apply_fast_recall_selection,
 )
 
 
@@ -51,6 +54,44 @@ def place_initial(workspace) -> dict[str, object]:
         built["selected_entry"],
     )
     return applied
+
+
+def test_fast_recall_mechanical_singleton_uses_zero_hidden_calls(tmp_path):
+    place_initial(tmp_path)
+    recalled = build_fast_recall_prompt("When is the release window?", str(tmp_path), "fast-single")
+    assert recalled["status"] == "complete_inject"
+    assert recalled["hidden_call_count"] == 0
+    assert recalled["selected_entry"] == CELL
+    assert recalled["statement_ids"] == ["dream:test"]
+    assert "Wednesday" in recalled["injection"]
+
+
+def test_fast_recall_selects_one_geometry_entry_then_injects_without_second_selection(tmp_path):
+    place_initial(tmp_path)
+    second = {"statement_id": "dream:second", "content_utf8": "The deployment color is green.", "source_handle": None, "context_refs": []}
+    built = build_placement_prompt(second, str(tmp_path), "placement-second")
+    while built["status"] == "traverse":
+        candidate = built["surface"]["surface_cells"][0]["candidate_id"]
+        built = advance_placement_traversal(second, built["traversal_state"], navigation("open_physical_entries", candidate), str(tmp_path))
+    if built["status"] == "physical_entry":
+        built = advance_placement_traversal(second, built["traversal_state"], navigation("defer"), str(tmp_path))
+    if built["status"] != "placement_decision":
+        built = build_placement_prompt(second, str(tmp_path), "placement-second-frontier")
+        # Select no existing locality: the bounded fallback remains the explicit frontier.
+        with AccessMemoryLoop(tmp_path) as loop:
+            candidates = loop.placement_candidates(None, "placement-second-frontier:candidates")
+        applied = apply_placement(placement("dream:second", "expand_surface", candidates[0]["candidate_id"]), second, str(tmp_path), "placement-second-frontier", None)
+    else:
+        frontier = next(item for item in built["candidates"] if item["relation_kind"] == "expand_surface")
+        applied = apply_placement(placement("dream:second", "expand_surface", frontier["candidate_id"]), second, str(tmp_path), "placement-second", built["selected_entry"])
+    assert applied["outcome"] == "applied"
+    decision = build_fast_recall_prompt("What is the release window?", str(tmp_path), "fast-many")
+    assert decision["status"] == "entry_decision"
+    chosen = next(item for item in decision["entries"] if any(statement["statement_id"] == "dream:test" for statement in item["statements"]))
+    result = apply_fast_recall_selection(json.dumps({"schema_version": FAST_RECALL_SCHEMA_VERSION, "outcome": "select", "entry_id": chosen["entry_id"]}), decision["entries"], str(tmp_path), "fast-many")
+    assert result["hidden_call_count"] == 1
+    assert result["status"] == "complete_inject"
+    assert "dream:test" in result["statement_ids"]
 
 
 def test_empty_surface_placement_expands_without_persistent_entry_hint(tmp_path):

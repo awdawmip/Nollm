@@ -109,6 +109,33 @@ class AccessMemoryLoop:
             context.append({"candidate_id": candidate["candidate_id"], "statements": statements[:3]})
         return context
 
+    def bounded_physical_entries(
+        self,
+        request_id: str,
+        max_entries: int = 32,
+        scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
+    ) -> list[dict[str, object]]:
+        """Project a finite geometry-ordered entry view without a semantic index."""
+        self._require_request(request_id)
+        if type(max_entries) is not int or not 1 <= max_entries <= 64:
+            raise ValueError("max_entries must be between 1 and 64")
+        if type(scope) is not PhysicalFieldScope:
+            raise TypeError("scope must be PhysicalFieldScope")
+        with CoreRuntime(self._workspace) as core:
+            cells = tuple(sorted(
+                (cell for cell in core.occupied_cells() if scope.contains(cell)),
+                key=lambda item: item.stable_key(),
+            ))[:max_entries]
+            candidates = [self._candidate(core, f"physical-entry:{index}", "existing_cell", cell) for index, cell in enumerate(cells)]
+        contexts = self.candidate_statement_context(candidates)
+        statements = {item["candidate_id"]: item["statements"] for item in contexts}
+        return [{
+            "entry_id": item["candidate_id"],
+            "entry_cell": item["geometry_address"],
+            "occupancy_count": item["occupancy"]["count"],
+            "statements": statements[item["candidate_id"]],
+        } for item in candidates]
+
     def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
         self._require_request(request_id)
         if type(entry_cells) is not list or len(entry_cells) != 1:

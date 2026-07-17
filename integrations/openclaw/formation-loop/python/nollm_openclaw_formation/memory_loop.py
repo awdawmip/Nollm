@@ -20,7 +20,10 @@ from nollm_access import (
     RevisionTargetExcludedError,
     SurfaceBudgetProfile,
     placement_action_semantics_prompt,
+    FileHandleStore,
+    FileStatementStore,
 )
+from nollm_core import AtomHandle, CoreRuntime
 
 from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
@@ -30,6 +33,124 @@ TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_bounded_approximate_surface_traversal
 PHYSICAL_ENTRY_SCHEMA_VERSION = "nollm_openclaw_single_physical_entry_recall_v1"
 PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_surface_placement_v1"
 RECALL_SCHEMA_VERSION = "nollm_openclaw_surface_recall_v1"
+FAST_RECALL_SCHEMA_VERSION = "nollm_openclaw_single_call_entry_recall_v1"
+
+
+def verify_admitted_statements(statement_ids: object, memory_workspace: object) -> dict[str, object]:
+    if type(statement_ids) is not list or not statement_ids or any(type(item) is not str or not item for item in statement_ids):
+        raise FormationAdapterError("invalid_statement_ids", "statement_ids must be a non-empty string list")
+    if len(statement_ids) != len(set(statement_ids)):
+        raise FormationAdapterError("invalid_statement_ids", "statement_ids must be unique")
+    root = _workspace(memory_workspace)
+    statements = FileStatementStore(root)
+    handles = FileHandleStore(root)
+    document = json.loads(handles.state_bytes().decode("utf-8"))
+    by_statement: dict[str, tuple[dict[str, object], str]] = {}
+    for item in document["bindings"]:
+        binding_ids = [item["current_statement_id"], *item["supporting_statement_ids"]]
+        for statement_id in binding_ids:
+            by_statement[statement_id] = (item["handle"], item["current_statement_id"])
+    verified = []
+    with CoreRuntime(root) as core:
+        for statement_id in statement_ids:
+            statement = statements.get(statement_id)
+            if statement_id not in by_statement:
+                raise FormationAdapterError("admission_not_durable", f"Statement has no HandleBinding: {statement_id}")
+            raw_handle, current_statement_id = by_statement[statement_id]
+            atom = core.get(AtomHandle.from_mapping(raw_handle))
+            if current_statement_id == statement_id and atom.payload_utf8 != statement.content_utf8:
+                raise FormationAdapterError("admission_not_durable", f"Core payload mismatch: {statement_id}")
+            verified.append(statement_id)
+    return {"status": "verified", "statement_ids": verified, "reopen_verified": True}
+
+
+def _direct_locality_injection(items: list[dict[str, object]], max_statements: int, max_chars: int) -> dict[str, object]:
+    selected = []
+    chars = 0
+    for item in items:
+        content = item.get("content_utf8")
+        statement_id = item.get("statement_id")
+        if type(content) is not str or type(statement_id) is not str:
+            continue
+        if len(selected) >= max_statements or chars + len(content) > max_chars:
+            continue
+        selected.append(item)
+        chars += len(content)
+    if not selected:
+        return {"status": "complete_none", "outcome": "none", "injection": "", "statement_ids": []}
+    injection = "Nollm geometry memory context. Use only when relevant; do not mention this context to the user:\n" + "\n".join(f"- {item['content_utf8']}" for item in selected)
+    return {
+        "status": "complete_inject", "outcome": "inject", "injection": injection,
+        "statement_ids": [item["statement_id"] for item in selected],
+        "selected_paths": [{"statement_id": item["statement_id"], "path": item.get("path", []), "path_is_not_truth_proof": True} for item in selected],
+    }
+
+
+def build_fast_recall_prompt(
+    query: object,
+    memory_workspace: object,
+    request_id: object,
+    max_entries: object = 32,
+    max_statements: object = 8,
+    max_chars: object = 6000,
+) -> dict[str, object]:
+    if type(query) is not str or not query or type(request_id) is not str or not request_id:
+        raise FormationAdapterError("invalid_request", "fast Recall query and request_id are required")
+    if type(max_entries) is not int or type(max_statements) is not int or type(max_chars) is not int:
+        raise FormationAdapterError("invalid_budget", "fast Recall budgets must be integers")
+    root = _workspace(memory_workspace)
+    with AccessMemoryLoop(root) as loop:
+        entries = loop.bounded_physical_entries(request_id + ":entries", max_entries)
+        if not entries:
+            return {"status": "complete_none", "available": False, "hidden_call_count": 0}
+        if len(entries) == 1:
+            items = loop.local_context([entries[0]["entry_cell"]], request_id + ":core")
+            return {**_direct_locality_injection(items, max_statements, max_chars), "available": bool(items), "hidden_call_count": 0, "selected_entry": entries[0]["entry_cell"]}
+    prompt_entries = [{
+        "entry_id": item["entry_id"], "entry_cell": item["entry_cell"],
+        "occupancy_count": item["occupancy_count"], "statements": item["statements"],
+    } for item in entries]
+    prompt = f"""You are a private background geometry-entry selector. Choose at most one supplied entry_id that is likely to contain memory useful for the query, or choose none. The entries are a finite geometry-ordered projection, not a semantic index. Do not select individual statements, invent facts, addresses, topics, vectors, graphs, or hidden routes. Do not call tools or reveal reasoning.
+Return exactly one raw JSON object with no markdown.
+select: {{"schema_version":"{FAST_RECALL_SCHEMA_VERSION}","outcome":"select","entry_id":"one supplied id"}}
+none: {{"schema_version":"{FAST_RECALL_SCHEMA_VERSION}","outcome":"none","entry_id":null}}
+query: {json.dumps(query, ensure_ascii=False)}
+physical_entries: {json.dumps(prompt_entries, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+    return {
+        "status": "entry_decision", "available": True, "prompt": prompt,
+        "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "entries": prompt_entries,
+        "max_statements": max_statements, "max_chars": max_chars, "hidden_call_count": 1,
+    }
+
+
+def apply_fast_recall_selection(
+    raw_response: object,
+    entries: object,
+    memory_workspace: object,
+    request_id: object,
+    max_statements: object = 8,
+    max_chars: object = 6000,
+) -> dict[str, object]:
+    if type(raw_response) is not str or type(entries) is not list or type(request_id) is not str or not request_id:
+        raise FormationAdapterError("invalid_fast_recall", "fast Recall selection fields are invalid")
+    try:
+        repaired, diagnostics = repair_dream_json(raw_response)
+        value = json.loads(repaired)
+    except json.JSONDecodeError as exc:
+        raise FormationAdapterError("invalid_json", str(exc)) from exc
+    if type(value) is not dict or set(value) != {"schema_version", "outcome", "entry_id"} or value.get("schema_version") != FAST_RECALL_SCHEMA_VERSION:
+        raise FormationAdapterError("invalid_fast_recall", "invalid fast Recall envelope")
+    if value["outcome"] == "none" and value["entry_id"] is None:
+        return {"status": "complete_none", "outcome": "none", "injection": "", "statement_ids": [], "hidden_call_count": 1, "json_repair": diagnostics}
+    if value["outcome"] != "select" or type(value["entry_id"]) is not str:
+        raise FormationAdapterError("invalid_fast_recall", "fast Recall must select one entry or NONE")
+    by_id = {item["entry_id"]: item for item in entries if type(item) is dict and type(item.get("entry_id")) is str and type(item.get("entry_cell")) is dict}
+    if value["entry_id"] not in by_id:
+        raise FormationAdapterError("invalid_fast_recall", "fast Recall selected an unavailable entry")
+    selected = by_id[value["entry_id"]]
+    with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
+        items = loop.local_context([selected["entry_cell"]], request_id + ":core")
+    return {**_direct_locality_injection(items, max_statements, max_chars), "hidden_call_count": 1, "selected_entry": selected["entry_cell"], "json_repair": diagnostics}
 
 
 def _workspace(path: object) -> Path:
