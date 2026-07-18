@@ -31,10 +31,15 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.surface_legal_actions_contract_version.const, manifest.contracts.surfaceLegalActionsContractVersion);
   assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
   assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
-  assert.equal(manifest.version, "0.16.0");
+  assert.equal(manifest.version, "0.17.0");
   assert.equal(manifest.configSchema.properties.dream_sculptor_schema_version.const, manifest.contracts.dreamSculptorWire);
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 512);
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.default, 512);
+  assert.equal(manifest.configSchema.properties.proposition_writer_schema_version.const, "nollm_openclaw_proposition_writer_v1");
+  assert.equal(manifest.configSchema.properties.field_cartographer_schema_version.const, "nollm_openclaw_field_cartographer_v1");
+  assert.equal(manifest.configSchema.properties.cartographer_max_regions.const, 32);
+  assert.equal(manifest.configSchema.properties.cartographer_max_prompt_bytes.const, 65536);
+  assert.equal(manifest.configSchema.properties.cartographer_max_turns.const, 4);
   assert.equal(manifest.contracts.localityAtlasWire, "nollm_access_locality_atlas_v3");
   assert.equal(manifest.contracts.atlasCoverageRequired, true);
   assert.equal(manifest.contracts.junctionRealizedOnly, true);
@@ -293,20 +298,27 @@ test("plugin entry is an ordinary hook plugin", () => {
   assert.equal(typeof plugin.register, "function");
 });
 
-test("background absorption uses one Dream Sculptor call and per-Capture outcomes", () => {
+test("background absorption splits one Writer call from one bounded Cartographer session", () => {
   const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
-  const start = source.indexOf("const absorbCapturedBatch");
+  const start = source.indexOf("const absorbCapturedBatch =");
   const end = source.indexOf("const absorptionWorker", start);
   const body = source.slice(start, end);
-  assert.match(body, /action: "build_dream_sculptor_prompt"/);
-  assert.match(body, /action: "apply_dream_sculptor_result"/);
+  assert.match(body, /action: "build_proposition_writer_prompt"/);
+  assert.match(body, /action: "parse_proposition_writer_result"/);
+  assert.match(body, /action: "build_field_cartographer_prompt"/);
+  assert.match(body, /action: "advance_field_cartographer"/);
+  assert.match(body, /action: "apply_field_cartography_result"/);
   assert.equal(body.includes('action: "build_batch_placement_prompt"'), false);
   assert.equal(body.includes(":placement`"), false);
   assert.match(body, /source_capture_ids\.includes\(record\.capture_id\)/);
-  assert.match(body, /common_one_call: providerCalls === 1/);
+  assert.match(body, /proposition_writer_provider_calls: 1/);
+  assert.match(body, /cartographer_sessions: 1/);
+  assert.match(body, /cartographer_turns: cartographerTurns/);
+  assert.match(body, /common_one_writer_call: true/);
   assert.match(body, /const providerKey = `\$\{batchId\}:\$\{executionId\}`/);
-  assert.match(body, /Dream Sculptor failed: \$\{sculptorRun\.error/);
-  assert.match(body, /stage: "dream_sculptor_validation"/);
+  assert.match(body, /Proposition Writer failed: \$\{writerRun\.error/);
+  assert.match(body, /stage: "proposition_writer_validation"/);
+  assert.match(body, /runDreamSubagentInSession/);
   assert.match(body, /validated_plans: applied\.plans, durable_outcomes: outcomes/);
 });
 

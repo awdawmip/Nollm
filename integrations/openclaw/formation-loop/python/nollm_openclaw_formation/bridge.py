@@ -31,6 +31,13 @@ from .memory_loop import (
     apply_batch_placement,
 )
 from .sculptor import apply_dream_sculptor_result, build_dream_sculptor_prompt, parse_dream_sculptor_result
+from .cartographer import (
+    advance_field_cartographer,
+    apply_field_cartography_result,
+    build_field_cartographer_prompt,
+    build_proposition_writer_prompt,
+    parse_proposition_writer_result,
+)
 
 
 def _well_formed(value: object) -> object:
@@ -58,6 +65,40 @@ def main() -> None:
             wire = base64.b64decode(wire, validate=True).decode("utf-8")
         envelope = _well_formed(json.loads(wire))
         action = envelope.get("action")
+        if action == "build_proposition_writer_prompt":
+            result = build_proposition_writer_prompt(
+                envelope["captures"], envelope["request_id"], envelope.get("max_statements", 8),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "parse_proposition_writer_result":
+            result = parse_proposition_writer_result(
+                envelope["raw_model_response"], envelope["captures"], envelope["request_id"],
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_field_cartographer_prompt":
+            result = build_field_cartographer_prompt(
+                envelope["writer_result"], envelope["memory_workspace"], envelope["request_id"],
+                envelope.get("turn", 1), envelope.get("page"), envelope.get("local_detail"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "advance_field_cartographer":
+            result = advance_field_cartographer(
+                envelope["raw_model_response"], envelope["writer_result"], envelope["page"],
+                envelope["memory_workspace"], envelope["request_id"], envelope["turn"],
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "apply_field_cartography_result":
+            result = apply_field_cartography_result(
+                envelope["cartography_result"], envelope["writer_result"], envelope["captures"],
+                envelope["memory_workspace"], envelope["request_id"], envelope.get("revision_confirmations"),
+                envelope.get("only_statement_ids"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
         if action == "build_dream_sculptor_prompt":
             result = build_dream_sculptor_prompt(
                 envelope["captures"], envelope["memory_workspace"], envelope["request_id"],
