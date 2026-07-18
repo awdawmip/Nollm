@@ -21,4 +21,3 @@ One fact is stored as one Atom. Multi-entry reachability may emerge after later 
 The active semantic write plane is physical layer 0 in `default_dream_v1/default`. Surface projections are finite, state-derived, and disposable. A write candidate is legal only when Core validates its address and Access validates its operation-local candidate identity. LLMs select supplied candidate IDs and never emit coordinates.
 
 The historical route book remains scheduling context. V3.9 defines bounded approximate Coverage and V3.11 adds operation-local Recall Lenses and geometry-only Junction candidates without changing this physical contract.
-

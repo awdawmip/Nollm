@@ -297,7 +297,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
     }
   };
-  const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[]): Promise<AbsorptionResult[]> => {
+  const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[], executionId: string): Promise<AbsorptionResult[]> => {
     const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
       return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "absorption configuration or model temporarily unavailable" }));
@@ -318,8 +318,10 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (built.ok !== true || typeof built.prompt !== "string" || !built.atlas) {
       return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(built.message ?? built.error ?? "Dream Sculptor prompt failed") }));
     }
-    let sculptor = await runDreamSubagent(api, config, built.prompt, model, `${batchId}:sculptor`);
-    if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Dream Sculptor failed" }));
+    const providerKey = `${batchId}:${executionId}`;
+    let sculptorRun = await runDreamSubagentDetailed(api, config, built.prompt, model, `${providerKey}:sculptor`);
+    let sculptor = sculptorRun.attempt;
+    if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Dream Sculptor failed: ${sculptorRun.error ?? "empty response"}` }));
     let providerCalls = 1;
     let providerMs = sculptor.providerMs;
     let applied = await bridge(config, {
@@ -328,11 +330,17 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       memory_workspace: configuredMemoryWorkspace,
     });
     if (applied.ok !== true) {
-      const retryPrompt = `${built.prompt}\nYour previous response failed strict validation: ${String(applied.message ?? applied.error ?? "invalid output")}. Return one corrected JSON object.`;
-      sculptor = await runDreamSubagent(api, config, retryPrompt, model, `${batchId}:sculptor-retry`);
+      const initialValidationError = String(applied.message ?? applied.error ?? "invalid output");
+      await trace(config, {
+        status: "correction_required", stage: "dream_sculptor_validation", batch_id: batchId,
+        error: initialValidationError, ...outputEvidence(sculptor.raw),
+      });
+      const retryPrompt = `${built.prompt}\nYour previous response failed strict validation: ${initialValidationError}. Return one corrected JSON object.`;
+      sculptorRun = await runDreamSubagentDetailed(api, config, retryPrompt, model, `${providerKey}:sculptor-retry`);
+      sculptor = sculptorRun.attempt;
       providerCalls += 1;
       providerMs += sculptor?.providerMs ?? 0;
-      if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Dream Sculptor correction failed" }));
+      if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Dream Sculptor correction failed after ${initialValidationError}: ${sculptorRun.error ?? "empty response"}` }));
       applied = await bridge(config, {
         action: "apply_dream_sculptor_result", request_id: requestId,
         raw_model_response: sculptor.raw, captures, atlas: built.atlas,
@@ -349,7 +357,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       const first = provisional[0];
       const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: first.provisional_revision });
       if (confirmationBuilt.ok === true && typeof confirmationBuilt.prompt === "string") {
-        const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${batchId}:revision-confirmation`);
+        const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${providerKey}:revision-confirmation`);
         providerCalls += 1;
         providerMs += confirmationRun?.providerMs ?? 0;
         if (confirmationRun?.raw) {
@@ -378,6 +386,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       dream_sculptor_provider_calls: providerCalls, dream_sculptor_provider_ms: providerMs,
       common_one_call: providerCalls === 1, error_statement_count: errors.length,
       deferred_statement_count: deferred.length, atlas_fingerprint: built.atlas_fingerprint,
+      validated_plans: applied.plans, durable_outcomes: outcomes,
     });
     return records.map(record => {
       const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
@@ -398,11 +407,13 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     retryBackoffMs: config.absorption_retry_backoff_ms ?? 1000,
   }, absorbCapturedBatch) : undefined;
   let absorptionTimer: NodeJS.Timeout | undefined;
+  let absorptionServiceRunning = false;
   const scheduleAbsorption = () => {
-    if (!absorptionWorker || absorptionTimer) return;
+    if (!absorptionWorker || !absorptionServiceRunning || absorptionTimer) return;
     absorptionTimer = setTimeout(() => {
       absorptionTimer = undefined;
       void (async () => {
+        if (!absorptionServiceRunning) return;
         const scan = captureStore ? await captureStore.scanRecords() : { diagnostics: [] };
         if (scan.diagnostics.length) await trace(config, { status: "warning", stage: "capture_integrity", corrupt_capture_count: scan.diagnostics.length, files: scan.diagnostics.map(item => item.file) });
         await absorptionWorker.runOnce();
@@ -411,6 +422,15 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }, config.absorption_max_wait_ms ?? 250);
     absorptionTimer.unref?.();
   };
+  api.registerService?.({
+    id: "nollm-durable-capture-absorption",
+    start: () => { absorptionServiceRunning = true; scheduleAbsorption(); },
+    stop: () => {
+      absorptionServiceRunning = false;
+      if (absorptionTimer) clearTimeout(absorptionTimer);
+      absorptionTimer = undefined;
+    },
+  });
   const publishCapture = async (sessionKey: string, runId: string | undefined, user: string | undefined, assistant: string, context: unknown, model?: string) => {
     if (!captureStore || !user?.trim() || !assistant.trim()) return undefined;
     const receipt = await captureStore.publish({
@@ -425,7 +445,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     scheduleAbsorption();
     return receipt;
   };
-  scheduleAbsorption();
   api.on("agent_turn_prepare", async (event, ctx) => {
     const observedAt = Date.now();
     const operationStartedMonoNs = systemLatencyClock.monotonicNs();
@@ -783,6 +802,7 @@ async function completeDream(api: OpenClawPluginApi, config: DreamConfig, parent
 }
 
 type DreamAttempt = { raw: string; runId: string; resolved: Record<string, string>; providerMs: number };
+type DreamRunResult = { attempt?: DreamAttempt; error?: string };
 
 function outputEvidence(raw: string): Record<string, unknown> {
   const limit = 24000;
@@ -834,16 +854,24 @@ async function runFullDreamRetry(api: OpenClawPluginApi, config: DreamConfig, re
 }
 
 async function runDreamSubagent(api: OpenClawPluginApi, config: DreamConfig, prompt: string, model: string | undefined, idempotencyKey: string): Promise<DreamAttempt | undefined> {
+  return (await runDreamSubagentDetailed(api, config, prompt, model, idempotencyKey)).attempt;
+}
+
+async function runDreamSubagentDetailed(api: OpenClawPluginApi, config: DreamConfig, prompt: string, model: string | undefined, idempotencyKey: string): Promise<DreamRunResult> {
   const sessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
   const override = config.model_mode === "dedicated" && model ? modelOverride(model) : undefined;
   const providerStartedMonoNs = systemLatencyClock.monotonicNs();
   try {
     const spawned = await api.runtime.subagent.run({ sessionKey, message: prompt, ...(override ?? {}), lightContext: true, deliver: false, idempotencyKey });
     const waited = await api.runtime.subagent.waitForRun({ runId: spawned.runId, timeoutMs: config.timeout_ms ?? 120000 });
-    if (waited.status !== "ok") return undefined;
+    if (waited.status !== "ok") return { error: String(waited.error ?? waited.status) };
     const session = await api.runtime.subagent.getSessionMessages({ sessionKey, limit: 20 });
     const raw = extractAssistantText(session.messages);
-    return raw ? { raw, runId: spawned.runId, resolved: extractResolvedModel(session.messages), providerMs: durationMs(providerStartedMonoNs, systemLatencyClock.monotonicNs()) } : undefined;
+    return raw
+      ? { attempt: { raw, runId: spawned.runId, resolved: extractResolvedModel(session.messages), providerMs: durationMs(providerStartedMonoNs, systemLatencyClock.monotonicNs()) } }
+      : { error: "completed run had no assistant output" };
+  } catch (error) {
+    return { error: String(error) };
   } finally {
     if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ } }
   }

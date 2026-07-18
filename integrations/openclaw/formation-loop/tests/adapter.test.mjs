@@ -300,4 +300,17 @@ test("background absorption uses one Dream Sculptor call and per-Capture outcome
   assert.equal(body.includes(":placement`"), false);
   assert.match(body, /source_capture_ids\.includes\(record\.capture_id\)/);
   assert.match(body, /common_one_call: providerCalls === 1/);
+  assert.match(body, /const providerKey = `\$\{batchId\}:\$\{executionId\}`/);
+  assert.match(body, /Dream Sculptor failed: \$\{sculptorRun\.error/);
+  assert.match(body, /stage: "dream_sculptor_validation"/);
+  assert.match(body, /validated_plans: applied\.plans, durable_outcomes: outcomes/);
+});
+
+test("background absorption timer follows the Host service lifecycle", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /id: "nollm-durable-capture-absorption"/);
+  assert.match(source, /start: \(\) => \{ absorptionServiceRunning = true; scheduleAbsorption\(\); \}/);
+  assert.match(source, /stop: \(\) => \{/);
+  assert.match(source, /if \(absorptionTimer\) clearTimeout\(absorptionTimer\)/);
+  assert.match(source, /if \(!absorptionServiceRunning\) return/);
 });

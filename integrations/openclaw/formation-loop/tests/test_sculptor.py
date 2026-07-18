@@ -69,6 +69,9 @@ def test_sculptor_prompt_teaches_complete_short_term_facts_and_geometry_boundary
     built = build_dream_sculptor_prompt(CAPTURES, str(tmp_path), "prompt")
     prompt = built["prompt"]
     assert "Never filter" in prompt
+    assert "user-grounded memory" in prompt
+    assert "Python-style Unicode character indices" in prompt
+    assert '"user_length_chars":8' in prompt
     assert "Weather, appointments, cancellations" in prompt
     assert "Never output q/r coordinates" in prompt
     assert "operation-local" in prompt

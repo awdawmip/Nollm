@@ -35,4 +35,3 @@ Later facts execute a fresh Dream Sculptor operation against the current Atlas. 
 ## First Implementation Boundary
 
 V3.11 stores one Statement as one Atom in one layer-0 Cell. It does not implement multi-cell footprints, contact markers, duplicated Atoms, automatic Bridge/Stitch, multi-layer semantic Placement, persistent Lens/Cortex stores, Topic/Entity indexes, vectors, embeddings, or graphs.
-

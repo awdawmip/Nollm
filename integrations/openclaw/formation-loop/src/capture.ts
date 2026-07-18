@@ -277,10 +277,10 @@ export class AbsorptionWorker {
   readonly batchMaxChars: number;
   readonly staleClaimMs: number;
   readonly retryBackoffMs: number;
-  readonly absorb: (batchId: string, records: CaptureRecord[]) => Promise<AbsorptionResult[]>;
+  readonly absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>;
   private active = false;
 
-  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number }, absorb: (batchId: string, records: CaptureRecord[]) => Promise<AbsorptionResult[]>) {
+  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number }, absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>) {
     this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.absorb = absorb;
   }
 
@@ -332,8 +332,9 @@ export class AbsorptionWorker {
         const attempt = state.attempt + 1; attempts.set(record.capture_id, attempt);
         await this.store.appendEvent(record.capture_id, "processing", { attempt, batchId, eventEpochMs: now });
       }
+      const executionId = sha256(canonical(candidates.map(record => [record.capture_id, attempts.get(record.capture_id)])));
       let results: AbsorptionResult[];
-      try { results = await this.absorb(batchId, candidates); }
+      try { results = await this.absorb(batchId, candidates, executionId); }
       catch (error) { results = candidates.map(record => ({ captureId: record.capture_id, status: "retry", error: String(error) })); }
       const byId = new Map(results.map(result => [result.captureId, result]));
       for (const record of candidates) {

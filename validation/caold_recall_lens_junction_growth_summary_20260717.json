@@ -1,0 +1,101 @@
+{
+  "schema_version": "nollm_caold_recall_lens_junction_growth_summary_v1",
+  "status": "validated",
+  "input_head": "4f8b1c479a2634d3c1b6ae8039116154864275aa",
+  "branch": "codex/caold-llm-recall-lens-junction-growth",
+  "provider": "meituan/LongCat-2.0",
+  "workspace_name": "nollm-caold-recall-lens-junction-growth-v1",
+  "architecture": {
+    "persistent_recall_lenses": false,
+    "persistent_topic_entity_axis_or_query_index": false,
+    "core_semantic_input": false,
+    "single_atom_single_handle_single_cell": true,
+    "junction_candidate_limit": 8,
+    "atlas_candidate_limit": 32
+  },
+  "deterministic_self_play": {
+    "case_count": 100,
+    "statement_formation_rate": 1.0,
+    "value_filter_error_rate": 0.0,
+    "primary_lens_reach_rate": 1.0,
+    "secondary_lens_reach_rate": 1.0,
+    "wrong_locality_rate": 0.0,
+    "unresolved_lens_rate": 0.1,
+    "average_free_face_count": 4.55,
+    "single_entry_path_rate": 1.0,
+    "duplicate_statement_count": 0,
+    "orphan_statement_count": 0,
+    "passed": true
+  },
+  "live_formation": {
+    "capture_count": 6,
+    "statement_count": 6,
+    "value_filtered_statement_count": 0,
+    "reopen_verified_statement_count": 6,
+    "recovered_validated_lens_count": 11,
+    "recovered_unresolved_lens_count": 2,
+    "successful_batch_count": 4,
+    "common_one_call_batch_count": 3,
+    "correction_batch_count": 1,
+    "provider_failures_observed": [
+      "strict span validation failure before the Unicode-span prompt correction",
+      "idempotency-key reuse after transcript deletion before execution identity binding",
+      "Host hot-reload worker overlap before service lifecycle binding",
+      "120000 ms Provider timeout on multi-Capture batches"
+    ]
+  },
+  "live_geometry": {
+    "target_statement_id": "dream:67a42da720d430a0ddc2de3071779df3612726de32319779096c9cf09997de38",
+    "target_cell": {"profile_id": "default_dream_v1", "chart_id": "default", "layer": 0, "q": 0, "r": 0, "phase": null},
+    "cells": [
+      {"statement_id": "dream:0fcaf6e3077a7ae6e116b35c0cc4fae73721770b0a83e819ac6dd2b134d382ce", "q": -1, "r": 0},
+      {"statement_id": "dream:c742b54f555b43dda126ea56b225d3155ffbe49abfdcfc77743b700666a46c1b", "q": -1, "r": 1},
+      {"statement_id": "dream:e8c16aa222a14d1856701d3168c49276173ba9d6341a609a8585b1d373338945", "q": 0, "r": -1},
+      {"statement_id": "dream:67a42da720d430a0ddc2de3071779df3612726de32319779096c9cf09997de38", "q": 0, "r": 0},
+      {"statement_id": "dream:b837070856d0ab0869b17bc93f5ef164456a39b6d062560378dca2ae2a14e224", "q": 0, "r": 1},
+      {"statement_id": "dream:c94ddedf823f86bf5f9c1f5830b5eccd8f70e5bf5e2241d92452882b06b92472", "q": 1, "r": -1}
+    ],
+    "target_atom_count": 1,
+    "duplicate_atom_count": 0
+  },
+  "live_recall": {
+    "tokyo": {"request_id": "recall-200a54455ed64624296c97d9bca285eeb216391e5666e7bcfccb5cb124f379b5", "entry": {"q": -1, "r": 0}, "target_path": ["lateral"], "hidden_provider_calls": 1},
+    "absolute_time": {"request_id": "recall-4897a9180fccdd01a457d69c71423582cf424f6f7056ffb02c12ec75655ab10d", "entry": {"q": 0, "r": 1}, "target_path": ["lateral"], "hidden_provider_calls": 1},
+    "weather": {"request_id": "recall-578c3a1e8e67522fb62436268bafe1c57e962dc7c9da699a585a1065a64c528b", "entry": {"q": 0, "r": -1}, "target_path": ["lateral"], "hidden_provider_calls": 1},
+    "none": {"request_id": "recall-66ce93a8ade076c8024b7cba50e6b882a1d1d2bd9db3152c60c8f63a11d8ab2a", "outcome": "none", "hidden_provider_calls": 1}
+  },
+  "performance_ms": {
+    "controlled_capture_150": {"p50": 4.3335, "p95": 6.5379, "max": 18.1097},
+    "controlled_pending_p95": 9.5623,
+    "controlled_atlas_50": {"p50": 32.58235, "p95": 37.0679, "max": 45.8581},
+    "controlled_junction_200": {"p50": 12.62105, "p95": 15.057, "max": 19.9688},
+    "live_capture_16": {"p50": 23.3788, "p95": 1598.6344, "max": 1598.6344},
+    "live_recall_entries": {"tokyo": 25072.31, "absolute_time": 19134.646, "weather": 18139.542, "none": 13222.455}
+  },
+  "tests": {
+    "python_core_access_lab": "202 passed, 8 warnings",
+    "openclaw_python": "48 passed",
+    "reference_m0_and_coverage": "46 passed",
+    "openclaw_node": "44 passed",
+    "openclaw_sculptor_python": "4 passed",
+    "ownership_manifest": "tracked=1941 rows=1941 unclassified=0",
+    "production_boundary": "violations=0 cycles=0"
+  },
+  "actual_completion_vector_percent": {
+    "CORE": 98,
+    "SNAPSHOT": 50,
+    "TRACE": 40,
+    "ACCESS": 98,
+    "HISTORY": 10,
+    "AUDIT": 10,
+    "OPENCLAW": 90,
+    "LAB": 97,
+    "DISTRIBUTIONS": 95
+  },
+  "limitations": [
+    "Only meituan/LongCat-2.0 was validated; multi-Provider behavior was not validated.",
+    "The Live 16-sample Capture p95 contains a 1598.6344 ms hot-reload/event-loop outlier; the controlled 150-sample p95 is 6.5379 ms.",
+    "Validated operation-local Lens evidence was recovered from Host logs for runs completed before validated-plan tracing was added.",
+    "No multi-cell footprint, persistent semantic index, multi-chart growth, or release claim is made."
+  ]
+}

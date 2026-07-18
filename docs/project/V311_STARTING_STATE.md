@@ -29,4 +29,3 @@ The existing Live evidence proves fast immutable Capture, Pending across Session
 ## Missing Authority Correction
 
 The input tree contains the V3.7 route but not the architecture authority named by the active task. Gate 0 restores a concise canonical V3.7 physical-field authority and adds the V3.11 amendment. No historical Cortex product path is reactivated.
-

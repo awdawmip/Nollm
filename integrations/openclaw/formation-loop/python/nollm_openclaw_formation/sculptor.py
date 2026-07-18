@@ -34,12 +34,15 @@ def build_dream_sculptor_prompt(
     captures_wire = [{
         "capture_id": item["capture_id"],
         "user_utf8": item["user_utf8"],
+        "user_length_chars": len(item["user_utf8"]),
         "assistant_utf8": item["assistant_utf8"],
+        "assistant_length_chars": len(item["assistant_utf8"]),
         "reference_epoch_ms": item["captured_epoch_ms"],
         "timezone_offset_minutes": item["timezone_offset_minutes"],
     } for item in clean]
     prompt = f"""You are Nollm's private Dream Sculptor. Compile complete Evidence-backed propositions and plan their placement in one batch operation.
 Never filter a complete proposition by importance, durability, predicted usefulness, or short lifetime. Weather, appointments, cancellations, temporary plans, preferences, and subjective observations are valid.
+Form user-grounded memory. Do not turn generic assistant explanations, suggestions, tool limitations, or newly generated background knowledge into user memory unless the user explicitly supplied or adopted that proposition.
 Use no_memory only when there is no standalone proposition, the material is empty/tool noise, or it is exact no-new-information. Use defer when a proposition exists but a safe plan cannot be produced.
 Positive example: "今天东京下雨了" is a complete weather proposition. Resolve "今天" from its Capture instant, form the Statement, and teach location, absolute-time, and weather-shaped future questions without requiring three entries.
 Bad value-filter example: never discard that Tokyo rain fact because weather is short-lived or supposedly low-value.
@@ -48,6 +51,7 @@ Bad coordinate example: do not invent Cell q/r values. Select only Atlas candida
 Bad fanout example: do not force one physical entry per Lens or persist a fact-to-entries map.
 For relative time, resolve it once from the Capture reference_epoch_ms and timezone_offset_minutes. Keep the original relative wording only in Capture; make the Statement self-contained and absolute when resolution is possible.
 For every Statement, imagine one to four future Recall Lenses. Each Lens is operation-local teaching material and must cite exact character spans from supplied Capture text. It is not a Topic, entity, index, axis registry, or persistent query route.
+Span offsets use Python-style Unicode character indices: start is inclusive and end is exclusive. Each role includes its exact length. Prefer the whole supporting role text with start 0 and end equal to that role's supplied length; for a substring, count exactly and ensure text[start:end] equals quote_utf8.
 Mark a Lens unresolved when its useful future perspective has no supplied Locality. An unresolved Lens is valid teaching output and must not invent a candidate.
 Choose only supplied Locality candidate_id values. Never output q/r coordinates. The first selected locality is primary; up to three others are contacts. Core, not you, chooses the precise Junction Cell.
 Use reuse only for materially the same current fact and supply its exact existing_handle. Use revision_current only for the same subject and proposition slot with a superseding value. Additive facts and analogous fields on different subjects are new_local/expand_surface. Defer uncertain revision.

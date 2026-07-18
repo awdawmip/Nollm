@@ -1,19 +1,19 @@
 # Nollm CAOLD：LLM 编译召回视角、交汇放置与逆向场生长任务书
 
-**任务文件名**：`NOLLM_C_A_O_L_D_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_TASK_20260717.md`  
-**日期**：2026-07-17  
-**受影响模块**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`  
-**可验证结果**：真实 LLM 在一次批量 Dream 操作中形成完整 Statement、模拟未来 Recall Lenses、选择有限 Localities；Core 将事实写入边界/交汇 Cell；后续自然事实逆向生长后，可从东京、绝对时间和天气三个独立单入口到达原事实  
-**输入 Bundle**：`nollm_aold_durable_capture_async_absorption_20260717_4f8b1c4.bundle`  
-**输入 Bundle SHA-256**：`8336569247865e25db94d50b237e58926d77f8421b9b7efcab1753b93647d521`  
-**输入分支**：`codex/aold-durable-capture-async-absorption-fast-recall`  
-**输入 HEAD**：`4f8b1c479a2634d3c1b6ae8039116154864275aa`  
-**输入状态**：`AOLD_DURABLE_CAPTURE_ASYNC_ABSORPTION_IN_PROGRESS`  
-**建议分支**：`codex/caold-llm-recall-lens-junction-growth`  
-**主环境**：Windows 10/11、PowerShell、Node 24、当前真实 OpenClaw / LongCat-2.0  
-**交付**：大跨度单任务；内部 Gate；普通问题就地修复；所有进展 commit；工作树 clean；仓库外单一完整历史 Git Bundle  
-**插件状态**：保持安装并启用  
-**数据状态**：旧工作区全部保留；新建 V3.11 工作区；禁止清空、覆盖或强制迁移旧用户数据  
+**任务文件名**：`NOLLM_C_A_O_L_D_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_TASK_20260717.md`
+**日期**：2026-07-17
+**受影响模块**：`C=Core | A=Access | O=OpenClaw | L=Lab | D=Distributions`
+**可验证结果**：真实 LLM 在一次批量 Dream 操作中形成完整 Statement、模拟未来 Recall Lenses、选择有限 Localities；Core 将事实写入边界/交汇 Cell；后续自然事实逆向生长后，可从东京、绝对时间和天气三个独立单入口到达原事实
+**输入 Bundle**：`nollm_aold_durable_capture_async_absorption_20260717_4f8b1c4.bundle`
+**输入 Bundle SHA-256**：`8336569247865e25db94d50b237e58926d77f8421b9b7efcab1753b93647d521`
+**输入分支**：`codex/aold-durable-capture-async-absorption-fast-recall`
+**输入 HEAD**：`4f8b1c479a2634d3c1b6ae8039116154864275aa`
+**输入状态**：`AOLD_DURABLE_CAPTURE_ASYNC_ABSORPTION_IN_PROGRESS`
+**建议分支**：`codex/caold-llm-recall-lens-junction-growth`
+**主环境**：Windows 10/11、PowerShell、Node 24、当前真实 OpenClaw / LongCat-2.0
+**交付**：大跨度单任务；内部 Gate；普通问题就地修复；所有进展 commit；工作树 clean；仓库外单一完整历史 Git Bundle
+**插件状态**：保持安装并启用
+**数据状态**：旧工作区全部保留；新建 V3.11 工作区；禁止清空、覆盖或强制迁移旧用户数据
 **任务边界**：实现 layer-0 单 Cell Junction Growth；不实现 multi-cell footprint、多物理层语义 Placement、Stitch、多 Chart、PB 长跑或语义索引
 
 ---

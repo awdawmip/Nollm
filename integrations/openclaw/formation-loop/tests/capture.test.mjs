@@ -121,18 +121,22 @@ test("retry batch identity is preserved and new Captures do not join replay", ()
   const store = new CaptureStore(root);
   const one = await store.publish(input());
   const two = await store.publish(input({ turnIdentity: "run-2", userUtf8: "second" }));
-  const failed = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => (
-    records.map(record => ({ captureId: record.capture_id, status: "retry", error: "injected" }))
-  ));
+  let firstExecutionId;
+  const failed = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records, executionId) => {
+    firstExecutionId = executionId;
+    return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "injected" }));
+  });
   const firstRun = await failed.runOnce(2000);
   const fresh = await store.publish(input({ turnIdentity: "run-3", userUtf8: "fresh" }));
-  let replayedIds = [];
-  const replay = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => {
+  let replayedIds = [], replayExecutionId;
+  const replay = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records, executionId) => {
     replayedIds = records.map(record => record.capture_id);
+    replayExecutionId = executionId;
     return records.map(record => ({ captureId: record.capture_id, status: "admitted", statementIds: ["dream:replay"] }));
   });
   const secondRun = await replay.runOnce(3000);
   assert.equal(secondRun.batchId, firstRun.batchId);
+  assert.notEqual(replayExecutionId, firstExecutionId);
   assert.deepEqual(replayedIds, [one.record.capture_id, two.record.capture_id]);
   assert.equal((await store.currentState(fresh.record.capture_id)).status, "captured");
 }));
