@@ -111,3 +111,12 @@ Remaining blockers are the Gate F Provider minimum and the real Gate G durable
 long-arm proof. Multi-cell footprints, multi-physical-layer Placement,
 multi-chart growth, persistent Lens state, semantic indexes, multi-entry
 Recall, Provider replacement, and formal release remain out of scope.
+
+The live smoke used the ordinary main OpenClaw agent before the isolated role
+runner was established. Because that agent retained its normal tools, it wrote
+one ordinary OpenClaw workspace `memory/2026-07-18.md` file. An instruction-only
+CLI probe also produced an immutable Capture that terminated as no-memory.
+Both external Host artifacts were retained and not presented as Nollm
+Admission, Lens, Atlas, Junction, or Recall evidence. The accepted plugin
+remains linked to this worktree with its new V2 memory workspace; the prior
+workspace was not removed.
