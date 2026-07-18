@@ -104,6 +104,16 @@ def test_relation_group_uses_min_cell_distance_and_reports_no_bounded_junction(t
     assert far == ()
 
 
+def test_partial_relation_group_junction_is_not_an_active_candidate(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        core.put(MemoryAtom("left", "left"), cell(0, 0))
+        core.put(MemoryAtom("right", "right"), cell(6, 0))
+        result = core.relation_group_junction_candidates(relation_request(
+            ((cell(0, 0),), (cell(6, 0),)), max_radius=4, contact_radius=2,
+        ))
+    assert result == ()
+
+
 def test_relation_group_contract_is_semantic_blind_and_bounded():
     parameters = inspect.signature(RelationGroupJunctionRequest).parameters
     assert "statement" not in parameters and "query" not in parameters and "lens" not in parameters

@@ -188,6 +188,8 @@ def _lens(value: dict[str, object], captures: dict[str, dict[str, object]], cand
     leaf_ids = _canonical_ids(value["leaf_locality_candidate_ids"], "leaf_locality_candidate_ids", 4)
     if any(item not in paths for item in path_ids) or any(item not in candidates for item in leaf_ids):
         raise ValueError("Lens references unknown Atlas path or leaf Locality")
+    if any(candidates[item].support_overflow for item in leaf_ids):
+        raise ValueError("resolved Lens cannot use an overflowed geometry support")
     exposed = {leaf for path_id in path_ids for leaf in paths[path_id].leaf_locality_candidate_ids}
     if any(item not in exposed for item in leaf_ids):
         raise ValueError("Lens leaf Locality is not exposed by its Atlas paths")

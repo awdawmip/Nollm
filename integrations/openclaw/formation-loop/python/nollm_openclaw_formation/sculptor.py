@@ -14,23 +14,33 @@ from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
 
 
-DREAM_SCULPTOR_PROMPT_VERSION = "dream-sculptor-v2-lens-causal"
+DREAM_SCULPTOR_PROMPT_VERSION = "dream-sculptor-v2-field-complete-realized-junction"
 
 
 def build_dream_sculptor_prompt(
     captures: object,
     memory_workspace: object,
     request_id: object,
-    candidate_limit: object = 32,
+    candidate_limit: object = 512,
     max_statements: object = 8,
 ) -> dict[str, object]:
     clean = _captures(captures)
     if type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_sculptor_request", "request_id is required")
-    if type(candidate_limit) is not int or not 1 <= candidate_limit <= 32 or type(max_statements) is not int or not 1 <= max_statements <= 8:
+    if type(candidate_limit) is not int or not 1 <= candidate_limit <= 512 or type(max_statements) is not int or not 1 <= max_statements <= 8:
         raise FormationAdapterError("invalid_sculptor_budget", "Dream Sculptor budgets are invalid")
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
         atlas = loop.build_locality_atlas(request_id + ":atlas", candidate_limit)
+    if atlas.overflow:
+        return {
+            "status": "atlas_overflow",
+            "retryable": True,
+            "prompt_version": DREAM_SCULPTOR_PROMPT_VERSION,
+            "schema_version": DREAM_SCULPTOR_SCHEMA_VERSION,
+            "atlas": atlas.to_mapping(),
+            "atlas_fingerprint": atlas.atlas_fingerprint,
+            "captures": clean,
+        }
     captures_wire = [{
         "capture_id": item["capture_id"],
         "user_utf8": item["user_utf8"],
@@ -53,7 +63,9 @@ For relative time, resolve it once from the Capture reference_epoch_ms and timez
 For every Statement, imagine one to four future Recall Lenses. Each Lens is operation-local teaching material and must cite exact character spans from supplied Capture text. It is not a Topic, entity, index, axis registry, or persistent query route.
 Span offsets use Python-style Unicode character indices: start is inclusive and end is exclusive. Each role includes its exact length. Prefer the whole supporting role text with start 0 and end equal to that role's supplied length; for a substring, count exactly and ensure text[start:end] equals quote_utf8.
 Mark a Lens unresolved when its useful future perspective has no supplied Locality. An unresolved Lens is valid teaching output and must use empty atlas_path_ids and leaf_locality_candidate_ids.
+The Atlas coverage_certificate covers every occupied physical Cell. Nodes are complete geometry regions; each leaf candidate is only its bounded geometry support. Never claim the support lists every Cell or every Statement in its region. A path with no leaf_locality_candidate_ids has support_overflow and can only teach an unresolved Lens.
 For every resolved Lens, choose complete supplied Atlas path_id values and leaf Locality candidate_id values exposed by those paths. Never output q/r coordinates. There is no separate primary/contact choice: Access compiles resolved Lenses in order into relation groups, and Core chooses the precise Junction Cell.
+Every resolved relation group must be simultaneously realizable within the bounded contact radius. If the supplied regions do not admit one realized Junction, mark some perspectives unresolved or defer; never accept a partial Junction.
 Within one Statement, each resolved Lens must select a geometrically distinct leaf candidate set. If two useful perspectives only have the same supplied Locality, keep one resolved Lens and mark the other unresolved; never duplicate an equivalent relation group.
 Use reuse only for materially the same current fact and supply its exact existing_handle. Use revision_current only for the same subject and proposition slot with a superseding value. Additive facts and analogous fields on different subjects are new_local/expand_surface. Defer uncertain revision.
 Do not force multiple entries, duplicate a fact, propose Bridge/Stitch, call tools, or reveal hidden reasoning.
@@ -134,6 +146,8 @@ def apply_dream_sculptor_result(
             raise FormationAdapterError("invalid_sculptor_filter", "only_statement_ids contains an unknown Statement")
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
         applied = loop.apply_junction_plans(plans, atlas, request_id, revision_confirmations)
+    if any(item.get("outcome") == "defer" and item.get("reason") == "lens_geometry_unrealized" for item in applied["outcomes"]):
+        raise FormationAdapterError("lens_geometry_unrealized", "resolved Lens groups have no realized bounded Junction")
     return {**parsed, **applied}
 
 

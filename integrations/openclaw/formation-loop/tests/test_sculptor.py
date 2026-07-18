@@ -3,6 +3,7 @@ import json
 import pytest
 
 from nollm_access import AccessMemoryLoop
+from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 from nollm_openclaw_formation.adapter import FormationAdapterError
 from nollm_openclaw_formation.sculptor import (
     apply_dream_sculptor_result,
@@ -76,7 +77,30 @@ def test_sculptor_prompt_teaches_complete_short_term_facts_and_geometry_boundary
     assert "Never output q/r coordinates" in prompt
     assert "operation-local" in prompt
     assert "There is no separate primary/contact choice" in prompt
+    assert "coverage_certificate covers every occupied physical Cell" in prompt
     assert built["schema_version"] == "nollm_openclaw_dream_sculptor_v2"
+    assert built["atlas"]["schema_version"] == "nollm_access_locality_atlas_v3"
+    assert built["atlas"]["coverage_certificate"]["uncovered_field_cell_count"] == 0
+
+
+def test_sculptor_returns_retryable_overflow_without_a_provider_prompt(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        for index in range(40):
+            address = GeometryAddress("default_dream_v1", "default", 0, index, 0)
+            core.put(MemoryAtom(f"atom-{index}", str(index)), address)
+    built = build_dream_sculptor_prompt(CAPTURES[:1], str(tmp_path), "overflow", candidate_limit=8)
+    assert built["status"] == "atlas_overflow"
+    assert built["retryable"] is True
+    assert "prompt" not in built
+    assert built["atlas"]["coverage_certificate"] == {
+        "occupied_field_cell_count": 40,
+        "covered_field_cell_count": 0,
+        "uncovered_field_cell_count": 40,
+        "selected_aggregation_order": None,
+        "region_count": 0,
+        "overflow": True,
+        "order_projection_counts": built["atlas"]["coverage_certificate"]["order_projection_counts"],
+    }
 
 
 def test_one_sculptor_result_applies_two_capture_bound_statements_via_core_junction(tmp_path):

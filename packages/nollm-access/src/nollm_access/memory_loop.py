@@ -200,12 +200,12 @@ class AccessMemoryLoop:
     def build_locality_atlas(
         self,
         request_id: str,
-        candidate_limit: int = 32,
+        candidate_limit: int = 512,
         scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
     ) -> LocalityAtlas:
         self._require_request(request_id)
-        if type(candidate_limit) is not int or not 1 <= candidate_limit <= 32:
-            raise ValueError("candidate_limit must be in [1,32]")
+        if type(candidate_limit) is not int or not 1 <= candidate_limit <= 512:
+            raise ValueError("candidate_limit must be in [1,512]")
         if type(scope) is not PhysicalFieldScope:
             raise TypeError("scope must be PhysicalFieldScope")
         with CoreRuntime(self._workspace) as core:
@@ -215,13 +215,36 @@ class AccessMemoryLoop:
             candidates: list[LocalityCandidateRef] = []
             nodes: list[AtlasNode] = []
             paths: list[AtlasPath] = []
+            selected_order: int | None = 0
+            order_projection_counts: tuple[int, ...] = (0,)
+            covered: frozenset[GeometryAddress] = frozenset()
+            overflow = False
             if occupied:
-                atlas_order = 0 if len(occupied) <= candidate_limit else 1
-                infos = core.surface_orders(scope, atlas_order)
-                projections = self._surface_projections(core, scope, atlas_order)
-                selected = self._even_sample(projections, candidate_limit)
-                for index, projection in enumerate(selected):
-                    cells = self._even_sample(tuple(sorted(projection.source_cells, key=lambda item: item.stable_key())), 4)
+                projection_counts = []
+                selected_order = None
+                for order in range(9):
+                    info = core.surface_orders(scope, order)[-1]
+                    projection_counts.append(info.occupied_cell_count)
+                    if info.occupied_cell_count <= candidate_limit:
+                        selected_order = order
+                        break
+                order_projection_counts = tuple(projection_counts)
+                if selected_order is None:
+                    overflow = True
+                    projections = ()
+                else:
+                    projections = self._surface_projections(core, scope, selected_order)
+                    if len(projections) != order_projection_counts[selected_order]:
+                        raise RuntimeError("Surface order count changed during Atlas construction")
+                covered = frozenset(
+                    cell for projection in projections for cell in projection.source_cells if cell in occupied_set
+                )
+                for projection in projections:
+                    source_cells = tuple(sorted(set(projection.source_cells) & occupied_set, key=lambda item: item.stable_key()))
+                    if not source_cells:
+                        raise RuntimeError("occupied Surface projection has no current source Cell")
+                    cells = self._region_support(source_cells, 4)
+                    support_overflow = self._support_coverage_radius(source_cells, cells) > 4
                     material = json.dumps({"state": state_sha256, "surface": projection.address.to_mapping()}, sort_keys=True, separators=(",", ":")).encode("ascii")
                     digest = hashlib.sha256(material).hexdigest()
                     candidate_id = f"locality:{digest}"
@@ -238,55 +261,74 @@ class AccessMemoryLoop:
                     candidates.append(LocalityCandidateRef(
                         candidate_id, cells, True, any(value < 6 for value in neighbor_counts),
                         max(6 - value for value in neighbor_counts), min(neighbor_counts), tuple(representatives[:3]),
+                        len(source_cells), "geometry_center_farthest_v1", support_overflow,
                     ))
-                    if atlas_order == 0:
-                        node_id = f"atlas-node:{digest}"
-                        nodes.append(AtlasNode(
-                            node_id, 0, projection.address.to_mapping(), (),
-                            projection.physical_source_cell_count, projection.native_atom_count,
-                            projection.truncated, tuple(representatives[:3]),
-                        ))
-                        paths.append(AtlasPath(f"atlas-path:{digest}", (node_id,), (candidate_id,)))
-                    else:
-                        leaf_id = f"atlas-leaf:{digest}"
-                        parent_id = f"atlas-node:{digest}"
-                        nodes.extend((
-                            AtlasNode(
-                                parent_id, atlas_order, projection.address.to_mapping(), (leaf_id,),
-                                projection.physical_source_cell_count, projection.native_atom_count,
-                                projection.truncated or len(projection.source_cells) > len(cells), tuple(representatives[:3]),
-                            ),
-                            AtlasNode(
-                                leaf_id, 0, {"geometry_addresses": [cell.to_mapping() for cell in cells]}, (),
-                                len(cells), sum(len(core.atoms_at(cell)) for cell in cells),
-                                len(projection.source_cells) > len(cells), tuple(representatives[:3]),
-                            ),
-                        ))
-                        paths.append(AtlasPath(f"atlas-path:{digest}", (parent_id, leaf_id), (candidate_id,)))
+                    node_id = f"atlas-node:{digest}"
+                    nodes.append(AtlasNode(
+                        node_id, selected_order, projection.address.to_mapping(), (),
+                        len(source_cells), projection.native_atom_count,
+                        projection.truncated, tuple(representatives[:3]), len(source_cells), len(cells),
+                        "geometry_center_farthest_v1", support_overflow,
+                    ))
+                    paths.append(AtlasPath(
+                        f"atlas-path:{digest}", (node_id,), () if support_overflow else (candidate_id,),
+                    ))
             else:
                 frontier = core.junction_candidates(JunctionRequest(scope, (), (), 1, 1))[0]
-                candidates.append(LocalityCandidateRef(frontier.candidate_id, (frontier.cell,), False, False, 6, 0, ()))
+                candidates.append(LocalityCandidateRef(frontier.candidate_id, (frontier.cell,), False, False, 6, 0, (), 0, "empty_field_frontier_v1", False))
                 node_id = f"atlas-node:{frontier.candidate_id}"
-                nodes.append(AtlasNode(node_id, 0, frontier.cell.to_mapping(), (), 0, 0, False))
+                nodes.append(AtlasNode(node_id, 0, frontier.cell.to_mapping(), (), 0, 0, False, (), 0, 1, "empty_field_frontier_v1", False))
                 paths.append(AtlasPath(f"atlas-path:{frontier.candidate_id}", (node_id,), (frontier.candidate_id,)))
+            uncovered = occupied_set - covered
+            certificate = {
+                "occupied_field_cell_count": len(occupied),
+                "covered_field_cell_count": len(covered),
+                "uncovered_field_cell_count": len(uncovered),
+                "selected_aggregation_order": selected_order,
+                "region_count": len(nodes),
+                "overflow": overflow,
+                "order_projection_counts": list(order_projection_counts),
+            }
         payload = {
             "field_scope": scope.to_mapping(),
             "core_state_sha256": state_sha256,
             "nodes": [item.to_mapping() for item in nodes],
             "paths": [item.to_mapping() for item in paths],
             "candidates": [item.to_mapping() for item in candidates],
+            "coverage_certificate": certificate,
         }
         fingerprint = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
-        return LocalityAtlas(request_id, scope, state_sha256, fingerprint, tuple(candidates), tuple(nodes), tuple(paths))
+        return LocalityAtlas(
+            request_id, scope, state_sha256, fingerprint, tuple(candidates), tuple(nodes), tuple(paths),
+            certificate["occupied_field_cell_count"], certificate["covered_field_cell_count"],
+            certificate["uncovered_field_cell_count"], certificate["selected_aggregation_order"],
+            certificate["region_count"], certificate["overflow"], tuple(order_projection_counts),
+        )
+
+    @classmethod
+    def _region_support(cls, source_cells: tuple[GeometryAddress, ...], limit: int) -> tuple[GeometryAddress, ...]:
+        if len(source_cells) <= limit:
+            return source_cells
+        center = min(
+            source_cells,
+            key=lambda cell: (sum(cls._hex_distance(cell, other) for other in source_cells), cell.stable_key()),
+        )
+        selected = [center]
+        while len(selected) < limit:
+            selected.append(max(
+                (cell for cell in source_cells if cell not in selected),
+                key=lambda cell: (min(cls._hex_distance(cell, current) for current in selected), tuple(-value if type(value) is int else value for value in cell.stable_key())),
+            ))
+        return tuple(sorted(selected, key=lambda item: item.stable_key()))
+
+    @classmethod
+    def _support_coverage_radius(cls, source_cells: tuple[GeometryAddress, ...], support: tuple[GeometryAddress, ...]) -> int:
+        return max(min(cls._hex_distance(cell, anchor) for anchor in support) for cell in source_cells)
 
     @staticmethod
-    def _even_sample(values: tuple, limit: int) -> tuple:
-        if len(values) <= limit:
-            return values
-        if limit == 1:
-            return (values[len(values) // 2],)
-        indexes = tuple((index * (len(values) - 1)) // (limit - 1) for index in range(limit))
-        return tuple(values[index] for index in indexes)
+    def _hex_distance(left: GeometryAddress, right: GeometryAddress) -> int:
+        dq, dr = left.q - right.q, left.r - right.r
+        return max(abs(dq), abs(dr), abs(dq + dr))
 
     @staticmethod
     def _surface_projections(core: CoreRuntime, scope: PhysicalFieldScope, order: int) -> tuple:
@@ -418,6 +460,8 @@ class AccessMemoryLoop:
             raise TypeError("plans must be a non-empty JunctionSemanticPlan tuple")
         if type(atlas) is not LocalityAtlas:
             raise TypeError("atlas must be LocalityAtlas")
+        if atlas.overflow or atlas.uncovered_field_cell_count != 0:
+            raise ValueError("Locality Atlas is not active and field-complete")
         if revision_confirmations is None:
             confirmations: dict[str, object] = {}
         elif type(revision_confirmations) is dict and all(type(key) is str for key in revision_confirmations):
@@ -469,9 +513,11 @@ class AccessMemoryLoop:
                         "statement_id": plan.statement.statement_id,
                         "source_capture_ids": list(plan.source_capture_ids),
                         "outcome": "defer",
-                        "reason": "no legal Junction Cell",
+                        "reason": "lens_geometry_unrealized",
                     })
                     continue
+                if hasattr(candidates[0], "all_groups_realized") and not candidates[0].all_groups_realized:
+                    raise RuntimeError("Core exposed an unrealized relation-group Junction")
                 decision = AccessDecision(
                     f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
                     "new", candidates[0].cell, None, None, plan.reason_text, "llm",

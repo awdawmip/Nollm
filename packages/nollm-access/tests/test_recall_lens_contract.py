@@ -3,6 +3,7 @@ from copy import deepcopy
 import pytest
 
 from nollm_access import AccessMemoryLoop, DREAM_SCULPTOR_SCHEMA_VERSION, LocalityAtlas, validate_dream_sculptor_plans
+from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 
 
 CAPTURE = {
@@ -94,3 +95,35 @@ def test_equivalent_resolved_lenses_reject_before_core(tmp_path):
     duplicate["lenses"].append(second)
     with pytest.raises(ValueError, match="relation_groups must be unique"):
         validate_dream_sculptor_plans("request", [duplicate], [CAPTURE], atlas)
+
+
+def test_unrealized_multi_group_plan_defers_with_zero_writes(tmp_path):
+    left = GeometryAddress("default_dream_v1", "default", 0, 0, 0)
+    right = GeometryAddress("default_dream_v1", "default", 0, 6, 0)
+    with CoreRuntime(tmp_path) as core:
+        core.put(MemoryAtom("left", "left"), left)
+        core.put(MemoryAtom("right", "right"), right)
+        before = core.export_state_bytes()
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("atlas")
+        left_candidate = next(item for item in atlas.candidates if left in item.geometry_addresses)
+        right_candidate = next(item for item in atlas.candidates if right in item.geometry_addresses)
+        left_path = next(item for item in atlas.paths if left_candidate.candidate_id in item.leaf_locality_candidate_ids)
+        right_path = next(item for item in atlas.paths if right_candidate.candidate_id in item.leaf_locality_candidate_ids)
+        value = plan(atlas, [left_path.path_id], [left_candidate.candidate_id])
+        second = deepcopy(value["lenses"][0])
+        second.update({
+            "lens_id": "lens-weather",
+            "future_query": "东京天气如何？",
+            "atlas_path_ids": [right_path.path_id],
+            "leaf_locality_candidate_ids": [right_candidate.candidate_id],
+        })
+        value["lenses"].append(second)
+        plans = validate_dream_sculptor_plans("unrealized", [value], [CAPTURE], atlas)
+        result = loop.apply_junction_plans(plans, atlas, "unrealized-apply")
+        with pytest.raises(KeyError):
+            loop.binding(plans[0].statement.statement_id)
+    assert result["outcomes"][0]["outcome"] == "defer"
+    assert result["outcomes"][0]["reason"] == "lens_geometry_unrealized"
+    with CoreRuntime(tmp_path) as core:
+        assert core.export_state_bytes() == before

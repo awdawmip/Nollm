@@ -61,7 +61,7 @@ def main() -> None:
         if action == "build_dream_sculptor_prompt":
             result = build_dream_sculptor_prompt(
                 envelope["captures"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("candidate_limit", 32), envelope.get("max_statements", 8),
+                envelope.get("candidate_limit", 512), envelope.get("max_statements", 8),
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

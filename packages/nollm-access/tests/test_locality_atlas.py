@@ -49,7 +49,7 @@ def test_atlas_fingerprint_invalidates_after_mutation_and_read_is_write_free(tmp
         assert core.export_state_bytes() == state
 
 
-def test_large_atlas_uses_surface_hierarchy_not_stable_key_prefix(tmp_path):
+def test_large_atlas_covers_every_field_cell_without_projection_sampling(tmp_path):
     cells = tuple(GeometryAddress("default_dream_v1", "default", 0, q, 0) for q in range(-150, 150))
     with CoreRuntime(tmp_path) as core:
         for index in range(1000):
@@ -57,13 +57,35 @@ def test_large_atlas_uses_surface_hierarchy_not_stable_key_prefix(tmp_path):
         before = core.export_state_bytes()
     started = perf_counter()
     with AccessMemoryLoop(tmp_path) as loop:
-        atlas = loop.build_locality_atlas("large", 32)
+        atlas = loop.build_locality_atlas("large", 512)
     elapsed = perf_counter() - started
-    exposed = {cell for candidate in atlas.candidates for cell in candidate.geometry_addresses}
-    assert cells[-1] in exposed
-    assert len(atlas.nodes) <= 64 and len(atlas.paths) <= 32 and len(atlas.candidates) <= 32
+    assert atlas.occupied_field_cell_count == 300
+    assert atlas.covered_field_cell_count == 300
+    assert atlas.uncovered_field_cell_count == 0
+    assert atlas.selected_aggregation_order == 0
+    assert atlas.region_count == 300
+    assert atlas.overflow is False
+    assert len(atlas.nodes) == len(atlas.paths) == len(atlas.candidates) == 300
     assert all(1 <= len(path.node_ids) <= 3 for path in atlas.paths)
-    assert tuple(candidate.geometry_address for candidate in atlas.candidates) != cells[:len(atlas.candidates)]
     assert elapsed <= 2.0
+    with CoreRuntime(tmp_path) as core:
+        assert core.export_state_bytes() == before
+
+
+def test_atlas_budget_overflow_is_explicit_and_never_samples(tmp_path):
+    cells = tuple(GeometryAddress("default_dream_v1", "default", 0, q, 0) for q in range(40))
+    with CoreRuntime(tmp_path) as core:
+        for index, address in enumerate(cells):
+            core.put(MemoryAtom(f"atom-{index}", str(index)), address)
+        before = core.export_state_bytes()
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("overflow", 8)
+    assert atlas.overflow is True
+    assert atlas.selected_aggregation_order is None
+    assert atlas.occupied_field_cell_count == atlas.uncovered_field_cell_count == 40
+    assert atlas.covered_field_cell_count == atlas.region_count == 0
+    assert atlas.candidates == atlas.nodes == atlas.paths == ()
+    assert len(atlas.order_projection_counts) == 9
+    assert all(count > 8 for count in atlas.order_projection_counts)
     with CoreRuntime(tmp_path) as core:
         assert core.export_state_bytes() == before

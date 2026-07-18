@@ -185,7 +185,12 @@ def solve_relation_group_junction_candidates(
                     universe.add(cell)
     if len(universe) > MAX_RELATION_GROUP_UNIVERSE:
         raise ValueError("relation-group Junction candidate universe exceeds deterministic ceiling")
-    candidates = tuple(_relation_group_candidate(request, cell, occupied) for cell in universe)
+    candidates = tuple(
+        candidate
+        for cell in universe
+        for candidate in (_relation_group_candidate(request, cell, occupied),)
+        if candidate.max_group_distance <= request.max_radius and candidate.all_groups_realized
+    )
     ranked = sorted(candidates, key=lambda item: (
         -item.groups_within_contact_radius,
         item.max_group_distance,
@@ -195,8 +200,6 @@ def solve_relation_group_junction_candidates(
         item.occupied_neighbor_count,
         item.cell.stable_key(),
     ))
-    if not ranked or ranked[0].max_group_distance > request.max_radius:
-        return ()
     return tuple(ranked[: request.candidate_limit])
 
 

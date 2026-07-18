@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 export const CAPTURE_SCHEMA = "nollm_openclaw_durable_capture_v1";
 export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
-export const CAPTURE_PLUGIN_VERSION = "0.15.0";
+export const CAPTURE_PLUGIN_VERSION = "0.16.0";
 
 export type CaptureInput = {
   scopeKey: string;
