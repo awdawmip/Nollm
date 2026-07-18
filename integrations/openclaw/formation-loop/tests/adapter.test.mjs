@@ -311,10 +311,12 @@ test("background absorption splits one Writer call from one bounded Cartographer
   assert.equal(body.includes('action: "build_batch_placement_prompt"'), false);
   assert.equal(body.includes(":placement`"), false);
   assert.match(body, /source_capture_ids\.includes\(record\.capture_id\)/);
-  assert.match(body, /proposition_writer_provider_calls: 1/);
+  assert.match(body, /proposition_writer_provider_calls: writerProviderCalls/);
   assert.match(body, /cartographer_sessions: 1/);
   assert.match(body, /cartographer_turns: cartographerTurns/);
-  assert.match(body, /common_one_writer_call: true/);
+  assert.match(body, /common_one_writer_call: writerProviderCalls === 1/);
+  assert.match(body, /writer-correction/);
+  assert.match(body, /Proposition Writer correction validation failed/);
   assert.match(body, /const providerKey = `\$\{batchId\}:\$\{executionId\}`/);
   assert.match(body, /Proposition Writer failed: \$\{writerRun\.error/);
   assert.match(body, /stage: "proposition_writer_validation"/);

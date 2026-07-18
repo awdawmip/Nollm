@@ -363,6 +363,12 @@ def _cartography_plans(values: list[object], propositions: list[dict[str, object
         if mode not in {"related_growth", "independent_seed", "reuse", "revision_current", "defer"}:
             raise FormationAdapterError("invalid_cartographer_schema", "invalid Cartographer placement mode")
         resolved_count = sum(not item["unresolved"] for item in resolutions)
+        resolved_cells = [
+            json.dumps(item["entry_cell"], sort_keys=True, separators=(",", ":"))
+            for item in resolutions if not item["unresolved"]
+        ]
+        if len(resolved_cells) != len(set(resolved_cells)):
+            raise FormationAdapterError("invalid_cartographer_schema", "resolved Lens relation groups must be unique")
         if mode == "independent_seed" and resolved_count != 0:
             raise FormationAdapterError("invalid_cartographer_schema", "independent_seed requires every Lens unresolved")
         if mode in {"related_growth", "reuse", "revision_current"} and resolved_count == 0:

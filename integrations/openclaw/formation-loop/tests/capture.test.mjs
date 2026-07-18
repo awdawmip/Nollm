@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AbsorptionWorker, CaptureStore } from "../dist/capture.js";
+import { AbsorptionWorker, CAPTURE_PLUGIN_VERSION, CaptureStore } from "../dist/capture.js";
 
 async function workspace(run) {
   const root = await mkdtemp(join(tmpdir(), "nollm-capture-"));
@@ -13,6 +13,7 @@ async function workspace(run) {
 const input = (overrides = {}) => ({ scopeKey: "user-a", sessionKey: "session-1", turnIdentity: "run-1", userUtf8: "原文 user\nline 2", assistantUtf8: "answer 😀", capturedEpochMs: 1000, ...overrides });
 
 test("Capture publishes exact immutable bytes and duplicate hooks replay", () => workspace(async root => {
+  assert.equal(CAPTURE_PLUGIN_VERSION, "0.17.0");
   const store = new CaptureStore(root);
   const first = await store.publish(input());
   const bytes = await readFile(store.capturePath(first.record.capture_id), "utf8");
@@ -26,7 +27,7 @@ test("Capture publishes exact immutable bytes and duplicate hooks replay", () =>
   assert.equal(record.user_utf8_bytes, Buffer.byteLength(record.user_utf8, "utf8"));
   assert.equal(record.assistant_utf8_bytes, Buffer.byteLength(record.assistant_utf8, "utf8"));
   assert.equal(record.visible_endpoint_kind, "visible_assistant_delivery");
-  assert.equal(record.plugin_version, "0.16.0");
+  assert.equal(record.plugin_version, "0.17.0");
 }));
 
 test("one scope workspace turn identity cannot publish conflicting content", () => workspace(async root => {

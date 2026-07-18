@@ -430,17 +430,37 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writerBuilt.message ?? writerBuilt.error ?? "Proposition Writer prompt failed") }));
     }
     const writerRun = await runDreamSubagentDetailed(api, config, writerBuilt.prompt, model, `${providerKey}:writer`);
-    const writerAttempt = writerRun.attempt;
+    let writerAttempt = writerRun.attempt;
+    let writerProviderCalls = 1;
+    let writerProviderMs = writerAttempt?.providerMs ?? 0;
     if (!writerAttempt?.raw) {
       return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer failed: ${writerRun.error ?? "empty response"}` }));
     }
-    const writer = await bridge(config, {
+    let writer = await bridge(config, {
       action: "parse_proposition_writer_result", request_id: requestId,
       raw_model_response: writerAttempt.raw, captures,
     });
     if (writer.ok !== true) {
       await trace(config, { status: "correction_required", stage: "proposition_writer_validation", batch_id: batchId, ...outputEvidence(writerAttempt.raw), ...writer });
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writer.message ?? writer.error ?? "Proposition Writer validation failed") }));
+      const validationError = String(writer.message ?? writer.error ?? "Proposition Writer validation failed");
+      const correction = await runDreamSubagentDetailed(
+        api, config,
+        `${writerBuilt.prompt}\nYour previous response was rejected without writes: ${validationError}. Return one corrected raw JSON object with no markdown or outer text.`,
+        model, `${providerKey}:writer-correction`,
+      );
+      writerProviderCalls += 1;
+      writerProviderMs += correction.attempt?.providerMs ?? 0;
+      writerAttempt = correction.attempt;
+      if (!writerAttempt?.raw) {
+        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer correction failed: ${correction.error ?? "empty response"}` }));
+      }
+      writer = await bridge(config, {
+        action: "parse_proposition_writer_result", request_id: requestId,
+        raw_model_response: writerAttempt.raw, captures,
+      });
+      if (writer.ok !== true) {
+        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writer.message ?? writer.error ?? "Proposition Writer correction validation failed") }));
+      }
     }
     if (writer.outcome === "no_memory") return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
     if (writer.outcome === "defer") return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: String(writer.defer_reason ?? "Proposition Writer deferred") }));
@@ -522,9 +542,9 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     await trace(config, {
       status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch",
       batch_id: batchId, capture_count: records.length, statement_count: outcomes.length,
-      proposition_writer_provider_calls: 1, proposition_writer_provider_ms: writerAttempt.providerMs,
+      proposition_writer_provider_calls: writerProviderCalls, proposition_writer_provider_ms: writerProviderMs,
       cartographer_sessions: 1, cartographer_turns: cartographerTurns,
-      cartographer_provider_ms: cartographerProviderMs, common_one_writer_call: true,
+      cartographer_provider_ms: cartographerProviderMs, common_one_writer_call: writerProviderCalls === 1,
       atlas_fingerprint: cartography.atlas_fingerprint, writer_raw: outputEvidence(writerAttempt.raw),
       cartographer_raw: cartographerRaw.map(outputEvidence), validated_plans: applied.plans, durable_outcomes: outcomes,
     });
