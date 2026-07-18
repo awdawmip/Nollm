@@ -3,8 +3,8 @@
 **Date**: 2026-07-18
 **Input HEAD**: `f9f01f56906c5ce64df4a4702f61d954a8402fb8`
 **Gate 0 checkpoint**: this checkpoint commit
-**Evidence/report checkpoint**: pending
-**Status**: `FIELD_COMPLETE_ATLAS_AND_REALIZED_JUNCTION_CHECKPOINT_AT_f9f01f5`
+**Evidence/report checkpoint**: `docs/project/AOLD_PROMPT_BOUNDED_CARTOGRAPHY_RELATION_ENTRY_RECALL_REPORT.md`
+**Status**: `AOLD_PROMPT_BOUNDED_CARTOGRAPHY_IN_PROGRESS_AT_<HEAD>`
 
 This is the only active module ledger. Percentages are current planning estimates, never permanent completion claims.
 
@@ -13,11 +13,11 @@ This is the only active module ledger. Percentages are current planning estimate
 | CORE | IMPLEMENTED | 95% | high | canonical state, bounded Coverage/Surface/Recall, realized-only relation-group Junction candidates | versioned and broader geometry evolution | +5% actual |
 | SNAPSHOT | IMPLEMENTED | 50% | medium-high | state-byte regression | versioned and incremental Snapshot | 0% |
 | TRACE | IMPLEMENTED | 40% | medium | isolated public contract | long-term performance observation | 0% |
-| ACCESS | IMPLEMENTED | 90% | medium-high | operation-local Lens validation, field-complete Atlas, explicit overflow, partial-Junction rejection | progressive Prompt-bounded Atlas, independent seed, complete Recall entry view | Rev3 +15% vector |
+| ACCESS | IMPLEMENTED | 97% | high | operation-local Lens validation, progressive Prompt-bounded complete Atlas, independent seed, complete Recall entry view | broader geometry evolution | +7% actual |
 | HISTORY | PROPOSED | 10% | low | charter | paused | 0% |
 | AUDIT | PROPOSED | 10% | low | charter | paused | 0% |
-| OPENCLAW | IMPLEMENTED | 90% | medium-high | immutable Capture, lifecycle worker, Rev2 Sculptor and single-entry Recall | split Writer/Cartographer, target-hidden relation-entry Reader | Rev3 +10% vector |
-| LAB | IMPLEMENTED | 86% | medium | same-field Writer evidence and one real Tokyo arm | direct-target self-proof, large-field Recall, three-arm Provider growth | Rev3 +15% vector |
-| DISTRIBUTIONS | IMPLEMENTED | 93% | medium-high | Rev2 schema and realized-Junction contracts | Rev3 Writer/Cartographer and Prompt budget contracts | Rev3 +5% vector |
+| OPENCLAW | IMPLEMENTED | 96% | medium-high | immutable Capture, split Writer/Cartographer, complete bounded single-entry Recall | one-cell free growth and completed long arms | +6% actual |
+| LAB | IMPLEMENTED | 94% | high for Gate F, medium overall | 10/10 target-hidden relation-entry causality and large-field Recall | one-cell free growth, long-arm Recall, restart | +8% actual |
+| DISTRIBUTIONS | IMPLEMENTED | 97% | high | Rev3 Writer/Cartographer, progressive Atlas, fast Recall wires and budgets | formal release | +4% actual |
 
-The `f9f01f5` checkpoint proves field-complete finite Atlas coverage, explicit overflow, realized-only Junction writes, durable Provider Writer application, and forced relation-group reachability. It does not prove target-hidden relation-entry Reader causality, Prompt-bounded field traversal, complete production Recall entries, independent seeds, or three-arm Provider growth. Percentages remain planning estimates, not release claims.
+Rev3 proves progressive Prompt-bounded field traversal, complete production Recall entries, independent seeds, and 10/10 target-hidden relation-entry Reader causality with zero unrelated false reach. It does not prove one-cell Provider free growth: T0 formed two Statements in two Cells, and long-arm Recall plus restart remain incomplete. Percentages remain planning estimates, not release claims.

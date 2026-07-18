@@ -7,13 +7,12 @@
 - Current task: [Prompt-Bounded Lens Cartography Independent Seed Relation-Entry Recall](tasks/NOLLM_A_O_L_D_PROMPT_BOUNDED_LENS_CARTOGRAPHY_INDEPENDENT_SEED_RELATION_ENTRY_RECALL_TASK_20260718.md)
 - Input checkpoint: `f9f01f56906c5ce64df4a4702f61d954a8402fb8`
 - Gate 0 checkpoint: this checkpoint commit
-- Evidence/report checkpoint: pending
-- Prior report: [CAOLD Field-Complete Atlas Realized Junction Causal Loop Report](CAOLD_FIELD_COMPLETE_ATLAS_REALIZED_JUNCTION_CAUSAL_LOOP_REPORT.md)
+- Evidence/report checkpoint: [AOLD Prompt-Bounded Cartography Relation-Entry Recall Report](AOLD_PROMPT_BOUNDED_CARTOGRAPHY_RELATION_ENTRY_RECALL_REPORT.md)
 
 Current state:
 
 ```text
-FIELD_COMPLETE_ATLAS_AND_REALIZED_JUNCTION_CHECKPOINT_AT_f9f01f5
+AOLD_PROMPT_BOUNDED_CARTOGRAPHY_IN_PROGRESS_AT_<HEAD>
 ```
 
-Rev2 provides field-complete Atlas coverage and realized-only Junction application, but its Reader proof selects the target Cell directly, its Atlas prompts are unbounded at field scale, production Recall uses a stable-key prefix, and unresolved independent facts cannot seed a new Locality. Rev3 must split Capture-only Writer from progressive Cartographer, add relation-neutral independent seeds, and prove target-hidden relation-entry Recall. No multi-cell Atom, persistent Lens, topic, query route, fact-to-entry map, or Stitch is authorized.
+Rev3 now provides a Capture-only Writer, progressive Prompt-bounded Cartographer, relation-neutral independent seeds, complete bounded Recall entries, and 10/10 target-hidden relation-entry causal reach. The isolated Provider growth arm remains incomplete because T0 formed two Statements in two Cells; long-arm Recall and restart are not claimed. No multi-cell implementation, persistent Lens, topic, query route, fact-to-entry map, or Stitch is authorized by this task.

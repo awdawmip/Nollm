@@ -5,10 +5,10 @@ Date: 2026-07-18
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
 task: NOLLM_A_O_L_D_PROMPT_BOUNDED_LENS_CARTOGRAPHY_INDEPENDENT_SEED_RELATION_ENTRY_RECALL_TASK_20260718.md
-status: FIELD_COMPLETE_ATLAS_AND_REALIZED_JUNCTION_CHECKPOINT_AT_f9f01f5
+status: AOLD_PROMPT_BOUNDED_CARTOGRAPHY_IN_PROGRESS_AT_<HEAD>
 input HEAD: f9f01f56906c5ce64df4a4702f61d954a8402fb8
 Gate 0 checkpoint: this checkpoint commit
-evidence/report checkpoint: pending
+evidence/report checkpoint: docs/project/AOLD_PROMPT_BOUNDED_CARTOGRAPHY_RELATION_ENTRY_RECALL_REPORT.md
 ```
 
 Active truth:
@@ -24,7 +24,8 @@ one Statement remains one Atom in one Cell;
 all Recall observations select one final entry;
 Rev2 Writer output is durable and relation groups can reach its target, but the reported Reader selects the target Cell directly with an empty path;
 300/1027 Cell Atlas prompts are too large, production Recall takes a stable-key prefix, and independent facts without resolved Lenses are rejected;
-one Provider-backed Tokyo arm is real, but time/weather arms, unrelated controls, and restart remain incomplete.
+Rev3 target-hidden relation-entry causality passed 10/10 with non-empty paths, forced Lens-entry reach, and zero unrelated false reach;
+Rev3 Provider free growth ran nine ordinary chats, but T0 formed two Statements in two Cells and a later batch remained processing after timeout.
 ```
 
-V3.11 Rev3 is active. It must preserve field-complete coverage and realized-only Junction writes while making Writer prompts field-independent, Cartography progressive and Prompt-bounded, independent facts seedable, and causal Recall target-hidden with a non-empty relation-entry path. DC1 remains a concept/Lab reference only; no Cortex Store, fixed axis ontology, semantic index, vector, graph, multi-cell Atom, Stitch, or multi-entry Recall is authorized.
+V3.11 Rev3 has a validated Prompt-bounded causal kernel but remains `IN_PROGRESS` because free-field growth violated one Statement/Atom/Cell. The next investigation requires a separately authorized multi-cell task. DC1 remains a concept/Lab reference only; no Cortex Store, fixed axis ontology, semantic index, vector, graph, multi-cell implementation, Stitch, or multi-entry Recall is authorized by this task.
