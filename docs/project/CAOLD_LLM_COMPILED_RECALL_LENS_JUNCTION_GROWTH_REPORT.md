@@ -56,7 +56,7 @@ Controlled Windows measurements passed the local targets: Capture p95 `6.5379 ms
 
 ## Verification And Limits
 
-Core/Access/Snapshot/Trace/Lab regression: `202 passed, 8 warnings`; OpenClaw Python: `48 passed`; M0 plus Coverage: `46 passed`; OpenClaw Node: `44 passed`; Sculptor Python targeted rerun: `4 passed`. Ownership was `tracked=1941 rows=1941 unclassified=0`; production boundary violations and cycles were zero.
+Core/Access/Snapshot/Trace/Lab regression: `202 passed, 8 warnings`; OpenClaw Python: `48 passed`; M0 plus Coverage: `46 passed`; OpenClaw Node: `44 passed`; Sculptor Python targeted rerun: `4 passed`. Ownership was `tracked=1944 rows=1944 unclassified=0`; production boundary violations and cycles were zero.
 
 Actual completion vector is `CORE 98 / SNAPSHOT 50 / TRACE 40 / ACCESS 98 / HISTORY 10 / AUDIT 10 / OPENCLAW 90 / LAB 97 / DISTRIBUTIONS 95`. This is a capability estimate, not a release claim.
 
