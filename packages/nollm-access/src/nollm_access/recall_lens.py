@@ -98,6 +98,8 @@ class JunctionSemanticPlan:
             raise ValueError("relation_groups must be a bounded tuple")
         if any(type(group) is not tuple or not 1 <= len(group) <= 4 for group in self.relation_groups):
             raise ValueError("each relation group must contain one to four cells")
+        if len(self.relation_groups) != len(set(self.relation_groups)):
+            raise ValueError("relation_groups must be unique")
         if type(self.atlas_fingerprint) is not str or len(self.atlas_fingerprint) != 64:
             raise ValueError("atlas_fingerprint must be SHA-256 text")
 

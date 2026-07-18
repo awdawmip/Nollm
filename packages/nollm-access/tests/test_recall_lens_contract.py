@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 
 from nollm_access import AccessMemoryLoop, DREAM_SCULPTOR_SCHEMA_VERSION, LocalityAtlas, validate_dream_sculptor_plans
@@ -80,3 +82,15 @@ def test_lenses_are_operation_objects_not_atlas_or_core_state(tmp_path):
     wire = str(atlas.to_mapping()).lower()
     assert "future_query" not in wire and "lens_id" not in wire
     assert DREAM_SCULPTOR_SCHEMA_VERSION == "nollm_openclaw_dream_sculptor_v2"
+
+
+def test_equivalent_resolved_lenses_reject_before_core(tmp_path):
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("atlas")
+    duplicate = plan(atlas)
+    second = deepcopy(duplicate["lenses"][0])
+    second["lens_id"] = "lens-weather"
+    second["future_query"] = "东京天气如何？"
+    duplicate["lenses"].append(second)
+    with pytest.raises(ValueError, match="relation_groups must be unique"):
+        validate_dream_sculptor_plans("request", [duplicate], [CAPTURE], atlas)

@@ -54,13 +54,14 @@ For every Statement, imagine one to four future Recall Lenses. Each Lens is oper
 Span offsets use Python-style Unicode character indices: start is inclusive and end is exclusive. Each role includes its exact length. Prefer the whole supporting role text with start 0 and end equal to that role's supplied length; for a substring, count exactly and ensure text[start:end] equals quote_utf8.
 Mark a Lens unresolved when its useful future perspective has no supplied Locality. An unresolved Lens is valid teaching output and must use empty atlas_path_ids and leaf_locality_candidate_ids.
 For every resolved Lens, choose complete supplied Atlas path_id values and leaf Locality candidate_id values exposed by those paths. Never output q/r coordinates. There is no separate primary/contact choice: Access compiles resolved Lenses in order into relation groups, and Core chooses the precise Junction Cell.
+Within one Statement, each resolved Lens must select a geometrically distinct leaf candidate set. If two useful perspectives only have the same supplied Locality, keep one resolved Lens and mark the other unresolved; never duplicate an equivalent relation group.
 Use reuse only for materially the same current fact and supply its exact existing_handle. Use revision_current only for the same subject and proposition slot with a superseding value. Additive facts and analogous fields on different subjects are new_local/expand_surface. Defer uncertain revision.
 Do not force multiple entries, duplicate a fact, propose Bridge/Stitch, call tools, or reveal hidden reasoning.
 Return exactly one raw JSON object with no markdown.
 schema_version: {DREAM_SCULPTOR_SCHEMA_VERSION}
 plan: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"plan","plans":[{{"draft_id":"d1","content_utf8":"complete proposition","source_capture_ids":["capture id"],"lenses":[{{"lens_id":"l1","future_query":"natural future question","basis_spans":[{{"capture_id":"capture id","role":"user|assistant","start":0,"end":1,"quote_utf8":"exact slice"}}],"atlas_path_ids":["supplied path id"],"leaf_locality_candidate_ids":["supplied leaf id"],"unresolved":false}}],"action":"reuse|new_local|expand_surface|revision_current|defer","existing_handle":null,"reason_text":"brief"}}],"defer_reason":null}}
 no_memory/defer: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"no_memory|defer","plans":[],"defer_reason":"brief"}}
-Draft IDs, source Capture IDs, Lens IDs, path IDs, and leaf candidate ID lists must be unique; fields documented as canonical must be sorted. Maximum Statements: {max_statements}.
+The Statement field name is exactly lenses (plural), never lens. Draft IDs, source Capture IDs, Lens IDs, path IDs, and leaf candidate ID lists must be unique; fields documented as canonical must be sorted. Maximum Statements: {max_statements}.
 request_id: {request_id}
 captures: {json.dumps(captures_wire, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 locality_atlas: {json.dumps(atlas.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""

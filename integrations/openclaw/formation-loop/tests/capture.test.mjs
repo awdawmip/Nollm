@@ -26,7 +26,7 @@ test("Capture publishes exact immutable bytes and duplicate hooks replay", () =>
   assert.equal(record.user_utf8_bytes, Buffer.byteLength(record.user_utf8, "utf8"));
   assert.equal(record.assistant_utf8_bytes, Buffer.byteLength(record.assistant_utf8, "utf8"));
   assert.equal(record.visible_endpoint_kind, "visible_assistant_delivery");
-  assert.equal(record.plugin_version, "0.14.0");
+  assert.equal(record.plugin_version, "0.15.0");
 }));
 
 test("one scope workspace turn identity cannot publish conflicting content", () => workspace(async root => {

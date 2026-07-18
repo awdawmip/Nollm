@@ -439,7 +439,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       turnIdentity: runId ?? createHash("sha256").update(`${user}\0${assistant}`).digest("hex"),
       userUtf8: user, assistantUtf8: assistant, modelRef: configuredModel(model),
       profileId: config.capture_scope_id ?? "local-default-user", mainRunIdentity: runId ?? sessionKey,
-      endpointKind: "visible_assistant_delivery", pluginVersion: "0.14.0",
+      endpointKind: "visible_assistant_delivery", pluginVersion: "0.15.0",
     });
     await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
     scheduleAbsorption();
