@@ -53,3 +53,14 @@ def test_prepared_case_freezes_field_complete_certificate(tmp_path: Path) -> Non
     assert case["atlas_certificate"]["occupied_field_cell_count"] == 3
     assert case["atlas_certificate"]["uncovered_field_cell_count"] == 0
     assert not case["atlas_certificate"]["overflow"]
+
+
+def test_reader_correction_preserves_original_prompt_and_entries() -> None:
+    module = _module()
+    case = {"reader": {"prompt": "original prompt"}}
+
+    corrected = module._reader_prompt(case, "outer text rejected")
+
+    assert corrected.startswith("original prompt\n")
+    assert "same supplied entries" in corrected
+    assert "outer text rejected" in corrected

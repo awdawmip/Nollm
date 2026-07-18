@@ -1,0 +1,18 @@
+{
+  "evidence_line_count": 41,
+  "evidence_sha256": "d8efada5108daeb1be2cf15d1af31eac6a2269e3cda1359f4550fc85fdd71645",
+  "evidence_utf8_bytes": 834861,
+  "honest_defer_count": 3,
+  "lens_ablation_effect_count": 10,
+  "multi_group_realized_count": 10,
+  "passed": true,
+  "provider": "meituan/LongCat-2.0",
+  "provider_attempt_count": 27,
+  "provider_process_success_count": 27,
+  "reader_correction_count": 1,
+  "reader_target_reach_count": 10,
+  "scenario_count": 10,
+  "schema_version": "nollm_v311r2_provider_causal_writer_field_reader_summary_v1",
+  "unrelated_false_reach_count": 0,
+  "writer_durable_count": 10
+}

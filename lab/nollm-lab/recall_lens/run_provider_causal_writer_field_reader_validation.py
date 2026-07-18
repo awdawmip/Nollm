@@ -320,6 +320,13 @@ def _apply_reader(case: dict[str, object], writer_result: dict[str, object], cal
     }
 
 
+def _reader_prompt(case: dict[str, object], correction: str | None = None) -> str:
+    prompt = case["reader"]["prompt"]
+    if correction is not None:
+        prompt += f"\nThe prior response was rejected without any field write: {correction}. Return only one corrected raw JSON object using the same supplied entries."
+    return prompt
+
+
 def _defer_probe(openclaw: Path, output_root: Path, probe_index: int) -> tuple[dict[str, object], list[dict[str, object]]]:
     workspace = output_root / f"defer-probe-{probe_index:02d}"
     records = []
@@ -410,13 +417,22 @@ def run(openclaw: Path, output_root: Path, evidence: Path, summary_path: Path, c
         })
     ready = [(case, result, record) for case, result, record in zip(cases, writer_results, case_records, strict=True) if result is not None]
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
-        reader_calls = list(pool.map(lambda item: _provider_call(openclaw, "reader", item[0]["scenario_id"], item[0]["reader"]["prompt"]), ready))
+        reader_calls = list(pool.map(lambda item: _provider_call(openclaw, "reader", item[0]["scenario_id"], _reader_prompt(item[0])), ready))
     for (case, writer_result, record), call in zip(ready, reader_calls, strict=True):
         provider_records.append(call)
         try:
             reader = _apply_reader(case, writer_result, call)
         except Exception as exc:
-            reader = {"passed": False, "reader_error": str(exc)}
+            correction = _provider_call(openclaw, "reader-correction", case["scenario_id"], _reader_prompt(case, str(exc)), 2)
+            provider_records.append(correction)
+            try:
+                reader = _apply_reader(case, writer_result, correction)
+            except Exception as corrected_exc:
+                reader = {"passed": False, "reader_error": str(corrected_exc)}
+            else:
+                reader["reader_corrected"] = True
+                reader["initial_reader_error"] = str(exc)
+                call = correction
         record.update({"reader_raw": call["assistant_raw"], **reader, "passed": reader["passed"] and record["lens_ablation"]["effect_observed"]})
     defer_records = []
     for probe_index in range(1, 4):
@@ -456,15 +472,100 @@ def run(openclaw: Path, output_root: Path, evidence: Path, summary_path: Path, c
     return summary
 
 
+def resume_reader_corrections(openclaw: Path, evidence: Path, summary_path: Path) -> dict[str, object]:
+    records = [json.loads(line) for line in evidence.read_text(encoding="utf-8").splitlines() if line]
+    case_records = {item["scenario_id"]: item for item in records if item.get("record_type") == "causal_case"}
+    amendments = {item["scenario_id"]: item for item in records if item.get("record_type") == "causal_case_amendment"}
+    appended = []
+    for index, scenario in enumerate(SCENARIOS, 1):
+        base = amendments.get(scenario[0], case_records.get(scenario[0]))
+        if base is None or base.get("passed") or not base.get("reader_error"):
+            continue
+        workspace = Path(base["workspace"])
+        reader = build_fast_recall_prompt(scenario[4], str(workspace), f"causal-reader-{index:02d}")
+        case = {
+            "index": index,
+            "scenario_id": scenario[0],
+            "workspace": workspace,
+            "reader": reader,
+            "fixture": {"unrelated_statement_id": f"background:{index:02d}:unrelated"},
+        }
+        writer_result = {
+            "target_statement_id": base["target_statement_id"],
+            "final_state_sha256": base["final_state_sha256"],
+        }
+        call = _provider_call(openclaw, "reader-correction", scenario[0], _reader_prompt(case, base["reader_error"]), 2)
+        appended.append(call)
+        try:
+            corrected = _apply_reader(case, writer_result, call)
+        except Exception as exc:
+            corrected = {"passed": False, "reader_error": str(exc)}
+        amendment = {
+            "record_type": "causal_case_amendment",
+            "scenario_id": scenario[0],
+            "workspace": str(workspace),
+            "target_statement_id": base["target_statement_id"],
+            "final_state_sha256": base["final_state_sha256"],
+            "multi_group_realized": base["multi_group_realized"],
+            "durable_reopen": base["durable_reopen"],
+            "lens_ablation": base["lens_ablation"],
+            "reader_raw": call["assistant_raw"],
+            "prior_reader_error": base["reader_error"],
+            **corrected,
+        }
+        amendment["passed"] = corrected["passed"] and base["lens_ablation"]["effect_observed"]
+        appended.append(amendment)
+        amendments[scenario[0]] = amendment
+    records.extend(appended)
+    effective_cases = [amendments.get(item[0], case_records.get(item[0], {})) for item in SCENARIOS]
+    defer_records = [item for item in records if item.get("record_type") == "defer_probe"]
+    provider_records = [item for item in records if item.get("record_type") == "provider_attempt"]
+    encoded = b"".join(json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n" for item in records)
+    evidence.write_bytes(encoded)
+    summary = {
+        "schema_version": "nollm_v311r2_provider_causal_writer_field_reader_summary_v1",
+        "provider": "meituan/LongCat-2.0",
+        "scenario_count": len(effective_cases),
+        "writer_durable_count": sum(item.get("durable_reopen", {}).get("reopen_verified") is True for item in effective_cases),
+        "reader_target_reach_count": sum(item.get("target_reached") is True for item in effective_cases),
+        "unrelated_false_reach_count": sum(item.get("unrelated_false_reach") is True for item in effective_cases),
+        "multi_group_realized_count": sum(item.get("multi_group_realized") is True for item in effective_cases),
+        "lens_ablation_effect_count": sum(item.get("lens_ablation", {}).get("effect_observed") is True for item in effective_cases),
+        "honest_defer_count": sum(item["honest_defer"] for item in defer_records),
+        "provider_attempt_count": len(provider_records),
+        "provider_process_success_count": sum(item["exit_code"] == 0 for item in provider_records),
+        "evidence_line_count": len(records),
+        "evidence_utf8_bytes": len(encoded),
+        "evidence_sha256": _sha_bytes(encoded),
+        "reader_correction_count": len([item for item in records if item.get("record_type") == "causal_case_amendment"]),
+    }
+    summary["passed"] = (
+        summary["writer_durable_count"] == 10
+        and summary["reader_target_reach_count"] == 10
+        and summary["unrelated_false_reach_count"] == 0
+        and summary["multi_group_realized_count"] >= 5
+        and summary["lens_ablation_effect_count"] == 10
+        and summary["honest_defer_count"] >= 3
+    )
+    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+    return summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--openclaw", type=Path, default=Path(os.environ.get("APPDATA", "")) / "npm/openclaw.cmd")
-    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path)
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--concurrency", type=int, choices=range(1, 6), default=3)
+    parser.add_argument("--resume-reader-corrections", action="store_true")
     args = parser.parse_args()
-    result = run(args.openclaw.resolve(), args.output_root.resolve(), args.evidence.resolve(), args.summary.resolve(), args.concurrency)
+    if args.resume_reader_corrections:
+        result = resume_reader_corrections(args.openclaw.resolve(), args.evidence.resolve(), args.summary.resolve())
+    else:
+        if args.output_root is None:
+            parser.error("--output-root is required unless --resume-reader-corrections is used")
+        result = run(args.openclaw.resolve(), args.output_root.resolve(), args.evidence.resolve(), args.summary.resolve(), args.concurrency)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0 if result["passed"] else 1
 
