@@ -4,12 +4,11 @@ Date: 2026-07-18
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_C_A_O_L_D_LENS_CAUSAL_TRUE_JUNCTION_HIERARCHICAL_ATLAS_CLOSURE_TASK_20260718.md
-status: CAOLD_LENS_CAUSAL_JUNCTION_GROWTH_IN_PROGRESS
-input HEAD: dd95606b36acae753ce137c5c449f6fa16a070b4
-Gate 0 checkpoint: e070153
-Rev1 implementation checkpoint: 27a5763
-evidence/report checkpoint: in progress
+task: NOLLM_C_A_O_L_D_FIELD_COMPLETE_ATLAS_REALIZED_JUNCTION_CAUSAL_WRITER_READER_TASK_20260718.md
+status: LENS_RELATION_GROUP_AND_JUNCTION_PROTOTYPE_CHECKPOINT_AT_440b7d4
+input HEAD: 440b7d43ade67a2c1b8f67aa0fabf24c2b7297ef
+Gate 0 checkpoint: pending
+evidence/report checkpoint: pending
 ```
 
 Active truth:
@@ -19,11 +18,12 @@ dd95606 is the immutable prototype input checkpoint;
 OpenClaw owns immutable Capture, attempt-bound Provider replay, recoverable worker state, and Host-lifecycle scheduling;
 V3.10 scope, turn idempotency, continuous drain, retry, provenance, partial outcome, revision, and Pending/admitted composition gaps are closed;
 V3.11 Recall Lenses are operation-local and never persistent state; Rev1 binds validated Lens paths to unique relation groups;
-Access owns the implemented hierarchical Locality Atlas and Lens-to-relation-group compilation;
-Core owns implemented geometry-only symmetric relation-group Junction solving;
+Access owns Lens-to-relation-group compilation, but the Rev1 Atlas samples projections and is not field-complete;
+Core owns geometry-only relation-group Junction scoring, but Rev1 exposes partial candidates and Access can apply them;
 one Statement remains one Atom in one Cell;
 all Recall observations select one final entry;
-Synthetic long-arm validation passes but remains provider_backed=false; the prior compact Tokyo/date/weather observation is not real long-arm causal validation.
+The Rev1 Provider Reader fixture was preseeded independently of Writer, so its 10/10 result is not Writer-to-field causality;
+Synthetic long-arm validation remains provider_backed=false and is not real long-arm causal validation.
 ```
 
-V3.11 Rev1 remains in progress. Fixed tests validate causal Lens compilation, true Junction behavior, and hierarchical Atlas scale. The final real Provider batch produced Writer 9/10, Reader 10/10, and exact Critic JSON 1/10; the minimum multi-relation/no-bounded-junction cases and real durable long-arm proof remain open. DC1 is a concept/Lab reference only; no Cortex Store, fixed axis ontology, rule registry, receipt system, topic/source/entity index, vector, graph, multi-cell Atom, automatic Stitch, or multi-entry Recall is authorized.
+V3.11 Rev2 is active. The `440b7d4` input is a Lens/relation-group/Junction prototype checkpoint, not a validated causal loop. Rev2 must prove zero-uncovered Atlas coverage, realized-only Junction application, Writer-applied durable Handles, same-field Reader/counterfactual behavior, and Provider-backed long arms. DC1 remains a concept/Lab reference only; no Cortex Store, fixed axis ontology, semantic index, vector, graph, multi-cell Atom, Stitch, or multi-entry Recall is authorized.

@@ -144,3 +144,15 @@
 - The Tokyo/date/weather field must use arms of length at least two, not a center-plus-neighbor star.
 - Persist raw validated Sculptor evidence at runtime; do not rely only on post-hoc log recovery.
 - Do not add Lens persistence, Topic/Entity indexes, fact-to-entry maps, vectors, graphs or multi-cell Atoms.
+- An Atlas is active only when its coverage certificate shows zero uncovered occupied Cells.
+- Never even-sample or stable-key-sample Surface projections and call the result field-complete.
+- Choose the finest Surface Order whose entire non-empty projection set fits the Atlas budget.
+- If no supported Order fits, return explicit Atlas overflow and defer; do not sample.
+- A resolved Lens is not geometrically realized until the selected Junction is within contact_radius of every relation group.
+- Access must never apply an all_groups_realized=false Junction.
+- Core must not expose active candidates outside max_radius.
+- Provider Writer/Reader validation must use one causal workspace: apply Writer, reopen, then Reader.
+- Do not preseed the Reader target independently of Writer.
+- Counterfactual and Reader must use the same final field and RecallBudget.
+- Synthetic direct seeds are conformance only, not Provider long-arm evidence.
+- Preserve one Statement/Atom/Cell and operation-local Lens.
