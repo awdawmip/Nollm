@@ -2,22 +2,23 @@
 
 **Date**: 2026-07-18
 **Input HEAD**: `dd95606b36acae753ce137c5c449f6fa16a070b4`
-**Gate 0 checkpoint**: in progress
-**Evidence/report checkpoint**: pending
-**Status**: `LLM_RECALL_LENS_JUNCTION_PROTOTYPE_CHECKPOINT_AT_dd95606`
+**Gate 0 checkpoint**: `e070153`
+**Rev1 implementation checkpoint**: `27a5763`
+**Evidence/report checkpoint**: in progress
+**Status**: `CAOLD_LENS_CAUSAL_JUNCTION_GROWTH_IN_PROGRESS`
 
 This is the only active module ledger. Percentages are current planning estimates, never permanent completion claims.
 
 | Module | Lifecycle | Current progress | Confidence | Preserved capability | Active gap | Task delta |
 |---|---|---:|---|---|---|---:|
-| CORE | IMPLEMENTED | 88% | medium-high | canonical state, bounded Coverage/Surface/Recall, deterministic geometry-only candidate prototype | Junction is not yet a symmetric multi-relation intersection | +10% task vector |
+| CORE | IMPLEMENTED | 96% | medium-high | canonical state, bounded Coverage/Surface/Recall, symmetric geometry-only relation-group Junction | real durable long-arm proof; multi-cell and multi-layer remain out of scope | +8% actual vector |
 | SNAPSHOT | IMPLEMENTED | 50% | medium-high | state-byte regression | versioned and incremental Snapshot | 0% |
 | TRACE | IMPLEMENTED | 40% | medium | isolated public contract | long-term performance observation | 0% |
-| ACCESS | IMPLEMENTED | 85% | medium | Statement/Handle/Core atomic coordination and operation-local Lens/Atlas prototype | Lens is not causally bound and Atlas is a coordinate prefix | +15% task vector |
+| ACCESS | IMPLEMENTED | 94% | medium-high | operation-local Lens validation, unique relation-group compilation, hierarchical Surface-derived Atlas | Provider multi-group minimum and long-term scale | +9% actual vector |
 | HISTORY | PROPOSED | 10% | low | charter | paused | 0% |
 | AUDIT | PROPOSED | 10% | low | charter | paused | 0% |
-| OPENCLAW | IMPLEMENTED | 88% | medium-high | immutable Capture, attempt-bound replay, lifecycle worker, Pending composition, one-call Dream Sculptor and Recall | Rev1 Wire, raw evidence and multi-Provider validation | +5% task vector |
-| LAB | IMPLEMENTED | 82% | medium | DC1 asset reuse and synthetic/compact-field fixtures | Writer/Reader/Critic, counterfactual and long-arm causal proof | +15% task vector |
-| DISTRIBUTIONS | IMPLEMENTED | 90% | medium-high | V3.11 v1 Wire/Prompt/policy and bounded configuration contracts | Rev1 schema and budgets | +5% task vector |
+| OPENCLAW | IMPLEMENTED | 92% | medium-high | immutable Capture, Rev1 Sculptor, raw response evidence, lifecycle worker and single-entry Recall | exact Provider output consistency and multi-provider validation | +4% actual vector |
+| LAB | IMPLEMENTED | 90% | medium | 100-case synthetic contract, synthetic long arms, real 30-call Writer/Reader/Critic evidence | Gate F minimum and provider-backed durable long arms | +8% actual vector |
+| DISTRIBUTIONS | IMPLEMENTED | 95% | medium-high | Rev1 schema, prompt, budgets and plugin version contract | formal release | +5% actual vector |
 
-The `dd95606` checkpoint is a prototype baseline, not validated Lens-to-geometry causality. Rev1 must prove Lens-to-relation-group compilation, symmetric true Junction scoring, hierarchical Atlas scale and independent long-arm single-entry observations. Percentages remain planning estimates, not release claims.
+The `dd95606` checkpoint remains the immutable prototype baseline. Rev1 fixed tests now prove Lens-to-relation-group compilation, symmetric true Junction scoring, and hierarchical Atlas scale. Provider-backed Gate F minimums and real durable long-arm single-entry observations remain unproved. Percentages remain planning estimates, not release claims.

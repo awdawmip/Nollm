@@ -6,14 +6,15 @@
 - Active route: [V3.9 Fast Structural Geometry](NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md)
 - Current task: [Lens Causal True Junction Hierarchical Atlas Closure](tasks/NOLLM_C_A_O_L_D_LENS_CAUSAL_TRUE_JUNCTION_HIERARCHICAL_ATLAS_CLOSURE_TASK_20260718.md)
 - Input checkpoint: `dd95606b36acae753ce137c5c449f6fa16a070b4`
-- Gate 0/A checkpoint: pending
-- Evidence/report checkpoint: pending
-- Report: [AOLD Durable Capture And Async Absorption Report](AOLD_DURABLE_CAPTURE_ASYNC_ABSORPTION_REPORT.md)
+- Gate 0 checkpoint: `e070153`
+- Rev1 implementation checkpoint: `27a5763`
+- Evidence/report checkpoint: in progress
+- Report: [CAOLD Lens Causal True Junction Hierarchical Atlas Report](CAOLD_LENS_CAUSAL_TRUE_JUNCTION_HIERARCHICAL_ATLAS_REPORT.md)
 
 Current state:
 
 ```text
-LLM_RECALL_LENS_JUNCTION_PROTOTYPE_CHECKPOINT_AT_dd95606
+CAOLD_LENS_CAUSAL_JUNCTION_GROWTH_IN_PROGRESS
 ```
 
-The active task causally compiles operation-local Recall Lenses into relation groups, replaces the primary-biased candidate prototype with true geometry-only Junction solving, and derives a bounded hierarchy from the existing Surface. No Lens, topic, query route, or fact-to-entry map becomes persistent state.
+Rev1 now causally compiles operation-local Recall Lenses into unique relation groups, uses true geometry-only Junction solving, and derives a bounded hierarchy from the existing Surface. Fixed and synthetic gates pass, but the Provider minimum and real durable long-arm gate remain open. No Lens, topic, query route, or fact-to-entry map becomes persistent state.
