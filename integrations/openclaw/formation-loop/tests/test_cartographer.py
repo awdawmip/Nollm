@@ -1,6 +1,5 @@
 import json
 
-from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 from nollm_openclaw_formation.cartographer import (
     FIELD_CARTOGRAPHER_SCHEMA_VERSION,
     PROPOSITION_WRITER_SCHEMA_VERSION,
@@ -9,6 +8,11 @@ from nollm_openclaw_formation.cartographer import (
     build_field_cartographer_prompt,
     build_proposition_writer_prompt,
     parse_proposition_writer_result,
+)
+from nollm_openclaw_formation.memory_loop import (
+    BATCH_PLACEMENT_SCHEMA_VERSION,
+    apply_batch_placement,
+    build_batch_placement_prompt,
 )
 
 
@@ -46,11 +50,36 @@ def _writer_result(request_id="writer"):
     return parse_proposition_writer_result(_writer_raw(), [CAPTURE], request_id)
 
 
+def _seed_field(workspace, count):
+    outcomes = []
+    offset = 0
+    while offset < count:
+        statements = [
+            {"statement_id": f"seed:{index}", "content_utf8": str(index), "source_handle": None, "context_refs": []}
+            for index in range(offset, min(offset + 16, count))
+        ]
+        request_id = f"seed-batch:{offset}"
+        built = build_batch_placement_prompt(statements, str(workspace), request_id, 1, 16)
+        empty = [item for item in built["candidates"] if item["occupancy"]["count"] == 0]
+        assert empty
+        statements = statements[:len(empty)]
+        decisions = [
+            {"statement_id": statement["statement_id"], "outcome": "apply", "action": "expand_surface" if empty[index]["relation_kind"] == "expand_surface" else "new_local", "candidate_id": empty[index]["candidate_id"], "reason_text": "bounded test field"}
+            for index, statement in enumerate(statements)
+        ]
+        applied = apply_batch_placement(
+            json.dumps({"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "decisions": decisions}),
+            statements, str(workspace), request_id, built["view_fingerprint"], 1, 16,
+        )
+        assert all(item["outcome"] == "applied" for item in applied["outcomes"])
+        outcomes.extend(applied["outcomes"])
+        offset += len(statements)
+    return outcomes
+
+
 def test_writer_is_capture_only_and_field_size_independent(tmp_path):
     empty = build_proposition_writer_prompt([CAPTURE], "writer")
-    with CoreRuntime(tmp_path) as core:
-        for q in range(40):
-            core.put(MemoryAtom(f"a{q}", str(q)), GeometryAddress("default_dream_v1", "default", 0, q, 0))
+    _seed_field(tmp_path, 1)
     populated = build_proposition_writer_prompt([CAPTURE], "writer")
 
     assert empty["prompt"] == populated["prompt"]
@@ -102,9 +131,7 @@ def test_cartographer_independent_seed_then_related_growth(tmp_path):
 
 
 def test_cartographer_uses_one_session_across_progressive_turns(tmp_path):
-    with CoreRuntime(tmp_path) as core:
-        for q in range(40):
-            core.put(MemoryAtom(f"a{q}", str(q)), GeometryAddress("default_dream_v1", "default", 0, q, 0))
+    _seed_field(tmp_path, 40)
     writer = _writer_result()
     first = build_field_cartographer_prompt(writer, str(tmp_path), "cartography")
     region = first["page"]["regions"][-1]
@@ -122,8 +149,7 @@ def test_cartographer_uses_one_session_across_progressive_turns(tmp_path):
 
 
 def test_cartographer_requests_bounded_local_detail_in_same_operation(tmp_path):
-    with CoreRuntime(tmp_path) as core:
-        core.put(MemoryAtom("a0", "zero"), GeometryAddress("default_dream_v1", "default", 0, 0, 0))
+    _seed_field(tmp_path, 1)
     writer = _writer_result("detail-writer")
     first = build_field_cartographer_prompt(writer, str(tmp_path), "detail")
     region_id = first["page"]["regions"][0]["region_id"]
