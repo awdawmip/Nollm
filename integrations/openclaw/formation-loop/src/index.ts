@@ -34,7 +34,7 @@ export type DreamConfig = {
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
   capture_single_user_mode?: true;
   absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number;
-  dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v1"; locality_atlas_candidate_limit?: number;
+  dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v2"; locality_atlas_candidate_limit?: number;
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
   recall_hidden_call_budget?: 1;
   surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
@@ -78,8 +78,8 @@ const JSON_SCHEMA = {
     absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
     absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
     absorption_retry_backoff_ms: { type: "integer", minimum: 100, default: 1000 },
-    dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v1", default: "nollm_openclaw_dream_sculptor_v1" },
-    locality_atlas_candidate_limit: { type: "integer", minimum: 1, maximum: 64, default: 32 },
+    dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v2", default: "nollm_openclaw_dream_sculptor_v2" },
+    locality_atlas_candidate_limit: { type: "integer", minimum: 1, maximum: 32, default: 32 },
     pending_fallback_enabled: { type: "boolean", default: true }, pending_fallback_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
     pending_fallback_max_chars: { type: "integer", minimum: 1, default: 6000 }, pending_fallback_max_age_ms: { type: "integer", minimum: 1000, default: 604800000 },
     recall_hidden_call_budget: { type: "integer", const: 1, default: 1 },
@@ -353,26 +353,25 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
 
     let outcomes = applied.outcomes as Array<Record<string, unknown>>;
     const provisional = outcomes.filter(item => item.outcome === "revision_confirmation_required");
-    if (provisional.length) {
-      const first = provisional[0];
-      const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: first.provisional_revision });
+    for (const item of provisional) {
+      const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: item.provisional_revision });
       if (confirmationBuilt.ok === true && typeof confirmationBuilt.prompt === "string") {
-        const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${providerKey}:revision-confirmation`);
+        const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${providerKey}:revision-confirmation:${String(item.statement_id ?? "unknown")}`);
         providerCalls += 1;
         providerMs += confirmationRun?.providerMs ?? 0;
         if (confirmationRun?.raw) {
-          const confirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun.raw, provisional_revision: first.provisional_revision });
-          if (confirmation.ok === true && confirmation.confirmation && typeof first.statement_id === "string") {
+          const confirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun.raw, provisional_revision: item.provisional_revision });
+          if (confirmation.ok === true && confirmation.confirmation && typeof item.statement_id === "string") {
             const revisionApplied = await bridge(config, {
               action: "apply_dream_sculptor_result", request_id: requestId,
               raw_model_response: sculptor.raw, captures, atlas: built.atlas,
               memory_workspace: configuredMemoryWorkspace,
-              revision_confirmations: { [first.statement_id]: confirmation.confirmation },
-              only_statement_ids: [first.statement_id],
+              revision_confirmations: { [item.statement_id]: confirmation.confirmation },
+              only_statement_ids: [item.statement_id],
             });
             if (revisionApplied.ok === true && Array.isArray(revisionApplied.outcomes)) {
               const revisionOutcomes = revisionApplied.outcomes as Array<Record<string, unknown>>;
-              outcomes = outcomes.map(item => item.statement_id === first.statement_id ? revisionOutcomes[0] : item);
+              outcomes = outcomes.map(outcome => outcome.statement_id === item.statement_id ? revisionOutcomes[0] : outcome);
             }
           }
         }
@@ -386,12 +385,13 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       dream_sculptor_provider_calls: providerCalls, dream_sculptor_provider_ms: providerMs,
       common_one_call: providerCalls === 1, error_statement_count: errors.length,
       deferred_statement_count: deferred.length, atlas_fingerprint: built.atlas_fingerprint,
-      validated_plans: applied.plans, durable_outcomes: outcomes,
+      validated_plans: applied.plans, durable_outcomes: outcomes, ...outputEvidence(sculptor.raw),
     });
     return records.map(record => {
       const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
       if (!related.length) return { captureId: record.capture_id, status: "no_memory" };
       if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" };
+      if (related.some(item => item.outcome === "revision_confirmation_required")) return { captureId: record.capture_id, status: "retry", error: "revision confirmation remains retryable" };
       if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "deferred", error: "one or more Capture Statements deferred" };
       const statementIds = related.flatMap(item => typeof item.statement_id === "string" ? [item.statement_id] : []);
       const reopenVerified = related.every(item => item.durable_commit && (item.durable_commit as Record<string, unknown>).reopen_verified === true);
@@ -805,10 +805,11 @@ type DreamAttempt = { raw: string; runId: string; resolved: Record<string, strin
 type DreamRunResult = { attempt?: DreamAttempt; error?: string };
 
 function outputEvidence(raw: string): Record<string, unknown> {
-  const limit = 24000;
   return {
-    raw_visible_output: raw.slice(0, limit), raw_visible_output_truncated: raw.length > limit,
+    raw_visible_output: raw, raw_visible_output_truncated: false,
     raw_visible_output_chars: raw.length, raw_visible_output_sha256: createHash("sha256").update(raw).digest("hex"),
+    raw_visible_output_utf8_bytes: Buffer.byteLength(raw, "utf8"),
+    raw_visible_output_line_count: raw.length === 0 ? 0 : raw.split(/\r?\n/).length,
   };
 }
 

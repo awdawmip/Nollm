@@ -12,7 +12,14 @@ from .coverage_template import CoverageTemplate, KernelEntry, expand_template, v
 from .geometry import GeometryAddress
 from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
-from .junction import JunctionCandidate, JunctionRequest, solve_junction_candidates
+from .junction import (
+    JunctionCandidate,
+    JunctionRequest,
+    RelationGroupJunctionCandidate,
+    RelationGroupJunctionRequest,
+    solve_junction_candidates,
+    solve_relation_group_junction_candidates,
+)
 from .physical_coverage import (
     ACTIVE_APPROXIMATION_POLICY,
     AmbiguousPhysicalCoverage,
@@ -64,6 +71,8 @@ __all__ = [
     "KernelRegistry",
     "JunctionCandidate",
     "JunctionRequest",
+    "RelationGroupJunctionCandidate",
+    "RelationGroupJunctionRequest",
     "MemoryAtom",
     "MoveCommand",
     "PutCommand",
@@ -85,5 +94,6 @@ __all__ = [
     "available_profile_ids",
     "runtime_profile",
     "solve_junction_candidates",
+    "solve_relation_group_junction_candidates",
     "validate_lateral_ring",
 ]

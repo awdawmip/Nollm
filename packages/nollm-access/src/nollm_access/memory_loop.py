@@ -5,16 +5,17 @@ from time import perf_counter_ns
 import hashlib
 import json
 
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope, RelationGroupJunctionRequest
 
 from .handle_store import FileHandleStore
-from .locality import LocalityAtlas, LocalityCandidateRef
+from .locality import AtlasNode, AtlasPath, LocalityAtlas, LocalityCandidateRef
 from .placement_contract import AccessDecision, ProvisionalRevisionDecision, RevisionConfirmationResult
 from .recall_lens import JunctionSemanticPlan
 from .runtime import AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore
 from .surface_navigation import AccessSurfaceNavigator
+from .surface_selection import PLACEMENT_SURFACE_BUDGET
 from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
 
 
@@ -203,8 +204,8 @@ class AccessMemoryLoop:
         scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
     ) -> LocalityAtlas:
         self._require_request(request_id)
-        if type(candidate_limit) is not int or not 1 <= candidate_limit <= 64:
-            raise ValueError("candidate_limit must be in [1,64]")
+        if type(candidate_limit) is not int or not 1 <= candidate_limit <= 32:
+            raise ValueError("candidate_limit must be in [1,32]")
         if type(scope) is not PhysicalFieldScope:
             raise TypeError("scope must be PhysicalFieldScope")
         with CoreRuntime(self._workspace) as core:
@@ -212,31 +213,91 @@ class AccessMemoryLoop:
             occupied = tuple(sorted((cell for cell in core.occupied_cells() if scope.contains(cell)), key=lambda item: item.stable_key()))
             occupied_set = frozenset(occupied)
             candidates: list[LocalityCandidateRef] = []
-            for index, cell in enumerate(occupied[:candidate_limit]):
-                neighbors = cell.lateral(1)
-                occupied_neighbors = sum(neighbor in occupied_set for neighbor in neighbors)
-                raw = self._candidate(core, f"locality:occupied:{index}", "existing_cell", cell)
-                context = self._candidate_statement_context([raw], 1)[0]["statements"]
-                candidates.append(LocalityCandidateRef(
-                    raw["candidate_id"], cell, True, occupied_neighbors < 6,
-                    6 - occupied_neighbors, occupied_neighbors, tuple(context),
-                ))
-            remaining = candidate_limit - len(candidates)
-            if remaining:
-                primary = occupied[: min(8, len(occupied))]
-                frontier = core.junction_candidates(JunctionRequest(scope, primary, (), 4, min(8, remaining)))
-                for item in frontier:
+            nodes: list[AtlasNode] = []
+            paths: list[AtlasPath] = []
+            if occupied:
+                atlas_order = 0 if len(occupied) <= candidate_limit else 1
+                infos = core.surface_orders(scope, atlas_order)
+                projections = self._surface_projections(core, scope, atlas_order)
+                selected = self._even_sample(projections, candidate_limit)
+                for index, projection in enumerate(selected):
+                    cells = self._even_sample(tuple(sorted(projection.source_cells, key=lambda item: item.stable_key())), 4)
+                    material = json.dumps({"state": state_sha256, "surface": projection.address.to_mapping()}, sort_keys=True, separators=(",", ":")).encode("ascii")
+                    digest = hashlib.sha256(material).hexdigest()
+                    candidate_id = f"locality:{digest}"
+                    raw = [self._candidate(core, f"{candidate_id}:{cell_index}", "existing_cell", cell) for cell_index, cell in enumerate(cells)]
+                    contexts = self._candidate_statement_context(raw, 4)
+                    representatives = []
+                    seen_statements = set()
+                    for context in contexts:
+                        for statement in context["statements"]:
+                            if statement["statement_id"] not in seen_statements:
+                                representatives.append(statement)
+                                seen_statements.add(statement["statement_id"])
+                    neighbor_counts = tuple(sum(neighbor in occupied_set for neighbor in cell.lateral(1)) for cell in cells)
                     candidates.append(LocalityCandidateRef(
-                        item.candidate_id, item.cell, False, item.boundary,
-                        item.free_face_count, item.occupied_neighbor_count, (),
+                        candidate_id, cells, True, any(value < 6 for value in neighbor_counts),
+                        max(6 - value for value in neighbor_counts), min(neighbor_counts), tuple(representatives[:3]),
                     ))
+                    if atlas_order == 0:
+                        node_id = f"atlas-node:{digest}"
+                        nodes.append(AtlasNode(
+                            node_id, 0, projection.address.to_mapping(), (),
+                            projection.physical_source_cell_count, projection.native_atom_count,
+                            projection.truncated, tuple(representatives[:3]),
+                        ))
+                        paths.append(AtlasPath(f"atlas-path:{digest}", (node_id,), (candidate_id,)))
+                    else:
+                        leaf_id = f"atlas-leaf:{digest}"
+                        parent_id = f"atlas-node:{digest}"
+                        nodes.extend((
+                            AtlasNode(
+                                parent_id, atlas_order, projection.address.to_mapping(), (leaf_id,),
+                                projection.physical_source_cell_count, projection.native_atom_count,
+                                projection.truncated or len(projection.source_cells) > len(cells), tuple(representatives[:3]),
+                            ),
+                            AtlasNode(
+                                leaf_id, 0, {"geometry_addresses": [cell.to_mapping() for cell in cells]}, (),
+                                len(cells), sum(len(core.atoms_at(cell)) for cell in cells),
+                                len(projection.source_cells) > len(cells), tuple(representatives[:3]),
+                            ),
+                        ))
+                        paths.append(AtlasPath(f"atlas-path:{digest}", (parent_id, leaf_id), (candidate_id,)))
+            else:
+                frontier = core.junction_candidates(JunctionRequest(scope, (), (), 1, 1))[0]
+                candidates.append(LocalityCandidateRef(frontier.candidate_id, (frontier.cell,), False, False, 6, 0, ()))
+                node_id = f"atlas-node:{frontier.candidate_id}"
+                nodes.append(AtlasNode(node_id, 0, frontier.cell.to_mapping(), (), 0, 0, False))
+                paths.append(AtlasPath(f"atlas-path:{frontier.candidate_id}", (node_id,), (frontier.candidate_id,)))
         payload = {
             "field_scope": scope.to_mapping(),
             "core_state_sha256": state_sha256,
+            "nodes": [item.to_mapping() for item in nodes],
+            "paths": [item.to_mapping() for item in paths],
             "candidates": [item.to_mapping() for item in candidates],
         }
         fingerprint = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
-        return LocalityAtlas(request_id, scope, state_sha256, fingerprint, tuple(candidates))
+        return LocalityAtlas(request_id, scope, state_sha256, fingerprint, tuple(candidates), tuple(nodes), tuple(paths))
+
+    @staticmethod
+    def _even_sample(values: tuple, limit: int) -> tuple:
+        if len(values) <= limit:
+            return values
+        if limit == 1:
+            return (values[len(values) // 2],)
+        indexes = tuple((index * (len(values) - 1)) // (limit - 1) for index in range(limit))
+        return tuple(values[index] for index in indexes)
+
+    @staticmethod
+    def _surface_projections(core: CoreRuntime, scope: PhysicalFieldScope, order: int) -> tuple:
+        projections = []
+        after = None
+        while True:
+            page = core.surface_page(scope, order, after, 256)
+            projections.extend(page.cells)
+            if not page.has_more:
+                return tuple(projections)
+            after = page.next_after
 
     def apply_batch_placements(
         self,
@@ -372,31 +433,20 @@ class AccessMemoryLoop:
             reopened = self.build_locality_atlas(request_id + ":reopen", len(atlas.candidates), atlas.scope)
             if reopened.core_state_sha256 != atlas.core_state_sha256 or reopened.atlas_fingerprint != atlas.atlas_fingerprint:
                 raise ValueError("Locality Atlas changed before Junction apply")
-        candidate_map = {item.candidate_id: item for item in atlas.candidates}
         prepared: list[tuple[JunctionSemanticPlan, AccessDecision | None, dict[str, object] | None]] = []
         for plan in plans:
+            if plan.atlas_fingerprint != atlas.atlas_fingerprint:
+                raise ValueError("semantic plan does not bind the current Locality Atlas")
             if plan.action == "defer":
                 prepared.append((plan, None, None))
                 continue
-            primary = candidate_map[plan.primary_candidate_id]
-            contacts = tuple(sorted(
-                (candidate_map[item].geometry_address for item in plan.contact_candidate_ids),
-                key=lambda cell: cell.stable_key(),
-            ))
             if plan.action in {"new_local", "expand_surface"}:
-                prepared.append((plan, None, {
-                    "primary": primary.geometry_address,
-                    "contacts": contacts,
-                }))
+                prepared.append((plan, None, {"relation_groups": plan.relation_groups}))
                 continue
             handle = plan.existing_handle
             assert handle is not None
-            supplied = tuple(
-                item.get("handle") for item in primary.representative_statements
-                if type(item) is dict and type(item.get("handle")) is dict
-            )
-            if handle.to_mapping() not in supplied:
-                raise ValueError("existing Handle is not supplied by the selected Locality")
+            if not any(handle.geometry_address in group for group in plan.relation_groups):
+                raise ValueError("existing Handle is not supplied by a resolved Lens relation group")
             action = "reuse" if plan.action == "reuse" else "revision_current"
             decision = AccessDecision(
                 f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
@@ -406,11 +456,14 @@ class AccessMemoryLoop:
 
         outcomes = []
         for plan, decision, placement in prepared:
-            if decision is None and placement is not None and "primary" in placement:
+            if decision is None and placement is not None and "relation_groups" in placement:
                 with CoreRuntime(self._workspace) as core:
-                    candidates = core.junction_candidates(JunctionRequest(
-                        atlas.scope, (placement["primary"],), placement["contacts"], 4, 8,
-                    ))
+                    if placement["relation_groups"]:
+                        candidates = core.relation_group_junction_candidates(RelationGroupJunctionRequest(
+                            atlas.scope, placement["relation_groups"], 4, 2, 8,
+                        ))
+                    else:
+                        candidates = core.junction_candidates(JunctionRequest(atlas.scope, (), (), 1, 1))
                 if not candidates:
                     outcomes.append({
                         "statement_id": plan.statement.statement_id,
@@ -434,7 +487,7 @@ class AccessMemoryLoop:
                 continue
             confirmation_value = confirmations.get(plan.statement.statement_id)
             if decision.action == "revision_current" and confirmation_value is None:
-                provisional = self._provisional_revision(plan.statement, decision, {"candidate_id": plan.primary_candidate_id})
+                provisional = self._provisional_revision(plan.statement, decision, self._relation_group_locator(plan.relation_groups))
                 outcomes.append({
                     "statement_id": plan.statement.statement_id,
                     "source_capture_ids": list(plan.source_capture_ids),
@@ -444,7 +497,7 @@ class AccessMemoryLoop:
                 continue
             if decision.action == "revision_current":
                 confirmation = RevisionConfirmationResult.from_mapping(confirmation_value)
-                provisional = self._provisional_revision(plan.statement, decision, {"candidate_id": plan.primary_candidate_id})
+                provisional = self._provisional_revision(plan.statement, decision, self._relation_group_locator(plan.relation_groups))
                 if confirmation.provisional_id != provisional.provisional_id or not confirmation.confirmed:
                     outcomes.append({
                         "statement_id": plan.statement.statement_id,
@@ -495,10 +548,16 @@ class AccessMemoryLoop:
                     **({} if placement is None else placement),
                 })
         return {
-            "schema_version": "nollm_access_junction_apply_v1",
+            "schema_version": "nollm_access_junction_apply_v2",
             "atlas_fingerprint": atlas.atlas_fingerprint,
             "outcomes": outcomes,
         }
+
+    @staticmethod
+    def _relation_group_locator(groups: tuple[tuple[GeometryAddress, ...], ...]) -> dict[str, object]:
+        mapping = [[cell.to_mapping() for cell in group] for group in groups]
+        payload = json.dumps(mapping, sort_keys=True, separators=(",", ":")).encode("ascii")
+        return {"candidate_id": f"relation-groups:{hashlib.sha256(payload).hexdigest()}", "relation_groups": mapping}
 
     def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
         self._require_request(request_id)

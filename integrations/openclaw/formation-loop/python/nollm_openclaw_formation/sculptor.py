@@ -14,7 +14,7 @@ from .adapter import FormationAdapterError
 from .dream_adapter import repair_dream_json
 
 
-DREAM_SCULPTOR_PROMPT_VERSION = "dream-sculptor-p1"
+DREAM_SCULPTOR_PROMPT_VERSION = "dream-sculptor-v2-lens-causal"
 
 
 def build_dream_sculptor_prompt(
@@ -27,7 +27,7 @@ def build_dream_sculptor_prompt(
     clean = _captures(captures)
     if type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_sculptor_request", "request_id is required")
-    if type(candidate_limit) is not int or not 1 <= candidate_limit <= 64 or type(max_statements) is not int or not 1 <= max_statements <= 8:
+    if type(candidate_limit) is not int or not 1 <= candidate_limit <= 32 or type(max_statements) is not int or not 1 <= max_statements <= 8:
         raise FormationAdapterError("invalid_sculptor_budget", "Dream Sculptor budgets are invalid")
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
         atlas = loop.build_locality_atlas(request_id + ":atlas", candidate_limit)
@@ -52,15 +52,15 @@ Bad fanout example: do not force one physical entry per Lens or persist a fact-t
 For relative time, resolve it once from the Capture reference_epoch_ms and timezone_offset_minutes. Keep the original relative wording only in Capture; make the Statement self-contained and absolute when resolution is possible.
 For every Statement, imagine one to four future Recall Lenses. Each Lens is operation-local teaching material and must cite exact character spans from supplied Capture text. It is not a Topic, entity, index, axis registry, or persistent query route.
 Span offsets use Python-style Unicode character indices: start is inclusive and end is exclusive. Each role includes its exact length. Prefer the whole supporting role text with start 0 and end equal to that role's supplied length; for a substring, count exactly and ensure text[start:end] equals quote_utf8.
-Mark a Lens unresolved when its useful future perspective has no supplied Locality. An unresolved Lens is valid teaching output and must not invent a candidate.
-Choose only supplied Locality candidate_id values. Never output q/r coordinates. The first selected locality is primary; up to three others are contacts. Core, not you, chooses the precise Junction Cell.
+Mark a Lens unresolved when its useful future perspective has no supplied Locality. An unresolved Lens is valid teaching output and must use empty atlas_path_ids and leaf_locality_candidate_ids.
+For every resolved Lens, choose complete supplied Atlas path_id values and leaf Locality candidate_id values exposed by those paths. Never output q/r coordinates. There is no separate primary/contact choice: Access compiles resolved Lenses in order into relation groups, and Core chooses the precise Junction Cell.
 Use reuse only for materially the same current fact and supply its exact existing_handle. Use revision_current only for the same subject and proposition slot with a superseding value. Additive facts and analogous fields on different subjects are new_local/expand_surface. Defer uncertain revision.
 Do not force multiple entries, duplicate a fact, propose Bridge/Stitch, call tools, or reveal hidden reasoning.
 Return exactly one raw JSON object with no markdown.
 schema_version: {DREAM_SCULPTOR_SCHEMA_VERSION}
-plan: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"plan","plans":[{{"draft_id":"d1","content_utf8":"complete proposition","source_capture_ids":["capture id"],"lenses":[{{"lens_id":"l1","future_query":"natural future question","basis_spans":[{{"capture_id":"capture id","role":"user|assistant","start":0,"end":1,"quote_utf8":"exact slice"}}],"locality_candidate_ids":["supplied id"],"unresolved":false}}],"action":"reuse|new_local|expand_surface|revision_current|defer","primary_candidate_id":"supplied id or null","contact_candidate_ids":[],"existing_handle":null,"reason_text":"brief"}}],"defer_reason":null}}
+plan: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"plan","plans":[{{"draft_id":"d1","content_utf8":"complete proposition","source_capture_ids":["capture id"],"lenses":[{{"lens_id":"l1","future_query":"natural future question","basis_spans":[{{"capture_id":"capture id","role":"user|assistant","start":0,"end":1,"quote_utf8":"exact slice"}}],"atlas_path_ids":["supplied path id"],"leaf_locality_candidate_ids":["supplied leaf id"],"unresolved":false}}],"action":"reuse|new_local|expand_surface|revision_current|defer","existing_handle":null,"reason_text":"brief"}}],"defer_reason":null}}
 no_memory/defer: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"no_memory|defer","plans":[],"defer_reason":"brief"}}
-Draft IDs, source Capture IDs, contact IDs, Lens IDs, and candidate ID lists must be canonical and unique. Maximum Statements: {max_statements}.
+Draft IDs, source Capture IDs, Lens IDs, path IDs, and leaf candidate ID lists must be unique; fields documented as canonical must be sorted. Maximum Statements: {max_statements}.
 request_id: {request_id}
 captures: {json.dumps(captures_wire, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
 locality_atlas: {json.dumps(atlas.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""

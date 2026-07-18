@@ -25,7 +25,7 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
-from .locality import LOCALITY_ATLAS_SCHEMA_VERSION, LocalityAtlas, LocalityCandidateRef
+from .locality import AtlasNode, AtlasPath, LOCALITY_ATLAS_SCHEMA_VERSION, LocalityAtlas, LocalityCandidateRef
 from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE, RevisionTargetExcludedError
 from .placement_contract import (
     ACTIONS,
@@ -101,6 +101,8 @@ __all__ = [
     "FileBindingStore",
     "HandleBinding",
     "LOCALITY_ATLAS_SCHEMA_VERSION",
+    "AtlasNode",
+    "AtlasPath",
     "LocalityAtlas",
     "LocalityCandidateRef",
     "DREAM_SCULPTOR_SCHEMA_VERSION",

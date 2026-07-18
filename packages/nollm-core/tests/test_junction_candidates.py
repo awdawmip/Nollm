@@ -2,7 +2,7 @@ import inspect
 
 import pytest
 
-from nollm_core import CoreRuntime, GeometryAddress, JunctionRequest, MemoryAtom, PhysicalFieldScope
+from nollm_core import CoreRuntime, GeometryAddress, JunctionRequest, MemoryAtom, PhysicalFieldScope, RelationGroupJunctionRequest
 
 
 SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0, max_relative_layer_delta=0)
@@ -61,3 +61,53 @@ def test_contract_rejects_semantic_or_noncanonical_inputs():
         JunctionRequest(SCOPE, (cell(1, 0), cell(0, 0)))
     with pytest.raises(ValueError, match=r"\[1,8\]"):
         request(max_radius=9)
+
+
+def relation_request(groups, **values):
+    canonical = tuple(tuple(sorted(group, key=lambda item: item.stable_key())) for group in groups)
+    return RelationGroupJunctionRequest(SCOPE, canonical, **values)
+
+
+def test_relation_group_junction_balances_primary_and_contact(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        core.put(MemoryAtom("left", "left"), cell(0, 0))
+        core.put(MemoryAtom("right", "right"), cell(4, 0))
+        result = core.relation_group_junction_candidates(relation_request(((cell(0, 0),), (cell(4, 0),))))
+    assert result[0].cell == cell(2, 0)
+    assert result[0].group_distances == (2, 2)
+    assert result[0].groups_within_contact_radius == 2
+    assert result[0].all_groups_realized is True
+
+
+def test_relation_group_order_is_geometry_invariant_and_contact_is_causal(tmp_path):
+    groups = ((cell(0, 0),), (cell(4, 0),))
+    with CoreRuntime(tmp_path) as core:
+        for index, address in enumerate((cell(0, 0), cell(4, 0))):
+            core.put(MemoryAtom(str(index), str(index)), address)
+        forward = core.relation_group_junction_candidates(relation_request(groups))
+        reverse = core.relation_group_junction_candidates(relation_request(tuple(reversed(groups))))
+        ablated = core.relation_group_junction_candidates(relation_request((groups[0],)))
+    assert tuple(item.cell for item in forward) == tuple(item.cell for item in reverse)
+    assert forward[0].cell != ablated[0].cell
+
+
+def test_relation_group_uses_min_cell_distance_and_reports_no_bounded_junction(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        for index, address in enumerate((cell(0, 0), cell(1, 0), cell(20, 0))):
+            core.put(MemoryAtom(str(index), str(index)), address)
+        local = core.relation_group_junction_candidates(relation_request(((cell(0, 0), cell(1, 0)), (cell(4, 0),))))
+        far = core.relation_group_junction_candidates(relation_request(((cell(0, 0),), (cell(20, 0),))))
+    assert local[0].group_distances[0] == min(
+        max(abs(local[0].cell.q - target.q), abs(local[0].cell.r - target.r), abs((local[0].cell.q + local[0].cell.r) - (target.q + target.r)))
+        for target in (cell(0, 0), cell(1, 0))
+    )
+    assert far == ()
+
+
+def test_relation_group_contract_is_semantic_blind_and_bounded():
+    parameters = inspect.signature(RelationGroupJunctionRequest).parameters
+    assert "statement" not in parameters and "query" not in parameters and "lens" not in parameters
+    with pytest.raises(ValueError, match="one to four groups"):
+        RelationGroupJunctionRequest(SCOPE, ())
+    with pytest.raises(ValueError, match="one to four cells"):
+        RelationGroupJunctionRequest(SCOPE, ((cell(0, 0),) * 5,))

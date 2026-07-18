@@ -19,7 +19,14 @@ from .command import (
 from .geometry import GeometryAddress
 from .handle import AtomHandle
 from .kernel_registry import KernelRegistry
-from .junction import JunctionCandidate, JunctionRequest, solve_junction_candidates
+from .junction import (
+    JunctionCandidate,
+    JunctionRequest,
+    RelationGroupJunctionCandidate,
+    RelationGroupJunctionRequest,
+    solve_junction_candidates,
+    solve_relation_group_junction_candidates,
+)
 from .ports import CoreTraceEvent, TraceSink
 from .storage import SCHEMA_VERSION, _FileCoreStateStore, canonical_state_bytes
 from .surface import (
@@ -227,6 +234,13 @@ class CoreRuntime:
     def junction_candidates(self, request: JunctionRequest) -> tuple[JunctionCandidate, ...]:
         with self._operation():
             return solve_junction_candidates(request, self._cell_store.occupied_cells())
+
+    def relation_group_junction_candidates(
+        self,
+        request: RelationGroupJunctionRequest,
+    ) -> tuple[RelationGroupJunctionCandidate, ...]:
+        with self._operation():
+            return solve_relation_group_junction_candidates(request, self._cell_store.occupied_cells())
 
     def bridges(self) -> tuple[BridgeSpec, ...]:
         with self._operation():

@@ -31,9 +31,9 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.surface_legal_actions_contract_version.const, manifest.contracts.surfaceLegalActionsContractVersion);
   assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
   assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
-  assert.equal(manifest.version, "0.14.0");
+  assert.equal(manifest.version, "0.15.0");
   assert.equal(manifest.configSchema.properties.dream_sculptor_schema_version.const, manifest.contracts.dreamSculptorWire);
-  assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 64);
+  assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 32);
   assert.equal(manifest.contracts.dreamSculptorCommonProviderCalls, 1);
   assert.equal(manifest.contracts.recallLensesPersistent, false);
   assert.equal(manifest.contracts.maxRecallLensesPerStatement, 4);

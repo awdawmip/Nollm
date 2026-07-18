@@ -31,6 +31,8 @@
     "PutCommand",
     "Q16_ONE",
     "RecallBudget",
+    "RelationGroupJunctionCandidate",
+    "RelationGroupJunctionRequest",
     "RemoveCommand",
     "ReplaceCommand",
     "SurfaceAggregateAddress",
@@ -47,6 +49,7 @@
     "expand_template",
     "runtime_profile",
     "solve_junction_candidates",
+    "solve_relation_group_junction_candidates",
     "validate_lateral_ring"
   ],
   "core_runtime_operations": [
@@ -67,6 +70,7 @@
     "placement_count",
     "put",
     "recall",
+    "relation_group_junction_candidates",
     "remove",
     "replace",
     "surface_descend",

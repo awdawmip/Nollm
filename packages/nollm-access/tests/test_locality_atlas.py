@@ -1,5 +1,7 @@
+from time import perf_counter
+
 from nollm_access import AccessMemoryLoop, LocalityAtlas, MemoryStatement
-from nollm_core import CoreRuntime
+from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 
 
 def placement(statement_id, candidate_id):
@@ -14,6 +16,7 @@ def test_empty_atlas_is_finite_stable_and_relation_neutral(tmp_path):
     assert first == second
     assert 1 <= len(first.candidates) <= 8
     assert all(not item.occupied and not item.representative_statements for item in first.candidates)
+    assert first.nodes and first.paths
     assert not any(key in str(first.to_mapping()).lower() for key in ("topic", "source_index", "query", "embedding"))
 
 
@@ -44,3 +47,23 @@ def test_atlas_fingerprint_invalidates_after_mutation_and_read_is_write_free(tmp
         loop.build_locality_atlas("read-only")
     with CoreRuntime(tmp_path) as core:
         assert core.export_state_bytes() == state
+
+
+def test_large_atlas_uses_surface_hierarchy_not_stable_key_prefix(tmp_path):
+    cells = tuple(GeometryAddress("default_dream_v1", "default", 0, q, 0) for q in range(-150, 150))
+    with CoreRuntime(tmp_path) as core:
+        for index in range(1000):
+            core.put(MemoryAtom(f"atom-{index}", str(index)), cells[index % len(cells)])
+        before = core.export_state_bytes()
+    started = perf_counter()
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("large", 32)
+    elapsed = perf_counter() - started
+    exposed = {cell for candidate in atlas.candidates for cell in candidate.geometry_addresses}
+    assert cells[-1] in exposed
+    assert len(atlas.nodes) <= 64 and len(atlas.paths) <= 32 and len(atlas.candidates) <= 32
+    assert all(1 <= len(path.node_ids) <= 3 for path in atlas.paths)
+    assert tuple(candidate.geometry_address for candidate in atlas.candidates) != cells[:len(atlas.candidates)]
+    assert elapsed <= 2.0
+    with CoreRuntime(tmp_path) as core:
+        assert core.export_state_bytes() == before

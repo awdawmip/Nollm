@@ -29,8 +29,9 @@ CAPTURES = [
 ]
 
 
-def _plan(draft_id, capture, content, candidate_id):
+def _plan(draft_id, capture, content, atlas, candidate_id):
     quote = capture["user_utf8"]
+    path = next(item for item in atlas["paths"] if candidate_id in item["leaf_locality_candidate_ids"])
     return {
         "draft_id": draft_id,
         "content_utf8": content,
@@ -45,12 +46,11 @@ def _plan(draft_id, capture, content, candidate_id):
                 "end": len(quote),
                 "quote_utf8": quote,
             }],
-            "locality_candidate_ids": [candidate_id],
+            "atlas_path_ids": [path["path_id"]],
+            "leaf_locality_candidate_ids": [candidate_id],
             "unresolved": False,
         }],
         "action": "expand_surface",
-        "primary_candidate_id": candidate_id,
-        "contact_candidate_ids": [],
         "existing_handle": None,
         "reason_text": "complete proposition",
     }
@@ -58,7 +58,7 @@ def _plan(draft_id, capture, content, candidate_id):
 
 def _wire(plans):
     return json.dumps({
-        "schema_version": "nollm_openclaw_dream_sculptor_v1",
+        "schema_version": "nollm_openclaw_dream_sculptor_v2",
         "outcome": "plan",
         "plans": plans,
         "defer_reason": None,
@@ -75,15 +75,16 @@ def test_sculptor_prompt_teaches_complete_short_term_facts_and_geometry_boundary
     assert "Weather, appointments, cancellations" in prompt
     assert "Never output q/r coordinates" in prompt
     assert "operation-local" in prompt
-    assert built["schema_version"] == "nollm_openclaw_dream_sculptor_v1"
+    assert "There is no separate primary/contact choice" in prompt
+    assert built["schema_version"] == "nollm_openclaw_dream_sculptor_v2"
 
 
 def test_one_sculptor_result_applies_two_capture_bound_statements_via_core_junction(tmp_path):
     built = build_dream_sculptor_prompt(CAPTURES, str(tmp_path), "batch")
     candidate = built["atlas"]["candidates"][0]["candidate_id"]
     raw = _wire([
-        _plan("d1", CAPTURES[0], "2026年1月17日东京下雨了。", candidate),
-        _plan("d2", CAPTURES[1], "2026年1月18日下午三点开会。", candidate),
+        _plan("d1", CAPTURES[0], "2026年1月17日东京下雨了。", built["atlas"], candidate),
+        _plan("d2", CAPTURES[1], "2026年1月18日下午三点开会。", built["atlas"], candidate),
     ])
     parsed = parse_dream_sculptor_result(raw, CAPTURES, built["atlas"], "batch")
     assert [item["source_capture_ids"] for item in parsed["plans"]] == [["capture-tokyo"], ["capture-meeting"]]
@@ -101,10 +102,10 @@ def test_one_sculptor_result_applies_two_capture_bound_statements_via_core_junct
 def test_sculptor_rejects_stale_atlas_before_any_plan_write(tmp_path):
     built = build_dream_sculptor_prompt(CAPTURES[:1], str(tmp_path), "stale")
     candidate = built["atlas"]["candidates"][0]["candidate_id"]
-    raw = _wire([_plan("d1", CAPTURES[0], "2026年1月17日东京下雨了。", candidate)])
+    raw = _wire([_plan("d1", CAPTURES[0], "2026年1月17日东京下雨了。", built["atlas"], candidate)])
     with AccessMemoryLoop(tmp_path) as loop:
         atlas = loop.build_locality_atlas("mutation")
-        mutation = _wire([_plan("d1", CAPTURES[0], "unrelated mutation", atlas.candidates[0].candidate_id)])
+        mutation = _wire([_plan("d1", CAPTURES[0], "unrelated mutation", atlas.to_mapping(), atlas.candidates[0].candidate_id)])
     apply_dream_sculptor_result(mutation, CAPTURES[:1], atlas.to_mapping(), str(tmp_path), "mutation")
     with pytest.raises(ValueError, match="Atlas changed"):
         apply_dream_sculptor_result(raw, CAPTURES[:1], built["atlas"], str(tmp_path), "stale")
@@ -113,14 +114,14 @@ def test_sculptor_rejects_stale_atlas_before_any_plan_write(tmp_path):
 def test_sculptor_revision_requires_bound_confirmation_and_keeps_one_handle(tmp_path):
     built = build_dream_sculptor_prompt(CAPTURES[:1], str(tmp_path), "initial")
     candidate = built["atlas"]["candidates"][0]["candidate_id"]
-    initial_raw = _wire([_plan("d1", CAPTURES[0], "Tokyo weather is rainy.", candidate)])
+    initial_raw = _wire([_plan("d1", CAPTURES[0], "Tokyo weather is rainy.", built["atlas"], candidate)])
     initial = apply_dream_sculptor_result(initial_raw, CAPTURES[:1], built["atlas"], str(tmp_path), "initial")
     handle = initial["outcomes"][0]["durable_commit"]["handle"]
 
     revision_capture = [{**CAPTURES[0], "capture_id": "capture-revision", "user_utf8": "Correction: Tokyo weather is sunny."}]
     revision_built = build_dream_sculptor_prompt(revision_capture, str(tmp_path), "revision")
     occupied = next(item for item in revision_built["atlas"]["candidates"] if item["occupied"])
-    revision_plan = _plan("d1", revision_capture[0], "Tokyo weather is sunny.", occupied["candidate_id"])
+    revision_plan = _plan("d1", revision_capture[0], "Tokyo weather is sunny.", revision_built["atlas"], occupied["candidate_id"])
     revision_plan.update({
         "action": "revision_current",
         "existing_handle": handle,

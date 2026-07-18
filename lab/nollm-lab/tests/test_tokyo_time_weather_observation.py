@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-SCRIPT = ROOT / "lab/nollm-lab/recall_lens/run_tokyo_time_weather_observation.py"
+SCRIPT = ROOT / "lab/nollm-lab/recall_lens/run_synthetic_long_arm_conformance.py"
 
 
 def _module():
@@ -16,14 +16,14 @@ def _module():
     return module
 
 
-def test_three_independent_single_entries_reach_one_tokyo_rain_handle(tmp_path):
+def test_synthetic_long_arms_have_three_positive_and_one_negative_control(tmp_path):
     result = _module().validate(tmp_path)
-    assert result["passed_deterministic_observation"]
-    assert result["statement_count"] == 6
-    assert result["target_atom_count"] == 1
+    assert result["passed"]
+    assert result["statement_count"] == 9
     assert result["independent_single_entry_count"] == 3
     assert result["same_target_handle"]
-    assert {tuple(item["path"]) for item in result["recalls"].values()} == {("lateral",)}
-    assert result["none_result_count"] == 0
+    assert all(len(item["path"]) >= 2 for item in result["recalls"].values())
+    assert result["arm_lengths"] == {"tokyo": 2, "absolute_time": 2, "weather": 2, "unrelated": 2}
+    assert not result["unrelated_target_reached"]
     assert not result["persistent_lens_text_found"]
     assert not result["provider_backed"]
