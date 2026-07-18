@@ -41,6 +41,17 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.cartographer_max_prompt_bytes.const, 65536);
   assert.equal(manifest.configSchema.properties.cartographer_max_turns.const, 4);
   assert.equal(manifest.contracts.localityAtlasWire, "nollm_access_locality_atlas_v3");
+  assert.equal(manifest.contracts.progressiveAtlasPageWire, "nollm_access_progressive_atlas_page_v1");
+  assert.equal(manifest.contracts.localDetailPageWire, "nollm_access_local_detail_page_v1");
+  assert.equal(manifest.contracts.propositionWriterWire, "nollm_openclaw_proposition_writer_v1");
+  assert.equal(manifest.contracts.fieldCartographerWire, "nollm_openclaw_field_cartographer_v1");
+  assert.equal(manifest.contracts.fastRecallWire, "nollm_openclaw_single_call_entry_recall_v1");
+  assert.equal(manifest.contracts.propositionWriterCommonProviderCalls, 1);
+  assert.equal(manifest.contracts.cartographerMaxRegions, 32);
+  assert.equal(manifest.contracts.cartographerMaxPromptBytes, 65536);
+  assert.equal(manifest.contracts.cartographerMaxTurns, 4);
+  assert.equal(manifest.contracts.recallAtlasComplete, true);
+  assert.equal(manifest.contracts.evidenceFilenameContract, "aold_prompt_bounded_cartography_relation_recall_20260718");
   assert.equal(manifest.contracts.atlasCoverageRequired, true);
   assert.equal(manifest.contracts.junctionRealizedOnly, true);
   assert.equal(manifest.contracts.dreamSculptorCommonProviderCalls, 1);
