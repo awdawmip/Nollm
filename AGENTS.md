@@ -133,3 +133,14 @@
 - Incomplete work must still be committed with clean tree and one full-history Bundle.
 - Update architecture, route, status, ledger, task report and final Manifest in Git.
 - Do not describe a capability as sealed, permanently complete, or permanently 100 percent complete.
+- `dd95606` is a prototype checkpoint, not validated Lens-to-geometry causality.
+- A resolved Recall Lens must causally constrain the geometry relation groups.
+- Do not accept a primary/contact choice unrelated to Lens Atlas paths.
+- Core Junction must score all relation groups symmetrically enough to make contacts observable.
+- Do not enumerate only around the first group or truncate candidates before geometry scoring.
+- Locality Atlas must be derived from bounded multi-scale Surface, not stable-coordinate prefixes.
+- Synthetic hand-built wire tests are conformance tests, not LLM self-play.
+- Multi-entry observations require independent single-entry queries and unrelated occupied negative controls.
+- The Tokyo/date/weather field must use arms of length at least two, not a center-plus-neighbor star.
+- Persist raw validated Sculptor evidence at runtime; do not rely only on post-hoc log recovery.
+- Do not add Lens persistence, Topic/Entity indexes, fact-to-entry maps, vectors, graphs or multi-cell Atoms.
