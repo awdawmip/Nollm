@@ -2,8 +2,7 @@ import json
 
 import pytest
 
-from nollm_access import AccessMemoryLoop
-from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
+from nollm_access import AccessMemoryLoop, MemoryStatement
 from nollm_openclaw_formation.adapter import FormationAdapterError
 from nollm_openclaw_formation.sculptor import (
     apply_dream_sculptor_result,
@@ -84,10 +83,29 @@ def test_sculptor_prompt_teaches_complete_short_term_facts_and_geometry_boundary
 
 
 def test_sculptor_returns_retryable_overflow_without_a_provider_prompt(tmp_path):
-    with CoreRuntime(tmp_path) as core:
+    entry = None
+    with AccessMemoryLoop(tmp_path) as loop:
         for index in range(40):
-            address = GeometryAddress("default_dream_v1", "default", 0, index, 0)
-            core.put(MemoryAtom(f"atom-{index}", str(index)), address)
+            candidate = next(
+                item for item in loop.placement_candidates(entry, f"seed:{index}")
+                if item["relation_kind"] == "expand_surface"
+            )
+            result = loop.apply_placement(
+                MemoryStatement(f"atom-{index}", str(index)),
+                {
+                    "schema_version": "nollm_openclaw_surface_placement_v1",
+                    "outcome": "apply",
+                    "decision": {
+                        "statement_id": f"atom-{index}",
+                        "action": "expand_surface",
+                        "candidate_id": candidate["candidate_id"],
+                        "reason_text": "bounded overflow fixture",
+                    },
+                },
+                f"seed:{index}",
+                entry,
+            )
+            entry = result["handle"]["geometry_address"]
     built = build_dream_sculptor_prompt(CAPTURES[:1], str(tmp_path), "overflow", candidate_limit=8)
     assert built["status"] == "atlas_overflow"
     assert built["retryable"] is True
