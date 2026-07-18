@@ -1,10 +1,10 @@
 # Nollm Canonical Module Progress Ledger
 
 **Date**: 2026-07-18
-**Input HEAD**: `440b7d43ade67a2c1b8f67aa0fabf24c2b7297ef`
-**Gate 0 checkpoint**: `311a118`
-**Evidence checkpoint**: `20bc980`
-**Status**: `CAOLD_FIELD_COMPLETE_ATLAS_CAUSAL_LOOP_IN_PROGRESS`
+**Input HEAD**: `f9f01f56906c5ce64df4a4702f61d954a8402fb8`
+**Gate 0 checkpoint**: this checkpoint commit
+**Evidence/report checkpoint**: pending
+**Status**: `FIELD_COMPLETE_ATLAS_AND_REALIZED_JUNCTION_CHECKPOINT_AT_f9f01f5`
 
 This is the only active module ledger. Percentages are current planning estimates, never permanent completion claims.
 
@@ -13,11 +13,11 @@ This is the only active module ledger. Percentages are current planning estimate
 | CORE | IMPLEMENTED | 95% | high | canonical state, bounded Coverage/Surface/Recall, realized-only relation-group Junction candidates | versioned and broader geometry evolution | +5% actual |
 | SNAPSHOT | IMPLEMENTED | 50% | medium-high | state-byte regression | versioned and incremental Snapshot | 0% |
 | TRACE | IMPLEMENTED | 40% | medium | isolated public contract | long-term performance observation | 0% |
-| ACCESS | IMPLEMENTED | 96% | high | operation-local Lens validation, complete finite Atlas, explicit overflow, partial-Junction rejection | broader field and migration validation | +8% actual |
+| ACCESS | IMPLEMENTED | 90% | medium-high | operation-local Lens validation, field-complete Atlas, explicit overflow, partial-Junction rejection | progressive Prompt-bounded Atlas, independent seed, complete Recall entry view | Rev3 +15% vector |
 | HISTORY | PROPOSED | 10% | low | charter | paused | 0% |
 | AUDIT | PROPOSED | 10% | low | charter | paused | 0% |
-| OPENCLAW | IMPLEMENTED | 94% | high | immutable Capture, Rev2 Sculptor, same-field Provider Writer/Reader loop, lifecycle worker and single-entry Recall | Provider long-arm matrix and restart | +4% actual |
-| LAB | IMPLEMENTED | 90% | medium-high | causal Writer/Reader, counterfactual and ablation evidence; one real Tokyo long arm | time/weather arms, unrelated controls and restart | +5% actual |
-| DISTRIBUTIONS | IMPLEMENTED | 96% | high | Rev2 schema, prompt, coverage budgets and realized-Junction contracts | broader distribution and release qualification | +4% actual |
+| OPENCLAW | IMPLEMENTED | 90% | medium-high | immutable Capture, lifecycle worker, Rev2 Sculptor and single-entry Recall | split Writer/Cartographer, target-hidden relation-entry Reader | Rev3 +10% vector |
+| LAB | IMPLEMENTED | 86% | medium | same-field Writer evidence and one real Tokyo arm | direct-target self-proof, large-field Recall, three-arm Provider growth | Rev3 +15% vector |
+| DISTRIBUTIONS | IMPLEMENTED | 93% | medium-high | Rev2 schema and realized-Junction contracts | Rev3 Writer/Cartographer and Prompt budget contracts | Rev3 +5% vector |
 
-Rev2 proves field-complete finite Atlas coverage, explicit overflow, realized-only Junction writes, and a 10/10 Provider Writer-to-field-to-Reader causal gate with zero unrelated false reaches. One Provider-backed Tokyo long arm is real, but the full long-arm matrix and restart remain incomplete; the task is not validated. Percentages remain planning estimates, not release claims.
+The `f9f01f5` checkpoint proves field-complete finite Atlas coverage, explicit overflow, realized-only Junction writes, durable Provider Writer application, and forced relation-group reachability. It does not prove target-hidden relation-entry Reader causality, Prompt-bounded field traversal, complete production Recall entries, independent seeds, or three-arm Provider growth. Percentages remain planning estimates, not release claims.

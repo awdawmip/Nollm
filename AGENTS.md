@@ -156,3 +156,15 @@
 - Counterfactual and Reader must use the same final field and RecallBudget.
 - Synthetic direct seeds are conformance only, not Provider long-arm evidence.
 - Preserve one Statement/Atom/Cell and operation-local Lens.
+- f9f01f5 is a field-complete Atlas and realized-Junction checkpoint, not a relation-entry Reader proof.
+- A causal Reader success requires a non-empty path from a relation entry; selecting the target Cell directly is a separate control.
+- Do not use occupied stable-key prefixes as the production Recall universe.
+- A complete Atlas must be Prompt-bounded through progressive full pages, not one huge serialized field.
+- Writer sees Capture only and forms Statements plus future Recall Lenses.
+- Cartographer sees Lenses and operation-local Atlas pages and maps them to geometry.
+- An independent complete proposition may create a relation-neutral seed when no Lens resolves.
+- Do not force unrelated facts to attach to existing Localities.
+- Atlas representatives are navigation hints; exact reuse/revision requires bounded local detail.
+- Common batch uses one Writer call and one Cartographer session; do not recreate a session for every Lens.
+- No single Writer/Cartographer Prompt may exceed the active byte budget.
+- Preserve Core realized-Junction code unchanged unless a real regression is found.
