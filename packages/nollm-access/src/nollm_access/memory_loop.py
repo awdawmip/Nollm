@@ -5,8 +5,9 @@ from time import perf_counter_ns
 import hashlib
 import json
 
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope, RelationGroupJunctionRequest
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope, RelationGroupJunctionRequest, SurfaceAggregateAddress
 
+from .cartography import LocalDetailPage, ProgressiveAtlasPage, ProgressiveAtlasPolicy, ProgressiveAtlasRegion
 from .handle_store import FileHandleStore
 from .locality import AtlasNode, AtlasPath, LocalityAtlas, LocalityCandidateRef
 from .placement_contract import AccessDecision, ProvisionalRevisionDecision, RevisionConfirmationResult
@@ -305,6 +306,354 @@ class AccessMemoryLoop:
             certificate["region_count"], certificate["overflow"], tuple(order_projection_counts),
         )
 
+    def build_progressive_atlas(
+        self,
+        request_id: str,
+        policy: ProgressiveAtlasPolicy = ProgressiveAtlasPolicy(),
+        scope: PhysicalFieldScope = DEFAULT_FIELD_SCOPE,
+    ) -> ProgressiveAtlasPage:
+        """Build the finest complete root page that fits the prompt policy."""
+        self._require_request(request_id)
+        if type(policy) is not ProgressiveAtlasPolicy or type(scope) is not PhysicalFieldScope:
+            raise TypeError("progressive Atlas policy and scope are required")
+        with CoreRuntime(self._workspace) as core:
+            state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
+            occupied = tuple(cell for cell in core.occupied_cells() if scope.contains(cell))
+            atlas_fingerprint = self._progressive_atlas_fingerprint(state_sha256, scope, policy)
+            if not occupied:
+                frontier = core.junction_candidates(JunctionRequest(scope, (), (), 1, 1))[0]
+                address = SurfaceAggregateAddress(
+                    scope.profile_id, scope.chart_id, scope.identity, scope.reference_layer,
+                    0, frontier.cell.q, frontier.cell.r, scope.reference_layer % 8,
+                )
+                candidate = self._candidate(core, "progressive-entry:empty", "expand_surface", frontier.cell)
+                identity = {"kind": "physical_cell_v1", "cell": frontier.cell.to_mapping()}
+                region = ProgressiveAtlasRegion(
+                    self._progressive_region_id(state_sha256, identity), identity, 0, 0, 0, 0,
+                    (self._entry_mapping(candidate, ()),), (), False, False,
+                )
+                return self._make_progressive_page(
+                    request_id, scope, state_sha256, atlas_fingerprint, None, 0, 0,
+                    (region,), 0, 0, 0, False, policy,
+                )
+            orders = core.surface_orders(scope, policy.max_order)
+            for order_info in orders:
+                if order_info.occupied_cell_count > policy.max_regions_per_page:
+                    continue
+                projections = self._surface_projections(core, scope, order_info.order)
+                regions = tuple(self._progressive_region(core, state_sha256, projection, policy, scope) for projection in projections)
+                try:
+                    return self._make_progressive_page(
+                        request_id, scope, state_sha256, atlas_fingerprint, None, 0, order_info.order,
+                        regions, len(occupied), len(occupied), 0, False, policy,
+                    )
+                except OverflowError:
+                    continue
+            regions = self._physical_partition_regions(core, state_sha256, occupied, policy, 0, 0, len(occupied))
+            try:
+                return self._make_progressive_page(
+                    request_id, scope, state_sha256, atlas_fingerprint, None, 0, None,
+                    regions, len(occupied), len(occupied), 0, False, policy,
+                )
+            except OverflowError:
+                pass
+            return self._make_progressive_page(
+                request_id, scope, state_sha256, atlas_fingerprint, None, 0, None,
+                (), len(occupied), 0, len(occupied), True, policy,
+            )
+
+    def open_progressive_region(
+        self,
+        parent_page: ProgressiveAtlasPage,
+        region_id: str,
+        request_id: str,
+    ) -> ProgressiveAtlasPage:
+        """Open every occupied direct child of one current Atlas region."""
+        self._require_request(request_id)
+        if type(parent_page) is not ProgressiveAtlasPage or type(region_id) is not str or not region_id:
+            raise TypeError("parent page and region identity are required")
+        if parent_page.overflow:
+            raise ValueError("cannot descend an overflow Atlas page")
+        region = next((item for item in parent_page.regions if item.region_id == region_id), None)
+        if region is None:
+            raise ValueError("region is not visible on the parent page")
+        if region.leaf:
+            raise ValueError("leaf region cannot be descended")
+        if parent_page.depth >= parent_page.policy.max_depth:
+            raise ValueError("Cartography depth budget is exhausted")
+        with CoreRuntime(self._workspace) as core:
+            state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
+            expected_atlas = self._progressive_atlas_fingerprint(state_sha256, parent_page.scope, parent_page.policy)
+            if state_sha256 != parent_page.core_state_sha256 or expected_atlas != parent_page.atlas_fingerprint:
+                raise ValueError("Progressive Atlas changed before region descent")
+            if any(
+                item.region_id != self._progressive_region_id(state_sha256, item.geometry_identity)
+                for item in parent_page.regions
+            ):
+                raise ValueError("Progressive Atlas region identity is not canonical")
+            if region.geometry_identity.get("kind") == "complete_physical_partition_v1":
+                occupied = tuple(sorted(
+                    (cell for cell in core.occupied_cells() if parent_page.scope.contains(cell)),
+                    key=lambda item: item.stable_key(),
+                ))
+                identity = region.geometry_identity
+                if identity.get("total") != len(occupied):
+                    raise ValueError("Progressive Atlas partition changed before descent")
+                start, end = identity.get("start"), identity.get("end")
+                if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(occupied):
+                    raise ValueError("Progressive Atlas partition identity is invalid")
+                selected = occupied[start:end]
+                regions = self._physical_partition_regions(
+                    core, state_sha256, selected, parent_page.policy,
+                    int(identity.get("level", 0)) + 1, start, len(occupied),
+                )
+                child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
+                covered = len(selected)
+            else:
+                address = SurfaceAggregateAddress.from_mapping(region.geometry_identity)
+                projection = self._projection_by_address(core, parent_page.scope, address)
+                selected = tuple(projection.source_cells)
+                regions = self._physical_partition_regions(
+                    core, state_sha256, selected, parent_page.policy, 1, 0, len(selected),
+                )
+                child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
+                covered = len(selected)
+            try:
+                return self._make_progressive_page(
+                    request_id, parent_page.scope, state_sha256, expected_atlas, region.region_id,
+                    parent_page.depth + 1, child_order, regions,
+                    parent_page.occupied_field_cell_count, covered, max(0, region.source_cell_count - covered), False,
+                    parent_page.policy,
+                )
+            except OverflowError:
+                return self._make_progressive_page(
+                    request_id, parent_page.scope, state_sha256, expected_atlas, region.region_id,
+                    parent_page.depth + 1, region.aggregation_order - 1, (),
+                    parent_page.occupied_field_cell_count, 0, region.source_cell_count, True, parent_page.policy,
+                )
+
+    def local_detail_page(
+        self,
+        page: ProgressiveAtlasPage,
+        region_id: str,
+        request_id: str,
+        after_statement_id: str | None = None,
+        limit: int = 16,
+    ) -> LocalDetailPage:
+        self._require_request(request_id)
+        if type(page) is not ProgressiveAtlasPage or type(region_id) is not str or not region_id:
+            raise TypeError("page and region identity are required")
+        if after_statement_id is not None and (type(after_statement_id) is not str or not after_statement_id):
+            raise TypeError("after_statement_id must be null or text")
+        if type(limit) is not int or not 1 <= limit <= 32:
+            raise ValueError("local detail limit must be in [1,32]")
+        region = next((item for item in page.regions if item.region_id == region_id), None)
+        if region is None:
+            raise ValueError("region is not visible on the page")
+        with CoreRuntime(self._workspace) as core:
+            state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
+            if state_sha256 != page.core_state_sha256:
+                raise ValueError("Progressive Atlas changed before local detail")
+            identity = region.geometry_identity
+            if identity.get("kind") == "physical_cell_v1":
+                cells = (self._cell(identity["cell"]),)
+            elif identity.get("kind") == "complete_physical_partition_v1":
+                occupied = tuple(sorted((cell for cell in core.occupied_cells() if page.scope.contains(cell)), key=lambda item: item.stable_key()))
+                cells = occupied[identity["start"]:identity["end"]]
+            else:
+                projection = self._projection_by_address(core, page.scope, SurfaceAggregateAddress.from_mapping(identity))
+                cells = projection.source_cells
+            handles = tuple(handle for cell in cells for handle, _atom in core.atoms_at(cell))
+        handle_store = FileHandleStore(self._workspace)
+        statement_store = FileStatementStore(self._workspace)
+        by_id = {}
+        for handle in handles:
+            try:
+                binding = handle_store.binding_for_handle(handle)
+                statement = statement_store.get(binding.current_statement_id)
+            except (KeyError, FileNotFoundError):
+                continue
+            by_id[statement.statement_id] = {
+                "statement_id": statement.statement_id,
+                "content_utf8": statement.content_utf8[:256],
+                "handle": handle.to_mapping(),
+            }
+        all_statements = sorted(by_id.values(), key=lambda item: item["statement_id"])
+        if after_statement_id is not None:
+            all_statements = [item for item in all_statements if item["statement_id"] > after_statement_id]
+        selected = tuple(all_statements[:limit])
+        return LocalDetailPage(request_id, state_sha256, page.atlas_fingerprint, region_id, selected, len(all_statements), len(all_statements) > limit)
+
+    def _physical_partition_regions(
+        self,
+        core: CoreRuntime,
+        state_sha256: str,
+        cells: tuple[GeometryAddress, ...],
+        policy: ProgressiveAtlasPolicy,
+        level: int,
+        start_offset: int,
+        total: int,
+    ) -> tuple[ProgressiveAtlasRegion, ...]:
+        if not cells:
+            raise ValueError("complete physical partition cannot be empty")
+        ordered = tuple(sorted(cells, key=lambda item: item.stable_key()))
+        if len(ordered) <= policy.max_regions_per_page:
+            output = []
+            for index, cell in enumerate(ordered):
+                candidate = self._candidate(core, f"progressive-entry:{start_offset + index}", "existing_cell", cell)
+                context = self._candidate_statement_context([candidate], 1)[0]["statements"]
+                identity = {"kind": "physical_cell_v1", "cell": cell.to_mapping()}
+                output.append(ProgressiveAtlasRegion(
+                    self._progressive_region_id(state_sha256, identity), identity, 0, 1,
+                    candidate["occupancy"]["count"], 0,
+                    (self._entry_mapping(candidate, tuple(context)),), tuple(context[:3]), False, False,
+                ))
+            return tuple(output)
+        chunk_size = (len(ordered) + policy.max_regions_per_page - 1) // policy.max_regions_per_page
+        output = []
+        for local_start in range(0, len(ordered), chunk_size):
+            chunk = ordered[local_start:local_start + chunk_size]
+            global_start = start_offset + local_start
+            global_end = global_start + len(chunk)
+            support = self._region_support(chunk, policy.support_limit)
+            candidates = [
+                self._candidate(core, f"progressive-support:{global_start}:{index}", "existing_cell", cell)
+                for index, cell in enumerate(support)
+            ]
+            contexts = self._candidate_statement_context(candidates, policy.support_limit)
+            representatives = []
+            for context in contexts:
+                if context["statements"]:
+                    representatives.append(context["statements"][0])
+                if len(representatives) == 3:
+                    break
+            identity = {
+                "kind": "complete_physical_partition_v1",
+                "start": global_start,
+                "end": global_end,
+                "total": total,
+                "level": level,
+            }
+            output.append(ProgressiveAtlasRegion(
+                self._progressive_region_id(state_sha256, identity), identity, policy.max_order,
+                len(chunk), sum(len(core.atoms_at(cell)) for cell in chunk),
+                min(len(chunk), policy.max_regions_per_page),
+                tuple(self._entry_mapping(candidate, ()) for candidate in candidates),
+                tuple(representatives), False,
+                self._support_coverage_radius(chunk, support) > 4,
+            ))
+        return tuple(output)
+
+    def _progressive_region(
+        self,
+        core: CoreRuntime,
+        state_sha256: str,
+        projection: object,
+        policy: ProgressiveAtlasPolicy,
+        scope: PhysicalFieldScope,
+    ) -> ProgressiveAtlasRegion:
+        support = self._region_support(tuple(projection.source_cells), policy.support_limit)
+        support_overflow = self._support_coverage_radius(tuple(projection.source_cells), support) > 4
+        candidates = [self._candidate(core, f"progressive-entry:{index}", "existing_cell", cell) for index, cell in enumerate(support)]
+        contexts = self._candidate_statement_context(candidates, policy.support_limit)
+        representatives = []
+        seen = set()
+        entries = []
+        for candidate, context in zip(candidates, contexts):
+            entries.append(self._entry_mapping(candidate, tuple(context["statements"])))
+            for statement in context["statements"]:
+                if statement["statement_id"] not in seen:
+                    representatives.append(statement)
+                    seen.add(statement["statement_id"])
+        child_count = 0
+        if projection.address.aggregation_order > 0:
+            children = core.surface_descend(scope, projection.address, None, 256)
+            child_count = len(children.cells) + int(children.has_more)
+        identity = projection.address.to_mapping()
+        return ProgressiveAtlasRegion(
+            self._progressive_region_id(state_sha256, identity), identity, projection.address.aggregation_order,
+            len(projection.source_cells), projection.native_atom_count, child_count,
+            tuple(entries), tuple(representatives[:3]), projection.truncated, support_overflow,
+        )
+
+    @staticmethod
+    def _entry_mapping(candidate: dict[str, object], statements: tuple[dict[str, object], ...]) -> dict[str, object]:
+        return {
+            "entry_id": candidate["candidate_id"],
+            "entry_cell": candidate["geometry_address"],
+            "occupancy_count": candidate["occupancy"]["count"],
+            "statements": list(statements),
+        }
+
+    @staticmethod
+    def _progressive_region_id(state_sha256: str, identity: dict[str, object]) -> str:
+        payload = json.dumps({"state": state_sha256, "geometry_identity": identity}, sort_keys=True, separators=(",", ":")).encode("ascii")
+        return f"atlas-region:{hashlib.sha256(payload).hexdigest()}"
+
+    @staticmethod
+    def _progressive_atlas_fingerprint(state_sha256: str, scope: PhysicalFieldScope, policy: ProgressiveAtlasPolicy) -> str:
+        payload = json.dumps({"state": state_sha256, "scope": scope.to_mapping(), "policy": policy.to_mapping()}, sort_keys=True, separators=(",", ":")).encode("ascii")
+        return hashlib.sha256(payload).hexdigest()
+
+    @staticmethod
+    def _projection_by_address(core: CoreRuntime, scope: PhysicalFieldScope, address: SurfaceAggregateAddress) -> object:
+        after = None
+        while True:
+            page = core.surface_page(scope, address.aggregation_order, after, 256)
+            for projection in page.cells:
+                if projection.address == address:
+                    return projection
+            if not page.has_more:
+                raise ValueError("Atlas region no longer exists")
+            after = page.next_after
+
+    @staticmethod
+    def _make_progressive_page(
+        request_id: str,
+        scope: PhysicalFieldScope,
+        state_sha256: str,
+        atlas_fingerprint: str,
+        parent_region_id: str | None,
+        depth: int,
+        order: int | None,
+        regions: tuple[ProgressiveAtlasRegion, ...],
+        occupied_count: int,
+        covered_count: int,
+        uncovered_count: int,
+        overflow: bool,
+        policy: ProgressiveAtlasPolicy,
+    ) -> ProgressiveAtlasPage:
+        base = {
+            "request_id": request_id,
+            "scope": scope.to_mapping(),
+            "state": state_sha256,
+            "atlas": atlas_fingerprint,
+            "parent": parent_region_id,
+            "depth": depth,
+            "order": order,
+            "regions": [region.to_mapping() for region in regions],
+            "occupied": occupied_count,
+            "covered": covered_count,
+            "uncovered": uncovered_count,
+            "overflow": overflow,
+            "policy": policy.to_mapping(),
+        }
+        page_fingerprint = hashlib.sha256(json.dumps(base, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        serialized = 0
+        for _ in range(4):
+            probe = {**base, "page_fingerprint": page_fingerprint, "serialized_utf8_bytes": serialized, "estimated_token_units": (serialized + 3) // 4}
+            new_size = len(json.dumps(probe, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+            if new_size == serialized:
+                break
+            serialized = new_size
+        if not overflow and serialized > policy.max_prompt_bytes:
+            raise OverflowError("Progressive Atlas page exceeds the prompt byte budget")
+        return ProgressiveAtlasPage(
+            request_id, scope, state_sha256, atlas_fingerprint, page_fingerprint, parent_region_id,
+            depth, order, regions, occupied_count, covered_count, uncovered_count,
+            serialized, (serialized + 3) // 4, overflow, policy,
+        )
+
     @classmethod
     def _region_support(cls, source_cells: tuple[GeometryAddress, ...], limit: int) -> tuple[GeometryAddress, ...]:
         if len(source_cells) <= limit:
@@ -484,8 +833,11 @@ class AccessMemoryLoop:
             if plan.action == "defer":
                 prepared.append((plan, None, None))
                 continue
-            if plan.action in {"new_local", "expand_surface"}:
-                prepared.append((plan, None, {"relation_groups": plan.relation_groups}))
+            if plan.action in {"new_local", "expand_surface", "independent_seed"}:
+                prepared.append((plan, None, {
+                    "relation_groups": plan.relation_groups,
+                    "placement_mode": "independent_seed" if plan.action == "independent_seed" else "related_growth",
+                }))
                 continue
             handle = plan.existing_handle
             assert handle is not None
@@ -502,13 +854,27 @@ class AccessMemoryLoop:
         for plan, decision, placement in prepared:
             if decision is None and placement is not None and "relation_groups" in placement:
                 with CoreRuntime(self._workspace) as core:
-                    if placement["relation_groups"]:
+                    if placement["placement_mode"] == "independent_seed":
+                        occupied = tuple(cell for cell in core.occupied_cells() if atlas.scope.contains(cell))
+                        seed_cell = self._expand_surface_frontier(atlas.scope, occupied)
+                        candidates = ()
+                    elif placement["relation_groups"]:
                         candidates = core.relation_group_junction_candidates(RelationGroupJunctionRequest(
                             atlas.scope, placement["relation_groups"], 4, 2, 8,
                         ))
                     else:
                         candidates = core.junction_candidates(JunctionRequest(atlas.scope, (), (), 1, 1))
-                if not candidates:
+                if placement["placement_mode"] == "independent_seed":
+                    decision = AccessDecision(
+                        f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
+                        "new", seed_cell, None, None, plan.reason_text, "llm",
+                    )
+                    placement = {
+                        "placement_mode": "independent_seed",
+                        "seed": {"cell": seed_cell.to_mapping(), "relation_neutral": True},
+                    }
+                    candidates = None
+                elif not candidates:
                     outcomes.append({
                         "statement_id": plan.statement.statement_id,
                         "source_capture_ids": list(plan.source_capture_ids),
@@ -516,13 +882,16 @@ class AccessMemoryLoop:
                         "reason": "lens_geometry_unrealized",
                     })
                     continue
-                if hasattr(candidates[0], "all_groups_realized") and not candidates[0].all_groups_realized:
+                if candidates is None:
+                    pass
+                elif hasattr(candidates[0], "all_groups_realized") and not candidates[0].all_groups_realized:
                     raise RuntimeError("Core exposed an unrealized relation-group Junction")
-                decision = AccessDecision(
-                    f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
-                    "new", candidates[0].cell, None, None, plan.reason_text, "llm",
-                )
-                placement = {"junction": candidates[0].to_mapping()}
+                else:
+                    decision = AccessDecision(
+                        f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
+                        "new", candidates[0].cell, None, None, plan.reason_text, "llm",
+                    )
+                    placement = {"placement_mode": "related_growth", "junction": candidates[0].to_mapping()}
             if decision is None:
                 outcomes.append({
                     "statement_id": plan.statement.statement_id,

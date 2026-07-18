@@ -127,3 +127,21 @@ def test_unrealized_multi_group_plan_defers_with_zero_writes(tmp_path):
     assert result["outcomes"][0]["reason"] == "lens_geometry_unrealized"
     with CoreRuntime(tmp_path) as core:
         assert core.export_state_bytes() == before
+
+
+def test_unresolved_complete_fact_can_create_relation_neutral_independent_seed(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        core.put(MemoryAtom("existing", "existing"), GeometryAddress("default_dream_v1", "default", 0, 0, 0))
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("occupied")
+        value = plan(atlas, unresolved=True, action="independent_seed")
+        plans = validate_dream_sculptor_plans("independent", [value], [CAPTURE], atlas)
+        result = loop.apply_junction_plans(plans, atlas, "independent-apply")
+        binding = loop.binding(plans[0].statement.statement_id)
+
+    assert plans[0].relation_groups == ()
+    assert result["outcomes"][0]["outcome"] == "applied"
+    assert result["outcomes"][0]["placement_mode"] == "independent_seed"
+    assert result["outcomes"][0]["seed"]["relation_neutral"] is True
+    cell = binding["handle"]["geometry_address"]
+    assert max(abs(cell["q"]), abs(cell["r"]), abs(cell["q"] + cell["r"])) >= 4

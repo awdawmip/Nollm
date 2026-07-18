@@ -11,7 +11,7 @@ from .statement import MemoryStatement
 
 DREAM_SCULPTOR_SCHEMA_VERSION = "nollm_openclaw_dream_sculptor_v2"
 LEGACY_DREAM_SCULPTOR_SCHEMA_VERSION = "nollm_openclaw_dream_sculptor_v1"
-SCULPTOR_ACTIONS = frozenset({"reuse", "new_local", "expand_surface", "revision_current", "defer"})
+SCULPTOR_ACTIONS = frozenset({"reuse", "new_local", "expand_surface", "independent_seed", "revision_current", "defer"})
 
 
 @dataclass(frozen=True)
@@ -158,6 +158,8 @@ def validate_dream_sculptor_plans(
         occupied_atlas = any(item.occupied for item in atlas.candidates)
         if action in {"new_local", "expand_surface", "reuse", "revision_current"} and not relation_groups and occupied_atlas:
             raise ValueError("non-deferred action requires a resolved Lens relation group")
+        if action == "independent_seed" and (relation_groups or not all(lens.unresolved for lens in lenses)):
+            raise ValueError("independent_seed requires every Lens to be unresolved")
         if action in {"reuse", "revision_current"}:
             if handle is None or not _handle_is_visible(handle, lenses, candidate_map):
                 raise ValueError("existing Handle must be visible in a resolved Lens leaf")
