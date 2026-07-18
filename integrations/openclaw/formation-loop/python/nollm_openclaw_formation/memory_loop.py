@@ -13,6 +13,7 @@ from nollm_access import (
     MemoryStatement,
     PLACEMENT_SURFACE_BUDGET,
     PLACEMENT_ACTION_SEMANTICS_VERSION,
+    ProgressiveAtlasPolicy,
     RECALL_SURFACE_BUDGET,
     REVISION_CONFIRMATION_SCHEMA_VERSION,
     ProvisionalRevisionDecision,
@@ -79,25 +80,64 @@ def build_fast_recall_prompt(
         raise FormationAdapterError("invalid_budget", "fast Recall budgets must be integers")
     root = _workspace(memory_workspace)
     with AccessMemoryLoop(root) as loop:
-        entries = loop.bounded_physical_entries(request_id + ":entries", max_entries)
+        if not 1 <= max_entries <= 32 or max_statements < 1 or max_chars < 1:
+            raise FormationAdapterError("invalid_budget", "fast Recall budgets are outside the active bounds")
+        page = loop.build_progressive_atlas(
+            request_id + ":atlas",
+            ProgressiveAtlasPolicy(max_regions_per_page=max_entries),
+        )
+        if page.overflow:
+            return {
+                "status": "atlas_page_overflow", "available": False, "retryable": True,
+                "hidden_call_count": 0, "atlas_page": page.to_mapping(),
+            }
+        if page.occupied_field_cell_count == 0:
+            return {"status": "complete_none", "available": False, "hidden_call_count": 0, "atlas_page": page.to_mapping()}
+        entries_by_id = {
+            item["entry_id"]: {**item, "region_id": region.region_id}
+            for region in page.regions
+            for item in region.support_entries
+        }
+        entries = list(entries_by_id.values())
         if not entries:
-            return {"status": "complete_none", "available": False, "hidden_call_count": 0}
-        if len(entries) == 1:
+            return {"status": "complete_none", "available": False, "hidden_call_count": 0, "atlas_page": page.to_mapping()}
+        if page.occupied_field_cell_count == 1 and len(entries) == 1:
             items = loop.local_context([entries[0]["entry_cell"]], request_id + ":core")
-            return {**_direct_locality_injection(items, max_statements, max_chars), "available": bool(items), "hidden_call_count": 0, "selected_entry": entries[0]["entry_cell"]}
+            return {
+                **_direct_locality_injection(items, max_statements, max_chars),
+                "available": bool(items), "hidden_call_count": 0,
+                "selected_entry": entries[0]["entry_cell"], "atlas_page": page.to_mapping(),
+            }
+    prompt_regions = [{
+        "region_id": region.region_id,
+        "geometry_identity": region.geometry_identity,
+        "source_cell_count": region.source_cell_count,
+        "native_atom_count": region.native_atom_count,
+        "support_entries": list(region.support_entries),
+        "representative_statements": list(region.representative_statements),
+    } for region in page.regions]
     prompt_entries = [{
-        "entry_id": item["entry_id"], "entry_cell": item["entry_cell"],
-        "occupancy_count": item["occupancy_count"], "statements": item["statements"],
+        "entry_id": item["entry_id"], "region_id": item["region_id"],
+        "entry_cell": item["entry_cell"], "occupancy_count": item["occupancy_count"],
+        "statements": item["statements"],
     } for item in entries]
-    prompt = f"""You are a private background geometry-entry selector. Choose at most one supplied entry_id that is likely to contain memory useful for the query, or choose none. The entries are a finite geometry-ordered projection, not a semantic index. Do not select individual statements, invent facts, addresses, topics, vectors, graphs, or hidden routes. Do not call tools or reveal reasoning.
+    prompt = f"""You are a private background geometry-entry selector. Choose at most one supplied support entry_id that is likely to contain memory useful for the query, or choose none. The complete top-level regions cover the occupied field; their support entries are bounded navigation entrances, not a semantic index. Do not select individual statements, invent facts, addresses, topics, vectors, graphs, or hidden routes. Do not call tools or reveal reasoning.
 Return exactly one raw JSON object with no markdown.
 select: {{"schema_version":"{FAST_RECALL_SCHEMA_VERSION}","outcome":"select","entry_id":"one supplied id"}}
 none: {{"schema_version":"{FAST_RECALL_SCHEMA_VERSION}","outcome":"none","entry_id":null}}
 query: {json.dumps(query, ensure_ascii=False)}
-physical_entries: {json.dumps(prompt_entries, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+progressive_atlas_regions: {json.dumps(prompt_regions, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+    prompt_bytes = len(prompt.encode("utf-8"))
+    if prompt_bytes > page.policy.max_prompt_bytes:
+        return {
+            "status": "atlas_prompt_overflow", "available": False, "retryable": True,
+            "hidden_call_count": 0, "prompt_utf8_bytes": prompt_bytes,
+            "atlas_page": page.to_mapping(),
+        }
     return {
         "status": "entry_decision", "available": True, "prompt": prompt,
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "entries": prompt_entries,
+        "prompt_utf8_bytes": prompt_bytes, "atlas_page": page.to_mapping(),
         "max_statements": max_statements, "max_chars": max_chars, "hidden_call_count": 1,
     }
 
