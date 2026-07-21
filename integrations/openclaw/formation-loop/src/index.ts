@@ -302,6 +302,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const configuredMemoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
   const captureRoot = config.capture_workspace ?? (configuredMemoryWorkspace ? join(configuredMemoryWorkspace, "openclaw-capture-spool") : undefined);
   const captureStore = config.capture_enabled === false || !captureRoot ? undefined : new CaptureStore(captureRoot);
+  const legacyFormationEnabled = !captureStore && !(config.capture_enabled === false && config.absorption_enabled === false);
   const pending = new Map<string, Pending>();
   const inFlight = new Set<string>();
   const scheduled = new Set<string>();
@@ -923,7 +924,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, sessionKey), event_type: "visible_answer", recall_request_id: unmatched.requestId, session_key_sha256: sha256Text(sessionKey), main_run_id: runId, expected_main_run_id: unmatched.mainRunId, recall_outcome: unmatched.outcome, main_message_sent_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "main_run_id_mismatch", visible_message_count: 1 }); });
       }
     }
-    if (!captureStore) queue(() => { void launch({ sessionKey, runId, assistant: exactAssistant, phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt, observedMonoNs }); });
+    if (legacyFormationEnabled) queue(() => { void launch({ sessionKey, runId, assistant: exactAssistant, phase: "AFTER_DELIVERY", sourceHook: "message_sent", observedAt, observedMonoNs }); });
     recordHandler("message_sent", observedAt, observedMonoNs, { session_key: sessionKey, run_id: runId, trigger_phase: "AFTER_DELIVERY", success: true });
   });
   api.on("agent_end", async (event, ctx) => {
@@ -943,7 +944,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       pendingRecallLatencyByRun.delete(recallKey);
       queue(() => { void appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey!), event_type: "visible_answer", recall_request_id: recall.requestId, session_key_sha256: sha256Text(ctx.sessionKey!), main_run_id: runId, recall_outcome: recall.outcome, agent_end_epoch_ms: observedAt, visible_answer_correlated: false, visible_answer_correlation_unavailable: true, correlation_failure: "message_sent_not_observed", visible_message_count: 0 }); });
     }
-    if (!captureStore) queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: exactUsers, resolvedModel: model }); });
+    if (legacyFormationEnabled) queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: exactUsers, resolvedModel: model }); });
     recordHandler("agent_end", observedAt, observedMonoNs, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
   });
   api.on("subagent_spawned", (event) => {

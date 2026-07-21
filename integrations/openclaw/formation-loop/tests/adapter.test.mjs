@@ -241,6 +241,31 @@ test("missing host configuration fails open after delivery", async () => {
   assert.equal(spawnCount, 0);
 });
 
+test("explicit recall-only mode never starts legacy Formation", async () => {
+  const hooks = new Map(); let spawnCount = 0;
+  registerDreamAgent({
+    pluginConfig: {
+      capture_enabled: false,
+      absorption_enabled: false,
+      python_executable: "python",
+      nollm_repo_root: ".",
+      model_mode: "inherit",
+      allowed_models: ["provider/model"],
+    },
+    on(name, handler) { hooks.set(name, handler); },
+    runtime: { subagent: { async run() { spawnCount += 1; return { runId: "unexpected" }; } } },
+  });
+  hooks.get("message_received")({ content: "Recall-only question." }, { sessionKey: "recall-only", runId: "run" });
+  hooks.get("llm_output")({ provider: "provider", model: "model" }, { sessionKey: "recall-only", runId: "run" });
+  await hooks.get("message_sent")({ success: true, content: "NONE", runId: "run" }, { sessionKey: "recall-only", runId: "run" });
+  await hooks.get("agent_end")(
+    { success: true, runId: "run", messages: [{ role: "user", content: "Recall-only question." }, { role: "assistant", content: "NONE" }] },
+    { sessionKey: "recall-only", runId: "run", modelProviderId: "provider", modelId: "model" },
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(spawnCount, 0);
+});
+
 test("failed delivery and disallowed model never spawn Dream", async () => {
   const hooks = new Map(); let spawnCount = 0;
   registerDreamAgent({ pluginConfig: { python_executable: "python", nollm_repo_root: ".", allowed_models: ["allowed/model"] }, on(name, handler) { hooks.set(name, handler); }, runtime: { subagent: { async run() { spawnCount += 1; return { runId: "bad" }; } } } });

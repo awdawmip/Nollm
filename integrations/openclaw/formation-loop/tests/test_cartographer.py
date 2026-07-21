@@ -84,9 +84,11 @@ def _seed_field(workspace, count):
 
 
 def test_writer_is_context_bounded_and_field_size_independent(tmp_path):
-    empty = build_proposition_writer_prompt([CAPTURE], "writer")
+    empty = build_proposition_writer_prompt([CAPTURE], "writer", context_captures=[])
+    assert empty["context_captures"] == []
+    assert empty["context_capture_count"] == 0
     _seed_field(tmp_path, 1)
-    populated = build_proposition_writer_prompt([CAPTURE], "writer")
+    populated = build_proposition_writer_prompt([CAPTURE], "writer", context_captures=[])
 
     assert empty["prompt"] == populated["prompt"]
     assert empty["field_input_count"] == 0
@@ -94,6 +96,15 @@ def test_writer_is_context_bounded_and_field_size_independent(tmp_path):
     assert "progressive_atlas_page:" not in empty["prompt"]
     assert "locality_atlas:" not in empty["prompt"]
     assert "candidate_id" not in empty["prompt"]
+    assert "non-empty list of zero-based indexes into this proposition's evidence_spans array" in empty["prompt"]
+    assert "never character offsets" in empty["prompt"]
+    assert "role_text[start:end] must equal quote_utf8 exactly" in empty["prompt"]
+    assert "Prefer user-role spans" in empty["prompt"]
+    assert 'outcome must be the literal string "plan"' in empty["prompt"]
+    assert "Every proposition object must contain exactly these eight keys" in empty["prompt"]
+    assert "Every basis_capture_id must equal the capture_id" in empty["prompt"]
+    assert "source_capture_ids may contain only IDs listed in absorption_sources" in empty["prompt"]
+    assert "the relative phrase itself is not an absolute-date basis" in empty["prompt"]
 
 
 def test_context_writer_resolves_same_day_with_explicit_prior_capture_provenance():
@@ -166,6 +177,7 @@ def test_cartographer_independent_seed_then_related_growth(tmp_path):
     built = build_field_cartographer_prompt(writer, str(tmp_path), "seed")
     assert "existing region need not already contain the new answer" in built["prompt"]
     assert "keyword overlap alone" in built["prompt"]
+    assert "no two resolved entry queries may select support entries with the same entry_cell" in built["prompt"]
     entry_query = writer["propositions"][0]["entry_queries"][0]
     independent_raw = json.dumps({
         "schema_version": FIELD_CARTOGRAPHER_SCHEMA_VERSION,

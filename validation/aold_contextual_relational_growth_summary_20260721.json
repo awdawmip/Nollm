@@ -1,0 +1,46 @@
+{
+  "action_counts": {
+    "independent_seed": 3,
+    "new_local": 6
+  },
+  "capture_count": 9,
+  "capture_max_ms": 20.588600000000042,
+  "capture_p95_ms": 7.674800000000005,
+  "capture_sample_count": 150,
+  "checks": {
+    "capture_p95_within_budget": true,
+    "distinct_product_entries": true,
+    "durable_reopen": true,
+    "nine_durable_captures": true,
+    "nine_unique_statements": true,
+    "none_after_restart": true,
+    "one_statement_atom_cell": true,
+    "read_zero_write": true,
+    "recall_only_no_formation_after_none": true,
+    "related_growth_at_least_five": true,
+    "t0_product_recall": true,
+    "target_hidden_causal": true,
+    "unrelated_independent_at_least_two": true,
+    "unrelated_not_reached": true,
+    "wrong_date_zero": true
+  },
+  "distinct_product_entry_count": 3,
+  "evidence_line_count": 1,
+  "evidence_sha256": "ad8996661707f21c3d461b1d99add55a66a447267edfe3d098be78dd1e767c06",
+  "evidence_utf8_bytes": 19884,
+  "live_capture_observed_p95_ms": 182.09719999996014,
+  "live_capture_observed_sample_count": 9,
+  "none_after_restart": true,
+  "occupied_cell_count": 9,
+  "passed": true,
+  "placement_count": 9,
+  "provider": "meituan/LongCat-2.0",
+  "read_zero_write": true,
+  "schema_version": "nollm_v311r4_contextual_live_summary_v1",
+  "statement_count": 9,
+  "target_hidden_path": [
+    "lateral"
+  ],
+  "unrelated_false_reach_count": 0,
+  "wrong_date_count": 0
+}

@@ -72,11 +72,11 @@ def test_rev3_live_growth_record_binds_chat_and_host_bytes() -> None:
     assert growth["gateway_listener_present_at_freeze"] is False
 
 
-def test_rev3_distribution_manifest_declares_active_bounded_wires() -> None:
+def test_active_distribution_manifest_declares_rev4_bounded_wires() -> None:
     manifest = json.loads((ROOT / "distributions/nollm-openclaw/manifest.json").read_text(encoding="utf-8"))
 
-    assert manifest["propositionWriterWire"] == "nollm_openclaw_proposition_writer_v1"
-    assert manifest["fieldCartographerWire"] == "nollm_openclaw_field_cartographer_v1"
+    assert manifest["propositionWriterWire"] == "nollm_openclaw_contextual_proposition_writer_v2"
+    assert manifest["fieldCartographerWire"] == "nollm_openclaw_field_cartographer_v2"
     assert manifest["progressiveAtlasPageWire"] == "nollm_access_progressive_atlas_page_v1"
     assert manifest["localDetailPageWire"] == "nollm_access_local_detail_page_v1"
     assert manifest["fastRecallWire"] == "nollm_openclaw_single_call_entry_recall_v1"
