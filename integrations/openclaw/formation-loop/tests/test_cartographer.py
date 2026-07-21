@@ -1,7 +1,10 @@
 import json
 
+import pytest
+
 from nollm_openclaw_formation.cartographer import (
     FIELD_CARTOGRAPHER_SCHEMA_VERSION,
+    LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION,
     PROPOSITION_WRITER_SCHEMA_VERSION,
     advance_field_cartographer,
     apply_field_cartography_result,
@@ -33,14 +36,17 @@ def _writer_raw(content="2026年7月18日东京下雨。"):
             "draft_id": "d1",
             "content_utf8": content,
             "source_capture_ids": ["capture-one"],
-            "lenses": [{
-                "lens_id": "lens-tokyo",
-                "future_query": "东京天气如何？",
-                "basis_spans": [{
-                    "capture_id": "capture-one", "role": "user", "start": 0,
-                    "end": len(CAPTURE["user_utf8"]), "quote_utf8": CAPTURE["user_utf8"],
-                }],
+            "evidence_spans": [{
+                "capture_id": "capture-one", "role": "user", "start": 0,
+                "end": len(CAPTURE["user_utf8"]), "quote_utf8": CAPTURE["user_utf8"],
             }],
+            "context_statement_refs": [],
+            "resolved_references": [{
+                "kind": "temporal", "normalized_value": "2026-07-18",
+                "basis_capture_ids": ["capture-one"], "basis_span_indexes": [],
+            }],
+            "direct_queries": [{"query_id": "direct-tokyo", "query_utf8": "东京天气如何？"}],
+            "entry_queries": [{"query_id": "entry-tokyo", "query_utf8": "这次东京经历发生了什么？"}],
         }],
         "defer_reason": None,
     }, ensure_ascii=False)
@@ -77,7 +83,7 @@ def _seed_field(workspace, count):
     return outcomes
 
 
-def test_writer_is_capture_only_and_field_size_independent(tmp_path):
+def test_writer_is_context_bounded_and_field_size_independent(tmp_path):
     empty = build_proposition_writer_prompt([CAPTURE], "writer")
     _seed_field(tmp_path, 1)
     populated = build_proposition_writer_prompt([CAPTURE], "writer")
@@ -90,16 +96,83 @@ def test_writer_is_capture_only_and_field_size_independent(tmp_path):
     assert "candidate_id" not in empty["prompt"]
 
 
+def test_context_writer_resolves_same_day_with_explicit_prior_capture_provenance():
+    context = {
+        "capture_id": "capture-context", "user_utf8": "2026年7月21日我参加了线上会议。", "assistant_utf8": "收到。",
+        "captured_epoch_ms": 1_784_563_200_000, "timezone_offset_minutes": 480,
+    }
+    source = {
+        "capture_id": "capture-source", "user_utf8": "那天晚上我整理了会议记录。", "assistant_utf8": "好的。",
+        "captured_epoch_ms": 1_784_606_400_000, "timezone_offset_minutes": 480,
+    }
+    context_span = {"capture_id": context["capture_id"], "role": "user", "start": 0, "end": len(context["user_utf8"]), "quote_utf8": context["user_utf8"]}
+    source_span = {"capture_id": source["capture_id"], "role": "user", "start": 0, "end": len(source["user_utf8"]), "quote_utf8": source["user_utf8"]}
+    raw = json.dumps({
+        "schema_version": PROPOSITION_WRITER_SCHEMA_VERSION, "outcome": "plan", "defer_reason": None,
+        "propositions": [{
+            "draft_id": "d1", "content_utf8": "2026年7月21日晚上，用户整理了该线上会议的记录。",
+            "source_capture_ids": [source["capture_id"]], "evidence_spans": [context_span, source_span],
+            "context_statement_refs": [],
+            "resolved_references": [{
+                "kind": "temporal", "normalized_value": "2026-07-21",
+                "basis_capture_ids": [context["capture_id"]], "basis_span_indexes": [0],
+            }],
+            "direct_queries": [{"query_id": "direct-1", "query_utf8": "用户那天晚上做了什么？"}],
+            "entry_queries": [{"query_id": "entry-1", "query_utf8": "这次线上会议发生了什么？"}],
+        }],
+    }, ensure_ascii=False)
+
+    built = build_proposition_writer_prompt([source], "contextual", context_captures=[context])
+    parsed = parse_proposition_writer_result(raw, [source], "contextual", context_captures=[context])
+    assert built["context_capture_count"] == 1
+    assert built["context_chars"] <= 6000
+    assert "context_only_evidence" in built["prompt"]
+    assert parsed["context_capture_ids"] == [context["capture_id"]]
+    assert parsed["propositions"][0]["direct_queries"][0]["query_utf8"] != parsed["propositions"][0]["entry_queries"][0]["query_utf8"]
+
+    wrong = json.loads(raw)
+    wrong["propositions"][0]["content_utf8"] = "2026年7月20日晚上，用户整理了该线上会议的记录。"
+    wrong["propositions"][0]["resolved_references"][0]["normalized_value"] = "2026-07-20"
+    with pytest.raises(Exception, match="no Evidence basis"):
+        parse_proposition_writer_result(json.dumps(wrong, ensure_ascii=False), [source], "wrong-date", context_captures=[context])
+
+
+def test_context_only_capture_cannot_become_absorption_source():
+    context = {**CAPTURE, "capture_id": "context", "captured_epoch_ms": CAPTURE["captured_epoch_ms"] - 1}
+    raw = json.loads(_writer_raw())
+    raw["propositions"][0]["source_capture_ids"] = ["context"]
+    with pytest.raises(Exception, match="source Capture IDs"):
+        parse_proposition_writer_result(json.dumps(raw, ensure_ascii=False), [CAPTURE], "context-source", context_captures=[context])
+
+
+def test_legacy_writer_wire_migrates_one_future_lens_to_direct_and_entry_queries():
+    raw = json.dumps({
+        "schema_version": LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION, "outcome": "plan", "defer_reason": None,
+        "propositions": [{
+            "draft_id": "d1", "content_utf8": "东京下雨。", "source_capture_ids": [CAPTURE["capture_id"]],
+            "lenses": [{
+                "lens_id": "legacy-lens", "future_query": "东京天气如何？",
+                "basis_spans": [{"capture_id": CAPTURE["capture_id"], "role": "user", "start": 0, "end": len(CAPTURE["user_utf8"]), "quote_utf8": CAPTURE["user_utf8"]}],
+            }],
+        }],
+    }, ensure_ascii=False)
+    proposition = parse_proposition_writer_result(raw, [CAPTURE], "legacy")["propositions"][0]
+    assert proposition["direct_queries"] == [{"query_id": "legacy-lens", "query_utf8": "东京天气如何？"}]
+    assert proposition["entry_queries"] == proposition["direct_queries"]
+
+
 def test_cartographer_independent_seed_then_related_growth(tmp_path):
     writer = _writer_result("seed-writer")
     built = build_field_cartographer_prompt(writer, str(tmp_path), "seed")
-    lens = writer["propositions"][0]["lenses"][0]
+    assert "existing region need not already contain the new answer" in built["prompt"]
+    assert "keyword overlap alone" in built["prompt"]
+    entry_query = writer["propositions"][0]["entry_queries"][0]
     independent_raw = json.dumps({
         "schema_version": FIELD_CARTOGRAPHER_SCHEMA_VERSION,
         "action": "resolve",
         "plans": [{
             "draft_id": "d1", "placement_mode": "independent_seed",
-            "lens_resolutions": [{"lens_id": lens["lens_id"], "region_id": None, "entry_id": None, "unresolved": True}],
+            "entry_resolutions": [{"entry_query_id": entry_query["query_id"], "region_id": None, "entry_id": None, "unresolved": True}],
             "existing_handle": None, "reason_text": "no credible relation",
         }],
     })
@@ -117,8 +190,8 @@ def test_cartographer_independent_seed_then_related_growth(tmp_path):
         "action": "resolve",
         "plans": [{
             "draft_id": "d1", "placement_mode": "related_growth",
-            "lens_resolutions": [{
-                "lens_id": second_writer["propositions"][0]["lenses"][0]["lens_id"],
+            "entry_resolutions": [{
+                "entry_query_id": second_writer["propositions"][0]["entry_queries"][0]["query_id"],
                 "region_id": region["region_id"], "entry_id": entry["entry_id"], "unresolved": False,
             }],
             "existing_handle": None, "reason_text": "Tokyo relation",

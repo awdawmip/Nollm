@@ -34,9 +34,10 @@ export type DreamConfig = {
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
   capture_single_user_mode?: true;
   absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number;
+  writer_context_max_captures?: number; writer_context_max_chars?: number;
   dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v2"; locality_atlas_candidate_limit?: number;
-  proposition_writer_schema_version?: "nollm_openclaw_proposition_writer_v1";
-  field_cartographer_schema_version?: "nollm_openclaw_field_cartographer_v1";
+  proposition_writer_schema_version?: "nollm_openclaw_contextual_proposition_writer_v2";
+  field_cartographer_schema_version?: "nollm_openclaw_field_cartographer_v2";
   cartographer_max_regions?: 32; cartographer_max_prompt_bytes?: 65536; cartographer_max_turns?: 4;
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
   recall_hidden_call_budget?: 1;
@@ -81,10 +82,12 @@ const JSON_SCHEMA = {
     absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
     absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
     absorption_retry_backoff_ms: { type: "integer", minimum: 100, default: 1000 },
+    writer_context_max_captures: { type: "integer", minimum: 0, maximum: 4, default: 4 },
+    writer_context_max_chars: { type: "integer", minimum: 0, maximum: 6000, default: 6000 },
     dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v2", default: "nollm_openclaw_dream_sculptor_v2" },
     locality_atlas_candidate_limit: { type: "integer", minimum: 1, maximum: 512, default: 512 },
-    proposition_writer_schema_version: { type: "string", const: "nollm_openclaw_proposition_writer_v1", default: "nollm_openclaw_proposition_writer_v1" },
-    field_cartographer_schema_version: { type: "string", const: "nollm_openclaw_field_cartographer_v1", default: "nollm_openclaw_field_cartographer_v1" },
+    proposition_writer_schema_version: { type: "string", const: "nollm_openclaw_contextual_proposition_writer_v2", default: "nollm_openclaw_contextual_proposition_writer_v2" },
+    field_cartographer_schema_version: { type: "string", const: "nollm_openclaw_field_cartographer_v2", default: "nollm_openclaw_field_cartographer_v2" },
     cartographer_max_regions: { type: "integer", const: 32, default: 32 },
     cartographer_max_prompt_bytes: { type: "integer", const: 65536, default: 65536 },
     cartographer_max_turns: { type: "integer", const: 4, default: 4 },
@@ -286,7 +289,7 @@ export function assertMutableEvidencePath(path: string, runId?: string): void {
 }
 
 export function writerFormatRepairPrompt(raw: string, error: string): string {
-  return `You repair JSON syntax and envelope formatting only. Return exactly one raw JSON object with no markdown. Preserve every semantic string value from the prior output byte-for-byte, including content_utf8, future_query, quote_utf8, IDs, and reason text. Do not add, remove, split, merge, summarize, or rewrite any proposition. If exact preservation is impossible, return the prior bytes unchanged.\nValidation error: ${error}\nPrior output:\n${raw}`;
+  return `You repair JSON syntax and envelope formatting only. Return exactly one raw JSON object with no markdown. Preserve every semantic string value from the prior output byte-for-byte, including content_utf8, query_utf8, normalized_value, quote_utf8, IDs, and reason text. Do not add, remove, split, merge, summarize, or rewrite any proposition. If exact preservation is impossible, return the prior bytes unchanged.\nValidation error: ${error}\nPrior output:\n${raw}`;
 }
 
 export function writerFormatRepairable(parsed: Record<string, unknown>): boolean {
@@ -446,8 +449,18 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       captured_epoch_ms: record.captured_epoch_ms,
       timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
     }));
+    const contextRecords = captureStore
+      ? await captureStore.contextBefore(records, config.writer_context_max_captures ?? 4, config.writer_context_max_chars ?? 6000)
+      : [];
+    const contextCaptures = contextRecords.map(record => ({
+      capture_id: record.capture_id,
+      user_utf8: record.user_utf8,
+      assistant_utf8: record.assistant_utf8,
+      captured_epoch_ms: record.captured_epoch_ms,
+      timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
+    }));
     const writerBuilt = await bridge(config, {
-      action: "build_proposition_writer_prompt", request_id: requestId, captures,
+      action: "build_proposition_writer_prompt", request_id: requestId, captures, context_captures: contextCaptures,
       max_statements: config.max_statements ?? 8,
     });
     if (writerBuilt.ok !== true || typeof writerBuilt.prompt !== "string") {
@@ -462,7 +475,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     let writer = await bridge(config, {
       action: "parse_proposition_writer_result", request_id: requestId,
-      raw_model_response: writerAttempt.raw, captures,
+      raw_model_response: writerAttempt.raw, captures, context_captures: contextCaptures,
     });
     if (writer.ok !== true) {
       await trace(config, { status: "correction_required", stage: "proposition_writer_validation", batch_id: batchId, ...outputEvidence(writerAttempt.raw), ...writer });
@@ -483,7 +496,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       }
       writer = await bridge(config, {
         action: "parse_proposition_writer_result", request_id: requestId,
-        raw_model_response: writerAttempt.raw, captures,
+        raw_model_response: writerAttempt.raw, captures, context_captures: contextCaptures,
       });
       if (writer.ok !== true) {
         return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writer.message ?? writer.error ?? "Proposition Writer correction validation failed") }));
@@ -540,7 +553,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     let applied = await bridge(config, {
       action: "apply_field_cartography_result", request_id: requestId,
-      cartography_result: cartography, writer_result: writer, captures,
+      cartography_result: cartography, writer_result: writer, captures: [...captures, ...contextCaptures],
       memory_workspace: configuredMemoryWorkspace,
     });
     if (applied.ok !== true || !Array.isArray(applied.outcomes)) {
@@ -556,7 +569,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (confirmation.ok !== true || !confirmation.confirmation) continue;
       const revisionApplied = await bridge(config, {
         action: "apply_field_cartography_result", request_id: requestId,
-        cartography_result: cartography, writer_result: writer, captures,
+        cartography_result: cartography, writer_result: writer, captures: [...captures, ...contextCaptures],
         memory_workspace: configuredMemoryWorkspace,
         revision_confirmations: { [item.statement_id]: confirmation.confirmation },
         only_statement_ids: [item.statement_id],
@@ -572,6 +585,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch",
       batch_id: batchId, capture_count: records.length, statement_count: outcomes.length,
       proposition_writer_provider_calls: writerProviderCalls, proposition_writer_provider_ms: writerProviderMs,
+      writer_context_capture_count: contextCaptures.length,
+      writer_context_chars: contextCaptures.reduce((total, item) => total + item.user_utf8.length + item.assistant_utf8.length, 0),
       cartographer_sessions: 1, cartographer_turns: cartographerTurns,
       cartographer_provider_ms: cartographerProviderMs, common_one_writer_call: writerProviderCalls === 1,
       atlas_fingerprint: cartography.atlas_fingerprint, writer_raw: outputEvidence(writerAttempt.raw),

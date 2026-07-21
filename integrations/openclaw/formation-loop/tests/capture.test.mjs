@@ -69,6 +69,21 @@ test("pending fallback is cross-session, scope isolated, bounded, and admission 
   assert.equal((await store.renderPending("user-a", { maxCaptures: 4, maxChars: 500, maxAgeMs: 5000 }, 2000)).injection, "");
 }));
 
+test("Writer context is chronological same-session prior-only and does not change Capture state", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const older = await store.publish(input({ turnIdentity: "context-1", capturedEpochMs: 1000, userUtf8: "context one" }));
+  const newest = await store.publish(input({ turnIdentity: "context-2", capturedEpochMs: 2000, userUtf8: "context two" }));
+  await store.publish(input({ sessionKey: "other-session", turnIdentity: "other", capturedEpochMs: 2500, userUtf8: "foreign" }));
+  const source = await store.publish(input({ turnIdentity: "source", capturedEpochMs: 3000, userUtf8: "that evening" }));
+  const future = await store.publish(input({ turnIdentity: "future", capturedEpochMs: 4000, userUtf8: "future" }));
+
+  const context = await store.contextBefore([source.record], 2, 1000);
+  assert.deepEqual(context.map(record => record.capture_id), [older.record.capture_id, newest.record.capture_id]);
+  assert.equal((await store.currentState(older.record.capture_id)).status, "captured");
+  assert.equal((await store.currentState(newest.record.capture_id)).status, "captured");
+  assert.equal((await store.currentState(future.record.capture_id)).status, "captured");
+}));
+
 test("terminal defer preserves Capture but exits pending fallback", () => workspace(async root => {
   const store = new CaptureStore(root);
   const { record } = await store.publish(input());
@@ -92,11 +107,12 @@ test("worker batches captures, serializes execution, and records terminal states
   assert.equal((await store.currentState(two.record.capture_id)).status, "admitted");
 }));
 
-test("worker never mixes scope workspace or profile partitions", () => workspace(async root => {
+test("worker never mixes scope workspace session or profile partitions", () => workspace(async root => {
   const store = new CaptureStore(root);
   const anchor = await store.publish(input({ workspaceKey: "workspace-a" }));
   const otherScope = await store.publish(input({ scopeKey: "user-b", workspaceKey: "workspace-a", turnIdentity: "run-2" }));
   const otherWorkspace = await store.publish(input({ workspaceKey: "workspace-b", turnIdentity: "run-3" }));
+  const otherSession = await store.publish(input({ workspaceKey: "workspace-a", sessionKey: "session-2", turnIdentity: "run-4" }));
   const seen = [];
   const worker = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, async (_batch, records) => {
     seen.push(records.map(record => record.capture_id));
@@ -106,6 +122,7 @@ test("worker never mixes scope workspace or profile partitions", () => workspace
   assert.deepEqual(seen, [[anchor.record.capture_id]]);
   assert.equal((await store.currentState(otherScope.record.capture_id)).status, "captured");
   assert.equal((await store.currentState(otherWorkspace.record.capture_id)).status, "captured");
+  assert.equal((await store.currentState(otherSession.record.capture_id)).status, "captured");
 }));
 
 test("stale processing claims recover and callback failure becomes retry", () => workspace(async root => {

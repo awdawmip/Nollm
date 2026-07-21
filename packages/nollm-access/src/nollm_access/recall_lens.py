@@ -164,7 +164,11 @@ def validate_dream_sculptor_plans(
             if handle is None or not _handle_is_visible(handle, lenses, candidate_map):
                 raise ValueError("existing Handle must be visible in a resolved Lens leaf")
         statement_payload = f"{DREAM_SCULPTOR_SCHEMA_VERSION}\0{request_id}\0{draft_id}".encode("utf-8")
-        statement = MemoryStatement(f"dream:{sha256(statement_payload).hexdigest()}", value["content_utf8"], context_refs=tuple(f"capture:{item}" for item in source_ids))
+        evidence_ids = tuple(sorted({span.capture_id for lens in lenses for span in lens.basis_spans}))
+        context_refs = tuple(f"capture:{item}" for item in source_ids) + tuple(
+            f"context-capture:{item}" for item in evidence_ids if item not in source_ids
+        )
+        statement = MemoryStatement(f"dream:{sha256(statement_payload).hexdigest()}", value["content_utf8"], context_refs=context_refs)
         plans.append(JunctionSemanticPlan(statement, source_ids, lenses, action, handle, value["reason_text"], relation_groups, atlas.atlas_fingerprint))
     if draft_ids != sorted(set(draft_ids)):
         raise ValueError("Dream Sculptor drafts must be canonical and unique")

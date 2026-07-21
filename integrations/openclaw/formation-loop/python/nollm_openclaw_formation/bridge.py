@@ -68,12 +68,14 @@ def main() -> None:
         if action == "build_proposition_writer_prompt":
             result = build_proposition_writer_prompt(
                 envelope["captures"], envelope["request_id"], envelope.get("max_statements", 8),
+                envelope.get("context_captures"),
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "parse_proposition_writer_result":
             result = parse_proposition_writer_result(
                 envelope["raw_model_response"], envelope["captures"], envelope["request_id"],
+                envelope.get("context_captures"),
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

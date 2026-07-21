@@ -255,6 +255,40 @@ export class CaptureStore {
     return (await this.scanRecords()).records;
   }
 
+  async contextBefore(sources: CaptureRecord[], maxCaptures = 4, maxChars = 6000): Promise<CaptureRecord[]> {
+    if (!sources.length || !Number.isInteger(maxCaptures) || maxCaptures < 0 || !Number.isInteger(maxChars) || maxChars < 0) {
+      throw new TypeError("context source and budgets are invalid");
+    }
+    const anchor = sources[0];
+    if (sources.some(record =>
+      record.scope_id_sha256 !== anchor.scope_id_sha256 ||
+      record.workspace_id_sha256 !== anchor.workspace_id_sha256 ||
+      record.session_key_sha256 !== anchor.session_key_sha256 ||
+      record.profile_id !== anchor.profile_id
+    )) throw new Error("one absorption batch must belong to one session partition");
+    const sourceIds = new Set(sources.map(record => record.capture_id));
+    const firstSource = [...sources].sort((left, right) =>
+      left.captured_epoch_ms - right.captured_epoch_ms || left.capture_id.localeCompare(right.capture_id)
+    )[0];
+    const candidates = (await this.allRecords()).filter(record =>
+      !sourceIds.has(record.capture_id) &&
+      record.scope_id_sha256 === anchor.scope_id_sha256 &&
+      record.workspace_id_sha256 === anchor.workspace_id_sha256 &&
+      record.session_key_sha256 === anchor.session_key_sha256 &&
+      record.profile_id === anchor.profile_id &&
+      (record.captured_epoch_ms < firstSource.captured_epoch_ms ||
+        (record.captured_epoch_ms === firstSource.captured_epoch_ms && record.capture_id < firstSource.capture_id))
+    );
+    const selected: CaptureRecord[] = [];
+    let chars = 0;
+    for (const record of candidates.reverse()) {
+      const size = record.user_utf8.length + record.assistant_utf8.length;
+      if (selected.length >= maxCaptures || chars + size > maxChars) continue;
+      selected.push(record); chars += size;
+    }
+    return selected.reverse();
+  }
+
   async pending(scopeKey: string, policy: PendingPolicy, now = Date.now()): Promise<CaptureRecord[]> {
     assertText(scopeKey, "scopeKey");
     const scopeHash = sha256(scopeKey);
@@ -353,7 +387,7 @@ export class AbsorptionWorker {
         const recoverable = recoveryBatchId
           ? (retryReady({ record, state }) || staleProcessing({ record, state })) && state.batch_id === recoveryBatchId
           : state.status === "captured";
-        if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
+        if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.session_key_sha256 !== freshAnchor.record.session_key_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;
         if (!recoverable || candidates.length >= this.batchMaxCaptures || chars + size > this.batchMaxChars) continue;
         candidates.push(record); chars += size;

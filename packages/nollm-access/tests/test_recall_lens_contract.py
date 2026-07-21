@@ -49,6 +49,25 @@ def test_sculptor_plan_compiles_exact_lens_path_into_relation_groups(tmp_path):
     assert "primary_candidate_id" not in plans[0].to_mapping()
 
 
+def test_context_only_evidence_is_persisted_as_provenance_not_source(tmp_path):
+    context = {
+        "capture_id": "capture-context", "user_utf8": "2026年7月17日有会议。", "assistant_utf8": "收到。",
+        "captured_epoch_ms": CAPTURE["captured_epoch_ms"] - 1000, "timezone_offset_minutes": 480,
+    }
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("atlas")
+    value = plan(atlas)
+    value["lenses"][0]["basis_spans"].append({
+        "capture_id": context["capture_id"], "role": "user", "start": 0,
+        "end": len(context["user_utf8"]), "quote_utf8": context["user_utf8"],
+    })
+    validated = validate_dream_sculptor_plans("request", [value], [CAPTURE, context], atlas)[0]
+    assert validated.source_capture_ids == (CAPTURE["capture_id"],)
+    assert validated.statement.context_refs == (
+        "capture:capture-one", "context-capture:capture-context",
+    )
+
+
 def test_sculptor_plan_rejects_fabricated_span_unknown_path_and_free_primary(tmp_path):
     with AccessMemoryLoop(tmp_path) as loop:
         atlas = loop.build_locality_atlas("atlas")
