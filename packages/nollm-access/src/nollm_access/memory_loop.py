@@ -348,11 +348,12 @@ class AccessMemoryLoop:
                     scope.profile_id, scope.chart_id, scope.identity, scope.reference_layer,
                     0, frontier.cell.q, frontier.cell.r, scope.reference_layer % 8,
                 )
-                candidate = self._candidate(core, "progressive-entry:empty", "expand_surface", frontier.cell)
                 identity = {"kind": "physical_cell_v1", "cell": frontier.cell.to_mapping()}
+                region_id = self._progressive_region_id(state_sha256, identity)
+                candidate = self._candidate(core, "progressive-entry:empty", "expand_surface", frontier.cell)
                 region = ProgressiveAtlasRegion(
-                    self._progressive_region_id(state_sha256, identity), identity, 0, 0, 0, 0,
-                    (self._entry_mapping(candidate, ()),), (), False, False,
+                    region_id, identity, 0, 0, 0, 0,
+                    (self._entry_mapping(atlas_fingerprint, region_id, candidate, ()),), (), False, False,
                 )
                 return self._make_progressive_page(
                     request_id, scope, state_sha256, atlas_fingerprint, None, 0, 0,
@@ -363,7 +364,7 @@ class AccessMemoryLoop:
                 if order_info.occupied_cell_count > policy.max_regions_per_page:
                     continue
                 projections = self._surface_projections(core, scope, order_info.order)
-                regions = tuple(self._progressive_region(core, state_sha256, projection, policy, scope) for projection in projections)
+                regions = tuple(self._progressive_region(core, state_sha256, atlas_fingerprint, projection, policy, scope) for projection in projections)
                 try:
                     return self._make_progressive_page(
                         request_id, scope, state_sha256, atlas_fingerprint, None, 0, order_info.order,
@@ -371,7 +372,7 @@ class AccessMemoryLoop:
                     )
                 except OverflowError:
                     continue
-            regions = self._physical_partition_regions(core, state_sha256, occupied, policy, 0, 0, len(occupied))
+            regions = self._physical_partition_regions(core, state_sha256, atlas_fingerprint, occupied, policy, 0, 0, len(occupied))
             try:
                 return self._make_progressive_page(
                     request_id, scope, state_sha256, atlas_fingerprint, None, 0, None,
@@ -426,7 +427,7 @@ class AccessMemoryLoop:
                     raise ValueError("Progressive Atlas partition identity is invalid")
                 selected = occupied[start:end]
                 regions = self._physical_partition_regions(
-                    core, state_sha256, selected, parent_page.policy,
+                    core, state_sha256, expected_atlas, selected, parent_page.policy,
                     int(identity.get("level", 0)) + 1, start, len(occupied),
                 )
                 child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
@@ -436,7 +437,7 @@ class AccessMemoryLoop:
                 projection = self._projection_by_address(core, parent_page.scope, address)
                 selected = tuple(projection.source_cells)
                 regions = self._physical_partition_regions(
-                    core, state_sha256, selected, parent_page.policy, 1, 0, len(selected),
+                    core, state_sha256, expected_atlas, selected, parent_page.policy, 1, 0, len(selected),
                 )
                 child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
                 covered = len(selected)
@@ -510,6 +511,7 @@ class AccessMemoryLoop:
         self,
         core: CoreRuntime,
         state_sha256: str,
+        atlas_fingerprint: str,
         cells: tuple[GeometryAddress, ...],
         policy: ProgressiveAtlasPolicy,
         level: int,
@@ -525,10 +527,11 @@ class AccessMemoryLoop:
                 candidate = self._candidate(core, f"progressive-entry:{start_offset + index}", "existing_cell", cell)
                 context = self._candidate_statement_context([candidate], 1)[0]["statements"]
                 identity = {"kind": "physical_cell_v1", "cell": cell.to_mapping()}
+                region_id = self._progressive_region_id(state_sha256, identity)
                 output.append(ProgressiveAtlasRegion(
-                    self._progressive_region_id(state_sha256, identity), identity, 0, 1,
+                    region_id, identity, 0, 1,
                     candidate["occupancy"]["count"], 0,
-                    (self._entry_mapping(candidate, tuple(context)),), tuple(context[:3]), False, False,
+                    (self._entry_mapping(atlas_fingerprint, region_id, candidate, tuple(context)),), tuple(context[:3]), False, False,
                 ))
             return tuple(output)
         chunk_size = (len(ordered) + policy.max_regions_per_page - 1) // policy.max_regions_per_page
@@ -556,11 +559,12 @@ class AccessMemoryLoop:
                 "total": total,
                 "level": level,
             }
+            region_id = self._progressive_region_id(state_sha256, identity)
             output.append(ProgressiveAtlasRegion(
-                self._progressive_region_id(state_sha256, identity), identity, policy.max_order,
+                region_id, identity, policy.max_order,
                 len(chunk), sum(len(core.atoms_at(cell)) for cell in chunk),
                 min(len(chunk), policy.max_regions_per_page),
-                tuple(self._entry_mapping(candidate, ()) for candidate in candidates),
+                tuple(self._entry_mapping(atlas_fingerprint, region_id, candidate, ()) for candidate in candidates),
                 tuple(representatives), False,
                 self._support_coverage_radius(chunk, support) > 4,
             ))
@@ -570,6 +574,7 @@ class AccessMemoryLoop:
         self,
         core: CoreRuntime,
         state_sha256: str,
+        atlas_fingerprint: str,
         projection: object,
         policy: ProgressiveAtlasPolicy,
         scope: PhysicalFieldScope,
@@ -578,11 +583,13 @@ class AccessMemoryLoop:
         support_overflow = self._support_coverage_radius(tuple(projection.source_cells), support) > 4
         candidates = [self._candidate(core, f"progressive-entry:{index}", "existing_cell", cell) for index, cell in enumerate(support)]
         contexts = self._candidate_statement_context(candidates, policy.support_limit)
+        identity = projection.address.to_mapping()
+        region_id = self._progressive_region_id(state_sha256, identity)
         representatives = []
         seen = set()
         entries = []
         for candidate, context in zip(candidates, contexts):
-            entries.append(self._entry_mapping(candidate, tuple(context["statements"])))
+            entries.append(self._entry_mapping(atlas_fingerprint, region_id, candidate, tuple(context["statements"])))
             for statement in context["statements"]:
                 if statement["statement_id"] not in seen:
                     representatives.append(statement)
@@ -591,17 +598,30 @@ class AccessMemoryLoop:
         if projection.address.aggregation_order > 0:
             children = core.surface_descend(scope, projection.address, None, 256)
             child_count = len(children.cells) + int(children.has_more)
-        identity = projection.address.to_mapping()
         return ProgressiveAtlasRegion(
-            self._progressive_region_id(state_sha256, identity), identity, projection.address.aggregation_order,
+            region_id, identity, projection.address.aggregation_order,
             len(projection.source_cells), projection.native_atom_count, child_count,
             tuple(entries), tuple(representatives[:3]), projection.truncated, support_overflow,
         )
 
     @staticmethod
-    def _entry_mapping(candidate: dict[str, object], statements: tuple[dict[str, object], ...]) -> dict[str, object]:
+    def _entry_mapping(
+        atlas_fingerprint: str,
+        region_id: str,
+        candidate: dict[str, object],
+        statements: tuple[dict[str, object], ...],
+    ) -> dict[str, object]:
+        identity = json.dumps(
+            {
+                "atlas_fingerprint": atlas_fingerprint,
+                "region_id": region_id,
+                "entry_cell": candidate["geometry_address"],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
         return {
-            "entry_id": candidate["candidate_id"],
+            "entry_id": f"atlas-entry:{hashlib.sha256(identity).hexdigest()}",
             "entry_cell": candidate["geometry_address"],
             "occupancy_count": candidate["occupancy"]["count"],
             "statements": list(statements),

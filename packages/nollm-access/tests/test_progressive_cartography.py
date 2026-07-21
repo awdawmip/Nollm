@@ -27,6 +27,21 @@ def test_progressive_root_is_complete_bounded_and_not_a_stable_prefix(tmp_path) 
         for region in root.regions
         for entry in region.support_entries
     )
+    entries = [entry for region in root.regions for entry in region.support_entries]
+    assert len({entry["entry_id"] for entry in entries}) == len(entries)
+    assert all(entry["entry_id"].startswith("atlas-entry:") for entry in entries)
+
+
+def test_nine_single_entry_regions_have_operation_unique_entry_identities(tmp_path) -> None:
+    _seed_line(tmp_path, 9)
+    with AccessMemoryLoop(tmp_path) as loop:
+        root = loop.build_progressive_atlas("nine-regions")
+
+    assert len(root.regions) == 9
+    assert all(len(region.support_entries) == 1 for region in root.regions)
+    entries = [region.support_entries[0] for region in root.regions]
+    assert len({entry["entry_id"] for entry in entries}) == 9
+    assert {entry["entry_cell"]["q"] for entry in entries} == set(range(9))
 
 
 def test_300_cell_cartography_descends_by_complete_bounded_pages(tmp_path) -> None:

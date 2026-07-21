@@ -93,12 +93,21 @@ def build_fast_recall_prompt(
             }
         if page.occupied_field_cell_count == 0:
             return {"status": "complete_none", "available": False, "hidden_call_count": 0, "atlas_page": page.to_mapping()}
-        entries_by_id = {
-            item["entry_id"]: {**item, "region_id": region.region_id}
+        entries = [
+            {**item, "region_id": region.region_id}
             for region in page.regions
             for item in region.support_entries
-        }
-        entries = list(entries_by_id.values())
+        ]
+        entry_ids = [item["entry_id"] for item in entries]
+        duplicate_entry_count = len(entry_ids) - len(set(entry_ids))
+        if duplicate_entry_count:
+            raise FormationAdapterError(
+                "duplicate_atlas_entry",
+                f"Progressive Atlas contains {duplicate_entry_count} duplicate selectable entry identities",
+            )
+        atlas_entry_count = sum(len(region.support_entries) for region in page.regions)
+        if atlas_entry_count != len(entries):
+            raise FormationAdapterError("atlas_entry_loss", "fast Recall candidate construction lost Atlas entries")
         if not entries:
             return {"status": "complete_none", "available": False, "hidden_call_count": 0, "atlas_page": page.to_mapping()}
         if page.occupied_field_cell_count == 1 and len(entries) == 1:
@@ -107,6 +116,8 @@ def build_fast_recall_prompt(
                 **_direct_locality_injection(items, max_statements, max_chars),
                 "available": bool(items), "hidden_call_count": 0,
                 "selected_entry": entries[0]["entry_cell"], "atlas_page": page.to_mapping(),
+                "atlas_entry_count": atlas_entry_count, "prompt_entry_count": len(entries),
+                "duplicate_entry_count": duplicate_entry_count,
             }
     prompt_regions = [{
         "region_id": region.region_id,
@@ -139,6 +150,8 @@ progressive_atlas_regions: {json.dumps(prompt_regions, ensure_ascii=False, sort_
         "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(), "entries": prompt_entries,
         "prompt_utf8_bytes": prompt_bytes, "atlas_page": page.to_mapping(),
         "max_statements": max_statements, "max_chars": max_chars, "hidden_call_count": 1,
+        "atlas_entry_count": atlas_entry_count, "prompt_entry_count": len(prompt_entries),
+        "duplicate_entry_count": duplicate_entry_count,
     }
 
 
@@ -163,7 +176,14 @@ def apply_fast_recall_selection(
         return {"status": "complete_none", "outcome": "none", "injection": "", "statement_ids": [], "hidden_call_count": 1, "json_repair": diagnostics}
     if value["outcome"] != "select" or type(value["entry_id"]) is not str:
         raise FormationAdapterError("invalid_fast_recall", "fast Recall must select one entry or NONE")
-    by_id = {item["entry_id"]: item for item in entries if type(item) is dict and type(item.get("entry_id")) is str and type(item.get("entry_cell")) is dict}
+    valid_entries = [
+        item for item in entries
+        if type(item) is dict and type(item.get("entry_id")) is str and type(item.get("entry_cell")) is dict
+    ]
+    entry_ids = [item["entry_id"] for item in valid_entries]
+    if len(entry_ids) != len(set(entry_ids)):
+        raise FormationAdapterError("duplicate_atlas_entry", "fast Recall entries contain duplicate identities")
+    by_id = {item["entry_id"]: item for item in valid_entries}
     if value["entry_id"] not in by_id:
         raise FormationAdapterError("invalid_fast_recall", "fast Recall selected an unavailable entry")
     selected = by_id[value["entry_id"]]

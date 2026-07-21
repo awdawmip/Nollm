@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from nollm_core import PhysicalFieldScope
+from nollm_core import GeometryAddress, PhysicalFieldScope
 
 
 PROGRESSIVE_ATLAS_SCHEMA_VERSION = "nollm_access_progressive_atlas_page_v1"
@@ -71,6 +71,23 @@ class ProgressiveAtlasRegion:
             raise ValueError("region counts must be non-negative")
         if type(self.support_entries) is not tuple or not 1 <= len(self.support_entries) <= 4:
             raise ValueError("region support must contain one to four entries")
+        entry_ids = []
+        for entry in self.support_entries:
+            keys = {"entry_id", "entry_cell", "occupancy_count", "statements"}
+            if type(entry) is not dict or set(entry) != keys:
+                raise ValueError("region support entry is not canonical")
+            if type(entry["entry_id"]) is not str or not entry["entry_id"]:
+                raise ValueError("region support entry identity is required")
+            address = GeometryAddress.from_mapping(entry["entry_cell"])
+            if address.to_mapping() != entry["entry_cell"]:
+                raise ValueError("region support entry Cell is not canonical")
+            if type(entry["occupancy_count"]) is not int or entry["occupancy_count"] < 0:
+                raise ValueError("region support entry occupancy is invalid")
+            if type(entry["statements"]) is not list:
+                raise ValueError("region support entry statements are invalid")
+            entry_ids.append(entry["entry_id"])
+        if len(entry_ids) != len(set(entry_ids)):
+            raise ValueError("region support entry identities must be unique")
         if type(self.representative_statements) is not tuple or len(self.representative_statements) > 3:
             raise ValueError("region representatives must be bounded")
         if type(self.truncated) is not bool or type(self.support_overflow) is not bool:
@@ -153,6 +170,16 @@ class ProgressiveAtlasPage:
             raise ValueError("page region count exceeds policy")
         if len({region.region_id for region in self.regions}) != len(self.regions):
             raise ValueError("page region identities must be unique")
+        entries = [entry for region in self.regions for entry in region.support_entries]
+        entry_ids = [entry["entry_id"] for entry in entries]
+        if len(entry_ids) != len(set(entry_ids)):
+            raise ValueError("page selectable entry identities must be unique")
+        entry_cells = {}
+        for entry in entries:
+            cell = GeometryAddress.from_mapping(entry["entry_cell"]).stable_key()
+            previous = entry_cells.setdefault(entry["entry_id"], cell)
+            if previous != cell:
+                raise ValueError("one selectable entry identity cannot name multiple Cells")
         counts = (self.occupied_field_cell_count, self.covered_source_cell_count, self.uncovered_source_cell_count, self.serialized_utf8_bytes, self.estimated_token_units)
         if any(type(value) is not int or value < 0 for value in counts):
             raise ValueError("page certificate counts are invalid")

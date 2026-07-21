@@ -98,6 +98,51 @@ def test_fast_recall_selects_one_geometry_entry_then_injects_without_second_sele
     assert "dream:test" in result["statement_ids"]
 
 
+def test_fast_recall_preserves_nine_single_entry_regions_without_identity_collision(tmp_path):
+    statements = [
+        {"statement_id": f"dream:region-{index}", "content_utf8": f"region {index}", "source_handle": None, "context_refs": []}
+        for index in range(9)
+    ]
+    built = build_batch_placement_prompt(statements, str(tmp_path), "nine:place", 1, 16)
+    empty = [item for item in built["candidates"] if item["occupancy"]["count"] == 0]
+    assert len(empty) >= 9
+    decisions = [{
+        "statement_id": statement["statement_id"],
+        "outcome": "apply",
+        "action": "expand_surface" if empty[index]["relation_kind"] == "expand_surface" else "new_local",
+        "candidate_id": empty[index]["candidate_id"],
+        "reason_text": "nine-region collision fixture",
+    } for index, statement in enumerate(statements)]
+    applied = apply_batch_placement(
+        json.dumps({"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "decisions": decisions}),
+        statements, str(tmp_path), "nine:place", built["view_fingerprint"], 1, 16,
+    )
+    assert len(applied["outcomes"]) == 9
+
+    recall = build_fast_recall_prompt("select one region", str(tmp_path), "nine:recall")
+    assert recall["atlas_entry_count"] == recall["prompt_entry_count"] == 9
+    assert recall["duplicate_entry_count"] == 0
+    assert len({item["entry_id"] for item in recall["entries"]}) == 9
+    selected_cells = []
+    for index, entry in enumerate(recall["entries"]):
+        result = apply_fast_recall_selection(
+            json.dumps({"schema_version": FAST_RECALL_SCHEMA_VERSION, "outcome": "select", "entry_id": entry["entry_id"]}),
+            recall["entries"], str(tmp_path), f"nine:select:{index}",
+        )
+        selected_cells.append(json.dumps(result["selected_entry"], sort_keys=True))
+    assert len(set(selected_cells)) == 9
+
+
+def test_fast_recall_rejects_duplicate_entry_input_instead_of_overwriting(tmp_path):
+    place_initial(tmp_path)
+    entry = {"entry_id": "duplicate", "entry_cell": CELL}
+    with pytest.raises(FormationAdapterError, match="duplicate identities"):
+        apply_fast_recall_selection(
+            json.dumps({"schema_version": FAST_RECALL_SCHEMA_VERSION, "outcome": "select", "entry_id": "duplicate"}),
+            [entry, dict(entry)], str(tmp_path), "duplicate:selection",
+        )
+
+
 def test_batch_placement_uses_one_frozen_geometry_view_and_durable_atomic_apply(tmp_path):
     statements = [
         STATEMENT,
