@@ -1,7 +1,9 @@
+from threading import Event, Thread
+
 import pytest
 
-from nollm_access import AccessDecision, AccessRuntime, FileEvidenceStore, FileHandleStore, HandleBinding, MemoryStatement
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress
+from nollm_access import AccessConsistencyError, AccessDecision, AccessRuntime, FileEvidenceStore, FileHandleStore, HandleBinding, MemoryStatement
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, MemoryAtom
 
 
 def cell(q: int) -> GeometryAddress:
@@ -91,3 +93,85 @@ def test_shared_composition_lock_preserves_success_after_failure(tmp_path) -> No
     handle = second.apply(decision("success", "new", target_cell=cell(1)))
     assert second.saved_handle("success") == handle
     assert core.placement_count() == 1
+
+
+def test_fatal_rollback_preserves_all_diagnostics_and_poisons_runtime(tmp_path, monkeypatch) -> None:
+    core = CoreRuntime(tmp_path / "core")
+    store = FileHandleStore(tmp_path)
+    access = AccessRuntime(core, FileEvidenceStore(tmp_path), store)
+    access.capture(MemoryStatement("candidate", "candidate"))
+
+    def fail_binding(_payload: bytes) -> None:
+        raise OSError("binding write and rollback failed")
+
+    def fail_core_rollback(_payload: bytes) -> None:
+        raise PermissionError("core rollback failed")
+
+    monkeypatch.setattr(store, "_write_bytes", fail_binding)
+    monkeypatch.setattr(core, "import_state_bytes", fail_core_rollback)
+    with pytest.raises(AccessConsistencyError) as raised:
+        access.apply(decision("candidate", "new", target_cell=cell(0)))
+
+    error = raised.value
+    assert isinstance(error.original_error, OSError)
+    assert error.commit_state == "commit_state_unknown"
+    assert [failure.to_mapping() for failure in error.rollback_failures] == [
+        {"component": "core", "error_type": "PermissionError", "message": "core rollback failed"},
+        {"component": "binding", "error_type": "OSError", "message": "binding write and rollback failed"},
+    ]
+    assert access.lifecycle_state == "FAILED"
+    assert access.last_commit_state == "commit_state_unknown"
+    with pytest.raises(RuntimeError, match="failed"):
+        access.apply(decision("candidate", "new", target_cell=cell(1)))
+
+    core.close()
+    with CoreRuntime(tmp_path / "core") as reopened_core:
+        reopened = AccessRuntime(reopened_core, FileEvidenceStore(tmp_path), FileHandleStore(tmp_path))
+        assert reopened_core.placement_count() == 1
+        with pytest.raises(KeyError):
+            reopened.saved_handle("candidate")
+
+
+def test_base_exception_is_indeterminate_and_poisons_runtime(tmp_path, monkeypatch) -> None:
+    core = CoreRuntime(tmp_path / "core")
+    access = AccessRuntime(core, FileEvidenceStore(tmp_path), FileHandleStore(tmp_path))
+    access.capture(MemoryStatement("candidate", "candidate"))
+
+    def interrupt(*_args: object) -> None:
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(core, "put", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        access.apply(decision("candidate", "new", target_cell=cell(0)))
+    assert access.lifecycle_state == "FAILED"
+    assert access.last_commit_state == "commit_state_unknown"
+
+
+def test_direct_core_mutation_waits_for_complete_access_transaction(tmp_path, monkeypatch) -> None:
+    core = CoreRuntime(tmp_path / "core")
+    store = FileHandleStore(tmp_path)
+    access = AccessRuntime(core, FileEvidenceStore(tmp_path), store)
+    access.capture(MemoryStatement("access", "access"))
+    binding_entered = Event()
+    release_binding = Event()
+    direct_done = Event()
+    original_put = store.put
+
+    def blocked_binding(*args: object) -> None:
+        binding_entered.set()
+        assert release_binding.wait(5)
+        original_put(*args)
+
+    monkeypatch.setattr(store, "put", blocked_binding)
+    access_thread = Thread(target=lambda: access.apply(decision("access", "new", target_cell=cell(0))))
+    direct_thread = Thread(target=lambda: (core.put(MemoryAtom("direct", "direct"), cell(1)), direct_done.set()))
+    access_thread.start()
+    assert binding_entered.wait(5)
+    direct_thread.start()
+    assert not direct_done.wait(0.1)
+    release_binding.set()
+    access_thread.join(5)
+    direct_thread.join(5)
+    assert not access_thread.is_alive() and not direct_thread.is_alive()
+    assert direct_done.is_set()
+    assert core.placement_count() == 2

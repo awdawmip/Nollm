@@ -72,11 +72,34 @@ def test_readback_failure_never_returns_completed_durable_memory(tmp_path, monke
 
     monkeypatch.setattr(CoreRuntime, "get", failed_readback)
     with AccessMemoryLoop(tmp_path) as loop:
-        with pytest.raises(OSError, match="readback unavailable"):
-            apply(loop, "readback", "durable payload", "expand_surface", "placement:expand:0")
+        result = apply(loop, "readback", "durable payload", "expand_surface", "placement:expand:0")
     monkeypatch.setattr(CoreRuntime, "get", original_get)
+    assert result["outcome"] == "committed_but_readback_unavailable"
+    assert result["durable_commit"]["verified"] is False
+    assert result["durable_commit"]["commit_state"] == "committed_but_readback_unavailable"
+    assert len(result["durable_commit"]["readback_errors"]) == 2
     assert FileStatementStore(tmp_path).exists("readback")
     assert FileHandleStore(tmp_path).exists("readback")
+
+
+def test_transient_post_commit_readback_failure_reopens_and_verifies(tmp_path, monkeypatch):
+    original_get = CoreRuntime.get
+    calls = 0
+
+    def fail_once(core, handle):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("transient readback unavailable")
+        return original_get(core, handle)
+
+    monkeypatch.setattr(CoreRuntime, "get", fail_once)
+    with AccessMemoryLoop(tmp_path) as loop:
+        result = apply(loop, "readback", "durable payload", "expand_surface", "placement:expand:0")
+
+    assert result["outcome"] == "applied"
+    assert result["durable_commit"]["commit_state"] == "reopen_verified"
+    assert result["durable_commit"]["readback_attempt_count"] == 2
 
 
 def test_admitted_statement_reopen_verification_is_access_owned(tmp_path):

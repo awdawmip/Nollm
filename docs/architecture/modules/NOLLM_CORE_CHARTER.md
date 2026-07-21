@@ -5,7 +5,8 @@ Purpose: deterministic geometry current-state operations, bounded geometry-entry
 - Persistent state: cells, occupancy, geometry addresses, bridge/stitch runtime, current atom handles.
 - Occupancy bands are exact atom-count policy labels only; they are not physical density, importance, confidence, or semantic crowding.
 - Temporary state: bounded frontier, transaction staging, partition calculations, and deterministic geometry-only Junction candidates.
-- Public API: put/remove/replace/move/batch, bounded recall, read-only Junction solving, atomic export/import state bytes, immutable `CoreTraceEvent`, and `TraceSink.emit`.
+- Public API: put/remove/replace/move/batch, bounded recall, read-only Junction solving, atomic export/import state bytes, a bounded operation lease, immutable `CoreTraceEvent`, and `TraceSink.emit`.
+- The operation lease serializes a bounded sequence of public Core calls against direct concurrent Core operations. It exposes no Store, Cell, or mutable state object and cannot be nested or acquired from a Trace callback.
 - Junction requests contain only field scope, geometry cells, radius, limits, and write-policy bounds. Core never receives Statement text, Recall Lenses, Capture IDs, or semantic scores.
 - Forbidden API: source, host, user, session, LLM, prompt, semantic placement, history, audit, trace storage.
 - Dependencies: Python/standard math and its own public contracts only; no Nollm product module.

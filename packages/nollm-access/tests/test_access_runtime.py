@@ -132,3 +132,22 @@ def test_missing_binding_is_an_explicit_access_fallback(tmp_path) -> None:
     )
     assert result.items[0].fallback_error == "binding_missing"
     assert result.items[0].evidence_utf8 is None
+
+
+def test_corrupt_statement_isolated_while_other_recall_items_continue(tmp_path) -> None:
+    access, core = runtime(tmp_path)
+    for index, statement_id in enumerate(("corrupt", "healthy")):
+        access.capture(MemoryStatement(statement_id, statement_id))
+        access.apply(decision(statement_id, "new", target_cell=cell(index, 0)))
+    access.statement_store._path("corrupt").write_bytes(b"not-json\n")
+
+    result = access.recall(AccessRecallRequest(
+        "mixed",
+        entry_cells=(cell(0, 0),),
+        allowed_kernels=("lateral",),
+        budget=RecallBudget(1, 8, 0, 1, 0, 8),
+    ))
+    by_id = {item.statement_id: item for item in result.items}
+    assert by_id["corrupt"].fallback_error == "evidence_corrupt"
+    assert by_id["corrupt"].evidence_utf8 is None
+    assert by_id["healthy"].evidence_utf8 == "healthy"

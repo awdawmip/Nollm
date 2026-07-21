@@ -19,6 +19,11 @@ Purpose: form statements, decide placement/recall entry, format recall, and own 
 - Dependencies: Core public API and optional Snapshot public API.
 - Failure: trusted exclusive composition uses public Core state bytes for ordinary local rollback; direct concurrent Store mutation is unsupported.
 - Binding contract: `HandleBinding` is strict canonical persistent state; `AccessRuntime` and `FileHandleStore` share one trusted process-local composition lock for each canonical Access/Core workspace pair.
+- `supporting_statement_ids` are immutable Statement aliases judged equivalent to the current proposition by an explicit `reuse` decision. A confirmed `revision_current` supersedes that proposition slot, retires the prior current ID and all of its aliases from the active binding, and leaves every Statement file intact; supporting IDs are not historical-value bindings.
+- Access operations hold the Core public operation lease across snapshot, action, binding, and rollback. Direct Core calls in another thread serialize at this supported boundary.
+- Ordinary `Exception` failures trigger rollback of Core and binding bytes. `KeyboardInterrupt`, `SystemExit`, and other direct `BaseException` subclasses are not rolled back because their interruption point is indeterminate; the affected runtime enters `FAILED` and rejects later operations.
+- A rollback failure preserves the original exception plus a machine-readable record for every failed component, marks commit state unknown, and poisons only that runtime. A newly opened runtime validates the actual canonical files rather than inheriting the process-local failure marker.
+- Commit state is reported as `pre_commit`, `rolled_back_failure`, `commit_state_unknown`, `committed_but_readback_unavailable`, or `reopen_verified`. Durable readback retries by reopening canonical files; an unavailable readback is terminally distinguished from an uncommitted write so a worker can replay identity checks without duplicate Admission.
 - Supported fault model: ordinary file-write failures roll back Core and binding bytes; private write monkeypatching is test/Lab-only and is not a public capability.
 - Distributions: minimal API, OpenClaw, debug, audited.
 - Future repository: `nollm-access`.

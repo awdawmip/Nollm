@@ -33,6 +33,28 @@ class RevisionTargetExcludedError(ValueError):
     pass
 
 
+class DurableReadbackError(RuntimeError):
+    def __init__(self, statement_id: str, handle: AtomHandle, errors: tuple[Exception, ...]) -> None:
+        super().__init__("placement committed but reopen readback is unavailable")
+        self.statement_id = statement_id
+        self.handle = handle
+        self.errors = errors
+        self.commit_state = "committed_but_readback_unavailable"
+
+    def to_mapping(self) -> dict[str, object]:
+        return {
+            "verified": False,
+            "reopen_verified": False,
+            "commit_state": self.commit_state,
+            "statement_id": self.statement_id,
+            "handle": self.handle.to_mapping(),
+            "readback_errors": [
+                {"error_type": type(error).__name__, "message": str(error)}
+                for error in self.errors
+            ],
+        }
+
+
 class AccessMemoryLoop:
     """Access-owned cursor-free Surface placement and recall composition."""
 
@@ -762,6 +784,13 @@ class AccessMemoryLoop:
                     durable = self._durable_readback(statement, existing_handle)
                 except KeyError:
                     pass
+                except DurableReadbackError as error:
+                    verified_by_statement[statement.statement_id] = {
+                        "statement_id": statement.statement_id,
+                        "outcome": error.commit_state,
+                        "durable_commit": error.to_mapping(),
+                    }
+                    continue
                 else:
                     verified_by_statement[statement.statement_id] = {
                         "statement_id": statement.statement_id,
@@ -775,6 +804,12 @@ class AccessMemoryLoop:
                     access.capture(statement)
                     result = access.apply(decision)
                 durable = self._durable_readback(statement, result)
+            except DurableReadbackError as error:
+                verified_by_statement[statement.statement_id] = {
+                    "statement_id": statement.statement_id,
+                    "outcome": error.commit_state,
+                    "durable_commit": error.to_mapping(),
+                }
             except Exception as error:
                 if not existed_before and statement_store.exists(statement.statement_id):
                     statement_store.discard_new(statement)
@@ -818,14 +853,11 @@ class AccessMemoryLoop:
         else:
             raise TypeError("revision_confirmations must be a Statement-keyed mapping")
 
-        confirmed_revision_replay = all(
-            plan.action == "revision_current" and plan.statement.statement_id in confirmations
-            for plan in plans
-        )
-        if not confirmed_revision_replay:
-            reopened = self.build_locality_atlas(request_id + ":reopen", len(atlas.candidates), atlas.scope)
-            if reopened.core_state_sha256 != atlas.core_state_sha256 or reopened.atlas_fingerprint != atlas.atlas_fingerprint:
-                raise ValueError("Locality Atlas changed before Junction apply")
+        # Confirmation proves semantic supersession only. It does not prove that
+        # the Core field or current Handle binding remained unchanged meanwhile.
+        reopened = self.build_locality_atlas(request_id + ":reopen", len(atlas.candidates), atlas.scope)
+        if reopened.core_state_sha256 != atlas.core_state_sha256 or reopened.atlas_fingerprint != atlas.atlas_fingerprint:
+            raise ValueError("Locality Atlas changed before Junction apply")
         prepared: list[tuple[JunctionSemanticPlan, AccessDecision | None, dict[str, object] | None]] = []
         for plan in plans:
             if plan.atlas_fingerprint != atlas.atlas_fingerprint:
@@ -930,6 +962,14 @@ class AccessMemoryLoop:
                     durable = self._durable_readback(plan.statement, existing_handle)
                 except KeyError:
                     pass
+                except DurableReadbackError as error:
+                    outcomes.append({
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": error.commit_state,
+                        "durable_commit": error.to_mapping(),
+                    })
+                    continue
                 else:
                     outcomes.append({
                         "statement_id": plan.statement.statement_id,
@@ -944,6 +984,14 @@ class AccessMemoryLoop:
                     access.capture(plan.statement)
                     handle = access.apply(decision)
                 durable = self._durable_readback(plan.statement, handle)
+            except DurableReadbackError as error:
+                outcomes.append({
+                    "statement_id": plan.statement.statement_id,
+                    "source_capture_ids": list(plan.source_capture_ids),
+                    "outcome": error.commit_state,
+                    "durable_commit": error.to_mapping(),
+                    **({} if placement is None else placement),
+                })
             except Exception as error:
                 if not existed_before and statement_store.exists(plan.statement.statement_id):
                     statement_store.discard_new(plan.statement)
@@ -1071,10 +1119,16 @@ class AccessMemoryLoop:
                     raise RuntimeError("placement HandleBinding verification failed")
             handle_bind_us = (perf_counter_ns() - bind_started) // 1_000
         durable_started = perf_counter_ns()
-        durable_commit = self._durable_readback(statement, result)
+        try:
+            durable_commit = self._durable_readback(statement, result)
+        except DurableReadbackError as error:
+            durable_commit = error.to_mapping()
+            outcome = error.commit_state
+        else:
+            outcome = "applied"
         durable_readback_us = (perf_counter_ns() - durable_started) // 1_000
         return {
-            "outcome": "applied",
+            "outcome": outcome,
             "statement_id": statement.statement_id,
             "action": public_action,
             "candidate_id": selected["candidate_id"] if selected is not None else None,
@@ -1098,6 +1152,19 @@ class AccessMemoryLoop:
     def _durable_readback(self, statement: MemoryStatement, result: object) -> dict[str, object]:
         if type(result) is not AtomHandle:
             raise RuntimeError("applied placement did not return an AtomHandle")
+        errors = []
+        for _attempt in range(2):
+            try:
+                value = self._durable_readback_once(statement, result)
+            except Exception as error:
+                errors.append(error)
+            else:
+                value["commit_state"] = "reopen_verified"
+                value["readback_attempt_count"] = len(errors) + 1
+                return value
+        raise DurableReadbackError(statement.statement_id, result, tuple(errors))
+
+    def _durable_readback_once(self, statement: MemoryStatement, result: AtomHandle) -> dict[str, object]:
         statement_store = FileStatementStore(self._workspace)
         persisted = statement_store.get(statement.statement_id)
         if persisted != statement:

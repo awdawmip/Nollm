@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from nollm_access import AccessMemoryLoop, DREAM_SCULPTOR_SCHEMA_VERSION, LocalityAtlas, validate_dream_sculptor_plans
+from nollm_access import AccessDecision, AccessMemoryLoop, AccessRuntime, DREAM_SCULPTOR_SCHEMA_VERSION, FileHandleStore, FileStatementStore, LocalityAtlas, MemoryStatement, validate_dream_sculptor_plans
 from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 
 
@@ -145,3 +145,31 @@ def test_unresolved_complete_fact_can_create_relation_neutral_independent_seed(t
     assert result["outcomes"][0]["seed"]["relation_neutral"] is True
     cell = binding["handle"]["geometry_address"]
     assert max(abs(cell["q"]), abs(cell["r"]), abs(cell["q"] + cell["r"])) >= 4
+
+
+def test_confirmed_revision_still_reopens_atlas_and_rejects_state_drift(tmp_path):
+    origin = GeometryAddress("default_dream_v1", "default", 0, 0, 0)
+    with CoreRuntime(tmp_path) as core:
+        access = AccessRuntime(core, FileStatementStore(tmp_path), FileHandleStore(tmp_path))
+        access.capture(MemoryStatement("old", "Tokyo was sunny."))
+        handle = access.apply(AccessDecision("old:new", "old", "new", target_cell=origin, reason_text="fixture"))
+
+    with AccessMemoryLoop(tmp_path) as loop:
+        atlas = loop.build_locality_atlas("revision-atlas")
+        value = plan(atlas, action="revision_current")
+        value["existing_handle"] = handle.to_mapping()
+        plans = validate_dream_sculptor_plans("revision-plan", [value], [CAPTURE], atlas)
+        provisional_result = loop.apply_junction_plans(plans, atlas, "revision-provisional")
+        provisional = provisional_result["outcomes"][0]["provisional_revision"]
+        confirmed = {
+            plans[0].statement.statement_id: {
+                "schema_version": "nollm_openclaw_revision_confirmation_v1",
+                "provisional_id": provisional["provisional_id"],
+                "outcome": "confirm_revision",
+                "relation": "same_subject_same_slot_supersedes",
+            }
+        }
+        with CoreRuntime(tmp_path) as core:
+            core.put(MemoryAtom("drift", "drift"), GeometryAddress("default_dream_v1", "default", 0, 1, 0))
+        with pytest.raises(ValueError, match="Atlas changed"):
+            loop.apply_junction_plans(plans, atlas, "revision-confirmed", confirmed)

@@ -97,6 +97,7 @@ class CoreRuntime:
         self._state = "OPEN"
         self._operation_depth = 0
         self._callback_depth = 0
+        self._operation_lease_depth = 0
         self._kernel_registry = KernelRegistry()
         self._owner_key = claim(self._state_path, self)
         self._store = _FileCoreStateStore(self._workspace, self._validate_state_bytes)
@@ -118,8 +119,8 @@ class CoreRuntime:
         with self._lock:
             if self._state == "CLOSED":
                 return
-            if self._operation_depth or self._callback_depth:
-                raise RuntimeError("CoreRuntime cannot close during an active operation or Trace callback")
+            if self._operation_depth or self._callback_depth or self._operation_lease_depth:
+                raise RuntimeError("CoreRuntime cannot close during an active operation, operation lease, or Trace callback")
             release(self._owner_key, self)
             self._state = "CLOSED"
 
@@ -163,6 +164,20 @@ class CoreRuntime:
                 yield
             finally:
                 self._operation_depth -= 1
+
+    @contextmanager
+    def operation_lease(self):
+        """Serialize a trusted multi-call transaction without exposing mutable state."""
+        with self._lock:
+            if self._state != "OPEN":
+                raise RuntimeError("CoreRuntime is closed")
+            if self._operation_depth or self._callback_depth or self._operation_lease_depth:
+                raise RuntimeError("CoreRuntime operation lease cannot reenter")
+            self._operation_lease_depth += 1
+            try:
+                yield
+            finally:
+                self._operation_lease_depth -= 1
 
     def _emit_trace(self, event: CoreTraceEvent) -> None:
         if self._trace_sink is None:

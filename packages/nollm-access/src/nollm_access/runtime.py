@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 
@@ -31,6 +32,7 @@ class AccessRuntime:
         self._composition_lock = composition_lock(access_root, core.state_path)
         self._lifecycle_lock = RLock()
         self._state = "OPEN"
+        self._last_commit_state = "pre_commit"
 
     @property
     def core(self) -> CoreRuntime:
@@ -61,9 +63,15 @@ class AccessRuntime:
         with self._lifecycle_lock:
             return self._state
 
+    @property
+    def last_commit_state(self) -> str:
+        with self._lifecycle_lock:
+            return self._last_commit_state
+
     def close(self) -> None:
         with self._lifecycle_lock:
-            self._state = "CLOSED"
+            if self._state != "FAILED":
+                self._state = "CLOSED"
 
     def __enter__(self) -> "AccessRuntime":
         return self
@@ -75,11 +83,12 @@ class AccessRuntime:
     def _operation(self):
         with self._lifecycle_lock:
             if self._state != "OPEN":
-                raise RuntimeError("AccessRuntime is closed")
-        with self._composition_lock:
-            if not self._core.is_open:
-                raise RuntimeError("AccessRuntime Core is closed")
-            yield
+                raise RuntimeError(f"AccessRuntime is {self._state.lower()}")
+            with self._composition_lock:
+                if not self._core.is_open:
+                    raise RuntimeError("AccessRuntime Core is closed")
+                with self._core.operation_lease():
+                    yield
 
     def capture(self, statement: MemoryStatement) -> None:
         self.put_statement(statement)
@@ -99,6 +108,7 @@ class AccessRuntime:
             return self._apply_locked(decision)
 
     def _apply_locked(self, decision: AccessDecision) -> object | None:
+        self._set_commit_state("pre_commit")
         if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "defer"} and not self._evidence_store.exists(decision.statement_id):
             raise FileNotFoundError("original Evidence is missing")
         if decision.action == "reuse":
@@ -111,8 +121,10 @@ class AccessRuntime:
             except KeyError:
                 existing = None
             if existing is not None and existing.current_statement_id == decision.statement_id:
+                self._set_commit_state("committed")
                 return decision.existing_handle
             self._handle_store.put(decision.statement_id, decision.existing_handle)
+            self._set_commit_state("committed")
             return decision.existing_handle
         if decision.action == "new":
             assert decision.target_cell is not None
@@ -144,10 +156,14 @@ class AccessRuntime:
             )
         if decision.action == "stitch":
             assert decision.bridge_spec is not None
-            return self._core.bridge_add(decision.bridge_spec)
+            result = self._core.bridge_add(decision.bridge_spec)
+            self._set_commit_state("committed")
+            return result
         if decision.action == "unstitch":
             assert decision.bridge_spec is not None
-            return self._core.bridge_remove(decision.bridge_spec.bridge_id)
+            result = self._core.bridge_remove(decision.bridge_spec.bridge_id)
+            self._set_commit_state("committed")
+            return result
         if decision.action == "defer":
             return None
         if decision.action == "forget":
@@ -172,6 +188,8 @@ class AccessRuntime:
                     statement = self._get_statement(statement_id)
                 except FileNotFoundError:
                     items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_missing", item.path))
+                except (ValueError, UnicodeError):
+                    items.append(AccessRecallItem(item.handle, statement_id, None, item.score_q16, "evidence_corrupt", item.path))
                 else:
                     if statement.content_utf8 != item.atom.payload_utf8:
                         items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch", item.path))
@@ -193,22 +211,58 @@ class AccessRuntime:
         binding_before = self._handle_store.state_bytes()
         try:
             result = core_action()
+            self._set_commit_state("commit_state_unknown")
             binding_action(result)
+            self._set_commit_state("committed")
             return result
         except Exception as original:
-            failures = []
+            failures: list[AccessRollbackFailure] = []
             try:
                 self._core.import_state_bytes(core_before)
             except Exception as error:
-                failures.append(error)
+                failures.append(AccessRollbackFailure.from_error("core", error))
             try:
                 self._handle_store.import_state(binding_before)
             except Exception as error:
-                failures.append(error)
+                failures.append(AccessRollbackFailure.from_error("binding", error))
             if failures:
-                raise AccessConsistencyError("fatal consistency failure during trusted Access rollback") from original
+                self._mark_failed("commit_state_unknown")
+                raise AccessConsistencyError(original, tuple(failures)) from original
+            self._set_commit_state("rolled_back_failure")
             raise
+        except BaseException:
+            # Exception subclasses receive rollback. Process-control BaseException
+            # subclasses are conservatively indeterminate and poison this runtime.
+            self._mark_failed("commit_state_unknown")
+            raise
+
+    def _set_commit_state(self, state: str) -> None:
+        with self._lifecycle_lock:
+            self._last_commit_state = state
+
+    def _mark_failed(self, commit_state: str) -> None:
+        with self._lifecycle_lock:
+            self._last_commit_state = commit_state
+            self._state = "FAILED"
 
 
 class AccessConsistencyError(RuntimeError):
-    pass
+    def __init__(self, original_error: Exception, rollback_failures: tuple["AccessRollbackFailure", ...]) -> None:
+        super().__init__("fatal consistency failure during trusted Access rollback")
+        self.original_error = original_error
+        self.rollback_failures = rollback_failures
+        self.commit_state = "commit_state_unknown"
+
+
+@dataclass(frozen=True)
+class AccessRollbackFailure:
+    component: str
+    error_type: str
+    message: str
+
+    @classmethod
+    def from_error(cls, component: str, error: Exception) -> "AccessRollbackFailure":
+        return cls(component, type(error).__name__, str(error))
+
+    def to_mapping(self) -> dict[str, str]:
+        return {"component": self.component, "error_type": self.error_type, "message": self.message}

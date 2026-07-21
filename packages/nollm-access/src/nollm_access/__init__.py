@@ -37,7 +37,7 @@ from .cartography import (
     ProgressiveAtlasPolicy,
     ProgressiveAtlasRegion,
 )
-from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE, RevisionTargetExcludedError
+from .memory_loop import AccessMemoryLoop, DEFAULT_FIELD_SCOPE, DurableReadbackError, RevisionTargetExcludedError
 from .placement_contract import (
     ACTIONS,
     PLACEMENT_ACTION_SEMANTICS,
@@ -50,7 +50,7 @@ from .placement_contract import (
 )
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .recall_lens import DREAM_SCULPTOR_SCHEMA_VERSION, JunctionSemanticPlan, LensBasisSpan, RecallLens, validate_dream_sculptor_plans
-from .runtime import AccessConsistencyError, AccessRuntime
+from .runtime import AccessConsistencyError, AccessRollbackFailure, AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore, StatementStore
 from .surface_selection import (
@@ -102,8 +102,10 @@ __all__ = [
     "ProvisionalRevisionDecision",
     "RevisionConfirmationResult",
     "RevisionTargetExcludedError",
+    "DurableReadbackError",
     "ActiveSurfaceSelection",
     "AccessConsistencyError",
+    "AccessRollbackFailure",
     "EvidenceStore",
     "EvidenceSpan",
     "FileEvidenceStore",

@@ -22,3 +22,29 @@ def test_one_current_and_one_statement_per_binding(tmp_path) -> None:
     assert store.bindings_for_handles((current, missing)) == (binding,)
     access.close()
     core.close()
+
+
+def test_confirmed_revision_retires_current_aliases_but_preserves_statements(tmp_path) -> None:
+    core = CoreRuntime(tmp_path / "core")
+    store = FileBindingStore(tmp_path)
+    evidence = FileEvidenceStore(tmp_path)
+    access = AccessRuntime(core, evidence, store)
+    for statement in (
+        MemoryStatement("current", "version one"),
+        MemoryStatement("alias", "version one"),
+        MemoryStatement("revised", "version two"),
+    ):
+        access.capture(statement)
+    handle = access.apply(AccessDecision("new", "current", "new", target_cell=CELL, reason_text="fixture"))
+    access.apply(AccessDecision("reuse", "alias", "reuse", existing_handle=handle, reason_text="fixture"))
+    revised = access.apply(AccessDecision("revision", "revised", "revision_current", existing_handle=handle, reason_text="fixture"))
+
+    binding = store.binding_for_handle(revised)
+    assert binding.current_statement_id == "revised"
+    assert binding.supporting_statement_ids == ()
+    with pytest.raises(KeyError):
+        store.get("current")
+    with pytest.raises(KeyError):
+        store.get("alias")
+    assert evidence.get("current").content_utf8 == "version one"
+    assert evidence.get("alias").content_utf8 == "version one"

@@ -67,6 +67,7 @@
     "move",
     "occupancy_band",
     "occupied_cells",
+    "operation_lease",
     "placement_count",
     "put",
     "recall",
