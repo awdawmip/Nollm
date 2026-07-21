@@ -54,6 +54,33 @@ def test_negative_coordinates_active_radius_and_budget_are_enforced(tmp_path):
     assert all(max(abs(item.cell.q), abs(item.cell.r), abs(item.cell.q + item.cell.r)) <= 4 for item in result)
 
 
+def test_radius_eight_scores_complete_universe_before_output_limit(tmp_path):
+    primaries = (cell(-8, 0), cell(8, 0))
+    with CoreRuntime(tmp_path) as core:
+        result = core.junction_candidates(request(primaries, max_radius=8, candidate_limit=1))
+
+    assert result[0].cell == cell(0, 0)
+    assert result[0].primary_max_distance == 8
+
+
+def test_complete_universe_ranking_is_independent_of_occupied_input_order():
+    from nollm_core.junction import solve_junction_candidates
+
+    value = request((cell(-8, 0), cell(8, 0)), max_radius=8, candidate_limit=4)
+    occupied = (cell(-8, 0), cell(8, 0), cell(0, 1))
+    forward = solve_junction_candidates(value, occupied)
+    reverse = solve_junction_candidates(value, tuple(reversed(occupied)))
+
+    assert forward == reverse
+
+
+def test_independent_seed_radius_one_keeps_origin_frontier(tmp_path):
+    with CoreRuntime(tmp_path) as core:
+        result = core.junction_candidates(request(max_radius=1, candidate_limit=1))
+
+    assert result[0].cell == cell(0, 0)
+
+
 def test_contract_rejects_semantic_or_noncanonical_inputs():
     assert "statement" not in inspect.signature(JunctionRequest).parameters
     assert "query" not in inspect.signature(JunctionRequest).parameters

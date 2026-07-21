@@ -9,11 +9,11 @@ from .geometry import GeometryAddress
 from .surface import PhysicalFieldScope
 
 
-MAX_INTERNAL_CANDIDATES = 64
 MAX_OUTPUT_CANDIDATES = 8
 MAX_RELATION_GROUPS = 4
 MAX_CELLS_PER_RELATION_GROUP = 4
 MAX_RELATION_GROUP_UNIVERSE = 1024
+ACTIVE_WRITABLE_HEX_RADIUS = (1 << 30) - 1
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class JunctionRequest:
     contact_cells: tuple[GeometryAddress, ...] = ()
     max_radius: int = 4
     candidate_limit: int = 8
-    active_hex_radius: int = 1 << 30
+    active_hex_radius: int = ACTIVE_WRITABLE_HEX_RADIUS
 
     def __post_init__(self) -> None:
         if type(self.scope) is not PhysicalFieldScope:
@@ -76,7 +76,7 @@ class RelationGroupJunctionRequest:
     max_radius: int = 4
     contact_radius: int = 2
     candidate_limit: int = 8
-    active_hex_radius: int = 1 << 30
+    active_hex_radius: int = ACTIVE_WRITABLE_HEX_RADIUS
 
     def __post_init__(self) -> None:
         if type(self.scope) is not PhysicalFieldScope:
@@ -152,8 +152,7 @@ def solve_junction_candidates(
                 if _distance(cell, anchor) > request.max_radius or cell in occupied or not _active(cell, request.active_hex_radius):
                     continue
                 universe.add(cell)
-    ordered_universe = tuple(sorted(universe, key=lambda cell: cell.stable_key()))[:MAX_INTERNAL_CANDIDATES]
-    candidates = tuple(_candidate(request, cell, occupied) for cell in ordered_universe)
+    candidates = tuple(_candidate(request, cell, occupied) for cell in universe)
     ranked = sorted(candidates, key=lambda item: (
         item.primary_max_distance,
         item.contact_max_distance,

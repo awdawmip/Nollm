@@ -95,6 +95,8 @@ class CoreRuntime:
         self._trace_sink = trace_sink
         self._lock = RLock()
         self._state = "OPEN"
+        self._operation_depth = 0
+        self._callback_depth = 0
         self._kernel_registry = KernelRegistry()
         self._owner_key = claim(self._state_path, self)
         self._store = _FileCoreStateStore(self._workspace, self._validate_state_bytes)
@@ -116,6 +118,8 @@ class CoreRuntime:
         with self._lock:
             if self._state == "CLOSED":
                 return
+            if self._operation_depth or self._callback_depth:
+                raise RuntimeError("CoreRuntime cannot close during an active operation or Trace callback")
             release(self._owner_key, self)
             self._state = "CLOSED"
 
@@ -152,15 +156,24 @@ class CoreRuntime:
         with self._lock:
             if self._state != "OPEN":
                 raise RuntimeError("CoreRuntime is closed")
-            yield
+            if self._operation_depth or self._callback_depth:
+                raise RuntimeError("CoreRuntime public operations cannot reenter an active operation or Trace callback")
+            self._operation_depth += 1
+            try:
+                yield
+            finally:
+                self._operation_depth -= 1
 
     def _emit_trace(self, event: CoreTraceEvent) -> None:
         if self._trace_sink is None:
             return
+        self._callback_depth += 1
         try:
             self._trace_sink.emit(event)
         except Exception:
             return
+        finally:
+            self._callback_depth -= 1
 
     def put(self, atom: MemoryAtom, target_cell: GeometryAddress) -> AtomHandle:
         return self.apply_batch((PutCommand(atom, target_cell),))[0]
