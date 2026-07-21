@@ -4,6 +4,8 @@ Purpose: typed hooks, durable visible-turn Capture, recoverable absorption worke
 
 - Persistent state: adapter configuration, immutable raw Capture files, append-only Capture state events, and bounded worker claims; no Core facts.
 - Temporary state: bounded conversation material, hook queues, Dream run correlation, frozen Locality Atlas, Dream Sculptor plans, and recall context.
+- Debug evidence is mutable only at a run-scoped `live/<run_id>/events.jsonl` path. A frozen delivery artifact is never a configured writer path; freezing requires rotation or disabling the writer first.
+- Provider and model identity in runtime evidence comes from the actual Host session envelope. Task reports and summaries must not substitute a configured or expected provider identity.
 - Temporary state includes at most one provisional revision confirmation and one exact-target blacklist for the current Placement operation; neither is persistent.
 - Public API: native OpenClaw hooks/subagent runtime and Access public API. Channel `message_sent` is `AFTER_DELIVERY`; CLI/webchat `agent_end` is `AFTER_TURN`. Default Formation is `deliver=false` and absent from the main agent tool table.
 - Forbidden API: Core private access, memory-provider ownership, direct provider HTTP, Python semantic placement.

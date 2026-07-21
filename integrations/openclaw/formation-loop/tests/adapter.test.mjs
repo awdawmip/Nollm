@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText } from "../dist/index.js";
+import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, assertMutableEvidencePath, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText, writerFormatRepairPrompt, writerFormatRepairable } from "../dist/index.js";
 import { CaptureStore } from "../dist/capture.js";
 
 test("manifest exposes no main-agent Formation tool", () => {
@@ -67,6 +67,23 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);
   assert.equal(manifest.configSchema.properties.placement_surface_max_calls.default, 32);
   assert.equal(JSON.stringify(manifest.configSchema).includes("cursor"), false);
+});
+
+test("debug evidence accepts only matching mutable run path", () => {
+  assert.doesNotThrow(() => assertMutableEvidencePath("C:/repo/validation/live/run-7/events.jsonl", "run-7"));
+  assert.throws(() => assertMutableEvidencePath("C:/repo/validation/frozen/task/evidence.jsonl", "run-7"), /not writable/);
+  assert.throws(() => assertMutableEvidencePath("C:/repo/validation/live/run-8/events.jsonl", "run-7"), /does not match/);
+  assert.throws(() => assertMutableEvidencePath("C:/repo/validation/events.jsonl", "run-7"), /run-scoped/);
+});
+
+test("Writer correction is format-only and semantic validation remains raw retry", () => {
+  const raw = '{"content_utf8":"exact proposition","quote_utf8":"exact span"';
+  const prompt = writerFormatRepairPrompt(raw, "missing closing brace");
+  assert.match(prompt, /formatting only/);
+  assert.match(prompt, /Preserve every semantic string value/);
+  assert.ok(prompt.endsWith(raw));
+  assert.equal(writerFormatRepairable({ ok: false, error: "invalid_json" }), true);
+  assert.equal(writerFormatRepairable({ ok: false, error: "invalid_writer_schema", message: "basis span mismatch" }), false);
 });
 
 test("Surface budgets are fixed structural values with bounded calls", () => {

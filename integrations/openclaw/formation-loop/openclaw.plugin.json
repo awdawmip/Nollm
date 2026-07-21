@@ -47,6 +47,7 @@
       "persist_subagent_transcripts": { "type": "boolean", "const": false, "default": false },
       "debug_trace": { "type": "boolean", "default": false },
       "evidence_path": { "type": "string" },
+      "evidence_run_id": { "type": "string" },
       "latency_validation_enabled": { "type": "boolean", "default": false },
       "latency_evidence_path": { "type": "string" },
       "latency_scenario_id": { "type": "string" },

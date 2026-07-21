@@ -29,7 +29,7 @@ export type DreamConfig = {
   model_mode?: "inherit" | "dedicated"; model?: string; allowed_models?: string[];
   prompt_version?: string; timeout_ms?: number; max_material_chars?: number;
   max_statements?: number; max_statement_chars?: number; max_total_chars?: number;
-  persist_subagent_transcripts?: boolean; debug_trace?: boolean; evidence_path?: string;
+  persist_subagent_transcripts?: boolean; debug_trace?: boolean; evidence_path?: string; evidence_run_id?: string;
   latency_validation_enabled?: boolean; latency_evidence_path?: string; latency_scenario_id?: string; latency_validation_run_id?: string;
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
   capture_single_user_mode?: true;
@@ -72,7 +72,7 @@ const JSON_SCHEMA = {
     timeout_ms: { type: "integer", minimum: 1000, default: 120000 }, max_material_chars: { type: "integer", minimum: 1, default: 12000 },
     max_statements: { type: "integer", minimum: 1, default: 8 }, max_statement_chars: { type: "integer", minimum: 1, default: 4096 },
     max_total_chars: { type: "integer", minimum: 1, default: 8192 }, persist_subagent_transcripts: { type: "boolean", const: false, default: false },
-    debug_trace: { type: "boolean", default: false }, evidence_path: { type: "string" },
+    debug_trace: { type: "boolean", default: false }, evidence_path: { type: "string" }, evidence_run_id: { type: "string" },
     latency_validation_enabled: { type: "boolean", default: false }, latency_evidence_path: { type: "string" },
     latency_scenario_id: { type: "string" }, latency_validation_run_id: { type: "string" },
     capture_enabled: { type: "boolean", default: true }, capture_workspace: { type: "string" }, capture_scope_id: { type: "string", default: "local-default-user" },
@@ -266,12 +266,36 @@ export function batchAbsorptionModel(
 
 async function trace(config: DreamConfig, value: object): Promise<void> {
   if (!config.debug_trace || !config.evidence_path) return;
+  assertMutableEvidencePath(config.evidence_path, config.evidence_run_id);
   await mkdir(dirname(config.evidence_path), { recursive: true });
   await appendFile(config.evidence_path, `${JSON.stringify(value)}\n`, "utf8");
 }
 
+export function assertMutableEvidencePath(path: string, runId?: string): void {
+  if (typeof path !== "string" || !path) throw new Error("debug evidence_path is required");
+  const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
+  const lowered = parts.map(part => part.toLowerCase());
+  if (lowered.includes("frozen")) throw new Error("frozen evidence artifacts are not writable");
+  const liveIndex = lowered.lastIndexOf("live");
+  if (liveIndex < 0 || liveIndex + 2 !== parts.length - 1 || lowered.at(-1) !== "events.jsonl") {
+    throw new Error("debug evidence_path must be run-scoped as live/<run_id>/events.jsonl");
+  }
+  if (!parts[liveIndex + 1] || (runId !== undefined && parts[liveIndex + 1] !== runId)) {
+    throw new Error("evidence_run_id does not match evidence_path");
+  }
+}
+
+export function writerFormatRepairPrompt(raw: string, error: string): string {
+  return `You repair JSON syntax and envelope formatting only. Return exactly one raw JSON object with no markdown. Preserve every semantic string value from the prior output byte-for-byte, including content_utf8, future_query, quote_utf8, IDs, and reason text. Do not add, remove, split, merge, summarize, or rewrite any proposition. If exact preservation is impossible, return the prior bytes unchanged.\nValidation error: ${error}\nPrior output:\n${raw}`;
+}
+
+export function writerFormatRepairable(parsed: Record<string, unknown>): boolean {
+  return parsed.ok !== true && String(parsed.error ?? "") === "invalid_json";
+}
+
 export function registerDreamAgent(api: OpenClawPluginApi): void {
   const config = (api.pluginConfig ?? {}) as DreamConfig;
+  if (config.debug_trace) assertMutableEvidencePath(config.evidence_path ?? "", config.evidence_run_id);
   const configuredMemoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
   const captureRoot = config.capture_workspace ?? (configuredMemoryWorkspace ? join(configuredMemoryWorkspace, "openclaw-capture-spool") : undefined);
   const captureStore = config.capture_enabled === false || !captureRoot ? undefined : new CaptureStore(captureRoot);
@@ -443,9 +467,12 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (writer.ok !== true) {
       await trace(config, { status: "correction_required", stage: "proposition_writer_validation", batch_id: batchId, ...outputEvidence(writerAttempt.raw), ...writer });
       const validationError = String(writer.message ?? writer.error ?? "Proposition Writer validation failed");
+      if (!writerFormatRepairable(writer)) {
+        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer semantic validation failed: ${validationError}` }));
+      }
       const correction = await runDreamSubagentDetailed(
         api, config,
-        `${writerBuilt.prompt}\nYour previous response was rejected without writes: ${validationError}. Return one corrected raw JSON object with no markdown or outer text.`,
+        writerFormatRepairPrompt(writerAttempt.raw, validationError),
         model, `${providerKey}:writer-correction`,
       );
       writerProviderCalls += 1;
@@ -474,6 +501,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     const cartographerSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
     const cartographerRaw: string[] = [];
+    const cartographerResolved: Record<string, string>[] = [];
     let cartographerProviderMs = 0;
     let cartographerTurns = 0;
     let cartographerError: string | undefined;
@@ -487,6 +515,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         cartographerProviderMs += run.attempt?.providerMs ?? 0;
         if (!run.attempt?.raw) { cartographerError = run.error ?? "empty response"; break; }
         cartographerRaw.push(run.attempt.raw);
+        cartographerResolved.push(run.attempt.resolved);
         cartography = await bridge(config, {
           action: "advance_field_cartographer", request_id: requestId,
           raw_model_response: run.attempt.raw, writer_result: writer,
@@ -546,7 +575,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       cartographer_sessions: 1, cartographer_turns: cartographerTurns,
       cartographer_provider_ms: cartographerProviderMs, common_one_writer_call: writerProviderCalls === 1,
       atlas_fingerprint: cartography.atlas_fingerprint, writer_raw: outputEvidence(writerAttempt.raw),
-      cartographer_raw: cartographerRaw.map(outputEvidence), validated_plans: applied.plans, durable_outcomes: outcomes,
+      writer_resolved: writerAttempt.resolved, cartographer_raw: cartographerRaw.map(outputEvidence),
+      cartographer_resolved: cartographerResolved, validated_plans: applied.plans, durable_outcomes: outcomes,
     });
     return records.map(record => {
       const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
