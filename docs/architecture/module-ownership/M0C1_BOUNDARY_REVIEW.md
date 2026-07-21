@@ -2,6 +2,11 @@
 
 Date: 2026-07-11
 
+Status: `HISTORICAL / SUPERSEDED`. This document preserves the M0-to-M1 debt
+record. The active boundary truth is `M1_BOUNDARY_CLOSURE.md` plus the generated
+`MODULE_OWNERSHIP_MANIFEST.json`, which require zero production violations and
+zero production cycles.
+
 ## Why the M0 Baseline Was Rejected
 
 The M0 baseline contained 642 undifferentiated findings and one owner cycle.

@@ -5,16 +5,16 @@ import sys
 from pathlib import Path
 
 REQUIRED = {
-    "AGENTS.md": ("Reuse before rebuild", 2000),
+    "AGENTS.md": ("CAOLD Runtime Integrity And Atomic Growth", 2000),
     "docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md": ("数学真值、历史资产复用", 8000),
-    "docs/project/ACTIVE_PROJECT.md": ("IN_PROGRESS", 1000),
-    "docs/project/NOLLM_CURRENT_STATUS.md": ("translation-covariant", 1000),
-    "docs/project/NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md": ("CORE +10%", 1000),
-    "docs/architecture/NOLLM_ARCHITECTURE_BOOK_V3_8_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_20260714.md": ("平移协变", 5000),
-    "docs/project/NOLLM_ROUTE_BOOK_V3_8_TRANSLATION_COVARIANT_COVERAGE_REUSE_20260714.md": ("历史数学资产复用", 4000),
-    "docs/project/tasks/NOLLM_C_A_O_L_D_TRANSLATION_COVARIANT_PHYSICAL_COVERAGE_REUSE_TASK_20260714.md": ("任务推进向量", 8000),
-    "docs/validation/NOLLM_REUSABLE_GEOMETRY_ASSET_INVENTORY_20260714.md": ("REUSE_AS_ORACLE", 3000),
-    "docs/validation/NOLLM_INDEPENDENT_GEOMETRY_ORACLE_CONTRACT_20260714.md": ("Oracle A", 2500),
+    "docs/project/ACTIVE_PROJECT.md": ("CAOLD_RUNTIME_INTEGRITY_ATOMIC_GROWTH_IN_PROGRESS", 1000),
+    "docs/project/NOLLM_CURRENT_STATUS.md": ("one-cell counterexample", 1000),
+    "docs/project/NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md": ("CORE +5%", 2000),
+    "docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV3_PROMPT_BOUNDED_LENS_CARTOGRAPHY_RELATION_ENTRY_RECALL_20260718.md": ("Prompt-bounded", 5000),
+    "docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md": ("V3.9", 4000),
+    "docs/project/tasks/NOLLM_C_A_O_L_D_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_EVIDENCE_CLOSURE_TASK_20260721.md": ("Gate D", 8000),
+    "docs/project/CAOLD_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_REPORT.md": ("Recall Counterexample", 3000),
+    "EVIDENCE.md": ("Active Evidence", 500),
 }
 
 FORBIDDEN_PRODUCTION_TOKENS = (
@@ -54,7 +54,7 @@ def main() -> int:
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
-    print("V3.8 authority and no-shortcut checks passed.")
+    print("Current authority and no-shortcut checks passed.")
     return 0
 
 if __name__ == "__main__":

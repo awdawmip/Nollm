@@ -83,4 +83,4 @@ def test_rev3_distribution_manifest_declares_active_bounded_wires() -> None:
     assert manifest["cartographerMaxRegions"] == 32
     assert manifest["cartographerMaxPromptBytes"] == 65536
     assert manifest["cartographerMaxTurns"] == 4
-    assert manifest["evidenceFilenameContract"] == "aold_prompt_bounded_cartography_relation_recall_20260718"
+    assert manifest["evidenceFilenameContract"] == "run_scoped_live_then_immutable_freeze_v1"

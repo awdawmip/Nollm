@@ -1,12 +1,27 @@
-# Nollm V3.11 Recall Lens Junction Growth Rules
+# Nollm CAOLD Runtime Integrity And Atomic Growth Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_20260717.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV3_PROMPT_BOUNDED_LENS_CARTOGRAPHY_RELATION_ENTRY_RECALL_20260718.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_LLM_COMPILED_RECALL_LENS_JUNCTION_GROWTH_TASK_20260717.md`.
-- `4f8b1c479a2634d3c1b6ae8039116154864275aa` is the input checkpoint. Preserve its Capture spool, calibrated Coverage, legal traversal, V1-V6 workspaces, Statements, Handles, Core state, and frozen evidence.
+- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_EVIDENCE_CLOSURE_TASK_20260721.md`.
+- `db2b5b0c25d8d527a249de90c6555aeaf686f618` is the immutable input checkpoint. It is a Prompt-bounded relation-entry causal checkpoint, not a completed growth or reliability baseline.
+
+## Current closure contract
+
+- One MemoryStatement maps to one Atom, one Handle, and one Cell.
+- One Capture or chat turn may produce zero, one, or multiple independent MemoryStatements.
+- Multiple Statements from one Capture do not authorize multi-cell footprints.
+- Trace sinks are observational only; reentrant Core mutation, import, or close during an operation must not commit.
+- Public Junction candidate limits may not discard candidates before scoring.
+- Access fatal rollback preserves structured diagnostics and poisons the affected runtime.
+- Readback failure after commit is an indeterminate commit state, not a pre-commit failure.
+- Corrupt Statement data is an item-level Recall error unless canonical state itself is unreadable.
+- Live Evidence uses a run-scoped mutable path; freeze publishes immutable exact bytes only after the writer rotates or is disabled.
+- Machine-detected facts and operator attestations are separate evidence fields.
+- Atomic Tokyo/time/weather/unrelated growth remains IN_PROGRESS because the Provider run did not realize three relation-entry paths to T0.
+- Do not add multi-cell, multi-entry Recall, Topic/Entity, vector, graph, embedding, or query/fact indexes in this task.
 
 ## V3.11 operation contract
 

@@ -5,6 +5,7 @@ from hashlib import sha256
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from uuid import uuid4
@@ -51,16 +52,31 @@ def _powershell_json(script: str) -> object:
     return [] if not output else json.loads(output)
 
 
+def _is_gateway_process(process: object) -> bool:
+    if type(process) is not dict:
+        return False
+    name = process.get("Name")
+    command_line = process.get("CommandLine")
+    if type(name) is not str or name.lower() != "node.exe" or type(command_line) is not str:
+        return False
+    return re.search(
+        r"(?i)(?:openclaw(?:\.mjs)?|openclaw[\\/]dist[\\/]index\.js)\"?\s+gateway(?:\s|$)",
+        command_line,
+    ) is not None
+
+
 def windows_gateway_probe(port: int) -> dict[str, object]:
     listeners = _powershell_json(
         f"@(Get-NetTCPConnection -State Listen -LocalPort {port} -ErrorAction SilentlyContinue | "
         "Select-Object LocalAddress,LocalPort,OwningProcess) | ConvertTo-Json -Compress"
     )
-    processes = _powershell_json(
+    process_probe = _powershell_json(
         "@(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | "
-        "Where-Object { $_.CommandLine -match 'openclaw' -and $_.CommandLine -match 'gateway' } | "
+        "Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine } | "
         "Select-Object ProcessId,Name,CommandLine) | ConvertTo-Json -Compress"
     )
+    candidates = process_probe if type(process_probe) is list else [process_probe]
+    processes = [process for process in candidates if _is_gateway_process(process)]
     return {"backend": "windows_powershell_process_api", "port": port, "listeners": listeners, "gateway_processes": processes}
 
 

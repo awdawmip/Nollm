@@ -20,7 +20,7 @@
   "cartographerMaxRegions": 32,
   "cartographerMaxPromptBytes": 65536,
   "cartographerMaxTurns": 4,
-  "evidenceFilenameContract": "aold_prompt_bounded_cartography_relation_recall_20260718",
+  "evidenceFilenameContract": "run_scoped_live_then_immutable_freeze_v1",
   "writePhysicalLayer": 0,
   "dreamAgent": {
     "enabled": true,

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "active_runtime": "m1-package-api",
-  "forbidden_runtime": ["reference/python/nollm/grf", "integrations/openclaw"],
+  "active_runtime": "m1-package-api-with-openclaw-adapter",
+  "forbidden_runtime": ["reference/python/nollm/grf"],
   "correctness_invariants": [
     "Core correctness is unchanged when Trace is disabled.",
     "Core correctness is unchanged when Audit is absent.",
@@ -33,7 +33,7 @@
     "nollm-openclaw": {
       "runtime": ["nollm-core", "nollm-snapshot", "nollm-access"],
       "migration": ["nollm-openclaw-adapter"],
-      "live_activation": "paused",
+      "live_activation": "invisible-dream-agent",
       "development": []
     }
   }

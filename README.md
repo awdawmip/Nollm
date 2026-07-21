@@ -47,16 +47,12 @@ inputs. GRF8 is an engineering checkpoint, not accepted architecture.
 
 ## Validation
 
-The repository-wide diagnostic remains:
+The bounded complete repository matrix is run from a clean committed source:
 
 ```powershell
-$env:PYTHONDONTWRITEBYTECODE = "1"
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = "1"
-python run_tests.py
+.\tools\run_nollm_test_matrix.ps1 -RepoRoot (Get-Location).Path
 ```
 
-The command runs with `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`. It is a
-legacy-inclusive repository diagnostic and not the primary V2 component acceptance gate.
-Historical delivery acceptance used the TQ1 matrix and a parentless evidence capsule;
-those terms do not define the M1 gate. M1 acceptance uses independent package
-tests, boundary checks, GRF migration regression, and the explicit minimal E2E.
+Package, OpenClaw, Lab, boundary, and ownership checks may be run directly while
+developing. `reference/python/run_tests.py` is a historical legacy-inclusive
+diagnostic, not the active acceptance entrypoint.

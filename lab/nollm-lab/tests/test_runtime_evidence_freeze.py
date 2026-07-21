@@ -52,3 +52,23 @@ def test_frozen_target_can_never_be_active_writer(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "windows_gateway_probe", lambda port: {})
     with pytest.raises(RuntimeError, match="configured as a writer"):
         module.freeze_evidence(live, frozen, config, stability_seconds=0)
+
+
+def test_gateway_process_detection_excludes_freeze_and_probe_commands():
+    module = load_module()
+    assert module._is_gateway_process({
+        "Name": "node.exe",
+        "CommandLine": '"C:\\Program Files\\nodejs\\node.exe" C:\\tools\\openclaw\\dist\\index.js gateway --port 18789',
+    })
+    assert not module._is_gateway_process({
+        "Name": "python.exe",
+        "CommandLine": "python freeze_live_evidence.py --plugin-config openclaw.json --gateway-port 18789",
+    })
+    assert not module._is_gateway_process({
+        "Name": "pwsh.exe",
+        "CommandLine": "pwsh -Command openclaw gateway status",
+    })
+    assert not module._is_gateway_process({
+        "Name": "node.exe",
+        "CommandLine": "node helper.js --gateway-port 18789 --plugin openclaw",
+    })

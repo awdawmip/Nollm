@@ -8,8 +8,12 @@ Distributions assemble package public APIs and contain no runtime logic.
 | `nollm-minimal` | Core, Snapshot, Access | Active minimal Evidence-to-Recall path |
 | `nollm-debug` | Minimal plus Trace | Active; TraceInspector, geometry generator, and capability validator are selected development tools |
 | `nollm-audited` | Minimal, Trace, Audit skeleton | Composition only; Audit is not productized |
-| `nollm-openclaw` | Minimal plus adapter migration asset | Live activation paused pending future E2E |
+| `nollm-openclaw` | Minimal plus active Access-only adapter | Invisible dream agent installed and enabled; atomic three-arm growth remains IN_PROGRESS |
 
 No active distribution references `reference/python/nollm/grf` or uses
 `GRFFacade` as its runtime entrypoint. Trace and Audit do not alter Core
 correctness.
+
+The OpenClaw adapter is an active Windows Host integration, not a Core runtime
+dependency. Its mutable Evidence path is run-scoped and disabled or rotated
+before an immutable frozen artifact is published.

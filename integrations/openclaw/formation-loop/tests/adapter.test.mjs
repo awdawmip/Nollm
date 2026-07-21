@@ -51,7 +51,7 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.contracts.cartographerMaxPromptBytes, 65536);
   assert.equal(manifest.contracts.cartographerMaxTurns, 4);
   assert.equal(manifest.contracts.recallAtlasComplete, true);
-  assert.equal(manifest.contracts.evidenceFilenameContract, "aold_prompt_bounded_cartography_relation_recall_20260718");
+  assert.equal(manifest.contracts.evidenceFilenameContract, "run_scoped_live_then_immutable_freeze_v1");
   assert.equal(manifest.contracts.atlasCoverageRequired, true);
   assert.equal(manifest.contracts.junctionRealizedOnly, true);
   assert.equal(manifest.contracts.dreamSculptorCommonProviderCalls, 1);
