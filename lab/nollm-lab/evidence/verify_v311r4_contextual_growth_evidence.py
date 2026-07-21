@@ -37,6 +37,10 @@ def verify_payloads(evidence_bytes: bytes, summary_bytes: bytes) -> dict[str, ob
             record.get("schema_version") == "nollm_v311r4_contextual_live_validation_v1"
             and summary.get("schema_version") == "nollm_v311r4_contextual_live_summary_v1"
         ),
+        "completion_bound": (
+            summary.get("validated_revision") == "75383c6f3cc0358d8dcc430cd09c02252edb947b"
+            and summary.get("completion_status") == "CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED"
+        ),
         "evidence_hash_bound": summary.get("evidence_sha256") == sha256(evidence_bytes).hexdigest(),
         "evidence_size_bound": summary.get("evidence_utf8_bytes") == len(evidence_bytes),
         "checks_identical": summary.get("checks") == record.get("checks"),

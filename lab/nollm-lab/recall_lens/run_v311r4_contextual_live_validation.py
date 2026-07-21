@@ -36,6 +36,12 @@ def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def _git_head() -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True,
+    ).stdout.strip()
+
+
 def _cell_key(value: dict[str, object]) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
@@ -324,6 +330,8 @@ def validate(workspace: Path, host_trace: Path, openclaw: Path, evidence: Path, 
     evidence.write_bytes(encoded)
     summary = {
         "schema_version": "nollm_v311r4_contextual_live_summary_v1",
+        "validated_revision": _git_head(),
+        "completion_status": "CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED",
         "provider": "meituan/LongCat-2.0",
         "capture_count": len(captures),
         "statement_count": len(statement_ids),

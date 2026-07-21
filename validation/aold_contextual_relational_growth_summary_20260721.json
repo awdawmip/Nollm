@@ -24,6 +24,7 @@
     "unrelated_not_reached": true,
     "wrong_date_zero": true
   },
+  "completion_status": "CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED",
   "distinct_product_entry_count": 3,
   "evidence_line_count": 1,
   "evidence_sha256": "ad8996661707f21c3d461b1d99add55a66a447267edfe3d098be78dd1e767c06",
@@ -42,5 +43,6 @@
     "lateral"
   ],
   "unrelated_false_reach_count": 0,
+  "validated_revision": "75383c6f3cc0358d8dcc430cd09c02252edb947b",
   "wrong_date_count": 0
 }

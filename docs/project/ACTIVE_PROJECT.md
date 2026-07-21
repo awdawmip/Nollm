@@ -12,11 +12,12 @@
 Current state:
 
 ```text
-AOLD_CONTEXTUAL_RELATIONAL_GROWTH_IN_PROGRESS_AT_cda2952
+CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED_AT_75383c6f3cc0358d8dcc430cd09c02252edb947b
 ```
 
 The c40f8bf reliability closure remains preserved, but its one-cell conclusion
-is withdrawn because region-local entry IDs collided in fast Recall. Rev4 is
-actively validating operation-unique entries, bounded narrative context,
-Direct/Entry queries, and shared-retrieval field growth. Core, multi-cell, and
+is withdrawn because region-local entry IDs collided in fast Recall. Rev4 has
+validated operation-unique entries, bounded narrative context, Direct/Entry
+queries, nine-fact relational growth, three distinct Reader entries, causal
+target-hidden Recall, restart/NONE, and read zero-write. Core, multi-cell, and
 multi-entry Recall changes remain unauthorized.
