@@ -166,3 +166,69 @@ test("a live worker lock fails closed without deleting another owner lock", () =
   assert.equal(await readFile(lock, "utf8"), "owner");
   await unlink(lock);
 }));
+
+test("stale processing recovery preserves batch identity", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const { record } = await store.publish(input());
+  await store.appendEvent(record.capture_id, "processing", { attempt: 2, batchId: "batch-original", eventEpochMs: 1000 });
+  let observedBatch;
+  const worker = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 100 }, async batchId => {
+    observedBatch = batchId;
+    return [{ captureId: record.capture_id, status: "admitted", statementIds: ["dream:stable"] }];
+  });
+  const result = await worker.runOnce(2000);
+  assert.equal(result.batchId, "batch-original");
+  assert.equal(observedBatch, "batch-original");
+  assert.equal((await store.currentState(record.capture_id)).status, "admitted");
+}));
+
+test("terminal state interruption resumes only unfinished capture without duplicate admission", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const one = await store.publish(input());
+  const two = await store.publish(input({ turnIdentity: "run-2", userUtf8: "second" }));
+  const admitted = new Set();
+  let absorptionCalls = 0;
+  const absorb = async (_batchId, records) => {
+    absorptionCalls += 1;
+    return records.map(record => {
+      admitted.add(record.capture_id);
+      return { captureId: record.capture_id, status: "admitted", statementIds: [`dream:${record.capture_id}`] };
+    });
+  };
+  const originalAppend = store.appendEvent.bind(store);
+  let interrupted = false;
+  store.appendEvent = async (captureId, status, options) => {
+    if (!interrupted && captureId === two.record.capture_id && status === "admitted") {
+      interrupted = true;
+      throw new Error("process stopped before terminal state write");
+    }
+    return originalAppend(captureId, status, options);
+  };
+  const first = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, absorb);
+  await assert.rejects(first.runOnce(2000), /terminal state write/);
+  const originalBatch = (await store.currentState(two.record.capture_id)).batch_id;
+  store.appendEvent = originalAppend;
+  const restarted = new AbsorptionWorker(store, { batchMaxCaptures: 4, batchMaxChars: 1000, staleClaimMs: 100 }, absorb);
+  const resumed = await restarted.runOnce(3000);
+  assert.equal(resumed.batchId, originalBatch);
+  assert.equal(resumed.captureCount, 1);
+  assert.equal((await store.currentState(one.record.capture_id)).status, "admitted");
+  assert.equal((await store.currentState(two.record.capture_id)).status, "admitted");
+  assert.equal(admitted.size, 2);
+  assert.equal(absorptionCalls, 2);
+}));
+
+test("diagnose reports retry deadline oldest backlog and stale processing", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const retry = await store.publish(input({ capturedEpochMs: 1000 }));
+  const processing = await store.publish(input({ turnIdentity: "run-2", capturedEpochMs: 1500 }));
+  await store.appendEvent(retry.record.capture_id, "retry", { attempt: 2, batchId: "batch", eventEpochMs: 3000, error: "temporary" });
+  await store.appendEvent(processing.record.capture_id, "processing", { attempt: 1, batchId: "batch-2", eventEpochMs: 2000 });
+  const diagnostic = await store.diagnose(5000, 1000, 2000);
+  assert.equal(diagnostic.pending_capture_count, 2);
+  assert.equal(diagnostic.oldest_pending_age_ms, 4000);
+  assert.equal(diagnostic.next_retry_epoch_ms, 5000);
+  assert.equal(diagnostic.stale_processing_count, 1);
+  assert.equal(diagnostic.state_counts.retry, 1);
+  assert.equal(diagnostic.state_counts.processing, 1);
+}));

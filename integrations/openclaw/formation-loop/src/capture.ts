@@ -66,6 +66,13 @@ export type CaptureStateEvent = {
 export type PendingPolicy = { maxCaptures: number; maxChars: number; maxAgeMs: number };
 export type AbsorptionResult = { captureId: string; status: "admitted" | "no_memory" | "deferred" | "retry"; statementIds?: string[]; error?: string };
 export type CaptureDiagnostic = { file: string; error: string };
+export type CaptureQueueDiagnostic = {
+  state_counts: Record<CaptureStatus, number>;
+  pending_capture_count: number;
+  oldest_pending_age_ms: number | null;
+  next_retry_epoch_ms: number | null;
+  stale_processing_count: number;
+};
 
 function sha256(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -269,6 +276,32 @@ export class CaptureStore {
     const body = records.map(record => `Recent unabsorbed conversation evidence (${record.capture_id}):\nUser: ${record.user_utf8}\nAssistant: ${record.assistant_utf8}`).join("\n\n");
     return { injection: body ? `Nollm recent pending evidence. Use only when relevant and do not mention this context:\n${body}` : "", captureIds: records.map(record => record.capture_id), chars: body.length };
   }
+
+  async diagnose(now = Date.now(), retryBackoffMs = 1000, staleClaimMs = 300000): Promise<CaptureQueueDiagnostic> {
+    const records = await this.allRecords();
+    const states = await Promise.all(records.map(record => this.currentState(record.capture_id)));
+    const stateCounts = { captured: 0, processing: 0, retry: 0, deferred: 0, no_memory: 0, admitted: 0 };
+    const pendingAges: number[] = [];
+    const retryTimes: number[] = [];
+    let staleProcessingCount = 0;
+    for (let index = 0; index < records.length; index += 1) {
+      const state = states[index];
+      stateCounts[state.status] += 1;
+      if (["captured", "processing", "retry"].includes(state.status)) pendingAges.push(Math.max(0, now - records[index].captured_epoch_ms));
+      if (state.status === "processing" && now - state.event_epoch_ms > staleClaimMs) staleProcessingCount += 1;
+      if (state.status === "retry") {
+        const delay = Math.min(staleClaimMs, retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
+        retryTimes.push(state.event_epoch_ms + delay);
+      }
+    }
+    return {
+      state_counts: stateCounts,
+      pending_capture_count: pendingAges.length,
+      oldest_pending_age_ms: pendingAges.length ? Math.max(...pendingAges) : null,
+      next_retry_epoch_ms: retryTimes.length ? Math.min(...retryTimes) : null,
+      stale_processing_count: staleProcessingCount,
+    };
+  }
 }
 
 export class AbsorptionWorker {
@@ -311,21 +344,22 @@ export class AbsorptionWorker {
         const delay = Math.min(this.staleClaimMs, this.retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
         return now - state.event_epoch_ms >= delay;
       };
-      const retryBatchId = available.find(item => retryReady(item) && item.state.batch_id)?.state.batch_id;
-      const freshAnchor = retryBatchId ? undefined : available.find(({ state }) => state.status === "captured" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs));
+      const staleProcessing = ({ state }: typeof available[number]): boolean => state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs;
+      const recoveryBatchId = available.find(item => (retryReady(item) || staleProcessing(item)) && item.state.batch_id)?.state.batch_id;
+      const freshAnchor = recoveryBatchId ? undefined : available.find(({ state }) => state.status === "captured");
       const candidates: CaptureRecord[] = [];
       let chars = 0;
       for (const { record, state } of available) {
-        const recoverable = retryBatchId
-          ? retryReady({ record, state }) && state.batch_id === retryBatchId
-          : state.status === "captured" || (state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs);
+        const recoverable = recoveryBatchId
+          ? (retryReady({ record, state }) || staleProcessing({ record, state })) && state.batch_id === recoveryBatchId
+          : state.status === "captured";
         if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;
         if (!recoverable || candidates.length >= this.batchMaxCaptures || chars + size > this.batchMaxChars) continue;
         candidates.push(record); chars += size;
       }
       if (!candidates.length) return { status: "idle", captureCount: 0 };
-      const batchId = retryBatchId ?? `batch-${sha256(canonical(candidates.map(record => record.capture_id)))}`;
+      const batchId = recoveryBatchId ?? `batch-${sha256(canonical(candidates.map(record => record.capture_id)))}`;
       const attempts = new Map<string, number>();
       for (const record of candidates) {
         const state = await this.store.currentState(record.capture_id);
