@@ -1,21 +1,22 @@
 # Active Project Basis
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
-- Active architecture: [V3.11 Rev3 Prompt-Bounded Lens Cartography Relation-Entry Recall](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV3_PROMPT_BOUNDED_LENS_CARTOGRAPHY_RELATION_ENTRY_RECALL_20260718.md)
+- Active architecture: [V3.11 Rev4 Contextual Proposition and Shared Retrieval Entry Identity](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV4_CONTEXTUAL_PROPOSITION_SHARED_RETRIEVAL_ENTRY_IDENTITY_20260721.md)
 - Active route: `NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`
-- Current task: [Runtime Integrity, Atomic Proposition Growth, and Evidence Closure](tasks/NOLLM_C_A_O_L_D_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_EVIDENCE_CLOSURE_TASK_20260721.md)
+- Current task: [Recall Entry Identity, Contextual Writer, and Relational Growth](tasks/NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md)
 - Current status: [NOLLM_CURRENT_STATUS.md](NOLLM_CURRENT_STATUS.md)
 - Canonical ledger: [NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current report: [CAOLD Runtime Integrity And Atomic Proposition Growth Report](CAOLD_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_REPORT.md)
-- Input checkpoint: `db2b5b0c25d8d527a249de90c6555aeaf686f618`
+- Current report: [AOLD Contextual Writer Relational Growth Report](AOLD_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_REPORT.md)
+- Input checkpoint: `c40f8bf6a5be6184e5e56236c96d2817fed4bee5`
 
 Current state:
 
 ```text
-CAOLD_RUNTIME_INTEGRITY_ATOMIC_GROWTH_IN_PROGRESS_AT_<HEAD>
+AOLD_CONTEXTUAL_RELATIONAL_GROWTH_IN_PROGRESS_AT_cda2952
 ```
 
-Core, Access, worker recovery, Provider identity, and Evidence lifecycle
-reliability closure passed. The real nine-Capture Provider run formed one
-related edge and eight independent seeds; six single-entry Recalls produced no
-non-empty path to T0. Multi-cell and multi-entry Recall remain unauthorized.
+The c40f8bf reliability closure remains preserved, but its one-cell conclusion
+is withdrawn because region-local entry IDs collided in fast Recall. Rev4 is
+actively validating operation-unique entries, bounded narrative context,
+Direct/Entry queries, and shared-retrieval field growth. Core, multi-cell, and
+multi-entry Recall changes remain unauthorized.

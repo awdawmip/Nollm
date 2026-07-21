@@ -2,7 +2,7 @@
 
 Date: 2026-07-21
 
-Status: `CAOLD_RUNTIME_INTEGRITY_ATOMIC_GROWTH_IN_PROGRESS_AT_<HEAD>`
+Status: `RUNTIME_INTEGRITY_AND_RELATION_ENTRY_COLLISION_CHECKPOINT_AT_c40f8bf6a5be6184e5e56236c96d2817fed4bee5`
 
 ## Scope And Baseline
 
@@ -81,7 +81,10 @@ Cell. Visible answers were not used as geometry evidence. The required three
 distinct relation entries with path length at least 2 to the same T0 Handle
 were not realized.
 
-This is a truthful one-cell Provider counterexample. Gate D is `IN_PROGRESS`.
+Rev4 reclassifies this as an entry-identity collision checkpoint, not a
+one-cell Provider counterexample. Region-local support entry IDs were silently
+overwritten by fast Recall before the Provider selected an entry. Gate D
+remains historical `IN_PROGRESS` evidence and does not authorize multi-cell.
 It does not authorize multi-cell or any DX-style repair inside this task.
 
 ## Evidence Lifecycle

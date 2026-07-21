@@ -4,11 +4,11 @@ Date: 2026-07-21
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_C_A_O_L_D_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_EVIDENCE_CLOSURE_TASK_20260721.md
-status: CAOLD_RUNTIME_INTEGRITY_ATOMIC_GROWTH_IN_PROGRESS_AT_<HEAD>
-input HEAD: db2b5b0c25d8d527a249de90c6555aeaf686f618
-evidence: validation/caold_runtime_integrity_atomic_growth_20260721.jsonl
-summary: validation/caold_runtime_integrity_atomic_growth_summary_20260721.json
+task: NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md
+status: AOLD_CONTEXTUAL_RELATIONAL_GROWTH_IN_PROGRESS_AT_cda2952
+input HEAD: c40f8bf6a5be6184e5e56236c96d2817fed4bee5
+evidence: validation/aold_contextual_relational_growth_20260721.jsonl
+summary: validation/aold_contextual_relational_growth_summary_20260721.json
 ```
 
 Active truth:
@@ -18,10 +18,13 @@ Active truth:
 - Capture state is append-only and recoverable; the real run demonstrated one structured Cartographer retry converging on the same Capture ID.
 - Live Evidence is run-scoped. The writer was disabled before exact-byte freeze; machine probes reported no listener and no Gateway process before or after freeze.
 - Nine ordinary atomic chats produced nine Captures, nine Statements, nine one-Cell Handles, and nine reopen-verified durable commits with `meituan/LongCat-2.0`.
-- Placement produced one `related_growth` and eight `independent_seed` outcomes.
-- Six single-entry Recalls selected only one distinct entry, returned zero non-empty paths, and never reached T0; one NONE outcome was correct and restart preserved the 9/9 durable state.
+- The c40f8bf live Recall result is reclassified as an entry-identity collision checkpoint: region-local `progressive-entry:0` IDs were overwritten by a single-key Reader dictionary.
+- Rev4 now derives entry IDs from Atlas fingerprint, region identity, and GeometryAddress; duplicate selectable identities fail closed.
+- Writer v2 receives at most four preceding same-session Captures and 6000 context characters, separately from absorption sources.
+- Writer provenance validates exact spans and rejects absolute dates without an explicit timestamp/span basis.
+- Direct queries are distinct from broader shared-entry queries; Cartographer resolves only the latter.
 
-The reliability closure is complete, but the atomic Tokyo/time/weather growth
-Gate is not. This is a real one-cell counterexample and remains `IN_PROGRESS`.
-No multi-cell, Topic/Entity, semantic index, multi-entry Recall, or query/fact
-mapping is authorized without a separate task.
+The deterministic Rev4 contracts are implemented, but the v6 nine-fact
+Provider growth and causal Recall Gates have not yet run. Status remains
+`IN_PROGRESS`. No Core, multi-cell, Topic/Entity, semantic index, multi-entry
+Recall, or query/fact mapping is authorized.

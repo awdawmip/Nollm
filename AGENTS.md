@@ -1,12 +1,12 @@
-# Nollm CAOLD Runtime Integrity And Atomic Growth Rules
+# Nollm V3.11 Rev4 Contextual Relational Growth Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV3_PROMPT_BOUNDED_LENS_CARTOGRAPHY_RELATION_ENTRY_RECALL_20260718.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV4_CONTEXTUAL_PROPOSITION_SHARED_RETRIEVAL_ENTRY_IDENTITY_20260721.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_C_A_O_L_D_RUNTIME_INTEGRITY_ATOMIC_PROPOSITION_GROWTH_EVIDENCE_CLOSURE_TASK_20260721.md`.
-- `db2b5b0c25d8d527a249de90c6555aeaf686f618` is the immutable input checkpoint. It is a Prompt-bounded relation-entry causal checkpoint, not a completed growth or reliability baseline.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md`.
+- `c40f8bf6a5be6184e5e56236c96d2817fed4bee5` is the immutable runtime-integrity input checkpoint. Its one-cell counterexample is invalid because fast Recall entry IDs collided.
 
 ## Current closure contract
 
@@ -20,7 +20,13 @@
 - Corrupt Statement data is an item-level Recall error unless canonical state itself is unreadable.
 - Live Evidence uses a run-scoped mutable path; freeze publishes immutable exact bytes only after the writer rotates or is disabled.
 - Machine-detected facts and operator attestations are separate evidence fields.
-- Atomic Tokyo/time/weather/unrelated growth remains IN_PROGRESS because the Provider run did not realize three relation-entry paths to T0.
+- Every selectable Atlas entry is unique within its operation/page. Never deduplicate Atlas entries by a region-local entry ID.
+- Writer receives bounded chronological narrative context separated from absorption sources; context-only Captures never re-enter absorption state.
+- Absolute time or location normalization requires explicit Evidence provenance.
+- Recall teaching distinguishes direct queries from broader shared-entry queries.
+- Cartographer resolves plausible shared retrieval neighborhoods, not only regions that already contain the new answer.
+- Entry queries, relation labels, Atlas paths, and narrative context remain operation-local and are not persisted.
+- Keep one Statement, one Atom, one Handle, and one Cell. Core is not modified in Rev4.
 - Do not add multi-cell, multi-entry Recall, Topic/Entity, vector, graph, embedding, or query/fact indexes in this task.
 
 ## V3.11 operation contract

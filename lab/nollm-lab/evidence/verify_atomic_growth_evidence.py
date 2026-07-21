@@ -170,7 +170,7 @@ def build_records(evidence_path: Path, freeze_metadata_path: Path, capture_state
     })
     summary = {
         "schema_version": SCHEMA_VERSION,
-        "status": "CAOLD_RUNTIME_INTEGRITY_ATOMIC_GROWTH_IN_PROGRESS_AT_<HEAD>",
+        "status": "RUNTIME_INTEGRITY_AND_RELATION_ENTRY_COLLISION_CHECKPOINT_AT_c40f8bf6a5be6184e5e56236c96d2817fed4bee5",
         "frozen_evidence": {"sha256": digest, "bytes": len(evidence_bytes), "line_count": len(events)},
         "frozen_capture_state": capture_state_metadata,
         "growth": {
