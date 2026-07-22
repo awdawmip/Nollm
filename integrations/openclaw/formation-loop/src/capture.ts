@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 
 export const CAPTURE_SCHEMA = "nollm_openclaw_durable_capture_v1";
 export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
+export const CAPTURE_DIRECTIVE_SCHEMA = "nollm_openclaw_capture_absorption_directive_v1";
 export const CAPTURE_PLUGIN_VERSION = "0.17.0";
 
 export type CaptureInput = {
@@ -48,6 +49,37 @@ export type CaptureRecord = {
   plugin_version: string;
   model_ref?: string;
   reference_timezone_offset_minutes?: number;
+};
+
+export type MemoryToolAction = "surface" | "recall" | "expand" | "none";
+export type AssistantRoleMode = "source" | "context_only" | "memory_derived";
+export type CaptureAbsorptionDirective = {
+  schema_version: typeof CAPTURE_DIRECTIVE_SCHEMA;
+  directive_id: string;
+  capture_id: string;
+  main_run_id_sha256: string;
+  user_role_mode: "source";
+  assistant_role_mode: AssistantRoleMode;
+  memory_tool_actions: MemoryToolAction[];
+  selected_entry_id_sha256?: string;
+  recalled_statement_ids: string[];
+  directive_epoch_ms: number;
+  sequence: number;
+  finalized: boolean;
+  finalization_reason: "hook" | "safe_default_missing" | "safe_default_timeout";
+};
+
+export type CaptureDirectiveInput = {
+  captureId: string;
+  mainRunIdentity: string;
+  assistantRoleMode: AssistantRoleMode;
+  memoryToolActions?: MemoryToolAction[];
+  selectedEntryId?: string;
+  recalledStatementIds?: string[];
+  directiveEpochMs?: number;
+  sequence: number;
+  finalized: boolean;
+  finalizationReason?: CaptureAbsorptionDirective["finalization_reason"];
 };
 
 export type CaptureStatus = "captured" | "processing" | "retry" | "deferred" | "no_memory" | "admitted";
@@ -149,6 +181,26 @@ function parseEvent(text: string): CaptureStateEvent {
   return value;
 }
 
+function parseDirective(text: string): CaptureAbsorptionDirective {
+  const value = JSON.parse(text) as CaptureAbsorptionDirective;
+  const actions = ["surface", "recall", "expand", "none"];
+  const sortedActions = [...(value.memory_tool_actions ?? [])].sort();
+  const sortedStatements = [...(value.recalled_statement_ids ?? [])].sort();
+  if (value.schema_version !== CAPTURE_DIRECTIVE_SCHEMA || typeof value.directive_id !== "string" ||
+      typeof value.capture_id !== "string" || typeof value.main_run_id_sha256 !== "string" ||
+      value.user_role_mode !== "source" || !["source", "context_only", "memory_derived"].includes(value.assistant_role_mode) ||
+      !Array.isArray(value.memory_tool_actions) || value.memory_tool_actions.some(item => !actions.includes(item)) ||
+      new Set(value.memory_tool_actions).size !== value.memory_tool_actions.length || value.memory_tool_actions.join("\0") !== sortedActions.join("\0") ||
+      (value.selected_entry_id_sha256 !== undefined && typeof value.selected_entry_id_sha256 !== "string") ||
+      !Array.isArray(value.recalled_statement_ids) || value.recalled_statement_ids.some(item => typeof item !== "string") ||
+      new Set(value.recalled_statement_ids).size !== value.recalled_statement_ids.length || value.recalled_statement_ids.join("\0") !== sortedStatements.join("\0") ||
+      !Number.isInteger(value.directive_epoch_ms) || !Number.isInteger(value.sequence) || value.sequence < 0 ||
+      typeof value.finalized !== "boolean" || !["hook", "safe_default_missing", "safe_default_timeout"].includes(value.finalization_reason)) {
+    throw new Error("invalid Capture absorption directive");
+  }
+  return value;
+}
+
 export class CaptureStore {
   readonly root: string;
   constructor(root: string) {
@@ -158,6 +210,7 @@ export class CaptureStore {
 
   capturePath(captureId: string): string { return join(this.root, "captures", `${captureId}.json`); }
   eventDirectory(captureId: string): string { return join(this.root, "events", captureId); }
+  directiveDirectory(captureId: string): string { return join(this.root, "directives", captureId); }
 
   async publish(input: CaptureInput): Promise<{ record: CaptureRecord; replayed: boolean; publish_ms: number }> {
     const started = performance.now();
@@ -204,6 +257,71 @@ export class CaptureStore {
 
   async read(captureId: string): Promise<CaptureRecord> {
     return parseRecord(await readFile(this.capturePath(captureId), "utf8"));
+  }
+
+  async publishDirective(input: CaptureDirectiveInput): Promise<{ directive: CaptureAbsorptionDirective; replayed: boolean }> {
+    assertText(input.captureId, "captureId"); assertText(input.mainRunIdentity, "mainRunIdentity");
+    if (!Number.isInteger(input.sequence) || input.sequence < 0) throw new TypeError("directive sequence is invalid");
+    const record = await this.read(input.captureId);
+    const runHash = sha256(input.mainRunIdentity);
+    if (record.main_run_id_sha256 !== runHash) throw new Error("Capture directive run identity mismatch");
+    const actions = [...new Set(input.memoryToolActions ?? [])].sort() as MemoryToolAction[];
+    const statementIds = [...new Set(input.recalledStatementIds ?? [])].sort();
+    const base = {
+      capture_id: input.captureId, main_run_id_sha256: runHash, user_role_mode: "source" as const,
+      assistant_role_mode: input.assistantRoleMode, memory_tool_actions: actions,
+      selected_entry_id_sha256: input.selectedEntryId ? sha256(input.selectedEntryId) : undefined,
+      recalled_statement_ids: statementIds, directive_epoch_ms: input.directiveEpochMs ?? Date.now(),
+      sequence: input.sequence, finalized: input.finalized,
+      finalization_reason: input.finalizationReason ?? "hook" as const,
+    };
+    const directiveId = `directive-${sha256(canonical(base))}`;
+    const directive: CaptureAbsorptionDirective = { schema_version: CAPTURE_DIRECTIVE_SCHEMA, directive_id: directiveId, ...base };
+    const result = await publishImmutable(join(this.directiveDirectory(input.captureId), `${directiveId}.json`), canonical(directive));
+    return { directive, replayed: result === "replayed" };
+  }
+
+  async directives(captureId: string): Promise<CaptureAbsorptionDirective[]> {
+    let names: string[];
+    try { names = await readdir(this.directiveDirectory(captureId)); } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
+    const values = await Promise.all(names.filter(name => name.endsWith(".json")).map(async name =>
+      parseDirective(await readFile(join(this.directiveDirectory(captureId), name), "utf8"))));
+    return values.sort((left, right) => left.sequence - right.sequence || left.directive_epoch_ms - right.directive_epoch_ms || left.directive_id.localeCompare(right.directive_id));
+  }
+
+  async directive(captureId: string): Promise<CaptureAbsorptionDirective | undefined> {
+    return (await this.directives(captureId)).at(-1);
+  }
+
+  async directiveForAbsorption(record: CaptureRecord, now: number, finalizationGraceMs: number): Promise<CaptureAbsorptionDirective | undefined> {
+    const current = await this.directive(record.capture_id);
+    if (current?.finalized) return current;
+    if (current && now - record.captured_epoch_ms < finalizationGraceMs) return undefined;
+    const fallback = await this.publishDirective({
+      captureId: record.capture_id, mainRunIdentity: record.main_run_id_sha256,
+      assistantRoleMode: "context_only", memoryToolActions: [], recalledStatementIds: [],
+      directiveEpochMs: record.captured_epoch_ms + finalizationGraceMs,
+      sequence: (current?.sequence ?? -1) + 1, finalized: true,
+      finalizationReason: current ? "safe_default_timeout" : "safe_default_missing",
+    }).catch(async error => {
+      // Legacy records expose only the run digest. Build the same safe fallback without mutating the Raw Capture.
+      if (!String(error).includes("run identity mismatch")) throw error;
+      const base = {
+        capture_id: record.capture_id, main_run_id_sha256: record.main_run_id_sha256, user_role_mode: "source" as const,
+        assistant_role_mode: "context_only" as const, memory_tool_actions: [] as MemoryToolAction[],
+        selected_entry_id_sha256: undefined, recalled_statement_ids: [] as string[],
+        directive_epoch_ms: record.captured_epoch_ms + finalizationGraceMs, sequence: (current?.sequence ?? -1) + 1,
+        finalized: true, finalization_reason: current ? "safe_default_timeout" as const : "safe_default_missing" as const,
+      };
+      const directiveId = `directive-${sha256(canonical(base))}`;
+      const directive: CaptureAbsorptionDirective = { schema_version: CAPTURE_DIRECTIVE_SCHEMA, directive_id: directiveId, ...base };
+      const result = await publishImmutable(join(this.directiveDirectory(record.capture_id), `${directiveId}.json`), canonical(directive));
+      return { directive, replayed: result === "replayed" };
+    });
+    return fallback.directive;
   }
 
   async appendEvent(captureId: string, status: CaptureStatus, options: { attempt: number; eventEpochMs?: number; batchId?: string; statementIds?: string[]; error?: string }): Promise<CaptureStateEvent> {
@@ -344,11 +462,12 @@ export class AbsorptionWorker {
   readonly batchMaxChars: number;
   readonly staleClaimMs: number;
   readonly retryBackoffMs: number;
+  readonly directiveFinalizationMs: number;
   readonly absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>;
   private active = false;
 
-  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number }, absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>) {
-    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.absorb = absorb;
+  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number; directiveFinalizationMs?: number }, absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>) {
+    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.directiveFinalizationMs = options.directiveFinalizationMs ?? 30000; this.absorb = absorb;
   }
 
   async runOnce(now = Date.now()): Promise<{ status: "idle" | "busy" | "completed"; batchId?: string; captureCount: number }> {
@@ -372,20 +491,23 @@ export class AbsorptionWorker {
       throw error;
     }
     try {
-      const available = await Promise.all((await this.store.allRecords()).map(async record => ({ record, state: await this.store.currentState(record.capture_id) })));
-      const retryReady = ({ state }: typeof available[number]): boolean => {
+      const available = (await Promise.all((await this.store.allRecords()).map(async record => ({
+        record, state: await this.store.currentState(record.capture_id),
+        directive: await this.store.directiveForAbsorption(record, now, this.directiveFinalizationMs),
+      })))).filter(item => item.directive?.finalized === true);
+      const retryReady = ({ state }: { state: CaptureStateEvent }): boolean => {
         if (state.status !== "retry") return false;
         const delay = Math.min(this.staleClaimMs, this.retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
         return now - state.event_epoch_ms >= delay;
       };
-      const staleProcessing = ({ state }: typeof available[number]): boolean => state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs;
+      const staleProcessing = ({ state }: { state: CaptureStateEvent }): boolean => state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs;
       const recoveryBatchId = available.find(item => (retryReady(item) || staleProcessing(item)) && item.state.batch_id)?.state.batch_id;
       const freshAnchor = recoveryBatchId ? undefined : available.find(({ state }) => state.status === "captured");
       const candidates: CaptureRecord[] = [];
       let chars = 0;
       for (const { record, state } of available) {
         const recoverable = recoveryBatchId
-          ? (retryReady({ record, state }) || staleProcessing({ record, state })) && state.batch_id === recoveryBatchId
+          ? (retryReady({ state }) || staleProcessing({ state })) && state.batch_id === recoveryBatchId
           : state.status === "captured";
         if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.session_key_sha256 !== freshAnchor.record.session_key_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;

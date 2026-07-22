@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from nollm_access import AccessMemoryLoop, ProgressiveAtlasPolicy
 
 from .adapter import FormationAdapterError
@@ -10,10 +12,16 @@ MAIN_AGENT_RECALL_SCHEMA_VERSION = "nollm_openclaw_main_agent_geometry_recall_v1
 BUDGETS = {"default": (4, 3000), "expanded": (8, 6000)}
 
 
-def _statement_preview(value: object) -> dict[str, object] | None:
-    if type(value) is not dict or type(value.get("statement_id")) is not str or type(value.get("content_utf8")) is not str:
-        return None
-    return {"statement_id": value["statement_id"], "content_utf8": value["content_utf8"]}
+def _routing_anchor(values: object, region_id: str) -> str:
+    if type(values) is list:
+        for value in values:
+            if type(value) is not dict or type(value.get("content_utf8")) is not str:
+                continue
+            content = " ".join(value["content_utf8"].split())
+            if len(content) >= 8:
+                prefix = content[: min(48, max(4, len(content) // 2))]
+                return f"route:{prefix}..."[:96]
+    return f"route:locality-{region_id[:24]}"[:96]
 
 
 def build_main_agent_surface(
@@ -45,31 +53,37 @@ def build_main_agent_surface(
                 "entries": [],
                 "regions": [],
             }
-        entries = [
-            {**entry, "region_id": region.region_id}
-            for region in page.regions
-            for entry in region.support_entries
-        ]
+        entries = []
+        regions = []
+        for region_index, region in enumerate(page.regions):
+            region_id = f"r{region_index + 1:02d}"
+            visible_entries = []
+            for entry in region.support_entries:
+                entry_id = f"e{len(entries) + 1:03d}"
+                entries.append({**entry, "atlas_entry_id": entry["entry_id"], "entry_id": entry_id, "region_id": region_id})
+                visible_entries.append({"entry_id": entry_id, "occupancy_count": entry["occupancy_count"]})
+            regions.append({
+                "region_id": region_id,
+                "routing_anchor_utf8": _routing_anchor(region.representative_statements, region.region_id),
+                "source_cell_count": region.source_cell_count,
+                "native_atom_count": region.native_atom_count,
+                "has_children": len(region.support_entries) > 1,
+                "support_entries": visible_entries,
+            })
         entry_ids = [item["entry_id"] for item in entries]
         if len(entry_ids) != len(set(entry_ids)):
             raise FormationAdapterError("duplicate_atlas_entry", "main-agent Surface contains duplicate entry IDs")
-        regions = [{
-            "region_id": region.region_id,
-            "source_cell_count": region.source_cell_count,
-            "native_atom_count": region.native_atom_count,
-            "representative_statements": [
-                preview for item in region.representative_statements
-                if (preview := _statement_preview(item)) is not None
-            ],
-            "support_entries": [{
-                "entry_id": entry["entry_id"],
-                "occupancy_count": entry["occupancy_count"],
-                "statements": [
-                    preview for item in entry["statements"]
-                    if (preview := _statement_preview(item)) is not None
-                ],
-            } for entry in region.support_entries],
-        } for region in page.regions]
+        routing_chars = sum(len(region["routing_anchor_utf8"]) for region in regions)
+        visible_probe = {"regions": regions, "entry_count": len(entries), "region_count": len(regions)}
+        visible_bytes = len(json.dumps(visible_probe, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+        if routing_chars > 3000 or visible_bytes > 8192:
+            return {
+                "schema_version": MAIN_AGENT_RECALL_SCHEMA_VERSION, "status": "overflow",
+                "operation_id": operation_id, "core_state_sha256": page.core_state_sha256,
+                "atlas_fingerprint": page.atlas_fingerprint, "page_fingerprint": page.page_fingerprint,
+                "policy": page.policy.to_mapping(), "entries": [], "regions": [],
+                "routing_text_chars": routing_chars, "visible_json_utf8_bytes": visible_bytes,
+            }
     return {
         "schema_version": MAIN_AGENT_RECALL_SCHEMA_VERSION,
         "status": "surface",
@@ -82,7 +96,11 @@ def build_main_agent_surface(
         "regions": regions,
         "entry_count": len(entries),
         "region_count": len(regions),
-        "serialized_utf8_bytes": page.serialized_utf8_bytes,
+        "routing_text_chars": routing_chars,
+        "visible_json_utf8_bytes": visible_bytes,
+        "full_statement_body_count": 0,
+        "routing_only": True,
+        "answer_from_surface": False,
         "private_entry_count": len(entries),
         "tool_visible_entry_count": len(entries),
         "single_entry_only": True,
@@ -121,7 +139,7 @@ def recall_main_agent_locality(
             item
             for region in page.regions
             for item in region.support_entries
-            if item["entry_id"] == entry["entry_id"]
+            if item["entry_id"] == entry.get("atlas_entry_id", entry["entry_id"])
         ), None)
         if current is None or current["entry_cell"] != entry["entry_cell"]:
             raise FormationAdapterError("main_agent_operation_stale", "selected entry changed after Surface selection")

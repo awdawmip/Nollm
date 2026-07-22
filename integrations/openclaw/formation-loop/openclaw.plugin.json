@@ -55,6 +55,7 @@
       "capture_enabled": { "type": "boolean", "default": true },
       "capture_workspace": { "type": "string" },
       "capture_scope_id": { "type": "string", "default": "local-default-user" },
+      "memory_scope_mode": { "type": "string", "const": "single-configured-scope", "default": "single-configured-scope" },
       "absorption_enabled": { "type": "boolean", "default": true },
       "absorption_batch_max_captures": { "type": "integer", "minimum": 1, "maximum": 16, "default": 4 },
       "absorption_batch_max_chars": { "type": "integer", "minimum": 1, "default": 24000 },
@@ -63,6 +64,7 @@
       "absorption_max_wait_ms": { "type": "integer", "minimum": 0, "default": 250 },
       "absorption_stale_claim_ms": { "type": "integer", "minimum": 1000, "default": 300000 },
       "absorption_retry_backoff_ms": { "type": "integer", "minimum": 100, "default": 1000 },
+      "absorption_directive_finalization_ms": { "type": "integer", "minimum": 1000, "default": 30000 },
       "dream_sculptor_schema_version": { "type": "string", "const": "nollm_openclaw_dream_sculptor_v2", "default": "nollm_openclaw_dream_sculptor_v2" },
       "locality_atlas_candidate_limit": { "type": "integer", "minimum": 1, "maximum": 512, "default": 512 },
       "proposition_writer_schema_version": { "type": "string", "const": "nollm_openclaw_contextual_proposition_writer_v3", "default": "nollm_openclaw_contextual_proposition_writer_v3" },
@@ -102,5 +104,10 @@
     },
     "additionalProperties": false
   },
+  "captureAbsorptionDirectiveWire": "nollm_openclaw_capture_absorption_directive_v1",
+  "memoryScopeMode": "single-configured-scope",
+  "routingSurfaceOnly": true,
+  "routingSurfaceMaxBytes": 8192,
+  "routingTextMaxChars": 3000,
   "contracts": { "tools": ["nollm_memory"], "captureWire": "nollm_openclaw_durable_capture_v1", "captureStateWire": "nollm_openclaw_capture_state_event_v1", "captureProviderCalls": 0, "captureBridgeCalls": 0, "captureCoreCalls": 0, "dreamSculptorWire": "nollm_openclaw_dream_sculptor_v2", "localityAtlasWire": "nollm_access_locality_atlas_v3", "progressiveAtlasPageWire": "nollm_access_progressive_atlas_page_v1", "localDetailPageWire": "nollm_access_local_detail_page_v1", "propositionWriterWire": "nollm_openclaw_contextual_proposition_writer_v3", "fieldCartographerWire": "nollm_openclaw_field_cartographer_v2", "fastRecallWire": "nollm_openclaw_single_call_entry_recall_v1", "mainAgentRecallWire": "nollm_openclaw_main_agent_geometry_recall_v1", "legacyReader": false, "defaultLocalityMaxResults": 4, "defaultLocalityMaxChars": 3000, "atlasCoverageRequired": true, "recallAtlasComplete": true, "junctionRealizedOnly": true, "dreamSculptorCommonProviderCalls": 1, "propositionWriterCommonProviderCalls": 1, "cartographerMaxRegions": 32, "cartographerMaxPromptBytes": 65536, "cartographerMaxTurns": 4, "recallLensesPersistent": false, "maxRecallLensesPerStatement": 4, "junctionCandidateLimit": 8, "surfaceWire": "nollm_openclaw_bounded_approximate_surface_traversal_v1", "physicalEntryWire": "nollm_openclaw_single_physical_entry_recall_v1", "revisionConfirmationWire": "nollm_openclaw_revision_confirmation_v1", "revisionConfirmationMaxCalls": 1, "revisionRedecisionMaxCalls": 1, "evidenceFilenameContract": "run_scoped_live_then_immutable_freeze_v1", "latencyCommitSchema": "nollm_memory_commit_latency_v1", "latencyRecallSchema": "nollm_memory_recall_latency_v1", "geometryProfile": "default_dream_v1", "geometryContractVersion": "nollm_bounded_approximate_hex_coverage_v1", "coordinateDomainVersion": "nollm_hex_radius_2p31_default_chart_null_phase_v1", "coveragePolicyVersion": "nollm_broad_residue_min_hit_1_v1", "writableFieldContractVersion": "nollm_hex_storage_2p31_writable_2p30_depth2_v1", "activeSemanticWritePolicyVersion": "nollm_default_dream_layer0_safe_write_v1", "surfaceLegalActionsContractVersion": "nollm_access_state_derived_surface_legal_actions_v1", "physicalEntryResolutionPolicyVersion": "mechanical_singleton_physical_entry_v1", "traversalCorrectionMaxAttempts": 2, "storageHexRadius": 2147483647, "activeWritableHexRadius": 1073741823, "maxCoverageDownSteps": 2, "physicalResidualSchemaVersion": "nollm_bounded_approximate_coverage_residual_v1" }
 }

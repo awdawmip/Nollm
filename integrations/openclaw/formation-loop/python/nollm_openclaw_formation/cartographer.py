@@ -32,6 +32,13 @@ MAX_CONTEXT_CAPTURES = 4
 MAX_CONTEXT_CHARS = 6000
 
 
+def _evidence_capture(value: dict[str, object]) -> dict[str, object]:
+    return {
+        key: value[key]
+        for key in ("capture_id", "user_utf8", "assistant_utf8", "captured_epoch_ms", "timezone_offset_minutes")
+    }
+
+
 def build_proposition_writer_prompt(
     captures: object,
     request_id: object,
@@ -53,9 +60,13 @@ def build_proposition_writer_prompt(
         "assistant_length_chars": len(item["assistant_utf8"]),
         "reference_epoch_ms": item["captured_epoch_ms"],
         "timezone_offset_minutes": item["timezone_offset_minutes"],
+        "user_role_mode": item.get("user_role_mode", "source"),
+        "assistant_role_mode": item.get("assistant_role_mode", "source"),
+        "memory_tool_actions": item.get("memory_tool_actions", []),
+        "recalled_statement_ids": item.get("recalled_statement_ids", []),
         } for item in items]
     prompt = f"""You are Nollm's private Contextual Proposition Writer.
-Form complete Evidence-backed MemoryStatements for absorption_sources only. context_only_evidence is bounded earlier conversation used only to resolve pronouns, time, location, and event continuity; never copy it into a new Statement and never treat it as a new absorption source. Generic assistant advice is not user memory unless the user supplied or adopted it.
+Form complete Evidence-backed MemoryStatements for absorption_sources only. Each source role has a durable role mode. User role mode source is eligible. Assistant role mode source is eligible; context_only or memory_derived may help understand the turn but must never be quoted as source Evidence or become the sole basis of a new Statement. Recalled Statement IDs are provenance diagnostics, not permission to copy old memory. context_only_evidence is bounded earlier conversation used only to resolve pronouns, time, location, and event continuity; never copy it into a new Statement and never treat it as a new absorption source. Generic assistant advice is not user memory unless the user supplied or adopted it.
 Every proposition cites natural Evidence quote refs. Quote exact text from one supplied Capture role and give each quote an operation-local evidence_ref_id. Never calculate or output start, end, Unicode offsets, Python slices, or span-array indexes. If the same quote occurs more than once, disambiguate with zero-based occurrence_hint or short exact left/right context. source_capture_ids may contain only IDs listed in absorption_sources. context_capture_ids may contain only IDs listed in context_only_evidence and must exactly name context Captures used by Evidence or timestamp basis. Prefer user-role quotes; when user text is sufficient, do not cite an assistant acknowledgement, translation, summary, or Markdown restatement. Any normalized absolute date, location, event, or coreference not verbatim in the source requires a resolved_reference whose basis_evidence_ref_ids cross-link the exact quoted Evidence refs, or whose timestamp_basis_capture_ids name a supplied Capture timestamp. Separate direct_queries, which the new proposition answers, from broader entry_queries, which name a plausible shared retrieval neighborhood a future reader could enter before knowing the new answer. Do not inspect or mention any field, Atlas, region, Locality, action, Handle, coordinate, Topic, entity, vector, graph, or placement.
 Return exactly one raw JSON object with no markdown. When propositions are present, outcome must be the literal string "plan" and defer_reason must be null; never use "propositions" or another outcome label.
 Every proposition object must contain exactly these nine keys: draft_id, outcome, content_utf8, source_capture_ids, context_capture_ids, evidence_refs, resolved_references, direct_queries, entry_queries. Proposition outcome must be "statement".
@@ -450,12 +461,18 @@ def _proposition(
     if type(context_ids) is not list or context_ids != sorted(set(context_ids)) or any(item not in available_context_ids for item in context_ids):
         raise FormationAdapterError("invalid_writer_schema", "Writer context Capture IDs are invalid")
     try:
-        spans = [item.to_mapping() for item in resolve_evidence_quote_refs(value["evidence_refs"], list(evidence.values()))]
+        spans = [item.to_mapping() for item in resolve_evidence_quote_refs(
+            value["evidence_refs"], [_evidence_capture(item) for item in evidence.values()],
+        )]
     except (TypeError, ValueError) as exc:
         error = str(exc) if str(exc).startswith("evidence_quote_") else "invalid Writer Evidence quote ref"
         raise FormationAdapterError(error, str(exc)) from exc
     if not any(span["capture_id"] in source_ids for span in spans):
         raise FormationAdapterError("invalid_writer_schema", "each proposition requires source-Capture Evidence")
+    for span in spans:
+        source = sources.get(span["capture_id"])
+        if source is not None and span["role"] == "assistant" and source.get("assistant_role_mode", "source") != "source":
+            raise FormationAdapterError("invalid_writer_schema", "assistant role is not eligible as new Statement source")
     used_context_ids = {
         span["capture_id"] for span in spans if span["capture_id"] not in source_ids
     }

@@ -11,7 +11,7 @@ from nollm_core import CoreRuntime, GeometryAddress
 from nollm_openclaw_formation.main_agent_recall import build_main_agent_surface, recall_main_agent_locality
 
 
-SCHEMA = "nollm_aold_declared_target_locality_simulation_v2"
+SCHEMA = "nollm_aold_routing_only_declared_target_simulation_v3"
 PROFILE = "default_dream_v1"
 CHART = "default"
 
@@ -83,6 +83,15 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
             entries_by_locality[locality] = entry
     if set(entries_by_locality) != set(range(8)):
         raise RuntimeError(f"Surface did not expose one entry for every fixture Locality: {sorted(entries_by_locality)}")
+    visible_surface = json.dumps(surface["regions"], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    fixture_contents = [
+        (f"Tokyo relation field fact {fact}; date/weather/event value {fact}." if locality == 0 else
+         f"Independent unrelated seed {locality}-{fact}; isolated control value {locality * 10 + fact}." if locality >= 6 else
+         f"Locality {locality} dense fact {fact}; bounded value {locality * 10 + fact}.")
+        for locality in range(8) for fact in range(10)
+    ]
+    full_statement_leakage_count = sum(content in visible_surface for content in fixture_contents)
+    routing_card_count = sum(len(region["support_entries"]) for region in surface["regions"])
 
     events: list[dict[str, object]] = [{
         "schema_version": SCHEMA,
@@ -94,6 +103,11 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "provider_backed_statement_count": 0,
         "deterministic_fixture_statement_count": 80,
         "surface_entry_count": surface["entry_count"],
+        "surface_region_count": surface["region_count"],
+        "routing_card_count": routing_card_count,
+        "routing_text_chars": surface["routing_text_chars"],
+        "visible_json_utf8_bytes": surface["visible_json_utf8_bytes"],
+        "full_statement_leakage_count": full_statement_leakage_count,
         "distinct_selected_entry_count": 8,
         "hidden_child_calls": 0,
     }]
@@ -205,6 +219,12 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
     target_reach = target_hits / len(registry)
     function_gate_met = _p95(default_counts) <= 5 and _p95(default_chars) <= 3000 and restart_hits == 2
     declared_simulation_gate_met = target_reach >= 0.9 and expanded_hits == 5 and max(leakage_counts) == 0
+    routing_surface_gate_met = (
+        surface["routing_only"] is True and surface["answer_from_surface"] is False and
+        full_statement_leakage_count == 0 and surface["routing_text_chars"] <= 3000 and
+        surface["visible_json_utf8_bytes"] <= 8192 and
+        all(len(region["routing_anchor_utf8"]) <= 96 for region in surface["regions"])
+    )
     summary = {
         "schema_version": SCHEMA,
         "status": "IN_PROGRESS",
@@ -231,12 +251,19 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "max_unrelated_leakage_count": max(leakage_counts),
         "single_entry_rate": 1.0,
         "hidden_child_calls": 0,
+        "surface_region_count": surface["region_count"],
+        "routing_card_count": routing_card_count,
+        "routing_text_chars": surface["routing_text_chars"],
+        "visible_json_utf8_bytes": surface["visible_json_utf8_bytes"],
+        "full_statement_leakage_count": full_statement_leakage_count,
+        "target_hidden_exact_content_count": 0,
         "legacy_reader": False,
         "old_hidden_reader_latency_ms": [31800, 19700, 23500, 33700],
         "provider_gate_met": False,
         "provider_gate_reason": "not executed",
         "geometry_function_gate_met": function_gate_met,
         "declared_target_simulation_gate_met": declared_simulation_gate_met,
+        "routing_surface_gate_met": routing_surface_gate_met,
         "semantic_product_gate_met": False,
     }
     events.append({"schema_version": SCHEMA, "event": "summary", **summary})
@@ -254,7 +281,7 @@ def main() -> int:
     args = parser.parse_args()
     summary = run_validation(args.workspace.resolve(), args.evidence.resolve(), args.summary.resolve())
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
-    return 0 if summary["geometry_function_gate_met"] and summary["declared_target_simulation_gate_met"] else 1
+    return 0 if summary["geometry_function_gate_met"] and summary["declared_target_simulation_gate_met"] and summary["routing_surface_gate_met"] else 1
 
 
 if __name__ == "__main__":

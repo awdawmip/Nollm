@@ -55,7 +55,13 @@ def test_main_agent_surface_hides_coordinates_and_recall_is_single_entry_bounded
     assert surface["single_entry_only"] is True
     assert surface["entry_count"] >= 1
     assert all("entry_cell" not in entry for region in surface["regions"] for entry in region["support_entries"])
-    assert all("handle" not in statement for region in surface["regions"] for statement in region["representative_statements"])
+    assert all("representative_statements" not in region for region in surface["regions"])
+    assert all("statements" not in entry for region in surface["regions"] for entry in region["support_entries"])
+    assert surface["routing_only"] is True and surface["answer_from_surface"] is False
+    assert all(len(region["routing_anchor_utf8"]) <= 96 for region in surface["regions"])
+    assert surface["full_statement_body_count"] == 0
+    assert surface["routing_text_chars"] <= 3000
+    assert surface["visible_json_utf8_bytes"] <= 8192
     assert '"q"' not in json.dumps(surface["regions"], sort_keys=True)
     entry = surface["entries"][0]
     default = recall(tmp_path, "operation-one", surface, entry, "default")

@@ -171,7 +171,7 @@ test("main-agent operation slot reservation expires TTL state and bounds 64+ ope
   assert.equal(operations.has("active-0"), false);
 });
 
-test("main-agent operations are server-issued, run-scoped, retryable, and suppress only the recalled run", async () => {
+test("main-agent operations are server-issued, run-scoped, retryable, and preserve recalled Raw Capture", async () => {
   const root = fs.mkdtempSync(join(tmpdir(), "nollm-native-tool-"));
   const memory = join(root, "memory");
   const capture = join(root, "capture");
@@ -182,7 +182,7 @@ test("main-agent operations are server-issued, run-scoped, retryable, and suppre
     capture_workspace: capture,
     capture_enabled: true,
     absorption_enabled: false,
-    capture_scope_id: "test-scope",
+    capture_scope_id: "local:u",
     recall_atlas_max_regions: 8,
     main_agent_operation_ttl_ms: 300000,
   };
@@ -198,11 +198,19 @@ test("main-agent operations are server-issued, run-scoped, retryable, and suppre
       { toolName: "nollm_memory", toolCallId: callId, runId, params },
       { toolName: "nollm_memory", toolCallId: callId, sessionKey, runId },
     );
+    hooks.get("before_tool_call")(
+      { toolName: "nollm_memory", toolCallId: "wrong-scope", runId: "run-scope", params: { action: "surface" } },
+      { toolName: "nollm_memory", toolCallId: "wrong-scope", sessionKey: "session-scope", runId: "run-scope", userId: "other" },
+    );
+    assert.equal((await tool.execute("wrong-scope", { action: "surface" })).details.status, "run_scope_unavailable");
     bind("surface-a", "session-a", "run-a", { action: "surface", operation_id: "model-collision" });
     const surface = await tool.execute("surface-a", { action: "surface", operation_id: "model-collision" });
     assert.equal(surface.details.status, "surface");
     assert.notEqual(surface.details.operation_id, "model-collision");
-    assert.equal(surface.details.policy.max_regions_per_page, 8);
+    assert.equal(surface.details.routing_only, true);
+    assert.equal(surface.details.answer_from_surface, false);
+    assert.equal(surface.details.full_statement_body_count, 0);
+    assert.equal("policy" in surface.details, false);
     const region = surface.details.regions[0];
     const entry = region.support_entries[0];
 
@@ -246,11 +254,25 @@ test("main-agent operations are server-issued, run-scoped, retryable, and suppre
 
     hooks.get("message_received")({ content: "recalled question", runId: "run-a" }, { sessionKey: "session-a", runId: "run-a", userId: "u" });
     await hooks.get("message_sent")({ success: true, content: "recalled answer", runId: "run-a" }, { sessionKey: "session-a", runId: "run-a", userId: "u" });
-    assert.equal((await new CaptureStore(capture).allRecords()).length, 0);
+    const recalledCaptures = await new CaptureStore(capture).allRecords();
+    assert.equal(recalledCaptures.length, 1);
+    const recalledDirective = await new CaptureStore(capture).directive(recalledCaptures[0].capture_id);
+    assert.equal(recalledDirective.assistant_role_mode, "memory_derived");
+    assert.equal(recalledDirective.finalized, false);
+    const endEvent = { success: true, runId: "run-a", messages: [
+      { role: "user", content: "recalled question" }, { role: "assistant", content: "recalled answer" },
+    ] };
+    const endContext = { sessionKey: "session-a", runId: "run-a", userId: "u" };
+    await hooks.get("agent_end")(endEvent, endContext);
+    await hooks.get("agent_end")(endEvent, endContext);
+    const finalDirective = await new CaptureStore(capture).directive(recalledCaptures[0].capture_id);
+    assert.equal(finalDirective.assistant_role_mode, "memory_derived");
+    assert.equal(finalDirective.finalized, true);
+    assert.equal((await new CaptureStore(capture).directives(recalledCaptures[0].capture_id)).length, 2);
 
     hooks.get("message_received")({ content: "new fact", runId: "run-next" }, { sessionKey: "session-a", runId: "run-next", userId: "u" });
     await hooks.get("message_sent")({ success: true, content: "new answer", runId: "run-next" }, { sessionKey: "session-a", runId: "run-next", userId: "u" });
-    assert.equal((await new CaptureStore(capture).allRecords()).length, 1);
+    assert.equal((await new CaptureStore(capture).allRecords()).length, 2);
 
     bind("surface-cleanup", "session-c", "run-c", { action: "surface" });
     const cleanupSurface = await tool.execute("surface-cleanup", { action: "surface" });
@@ -474,13 +496,14 @@ test("destructive revision uses one confirmation and at most one redecision", ()
   }
 });
 
-test("native Recall suppression is bound to one exact run", () => {
+test("native Recall marks role-level absorption without deleting Raw Capture", () => {
   const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
   assert.match(source, /type MainAgentRunScope[\s\S]+export function mainAgentRunKey/);
-  assert.match(source, /api\.on\("after_tool_call"[\s\S]+recallSatisfiedRuns\.add\(mainAgentRunKey\(binding\)\)/);
-  assert.match(source, /capture_suppressed_same_run: true/);
-  assert.equal(source.includes("recallSatisfiedSessions"), false);
-  assert.match(source, /reason: "same_run_satisfied_by_recall"/);
+  assert.match(source, /type RunMemoryUseState/);
+  assert.match(source, /assistantRoleMode: roleMode\(state\)/);
+  assert.match(source, /raw_capture_preserved: true/);
+  assert.equal(source.includes("recallSatisfiedRuns"), false);
+  assert.equal(source.includes("capture_suppressed_same_run"), false);
 });
 
 test("Recall-to-visible pending correlation is process-wide but memory-only", () => {

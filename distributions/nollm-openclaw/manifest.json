@@ -19,6 +19,11 @@
   "fastRecallWire": "nollm_openclaw_single_call_entry_recall_v1",
   "mainAgentRecallWire": "nollm_openclaw_main_agent_geometry_recall_v1",
   "mainAgentRecallTool": "nollm_memory",
+  "captureAbsorptionDirectiveWire": "nollm_openclaw_capture_absorption_directive_v1",
+  "memoryScopeMode": "single-configured-scope",
+  "routingSurfaceOnly": true,
+  "routingSurfaceMaxBytes": 8192,
+  "routingTextMaxChars": 3000,
   "defaultProfile": "shadow-observation",
   "profiles": {
     "shadow-observation": {"writeMode": "shadow", "admission": false},

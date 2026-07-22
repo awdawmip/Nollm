@@ -57,6 +57,30 @@ test("missing sidecar is reconstructed from immutable Capture", () => workspace(
   assert.equal((await store.currentState(record.capture_id)).status, "captured");
 }));
 
+test("role directives are append-only, reopenable, and default assistant to context-only", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const { record } = await store.publish(input({ mainRunIdentity: "run-1" }));
+  const pending = await store.publishDirective({
+    captureId: record.capture_id, mainRunIdentity: "run-1", assistantRoleMode: "source",
+    memoryToolActions: ["surface"], recalledStatementIds: [], sequence: 1, finalized: false,
+  });
+  const final = await store.publishDirective({
+    captureId: record.capture_id, mainRunIdentity: "run-1", assistantRoleMode: "memory_derived",
+    memoryToolActions: ["recall", "surface"], selectedEntryId: "entry-a",
+    recalledStatementIds: ["statement-a"], sequence: 2, finalized: true,
+  });
+  assert.equal(pending.directive.finalized, false);
+  assert.equal(final.directive.assistant_role_mode, "memory_derived");
+  assert.equal((await store.directive(record.capture_id)).directive_id, final.directive.directive_id);
+  assert.equal((await new CaptureStore(root).directive(record.capture_id)).selected_entry_id_sha256.length, 64);
+
+  const legacy = await store.publish(input({ turnIdentity: "legacy", mainRunIdentity: "legacy" }));
+  const fallback = await store.directiveForAbsorption(legacy.record, legacy.record.captured_epoch_ms, 30000);
+  assert.equal(fallback.assistant_role_mode, "context_only");
+  assert.equal(fallback.finalization_reason, "safe_default_missing");
+  assert.equal(fallback.finalized, true);
+}));
+
 test("pending fallback is cross-session, scope isolated, bounded, and admission removes it", () => workspace(async root => {
   const store = new CaptureStore(root);
   const one = await store.publish(input());

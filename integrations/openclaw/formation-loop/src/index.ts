@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { Type } from "typebox";
 import { buildJsonPluginConfigSchema, definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 import { appendLatencyEvent, COMMIT_LATENCY_SCHEMA, durationMs, durationUs, RECALL_LATENCY_SCHEMA, sha256Text, systemLatencyClock, turnCorrelationId } from "./latency.js";
-import { AbsorptionWorker, CaptureStore, type AbsorptionResult, type CaptureRecord } from "./capture.js";
+import { AbsorptionWorker, CaptureStore, type AbsorptionResult, type CaptureRecord, type MemoryToolAction } from "./capture.js";
 
 export type RunResult = { code: number; stdout: string; stderr: string };
 export type DreamConfig = {
@@ -34,7 +34,8 @@ export type DreamConfig = {
   latency_validation_enabled?: boolean; latency_evidence_path?: string; latency_scenario_id?: string; latency_validation_run_id?: string;
   capture_enabled?: boolean; capture_workspace?: string; capture_scope_id?: string;
   capture_single_user_mode?: true;
-  absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number;
+  memory_scope_mode?: "single-configured-scope";
+  absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number; absorption_directive_finalization_ms?: number;
   writer_context_max_captures?: number; writer_context_max_chars?: number;
   dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v2"; locality_atlas_candidate_limit?: number;
   proposition_writer_schema_version?: "nollm_openclaw_contextual_proposition_writer_v3";
@@ -82,10 +83,12 @@ const JSON_SCHEMA = {
     latency_scenario_id: { type: "string" }, latency_validation_run_id: { type: "string" },
     capture_enabled: { type: "boolean", default: true }, capture_workspace: { type: "string" }, capture_scope_id: { type: "string", default: "local-default-user" },
     capture_single_user_mode: { type: "boolean", const: true, default: true },
+    memory_scope_mode: { type: "string", const: "single-configured-scope", default: "single-configured-scope" },
     absorption_enabled: { type: "boolean", default: true }, absorption_batch_max_captures: { type: "integer", minimum: 1, maximum: 16, default: 4 },
     absorption_batch_max_chars: { type: "integer", minimum: 1, default: 24000 }, absorption_max_wait_ms: { type: "integer", minimum: 0, default: 250 },
     absorption_stale_claim_ms: { type: "integer", minimum: 1000, default: 300000 },
     absorption_retry_backoff_ms: { type: "integer", minimum: 100, default: 1000 },
+    absorption_directive_finalization_ms: { type: "integer", minimum: 1000, default: 30000 },
     writer_context_max_captures: { type: "integer", minimum: 0, maximum: 4, default: 4 },
     writer_context_max_chars: { type: "integer", minimum: 0, maximum: 6000, default: 6000 },
     dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v2", default: "nollm_openclaw_dream_sculptor_v2" },
@@ -185,6 +188,14 @@ type MainAgentRecallOperation = {
   selectedEntryId?: string;
   selectedRegionId?: string;
   expanded: boolean;
+};
+type RunMemoryUseState = {
+  scope: MainAgentRunScope;
+  actions: Set<MemoryToolAction>;
+  selectedEntryId?: string;
+  recalledStatementIds: Set<string>;
+  sequence: number;
+  finalized: boolean;
 };
 
 // Gateway hook dispatch can cross plugin registration instances within one turn.
@@ -362,7 +373,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const mainAgentRecallOperations = new Map<string, MainAgentRecallOperation>();
   const mainAgentToolBindings = new Map<string, MainAgentRunScope>();
   const successfulMainAgentRecallCalls = new Set<string>();
-  const recallSatisfiedRuns = new Set<string>();
+  const runMemoryUseStates = new Map<string, RunMemoryUseState>();
+  const captureIdsByRun = new Map<string, Set<string>>();
   let duplicateHookObservationCount = 0;
   let duplicateDreamSuppressedCount = 0;
   const backgroundScope = new AsyncResource("nollm-formation-background");
@@ -390,10 +402,45 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
   };
   const operationTtlMs = () => config.main_agent_operation_ttl_ms ?? 300000;
-  const runScope = (sessionKey: string, runId: string): MainAgentRunScope => ({
-    sessionKey, runId, scopeId: config.capture_scope_id ?? "local-default-user",
+  const runIdentityKey = (sessionKey: string, runId: string): string => `${sessionKey}\0${runId}`;
+  const runScope = (sessionKey: string, runId: string, context?: unknown): MainAgentRunScope => ({
+    sessionKey, runId, scopeId: captureScope(context, config.capture_scope_id ?? "local-default-user"),
     workspaceId: configuredMemoryWorkspace ?? "",
   });
+  const memoryUseState = (scope: MainAgentRunScope): RunMemoryUseState => {
+    const key = runIdentityKey(scope.sessionKey, scope.runId);
+    const existing = runMemoryUseStates.get(key);
+    if (existing) {
+      if (existing.scope.scopeId !== scope.scopeId || existing.scope.workspaceId !== scope.workspaceId) throw new Error("main-agent run scope changed");
+      return existing;
+    }
+    const created: RunMemoryUseState = { scope, actions: new Set(), recalledStatementIds: new Set(), sequence: 0, finalized: false };
+    runMemoryUseStates.set(key, created);
+    return created;
+  };
+  const roleMode = (state: RunMemoryUseState | undefined) =>
+    state?.actions.has("recall") || state?.actions.has("expand") ? "memory_derived" as const
+      : state?.actions.has("surface") ? "context_only" as const : "source" as const;
+  const publishRunDirectives = async (state: RunMemoryUseState, epoch = Date.now()) => {
+    if (!captureStore) return;
+    const ids = captureIdsByRun.get(runIdentityKey(state.scope.sessionKey, state.scope.runId)) ?? new Set<string>();
+    for (const captureId of ids) {
+      await captureStore.publishDirective({
+        captureId, mainRunIdentity: state.scope.runId, assistantRoleMode: roleMode(state),
+        memoryToolActions: [...state.actions], selectedEntryId: state.selectedEntryId,
+        recalledStatementIds: [...state.recalledStatementIds], directiveEpochMs: epoch,
+        sequence: state.sequence, finalized: state.finalized,
+      });
+    }
+  };
+  const recordMemoryAction = async (binding: MainAgentRunScope, action: MemoryToolAction, details: Record<string, unknown> = {}) => {
+    const state = memoryUseState(binding);
+    state.actions.add(action);
+    if (typeof details.entry_id === "string") state.selectedEntryId = details.entry_id;
+    if (Array.isArray(details.statement_ids)) for (const id of details.statement_ids) if (typeof id === "string") state.recalledStatementIds.add(id);
+    state.sequence += 1;
+    await publishRunDirectives(state);
+  };
   const atlasPolicy = (): Record<string, number> => ({
     max_regions_per_page: config.recall_atlas_max_regions ?? config.recall_surface_max_cells ?? 32,
     max_prompt_bytes: config.cartographer_max_prompt_bytes ?? 65536,
@@ -422,10 +469,12 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (event.toolName !== "nollm_memory" || !ctx.toolCallId || !ctx.sessionKey) return;
     const runId = ctx.runId ?? event.runId;
     if (!runId) return;
+    const actualScope = captureScope(ctx, config.capture_scope_id ?? "local-default-user");
+    if (actualScope !== (config.capture_scope_id ?? "local-default-user")) return;
     mainAgentToolBindings.set(ctx.toolCallId, {
       sessionKey: ctx.sessionKey,
       runId,
-      scopeId: config.capture_scope_id ?? "local-default-user",
+      scopeId: actualScope,
       workspaceId: configuredMemoryWorkspace ?? "",
     });
   });
@@ -433,7 +482,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (event.toolName !== "nollm_memory" || !ctx.toolCallId) return;
     const binding = mainAgentToolBindings.get(ctx.toolCallId);
     if (binding && successfulMainAgentRecallCalls.delete(ctx.toolCallId)) {
-      recallSatisfiedRuns.add(mainAgentRunKey(binding));
       await trace(config, {
         status: "completed", stage: "tool_recall_satisfied", session_key: binding.sessionKey,
         run_id: binding.runId, scope_id: binding.scopeId, workspace_id: binding.workspaceId,
@@ -446,7 +494,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     api.registerTool({
       name: "nollm_memory",
       label: "Nollm memory",
-      description: "Inspect one bounded Nollm geometry Surface and recall from one selected entry in this run.",
+      description: "Inspect a routing-only Nollm map. The Surface is not answer evidence: select one entry and call recall, or call none. Full memory content is returned only by recall or same-entry expand.",
       parameters: Type.Object({
         action: Type.Union([Type.Literal("surface"), Type.Literal("recall"), Type.Literal("expand"), Type.Literal("none")]),
         operation_id: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
@@ -484,8 +532,15 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
             coreStateSha256: built.core_state_sha256, atlasFingerprint: built.atlas_fingerprint,
             pageFingerprint: built.page_fingerprint, policy, entries, expanded: false,
           });
-          const { entries: _privateEntries, ...visible } = built;
-          return result({ ...visible, operation_id: operationId, expires_at: now + operationTtlMs(), legacy_reader: false, hidden_child_calls: 0 });
+          await recordMemoryAction(binding, "surface");
+          return result({
+            schema_version: built.schema_version, status: built.status, operation_id: operationId,
+            regions: built.regions, entry_count: built.entry_count, region_count: built.region_count,
+            routing_text_chars: built.routing_text_chars, visible_json_utf8_bytes: built.visible_json_utf8_bytes,
+            full_statement_body_count: built.full_statement_body_count, routing_only: true,
+            answer_from_surface: false, single_entry_only: true,
+            expires_at: now + operationTtlMs(), legacy_reader: false, hidden_child_calls: 0,
+          });
         }
         if (!params.operation_id) return result({ status: "operation_missing", legacy_reader: false });
         const operation = mainAgentRecallOperations.get(params.operation_id);
@@ -495,6 +550,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         operation.expiresAt = operation.lastUsedAt + operationTtlMs();
         if (params.action === "none") {
           mainAgentRecallOperations.delete(params.operation_id);
+          await recordMemoryAction(binding, "none");
           return result({ status: "none", operation_id: params.operation_id, legacy_reader: false });
         }
         let entryId = params.entry_id;
@@ -529,6 +585,10 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
             operation.expanded = true;
             mainAgentRecallOperations.delete(params.operation_id);
           }
+          const statementIds = Array.isArray(recalled.items)
+            ? recalled.items.flatMap(item => item && typeof item === "object" && typeof (item as Record<string, unknown>).statement_id === "string" ? [(item as Record<string, unknown>).statement_id] : [])
+            : [];
+          await recordMemoryAction(binding, params.action, { entry_id: entryId, statement_ids: statementIds });
         }
         return result({ ...recalled, legacy_reader: false, hidden_child_calls: 0 });
       },
@@ -644,12 +704,20 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     const requestId = `cartography-${batchId}`;
     const providerKey = `${batchId}:${executionId}`;
-    const captures = records.map(record => ({
+    const directives = captureStore ? await Promise.all(records.map(record => captureStore.directive(record.capture_id))) : [];
+    if (directives.length !== records.length || directives.some(item => item?.finalized !== true)) {
+      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Capture absorption directive is not finalized" }));
+    }
+    const captures = records.map((record, index) => ({
       capture_id: record.capture_id,
       user_utf8: record.user_utf8,
       assistant_utf8: record.assistant_utf8,
       captured_epoch_ms: record.captured_epoch_ms,
       timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
+      user_role_mode: directives[index]!.user_role_mode,
+      assistant_role_mode: directives[index]!.assistant_role_mode,
+      memory_tool_actions: directives[index]!.memory_tool_actions,
+      recalled_statement_ids: directives[index]!.recalled_statement_ids,
     }));
     const contextRecords = captureStore
       ? await captureStore.contextBefore(records, config.writer_context_max_captures ?? 4, config.writer_context_max_chars ?? 6000)
@@ -814,6 +882,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     batchMaxChars: config.absorption_batch_max_chars ?? 24000,
     staleClaimMs: config.absorption_stale_claim_ms ?? 300000,
     retryBackoffMs: config.absorption_retry_backoff_ms ?? 1000,
+    directiveFinalizationMs: config.absorption_directive_finalization_ms ?? 30000,
   }, absorbCapturedBatch) : undefined;
   let absorptionTimer: NodeJS.Timeout | undefined;
   let absorptionServiceRunning = false;
@@ -841,19 +910,13 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       mainAgentRecallOperations.clear();
       mainAgentToolBindings.clear();
       successfulMainAgentRecallCalls.clear();
-      recallSatisfiedRuns.clear();
+      runMemoryUseStates.clear();
+      captureIdsByRun.clear();
     },
   });
-  const publishCapture = async (sessionKey: string, runId: string | undefined, user: string | undefined, assistant: string, context: unknown, model?: string) => {
+  const publishCapture = async (sessionKey: string, runId: string | undefined, user: string | undefined, assistant: string, context: unknown, model?: string, finalized = false) => {
     if (!captureStore || !user?.trim() || !assistant.trim()) return undefined;
-    if (runId && recallSatisfiedRuns.has(mainAgentRunKey(runScope(sessionKey, runId)))) {
-      await trace(config, {
-        status: "suppressed", stage: "capture", reason: "same_run_satisfied_by_native_memory_recall",
-        session_key: sessionKey, run_id: runId, scope_id: config.capture_scope_id ?? "local-default-user",
-        workspace_id: configuredMemoryWorkspace, capture_suppressed_same_run: true,
-      });
-      return undefined;
-    }
+    const scope = runId ? runScope(sessionKey, runId, context) : undefined;
     const receipt = await captureStore.publish({
       scopeKey: captureScope(context, config.capture_scope_id ?? "local-default-user"), sessionKey,
       workspaceKey: configuredMemoryWorkspace ?? captureRoot!,
@@ -862,7 +925,14 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       profileId: config.capture_scope_id ?? "local-default-user", mainRunIdentity: runId ?? sessionKey,
       endpointKind: "visible_assistant_delivery", pluginVersion: "0.16.0",
     });
-    await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
+    if (scope) {
+      const key = runIdentityKey(sessionKey, runId!);
+      const ids = captureIdsByRun.get(key) ?? new Set<string>(); ids.add(receipt.record.capture_id); captureIdsByRun.set(key, ids);
+      const state = memoryUseState(scope);
+      if (finalized && !state.finalized) { state.finalized = true; state.sequence += 1; }
+      await publishRunDirectives(state, receipt.record.captured_epoch_ms + state.sequence);
+    }
+    await trace(config, { status: "captured", stage: "capture", capture_id: receipt.record.capture_id, capture_content_sha256: receipt.record.content_sha256, capture_publish_ms: receipt.publish_ms, replayed: receipt.replayed, raw_capture_preserved: true, directive_finalized: finalized, provider_calls: 0, bridge_calls: 0, core_calls: 0 });
     scheduleAbsorption();
     return receipt;
   };
@@ -907,7 +977,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         return combinedContext();
       }
       if (built.status === "complete_inject" && typeof built.injection === "string") {
-        if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
+        if (ctx.runId) await recordMemoryAction(runScope(ctx.sessionKey, ctx.runId, ctx), "recall", { entry_id: built.selected_entry, statement_ids: built.statement_ids });
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, selected_entry: built.selected_entry, statement_ids: built.statement_ids, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
         return combinedContext(built.injection);
       }
@@ -925,7 +995,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         return combinedContext();
       }
       if (applied.outcome === "inject" && typeof applied.injection === "string") {
-        if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
+        if (ctx.runId) await recordMemoryAction(runScope(ctx.sessionKey, ctx.runId, ctx), "recall", { entry_id: applied.selected_entry, statement_ids: applied.statement_ids });
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, selected_entry: applied.selected_entry, statement_ids: applied.statement_ids, selected_paths: applied.selected_paths, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved });
         return combinedContext(applied.injection);
       }
@@ -1021,7 +1091,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     pendingRecallLatencyByRun.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "inject", injectionHash });
     await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey), event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_injection_ready_ms: timing.total_operation_ms, recall_outcome: "inject", selected_statement_ids: rendered.statement_ids, selected_statement_count: Array.isArray(rendered.statement_ids) ? rendered.statement_ids.length : 0, injection_hash: injectionHash, hidden_injection_created: true, operation_timing: timing, ...selected.resolved });
     await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
-    if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
+    if (ctx.runId) await recordMemoryAction(runScope(ctx.sessionKey, ctx.runId, ctx), "recall", { statement_ids: rendered.statement_ids });
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {
@@ -1057,19 +1127,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const launch = async (candidate: Candidate) => {
     const { sessionKey, assistant, sourceHook, observedAt, phase } = candidate;
     if (config.enabled === false || !assistant.trim() || inFlight.has(sessionKey)) return;
-    const satisfiedRunKey = candidate.runId ? mainAgentRunKey(runScope(sessionKey, candidate.runId)) : undefined;
-    if (satisfiedRunKey && recallSatisfiedRuns.has(satisfiedRunKey)) {
-      pending.delete(sessionKey);
-      await trace(config, {
-        status: "suppressed",
-        stage: "formation",
-        reason: "same_run_satisfied_by_recall",
-        session_key: sessionKey,
-        run_id: candidate.runId,
-        visible_message_count: 0,
-      });
-      return;
-    }
     if (!config.python_executable || !config.nollm_repo_root) { await trace(config, { status: "defer", reason: "explicit_configuration_required", trigger_phase: phase }); return; }
     const fallbackUsers: UserObservation[] = (candidate.users ?? []).map((turn, index) => ({ role: turn.role, content_utf8: turn.content_utf8, identity: `${candidate.runId ?? "fallback"}:${index}:${createHash("sha256").update(turn.content_utf8).digest("hex")}` }));
     const current = pending.get(sessionKey) ?? { users: fallbackUsers, resolvedModel: candidate.resolvedModel, runId: candidate.runId };
@@ -1151,7 +1208,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const content = wellFormedText(assistant);
     const runId = event.runId ?? ctx.runId;
     const exactUsers = extractUserTurns(event.messages);
-    await publishCapture(ctx.sessionKey, runId, exactUsers.at(-1)?.content_utf8, content, ctx, model);
+    await publishCapture(ctx.sessionKey, runId, exactUsers.at(-1)?.content_utf8, content, ctx, model, true);
     const recallKey = `${ctx.sessionKey}\0${runId ?? ""}`;
     const recall = pendingRecallLatencyByRun.get(recallKey);
     if (recall) {
@@ -1162,18 +1219,27 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     recordHandler("agent_end", observedAt, observedMonoNs, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
     queue(() => {
       clearRunOperations(ctx.sessionKey, runId);
-      if (runId) recallSatisfiedRuns.delete(mainAgentRunKey(runScope(ctx.sessionKey!, runId)));
+      if (runId) {
+        const key = runIdentityKey(ctx.sessionKey!, runId);
+        const timer = setTimeout(() => {
+          runMemoryUseStates.delete(key);
+          captureIdsByRun.delete(key);
+        }, operationTtlMs());
+        timer.unref?.();
+      }
     });
   });
   api.on("session_end", (_event, ctx) => {
     clearSessionOperations(ctx.sessionKey);
-    for (const key of recallSatisfiedRuns) if (ctx.sessionKey && key.startsWith(`${ctx.sessionKey}\0`)) recallSatisfiedRuns.delete(key);
+    for (const key of runMemoryUseStates.keys()) if (ctx.sessionKey && key.startsWith(`${ctx.sessionKey}\0`)) runMemoryUseStates.delete(key);
+    for (const key of captureIdsByRun.keys()) if (ctx.sessionKey && key.startsWith(`${ctx.sessionKey}\0`)) captureIdsByRun.delete(key);
   });
   api.on("gateway_stop", () => {
     mainAgentRecallOperations.clear();
     mainAgentToolBindings.clear();
     successfulMainAgentRecallCalls.clear();
-    recallSatisfiedRuns.clear();
+    runMemoryUseStates.clear();
+    captureIdsByRun.clear();
   });
   api.on("subagent_spawned", (event) => {
     const parent = childParents.get(event.childSessionKey);

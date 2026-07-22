@@ -5,6 +5,7 @@ param(
   [ValidateSet("shadow-observation", "active-memory")][string]$Profile = "shadow-observation",
   [string]$StatementWorkspace = "",
   [string]$MemoryWorkspace = "",
+  [string]$CaptureScope = "",
   [string]$PythonExecutable = ""
 )
 $ErrorActionPreference = "Stop"
@@ -14,6 +15,8 @@ if (-not (Test-Path $OpenClaw)) { throw "OpenClaw not found: $OpenClaw" }
 if ($ModelMode -eq "dedicated" -and -not $Model) { throw "Dedicated mode requires -Model" }
 $WriteMode = if ($Profile -eq "active-memory") { "statement-store" } else { "shadow" }
 if ($Profile -eq "active-memory" -and -not $StatementWorkspace) { throw "active-memory profile requires -StatementWorkspace" }
+if ($Profile -eq "active-memory" -and -not $CaptureScope) { throw "active-memory profile requires one explicit -CaptureScope" }
+if (-not $CaptureScope) { $CaptureScope = "local-default-user" }
 if ($Profile -eq "active-memory" -and -not $MemoryWorkspace) { $MemoryWorkspace = $StatementWorkspace }
 Push-Location $root
 try {
@@ -36,6 +39,9 @@ if (-not $PythonExecutable -or -not (Test-Path -LiteralPath $PythonExecutable)) 
 & $OpenClaw config set plugins.entries.nollm-formation.config.enabled true
 & $OpenClaw config set plugins.entries.nollm-formation.config.model_mode $ModelMode
 & $OpenClaw config set plugins.entries.nollm-formation.config.write_mode $WriteMode
+& $OpenClaw config set plugins.entries.nollm-formation.config.capture_scope_id $CaptureScope
+& $OpenClaw config set plugins.entries.nollm-formation.config.memory_scope_mode single-configured-scope
+& $OpenClaw config set plugins.entries.nollm-formation.config.absorption_directive_finalization_ms 30000
 & $OpenClaw config set plugins.entries.nollm-formation.config.main_agent_operation_ttl_ms 300000
 & $OpenClaw config set plugins.entries.nollm-formation.config.recall_atlas_max_regions 32
 & $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-json-p1
@@ -54,6 +60,8 @@ if ($MemoryWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.c
 Write-Output "Nollm profile: $Profile"
 Write-Output "Nollm write_mode: $WriteMode"
 Write-Output "Nollm memory workspace: $MemoryWorkspace"
+Write-Output "Nollm allowed capture scope: $CaptureScope"
+Write-Output "Nollm memory scope mode: single-configured-scope"
 $resolvedModel = if ($ModelMode -eq "dedicated") { $Model } else { & $OpenClaw config get agents.defaults.model.primary --json | ConvertFrom-Json }
 if ($resolvedModel -isnot [string] -or -not $resolvedModel.Contains('/')) { throw "Host model must be a canonical provider/model reference" }
 $hostAllowedModels = @($resolvedModel)

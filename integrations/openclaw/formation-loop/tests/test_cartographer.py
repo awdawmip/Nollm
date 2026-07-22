@@ -162,6 +162,28 @@ def test_context_only_capture_cannot_become_absorption_source():
         parse_proposition_writer_result(json.dumps(raw, ensure_ascii=False), [CAPTURE], "context-source", context_captures=[context])
 
 
+def test_memory_derived_assistant_cannot_be_new_statement_source():
+    capture = {
+        **CAPTURE,
+        "user_role_mode": "source",
+        "assistant_role_mode": "memory_derived",
+        "memory_tool_actions": ["recall", "surface"],
+        "recalled_statement_ids": ["old-statement"],
+    }
+    raw = json.loads(_writer_raw("收到。"))
+    proposition = raw["propositions"][0]
+    proposition["evidence_refs"] = [{
+        "evidence_ref_id": "assistant-echo", "capture_id": CAPTURE["capture_id"],
+        "role": "assistant", "quote_utf8": CAPTURE["assistant_utf8"],
+    }]
+    proposition["resolved_references"] = []
+    with pytest.raises(Exception, match="assistant role is not eligible"):
+        parse_proposition_writer_result(json.dumps(raw, ensure_ascii=False), [capture], "memory-echo")
+
+    built = build_proposition_writer_prompt([capture], "memory-echo-prompt")
+    assert "memory_derived may help understand the turn" in built["prompt"]
+
+
 def test_active_writer_rejects_legacy_and_explicit_migration_marks_coarse_provenance():
     raw = json.dumps({
         "schema_version": LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION, "outcome": "plan", "defer_reason": None,

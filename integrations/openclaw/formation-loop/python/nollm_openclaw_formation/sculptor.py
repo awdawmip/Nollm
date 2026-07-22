@@ -153,14 +153,24 @@ def apply_dream_sculptor_result(
 
 def _captures(value: object) -> list[dict[str, object]]:
     keys = {"capture_id", "user_utf8", "assistant_utf8", "captured_epoch_ms", "timezone_offset_minutes"}
+    directive_keys = {"user_role_mode", "assistant_role_mode", "memory_tool_actions", "recalled_statement_ids"}
     if type(value) is not list or not value or len(value) > 16:
         raise FormationAdapterError("invalid_sculptor_captures", "Captures must be a bounded non-empty list")
     clean = []
     for item in value:
-        if type(item) is not dict or set(item) != keys or type(item["capture_id"]) is not str or type(item["user_utf8"]) is not str or type(item["assistant_utf8"]) is not str:
+        if type(item) is not dict or frozenset(item) not in {frozenset(keys), frozenset(keys | directive_keys)} or type(item["capture_id"]) is not str or type(item["user_utf8"]) is not str or type(item["assistant_utf8"]) is not str:
             raise FormationAdapterError("invalid_sculptor_captures", "Capture fields are invalid")
         if type(item["captured_epoch_ms"]) is not int or type(item["timezone_offset_minutes"]) is not int or not -840 <= item["timezone_offset_minutes"] <= 840:
             raise FormationAdapterError("invalid_sculptor_captures", "Capture reference instant is invalid")
+        if directive_keys <= set(item):
+            actions = item["memory_tool_actions"]
+            recalled = item["recalled_statement_ids"]
+            if item["user_role_mode"] != "source" or item["assistant_role_mode"] not in {"source", "context_only", "memory_derived"}:
+                raise FormationAdapterError("invalid_sculptor_captures", "Capture role modes are invalid")
+            if type(actions) is not list or actions != sorted(set(actions)) or any(action not in {"surface", "recall", "expand", "none"} for action in actions):
+                raise FormationAdapterError("invalid_sculptor_captures", "Capture memory actions are invalid")
+            if type(recalled) is not list or recalled != sorted(set(recalled)) or any(type(statement_id) is not str or not statement_id for statement_id in recalled):
+                raise FormationAdapterError("invalid_sculptor_captures", "Capture recalled Statement IDs are invalid")
         clean.append(item)
     ids = [item["capture_id"] for item in clean]
     if len(ids) != len(set(ids)):
