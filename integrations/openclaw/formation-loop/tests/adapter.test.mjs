@@ -13,6 +13,8 @@ test("manifest exposes one internal main-agent geometry Recall tool", () => {
   assert.equal(manifest.contracts.legacyReader, false);
   assert.equal(manifest.configSchema.properties.recall_hidden_call_budget.const, 0);
   assert.equal(manifest.configSchema.properties.main_agent_recall_enabled.default, true);
+  assert.equal(manifest.configSchema.properties.main_agent_operation_ttl_ms.default, 300000);
+  assert.equal(manifest.configSchema.properties.recall_atlas_max_regions.default, 32);
   assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
@@ -71,6 +73,22 @@ test("manifest exposes one internal main-agent geometry Recall tool", () => {
   assert.equal(manifest.configSchema.properties.recall_surface_max_calls.default, 24);
   assert.equal(manifest.configSchema.properties.placement_surface_max_calls.default, 32);
   assert.equal(JSON.stringify(manifest.configSchema).includes("cursor"), false);
+});
+
+test("distribution separates shadow-observation from active-memory truthfully", () => {
+  const manifest = JSON.parse(fs.readFileSync(new URL("../../../../distributions/nollm-openclaw/manifest.json", import.meta.url)));
+  assert.equal(manifest.defaultProfile, "shadow-observation");
+  assert.deepEqual(manifest.profiles["shadow-observation"], { writeMode: "shadow", admission: false });
+  assert.deepEqual(manifest.profiles["active-memory"], { writeMode: "statement-store", admission: true, workspaceRequired: true });
+  assert.equal(manifest.recallTool.serverIssuedOperation, true);
+  assert.equal(manifest.recallTool.runScoped, true);
+  const install = fs.readFileSync(new URL("../scripts/install.ps1", import.meta.url), "utf8");
+  const diagnose = fs.readFileSync(new URL("../scripts/diagnose.ps1", import.meta.url), "utf8");
+  assert.match(install, /ValidateSet\("shadow-observation", "active-memory"\)/);
+  assert.match(install, /active-memory profile requires -StatementWorkspace/);
+  for (const field of ["profile", "write_mode", "memory_workspace", "statement_store_workspace", "provider_model", "active_evidence_path"]) {
+    assert.equal(diagnose.includes(field), true);
+  }
 });
 
 test("debug evidence accepts only matching mutable run path", () => {

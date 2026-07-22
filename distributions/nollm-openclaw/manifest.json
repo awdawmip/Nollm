@@ -19,6 +19,11 @@
   "fastRecallWire": "nollm_openclaw_single_call_entry_recall_v1",
   "mainAgentRecallWire": "nollm_openclaw_main_agent_geometry_recall_v1",
   "mainAgentRecallTool": "nollm_memory",
+  "defaultProfile": "shadow-observation",
+  "profiles": {
+    "shadow-observation": {"writeMode": "shadow", "admission": false},
+    "active-memory": {"writeMode": "statement-store", "admission": true, "workspaceRequired": true}
+  },
   "legacyReader": false,
   "defaultLocalityMaxResults": 4,
   "defaultLocalityMaxChars": 3000,
@@ -32,10 +37,11 @@
     "mode": "background",
     "modelMode": "inherit",
     "persistTranscripts": false,
+    "profile": "shadow-observation",
     "writeMode": "shadow"
   },
   "formationTool": {"visible": false},
-  "recallTool": {"mainAgentInternal": true, "singleEntry": true},
+  "recallTool": {"mainAgentInternal": true, "singleEntry": true, "serverIssuedOperation": true, "runScoped": true},
   "externalApi": {"required": false},
   "requires": ["nollm-access", "openclaw>=2026.6.11", "statement-store"],
   "diagnose": "integrations/openclaw/formation-loop/scripts/diagnose.ps1",

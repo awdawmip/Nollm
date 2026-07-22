@@ -69,10 +69,14 @@ $gatewayTask = Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object Ta
 $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path $captureRoot "worker.lock")))
 
 [pscustomobject]@{
+  profile = if ($config.write_mode -eq "statement-store") { "active-memory" } else { "shadow-observation" }
+  write_mode = $config.write_mode
   plugin_enabled = ($plugin.status -eq "loaded")
   plugin_version = $inspect.plugin.version
   capture_enabled = ($config.capture_enabled -ne $false)
   capture_workspace = $captureRoot
+  memory_workspace = $config.memory_workspace
+  statement_store_workspace = $config.statement_store_workspace
   worker_enabled = ($config.absorption_enabled -ne $false)
   worker_alive = [bool]($workerLockPresent -and $gatewayTask -and $gatewayTask.State -eq "Running")
   worker_lock_present = $workerLockPresent
@@ -96,7 +100,11 @@ $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path
   dream_agent_denies_message = (@($dream.tools.deny) -contains "message")
   main_agent_nollm_memory_allowed = (@($main.tools.alsoAllow) -contains "nollm_memory")
   main_agent_recall_enabled = ($config.main_agent_recall_enabled -ne $false)
+  main_agent_operation_ttl_ms = if ($config.main_agent_operation_ttl_ms) { $config.main_agent_operation_ttl_ms } else { 300000 }
+  recall_atlas_max_regions = if ($config.recall_atlas_max_regions) { $config.recall_atlas_max_regions } else { 32 }
   legacy_reader = $false
   proposition_writer_schema_version = "nollm_openclaw_contextual_proposition_writer_v3"
   host_allow_model_override = $configEnvelope.subagent.allowModelOverride
+  provider_model = if ($config.model) { $config.model } else { @($config.allowed_models) -join "," }
+  active_evidence_path = $config.evidence_path
 } | ConvertTo-Json -Depth 5

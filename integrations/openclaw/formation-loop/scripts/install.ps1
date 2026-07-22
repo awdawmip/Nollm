@@ -2,7 +2,7 @@ param(
   [string]$OpenClaw = "$env:LOCALAPPDATA\Programs\nodejs\openclaw.cmd",
   [ValidateSet("inherit", "dedicated")][string]$ModelMode = "inherit",
   [string]$Model = "",
-  [ValidateSet("shadow", "statement-store")][string]$WriteMode = "shadow",
+  [ValidateSet("shadow-observation", "active-memory")][string]$Profile = "shadow-observation",
   [string]$StatementWorkspace = "",
   [string]$MemoryWorkspace = "",
   [string]$PythonExecutable = ""
@@ -12,7 +12,9 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $repo = (Resolve-Path (Join-Path $root "..\..\..")).Path
 if (-not (Test-Path $OpenClaw)) { throw "OpenClaw not found: $OpenClaw" }
 if ($ModelMode -eq "dedicated" -and -not $Model) { throw "Dedicated mode requires -Model" }
-if ($WriteMode -eq "statement-store" -and -not $StatementWorkspace) { throw "statement-store mode requires -StatementWorkspace" }
+$WriteMode = if ($Profile -eq "active-memory") { "statement-store" } else { "shadow" }
+if ($Profile -eq "active-memory" -and -not $StatementWorkspace) { throw "active-memory profile requires -StatementWorkspace" }
+if ($Profile -eq "active-memory" -and -not $MemoryWorkspace) { $MemoryWorkspace = $StatementWorkspace }
 Push-Location $root
 try {
   npm install --ignore-scripts; if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
@@ -34,6 +36,8 @@ if (-not $PythonExecutable -or -not (Test-Path -LiteralPath $PythonExecutable)) 
 & $OpenClaw config set plugins.entries.nollm-formation.config.enabled true
 & $OpenClaw config set plugins.entries.nollm-formation.config.model_mode $ModelMode
 & $OpenClaw config set plugins.entries.nollm-formation.config.write_mode $WriteMode
+& $OpenClaw config set plugins.entries.nollm-formation.config.main_agent_operation_ttl_ms 300000
+& $OpenClaw config set plugins.entries.nollm-formation.config.recall_atlas_max_regions 32
 & $OpenClaw config set plugins.entries.nollm-formation.config.prompt_version dream-json-p1
 & $OpenClaw config set plugins.entries.nollm-formation.config.persist_subagent_transcripts false
 & $OpenClaw config set plugins.entries.nollm-formation.config.geometry_profile default_dream_v1
@@ -47,6 +51,9 @@ if ($MemoryWorkspace) { & $OpenClaw config set plugins.entries.nollm-formation.c
 & $OpenClaw plugins enable nollm-formation
 & $OpenClaw config set plugins.entries.nollm-formation.hooks.allowConversationAccess true
 & $OpenClaw config set plugins.entries.nollm-formation.subagent.allowModelOverride true
+Write-Output "Nollm profile: $Profile"
+Write-Output "Nollm write_mode: $WriteMode"
+Write-Output "Nollm memory workspace: $MemoryWorkspace"
 $resolvedModel = if ($ModelMode -eq "dedicated") { $Model } else { & $OpenClaw config get agents.defaults.model.primary --json | ConvertFrom-Json }
 if ($resolvedModel -isnot [string] -or -not $resolvedModel.Contains('/')) { throw "Host model must be a canonical provider/model reference" }
 $hostAllowedModels = @($resolvedModel)

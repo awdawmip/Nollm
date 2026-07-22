@@ -6,12 +6,12 @@ from pathlib import Path
 from statistics import quantiles
 from time import perf_counter
 
-from nollm_access import AccessDecision, AccessRuntime, FileHandleStore, FileStatementStore, MemoryStatement
+from nollm_access import AccessDecision, AccessRuntime, FileHandleStore, FileStatementStore, MemoryStatement, ProgressiveAtlasPolicy
 from nollm_core import CoreRuntime, GeometryAddress
 from nollm_openclaw_formation.main_agent_recall import build_main_agent_surface, recall_main_agent_locality
 
 
-SCHEMA = "nollm_aold_llm_native_main_agent_recall_evidence_v1"
+SCHEMA = "nollm_aold_declared_target_locality_simulation_v2"
 PROFILE = "default_dream_v1"
 CHART = "default"
 
@@ -74,7 +74,8 @@ def _entry_locality(entry: dict[str, object]) -> int | None:
 def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> dict[str, object]:
     workspace.mkdir(parents=True, exist_ok=True)
     _seed(workspace)
-    surface = build_main_agent_surface(str(workspace), "scale-operation", 32)
+    policy = ProgressiveAtlasPolicy().to_mapping()
+    surface = build_main_agent_surface(str(workspace), "scale-operation", policy)
     entries_by_locality: dict[int, dict[str, object]] = {}
     for entry in surface["entries"]:
         locality = _entry_locality(entry)
@@ -99,89 +100,111 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
     default_counts: list[int] = []
     default_chars: list[int] = []
     local_latencies_ms: list[float] = []
-    default_targets = 0
-    default_hits = 0
-    query_index = 0
+    registry: list[dict[str, object]] = []
+    for index in range(20):
+        registry.append({"query_id": f"relevant-{index + 1:02d}", "kind": "relevant", "locality": index % 6, "target_fact": 0})
+    for index in range(10):
+        registry.append({"query_id": f"relation-entry-{index + 1:02d}", "kind": "relation-entry-target-hidden", "locality": index % 3, "target_fact": 0})
+    for index in range(10):
+        registry.append({"query_id": f"dense-{index + 1:02d}", "kind": "dense-hidden-target", "locality": 3 + index % 3, "target_fact": 0})
+    for item in registry:
+        locality = int(item["locality"])
+        item["query_utf8"] = f"Recall fixture locality {locality} fact zero."
+        item["declared_target_statement_ids"] = [f"scale:l{locality}:f{item['target_fact']}"]
+        item["allowed_supporting_ids"] = [f"scale:l{locality}:f{fact}" for fact in range(10)]
+        item["forbidden_statement_ids"] = [f"scale:l{other}:f{fact}" for other in range(8) if other != locality for fact in range(10)]
+    events.append({"schema_version": SCHEMA, "event": "query_registry", "declared_before_recall": True, "queries": registry})
 
-    def default_case(kind: str, locality: int, target_rank: int) -> None:
-        nonlocal query_index, default_targets, default_hits
-        query_index += 1
+    target_hits = 0
+    leakage_counts: list[int] = []
+    for declared in registry:
+        locality = int(declared["locality"])
         entry = entries_by_locality[locality]
         started = perf_counter()
         result = recall_main_agent_locality(
-            str(workspace), "scale-operation", surface["core_state_sha256"], entry, "default",
+            str(workspace), "scale-operation", surface["core_state_sha256"], surface["atlas_fingerprint"],
+            surface["page_fingerprint"], surface["policy"], entry, "default",
         )
         latency_ms = (perf_counter() - started) * 1000
-        target = result["items"][target_rank - 1]["statement_id"]
-        hit = any(item["statement_id"] == target for item in result["items"])
-        default_targets += 1
-        default_hits += int(hit)
+        returned_ids = [item["statement_id"] for item in result["items"]]
+        target_ids = list(declared["declared_target_statement_ids"])
+        forbidden_ids = set(declared["forbidden_statement_ids"])
+        hit = any(target in returned_ids for target in target_ids)
+        leakage = len(set(returned_ids).intersection(forbidden_ids))
+        target_hits += int(hit)
+        leakage_counts.append(leakage)
         default_counts.append(result["result_count"])
         default_chars.append(result["rendered_chars"])
         local_latencies_ms.append(latency_ms)
         events.append({
-            "schema_version": SCHEMA, "event": "query", "query_id": f"{kind}-{query_index:02d}",
-            "kind": kind, "selection_actor": "deterministic_fixture", "entry_id": result["entry_id"],
-            "single_entry": True, "target_statement_id": target, "target_reached": hit,
+            "schema_version": SCHEMA, "event": "query", **declared,
+            "target_declared_before_recall": True, "target_source": "query_registry",
+            "selection_actor": "independent_deterministic_fixture_oracle", "entry_id": result["entry_id"],
+            "single_entry": True, "returned_statement_ids": returned_ids, "target_reached": hit,
             "result_count": result["result_count"], "rendered_chars": result["rendered_chars"],
-            "unrelated_leakage": 0, "hidden_child_calls": 0, "local_tool_ms": round(latency_ms, 3),
+            "unrelated_leakage_count": leakage, "hidden_child_calls": 0,
+            "python_bounded_locality_function_ms": round(latency_ms, 3), "semantic_product_evidence": False,
         })
-
-    for index in range(20):
-        default_case("relevant", index % 6, 1 + index % 4)
-    for index in range(10):
-        default_case("relation-entry-target-hidden", index % 3, 2 + index % 3)
-    for index in range(10):
-        default_case("dense-hidden-target", 3 + index % 3, 2 + index % 3)
 
     expanded_hits = 0
     for index in range(5):
         locality = index % 5
         entry = entries_by_locality[locality]
+        target = f"scale:l{locality}:f7"
         default = recall_main_agent_locality(
-            str(workspace), "scale-operation", surface["core_state_sha256"], entry, "default",
+            str(workspace), "scale-operation", surface["core_state_sha256"], surface["atlas_fingerprint"],
+            surface["page_fingerprint"], surface["policy"], entry, "default",
         )
         expanded = recall_main_agent_locality(
-            str(workspace), "scale-operation", surface["core_state_sha256"], entry, "expanded",
+            str(workspace), "scale-operation", surface["core_state_sha256"], surface["atlas_fingerprint"],
+            surface["page_fingerprint"], surface["policy"], entry, "expanded",
         )
-        target = expanded["items"][4 + index % 4]["statement_id"]
         default_hit = any(item["statement_id"] == target for item in default["items"])
         expanded_hit = any(item["statement_id"] == target for item in expanded["items"])
         expanded_hits += int(expanded_hit and not default_hit)
         events.append({
             "schema_version": SCHEMA, "event": "query", "query_id": f"expand-{index + 1:02d}",
-            "kind": "same-entry-expand", "selection_actor": "deterministic_fixture",
+            "kind": "same-entry-expand", "query_utf8": f"Recall fixture locality {locality} fact seven.",
+            "target_declared_before_recall": True, "target_source": "query_registry",
+            "declared_target_statement_ids": [target], "selection_actor": "independent_deterministic_fixture_oracle",
             "entry_id": expanded["entry_id"], "single_entry": True,
-            "target_statement_id": target, "default_target_reached": default_hit,
+            "returned_statement_ids": [item["statement_id"] for item in expanded["items"]],
+            "default_target_reached": default_hit,
             "expanded_target_reached": expanded_hit, "default_result_count": default["result_count"],
-            "expanded_result_count": expanded["result_count"], "hidden_child_calls": 0,
+            "expanded_result_count": expanded["result_count"], "hidden_child_calls": 0, "semantic_product_evidence": False,
         })
 
-    for index in range(10):
-        events.append({
-            "schema_version": SCHEMA, "event": "query", "query_id": f"none-{index + 1:02d}",
-            "kind": "none-unrelated", "selection_actor": "deterministic_fixture",
-            "entry_id": None, "single_entry": True, "target_reached": False,
-            "result_count": 0, "rendered_chars": 0, "unrelated_leakage": 0,
-            "hidden_child_calls": 0,
-        })
+    events.append({
+        "schema_version": SCHEMA, "event": "semantic_none_status", "semantic_none_observation_count": 0,
+        "semantic_none_metric_available": False, "reason": "no real main-agent operation or visible answer was executed",
+    })
 
     restart_hits = 0
     for index in range(2):
-        reopened = build_main_agent_surface(str(workspace), f"cold-restart-{index}", 32)
+        reopened = build_main_agent_surface(str(workspace), f"cold-restart-{index}", policy)
         entry = next(item for item in reopened["entries"] if _entry_locality(item) == index)
+        target = f"scale:l{index}:f0"
         result = recall_main_agent_locality(
-            str(workspace), f"cold-restart-{index}", reopened["core_state_sha256"], entry, "default",
+            str(workspace), f"cold-restart-{index}", reopened["core_state_sha256"], reopened["atlas_fingerprint"],
+            reopened["page_fingerprint"], reopened["policy"], entry, "default",
         )
-        restart_hits += int(bool(result["items"]))
+        returned_ids = [item["statement_id"] for item in result["items"]]
+        hit = target in returned_ids
+        restart_hits += int(hit)
         events.append({
             "schema_version": SCHEMA, "event": "query", "query_id": f"cold-restart-{index + 1:02d}",
-            "kind": "cold-restart", "entry_id": result["entry_id"], "single_entry": True,
-            "target_reached": bool(result["items"]), "result_count": result["result_count"],
+            "kind": "cold-restart", "query_utf8": f"Recall fixture locality {index} fact zero after reopen.",
+            "target_declared_before_recall": True, "target_source": "query_registry",
+            "declared_target_statement_ids": [target], "returned_statement_ids": returned_ids,
+            "entry_id": result["entry_id"], "single_entry": True,
+            "target_reached": hit, "result_count": result["result_count"],
             "rendered_chars": result["rendered_chars"], "hidden_child_calls": 0,
+            "semantic_product_evidence": False,
         })
 
-    target_reach = default_hits / default_targets
+    target_reach = target_hits / len(registry)
+    function_gate_met = _p95(default_counts) <= 5 and _p95(default_chars) <= 3000 and restart_hits == 2
+    declared_simulation_gate_met = target_reach >= 0.9 and expanded_hits == 5 and max(leakage_counts) == 0
     summary = {
         "schema_version": SCHEMA,
         "status": "IN_PROGRESS",
@@ -191,11 +214,12 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "dense_locality_max_facts": 10,
         "provider_backed_statement_count": 0,
         "deterministic_fixture_statement_count": 80,
-        "query_count": 57,
+        "declared_query_count": len(registry) + 5 + 2,
         "relevant_query_count": 20,
         "relation_entry_target_hidden_count": 10,
         "dense_hidden_target_count": 10,
-        "none_unrelated_count": 10,
+        "semantic_none_observation_count": 0,
+        "semantic_none_metric_available": False,
         "expand_count": 5,
         "cold_restart_count": 2,
         "target_reach": target_reach,
@@ -203,21 +227,17 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "cold_restart_reach": restart_hits / 2,
         "default_result_p95": _p95(default_counts),
         "default_chars_p95": _p95(default_chars),
-        "local_tool_ms_p95": _p95([round(value) for value in local_latencies_ms]),
-        "max_unrelated_leakage": 0,
+        "python_bounded_locality_function_ms_p95": _p95([round(value) for value in local_latencies_ms]),
+        "max_unrelated_leakage_count": max(leakage_counts),
         "single_entry_rate": 1.0,
         "hidden_child_calls": 0,
         "legacy_reader": False,
         "old_hidden_reader_latency_ms": [31800, 19700, 23500, 33700],
         "provider_gate_met": False,
-        "provider_gate_reason": "live OpenClaw and model calls are prohibited by the active repository instruction",
-        "synthetic_thresholds_met": (
-            target_reach >= 0.9
-            and expanded_hits == 5
-            and _p95(default_counts) <= 5
-            and _p95(default_chars) <= 3000
-            and restart_hits == 2
-        ),
+        "provider_gate_reason": "not executed",
+        "geometry_function_gate_met": function_gate_met,
+        "declared_target_simulation_gate_met": declared_simulation_gate_met,
+        "semantic_product_gate_met": False,
     }
     events.append({"schema_version": SCHEMA, "event": "summary", **summary})
     evidence_path.parent.mkdir(parents=True, exist_ok=True)
@@ -234,7 +254,7 @@ def main() -> int:
     args = parser.parse_args()
     summary = run_validation(args.workspace.resolve(), args.evidence.resolve(), args.summary.resolve())
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
-    return 0 if summary["synthetic_thresholds_met"] else 1
+    return 0 if summary["geometry_function_gate_met"] and summary["declared_target_simulation_gate_met"] else 1
 
 
 if __name__ == "__main__":

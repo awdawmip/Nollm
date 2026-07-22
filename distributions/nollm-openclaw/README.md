@@ -10,3 +10,9 @@ remain enabled, while debug Evidence is disabled by default. Validation enables
 a run-scoped mutable Evidence path and freezes exact bytes only after the writer
 is disabled or rotated. The CAOLD atomic three-arm growth gate is IN_PROGRESS;
 this distribution status does not claim multi-cell or multi-entry Recall.
+
+Installation requires an explicit operational profile. `shadow-observation`
+keeps `write_mode=shadow` and does not prove durable memory. `active-memory`
+sets `write_mode=statement-store`, requires a workspace, enables durable
+Capture/absorption and the run-scoped main-agent tool, and is the only profile
+eligible for Provider Live validation.
