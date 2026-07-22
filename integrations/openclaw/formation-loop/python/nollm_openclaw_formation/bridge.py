@@ -210,14 +210,16 @@ def main() -> None:
             return
         if action == "build_main_agent_surface":
             result = build_main_agent_surface(
-                envelope["memory_workspace"], envelope["operation_id"], envelope.get("max_entries", 32),
+                envelope["memory_workspace"], envelope["operation_id"], envelope["policy"],
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "recall_main_agent_locality":
             result = recall_main_agent_locality(
                 envelope["memory_workspace"], envelope["operation_id"],
-                envelope["expected_core_state_sha256"], envelope["entry"], envelope["budget_option_id"],
+                envelope["expected_core_state_sha256"], envelope["expected_atlas_fingerprint"],
+                envelope["expected_page_fingerprint"], envelope["policy"], envelope["entry"],
+                envelope["budget_option_id"],
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

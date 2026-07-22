@@ -43,7 +43,9 @@ export type DreamConfig = {
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
   recall_hidden_call_budget?: 0;
   main_agent_recall_enabled?: boolean;
+  main_agent_operation_ttl_ms?: number;
   surface_page_size?: number; surface_max_order?: number; surface_page_overhead_units?: number; surface_cell_preview_units?: number;
+  recall_atlas_max_regions?: number;
   recall_surface_max_pages?: number; recall_surface_max_cells?: number; recall_surface_max_projection_units?: number; recall_surface_max_calls?: number;
   placement_surface_max_pages?: number; placement_surface_max_cells?: number; placement_surface_max_projection_units?: number; placement_surface_max_calls?: number;
 };
@@ -97,9 +99,11 @@ const JSON_SCHEMA = {
     pending_fallback_max_chars: { type: "integer", minimum: 1, default: 6000 }, pending_fallback_max_age_ms: { type: "integer", minimum: 1000, default: 604800000 },
     recall_hidden_call_budget: { type: "integer", const: 0, default: 0 },
     main_agent_recall_enabled: { type: "boolean", default: true },
+    main_agent_operation_ttl_ms: { type: "integer", minimum: 1000, maximum: 3600000, default: 300000 },
     surface_page_size: { type: "integer", minimum: 1, maximum: 8, default: 8 }, surface_max_order: { type: "integer", minimum: 0, maximum: 8, default: 8 },
     surface_page_overhead_units: { type: "integer", minimum: 1, default: 8 }, surface_cell_preview_units: { type: "integer", minimum: 1, default: 4 },
     recall_surface_max_pages: { type: "integer", minimum: 1, default: 4 }, recall_surface_max_cells: { type: "integer", minimum: 1, default: 32 }, recall_surface_max_projection_units: { type: "integer", minimum: 1, default: 160 }, recall_surface_max_calls: { type: "integer", minimum: 1, default: 24 },
+    recall_atlas_max_regions: { type: "integer", minimum: 1, maximum: 32, default: 32 },
     placement_surface_max_pages: { type: "integer", minimum: 1, default: 6 }, placement_surface_max_cells: { type: "integer", minimum: 1, default: 48 }, placement_surface_max_projection_units: { type: "integer", minimum: 1, default: 240 }, placement_surface_max_calls: { type: "integer", minimum: 1, default: 32 },
   },
 } as const;
@@ -167,16 +171,51 @@ type UserObservation = Turn & { identity: string };
 type Pending = { users: UserObservation[]; resolvedModel?: string; runId?: string };
 type Candidate = { sessionKey: string; runId?: string; assistant: string; phase: TriggerPhase; sourceHook: "message_sent" | "agent_end"; observedAt: number; observedMonoNs: bigint; users?: Turn[]; resolvedModel?: string };
 type PendingRecallLatency = { requestId: string; mainRunId?: string; queryPrepareEpochMs: number; injectionReadyEpochMs: number; outcome: "inject" | "none"; injectionHash?: string };
+type MainAgentRunScope = { sessionKey: string; runId: string; scopeId: string; workspaceId: string };
 type MainAgentRecallOperation = {
+  scope: MainAgentRunScope;
+  createdAt: number;
+  lastUsedAt: number;
+  expiresAt: number;
   coreStateSha256: string;
+  atlasFingerprint: string;
+  pageFingerprint: string;
+  policy: Record<string, number>;
   entries: Map<string, Record<string, unknown>>;
   selectedEntryId?: string;
+  selectedRegionId?: string;
   expanded: boolean;
 };
 
 // Gateway hook dispatch can cross plugin registration instances within one turn.
-const recallSatisfiedSessions = new Set<string>();
 const pendingRecallLatencyByRun = new Map<string, PendingRecallLatency>();
+
+export function mainAgentRunKey(scope: MainAgentRunScope): string {
+  return `${scope.sessionKey}\0${scope.runId}\0${scope.scopeId}\0${scope.workspaceId}`;
+}
+
+export function reserveMainAgentOperationSlot<T extends { createdAt: number; expiresAt: number }>(
+  operations: Map<string, T>, now: number, capacity = 64,
+): string[] {
+  const removed: string[] = [];
+  for (const [operationId, operation] of operations) {
+    if (operation.expiresAt <= now) {
+      operations.delete(operationId);
+      removed.push(operationId);
+    }
+  }
+  while (operations.size >= capacity) {
+    const oldest = [...operations.entries()].sort((left, right) => left[1].createdAt - right[1].createdAt)[0]?.[0];
+    if (!oldest) break;
+    operations.delete(oldest);
+    removed.push(oldest);
+  }
+  return removed;
+}
+
+function sameMainAgentRun(left: MainAgentRunScope, right: MainAgentRunScope): boolean {
+  return mainAgentRunKey(left) === mainAgentRunKey(right);
+}
 
 export function wellFormedText(value: string): string {
   return Array.from(value, character => {
@@ -321,6 +360,9 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const scheduled = new Set<string>();
   const childParents = new Map<string, { parentRunId?: string; requestedModel?: string }>();
   const mainAgentRecallOperations = new Map<string, MainAgentRecallOperation>();
+  const mainAgentToolBindings = new Map<string, MainAgentRunScope>();
+  const successfulMainAgentRecallCalls = new Set<string>();
+  const recallSatisfiedRuns = new Set<string>();
   let duplicateHookObservationCount = 0;
   let duplicateDreamSuppressedCount = 0;
   const backgroundScope = new AsyncResource("nollm-formation-background");
@@ -347,6 +389,59 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (!config.persist_subagent_transcripts) { try { await api.runtime.subagent.deleteSession({ sessionKey: childSessionKey, deleteTranscript: true }); } catch { /* best effort */ } }
     }
   };
+  const operationTtlMs = () => config.main_agent_operation_ttl_ms ?? 300000;
+  const runScope = (sessionKey: string, runId: string): MainAgentRunScope => ({
+    sessionKey, runId, scopeId: config.capture_scope_id ?? "local-default-user",
+    workspaceId: configuredMemoryWorkspace ?? "",
+  });
+  const atlasPolicy = (): Record<string, number> => ({
+    max_regions_per_page: config.recall_atlas_max_regions ?? config.recall_surface_max_cells ?? 32,
+    max_prompt_bytes: config.cartographer_max_prompt_bytes ?? 65536,
+    max_depth: config.surface_max_order ?? 8,
+    max_order: config.surface_max_order ?? 8,
+    support_limit: 4,
+  });
+  const expireOperations = (now = Date.now()) => {
+    for (const [operationId, operation] of mainAgentRecallOperations) {
+      if (operation.expiresAt <= now) mainAgentRecallOperations.delete(operationId);
+    }
+  };
+  const clearRunOperations = (sessionKey: string | undefined, runId: string | undefined) => {
+    if (!sessionKey || !runId) return;
+    for (const [operationId, operation] of mainAgentRecallOperations) {
+      if (operation.scope.sessionKey === sessionKey && operation.scope.runId === runId) mainAgentRecallOperations.delete(operationId);
+    }
+  };
+  const clearSessionOperations = (sessionKey: string | undefined) => {
+    if (!sessionKey) return;
+    for (const [operationId, operation] of mainAgentRecallOperations) {
+      if (operation.scope.sessionKey === sessionKey) mainAgentRecallOperations.delete(operationId);
+    }
+  };
+  api.on("before_tool_call", (event, ctx) => {
+    if (event.toolName !== "nollm_memory" || !ctx.toolCallId || !ctx.sessionKey) return;
+    const runId = ctx.runId ?? event.runId;
+    if (!runId) return;
+    mainAgentToolBindings.set(ctx.toolCallId, {
+      sessionKey: ctx.sessionKey,
+      runId,
+      scopeId: config.capture_scope_id ?? "local-default-user",
+      workspaceId: configuredMemoryWorkspace ?? "",
+    });
+  });
+  api.on("after_tool_call", async (event, ctx) => {
+    if (event.toolName !== "nollm_memory" || !ctx.toolCallId) return;
+    const binding = mainAgentToolBindings.get(ctx.toolCallId);
+    if (binding && successfulMainAgentRecallCalls.delete(ctx.toolCallId)) {
+      recallSatisfiedRuns.add(mainAgentRunKey(binding));
+      await trace(config, {
+        status: "completed", stage: "tool_recall_satisfied", session_key: binding.sessionKey,
+        run_id: binding.runId, scope_id: binding.scopeId, workspace_id: binding.workspaceId,
+        tool_call_id: ctx.toolCallId, hidden_child_calls: 0,
+      });
+    }
+    mainAgentToolBindings.delete(ctx.toolCallId);
+  });
   if (config.enabled !== false && config.main_agent_recall_enabled !== false && typeof api.registerTool === "function") {
     api.registerTool({
       name: "nollm_memory",
@@ -354,63 +449,87 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       description: "Inspect one bounded Nollm geometry Surface and recall from one selected entry in this run.",
       parameters: Type.Object({
         action: Type.Union([Type.Literal("surface"), Type.Literal("recall"), Type.Literal("expand"), Type.Literal("none")]),
-        operation_id: Type.String({ minLength: 1, maxLength: 128 }),
+        operation_id: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
         region_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
         entry_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
         budget_option_id: Type.Optional(Type.Union([Type.Literal("default"), Type.Literal("expanded")])),
       }, { additionalProperties: false }),
-      async execute(_toolCallId: string, params: { action: "surface" | "recall" | "expand" | "none"; operation_id: string; region_id?: string; entry_id?: string; budget_option_id?: "default" | "expanded" }) {
+      async execute(toolCallId: string, params: { action: "surface" | "recall" | "expand" | "none"; operation_id?: string; region_id?: string; entry_id?: string; budget_option_id?: "default" | "expanded" }) {
         const result = (value: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(value) }], details: value });
         if (!configuredMemoryWorkspace || !config.python_executable || !config.nollm_repo_root) {
           return result({ status: "unavailable", reason: "Nollm memory workspace is not configured", legacy_reader: false });
         }
-        if (params.action === "none") {
-          mainAgentRecallOperations.delete(params.operation_id);
-          return result({ status: "none", operation_id: params.operation_id, legacy_reader: false });
-        }
+        const binding = mainAgentToolBindings.get(toolCallId);
+        if (!binding) return result({ status: "run_scope_unavailable", legacy_reader: false });
+        expireOperations();
         if (params.action === "surface") {
           if (params.entry_id !== undefined || params.budget_option_id !== undefined) return result({ status: "invalid_parameters", legacy_reader: false });
+          const operationId = `memory-${randomUUID()}`;
+          const policy = atlasPolicy();
           const built = await bridge(config, {
             action: "build_main_agent_surface", memory_workspace: configuredMemoryWorkspace,
-            operation_id: params.operation_id, max_entries: config.recall_surface_max_cells ?? 32,
+            operation_id: operationId, policy,
           });
-          if (built.ok !== true || typeof built.core_state_sha256 !== "string" || !Array.isArray(built.entries)) return result({ ...built, legacy_reader: false });
+          if (built.ok !== true || typeof built.core_state_sha256 !== "string" || typeof built.atlas_fingerprint !== "string" || typeof built.page_fingerprint !== "string" || !Array.isArray(built.entries)) return result({ ...built, legacy_reader: false });
           const entries = new Map<string, Record<string, unknown>>();
           for (const raw of built.entries) {
             if (typeof raw === "object" && raw !== null && typeof (raw as Record<string, unknown>).entry_id === "string") {
               entries.set((raw as Record<string, unknown>).entry_id as string, raw as Record<string, unknown>);
             }
           }
-          if (!mainAgentRecallOperations.has(params.operation_id) && mainAgentRecallOperations.size >= 64) {
-            const oldest = mainAgentRecallOperations.keys().next().value;
-            if (typeof oldest === "string") mainAgentRecallOperations.delete(oldest);
-          }
-          mainAgentRecallOperations.set(params.operation_id, { coreStateSha256: built.core_state_sha256, entries, expanded: false });
+          const now = Date.now();
+          reserveMainAgentOperationSlot(mainAgentRecallOperations, now);
+          mainAgentRecallOperations.set(operationId, {
+            scope: binding, createdAt: now, lastUsedAt: now, expiresAt: now + operationTtlMs(),
+            coreStateSha256: built.core_state_sha256, atlasFingerprint: built.atlas_fingerprint,
+            pageFingerprint: built.page_fingerprint, policy, entries, expanded: false,
+          });
           const { entries: _privateEntries, ...visible } = built;
-          return result({ ...visible, legacy_reader: false, hidden_child_calls: 0 });
+          return result({ ...visible, operation_id: operationId, expires_at: now + operationTtlMs(), legacy_reader: false, hidden_child_calls: 0 });
         }
+        if (!params.operation_id) return result({ status: "operation_missing", legacy_reader: false });
         const operation = mainAgentRecallOperations.get(params.operation_id);
         if (!operation) return result({ status: "operation_missing", legacy_reader: false });
+        if (!sameMainAgentRun(operation.scope, binding)) return result({ status: "operation_scope_mismatch", legacy_reader: false });
+        operation.lastUsedAt = Date.now();
+        operation.expiresAt = operation.lastUsedAt + operationTtlMs();
+        if (params.action === "none") {
+          mainAgentRecallOperations.delete(params.operation_id);
+          return result({ status: "none", operation_id: params.operation_id, legacy_reader: false });
+        }
         let entryId = params.entry_id;
         let budgetOptionId: "default" | "expanded" = "default";
         if (params.action === "recall") {
-          if (!entryId || params.budget_option_id === "expanded") return result({ status: "invalid_parameters", legacy_reader: false });
+          if (!entryId || !params.region_id || params.budget_option_id === "expanded") return result({ status: "invalid_parameters", legacy_reader: false });
           if (operation.selectedEntryId && operation.selectedEntryId !== entryId) return result({ status: "entry_locked", legacy_reader: false });
-          operation.selectedEntryId = entryId;
         } else {
-          if (entryId !== undefined || params.budget_option_id === "default" || !operation.selectedEntryId || operation.expanded) return result({ status: "invalid_expansion", legacy_reader: false });
+          if (entryId !== undefined || params.region_id !== undefined || params.budget_option_id === "default" || !operation.selectedEntryId || operation.expanded) return result({ status: "invalid_expansion", legacy_reader: false });
           entryId = operation.selectedEntryId;
           budgetOptionId = "expanded";
-          operation.expanded = true;
         }
         const entry = operation.entries.get(entryId!);
         if (!entry) return result({ status: "entry_unavailable", legacy_reader: false });
+        if (params.action === "recall" && entry.region_id !== params.region_id) return result({ status: "region_entry_mismatch", legacy_reader: false });
         const recalled = await bridge(config, {
           action: "recall_main_agent_locality", memory_workspace: configuredMemoryWorkspace,
           operation_id: params.operation_id, expected_core_state_sha256: operation.coreStateSha256,
-          entry, budget_option_id: budgetOptionId,
+          expected_atlas_fingerprint: operation.atlasFingerprint, expected_page_fingerprint: operation.pageFingerprint,
+          policy: operation.policy, entry, budget_option_id: budgetOptionId,
         });
-        if (recalled.ok !== true) mainAgentRecallOperations.delete(params.operation_id);
+        if (recalled.ok !== true) {
+          if (!(["bridge_process_error", "bridge_invalid_json"] as unknown[]).includes(recalled.error)) {
+            mainAgentRecallOperations.delete(params.operation_id);
+          }
+        } else {
+          successfulMainAgentRecallCalls.add(toolCallId);
+          if (params.action === "recall") {
+            operation.selectedEntryId = entryId;
+            operation.selectedRegionId = params.region_id;
+          } else {
+            operation.expanded = true;
+            mainAgentRecallOperations.delete(params.operation_id);
+          }
+        }
         return result({ ...recalled, legacy_reader: false, hidden_child_calls: 0 });
       },
     });
@@ -719,10 +838,22 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       absorptionServiceRunning = false;
       if (absorptionTimer) clearTimeout(absorptionTimer);
       absorptionTimer = undefined;
+      mainAgentRecallOperations.clear();
+      mainAgentToolBindings.clear();
+      successfulMainAgentRecallCalls.clear();
+      recallSatisfiedRuns.clear();
     },
   });
   const publishCapture = async (sessionKey: string, runId: string | undefined, user: string | undefined, assistant: string, context: unknown, model?: string) => {
     if (!captureStore || !user?.trim() || !assistant.trim()) return undefined;
+    if (runId && recallSatisfiedRuns.has(mainAgentRunKey(runScope(sessionKey, runId)))) {
+      await trace(config, {
+        status: "suppressed", stage: "capture", reason: "same_run_satisfied_by_native_memory_recall",
+        session_key: sessionKey, run_id: runId, scope_id: config.capture_scope_id ?? "local-default-user",
+        workspace_id: configuredMemoryWorkspace, capture_suppressed_same_run: true,
+      });
+      return undefined;
+    }
     const receipt = await captureStore.publish({
       scopeKey: captureScope(context, config.capture_scope_id ?? "local-default-user"), sessionKey,
       workspaceKey: configuredMemoryWorkspace ?? captureRoot!,
@@ -738,7 +869,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   api.on("agent_turn_prepare", async (event, ctx) => {
     const observedAt = Date.now();
     const operationStartedMonoNs = systemLatencyClock.monotonicNs();
-    if (ctx.sessionKey) recallSatisfiedSessions.delete(ctx.sessionKey);
     const memoryWorkspace = config.memory_workspace ?? config.statement_store_workspace;
     if (config.enabled === false || ctx.agentId === "nollm-dream-agent" || !ctx.sessionKey || !event.prompt.trim()) return;
     let pendingInjection = "";
@@ -757,7 +887,6 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     const combinedContext = (admitted = ""): { appendContext: string } | undefined => {
       const parts = [admitted, pendingInjection].filter(Boolean);
       if (!parts.length) return undefined;
-      if (ctx.sessionKey) recallSatisfiedSessions.add(ctx.sessionKey);
       return { appendContext: parts.join("\n\n") };
     };
     if (!memoryWorkspace || !config.python_executable || !config.nollm_repo_root) return combinedContext();
@@ -778,7 +907,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         return combinedContext();
       }
       if (built.status === "complete_inject" && typeof built.injection === "string") {
-        recallSatisfiedSessions.add(ctx.sessionKey);
+        if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 0, selected_entry: built.selected_entry, statement_ids: built.statement_ids, operation_timing: { total_operation_ms: durationMs(operationStartedMonoNs, systemLatencyClock.monotonicNs()) } });
         return combinedContext(built.injection);
       }
@@ -796,7 +925,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         return combinedContext();
       }
       if (applied.outcome === "inject" && typeof applied.injection === "string") {
-        recallSatisfiedSessions.add(ctx.sessionKey);
+        if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
         await trace(config, { status: "completed", stage: "fast_recall", request_id: requestId, hidden_provider_calls: 1, selected_entry: applied.selected_entry, statement_ids: applied.statement_ids, selected_paths: applied.selected_paths, operation_timing: { total_operation_ms: totalOperationMs }, ...selected.resolved });
         return combinedContext(applied.injection);
       }
@@ -892,7 +1021,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     pendingRecallLatencyByRun.set(`${ctx.sessionKey}\0${ctx.runId ?? ""}`, { requestId, mainRunId: ctx.runId, queryPrepareEpochMs: observedAt, injectionReadyEpochMs, outcome: "inject", injectionHash });
     await appendLatencyEvent(config, RECALL_LATENCY_SCHEMA, { scenario_id: latencyScenario(config, ctx.sessionKey), event_type: "recall_terminal", recall_request_id: requestId, session_key_sha256: sha256Text(ctx.sessionKey), main_run_id: ctx.runId, query_hash: sha256Text(event.prompt), query_prepare_epoch_ms: observedAt, injection_ready_epoch_ms: injectionReadyEpochMs, query_to_injection_ready_ms: timing.total_operation_ms, recall_outcome: "inject", selected_statement_ids: rendered.statement_ids, selected_statement_count: Array.isArray(rendered.statement_ids) ? rendered.statement_ids.length : 0, injection_hash: injectionHash, hidden_injection_created: true, operation_timing: timing, ...selected.resolved });
     await trace(config, { status: "completed", stage: "recall", request_id: requestId, selected_statement_ids: rendered.statement_ids, selected_paths: selectedRecallPaths(built.candidates, rendered.statement_ids), entry_cell: built.entry_cell, core_recall: built.core_recall, surface_path: surfacePath, visible_message_count: 0, operation_timing: timing, ...selected.resolved });
-    recallSatisfiedSessions.add(ctx.sessionKey);
+    if (ctx.runId) recallSatisfiedRuns.add(mainAgentRunKey(runScope(ctx.sessionKey, ctx.runId)));
     return { appendContext: rendered.injection };
   });
   api.on("before_agent_run", (event, ctx) => {
@@ -928,7 +1057,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const launch = async (candidate: Candidate) => {
     const { sessionKey, assistant, sourceHook, observedAt, phase } = candidate;
     if (config.enabled === false || !assistant.trim() || inFlight.has(sessionKey)) return;
-    if (recallSatisfiedSessions.has(sessionKey)) {
+    const satisfiedRunKey = candidate.runId ? mainAgentRunKey(runScope(sessionKey, candidate.runId)) : undefined;
+    if (satisfiedRunKey && recallSatisfiedRuns.has(satisfiedRunKey)) {
       pending.delete(sessionKey);
       await trace(config, {
         status: "suppressed",
@@ -1030,6 +1160,20 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     if (legacyFormationEnabled) queue(() => { void launch({ sessionKey: ctx.sessionKey!, runId, assistant: content, phase: "AFTER_TURN", sourceHook: "agent_end", observedAt, observedMonoNs, users: exactUsers, resolvedModel: model }); });
     recordHandler("agent_end", observedAt, observedMonoNs, { session_key: ctx.sessionKey, run_id: runId, trigger_phase: "AFTER_TURN", success: true });
+    queue(() => {
+      clearRunOperations(ctx.sessionKey, runId);
+      if (runId) recallSatisfiedRuns.delete(mainAgentRunKey(runScope(ctx.sessionKey!, runId)));
+    });
+  });
+  api.on("session_end", (_event, ctx) => {
+    clearSessionOperations(ctx.sessionKey);
+    for (const key of recallSatisfiedRuns) if (ctx.sessionKey && key.startsWith(`${ctx.sessionKey}\0`)) recallSatisfiedRuns.delete(key);
+  });
+  api.on("gateway_stop", () => {
+    mainAgentRecallOperations.clear();
+    mainAgentToolBindings.clear();
+    successfulMainAgentRecallCalls.clear();
+    recallSatisfiedRuns.clear();
   });
   api.on("subagent_spawned", (event) => {
     const parent = childParents.get(event.childSessionKey);

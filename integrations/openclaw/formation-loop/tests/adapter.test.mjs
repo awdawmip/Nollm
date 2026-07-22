@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, assertMutableEvidencePath, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText, writerFormatRepairPrompt, writerFormatRepairable } from "../dist/index.js";
+import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, assertMutableEvidencePath, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, reserveMainAgentOperationSlot, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText, writerFormatRepairPrompt, writerFormatRepairable } from "../dist/index.js";
 import { CaptureStore } from "../dist/capture.js";
 
 test("manifest exposes one internal main-agent geometry Recall tool", () => {
@@ -126,7 +126,7 @@ test("Python bridge wire is ASCII-safe and lossless for Windows pipes", () => {
 test("plugin registers channel delivery, recall preparation, and Gateway completion hooks with no tool", () => {
   const hooks = new Map(); let toolCount = 0;
   registerDreamAgent({ pluginConfig: { enabled: false }, on(name, handler) { hooks.set(name, handler); }, registerTool() { toolCount += 1; } });
-  assert.deepEqual([...hooks.keys()].sort(), ["agent_end", "agent_turn_prepare", "before_agent_run", "llm_output", "message_received", "message_sent", "subagent_ended", "subagent_spawned"]);
+  assert.deepEqual([...hooks.keys()].sort(), ["after_tool_call", "agent_end", "agent_turn_prepare", "before_agent_run", "before_tool_call", "gateway_stop", "llm_output", "message_received", "message_sent", "session_end", "subagent_ended", "subagent_spawned"]);
   assert.equal(toolCount, 0);
 });
 
@@ -139,6 +139,117 @@ test("active plugin registers one parameter-bounded main-agent memory tool", asy
   const unavailable = await tool.execute("call", { action: "surface", operation_id: "same-run" });
   assert.equal(unavailable.details.status, "unavailable");
   assert.equal(unavailable.details.legacy_reader, false);
+});
+
+test("main-agent operation slot reservation expires TTL state and bounds 64+ operations", () => {
+  const operations = new Map();
+  operations.set("expired", { createdAt: 0, expiresAt: 10 });
+  for (let index = 0; index < 64; index += 1) {
+    operations.set(`active-${index}`, { createdAt: 100 + index, expiresAt: 10000 });
+  }
+  const removed = reserveMainAgentOperationSlot(operations, 20, 64);
+  assert.deepEqual(removed, ["expired", "active-0"]);
+  assert.equal(operations.size, 63);
+  assert.equal(operations.has("active-0"), false);
+});
+
+test("main-agent operations are server-issued, run-scoped, retryable, and suppress only the recalled run", async () => {
+  const root = fs.mkdtempSync(join(tmpdir(), "nollm-native-tool-"));
+  const memory = join(root, "memory");
+  const capture = join(root, "capture");
+  const config = {
+    python_executable: process.env.NOLLM_TEST_PYTHON ?? "python",
+    nollm_repo_root: join(process.cwd(), "..", "..", ".."),
+    memory_workspace: memory,
+    capture_workspace: capture,
+    capture_enabled: true,
+    absorption_enabled: false,
+    capture_scope_id: "test-scope",
+    recall_atlas_max_regions: 8,
+    main_agent_operation_ttl_ms: 300000,
+  };
+  try {
+    const hooks = new Map(); let tool;
+    registerDreamAgent({
+      pluginConfig: config,
+      on(name, handler) { hooks.set(name, handler); },
+      registerTool(value) { tool = value; },
+      registerService() {},
+    });
+    const bind = (callId, sessionKey, runId, params) => hooks.get("before_tool_call")(
+      { toolName: "nollm_memory", toolCallId: callId, runId, params },
+      { toolName: "nollm_memory", toolCallId: callId, sessionKey, runId },
+    );
+    bind("surface-a", "session-a", "run-a", { action: "surface", operation_id: "model-collision" });
+    const surface = await tool.execute("surface-a", { action: "surface", operation_id: "model-collision" });
+    assert.equal(surface.details.status, "surface");
+    assert.notEqual(surface.details.operation_id, "model-collision");
+    assert.equal(surface.details.policy.max_regions_per_page, 8);
+    const region = surface.details.regions[0];
+    const entry = region.support_entries[0];
+
+    bind("cross-run", "session-b", "run-b", { action: "recall", operation_id: surface.details.operation_id });
+    const crossRun = await tool.execute("cross-run", {
+      action: "recall", operation_id: surface.details.operation_id,
+      region_id: region.region_id, entry_id: entry.entry_id,
+    });
+    assert.equal(crossRun.details.status, "operation_scope_mismatch");
+    bind("cross-none", "session-b", "run-b", { action: "none", operation_id: surface.details.operation_id });
+    const crossNone = await tool.execute("cross-none", { action: "none", operation_id: surface.details.operation_id });
+    assert.equal(crossNone.details.status, "operation_scope_mismatch");
+
+    bind("wrong-region", "session-a", "run-a", { action: "recall", operation_id: surface.details.operation_id });
+    const wrongRegion = await tool.execute("wrong-region", {
+      action: "recall", operation_id: surface.details.operation_id,
+      region_id: "wrong", entry_id: entry.entry_id,
+    });
+    assert.equal(wrongRegion.details.status, "region_entry_mismatch");
+
+    bind("recall-a", "session-a", "run-a", { action: "recall", operation_id: surface.details.operation_id });
+    const recalled = await tool.execute("recall-a", {
+      action: "recall", operation_id: surface.details.operation_id,
+      region_id: region.region_id, entry_id: entry.entry_id,
+    });
+    assert.equal(recalled.details.status, "locality");
+    await hooks.get("after_tool_call")(
+      { toolName: "nollm_memory", toolCallId: "recall-a", runId: "run-a", params: {}, result: recalled },
+      { toolName: "nollm_memory", toolCallId: "recall-a", sessionKey: "session-a", runId: "run-a" },
+    );
+
+    const originalPython = config.python_executable;
+    config.python_executable = join(root, "missing-python");
+    bind("expand-fail", "session-a", "run-a", { action: "expand", operation_id: surface.details.operation_id });
+    const failedExpand = await tool.execute("expand-fail", { action: "expand", operation_id: surface.details.operation_id });
+    assert.equal(failedExpand.details.error, "bridge_process_error");
+    config.python_executable = originalPython;
+    bind("expand-retry", "session-a", "run-a", { action: "expand", operation_id: surface.details.operation_id });
+    const expanded = await tool.execute("expand-retry", { action: "expand", operation_id: surface.details.operation_id });
+    assert.equal(expanded.details.status, "locality");
+
+    hooks.get("message_received")({ content: "recalled question", runId: "run-a" }, { sessionKey: "session-a", runId: "run-a", userId: "u" });
+    await hooks.get("message_sent")({ success: true, content: "recalled answer", runId: "run-a" }, { sessionKey: "session-a", runId: "run-a", userId: "u" });
+    assert.equal((await new CaptureStore(capture).allRecords()).length, 0);
+
+    hooks.get("message_received")({ content: "new fact", runId: "run-next" }, { sessionKey: "session-a", runId: "run-next", userId: "u" });
+    await hooks.get("message_sent")({ success: true, content: "new answer", runId: "run-next" }, { sessionKey: "session-a", runId: "run-next", userId: "u" });
+    assert.equal((await new CaptureStore(capture).allRecords()).length, 1);
+
+    bind("surface-cleanup", "session-c", "run-c", { action: "surface" });
+    const cleanupSurface = await tool.execute("surface-cleanup", { action: "surface" });
+    hooks.get("session_end")({}, { sessionKey: "session-c" });
+    bind("after-session", "session-c", "run-c", { action: "none", operation_id: cleanupSurface.details.operation_id });
+    const afterSession = await tool.execute("after-session", { action: "none", operation_id: cleanupSurface.details.operation_id });
+    assert.equal(afterSession.details.status, "operation_missing");
+
+    bind("surface-stop", "session-d", "run-d", { action: "surface" });
+    const stopSurface = await tool.execute("surface-stop", { action: "surface" });
+    hooks.get("gateway_stop")({}, {});
+    bind("after-stop", "session-d", "run-d", { action: "none", operation_id: stopSurface.details.operation_id });
+    const afterStop = await tool.execute("after-stop", { action: "none", operation_id: stopSurface.details.operation_id });
+    assert.equal(afterStop.details.status, "operation_missing");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("recall NONE paths emit explicit audit evidence", () => {
@@ -345,12 +456,12 @@ test("destructive revision uses one confirmation and at most one redecision", ()
   }
 });
 
-test("a run satisfied by hidden Recall cannot re-form the recalled fact", () => {
+test("native Recall suppression is bound to one exact run", () => {
   const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
-  assert.match(source, /type Candidate[\s\S]+const recallSatisfiedSessions = new Set<string>\(\);[\s\S]+export function registerDreamAgent/);
-  assert.match(source, /recallSatisfiedSessions\.add\(ctx\.sessionKey\)/);
-  assert.match(source, /api\.on\("agent_turn_prepare"[\s\S]+recallSatisfiedSessions\.delete\(ctx\.sessionKey\)/);
-  assert.match(source, /recallSatisfiedSessions\.has\(sessionKey\)/);
+  assert.match(source, /type MainAgentRunScope[\s\S]+export function mainAgentRunKey/);
+  assert.match(source, /api\.on\("after_tool_call"[\s\S]+recallSatisfiedRuns\.add\(mainAgentRunKey\(binding\)\)/);
+  assert.match(source, /capture_suppressed_same_run: true/);
+  assert.equal(source.includes("recallSatisfiedSessions"), false);
   assert.match(source, /reason: "same_run_satisfied_by_recall"/);
 });
 

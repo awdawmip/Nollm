@@ -19,17 +19,19 @@ def _statement_preview(value: object) -> dict[str, object] | None:
 def build_main_agent_surface(
     memory_workspace: object,
     operation_id: object,
-    max_entries: object = 32,
+    policy_mapping: object,
 ) -> dict[str, object]:
     if type(operation_id) is not str or not operation_id or len(operation_id) > 128:
         raise FormationAdapterError("invalid_main_agent_recall", "operation_id is required and bounded")
-    if type(max_entries) is not int or not 1 <= max_entries <= 32:
-        raise FormationAdapterError("invalid_main_agent_recall", "max_entries must be in [1,32]")
+    try:
+        policy = ProgressiveAtlasPolicy.from_mapping(policy_mapping)
+    except (TypeError, ValueError) as error:
+        raise FormationAdapterError("invalid_main_agent_recall", "Progressive Atlas policy is invalid") from error
     root = _workspace(memory_workspace)
     with AccessMemoryLoop(root) as loop:
         page = loop.build_progressive_atlas(
             operation_id + ":main-agent-surface",
-            ProgressiveAtlasPolicy(max_regions_per_page=max_entries),
+            policy,
         )
         if page.overflow:
             return {
@@ -37,6 +39,9 @@ def build_main_agent_surface(
                 "status": "overflow",
                 "operation_id": operation_id,
                 "core_state_sha256": page.core_state_sha256,
+                "atlas_fingerprint": page.atlas_fingerprint,
+                "page_fingerprint": page.page_fingerprint,
+                "policy": page.policy.to_mapping(),
                 "entries": [],
                 "regions": [],
             }
@@ -71,9 +76,15 @@ def build_main_agent_surface(
         "operation_id": operation_id,
         "core_state_sha256": page.core_state_sha256,
         "atlas_fingerprint": page.atlas_fingerprint,
+        "page_fingerprint": page.page_fingerprint,
+        "policy": page.policy.to_mapping(),
         "entries": entries,
         "regions": regions,
         "entry_count": len(entries),
+        "region_count": len(regions),
+        "serialized_utf8_bytes": page.serialized_utf8_bytes,
+        "private_entry_count": len(entries),
+        "tool_visible_entry_count": len(entries),
         "single_entry_only": True,
     }
 
@@ -82,20 +93,30 @@ def recall_main_agent_locality(
     memory_workspace: object,
     operation_id: object,
     expected_core_state_sha256: object,
+    expected_atlas_fingerprint: object,
+    expected_page_fingerprint: object,
+    policy_mapping: object,
     entry: object,
     budget_option_id: object,
 ) -> dict[str, object]:
-    if type(operation_id) is not str or not operation_id or type(expected_core_state_sha256) is not str or len(expected_core_state_sha256) != 64:
+    fingerprints = (expected_core_state_sha256, expected_atlas_fingerprint, expected_page_fingerprint)
+    if type(operation_id) is not str or not operation_id or any(type(value) is not str or len(value) != 64 for value in fingerprints):
         raise FormationAdapterError("invalid_main_agent_recall", "operation identity or state binding is invalid")
     if type(entry) is not dict or type(entry.get("entry_id")) is not str or type(entry.get("entry_cell")) is not dict:
         raise FormationAdapterError("invalid_main_agent_recall", "one internal entry binding is required")
     if budget_option_id not in BUDGETS:
         raise FormationAdapterError("invalid_main_agent_recall", "unknown budget option")
+    try:
+        policy = ProgressiveAtlasPolicy.from_mapping(policy_mapping)
+    except (TypeError, ValueError) as error:
+        raise FormationAdapterError("invalid_main_agent_recall", "Progressive Atlas policy is invalid") from error
     root = _workspace(memory_workspace)
     with AccessMemoryLoop(root) as loop:
         if loop.core_state_sha256() != expected_core_state_sha256:
             raise FormationAdapterError("main_agent_operation_stale", "field changed after Surface selection")
-        page = loop.build_progressive_atlas(operation_id + ":main-agent-reopen")
+        page = loop.build_progressive_atlas(operation_id + ":main-agent-surface", policy)
+        if page.atlas_fingerprint != expected_atlas_fingerprint or page.page_fingerprint != expected_page_fingerprint:
+            raise FormationAdapterError("main_agent_operation_stale", "Atlas or page changed after Surface selection")
         current = next((
             item
             for region in page.regions
@@ -113,6 +134,7 @@ def recall_main_agent_locality(
         "status": "locality",
         "operation_id": operation_id,
         "entry_id": entry["entry_id"],
+        "region_id": entry.get("region_id"),
         "budget_option_id": budget_option_id,
         "expansion_options": [] if budget_option_id == "expanded" or not locality["has_more"] else ["expanded"],
         "single_entry_only": True,
