@@ -5,24 +5,26 @@ Date: 2026-07-22
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
 task: NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md
-status: LLM_NATIVE_EVIDENCE_AND_MAIN_AGENT_GEOMETRIC_RECALL_IN_PROGRESS_AT_a4d8e3135ef894453e1d01dc5c19139d23d9c71f
+status: AOLD_LLM_NATIVE_MAIN_AGENT_RECALL_IN_PROGRESS_AT_217f512559385a93fdd79b56b32f7894c6016293
 input HEAD: a4d8e3135ef894453e1d01dc5c19139d23d9c71f
-evidence: pending validation/aold_llm_native_main_agent_recall_20260722.jsonl
-summary: pending validation/aold_llm_native_main_agent_recall_summary_20260722.json
+code/evidence HEAD: 217f512559385a93fdd79b56b32f7894c6016293
+evidence: validation/aold_llm_native_main_agent_recall_20260722.jsonl
+summary: validation/aold_llm_native_main_agent_recall_summary_20260722.json
 ```
 
 Active truth:
 
-- `a4d8e31` is the contextual Writer/shared-retrieval growth checkpoint; it is not a user-facing low-latency Recall completion claim.
-- Rev4 operation-unique entries, bounded narrative context, Direct/Entry queries, nine durable one-Cell facts, causal target-hidden Recall, restart/NONE, and read zero-write remain preserved.
-- The Git-blob evidence verifier does not pass at `75383c6`; the missing completion binding is present only in final checkpoint `a4d8e31`.
-- Active Writer v2 still accepts legacy v1, asks the model for offsets/indexes, and permits mismatched resolved-reference basis declarations.
-- Cartography apply is not yet bound to its planned field state.
-- Default common Recall may still create a hidden Reader child-agent and inject six or seven statements in the nine-fact field.
-- Rev5 implementation is therefore in progress: Writer v3 quote refs, Access-owned canonical provenance, stale-plan zero-write rejection, same-run main-agent single-entry geometry tool, and bounded expandable locality.
-- Core is frozen. Multi-cell, multi-entry, Stitch, Topic/Entity, vector, graph, embedding, query/fact indexes, and Provider replacement remain unauthorized.
+- Writer v3 is the only active Host schema; v1 migration is explicit/offline and v2 has no active fallback.
+- LLM output contains quote refs, while Access deterministically computes exact codepoint spans and canonical digests.
+- New durable Statements have reopenable Access-owned provenance; resolved-reference basis IDs cross-link exact Evidence refs.
+- Cartography plans bind Writer, field, Atlas/page, selected entries, Handles, and schema/prompt identity. Stale apply is zero-write.
+- The main agent owns one internal `nollm_memory` tool call path. Model-visible parameters contain no coordinates or query/Statement lookup.
+- Default Locality is one entry and at most 4 Statements/3000 characters; one same-entry expansion allows 8/6000.
+- The 80-Statement, eight-Locality, 57-query deterministic matrix achieved 100% target/expanded/restart reach, p95 4 Statements/224 characters, zero unrelated leakage, and zero hidden child calls.
+- The Provider-backed 20-Statement gate, Writer first-attempt rate, and natural visible-answer quality were not run because live OpenClaw/model calls are prohibited. Status therefore remains IN_PROGRESS.
+- Core tree `83bb1fb4d28a0ee2a2a3f3f3efc85f1b4ba7c0c7` is unchanged from input.
 
-Gate vector:
+Task vector:
 
 ```text
 CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +15% |
