@@ -23,7 +23,18 @@
 - Preserve one Statement/Atom/Handle/Cell, Prompt-bounded Atlas, realized Junction, and all Rev4 relation-growth evidence.
 - Core is frozen in this task.
 - Main-agent memory operations are server-issued and bound to the exact Host run, session, scope, and workspace.
-- Recall-satisfied suppression is run-scoped; Pending context and Surface-only calls never suppress Capture.
+- `53182a4` is an offline run-scoped tool checkpoint, not Provider or semantic product validation.
+- Every visible user/assistant turn is durably Captured even when Nollm Recall was used.
+- Recall use changes role-level absorption eligibility; it never deletes Raw Capture.
+- User-originated text remains eligible in mixed Recall/new-fact turns.
+- Memory-derived assistant text is context-only and is not a new proposition source.
+- Capture eligibility metadata is durable and hook-order independent; missing metadata defaults safely.
+- A Surface is routing-only and never exposes complete Statement bodies from multiple Localities.
+- Full Statement content is returned only after one entry is selected by Recall or same-entry expansion.
+- Surface-only model answers are invalid product evidence; target-hidden tests verify content absence.
+- Main-agent operation scope uses the actual Host-derived scope under an explicitly enforced single-scope profile.
+- Real Provider Writer and real main-agent Host execution remain mandatory for product acceptance.
+- Deterministic geometry fixtures are conformance evidence, not semantic product evidence.
 - Deterministic fixtures must predeclare targets and compute leakage from returned Statement IDs.
 
 - One MemoryStatement maps to one Atom, one Handle, and one Cell.

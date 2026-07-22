@@ -15,6 +15,18 @@ Locality is geometry-ranked and bounded to four Statements or 3000 characters;
 one expansion may increase the same selected entry to eight Statements or 6000
 characters. The active user Recall path starts no independent Reader child.
 
+Every visible user/assistant turn is durably Captured, including turns that use
+Nollm Recall. An append-only role directive controls only background absorption:
+user text remains source eligible, while recalled assistant text is context-only.
+Missing or late directives fail safely to context-only assistant handling.
+
+The preselection Surface is routing-only. It exposes bounded routing anchors,
+occupancy, child availability, and opaque operation-local entry aliases, but no
+complete Statement bodies. Full Statement content appears only after one entry
+is selected by Recall or same-entry expansion. The active profile enforces one
+explicit configured Capture scope and refuses tool binding for any other
+Host-derived scope.
+
 Capture and Pending read-your-writes remain local, bounded, and fail-open.
 Formation and Cartography remain background operations. Core is not imported by
 the TypeScript plugin and no Topic, entity, vector, graph, embedding, query, or
