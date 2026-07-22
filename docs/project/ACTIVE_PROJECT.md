@@ -1,23 +1,23 @@
 # Active Project Basis
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
-- Active architecture: [V3.11 Rev4 Contextual Proposition and Shared Retrieval Entry Identity](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV4_CONTEXTUAL_PROPOSITION_SHARED_RETRIEVAL_ENTRY_IDENTITY_20260721.md)
+- Active architecture: [V3.11 Rev5 LLM-Native Evidence and Main-Agent Geometric Recall](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV5_LLM_NATIVE_EVIDENCE_ANCHORS_MAIN_AGENT_GEOMETRIC_RECALL_20260722.md)
 - Active route: `NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`
-- Current task: [Recall Entry Identity, Contextual Writer, and Relational Growth](tasks/NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md)
+- Current task: [LLM-Native Evidence, Stale Plan Rejection, Main-Agent Recall, and Selectivity](tasks/NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md)
 - Current status: [NOLLM_CURRENT_STATUS.md](NOLLM_CURRENT_STATUS.md)
 - Canonical ledger: [NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current report: [AOLD Contextual Writer Relational Growth Report](AOLD_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_REPORT.md)
-- Input checkpoint: `c40f8bf6a5be6184e5e56236c96d2817fed4bee5`
+- Current report: pending `AOLD_LLM_NATIVE_EVIDENCE_MAIN_AGENT_RECALL_REPORT.md`
+- Input checkpoint: `a4d8e3135ef894453e1d01dc5c19139d23d9c71f`
 
 Current state:
 
 ```text
-CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED_AT_75383c6f3cc0358d8dcc430cd09c02252edb947b
+LLM_NATIVE_EVIDENCE_AND_MAIN_AGENT_GEOMETRIC_RECALL_IN_PROGRESS_AT_a4d8e3135ef894453e1d01dc5c19139d23d9c71f
 ```
 
-The c40f8bf reliability closure remains preserved, but its one-cell conclusion
-is withdrawn because region-local entry IDs collided in fast Recall. Rev4 has
-validated operation-unique entries, bounded narrative context, Direct/Entry
-queries, nine-fact relational growth, three distinct Reader entries, causal
-target-hidden Recall, restart/NONE, and read zero-write. Core, multi-cell, and
-multi-entry Recall changes remain unauthorized.
+The a4d8e31 input is a contextual Writer and shared-retrieval growth checkpoint,
+not a low-latency user Recall closure. Rev5 is active to remove legacy Writer
+bypass, resolve quoted Evidence deterministically, persist canonical provenance,
+reject stale Cartography, and move default Recall into a same-run main-agent
+single-entry geometry tool. Core, multi-cell, and multi-entry Recall changes
+remain unauthorized.

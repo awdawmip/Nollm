@@ -1,0 +1,12 @@
+{
+  "schema_version": "nollm_aold_rev5_input_counterexamples_v1",
+  "input_head": "a4d8e3135ef894453e1d01dc5c19139d23d9c71f",
+  "observations": [
+    {"id": "legacy-wrong-date", "observed": true, "detail": "active parser accepts legacy v1 content 2035-01-01 from source text 今天东京下雨了"},
+    {"id": "mismatched-reference-basis", "observed": true, "detail": "basis_capture_ids can name a context Capture while basis_span_indexes select a source Capture span"},
+    {"id": "stale-cartography-apply", "observed": true, "detail": "apply rebuilds current Atlas but does not compare the planned Atlas/Core/visible-handle fingerprint"},
+    {"id": "llm-offset-index-failures", "observed": true, "attempts": 31, "detail": "nine accepted Captures required 9,11,1,1,1,1,5,1,1 attempts"},
+    {"id": "hidden-reader-latency", "observed": true, "latency_ms": [31800, 19700, 23500, 33700], "detail": "common Recall invokes an independent hidden Reader before the main answer"},
+    {"id": "locality-over-injection", "observed": true, "statement_counts": [7, 6, 6, 7], "detail": "nine-fact field injects six or seven statements for representative queries"}
+  ]
+}

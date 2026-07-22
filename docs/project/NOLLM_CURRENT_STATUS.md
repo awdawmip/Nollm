@@ -1,34 +1,31 @@
 # Nollm Current Status
 
-Date: 2026-07-21
+Date: 2026-07-22
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md
-status: CONTEXTUAL_WRITER_SHARED_RETRIEVAL_GROWTH_VALIDATED_AT_75383c6f3cc0358d8dcc430cd09c02252edb947b
-input HEAD: c40f8bf6a5be6184e5e56236c96d2817fed4bee5
-evidence: validation/aold_contextual_relational_growth_20260721.jsonl
-summary: validation/aold_contextual_relational_growth_summary_20260721.json
+task: NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md
+status: LLM_NATIVE_EVIDENCE_AND_MAIN_AGENT_GEOMETRIC_RECALL_IN_PROGRESS_AT_a4d8e3135ef894453e1d01dc5c19139d23d9c71f
+input HEAD: a4d8e3135ef894453e1d01dc5c19139d23d9c71f
+evidence: pending validation/aold_llm_native_main_agent_recall_20260722.jsonl
+summary: pending validation/aold_llm_native_main_agent_recall_summary_20260722.json
 ```
 
 Active truth:
 
-- Core rejects reentrant Trace mutation/import/close and scores the complete public Junction universe before applying output limits.
-- Access holds a Core operation lease across cross-store actions, preserves fatal rollback diagnostics, exposes commit state, and handles corrupt Statements per item.
-- Capture state is append-only and recoverable; the real run demonstrated one structured Cartographer retry converging on the same Capture ID.
-- Live Evidence is run-scoped. The writer was disabled before exact-byte freeze; machine probes reported no listener and no Gateway process before or after freeze.
-- Nine ordinary atomic chats produced nine Captures, nine Statements, nine one-Cell Handles, and nine reopen-verified durable commits with `meituan/LongCat-2.0`.
-- The c40f8bf live Recall result is reclassified as an entry-identity collision checkpoint: region-local `progressive-entry:0` IDs were overwritten by a single-key Reader dictionary.
-- Rev4 now derives entry IDs from Atlas fingerprint, region identity, and GeometryAddress; duplicate selectable identities fail closed.
-- Writer v2 receives at most four preceding same-session Captures and 6000 context characters, separately from absorption sources.
-- Writer provenance validates exact spans and rejects absolute dates without an explicit timestamp/span basis.
-- Direct queries are distinct from broader shared-entry queries; Cartographer resolves only the latter.
-- The v6 run has nine accepted Captures, Statements, active bindings, and occupied Cells; wrong-date and active duplicate/orphan counts are zero.
-- Related growth is 6 and independent seed is 3; Tokyo, meeting, and weather use three distinct entries and reach T0 through non-empty paths.
-- Target-hidden causal Recall passes, unrelated counterfactuals do not reach T0, restart/NONE passes, and Core bytes are unchanged across Recall.
-- Recall-only mode cannot start legacy Formation when Capture and absorption are both explicitly disabled.
-- Controlled Capture p95 is 7.6748 ms over 150 samples; the nine-sample live p95 observation of 182.0972 ms is retained separately.
+- `a4d8e31` is the contextual Writer/shared-retrieval growth checkpoint; it is not a user-facing low-latency Recall completion claim.
+- Rev4 operation-unique entries, bounded narrative context, Direct/Entry queries, nine durable one-Cell facts, causal target-hidden Recall, restart/NONE, and read zero-write remain preserved.
+- The Git-blob evidence verifier does not pass at `75383c6`; the missing completion binding is present only in final checkpoint `a4d8e31`.
+- Active Writer v2 still accepts legacy v1, asks the model for offsets/indexes, and permits mismatched resolved-reference basis declarations.
+- Cartography apply is not yet bound to its planned field state.
+- Default common Recall may still create a hidden Reader child-agent and inject six or seven statements in the nine-fact field.
+- Rev5 implementation is therefore in progress: Writer v3 quote refs, Access-owned canonical provenance, stale-plan zero-write rejection, same-run main-agent single-entry geometry tool, and bounded expandable locality.
+- Core is frozen. Multi-cell, multi-entry, Stitch, Topic/Entity, vector, graph, embedding, query/fact indexes, and Provider replacement remain unauthorized.
 
-The Rev4 contextual shared-retrieval growth Gate is validated at the named
-code/Evidence commit. No Core, multi-cell, Topic/Entity, semantic index,
-multi-entry Recall, or query/fact mapping is authorized.
+Gate vector:
+
+```text
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +15% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +15% |
+LAB +15% | DISTRIBUTIONS +5%
+```

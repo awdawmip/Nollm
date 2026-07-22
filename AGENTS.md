@@ -1,14 +1,27 @@
-# Nollm V3.11 Rev4 Contextual Relational Growth Rules
+# Nollm V3.11 Rev5 LLM-Native Evidence and Main-Agent Recall Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV4_CONTEXTUAL_PROPOSITION_SHARED_RETRIEVAL_ENTRY_IDENTITY_20260721.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV5_LLM_NATIVE_EVIDENCE_ANCHORS_MAIN_AGENT_GEOMETRIC_RECALL_20260722.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_RECALL_ENTRY_IDENTITY_CONTEXTUAL_WRITER_RELATIONAL_GROWTH_TASK_20260721.md`.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md`.
 - `c40f8bf6a5be6184e5e56236c96d2817fed4bee5` is the immutable runtime-integrity input checkpoint. Its one-cell counterexample is invalid because fast Recall entry IDs collided.
 
 ## Current closure contract
+
+- The active Writer schema is Rev5 only; legacy Writer parsing is offline migration only.
+- LLMs quote Evidence; deterministic code computes exact spans.
+- Do not ask an LLM for Unicode offsets, Python slices, or span-array indexes.
+- Every durable Statement retains canonical provenance independent of debug traces.
+- Resolved-reference basis IDs must point to the exact Evidence refs they claim.
+- Cartography plans are state-bound; stale plans are zero-write and recalculated.
+- The default user Recall path creates no independent hidden Reader child-agent.
+- The main agent uses an internal single-entry Nollm geometry tool in its own run.
+- The main agent may expand only from the same selected entry.
+- Default Locality is small and geometry-ranked; Python does not semantically filter it.
+- Preserve one Statement/Atom/Handle/Cell, Prompt-bounded Atlas, realized Junction, and all Rev4 relation-growth evidence.
+- Core is frozen in this task.
 
 - One MemoryStatement maps to one Atom, one Handle, and one Cell.
 - One Capture or chat turn may produce zero, one, or multiple independent MemoryStatements.
