@@ -5,7 +5,7 @@
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
 - Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV5_LLM_NATIVE_EVIDENCE_ANCHORS_MAIN_AGENT_GEOMETRIC_RECALL_20260722.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md`.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_MAIN_AGENT_TOOL_SCOPE_PROVIDER_LIVE_SEMANTIC_SELECTIVITY_CLOSURE_TASK_20260722.md`.
 - `c40f8bf6a5be6184e5e56236c96d2817fed4bee5` is the immutable runtime-integrity input checkpoint. Its one-cell counterexample is invalid because fast Recall entry IDs collided.
 
 ## Current closure contract
@@ -22,6 +22,9 @@
 - Default Locality is small and geometry-ranked; Python does not semantically filter it.
 - Preserve one Statement/Atom/Handle/Cell, Prompt-bounded Atlas, realized Junction, and all Rev4 relation-growth evidence.
 - Core is frozen in this task.
+- Main-agent memory operations are server-issued and bound to the exact Host run, session, scope, and workspace.
+- Recall-satisfied suppression is run-scoped; Pending context and Surface-only calls never suppress Capture.
+- Deterministic fixtures must predeclare targets and compute leakage from returned Statement IDs.
 
 - One MemoryStatement maps to one Atom, one Handle, and one Cell.
 - One Capture or chat turn may produce zero, one, or multiple independent MemoryStatements.

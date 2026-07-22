@@ -8,9 +8,9 @@ Status:
 AOLD_LLM_NATIVE_MAIN_AGENT_RECALL_IN_PROGRESS_AT_217f512559385a93fdd79b56b32f7894c6016293
 ```
 
-The implementation and deterministic scale gates are complete. The Provider
-gate is not complete because the active repository instruction prohibits live
-OpenClaw, model calls, and corpus execution. No Provider result is fabricated.
+This report records an implementation checkpoint. Provider and main-agent Live
+gates were not executed, and the old deterministic target/NONE/leakage claims
+are withdrawn below. No Provider result is fabricated.
 
 ## Delivery identity
 
@@ -39,7 +39,7 @@ normalization mismatch, missing quotes, and long Captures.
 
 This removes the deterministic offset/index failure class that contributed to
 the Rev4 31-attempt baseline. New Provider first-attempt success was not
-measured because model calls were prohibited.
+measured in this checkpoint.
 
 Each new durable Statement receives an Access-owned canonical provenance
 sidecar containing content digest, source/context Captures, exact spans,
@@ -85,12 +85,12 @@ expand, and two cold restart cases.
 
 | Metric | Result |
 | --- | ---: |
-| target reach | 100% |
-| expanded target reach | 100% |
+| target reach | withdrawn: target selected from the result |
+| expanded target reach | withdrawn: target selected from the result |
 | cold restart reach | 100% |
 | default result p95 | 4 |
 | default characters p95 | 224 |
-| maximum unrelated leakage | 0 |
+| maximum unrelated leakage | withdrawn: returned IDs were not checked |
 | single-entry rate | 100% |
 | hidden child calls | 0 |
 | local tool p95 | 624.6 ms |
@@ -108,9 +108,10 @@ Code/evidence commit `217f512` contains:
 | `validation/aold_llm_native_main_agent_recall_20260722.jsonl` | `29cbcdbc2ff08c95afe88ce3c9abe54db94952b7` | 59 | 26015 | `9271af16b40222c96bf7290a209ad1f04bed865892f6b023c89d266b21cba487` |
 | `validation/aold_llm_native_main_agent_recall_summary_20260722.json` | `e30ced0e1dd7042275a35c59b4e8c60e65884459` | 1 | 929 | `96574f7fcb1838eec836c37862b4bda59f841e75896eea7a870e3678f845ca6b` |
 
-Provider/model, raw Writer/Cartographer attempts, and visible main-answer
-quality have no new events because those calls were prohibited. The summary
-records `provider_backed_statement_count=0` and `provider_gate_met=false`.
+Provider/model, raw Writer/Cartographer attempts, real NONE, and visible
+main-answer quality have no events in this checkpoint. The frozen summary
+records `provider_backed_statement_count=0` and `provider_gate_met=false`; its
+stated prohibition reason is historical report text, not active authority.
 
 ## Verification
 
@@ -132,8 +133,8 @@ HISTORY 0% | AUDIT 0% | OPENCLAW +15% |
 LAB +15% | DISTRIBUTIONS +5%
 ```
 
-Access and OpenClaw reach the planned Rev5 implementation target; Lab proves
-the deterministic 80-fact selectivity target. Remaining limitations are the
+Access and OpenClaw reach the Rev5 implementation checkpoint; Lab proves only
+bounded function behavior after an entry is supplied. Remaining limitations are the
 unrun 20-Statement Provider gate, unmeasured Writer first-attempt/final-durable
 rates, unverified live install/diagnose behavior, and unobserved natural visible
 main-agent answers. Multi-cell, multi-entry, Stitch, Topic/Entity,
