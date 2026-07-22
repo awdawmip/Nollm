@@ -2,6 +2,8 @@ import json
 
 import pytest
 
+from nollm_access import AccessMemoryLoop, FileStatementProvenanceStore, FileStatementStore
+
 from nollm_openclaw_formation.cartographer import (
     FIELD_CARTOGRAPHER_SCHEMA_VERSION,
     LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION,
@@ -10,6 +12,7 @@ from nollm_openclaw_formation.cartographer import (
     apply_field_cartography_result,
     build_field_cartographer_prompt,
     build_proposition_writer_prompt,
+    migrate_legacy_proposition_writer_result,
     parse_proposition_writer_result,
 )
 from nollm_openclaw_formation.memory_loop import (
@@ -34,16 +37,17 @@ def _writer_raw(content="2026年7月18日东京下雨。"):
         "outcome": "plan",
         "propositions": [{
             "draft_id": "d1",
+            "outcome": "statement",
             "content_utf8": content,
             "source_capture_ids": ["capture-one"],
-            "evidence_spans": [{
-                "capture_id": "capture-one", "role": "user", "start": 0,
-                "end": len(CAPTURE["user_utf8"]), "quote_utf8": CAPTURE["user_utf8"],
+            "context_capture_ids": [],
+            "evidence_refs": [{
+                "evidence_ref_id": "e1", "capture_id": "capture-one", "role": "user", "quote_utf8": CAPTURE["user_utf8"],
             }],
-            "context_statement_refs": [],
             "resolved_references": [{
+                "reference_id": "r1",
                 "kind": "temporal", "normalized_value": "2026-07-18",
-                "basis_capture_ids": ["capture-one"], "basis_span_indexes": [],
+                "basis_evidence_ref_ids": [], "timestamp_basis_capture_ids": ["capture-one"],
             }],
             "direct_queries": [{"query_id": "direct-tokyo", "query_utf8": "东京天气如何？"}],
             "entry_queries": [{"query_id": "entry-tokyo", "query_utf8": "这次东京经历发生了什么？"}],
@@ -96,15 +100,15 @@ def test_writer_is_context_bounded_and_field_size_independent(tmp_path):
     assert "progressive_atlas_page:" not in empty["prompt"]
     assert "locality_atlas:" not in empty["prompt"]
     assert "candidate_id" not in empty["prompt"]
-    assert "non-empty list of zero-based indexes into this proposition's evidence_spans array" in empty["prompt"]
-    assert "never character offsets" in empty["prompt"]
-    assert "role_text[start:end] must equal quote_utf8 exactly" in empty["prompt"]
-    assert "Prefer user-role spans" in empty["prompt"]
+    assert "Never calculate or output start, end" in empty["prompt"]
+    assert "span-array indexes" in empty["prompt"]
+    assert "Evidence quote refs" in empty["prompt"]
+    assert "Prefer user-role quotes" in empty["prompt"]
     assert 'outcome must be the literal string "plan"' in empty["prompt"]
-    assert "Every proposition object must contain exactly these eight keys" in empty["prompt"]
-    assert "Every basis_capture_id must equal the capture_id" in empty["prompt"]
+    assert "Every proposition object must contain exactly these nine keys" in empty["prompt"]
+    assert "basis_evidence_ref_ids cross-link" in empty["prompt"]
     assert "source_capture_ids may contain only IDs listed in absorption_sources" in empty["prompt"]
-    assert "the relative phrase itself is not an absolute-date basis" in empty["prompt"]
+    assert 'Proposition outcome must be "statement"' in empty["prompt"]
 
 
 def test_context_writer_resolves_same_day_with_explicit_prior_capture_provenance():
@@ -116,17 +120,19 @@ def test_context_writer_resolves_same_day_with_explicit_prior_capture_provenance
         "capture_id": "capture-source", "user_utf8": "那天晚上我整理了会议记录。", "assistant_utf8": "好的。",
         "captured_epoch_ms": 1_784_606_400_000, "timezone_offset_minutes": 480,
     }
-    context_span = {"capture_id": context["capture_id"], "role": "user", "start": 0, "end": len(context["user_utf8"]), "quote_utf8": context["user_utf8"]}
-    source_span = {"capture_id": source["capture_id"], "role": "user", "start": 0, "end": len(source["user_utf8"]), "quote_utf8": source["user_utf8"]}
     raw = json.dumps({
         "schema_version": PROPOSITION_WRITER_SCHEMA_VERSION, "outcome": "plan", "defer_reason": None,
         "propositions": [{
-            "draft_id": "d1", "content_utf8": "2026年7月21日晚上，用户整理了该线上会议的记录。",
-            "source_capture_ids": [source["capture_id"]], "evidence_spans": [context_span, source_span],
-            "context_statement_refs": [],
+            "draft_id": "d1", "outcome": "statement", "content_utf8": "2026年7月21日晚上，用户整理了该线上会议的记录。",
+            "source_capture_ids": [source["capture_id"]], "context_capture_ids": [context["capture_id"]],
+            "evidence_refs": [
+                {"evidence_ref_id": "context-date", "capture_id": context["capture_id"], "role": "user", "quote_utf8": context["user_utf8"]},
+                {"evidence_ref_id": "source-event", "capture_id": source["capture_id"], "role": "user", "quote_utf8": source["user_utf8"]},
+            ],
             "resolved_references": [{
+                "reference_id": "same-day",
                 "kind": "temporal", "normalized_value": "2026-07-21",
-                "basis_capture_ids": [context["capture_id"]], "basis_span_indexes": [0],
+                "basis_evidence_ref_ids": ["context-date"], "timestamp_basis_capture_ids": [],
             }],
             "direct_queries": [{"query_id": "direct-1", "query_utf8": "用户那天晚上做了什么？"}],
             "entry_queries": [{"query_id": "entry-1", "query_utf8": "这次线上会议发生了什么？"}],
@@ -156,7 +162,7 @@ def test_context_only_capture_cannot_become_absorption_source():
         parse_proposition_writer_result(json.dumps(raw, ensure_ascii=False), [CAPTURE], "context-source", context_captures=[context])
 
 
-def test_legacy_writer_wire_migrates_one_future_lens_to_direct_and_entry_queries():
+def test_active_writer_rejects_legacy_and_explicit_migration_marks_coarse_provenance():
     raw = json.dumps({
         "schema_version": LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION, "outcome": "plan", "defer_reason": None,
         "propositions": [{
@@ -167,7 +173,11 @@ def test_legacy_writer_wire_migrates_one_future_lens_to_direct_and_entry_queries
             }],
         }],
     }, ensure_ascii=False)
-    proposition = parse_proposition_writer_result(raw, [CAPTURE], "legacy")["propositions"][0]
+    with pytest.raises(Exception, match="invalid Proposition Writer envelope"):
+        parse_proposition_writer_result(raw, [CAPTURE], "legacy-active")
+    migrated = migrate_legacy_proposition_writer_result(raw, [CAPTURE], "legacy-migration")
+    proposition = migrated["propositions"][0]
+    assert migrated["provenance_precision"] == "coarse"
     assert proposition["direct_queries"] == [{"query_id": "legacy-lens", "query_utf8": "东京天气如何？"}]
     assert proposition["entry_queries"] == proposition["direct_queries"]
 
@@ -192,6 +202,12 @@ def test_cartographer_independent_seed_then_related_growth(tmp_path):
     applied = apply_field_cartography_result(resolved, writer, [CAPTURE], str(tmp_path), "seed")
     seed = applied["outcomes"][0]
     assert seed["outcome"] == "applied" and seed["placement_mode"] == "independent_seed"
+    with AccessMemoryLoop(tmp_path) as loop:
+        provenance = loop.statement_provenance(seed["statement_id"])
+    assert provenance["writer_schema_version"] == PROPOSITION_WRITER_SCHEMA_VERSION
+    assert provenance["source_capture_ids"] == [CAPTURE["capture_id"]]
+    assert provenance["evidence_spans"][0]["quote_utf8"] == CAPTURE["user_utf8"]
+    assert seed["provenance_sha256"] == provenance["provenance_sha256"]
 
     second_writer = parse_proposition_writer_result(_writer_raw("用户因东京降雨取消浅草行程。"), [CAPTURE], "related-writer")
     related_built = build_field_cartographer_prompt(second_writer, str(tmp_path), "related")
@@ -213,6 +229,64 @@ def test_cartographer_independent_seed_then_related_growth(tmp_path):
     related_applied = apply_field_cartography_result(related, second_writer, [CAPTURE], str(tmp_path), "related")
     assert related_applied["outcomes"][0]["outcome"] == "applied"
     assert related_applied["outcomes"][0]["placement_mode"] == "related_growth"
+
+
+def _independent_cartography(writer, workspace, request_id):
+    built = build_field_cartographer_prompt(writer, str(workspace), request_id)
+    query = writer["propositions"][0]["entry_queries"][0]
+    raw = json.dumps({
+        "schema_version": FIELD_CARTOGRAPHER_SCHEMA_VERSION,
+        "action": "resolve",
+        "plans": [{
+            "draft_id": "d1", "placement_mode": "independent_seed",
+            "entry_resolutions": [{"entry_query_id": query["query_id"], "region_id": None, "entry_id": None, "unresolved": True}],
+            "existing_handle": None, "reason_text": "independent fixture",
+        }],
+    })
+    return advance_field_cartographer(raw, writer, built["page"], str(workspace), request_id, 1)
+
+
+def test_cartography_plan_rejects_field_change_before_any_apply_write(tmp_path):
+    writer = _writer_result("stale-writer")
+    resolved = _independent_cartography(writer, tmp_path, "stale")
+    _seed_field(tmp_path, 1)
+    with AccessMemoryLoop(tmp_path) as loop:
+        before = loop.core_state_sha256()
+        occupied_before = loop.build_progressive_atlas("stale:before").occupied_field_cell_count
+    with pytest.raises(Exception, match="field state changed"):
+        apply_field_cartography_result(resolved, writer, [CAPTURE], str(tmp_path), "stale")
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.core_state_sha256() == before
+        assert loop.build_progressive_atlas("stale:after").occupied_field_cell_count == occupied_before
+    assert not (tmp_path / "access" / "statement-provenance").exists()
+
+
+def test_cartography_plan_token_tamper_is_zero_write(tmp_path):
+    writer = _writer_result("token-writer")
+    resolved = _independent_cartography(writer, tmp_path, "token")
+    resolved["plan_token"]["page_fingerprint"] = "0" * 64
+    with pytest.raises(Exception, match="not canonical"):
+        apply_field_cartography_result(resolved, writer, [CAPTURE], str(tmp_path), "token")
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.build_progressive_atlas("token:after").occupied_field_cell_count == 0
+
+
+def test_provenance_write_failure_rolls_back_new_statement_and_core(tmp_path, monkeypatch):
+    writer = _writer_result("provenance-failure-writer")
+    resolved = _independent_cartography(writer, tmp_path, "provenance-failure")
+
+    def fail_put(_store, _value):
+        raise OSError("injected provenance failure")
+
+    monkeypatch.setattr(FileStatementProvenanceStore, "put", fail_put)
+    applied = apply_field_cartography_result(resolved, writer, [CAPTURE], str(tmp_path), "provenance-failure")
+    outcome = applied["outcomes"][0]
+    assert outcome["outcome"] == "error"
+    assert "injected provenance failure" in outcome["error"]
+    assert not FileStatementStore(tmp_path).exists(outcome["statement_id"])
+    assert not FileStatementProvenanceStore(tmp_path).exists(outcome["statement_id"])
+    with AccessMemoryLoop(tmp_path) as loop:
+        assert loop.build_progressive_atlas("provenance-failure:after").occupied_field_cell_count == 0
 
 
 def test_cartographer_uses_one_session_across_progressive_turns(tmp_path):

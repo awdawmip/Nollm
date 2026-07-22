@@ -53,6 +53,13 @@ from .recall_lens import DREAM_SCULPTOR_SCHEMA_VERSION, JunctionSemanticPlan, Le
 from .runtime import AccessConsistencyError, AccessRollbackFailure, AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore, StatementStore
+from .evidence_anchor import EvidenceQuoteRef, ExactEvidenceSpan, resolve_evidence_quote_refs
+from .provenance import (
+    PROVENANCE_SCHEMA_VERSION,
+    FileStatementProvenanceStore,
+    ResolvedReferenceProvenance,
+    StatementProvenance,
+)
 from .surface_selection import (
     ActiveSurfaceSelection,
     PLACEMENT_SURFACE_BUDGET,
@@ -110,6 +117,7 @@ __all__ = [
     "EvidenceSpan",
     "FileEvidenceStore",
     "FileStatementStore",
+    "FileStatementProvenanceStore",
     "FileHandleStore",
     "FileBindingStore",
     "HandleBinding",
@@ -137,6 +145,12 @@ __all__ = [
     "MAX_STATEMENTS",
     "FormedMemoryStatement",
     "MemoryStatement",
+    "EvidenceQuoteRef",
+    "ExactEvidenceSpan",
+    "ResolvedReferenceProvenance",
+    "StatementProvenance",
+    "PROVENANCE_SCHEMA_VERSION",
+    "resolve_evidence_quote_refs",
     "PLACEMENT_SURFACE_BUDGET",
     "RECALL_SURFACE_BUDGET",
     "StatementStore",

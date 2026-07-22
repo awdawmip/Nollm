@@ -12,6 +12,7 @@ $configEnvelope = & $OpenClaw config get plugins.entries.nollm-formation --json 
 $config = $configEnvelope.config
 $agents = & $OpenClaw config get agents.list --json | ConvertFrom-Json
 $dream = $agents | Where-Object id -eq "nollm-dream-agent"
+$main = $agents | Where-Object id -eq "main"
 $captureRoot = if ($config.capture_workspace) {
   $config.capture_workspace
 } elseif ($config.memory_workspace) {
@@ -93,5 +94,9 @@ $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path
   old_workspace_present = $oldWorkspacePresent
   dream_agent_present = ($null -ne $dream)
   dream_agent_denies_message = (@($dream.tools.deny) -contains "message")
+  main_agent_nollm_memory_allowed = (@($main.tools.alsoAllow) -contains "nollm_memory")
+  main_agent_recall_enabled = ($config.main_agent_recall_enabled -ne $false)
+  legacy_reader = $false
+  proposition_writer_schema_version = "nollm_openclaw_contextual_proposition_writer_v3"
   host_allow_model_override = $configEnvelope.subagent.allowModelOverride
 } | ConvertTo-Json -Depth 5

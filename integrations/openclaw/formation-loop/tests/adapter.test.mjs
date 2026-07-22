@@ -6,9 +6,13 @@ import { join } from "node:path";
 import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, assertMutableEvidencePath, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText, writerFormatRepairPrompt, writerFormatRepairable } from "../dist/index.js";
 import { CaptureStore } from "../dist/capture.js";
 
-test("manifest exposes no main-agent Formation tool", () => {
+test("manifest exposes one internal main-agent geometry Recall tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
-  assert.deepEqual(manifest.contracts.tools, []);
+  assert.deepEqual(manifest.contracts.tools, ["nollm_memory"]);
+  assert.equal(manifest.contracts.mainAgentRecallWire, "nollm_openclaw_main_agent_geometry_recall_v1");
+  assert.equal(manifest.contracts.legacyReader, false);
+  assert.equal(manifest.configSchema.properties.recall_hidden_call_budget.const, 0);
+  assert.equal(manifest.configSchema.properties.main_agent_recall_enabled.default, true);
   assert.equal(manifest.configSchema.properties.prompt_version.default, "dream-json-p1");
   assert.equal(manifest.configSchema.properties.model_mode.default, "inherit");
   assert.equal(manifest.configSchema.properties.persist_subagent_transcripts.const, false);
@@ -35,7 +39,7 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.configSchema.properties.dream_sculptor_schema_version.const, manifest.contracts.dreamSculptorWire);
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 512);
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.default, 512);
-  assert.equal(manifest.configSchema.properties.proposition_writer_schema_version.const, "nollm_openclaw_contextual_proposition_writer_v2");
+  assert.equal(manifest.configSchema.properties.proposition_writer_schema_version.const, "nollm_openclaw_contextual_proposition_writer_v3");
   assert.equal(manifest.configSchema.properties.field_cartographer_schema_version.const, "nollm_openclaw_field_cartographer_v2");
   assert.equal(manifest.configSchema.properties.cartographer_max_regions.const, 32);
   assert.equal(manifest.configSchema.properties.cartographer_max_prompt_bytes.const, 65536);
@@ -43,7 +47,7 @@ test("manifest exposes no main-agent Formation tool", () => {
   assert.equal(manifest.contracts.localityAtlasWire, "nollm_access_locality_atlas_v3");
   assert.equal(manifest.contracts.progressiveAtlasPageWire, "nollm_access_progressive_atlas_page_v1");
   assert.equal(manifest.contracts.localDetailPageWire, "nollm_access_local_detail_page_v1");
-  assert.equal(manifest.contracts.propositionWriterWire, "nollm_openclaw_contextual_proposition_writer_v2");
+  assert.equal(manifest.contracts.propositionWriterWire, "nollm_openclaw_contextual_proposition_writer_v3");
   assert.equal(manifest.contracts.fieldCartographerWire, "nollm_openclaw_field_cartographer_v2");
   assert.equal(manifest.contracts.fastRecallWire, "nollm_openclaw_single_call_entry_recall_v1");
   assert.equal(manifest.contracts.propositionWriterCommonProviderCalls, 1);
@@ -124,6 +128,17 @@ test("plugin registers channel delivery, recall preparation, and Gateway complet
   registerDreamAgent({ pluginConfig: { enabled: false }, on(name, handler) { hooks.set(name, handler); }, registerTool() { toolCount += 1; } });
   assert.deepEqual([...hooks.keys()].sort(), ["agent_end", "agent_turn_prepare", "before_agent_run", "llm_output", "message_received", "message_sent", "subagent_ended", "subagent_spawned"]);
   assert.equal(toolCount, 0);
+});
+
+test("active plugin registers one parameter-bounded main-agent memory tool", async () => {
+  let tool; const hooks = new Map();
+  registerDreamAgent({ pluginConfig: {}, on(name, handler) { hooks.set(name, handler); }, registerTool(value) { tool = value; } });
+  assert.equal(tool.name, "nollm_memory");
+  assert.deepEqual(Object.keys(tool.parameters.properties).sort(), ["action", "budget_option_id", "entry_id", "operation_id", "region_id"]);
+  for (const forbidden of ["q", "r", "layer", "query", "statement_id", "topic"]) assert.equal(forbidden in tool.parameters.properties, false);
+  const unavailable = await tool.execute("call", { action: "surface", operation_id: "same-run" });
+  assert.equal(unavailable.details.status, "unavailable");
+  assert.equal(unavailable.details.legacy_reader, false);
 });
 
 test("recall NONE paths emit explicit audit evidence", () => {

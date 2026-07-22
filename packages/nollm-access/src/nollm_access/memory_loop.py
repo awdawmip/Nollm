@@ -15,6 +15,7 @@ from .recall_lens import JunctionSemanticPlan
 from .runtime import AccessRuntime
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore
+from .provenance import FileStatementProvenanceStore, StatementProvenance
 from .surface_navigation import AccessSurfaceNavigator
 from .surface_selection import PLACEMENT_SURFACE_BUDGET
 from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
@@ -857,6 +858,7 @@ class AccessMemoryLoop:
         atlas: LocalityAtlas,
         request_id: str,
         revision_confirmations: object = None,
+        provenance_by_statement: object = None,
     ) -> dict[str, object]:
         """Apply validated semantic plans while keeping exact Cell selection in Core."""
         self._require_request(request_id)
@@ -872,6 +874,14 @@ class AccessMemoryLoop:
             confirmations = revision_confirmations
         else:
             raise TypeError("revision_confirmations must be a Statement-keyed mapping")
+        if provenance_by_statement is None:
+            provenances: dict[str, StatementProvenance] = {}
+        elif type(provenance_by_statement) is dict and all(type(key) is str and type(value) is StatementProvenance for key, value in provenance_by_statement.items()):
+            provenances = provenance_by_statement
+        else:
+            raise TypeError("provenance_by_statement must be a Statement-keyed provenance mapping")
+        if set(provenances) - {plan.statement.statement_id for plan in plans}:
+            raise ValueError("provenance contains an unknown Statement")
 
         # Confirmation proves semantic supersession only. It does not prove that
         # the Core field or current Handle binding remained unchanged meanwhile.
@@ -974,7 +984,13 @@ class AccessMemoryLoop:
                     })
                     continue
             statement_store = FileStatementStore(self._workspace)
+            provenance_store = FileStatementProvenanceStore(self._workspace)
+            provenance = provenances.get(plan.statement.statement_id)
+            if provenance is not None:
+                if provenance.statement_id != plan.statement.statement_id or provenance.content_sha256 != hashlib.sha256(plan.statement.content_utf8.encode("utf-8")).hexdigest():
+                    raise ValueError("Statement provenance does not bind the planned Statement")
             existed_before = statement_store.exists(plan.statement.statement_id)
+            provenance_existed_before = provenance is not None and provenance_store.exists(plan.statement.statement_id)
             if existed_before:
                 try:
                     with self._runtime() as access:
@@ -991,17 +1007,22 @@ class AccessMemoryLoop:
                     })
                     continue
                 else:
+                    if provenance is not None:
+                        provenance_store.put(provenance)
                     outcomes.append({
                         "statement_id": plan.statement.statement_id,
                         "source_capture_ids": list(plan.source_capture_ids),
                         "outcome": "applied",
                         "action": "replay_existing",
                         "durable_commit": durable,
+                        **({} if provenance is None else {"provenance_sha256": provenance.digest()}),
                     })
                     continue
             try:
                 with self._runtime() as access:
                     access.capture(plan.statement)
+                    if provenance is not None:
+                        provenance_store.put(provenance)
                     handle = access.apply(decision)
                 durable = self._durable_readback(plan.statement, handle)
             except DurableReadbackError as error:
@@ -1013,6 +1034,8 @@ class AccessMemoryLoop:
                     **({} if placement is None else placement),
                 })
             except Exception as error:
+                if provenance is not None and not provenance_existed_before and provenance_store.exists(plan.statement.statement_id):
+                    provenance_store.discard_new(provenance)
                 if not existed_before and statement_store.exists(plan.statement.statement_id):
                     statement_store.discard_new(plan.statement)
                 outcomes.append({
@@ -1028,6 +1051,7 @@ class AccessMemoryLoop:
                     "outcome": "applied",
                     "action": plan.action,
                     "durable_commit": durable,
+                    **({} if provenance is None else {"provenance_sha256": provenance.digest()}),
                     **({} if placement is None else placement),
                 })
         return {
@@ -1035,6 +1059,15 @@ class AccessMemoryLoop:
             "atlas_fingerprint": atlas.atlas_fingerprint,
             "outcomes": outcomes,
         }
+
+    def statement_provenance(self, statement_id: str) -> dict[str, object]:
+        provenance = FileStatementProvenanceStore(self._workspace).get(statement_id)
+        return {**provenance.to_mapping(), "provenance_sha256": provenance.digest()}
+
+    def current_statement_for_handle(self, handle: object) -> str:
+        parsed = handle if type(handle) is AtomHandle else AtomHandle.from_mapping(handle)
+        with self._runtime() as access:
+            return access.handle_store.statement_for_handle(parsed)
 
     @staticmethod
     def _relation_group_locator(groups: tuple[tuple[GeometryAddress, ...], ...]) -> dict[str, object]:
@@ -1049,6 +1082,57 @@ class AccessMemoryLoop:
         cells = tuple(sorted((self._cell(item) for item in entry_cells), key=lambda item: item.stable_key()))
         result = self.navigator().recall_entry(request_id, cells[0])
         return list(result.items)
+
+    def core_state_sha256(self) -> str:
+        with CoreRuntime(self._workspace) as core:
+            return hashlib.sha256(core.export_state_bytes()).hexdigest()
+
+    def bounded_locality(
+        self,
+        entry_cell: object,
+        request_id: str,
+        max_results: int = 4,
+        max_chars: int = 3000,
+    ) -> dict[str, object]:
+        self._require_request(request_id)
+        if type(max_results) is not int or type(max_chars) is not int or not 1 <= max_results <= 16 or not 1 <= max_chars <= 12000:
+            raise ValueError("bounded Locality budget is outside the active limits")
+        cell = self._cell(entry_cell)
+        result = self.navigator().recall_entry(request_id, cell)
+        provenance_store = FileStatementProvenanceStore(self._workspace)
+        selected = []
+        rendered_chars = 0
+        for rank, item in enumerate(result.items, 1):
+            content = item["content_utf8"]
+            if len(selected) >= max_results or rendered_chars + len(content) > max_chars:
+                continue
+            provenance_digest = None
+            if provenance_store.exists(item["statement_id"]):
+                provenance_digest = provenance_store.get(item["statement_id"]).digest()
+            selected.append({
+                "statement_id": item["statement_id"],
+                "content_utf8": item["content_utf8"],
+                "provenance_sha256": provenance_digest,
+                "score_q16": item["score_q16"],
+                "fallback_error": item["fallback_error"],
+                "path": item["path"],
+                "path_is_not_truth_proof": True,
+                "entry_relative_rank": rank,
+            })
+            rendered_chars += len(content)
+        return {
+            "schema_version": "nollm_access_bounded_locality_v1",
+            "items": selected,
+            "result_count": len(selected),
+            "rendered_chars": rendered_chars,
+            "available_count": len(result.items),
+            "has_more": len(selected) < len(result.items),
+            "budget_exhausted": result.budget_exhausted or len(selected) < len(result.items),
+            "max_results": max_results,
+            "max_chars": max_chars,
+            "window_mode": "full_window",
+            "core_state_sha256": self.core_state_sha256(),
+        }
 
     def apply_placement(
         self,

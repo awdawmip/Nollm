@@ -12,7 +12,7 @@ $globalAllow = @($globalAllow | Where-Object { $_ -notin @("nollm_form_statement
 $operations = [System.Collections.ArrayList]::new()
 [void]$operations.Add([ordered]@{ path="tools.alsoAllow"; value=$globalAllow })
 if ($mainIndex -ge 0) {
-  $allow = @($agents[$mainIndex].tools.alsoAllow | Where-Object { $_ -ne "nollm_form_statement" })
+  $allow = @($agents[$mainIndex].tools.alsoAllow | Where-Object { $_ -notin @("nollm_form_statement", "nollm_memory") })
   [void]$operations.Add([ordered]@{ path="agents.list[$mainIndex].tools.alsoAllow"; value=$allow })
 }
 $batchFile = Join-Path $env:TEMP "nollm-formation-uninstall-$PID.json"

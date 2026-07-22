@@ -38,6 +38,7 @@ from .cartographer import (
     build_proposition_writer_prompt,
     parse_proposition_writer_result,
 )
+from .main_agent_recall import build_main_agent_surface, recall_main_agent_locality
 
 
 def _well_formed(value: object) -> object:
@@ -204,6 +205,19 @@ def main() -> None:
             result = apply_fast_recall_selection(
                 envelope["raw_model_response"], envelope["entries"], envelope["memory_workspace"], envelope["request_id"],
                 envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_main_agent_surface":
+            result = build_main_agent_surface(
+                envelope["memory_workspace"], envelope["operation_id"], envelope.get("max_entries", 32),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "recall_main_agent_locality":
+            result = recall_main_agent_locality(
+                envelope["memory_workspace"], envelope["operation_id"],
+                envelope["expected_core_state_sha256"], envelope["entry"], envelope["budget_option_id"],
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

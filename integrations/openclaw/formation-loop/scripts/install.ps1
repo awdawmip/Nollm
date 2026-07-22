@@ -70,7 +70,7 @@ $globalAllow = @($globalAllow | Where-Object { $_ -notin @("nollm_form_statement
 [void]$operations.Add([ordered]@{ path="agents.list[$dreamIndex].tools.alsoAllow"; value=@() })
 [void]$operations.Add([ordered]@{ path="agents.list[$dreamIndex].tools.deny"; value=@("message", "sessions_spawn", "sessions_send", "sessions_yield") })
 if ($mainIndex -ge 0) {
-  $allow = @($agents[$mainIndex].tools.alsoAllow | Where-Object { $_ -ne "nollm_form_statement" })
+  $allow = @($agents[$mainIndex].tools.alsoAllow | Where-Object { $_ -notin @("nollm_form_statement", "nollm_memory") }) + @("nollm_memory")
   [void]$operations.Add([ordered]@{ path="agents.list[$mainIndex].tools.alsoAllow"; value=$allow })
 }
 $batchFile = Join-Path $env:TEMP "nollm-dream-install-$PID.json"

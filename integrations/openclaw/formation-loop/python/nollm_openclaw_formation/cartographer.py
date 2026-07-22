@@ -7,7 +7,10 @@ from datetime import datetime, timedelta, timezone
 
 from nollm_access import (
     AccessMemoryLoop,
+    ResolvedReferenceProvenance,
+    StatementProvenance,
     ProgressiveAtlasPage,
+    resolve_evidence_quote_refs,
     validate_dream_sculptor_plans,
 )
 
@@ -16,11 +19,13 @@ from .dream_adapter import repair_dream_json
 from .sculptor import _captures, _workspace
 
 
-PROPOSITION_WRITER_SCHEMA_VERSION = "nollm_openclaw_contextual_proposition_writer_v2"
+PROPOSITION_WRITER_SCHEMA_VERSION = "nollm_openclaw_contextual_proposition_writer_v3"
+PREVIOUS_PROPOSITION_WRITER_SCHEMA_VERSION = "nollm_openclaw_contextual_proposition_writer_v2"
 LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION = "nollm_openclaw_proposition_writer_v1"
 FIELD_CARTOGRAPHER_SCHEMA_VERSION = "nollm_openclaw_field_cartographer_v2"
-PROPOSITION_WRITER_PROMPT_VERSION = "proposition-writer-v2-bounded-narrative-context"
+PROPOSITION_WRITER_PROMPT_VERSION = "proposition-writer-v3-llm-native-evidence-quotes"
 FIELD_CARTOGRAPHER_PROMPT_VERSION = "field-cartographer-v2-shared-retrieval-entry"
+CARTOGRAPHY_PLAN_TOKEN_SCHEMA_VERSION = "nollm_openclaw_cartography_plan_token_v1"
 MAX_PROMPT_BYTES = 65536
 MAX_CARTOGRAPHER_TURNS = 4
 MAX_CONTEXT_CAPTURES = 4
@@ -51,11 +56,11 @@ def build_proposition_writer_prompt(
         } for item in items]
     prompt = f"""You are Nollm's private Contextual Proposition Writer.
 Form complete Evidence-backed MemoryStatements for absorption_sources only. context_only_evidence is bounded earlier conversation used only to resolve pronouns, time, location, and event continuity; never copy it into a new Statement and never treat it as a new absorption source. Generic assistant advice is not user memory unless the user supplied or adopted it.
-Every proposition cites exact Python-style Unicode evidence_spans. source_capture_ids may contain only IDs listed in absorption_sources, never IDs from context_only_evidence; context Captures may appear only in evidence_spans and resolved-reference basis. Prefer user-role spans; when user text is sufficient, do not cite an assistant acknowledgement, translation, summary, or Markdown restatement. start and end are zero-based Python Unicode slice offsets in the named role text, and role_text[start:end] must equal quote_utf8 exactly. Any normalized absolute date, location, or coreference not verbatim in the source requires a resolved_reference with explicit Capture/span basis; verbatim source facts need no resolved_reference. When resolving relative time such as 当天, 同一天, or 那天 to an absolute date, cite a context evidence span that verbatim contains that absolute date; the relative phrase itself is not an absolute-date basis. basis_span_indexes must be a non-empty list of zero-based indexes into this proposition's evidence_spans array, never character offsets within a quote. Every basis_capture_id must equal the capture_id of at least one indexed evidence span, and every indexed span's capture_id must appear in basis_capture_ids. Separate direct_queries, which the new proposition answers, from broader entry_queries, which name a plausible shared retrieval neighborhood a future reader could enter before knowing the new answer. Do not inspect or mention any field, Atlas, region, Locality, action, Handle, coordinate, Topic, entity, vector, graph, or placement.
+Every proposition cites natural Evidence quote refs. Quote exact text from one supplied Capture role and give each quote an operation-local evidence_ref_id. Never calculate or output start, end, Unicode offsets, Python slices, or span-array indexes. If the same quote occurs more than once, disambiguate with zero-based occurrence_hint or short exact left/right context. source_capture_ids may contain only IDs listed in absorption_sources. context_capture_ids may contain only IDs listed in context_only_evidence and must exactly name context Captures used by Evidence or timestamp basis. Prefer user-role quotes; when user text is sufficient, do not cite an assistant acknowledgement, translation, summary, or Markdown restatement. Any normalized absolute date, location, event, or coreference not verbatim in the source requires a resolved_reference whose basis_evidence_ref_ids cross-link the exact quoted Evidence refs, or whose timestamp_basis_capture_ids name a supplied Capture timestamp. Separate direct_queries, which the new proposition answers, from broader entry_queries, which name a plausible shared retrieval neighborhood a future reader could enter before knowing the new answer. Do not inspect or mention any field, Atlas, region, Locality, action, Handle, coordinate, Topic, entity, vector, graph, or placement.
 Return exactly one raw JSON object with no markdown. When propositions are present, outcome must be the literal string "plan" and defer_reason must be null; never use "propositions" or another outcome label.
-Every proposition object must contain exactly these eight keys: draft_id, content_utf8, source_capture_ids, evidence_spans, context_statement_refs, resolved_references, direct_queries, entry_queries. context_statement_refs is required and must be [] unless a supplied canonical Statement reference exists; Capture evidence belongs in evidence_spans, not context_statement_refs.
+Every proposition object must contain exactly these nine keys: draft_id, outcome, content_utf8, source_capture_ids, context_capture_ids, evidence_refs, resolved_references, direct_queries, entry_queries. Proposition outcome must be "statement".
 schema_version: {PROPOSITION_WRITER_SCHEMA_VERSION}
-plan: {{"schema_version":"{PROPOSITION_WRITER_SCHEMA_VERSION}","outcome":"plan","propositions":[{{"draft_id":"d1","content_utf8":"complete proposition","source_capture_ids":["source capture id"],"evidence_spans":[{{"capture_id":"source or context capture id","role":"user|assistant","start":0,"end":1,"quote_utf8":"exact slice"}}],"context_statement_refs":[],"resolved_references":[{{"kind":"temporal|coreference|location","normalized_value":"resolved value","basis_capture_ids":["capture id"],"basis_span_indexes":[0]}}],"direct_queries":[{{"query_id":"direct-1","query_utf8":"question directly answered by the new proposition"}}],"entry_queries":[{{"query_id":"entry-1","query_utf8":"broader shared retrieval question"}}]}}],"defer_reason":null}}
+plan: {{"schema_version":"{PROPOSITION_WRITER_SCHEMA_VERSION}","outcome":"plan","propositions":[{{"draft_id":"d1","outcome":"statement","content_utf8":"complete proposition","source_capture_ids":["source capture id"],"context_capture_ids":[],"evidence_refs":[{{"evidence_ref_id":"e1","capture_id":"source or context capture id","role":"user|assistant","quote_utf8":"exact quote","occurrence_hint":0}}],"resolved_references":[{{"reference_id":"r1","kind":"temporal|coreference|location|event|other","normalized_value":"resolved value","basis_evidence_ref_ids":["e1"],"timestamp_basis_capture_ids":[]}}],"direct_queries":[{{"query_id":"direct-1","query_utf8":"question directly answered by the new proposition"}}],"entry_queries":[{{"query_id":"entry-1","query_utf8":"broader shared retrieval question"}}]}}],"defer_reason":null}}
 terminal: {{"schema_version":"{PROPOSITION_WRITER_SCHEMA_VERSION}","outcome":"no_memory|defer","propositions":[],"defer_reason":"brief"}}
 Draft IDs and source Capture IDs must be unique and sorted. Maximum Statements: {max_statements}.
 request_id: {request_id}
@@ -95,7 +100,7 @@ def parse_proposition_writer_result(
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
     keys = {"schema_version", "outcome", "propositions", "defer_reason"}
-    if type(value) is not dict or set(value) != keys or value.get("schema_version") not in {PROPOSITION_WRITER_SCHEMA_VERSION, LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION} or type(value.get("propositions")) is not list:
+    if type(value) is not dict or set(value) != keys or value.get("schema_version") != PROPOSITION_WRITER_SCHEMA_VERSION or type(value.get("propositions")) is not list:
         raise FormationAdapterError("invalid_writer_schema", "invalid Proposition Writer envelope")
     if value["outcome"] in {"no_memory", "defer"}:
         if value["propositions"] or type(value["defer_reason"]) is not str or not value["defer_reason"]:
@@ -105,14 +110,41 @@ def parse_proposition_writer_result(
         raise FormationAdapterError("invalid_writer_schema", "invalid planned Writer outcome")
     source_map = {item["capture_id"]: item for item in clean}
     evidence_map = {item["capture_id"]: item for item in clean + context}
-    legacy = value["schema_version"] == LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION
-    propositions = tuple(_proposition(item, source_map, evidence_map, legacy) for item in value["propositions"])
+    propositions = tuple(_proposition(item, source_map, evidence_map, context) for item in value["propositions"])
     draft_ids = [item["draft_id"] for item in propositions]
     if draft_ids != sorted(set(draft_ids)):
         raise FormationAdapterError("invalid_writer_schema", "Writer draft IDs must be canonical and unique")
     return {
         "outcome": "plan", "propositions": list(propositions), "defer_reason": None,
         "context_capture_ids": [item["capture_id"] for item in context],
+        "json_repair": diagnostics,
+    }
+
+
+def migrate_legacy_proposition_writer_result(
+    raw_response: object,
+    captures: object,
+    request_id: object,
+) -> dict[str, object]:
+    """Explicit offline-only conversion that never claims exact Rev5 provenance."""
+    clean = _captures(captures)
+    if type(raw_response) is not str or type(request_id) is not str or not request_id:
+        raise FormationAdapterError("invalid_writer_result", "Writer response and request_id are required")
+    try:
+        repaired, diagnostics = repair_dream_json(raw_response)
+        value = json.loads(repaired)
+    except json.JSONDecodeError as exc:
+        raise FormationAdapterError("invalid_json", str(exc)) from exc
+    if type(value) is not dict or value.get("schema_version") != LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION or value.get("outcome") != "plan" or type(value.get("propositions")) is not list:
+        raise FormationAdapterError("invalid_writer_schema", "explicit migration requires legacy Writer v1 plan")
+    source_map = {item["capture_id"]: item for item in clean}
+    propositions = [_legacy_proposition(item, source_map, source_map) for item in value["propositions"]]
+    return {
+        "outcome": "plan",
+        "propositions": propositions,
+        "defer_reason": None,
+        "migrated_from_version": LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION,
+        "provenance_precision": "coarse",
         "json_repair": diagnostics,
     }
 
@@ -214,7 +246,11 @@ def advance_field_cartographer(
     if value["action"] != "resolve" or set(value) != {"schema_version", "action", "plans"} or type(value["plans"]) is not list:
         raise FormationAdapterError("invalid_cartographer_schema", "invalid Cartographer resolution")
     plans = _cartography_plans(value["plans"], propositions, page)
-    return {"status": "complete", "outcome": "plan", "plans": plans, "turn": turn, "page": page.to_mapping(), "json_repair": diagnostics}
+    token = _cartography_plan_token(propositions, plans, page)
+    return {
+        "status": "complete", "outcome": "plan", "plans": plans, "turn": turn,
+        "page": page.to_mapping(), "plan_token": token, "json_repair": diagnostics,
+    }
 
 
 def apply_field_cartography_result(
@@ -227,12 +263,22 @@ def apply_field_cartography_result(
     only_statement_ids: object = None,
 ) -> dict[str, object]:
     propositions = _writer_propositions(writer_result)
-    if type(cartography_result) is not dict or cartography_result.get("outcome") != "plan" or type(cartography_result.get("plans")) is not list:
+    if type(cartography_result) is not dict or cartography_result.get("outcome") != "plan" or type(cartography_result.get("plans")) is not list or type(cartography_result.get("page")) is not dict or type(cartography_result.get("plan_token")) is not dict:
         raise FormationAdapterError("invalid_cartographer_apply", "completed Cartographer plans are required")
     if type(request_id) is not str or not request_id:
         raise FormationAdapterError("invalid_cartographer_apply", "request_id is required")
     root = _workspace(memory_workspace)
+    try:
+        planned_page = ProgressiveAtlasPage.from_mapping(cartography_result["page"])
+        expected_token = _cartography_plan_token(propositions, cartography_result["plans"], planned_page)
+    except (TypeError, ValueError) as exc:
+        raise FormationAdapterError("invalid_cartographer_apply", str(exc)) from exc
+    if cartography_result["plan_token"] != expected_token:
+        raise FormationAdapterError("invalid_cartographer_apply", "Cartography plan token is not canonical")
     with AccessMemoryLoop(root) as loop:
+        current_page = loop.build_progressive_atlas(request_id + ":freshness")
+        if current_page.core_state_sha256 != planned_page.core_state_sha256 or current_page.atlas_fingerprint != planned_page.atlas_fingerprint:
+            raise FormationAdapterError("cartography_plan_stale", "Cartography field state changed before apply")
         atlas = loop.build_locality_atlas(request_id + ":apply-atlas", 512)
     if atlas.overflow:
         raise FormationAdapterError("atlas_overflow", "active apply Atlas exceeds the bounded compatibility view")
@@ -245,7 +291,7 @@ def apply_field_cartography_result(
             lens = {
                 "lens_id": entry_query["query_id"],
                 "future_query": entry_query["query_utf8"],
-                "basis_spans": proposition["evidence_spans"],
+                "basis_spans": [{key: span[key] for key in ("capture_id", "role", "start", "end", "quote_utf8")} for span in proposition["evidence_spans"]],
             }
             if resolution["unresolved"]:
                 lenses.append({**lens, "atlas_path_ids": [], "leaf_locality_candidate_ids": [], "unresolved": True})
@@ -275,7 +321,8 @@ def apply_field_cartography_result(
         })
     clean = _captures(captures)
     try:
-        validated = validate_dream_sculptor_plans(request_id, old_plans, clean, atlas)
+        all_validated = validate_dream_sculptor_plans(request_id, old_plans, clean, atlas)
+        validated = all_validated
         if only_statement_ids is not None:
             if type(only_statement_ids) is not list or not only_statement_ids or any(type(item) is not str for item in only_statement_ids):
                 raise TypeError("only_statement_ids must be a nonempty text list")
@@ -283,11 +330,83 @@ def apply_field_cartography_result(
             validated = tuple(item for item in validated if item.statement_id in selected)
             if len(validated) != len(selected):
                 raise ValueError("only_statement_ids contains an unknown Statement")
+        provenance_by_statement = {}
+        selected_statement_ids = {plan.statement.statement_id for plan in validated}
+        for proposition, plan in zip(propositions, all_validated, strict=True):
+            if plan.statement.statement_id not in selected_statement_ids:
+                continue
+            predecessor = None
+            if plan.action == "revision_current" and plan.existing_handle is not None:
+                with AccessMemoryLoop(root) as loop:
+                    predecessor = loop.current_statement_for_handle(plan.existing_handle)
+            provenance_by_statement[plan.statement.statement_id] = _statement_provenance(
+                plan.statement.statement_id, proposition, clean, predecessor,
+            )
         with AccessMemoryLoop(root) as loop:
-            applied = loop.apply_junction_plans(validated, atlas, request_id, revision_confirmations)
+            applied = loop.apply_junction_plans(
+                validated, atlas, request_id, revision_confirmations, provenance_by_statement,
+            )
     except (KeyError, TypeError, ValueError) as exc:
         raise FormationAdapterError("invalid_cartographer_apply", str(exc)) from exc
-    return {"outcome": "plan", "plans": [item.to_mapping() for item in validated], **applied}
+    return {"outcome": "plan", "plans": [item.to_mapping() for item in validated], "plan_token": expected_token, **applied}
+
+
+def _cartography_plan_token(
+    propositions: list[dict[str, object]],
+    plans: list[dict[str, object]],
+    page: ProgressiveAtlasPage,
+) -> dict[str, object]:
+    writer_payload = json.dumps(propositions, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    plan_payload = json.dumps(plans, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    selected = [{
+        "draft_id": plan["draft_id"],
+        "entry_resolutions": plan["entry_resolutions"],
+        "existing_handle": plan["existing_handle"],
+    } for plan in plans]
+    selected_payload = json.dumps(selected, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "schema_version": CARTOGRAPHY_PLAN_TOKEN_SCHEMA_VERSION,
+        "writer_proposition_sha256": hashlib.sha256(writer_payload).hexdigest(),
+        "plans_sha256": hashlib.sha256(plan_payload).hexdigest(),
+        "core_state_sha256": page.core_state_sha256,
+        "atlas_fingerprint": page.atlas_fingerprint,
+        "page_fingerprint": page.page_fingerprint,
+        "affected_locality_sha256": hashlib.sha256(selected_payload).hexdigest(),
+        "writer_schema_version": PROPOSITION_WRITER_SCHEMA_VERSION,
+        "writer_prompt_version": PROPOSITION_WRITER_PROMPT_VERSION,
+        "cartographer_schema_version": FIELD_CARTOGRAPHER_SCHEMA_VERSION,
+        "cartographer_prompt_version": FIELD_CARTOGRAPHER_PROMPT_VERSION,
+    }
+
+
+def _statement_provenance(
+    statement_id: str,
+    proposition: dict[str, object],
+    captures: list[dict[str, object]],
+    predecessor: str | None,
+) -> StatementProvenance:
+    capture_map = {item["capture_id"]: item for item in captures}
+    involved = set(proposition["source_capture_ids"]) | set(proposition["context_capture_ids"])
+    references = tuple(ResolvedReferenceProvenance(
+        item["reference_id"], item["kind"], item["normalized_value"],
+        tuple(item["basis_evidence_ref_ids"]), tuple(item["timestamp_basis_capture_ids"]),
+    ) for item in proposition["resolved_references"])
+    from nollm_access import ExactEvidenceSpan
+    spans = tuple(ExactEvidenceSpan.from_mapping(item) for item in proposition["evidence_spans"])
+    created_at = max(capture_map[capture_id]["captured_epoch_ms"] for capture_id in involved)
+    return StatementProvenance(
+        statement_id,
+        hashlib.sha256(proposition["content_utf8"].encode("utf-8")).hexdigest(),
+        tuple(proposition["source_capture_ids"]),
+        tuple(proposition["context_capture_ids"]),
+        spans,
+        references,
+        PROPOSITION_WRITER_SCHEMA_VERSION,
+        PROPOSITION_WRITER_PROMPT_VERSION,
+        created_at,
+        predecessor,
+        "exact",
+    )
 
 
 def _validated_context_captures(
@@ -313,33 +432,50 @@ def _proposition(
     value: object,
     sources: dict[str, dict[str, object]],
     evidence: dict[str, dict[str, object]],
-    legacy: bool,
+    context: list[dict[str, object]],
 ) -> dict[str, object]:
-    if legacy:
-        return _legacy_proposition(value, sources, evidence)
     keys = {
-        "draft_id", "content_utf8", "source_capture_ids", "evidence_spans",
-        "context_statement_refs", "resolved_references", "direct_queries", "entry_queries",
+        "draft_id", "outcome", "content_utf8", "source_capture_ids", "context_capture_ids",
+        "evidence_refs", "resolved_references", "direct_queries", "entry_queries",
     }
     if type(value) is not dict or set(value) != keys:
         raise FormationAdapterError("invalid_writer_schema", "invalid contextual Writer proposition fields")
-    if type(value["draft_id"]) is not str or not value["draft_id"] or type(value["content_utf8"]) is not str or not value["content_utf8"]:
+    if value.get("outcome") != "statement" or type(value["draft_id"]) is not str or not value["draft_id"] or type(value["content_utf8"]) is not str or not value["content_utf8"]:
         raise FormationAdapterError("invalid_writer_schema", "Writer proposition identity and content are required")
     source_ids = value["source_capture_ids"]
     if type(source_ids) is not list or not source_ids or source_ids != sorted(set(source_ids)) or any(item not in sources for item in source_ids):
         raise FormationAdapterError("invalid_writer_schema", "Writer source Capture IDs are invalid")
-    spans = _evidence_spans(value["evidence_spans"], evidence)
+    context_ids = value["context_capture_ids"]
+    available_context_ids = {item["capture_id"] for item in context}
+    if type(context_ids) is not list or context_ids != sorted(set(context_ids)) or any(item not in available_context_ids for item in context_ids):
+        raise FormationAdapterError("invalid_writer_schema", "Writer context Capture IDs are invalid")
+    try:
+        spans = [item.to_mapping() for item in resolve_evidence_quote_refs(value["evidence_refs"], list(evidence.values()))]
+    except (TypeError, ValueError) as exc:
+        error = str(exc) if str(exc).startswith("evidence_quote_") else "invalid Writer Evidence quote ref"
+        raise FormationAdapterError(error, str(exc)) from exc
     if not any(span["capture_id"] in source_ids for span in spans):
         raise FormationAdapterError("invalid_writer_schema", "each proposition requires source-Capture Evidence")
-    if value["context_statement_refs"] != []:
-        raise FormationAdapterError("invalid_writer_schema", "context Statement refs require a supplied current-Statement window")
+    used_context_ids = {
+        span["capture_id"] for span in spans if span["capture_id"] not in source_ids
+    }
     references = _resolved_references(value["resolved_references"], spans, evidence)
+    used_context_ids.update(
+        capture_id for item in references for capture_id in item["timestamp_basis_capture_ids"]
+        if capture_id not in source_ids
+    )
+    if set(context_ids) != used_context_ids:
+        raise FormationAdapterError("invalid_writer_schema", "context_capture_ids must exactly bind used context Evidence")
     direct = _queries(value["direct_queries"], "direct")
     entry = _queries(value["entry_queries"], "entry")
     _validate_absolute_dates(value["content_utf8"], spans, references, evidence)
     return {
-        **value,
+        "draft_id": value["draft_id"],
+        "outcome": value["outcome"],
+        "content_utf8": value["content_utf8"],
         "source_capture_ids": source_ids,
+        "context_capture_ids": context_ids,
+        "evidence_refs": value["evidence_refs"],
         "evidence_spans": spans,
         "resolved_references": references,
         "direct_queries": direct,
@@ -413,18 +549,21 @@ def _resolved_references(
         raise FormationAdapterError("invalid_writer_schema", "Writer resolved references are invalid")
     output = []
     for item in value:
-        keys = {"kind", "normalized_value", "basis_capture_ids", "basis_span_indexes"}
-        if type(item) is not dict or set(item) != keys or item["kind"] not in {"temporal", "coreference", "location"} or type(item["normalized_value"]) is not str or not item["normalized_value"]:
+        keys = {"reference_id", "kind", "normalized_value", "basis_evidence_ref_ids", "timestamp_basis_capture_ids"}
+        if type(item) is not dict or set(item) != keys or item["kind"] not in {"temporal", "coreference", "location", "event", "other"} or type(item["reference_id"]) is not str or not item["reference_id"] or type(item["normalized_value"]) is not str or not item["normalized_value"]:
             raise FormationAdapterError("invalid_writer_schema", "invalid Writer resolved reference")
-        capture_ids = item["basis_capture_ids"]
-        indexes = item["basis_span_indexes"]
-        if type(capture_ids) is not list or capture_ids != sorted(set(capture_ids)) or any(capture_id not in captures for capture_id in capture_ids):
-            raise FormationAdapterError("invalid_writer_schema", "resolved reference Capture basis is invalid")
-        if type(indexes) is not list or indexes != sorted(set(indexes)) or any(type(index) is not int or not 0 <= index < len(spans) for index in indexes):
-            raise FormationAdapterError("invalid_writer_schema", "resolved reference span basis is invalid")
-        if not capture_ids and not indexes:
+        basis_ids = item["basis_evidence_ref_ids"]
+        timestamp_ids = item["timestamp_basis_capture_ids"]
+        span_ids = {span["evidence_ref_id"] for span in spans}
+        if type(basis_ids) is not list or basis_ids != sorted(set(basis_ids)) or any(ref_id not in span_ids for ref_id in basis_ids):
+            raise FormationAdapterError("invalid_writer_schema", "resolved reference Evidence basis is invalid")
+        if type(timestamp_ids) is not list or timestamp_ids != sorted(set(timestamp_ids)) or any(capture_id not in captures for capture_id in timestamp_ids):
+            raise FormationAdapterError("invalid_writer_schema", "resolved reference timestamp basis is invalid")
+        if not basis_ids and not timestamp_ids:
             raise FormationAdapterError("invalid_writer_schema", "resolved reference requires explicit Evidence basis")
         output.append(item)
+    if len({item["reference_id"] for item in output}) != len(output):
+        raise FormationAdapterError("invalid_writer_schema", "resolved reference IDs must be unique")
     return output
 
 
@@ -457,7 +596,7 @@ def _temporal_basis_matches(
     spans: list[dict[str, object]],
     captures: dict[str, dict[str, object]],
 ) -> bool:
-    for capture_id in reference["basis_capture_ids"]:
+    for capture_id in reference["timestamp_basis_capture_ids"]:
         capture = captures[capture_id]
         offset = timezone(timedelta(minutes=capture["timezone_offset_minutes"]))
         observed = datetime.fromtimestamp(capture["captured_epoch_ms"] / 1000, tz=offset).date().isoformat()
@@ -465,7 +604,8 @@ def _temporal_basis_matches(
             return True
     year, month, day = (int(part) for part in date_text.split("-"))
     variants = {date_text, f"{year}/{month}/{day}", f"{year}年{month}月{day}日"}
-    return any(any(variant in spans[index]["quote_utf8"] for variant in variants) for index in reference["basis_span_indexes"])
+    basis = set(reference["basis_evidence_ref_ids"])
+    return any(span["evidence_ref_id"] in basis and any(variant in span["quote_utf8"] for variant in variants) for span in spans)
 
 
 def _writer_lens(value: object, captures: dict[str, dict[str, object]]) -> dict[str, object]:
