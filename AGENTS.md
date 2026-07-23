@@ -1,11 +1,12 @@
-# Nollm V3.11 Rev5 LLM-Native Evidence and Main-Agent Recall Rules
+# Nollm V3.11 Rev6 Content-Neutral Memory Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV5_LLM_NATIVE_EVIDENCE_ANCHORS_MAIN_AGENT_GEOMETRIC_RECALL_20260722.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_20260723.md`.
+- Content-neutral authority: `docs/architecture/NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_MAIN_AGENT_TOOL_SCOPE_PROVIDER_LIVE_SEMANTIC_SELECTIVITY_CLOSURE_TASK_20260722.md`.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_TASK_20260723.md`.
 - `c40f8bf6a5be6184e5e56236c96d2817fed4bee5` is the immutable runtime-integrity input checkpoint. Its one-cell counterexample is invalid because fast Recall entry IDs collided.
 
 ## Current closure contract
@@ -25,10 +26,10 @@
 - Main-agent memory operations are server-issued and bound to the exact Host run, session, scope, and workspace.
 - `53182a4` is an offline run-scoped tool checkpoint, not Provider or semantic product validation.
 - Every visible user/assistant turn is durably Captured even when Nollm Recall was used.
-- Recall use changes role-level absorption eligibility; it never deletes Raw Capture.
+- Recall use records provenance; it never deletes Raw Capture or changes eligibility by source role.
 - User-originated text remains eligible in mixed Recall/new-fact turns.
-- Memory-derived assistant text is context-only and is not a new proposition source.
-- Capture eligibility metadata is durable and hook-order independent; missing metadata defaults safely.
+- Recalled-derived assistant content may form a genuinely new inference; the LLM decides reuse, revision, zero delta, or new Statement without a blanket role ban.
+- Capture origin metadata is durable, provenance-only, and hook-order independent.
 - A Surface is routing-only and never exposes complete Statement bodies from multiple Localities.
 - Full Statement content is returned only after one entry is selected by Recall or same-entry expansion.
 - Surface-only model answers are invalid product evidence; target-hidden tests verify content absence.
@@ -36,6 +37,14 @@
 - Real Provider Writer and real main-agent Host execution remain mandatory for product acceptance.
 - Deterministic geometry fixtures are conformance evidence, not semantic product evidence.
 - Deterministic fixtures must predeclare targets and compute leakage from returned Statement IDs.
+- Never classify canonical memory as sensitive, secret, temporary, tool noise, low-value, or ineligible.
+- Source role is provenance, not admission eligibility.
+- `no_memory` is not an active outcome; use `zero_new_propositions`.
+- Semantic defer is retryable and never permanently excludes a Capture.
+- Oversize Captures and Statement limits require continuation and complete coverage; they may not silently skip content.
+- Production admission code may not branch on password, token, secret, weather, temporary, or source-role terms.
+- Canonical memory is never redacted by content category. Export/share copies are separate and never write back.
+- Historical `nollm-memory-provider` promotion and rejection policy is invalid for active content admission.
 
 - One MemoryStatement maps to one Atom, one Handle, and one Cell.
 - One Capture or chat turn may produce zero, one, or multiple independent MemoryStatements.
@@ -59,7 +68,7 @@
 ## V3.11 operation contract
 
 - V3.11 teaches the LLM to simulate future Recall Lenses before choosing locality.
-- Do not ask whether a complete fact is important enough to remember. `no_memory` is limited to no standalone proposition, empty/tool noise, or exact no-new-information cases.
+- Do not ask whether a complete fact is important enough to remember. Exact no-new-information is a re-evaluable `zero_new_propositions` outcome.
 - Recall Lenses are operation-local teaching artifacts. Do not persist axis IDs, future queries, query-to-entry or fact-to-entry mappings, contact candidate IDs, Lens text, or LLM reasoning.
 - Reuse DC1 axis/ray concepts only as ephemeral Prompt and Lab references; do not restore Cortex Store, rule registry, receipts, or fixed ontology.
 - A Dream Sculptor call may form Statements and plan Placement in one batch. It selects supplied Locality candidate IDs and never outputs coordinates.

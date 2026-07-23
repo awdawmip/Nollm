@@ -52,6 +52,21 @@ Placement ≠ Fact confirmation
 Recall path ≠ Proof
 ```
 
+### 2.1.1 Canonical memory is content-neutral
+
+```text
+Canonical memory eligibility does not depend on sensitivity, expected lifetime,
+tool or assistant origin, importance, or content category.
+Source role is provenance, not an admission gate.
+```
+
+Technical limits may create deterministic source windows, continuation, retry,
+or a re-evaluable zero-delta result. They must never silently omit a Capture or
+permanently exclude content. Safety and tenant isolation are enforced by the
+actual Host scope and workspace boundary, not by classifying canonical content.
+Export or sharing copies may apply independent policy, but those copies are
+noncanonical and may never rewrite canonical Evidence or memory.
+
 ### 2.2 File first
 
 ```text
