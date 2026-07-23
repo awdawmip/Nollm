@@ -436,6 +436,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "seed_translation_covariant_live_fixture.py": "lab:translation-covariant-live",
         }
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active validation", "validation workspace only", "development", "Current public-contract validation entrypoint.", evidence="Explicit current final-gate command.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_VALIDATION", gates[name])
+    if p == "lab/nollm-lab/recall_lens/run_v311r6_content_neutral_memory_validation.py":
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", "active validation",
+            "validation workspace only", "development",
+            "Current content-neutral memory offline Gate A-F validation entrypoint.",
+            evidence="Explicit V3.11 Rev6 final-gate command.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "ACTIVE_VALIDATION", "lab:content-neutral-memory")
     if p.startswith("reference/python/tests/m0/"):
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active governance test", "development-only state", "development", "Executed by the current M0 governance gate.", evidence="Explicit current final-gate suite reference/python/tests/m0.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_TEST", "governance:m0")
     if p in {

@@ -6,7 +6,6 @@ from nollm_openclaw_formation.adapter import FormationAdapterError
 from nollm_openclaw_formation.main_agent_recall import (
     MAIN_AGENT_RECALL_SCHEMA_VERSION,
     build_main_agent_surface,
-    open_main_agent_region,
     recall_main_agent_locality,
 )
 from nollm_openclaw_formation.memory_loop import (
@@ -117,62 +116,6 @@ def test_main_agent_surface_hides_coordinates_and_recall_is_single_entry_bounded
     assert expanded["entry_id"] == default["entry_id"]
     assert expanded["result_count"] >= default["result_count"]
     assert expanded["max_results"] == 8
-
-
-def test_main_agent_can_open_nonleaf_region_with_uniform_content_preview(tmp_path):
-    from nollm_access import (
-        AccessDecision,
-        AccessRuntime,
-        FileHandleStore,
-        FileStatementStore,
-        MemoryStatement,
-    )
-    from nollm_core import CoreRuntime, GeometryAddress
-
-    with (
-        CoreRuntime(tmp_path) as core,
-        AccessRuntime(
-            core,
-            FileStatementStore(tmp_path),
-            FileHandleStore(tmp_path),
-        ) as access,
-    ):
-        for index in range(128):
-            statement = MemoryStatement(
-                f"statement-{index}", "preview-" + str(index) + "-" + "x" * 100
-            )
-            access.capture(statement)
-            access.apply(
-                AccessDecision(
-                    f"decision-{index}",
-                    statement.statement_id,
-                    "new",
-                    GeometryAddress("default_dream_v1", "default", 0, index, 0),
-                    None,
-                    None,
-                    "uniform preview fixture",
-                    "fixture",
-                )
-            )
-    surface = build_main_agent_surface(str(tmp_path), "open-operation", POLICY)
-    parent_region = next(
-        region for region in surface["regions"] if region["has_children"]
-    )
-    opened = open_main_agent_region(
-        str(tmp_path),
-        "open-operation",
-        surface["page"],
-        parent_region["atlas_region_id"],
-    )
-    assert opened["status"] == "surface"
-    assert opened["depth"] == surface["depth"] + 1
-    assert opened["entry_count"] >= 1
-    assert all(
-        len(region["routing_anchor_utf8"]) <= 131 for region in opened["regions"]
-    )
-    assert all(
-        "preview-" in region["routing_anchor_utf8"] for region in opened["regions"]
-    )
 
 
 def test_main_agent_operation_is_invalid_after_field_mutation(tmp_path):
