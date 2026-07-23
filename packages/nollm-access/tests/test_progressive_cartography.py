@@ -1,4 +1,12 @@
-from nollm_access import AccessDecision, AccessMemoryLoop, AccessRuntime, FileHandleStore, FileStatementStore, MemoryStatement, ProgressiveAtlasPolicy
+from nollm_access import (
+    AccessDecision,
+    AccessMemoryLoop,
+    AccessRuntime,
+    FileHandleStore,
+    FileStatementStore,
+    MemoryStatement,
+    ProgressiveAtlasPolicy,
+)
 from nollm_core import CoreRuntime, GeometryAddress, MemoryAtom
 
 
@@ -32,7 +40,9 @@ def test_progressive_root_is_complete_bounded_and_not_a_stable_prefix(tmp_path) 
     assert all(entry["entry_id"].startswith("atlas-entry:") for entry in entries)
 
 
-def test_nine_single_entry_regions_have_operation_unique_entry_identities(tmp_path) -> None:
+def test_nine_single_entry_regions_have_operation_unique_entry_identities(
+    tmp_path,
+) -> None:
     _seed_line(tmp_path, 9)
     with AccessMemoryLoop(tmp_path) as loop:
         root = loop.build_progressive_atlas("nine-regions")
@@ -46,13 +56,20 @@ def test_nine_single_entry_regions_have_operation_unique_entry_identities(tmp_pa
 
 def test_300_cell_cartography_descends_by_complete_bounded_pages(tmp_path) -> None:
     _seed_line(tmp_path, 300)
-    policy = ProgressiveAtlasPolicy(max_regions_per_page=32, max_prompt_bytes=65536, max_depth=8)
+    policy = ProgressiveAtlasPolicy(
+        max_regions_per_page=32, max_prompt_bytes=65536, max_depth=8
+    )
     with AccessMemoryLoop(tmp_path) as loop:
         page = loop.build_progressive_atlas("root", policy)
         visited_depth = 0
-        while any(not region.leaf for region in page.regions) and visited_depth < policy.max_depth:
+        while (
+            any(not region.leaf for region in page.regions)
+            and visited_depth < policy.max_depth
+        ):
             region = max(page.regions, key=lambda item: item.source_cell_count)
-            page = loop.open_progressive_region(page, region.region_id, f"depth:{visited_depth}")
+            page = loop.open_progressive_region(
+                page, region.region_id, f"depth:{visited_depth}"
+            )
             assert page.overflow is False
             assert page.uncovered_source_cell_count == 0
             assert len(page.regions) <= 32
@@ -78,7 +95,10 @@ def test_progressive_page_fails_stale_after_mutation(tmp_path) -> None:
     with AccessMemoryLoop(tmp_path) as loop:
         root = loop.build_progressive_atlas("root")
     with CoreRuntime(tmp_path) as core:
-        core.put(MemoryAtom("mutation", "mutation"), GeometryAddress("default_dream_v1", "default", 0, 100, 0))
+        core.put(
+            MemoryAtom("mutation", "mutation"),
+            GeometryAddress("default_dream_v1", "default", 0, 100, 0),
+        )
     with AccessMemoryLoop(tmp_path) as loop:
         region = next(item for item in root.regions if not item.leaf)
         try:
@@ -89,22 +109,44 @@ def test_progressive_page_fails_stale_after_mutation(tmp_path) -> None:
             raise AssertionError("stale progressive page was accepted")
 
 
-def test_local_detail_exposes_statements_hidden_beyond_region_representatives(tmp_path) -> None:
+def test_local_detail_exposes_statements_hidden_beyond_region_representatives(
+    tmp_path,
+) -> None:
     cell = GeometryAddress("default_dream_v1", "default", 0, 0, 0)
     with CoreRuntime(tmp_path) as core:
-        with AccessRuntime(core, FileStatementStore(tmp_path), FileHandleStore(tmp_path)) as access:
+        with AccessRuntime(
+            core, FileStatementStore(tmp_path), FileHandleStore(tmp_path)
+        ) as access:
             for index in range(5):
                 statement = MemoryStatement(f"statement-{index}", f"value {index}")
                 access.capture(statement)
-                access.apply(AccessDecision(
-                    f"decision-{index}", statement.statement_id, "new", cell, None, None, "fixture", "llm",
-                ))
+                access.apply(
+                    AccessDecision(
+                        f"decision-{index}",
+                        statement.statement_id,
+                        "new",
+                        cell,
+                        None,
+                        None,
+                        "fixture",
+                        "llm",
+                    )
+                )
     with AccessMemoryLoop(tmp_path) as loop:
         page = loop.build_progressive_atlas("root")
         region = page.regions[0]
         detail = loop.local_detail_page(page, region.region_id, "detail", limit=16)
 
-    assert len(region.representative_statements) == 3
+    assert len(region.representative_statements) == 2
+    assert all(
+        set(item) == {"statement_id", "content_utf8", "truncated"}
+        for item in region.representative_statements
+    )
+    assert all(
+        len(item["content_utf8"]) <= 64 for item in region.representative_statements
+    )
     assert detail.total_statement_count == 5
-    assert [item["statement_id"] for item in detail.statements] == [f"statement-{index}" for index in range(5)]
+    assert [item["statement_id"] for item in detail.statements] == [
+        f"statement-{index}" for index in range(5)
+    ]
     assert detail.has_more is False

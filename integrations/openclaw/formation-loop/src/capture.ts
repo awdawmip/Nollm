@@ -3,7 +3,8 @@ import { link, mkdir, open, readFile, readdir, stat, unlink } from "node:fs/prom
 import { dirname, join } from "node:path";
 
 export const CAPTURE_SCHEMA = "nollm_openclaw_durable_capture_v1";
-export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
+export const LEGACY_CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
+export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v2";
 export const CAPTURE_DIRECTIVE_SCHEMA = "nollm_openclaw_capture_absorption_directive_v1";
 export const CAPTURE_PLUGIN_VERSION = "0.17.0";
 
@@ -51,7 +52,7 @@ export type CaptureRecord = {
   reference_timezone_offset_minutes?: number;
 };
 
-export type MemoryToolAction = "surface" | "recall" | "expand" | "none";
+export type MemoryToolAction = "surface" | "open_region" | "recall" | "expand" | "none";
 export type AssistantRoleMode = "source" | "context_only" | "memory_derived";
 export type CaptureAbsorptionDirective = {
   schema_version: typeof CAPTURE_DIRECTIVE_SCHEMA;
@@ -82,9 +83,26 @@ export type CaptureDirectiveInput = {
   finalizationReason?: CaptureAbsorptionDirective["finalization_reason"];
 };
 
-export type CaptureStatus = "captured" | "processing" | "retry" | "deferred" | "no_memory" | "admitted";
+export type CaptureStatus = "captured" | "processing" | "retryable_defer" | "retryable_defer_legacy" |
+  "evaluated_no_new_propositions" | "evaluated_no_new_propositions_legacy" | "incomplete_continuation" |
+  "structural_invalid" | "admitted" | "reused" | "revised";
+export type CaptureEvaluationIdentity = {
+  writer_schema: string;
+  prompt_version: string;
+  context_fingerprint: string;
+  current_memory_fingerprint: string;
+  source_coverage: string;
+  evaluation_epoch_ms: number;
+};
+export type CaptureContinuation = {
+  group_index: number;
+  pass_index: number;
+  total_groups: number;
+  covered_ranges: Array<{ capture_id: string; role: "user" | "assistant"; start: number; end: number }>;
+  uncovered_ranges: Array<{ capture_id: string; role: "user" | "assistant"; start: number; end: number }>;
+};
 export type CaptureStateEvent = {
-  schema_version: typeof CAPTURE_STATE_SCHEMA;
+  schema_version: typeof CAPTURE_STATE_SCHEMA | typeof LEGACY_CAPTURE_STATE_SCHEMA;
   event_id: string;
   capture_id: string;
   status: CaptureStatus;
@@ -93,10 +111,12 @@ export type CaptureStateEvent = {
   batch_id?: string;
   statement_ids?: string[];
   error?: string;
+  evaluation?: CaptureEvaluationIdentity;
+  continuation?: CaptureContinuation;
 };
 
 export type PendingPolicy = { maxCaptures: number; maxChars: number; maxAgeMs: number };
-export type AbsorptionResult = { captureId: string; status: "admitted" | "no_memory" | "deferred" | "retry"; statementIds?: string[]; error?: string };
+export type AbsorptionResult = { captureId: string; status: Exclude<CaptureStatus, "captured" | "processing" | "retryable_defer_legacy" | "evaluated_no_new_propositions_legacy">; statementIds?: string[]; error?: string; evaluation?: CaptureEvaluationIdentity; continuation?: CaptureContinuation };
 export type CaptureDiagnostic = { file: string; error: string };
 export type CaptureQueueDiagnostic = {
   state_counts: Record<CaptureStatus, number>;
@@ -104,6 +124,16 @@ export type CaptureQueueDiagnostic = {
   oldest_pending_age_ms: number | null;
   next_retry_epoch_ms: number | null;
   stale_processing_count: number;
+};
+
+export type CaptureSourceWindow = {
+  capture_id: string;
+  role: "user" | "assistant";
+  start: number;
+  end: number;
+  text_utf8: string;
+  window_index: number;
+  window_count: number;
 };
 
 function sha256(value: string): string {
@@ -125,6 +155,48 @@ function assertText(value: string, name: string, allowEmpty = false): void {
     }
     throw new TypeError(`${name} contains an isolated UTF-16 surrogate`);
   }
+}
+
+export function buildCaptureSourceWindowGroups(
+  records: CaptureRecord[],
+  maxWindowBytes = 12000,
+  maxGroupBytes = 32000,
+  overlapCodepoints = 128,
+): CaptureSourceWindow[][] {
+  if (!records.length || !Number.isInteger(maxWindowBytes) || maxWindowBytes < 1024 ||
+      !Number.isInteger(maxGroupBytes) || maxGroupBytes < maxWindowBytes ||
+      !Number.isInteger(overlapCodepoints) || overlapCodepoints < 0) throw new TypeError("source window budgets are invalid");
+  const windows: CaptureSourceWindow[] = [];
+  for (const record of records) for (const role of ["user", "assistant"] as const) {
+    const points = [...record[`${role}_utf8`]];
+    if (!points.length) continue;
+    const roleWindows: Omit<CaptureSourceWindow, "window_index" | "window_count">[] = [];
+    let start = 0;
+    while (start < points.length) {
+      let end = start;
+      let bytes = 0;
+      while (end < points.length) {
+        const pointBytes = Buffer.byteLength(points[end], "utf8");
+        if (end > start && bytes + pointBytes > maxWindowBytes) break;
+        bytes += pointBytes; end += 1;
+      }
+      roleWindows.push({ capture_id: record.capture_id, role, start, end, text_utf8: points.slice(start, end).join("") });
+      if (end === points.length) break;
+      const next = Math.max(start + 1, end - overlapCodepoints);
+      start = next;
+    }
+    roleWindows.forEach((window, index) => windows.push({ ...window, window_index: index, window_count: roleWindows.length }));
+  }
+  const groups: CaptureSourceWindow[][] = [];
+  let current: CaptureSourceWindow[] = [];
+  let bytes = 0;
+  for (const window of windows) {
+    const size = Buffer.byteLength(window.text_utf8, "utf8");
+    if (current.length && bytes + size > maxGroupBytes) { groups.push(current); current = []; bytes = 0; }
+    current.push(window); bytes += size;
+  }
+  if (current.length) groups.push(current);
+  return groups;
 }
 
 async function publishImmutable(path: string, bytes: string): Promise<"created" | "replayed"> {
@@ -175,15 +247,17 @@ function parseRecord(text: string): CaptureRecord {
 
 function parseEvent(text: string): CaptureStateEvent {
   const value = JSON.parse(text) as CaptureStateEvent;
-  if (value.schema_version !== CAPTURE_STATE_SCHEMA || typeof value.event_id !== "string" || typeof value.capture_id !== "string" ||
-      !["captured", "processing", "retry", "deferred", "no_memory", "admitted"].includes(value.status) ||
+  const legacyStatuses = ["captured", "processing", "retry", "deferred", "no_memory", "admitted"];
+  const currentStatuses: CaptureStatus[] = ["captured", "processing", "retryable_defer", "retryable_defer_legacy", "evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy", "incomplete_continuation", "structural_invalid", "admitted", "reused", "revised"];
+  if (![CAPTURE_STATE_SCHEMA, LEGACY_CAPTURE_STATE_SCHEMA].includes(value.schema_version) || typeof value.event_id !== "string" || typeof value.capture_id !== "string" ||
+      !(value.schema_version === LEGACY_CAPTURE_STATE_SCHEMA ? legacyStatuses : currentStatuses).includes(value.status) ||
       typeof value.event_epoch_ms !== "number" || typeof value.attempt !== "number") throw new Error("invalid Capture state event");
   return value;
 }
 
 function parseDirective(text: string): CaptureAbsorptionDirective {
   const value = JSON.parse(text) as CaptureAbsorptionDirective;
-  const actions = ["surface", "recall", "expand", "none"];
+  const actions = ["surface", "open_region", "recall", "expand", "none"];
   const sortedActions = [...(value.memory_tool_actions ?? [])].sort();
   const sortedStatements = [...(value.recalled_statement_ids ?? [])].sort();
   if (value.schema_version !== CAPTURE_DIRECTIVE_SCHEMA || typeof value.directive_id !== "string" ||
@@ -324,9 +398,10 @@ export class CaptureStore {
     return fallback.directive;
   }
 
-  async appendEvent(captureId: string, status: CaptureStatus, options: { attempt: number; eventEpochMs?: number; batchId?: string; statementIds?: string[]; error?: string }): Promise<CaptureStateEvent> {
+  async appendEvent(captureId: string, status: CaptureStatus, options: { attempt: number; eventEpochMs?: number; batchId?: string; statementIds?: string[]; error?: string; evaluation?: CaptureEvaluationIdentity; continuation?: CaptureContinuation }): Promise<CaptureStateEvent> {
     const base = { capture_id: captureId, status, event_epoch_ms: options.eventEpochMs ?? Date.now(), attempt: options.attempt,
-      batch_id: options.batchId, statement_ids: options.statementIds, error: options.error };
+      batch_id: options.batchId, statement_ids: options.statementIds, error: options.error,
+      evaluation: options.evaluation, continuation: options.continuation };
     const eventId = `event-${sha256(canonical(base))}`;
     const event: CaptureStateEvent = { schema_version: CAPTURE_STATE_SCHEMA, event_id: eventId, ...base };
     await publishImmutable(join(this.eventDirectory(captureId), `${eventId}.json`), canonical(event));
@@ -340,7 +415,7 @@ export class CaptureStore {
       throw error;
     }
     const events = await Promise.all(names.filter(name => name.endsWith(".json")).map(async name => parseEvent(await readFile(join(this.eventDirectory(captureId), name), "utf8"))));
-    const terminalRank = (status: CaptureStatus): number => status === "processing" ? 1 : status === "captured" ? 0 : 2;
+    const terminalRank = (status: string): number => status === "processing" ? 1 : status === "captured" ? 0 : 2;
     return events.sort((left, right) => left.attempt - right.attempt || left.event_epoch_ms - right.event_epoch_ms || terminalRank(left.status) - terminalRank(right.status) || left.event_id.localeCompare(right.event_id));
   }
 
@@ -350,7 +425,39 @@ export class CaptureStore {
       const record = await this.read(captureId);
       return this.appendEvent(captureId, "captured", { attempt: 0, eventEpochMs: record.captured_epoch_ms });
     }
-    return events[events.length - 1];
+    const current = events[events.length - 1];
+    if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && (current.status as string) === "no_memory") {
+      return this.appendEvent(captureId, "evaluated_no_new_propositions_legacy", {
+        attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+        eventEpochMs: current.event_epoch_ms + 1,
+        evaluation: {
+          writer_schema: "legacy_no_memory", prompt_version: "legacy_unknown",
+          context_fingerprint: sha256("legacy-context"), current_memory_fingerprint: sha256("legacy-memory-unobserved"),
+          source_coverage: "legacy_unverified", evaluation_epoch_ms: current.event_epoch_ms,
+        },
+      });
+    }
+    if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && (current.status as string) === "deferred") {
+      return this.appendEvent(captureId, "retryable_defer_legacy", {
+        attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+        error: current.error ?? "legacy deferred outcome requires retry", eventEpochMs: current.event_epoch_ms + 1,
+      });
+    }
+    if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && (current.status as string) === "retry") {
+      return this.appendEvent(captureId, "retryable_defer", {
+        attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+        error: current.error ?? "legacy retry", eventEpochMs: current.event_epoch_ms + 1,
+      });
+    }
+    return current;
+  }
+
+  async requestReevaluation(captureId: string, reason: string, now = Date.now()): Promise<CaptureStateEvent> {
+    assertText(reason, "reevaluation reason");
+    const current = await this.currentState(captureId);
+    return this.appendEvent(captureId, "captured", {
+      attempt: current.attempt, eventEpochMs: now, error: `re-evaluate:${reason}`,
+    });
   }
 
   async scanRecords(): Promise<{ records: CaptureRecord[]; diagnostics: CaptureDiagnostic[] }> {
@@ -415,7 +522,7 @@ export class CaptureStore {
     const records = (await this.allRecords()).filter(record => record.scope_id_sha256 === scopeHash && now - record.captured_epoch_ms <= policy.maxAgeMs).reverse();
     for (const record of records) {
       const state = await this.currentState(record.capture_id);
-      if (state.status === "admitted" || state.status === "no_memory" || state.status === "deferred") continue;
+      if (["admitted", "reused", "revised", "evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy", "structural_invalid"].includes(state.status)) continue;
       const size = record.user_utf8.length + record.assistant_utf8.length;
       if (selected.length >= policy.maxCaptures || chars + size > policy.maxChars) continue;
       selected.push(record); chars += size;
@@ -432,16 +539,19 @@ export class CaptureStore {
   async diagnose(now = Date.now(), retryBackoffMs = 1000, staleClaimMs = 300000): Promise<CaptureQueueDiagnostic> {
     const records = await this.allRecords();
     const states = await Promise.all(records.map(record => this.currentState(record.capture_id)));
-    const stateCounts = { captured: 0, processing: 0, retry: 0, deferred: 0, no_memory: 0, admitted: 0 };
+    const stateCounts = Object.fromEntries([
+      "captured", "processing", "retryable_defer", "retryable_defer_legacy", "evaluated_no_new_propositions",
+      "evaluated_no_new_propositions_legacy", "incomplete_continuation", "structural_invalid", "admitted", "reused", "revised",
+    ].map(status => [status, 0])) as Record<CaptureStatus, number>;
     const pendingAges: number[] = [];
     const retryTimes: number[] = [];
     let staleProcessingCount = 0;
     for (let index = 0; index < records.length; index += 1) {
       const state = states[index];
       stateCounts[state.status] += 1;
-      if (["captured", "processing", "retry"].includes(state.status)) pendingAges.push(Math.max(0, now - records[index].captured_epoch_ms));
+      if (["captured", "processing", "retryable_defer", "retryable_defer_legacy", "incomplete_continuation"].includes(state.status)) pendingAges.push(Math.max(0, now - records[index].captured_epoch_ms));
       if (state.status === "processing" && now - state.event_epoch_ms > staleClaimMs) staleProcessingCount += 1;
-      if (state.status === "retry") {
+      if (state.status === "retryable_defer" || state.status === "retryable_defer_legacy" || state.status === "incomplete_continuation") {
         const delay = Math.min(staleClaimMs, retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
         retryTimes.push(state.event_epoch_ms + delay);
       }
@@ -463,11 +573,12 @@ export class AbsorptionWorker {
   readonly staleClaimMs: number;
   readonly retryBackoffMs: number;
   readonly directiveFinalizationMs: number;
+  readonly reevaluationNeeded: (record: CaptureRecord, state: CaptureStateEvent) => Promise<boolean>;
   readonly absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>;
   private active = false;
 
-  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number; directiveFinalizationMs?: number }, absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>) {
-    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.directiveFinalizationMs = options.directiveFinalizationMs ?? 30000; this.absorb = absorb;
+  constructor(store: CaptureStore, options: { batchMaxCaptures: number; batchMaxChars: number; staleClaimMs: number; retryBackoffMs?: number; directiveFinalizationMs?: number; reevaluationNeeded?: (record: CaptureRecord, state: CaptureStateEvent) => Promise<boolean> }, absorb: (batchId: string, records: CaptureRecord[], executionId: string) => Promise<AbsorptionResult[]>) {
+    this.store = store; this.batchMaxCaptures = options.batchMaxCaptures; this.batchMaxChars = options.batchMaxChars; this.staleClaimMs = options.staleClaimMs; this.retryBackoffMs = options.retryBackoffMs ?? 1000; this.directiveFinalizationMs = options.directiveFinalizationMs ?? 30000; this.reevaluationNeeded = options.reevaluationNeeded ?? (async () => false); this.absorb = absorb;
   }
 
   async runOnce(now = Date.now()): Promise<{ status: "idle" | "busy" | "completed"; batchId?: string; captureCount: number }> {
@@ -494,24 +605,34 @@ export class AbsorptionWorker {
       const available = (await Promise.all((await this.store.allRecords()).map(async record => ({
         record, state: await this.store.currentState(record.capture_id),
         directive: await this.store.directiveForAbsorption(record, now, this.directiveFinalizationMs),
-      })))).filter(item => item.directive?.finalized === true);
+        reevaluation: false,
+      }))));
+      for (const item of available) if (["evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy"].includes(item.state.status)) {
+        item.reevaluation = await this.reevaluationNeeded(item.record, item.state);
+      }
+      const ready = available.filter(item => item.directive?.finalized === true);
       const retryReady = ({ state }: { state: CaptureStateEvent }): boolean => {
-        if (state.status !== "retry") return false;
+        if (!["retryable_defer", "retryable_defer_legacy", "incomplete_continuation"].includes(state.status)) return false;
+        if (state.status === "incomplete_continuation") return true;
         const delay = Math.min(this.staleClaimMs, this.retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
         return now - state.event_epoch_ms >= delay;
       };
       const staleProcessing = ({ state }: { state: CaptureStateEvent }): boolean => state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs;
-      const recoveryBatchId = available.find(item => (retryReady(item) || staleProcessing(item)) && item.state.batch_id)?.state.batch_id;
-      const freshAnchor = recoveryBatchId ? undefined : available.find(({ state }) => state.status === "captured");
+      const recoveryBatchId = ready.find(item => (retryReady(item) || staleProcessing(item)) && item.state.batch_id)?.state.batch_id;
+      const freshAnchor = recoveryBatchId ? undefined : ready.find(({ state, reevaluation }) => state.status === "captured" || reevaluation);
       const candidates: CaptureRecord[] = [];
       let chars = 0;
-      for (const { record, state } of available) {
+      for (const { record, state, reevaluation } of ready) {
         const recoverable = recoveryBatchId
           ? (retryReady({ state }) || staleProcessing({ state })) && state.batch_id === recoveryBatchId
-          : state.status === "captured";
+          : state.status === "captured" || reevaluation;
         if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.session_key_sha256 !== freshAnchor.record.session_key_sha256 || record.profile_id !== freshAnchor.record.profile_id)) continue;
         const size = record.user_utf8.length + record.assistant_utf8.length;
-        if (!recoverable || candidates.length >= this.batchMaxCaptures || chars + size > this.batchMaxChars) continue;
+        if (!recoverable || candidates.length >= this.batchMaxCaptures) continue;
+        if (chars + size > this.batchMaxChars) {
+          if (!candidates.length) { candidates.push(record); chars = size; }
+          continue;
+        }
         candidates.push(record); chars += size;
       }
       if (!candidates.length) return { status: "idle", captureCount: 0 };
@@ -525,11 +646,14 @@ export class AbsorptionWorker {
       const executionId = sha256(canonical(candidates.map(record => [record.capture_id, attempts.get(record.capture_id)])));
       let results: AbsorptionResult[];
       try { results = await this.absorb(batchId, candidates, executionId); }
-      catch (error) { results = candidates.map(record => ({ captureId: record.capture_id, status: "retry", error: String(error) })); }
+      catch (error) { results = candidates.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(error) })); }
       const byId = new Map(results.map(result => [result.captureId, result]));
       for (const record of candidates) {
-        const result = byId.get(record.capture_id) ?? { captureId: record.capture_id, status: "retry" as const, error: "missing absorption result" };
-        await this.store.appendEvent(record.capture_id, result.status, { attempt: attempts.get(record.capture_id)!, batchId, statementIds: result.statementIds, error: result.error, eventEpochMs: now });
+        const result = byId.get(record.capture_id) ?? { captureId: record.capture_id, status: "retryable_defer" as const, error: "missing absorption result" };
+        await this.store.appendEvent(record.capture_id, result.status, {
+          attempt: attempts.get(record.capture_id)!, batchId, statementIds: result.statementIds,
+          error: result.error, evaluation: result.evaluation, continuation: result.continuation, eventEpochMs: now,
+        });
       }
       return { status: "completed", batchId, captureCount: candidates.length };
     } finally {

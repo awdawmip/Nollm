@@ -26,9 +26,18 @@ def build_dream_sculptor_prompt(
 ) -> dict[str, object]:
     clean = _captures(captures)
     if type(request_id) is not str or not request_id:
-        raise FormationAdapterError("invalid_sculptor_request", "request_id is required")
-    if type(candidate_limit) is not int or not 1 <= candidate_limit <= 512 or type(max_statements) is not int or not 1 <= max_statements <= 8:
-        raise FormationAdapterError("invalid_sculptor_budget", "Dream Sculptor budgets are invalid")
+        raise FormationAdapterError(
+            "invalid_sculptor_request", "request_id is required"
+        )
+    if (
+        type(candidate_limit) is not int
+        or not 1 <= candidate_limit <= 512
+        or type(max_statements) is not int
+        or not 1 <= max_statements <= 8
+    ):
+        raise FormationAdapterError(
+            "invalid_sculptor_budget", "Dream Sculptor budgets are invalid"
+        )
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
         atlas = loop.build_locality_atlas(request_id + ":atlas", candidate_limit)
     if atlas.overflow:
@@ -41,15 +50,18 @@ def build_dream_sculptor_prompt(
             "atlas_fingerprint": atlas.atlas_fingerprint,
             "captures": clean,
         }
-    captures_wire = [{
-        "capture_id": item["capture_id"],
-        "user_utf8": item["user_utf8"],
-        "user_length_chars": len(item["user_utf8"]),
-        "assistant_utf8": item["assistant_utf8"],
-        "assistant_length_chars": len(item["assistant_utf8"]),
-        "reference_epoch_ms": item["captured_epoch_ms"],
-        "timezone_offset_minutes": item["timezone_offset_minutes"],
-    } for item in clean]
+    captures_wire = [
+        {
+            "capture_id": item["capture_id"],
+            "user_utf8": item["user_utf8"],
+            "user_length_chars": len(item["user_utf8"]),
+            "assistant_utf8": item["assistant_utf8"],
+            "assistant_length_chars": len(item["assistant_utf8"]),
+            "reference_epoch_ms": item["captured_epoch_ms"],
+            "timezone_offset_minutes": item["timezone_offset_minutes"],
+        }
+        for item in clean
+    ]
     prompt = f"""You are Nollm's private Dream Sculptor. Compile complete Evidence-backed propositions and plan their placement in one batch operation.
 Never filter a complete proposition by importance, durability, predicted usefulness, or short lifetime. Weather, appointments, cancellations, temporary plans, preferences, and subjective observations are valid.
 Form user-grounded memory. Do not turn generic assistant explanations, suggestions, tool limitations, or newly generated background knowledge into user memory unless the user explicitly supplied or adopted that proposition.
@@ -75,8 +87,8 @@ plan: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"plan","pla
 no_memory/defer: {{"schema_version":"{DREAM_SCULPTOR_SCHEMA_VERSION}","outcome":"no_memory|defer","plans":[],"defer_reason":"brief"}}
 The Statement field name is exactly lenses (plural), never lens. Draft IDs, source Capture IDs, Lens IDs, path IDs, and leaf candidate ID lists must be unique; fields documented as canonical must be sorted. Maximum Statements: {max_statements}.
 request_id: {request_id}
-captures: {json.dumps(captures_wire, ensure_ascii=False, sort_keys=True, separators=(',', ':'))}
-locality_atlas: {json.dumps(atlas.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(',', ':'))}"""
+captures: {json.dumps(captures_wire, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
+locality_atlas: {json.dumps(atlas.to_mapping(), ensure_ascii=False, sort_keys=True, separators=(",", ":"))}"""
     return {
         "status": "sculptor_decision",
         "prompt": prompt,
@@ -96,7 +108,9 @@ def parse_dream_sculptor_result(
     request_id: object,
 ) -> dict[str, object]:
     if type(raw_response) is not str or type(request_id) is not str or not request_id:
-        raise FormationAdapterError("invalid_sculptor_result", "raw response and request_id are required")
+        raise FormationAdapterError(
+            "invalid_sculptor_result", "raw response and request_id are required"
+        )
     clean = _captures(captures)
     try:
         repaired, diagnostics = repair_dream_json(raw_response)
@@ -104,20 +118,49 @@ def parse_dream_sculptor_result(
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
     keys = {"schema_version", "outcome", "plans", "defer_reason"}
-    if type(value) is not dict or set(value) != keys or value.get("schema_version") != DREAM_SCULPTOR_SCHEMA_VERSION or type(value.get("plans")) is not list:
-        raise FormationAdapterError("invalid_sculptor_schema", "invalid Dream Sculptor envelope")
+    if (
+        type(value) is not dict
+        or set(value) != keys
+        or value.get("schema_version") != DREAM_SCULPTOR_SCHEMA_VERSION
+        or type(value.get("plans")) is not list
+    ):
+        raise FormationAdapterError(
+            "invalid_sculptor_schema", "invalid Dream Sculptor envelope"
+        )
     if value["outcome"] in {"no_memory", "defer"}:
-        if value["plans"] or type(value["defer_reason"]) is not str or not value["defer_reason"]:
-            raise FormationAdapterError("invalid_sculptor_schema", "terminal Sculptor outcome is invalid")
-        return {"outcome": value["outcome"], "plans": [], "defer_reason": value["defer_reason"], "json_repair": diagnostics}
-    if value["outcome"] != "plan" or not value["plans"] or value["defer_reason"] is not None:
-        raise FormationAdapterError("invalid_sculptor_schema", "planned Sculptor outcome is invalid")
+        if (
+            value["plans"]
+            or type(value["defer_reason"]) is not str
+            or not value["defer_reason"]
+        ):
+            raise FormationAdapterError(
+                "invalid_sculptor_schema", "terminal Sculptor outcome is invalid"
+            )
+        return {
+            "outcome": value["outcome"],
+            "plans": [],
+            "defer_reason": value["defer_reason"],
+            "json_repair": diagnostics,
+        }
+    if (
+        value["outcome"] != "plan"
+        or not value["plans"]
+        or value["defer_reason"] is not None
+    ):
+        raise FormationAdapterError(
+            "invalid_sculptor_schema", "planned Sculptor outcome is invalid"
+        )
     try:
         atlas = LocalityAtlas.from_mapping(atlas_value)
         plans = validate_dream_sculptor_plans(request_id, value["plans"], clean, atlas)
     except (KeyError, TypeError, ValueError) as exc:
         raise FormationAdapterError("invalid_sculptor_plan", str(exc)) from exc
-    return {"outcome": "plan", "plans": [item.to_mapping() for item in plans], "defer_reason": None, "json_repair": diagnostics}
+    return {
+        "outcome": "plan",
+        "plans": [item.to_mapping() for item in plans],
+        "defer_reason": None,
+        "json_repair": diagnostics,
+    }
 
 
 def apply_dream_sculptor_result(
@@ -129,7 +172,9 @@ def apply_dream_sculptor_result(
     revision_confirmations: object = None,
     only_statement_ids: object = None,
 ) -> dict[str, object]:
-    parsed = parse_dream_sculptor_result(raw_response, captures, atlas_value, request_id)
+    parsed = parse_dream_sculptor_result(
+        raw_response, captures, atlas_value, request_id
+    )
     if parsed["outcome"] != "plan":
         return parsed
     clean = _captures(captures)
@@ -138,48 +183,165 @@ def apply_dream_sculptor_result(
     raw = json.loads(repaired)
     plans = validate_dream_sculptor_plans(request_id, raw["plans"], clean, atlas)
     if only_statement_ids is not None:
-        if type(only_statement_ids) is not list or not only_statement_ids or any(type(item) is not str or not item for item in only_statement_ids):
-            raise FormationAdapterError("invalid_sculptor_filter", "only_statement_ids must be a non-empty string list")
+        if (
+            type(only_statement_ids) is not list
+            or not only_statement_ids
+            or any(type(item) is not str or not item for item in only_statement_ids)
+        ):
+            raise FormationAdapterError(
+                "invalid_sculptor_filter",
+                "only_statement_ids must be a non-empty string list",
+            )
         selected = frozenset(only_statement_ids)
         plans = tuple(plan for plan in plans if plan.statement.statement_id in selected)
         if len(plans) != len(selected):
-            raise FormationAdapterError("invalid_sculptor_filter", "only_statement_ids contains an unknown Statement")
+            raise FormationAdapterError(
+                "invalid_sculptor_filter",
+                "only_statement_ids contains an unknown Statement",
+            )
     with AccessMemoryLoop(_workspace(memory_workspace)) as loop:
-        applied = loop.apply_junction_plans(plans, atlas, request_id, revision_confirmations)
-    if any(item.get("outcome") == "defer" and item.get("reason") == "lens_geometry_unrealized" for item in applied["outcomes"]):
-        raise FormationAdapterError("lens_geometry_unrealized", "resolved Lens groups have no realized bounded Junction")
+        applied = loop.apply_junction_plans(
+            plans, atlas, request_id, revision_confirmations
+        )
+    if any(
+        item.get("outcome") == "defer"
+        and item.get("reason") == "lens_geometry_unrealized"
+        for item in applied["outcomes"]
+    ):
+        raise FormationAdapterError(
+            "lens_geometry_unrealized",
+            "resolved Lens groups have no realized bounded Junction",
+        )
     return {**parsed, **applied}
 
 
 def _captures(value: object) -> list[dict[str, object]]:
-    keys = {"capture_id", "user_utf8", "assistant_utf8", "captured_epoch_ms", "timezone_offset_minutes"}
-    directive_keys = {"user_role_mode", "assistant_role_mode", "memory_tool_actions", "recalled_statement_ids"}
+    keys = {
+        "capture_id",
+        "user_utf8",
+        "assistant_utf8",
+        "captured_epoch_ms",
+        "timezone_offset_minutes",
+    }
+    legacy_directive_keys = {
+        "user_role_mode",
+        "assistant_role_mode",
+        "memory_tool_actions",
+        "recalled_statement_ids",
+    }
+    origin_keys = {
+        "assistant_origin_kind",
+        "memory_tool_actions",
+        "recalled_statement_ids",
+    }
     if type(value) is not list or not value or len(value) > 16:
-        raise FormationAdapterError("invalid_sculptor_captures", "Captures must be a bounded non-empty list")
+        raise FormationAdapterError(
+            "invalid_sculptor_captures", "Captures must be a bounded non-empty list"
+        )
     clean = []
     for item in value:
-        if type(item) is not dict or frozenset(item) not in {frozenset(keys), frozenset(keys | directive_keys)} or type(item["capture_id"]) is not str or type(item["user_utf8"]) is not str or type(item["assistant_utf8"]) is not str:
-            raise FormationAdapterError("invalid_sculptor_captures", "Capture fields are invalid")
-        if type(item["captured_epoch_ms"]) is not int or type(item["timezone_offset_minutes"]) is not int or not -840 <= item["timezone_offset_minutes"] <= 840:
-            raise FormationAdapterError("invalid_sculptor_captures", "Capture reference instant is invalid")
-        if directive_keys <= set(item):
+        if (
+            type(item) is not dict
+            or frozenset(item)
+            not in {
+                frozenset(keys),
+                frozenset(keys | legacy_directive_keys),
+                frozenset(keys | origin_keys),
+            }
+            or type(item["capture_id"]) is not str
+            or type(item["user_utf8"]) is not str
+            or type(item["assistant_utf8"]) is not str
+        ):
+            raise FormationAdapterError(
+                "invalid_sculptor_captures", "Capture fields are invalid"
+            )
+        if (
+            type(item["captured_epoch_ms"]) is not int
+            or type(item["timezone_offset_minutes"]) is not int
+            or not -840 <= item["timezone_offset_minutes"] <= 840
+        ):
+            raise FormationAdapterError(
+                "invalid_sculptor_captures", "Capture reference instant is invalid"
+            )
+        if legacy_directive_keys <= set(item):
             actions = item["memory_tool_actions"]
             recalled = item["recalled_statement_ids"]
-            if item["user_role_mode"] != "source" or item["assistant_role_mode"] not in {"source", "context_only", "memory_derived"}:
-                raise FormationAdapterError("invalid_sculptor_captures", "Capture role modes are invalid")
-            if type(actions) is not list or actions != sorted(set(actions)) or any(action not in {"surface", "recall", "expand", "none"} for action in actions):
-                raise FormationAdapterError("invalid_sculptor_captures", "Capture memory actions are invalid")
-            if type(recalled) is not list or recalled != sorted(set(recalled)) or any(type(statement_id) is not str or not statement_id for statement_id in recalled):
-                raise FormationAdapterError("invalid_sculptor_captures", "Capture recalled Statement IDs are invalid")
+            if item["user_role_mode"] != "source" or item[
+                "assistant_role_mode"
+            ] not in {"source", "context_only", "memory_derived"}:
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures", "Capture role modes are invalid"
+                )
+            if (
+                type(actions) is not list
+                or actions != sorted(set(actions))
+                or any(
+                    action not in {"surface", "open_region", "recall", "expand", "none"}
+                    for action in actions
+                )
+            ):
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures", "Capture memory actions are invalid"
+                )
+            if (
+                type(recalled) is not list
+                or recalled != sorted(set(recalled))
+                or any(
+                    type(statement_id) is not str or not statement_id
+                    for statement_id in recalled
+                )
+            ):
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures",
+                    "Capture recalled Statement IDs are invalid",
+                )
+        if origin_keys <= set(item):
+            actions = item["memory_tool_actions"]
+            recalled = item["recalled_statement_ids"]
+            if item["assistant_origin_kind"] not in {
+                "assistant",
+                "model_inference",
+                "recalled_memory",
+                "tool",
+            }:
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures", "Capture assistant origin is invalid"
+                )
+            if (
+                type(actions) is not list
+                or actions != sorted(set(actions))
+                or any(
+                    action not in {"surface", "open_region", "recall", "expand", "none"}
+                    for action in actions
+                )
+            ):
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures", "Capture memory actions are invalid"
+                )
+            if (
+                type(recalled) is not list
+                or recalled != sorted(set(recalled))
+                or any(
+                    type(statement_id) is not str or not statement_id
+                    for statement_id in recalled
+                )
+            ):
+                raise FormationAdapterError(
+                    "invalid_sculptor_captures",
+                    "Capture recalled Statement IDs are invalid",
+                )
         clean.append(item)
     ids = [item["capture_id"] for item in clean]
     if len(ids) != len(set(ids)):
-        raise FormationAdapterError("invalid_sculptor_captures", "Capture IDs must be unique")
+        raise FormationAdapterError(
+            "invalid_sculptor_captures", "Capture IDs must be unique"
+        )
     return clean
 
 
 def _workspace(value: object):
     from pathlib import Path
+
     if type(value) is not str or not value:
         raise FormationAdapterError("invalid_workspace", "memory_workspace is required")
     return Path(value).resolve()

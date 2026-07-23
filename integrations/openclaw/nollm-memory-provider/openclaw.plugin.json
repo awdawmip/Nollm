@@ -2,7 +2,8 @@
   "id": "nollm",
   "name": "Nollm Memory",
   "kind": "memory",
-  "description": "Nollm native active memory provider for OpenClaw. Reuses the W1 native companion store for automatic prepare/recall and deterministic explicit capture.",
+  "description": "HISTORICAL_INVALID_FOR_CONTENT_ADMISSION; quarantined and fail-closed.",
+  "x-nollm-status": "HISTORICAL_INVALID_FOR_CONTENT_ADMISSION",
   "version": "0.2.0-w2.1",
   "activation": {
     "onStartup": false

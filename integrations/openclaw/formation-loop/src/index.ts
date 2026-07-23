@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { Type } from "typebox";
 import { buildJsonPluginConfigSchema, definePluginEntry, type OpenClawPluginApi } from "openclaw/plugin-sdk/core";
 import { appendLatencyEvent, COMMIT_LATENCY_SCHEMA, durationMs, durationUs, RECALL_LATENCY_SCHEMA, sha256Text, systemLatencyClock, turnCorrelationId } from "./latency.js";
-import { AbsorptionWorker, CaptureStore, type AbsorptionResult, type CaptureRecord, type MemoryToolAction } from "./capture.js";
+import { AbsorptionWorker, buildCaptureSourceWindowGroups, CaptureStore, type AbsorptionResult, type CaptureContinuation, type CaptureEvaluationIdentity, type CaptureRecord, type CaptureStateEvent, type MemoryToolAction } from "./capture.js";
 
 export type RunResult = { code: number; stdout: string; stderr: string };
 export type DreamConfig = {
@@ -37,8 +37,9 @@ export type DreamConfig = {
   memory_scope_mode?: "single-configured-scope";
   absorption_enabled?: boolean; absorption_batch_max_captures?: number; absorption_batch_max_chars?: number; absorption_max_wait_ms?: number; absorption_stale_claim_ms?: number; absorption_retry_backoff_ms?: number; absorption_directive_finalization_ms?: number;
   writer_context_max_captures?: number; writer_context_max_chars?: number;
+  writer_source_window_bytes?: number; writer_source_group_bytes?: number; writer_source_overlap_codepoints?: number; writer_max_continuation_passes?: number;
   dream_sculptor_schema_version?: "nollm_openclaw_dream_sculptor_v2"; locality_atlas_candidate_limit?: number;
-  proposition_writer_schema_version?: "nollm_openclaw_contextual_proposition_writer_v3";
+  proposition_writer_schema_version?: "nollm_openclaw_content_neutral_proposition_writer_v4";
   field_cartographer_schema_version?: "nollm_openclaw_field_cartographer_v2";
   cartographer_max_regions?: 32; cartographer_max_prompt_bytes?: 65536; cartographer_max_turns?: 4;
   pending_fallback_enabled?: boolean; pending_fallback_max_captures?: number; pending_fallback_max_chars?: number; pending_fallback_max_age_ms?: number;
@@ -91,9 +92,13 @@ const JSON_SCHEMA = {
     absorption_directive_finalization_ms: { type: "integer", minimum: 1000, default: 30000 },
     writer_context_max_captures: { type: "integer", minimum: 0, maximum: 4, default: 4 },
     writer_context_max_chars: { type: "integer", minimum: 0, maximum: 6000, default: 6000 },
+    writer_source_window_bytes: { type: "integer", minimum: 1024, maximum: 24000, default: 12000 },
+    writer_source_group_bytes: { type: "integer", minimum: 12000, maximum: 40000, default: 32000 },
+    writer_source_overlap_codepoints: { type: "integer", minimum: 0, maximum: 1024, default: 128 },
+    writer_max_continuation_passes: { type: "integer", minimum: 1, maximum: 32, default: 16 },
     dream_sculptor_schema_version: { type: "string", const: "nollm_openclaw_dream_sculptor_v2", default: "nollm_openclaw_dream_sculptor_v2" },
     locality_atlas_candidate_limit: { type: "integer", minimum: 1, maximum: 512, default: 512 },
-    proposition_writer_schema_version: { type: "string", const: "nollm_openclaw_contextual_proposition_writer_v3", default: "nollm_openclaw_contextual_proposition_writer_v3" },
+    proposition_writer_schema_version: { type: "string", const: "nollm_openclaw_content_neutral_proposition_writer_v4", default: "nollm_openclaw_content_neutral_proposition_writer_v4" },
     field_cartographer_schema_version: { type: "string", const: "nollm_openclaw_field_cartographer_v2", default: "nollm_openclaw_field_cartographer_v2" },
     cartographer_max_regions: { type: "integer", const: 32, default: 32 },
     cartographer_max_prompt_bytes: { type: "integer", const: 65536, default: 65536 },
@@ -184,7 +189,9 @@ type MainAgentRecallOperation = {
   atlasFingerprint: string;
   pageFingerprint: string;
   policy: Record<string, number>;
+  page: Record<string, unknown>;
   entries: Map<string, Record<string, unknown>>;
+  regions: Map<string, string>;
   selectedEntryId?: string;
   selectedRegionId?: string;
   expanded: boolean;
@@ -494,15 +501,15 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     api.registerTool({
       name: "nollm_memory",
       label: "Nollm memory",
-      description: "Inspect a routing-only Nollm map. The Surface is not answer evidence: select one entry and call recall, or call none. Full memory content is returned only by recall or same-entry expand.",
+      description: "Inspect a routing-only Nollm map. Open a region when it has children, then select one entry and call recall, or call none. The Surface is not answer evidence; recalled content is returned only by recall or same-entry expand.",
       parameters: Type.Object({
-        action: Type.Union([Type.Literal("surface"), Type.Literal("recall"), Type.Literal("expand"), Type.Literal("none")]),
+        action: Type.Union([Type.Literal("surface"), Type.Literal("open_region"), Type.Literal("recall"), Type.Literal("expand"), Type.Literal("none")]),
         operation_id: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
         region_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
         entry_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
         budget_option_id: Type.Optional(Type.Union([Type.Literal("default"), Type.Literal("expanded")])),
       }, { additionalProperties: false }),
-      async execute(toolCallId: string, params: { action: "surface" | "recall" | "expand" | "none"; operation_id?: string; region_id?: string; entry_id?: string; budget_option_id?: "default" | "expanded" }) {
+      async execute(toolCallId: string, params: { action: "surface" | "open_region" | "recall" | "expand" | "none"; operation_id?: string; region_id?: string; entry_id?: string; budget_option_id?: "default" | "expanded" }) {
         const result = (value: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(value) }], details: value });
         if (!configuredMemoryWorkspace || !config.python_executable || !config.nollm_repo_root) {
           return result({ status: "unavailable", reason: "Nollm memory workspace is not configured", legacy_reader: false });
@@ -511,31 +518,36 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         if (!binding) return result({ status: "run_scope_unavailable", legacy_reader: false });
         expireOperations();
         if (params.action === "surface") {
-          if (params.entry_id !== undefined || params.budget_option_id !== undefined) return result({ status: "invalid_parameters", legacy_reader: false });
+          if (params.region_id !== undefined || params.entry_id !== undefined || params.budget_option_id !== undefined) return result({ status: "invalid_parameters", legacy_reader: false });
           const operationId = `memory-${randomUUID()}`;
           const policy = atlasPolicy();
           const built = await bridge(config, {
             action: "build_main_agent_surface", memory_workspace: configuredMemoryWorkspace,
             operation_id: operationId, policy,
           });
-          if (built.ok !== true || typeof built.core_state_sha256 !== "string" || typeof built.atlas_fingerprint !== "string" || typeof built.page_fingerprint !== "string" || !Array.isArray(built.entries)) return result({ ...built, legacy_reader: false });
+          if (built.ok !== true || typeof built.core_state_sha256 !== "string" || typeof built.atlas_fingerprint !== "string" || typeof built.page_fingerprint !== "string" || !Array.isArray(built.entries) || !Array.isArray(built.regions) || typeof built.page !== "object" || built.page === null) return result({ ...built, legacy_reader: false });
           const entries = new Map<string, Record<string, unknown>>();
           for (const raw of built.entries) {
             if (typeof raw === "object" && raw !== null && typeof (raw as Record<string, unknown>).entry_id === "string") {
               entries.set((raw as Record<string, unknown>).entry_id as string, raw as Record<string, unknown>);
             }
           }
+          const regions = new Map<string, string>();
+          for (const raw of built.regions) if (typeof raw === "object" && raw !== null) {
+            const item = raw as Record<string, unknown>;
+            if (typeof item.region_id === "string" && typeof item.atlas_region_id === "string") regions.set(item.region_id, item.atlas_region_id);
+          }
           const now = Date.now();
           reserveMainAgentOperationSlot(mainAgentRecallOperations, now);
           mainAgentRecallOperations.set(operationId, {
             scope: binding, createdAt: now, lastUsedAt: now, expiresAt: now + operationTtlMs(),
             coreStateSha256: built.core_state_sha256, atlasFingerprint: built.atlas_fingerprint,
-            pageFingerprint: built.page_fingerprint, policy, entries, expanded: false,
+            pageFingerprint: built.page_fingerprint, policy: built.policy as Record<string, number>, page: built.page as Record<string, unknown>, entries, regions, expanded: false,
           });
           await recordMemoryAction(binding, "surface");
           return result({
             schema_version: built.schema_version, status: built.status, operation_id: operationId,
-            regions: built.regions, entry_count: built.entry_count, region_count: built.region_count,
+            regions: (built.regions as Array<Record<string, unknown>>).map(({ atlas_region_id: _private, ...visible }) => visible), entry_count: built.entry_count, region_count: built.region_count,
             routing_text_chars: built.routing_text_chars, visible_json_utf8_bytes: built.visible_json_utf8_bytes,
             full_statement_body_count: built.full_statement_body_count, routing_only: true,
             answer_from_surface: false, single_entry_only: true,
@@ -548,6 +560,32 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         if (!sameMainAgentRun(operation.scope, binding)) return result({ status: "operation_scope_mismatch", legacy_reader: false });
         operation.lastUsedAt = Date.now();
         operation.expiresAt = operation.lastUsedAt + operationTtlMs();
+        if (params.action === "open_region") {
+          if (!params.region_id || params.entry_id !== undefined || params.budget_option_id !== undefined || operation.selectedEntryId) return result({ status: "invalid_parameters", legacy_reader: false });
+          const atlasRegionId = operation.regions.get(params.region_id);
+          if (!atlasRegionId) return result({ status: "region_unavailable", legacy_reader: false });
+          const opened = await bridge(config, {
+            action: "open_main_agent_region", memory_workspace: configuredMemoryWorkspace,
+            operation_id: params.operation_id, parent_page: operation.page, atlas_region_id: atlasRegionId,
+          });
+          if (opened.ok !== true || typeof opened.page_fingerprint !== "string" || !Array.isArray(opened.entries) || !Array.isArray(opened.regions) || typeof opened.page !== "object" || opened.page === null) {
+            if (opened.error !== "bridge_process_error" && opened.error !== "bridge_invalid_json") mainAgentRecallOperations.delete(params.operation_id);
+            return result({ ...opened, legacy_reader: false });
+          }
+          operation.pageFingerprint = opened.page_fingerprint;
+          operation.page = opened.page as Record<string, unknown>;
+          operation.entries = new Map((opened.entries as Array<Record<string, unknown>>).map(item => [String(item.entry_id), item]));
+          operation.regions = new Map((opened.regions as Array<Record<string, unknown>>).map(item => [String(item.region_id), String(item.atlas_region_id)]));
+          await recordMemoryAction(binding, "open_region");
+          return result({
+            schema_version: opened.schema_version, status: opened.status, operation_id: params.operation_id,
+            regions: (opened.regions as Array<Record<string, unknown>>).map(({ atlas_region_id: _private, ...visible }) => visible),
+            entry_count: opened.entry_count, region_count: opened.region_count, depth: opened.depth,
+            routing_text_chars: opened.routing_text_chars, visible_json_utf8_bytes: opened.visible_json_utf8_bytes,
+            full_statement_body_count: opened.full_statement_body_count, routing_only: true, answer_from_surface: false,
+            single_entry_only: true, expires_at: operation.expiresAt, legacy_reader: false, hidden_child_calls: 0,
+          });
+        }
         if (params.action === "none") {
           mainAgentRecallOperations.delete(params.operation_id);
           await recordMemoryAction(binding, "none");
@@ -570,7 +608,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
           action: "recall_main_agent_locality", memory_workspace: configuredMemoryWorkspace,
           operation_id: params.operation_id, expected_core_state_sha256: operation.coreStateSha256,
           expected_atlas_fingerprint: operation.atlasFingerprint, expected_page_fingerprint: operation.pageFingerprint,
-          policy: operation.policy, entry, budget_option_id: budgetOptionId,
+          policy: operation.policy, entry, budget_option_id: budgetOptionId, page: operation.page,
         });
         if (recalled.ok !== true) {
           if (!(["bridge_process_error", "bridge_invalid_json"] as unknown[]).includes(recalled.error)) {
@@ -597,7 +635,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const absorbCapturedBatchLegacy = async (batchId: string, records: CaptureRecord[], executionId: string): Promise<AbsorptionResult[]> => {
     const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "absorption configuration or model temporarily unavailable" }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: "absorption configuration or model temporarily unavailable" }));
     }
     const requestId = `sculptor-${batchId}`;
     const captures = records.map(record => ({
@@ -613,12 +651,12 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       max_statements: config.max_statements ?? 8,
     });
     if (built.ok !== true || typeof built.prompt !== "string" || !built.atlas) {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(built.message ?? built.error ?? "Dream Sculptor prompt failed") }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(built.message ?? built.error ?? "Dream Sculptor prompt failed") }));
     }
     const providerKey = `${batchId}:${executionId}`;
     let sculptorRun = await runDreamSubagentDetailed(api, config, built.prompt, model, `${providerKey}:sculptor`);
     let sculptor = sculptorRun.attempt;
-    if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Dream Sculptor failed: ${sculptorRun.error ?? "empty response"}` }));
+    if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Dream Sculptor failed: ${sculptorRun.error ?? "empty response"}` }));
     let providerCalls = 1;
     let providerMs = sculptor.providerMs;
     let applied = await bridge(config, {
@@ -637,16 +675,16 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       sculptor = sculptorRun.attempt;
       providerCalls += 1;
       providerMs += sculptor?.providerMs ?? 0;
-      if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Dream Sculptor correction failed after ${initialValidationError}: ${sculptorRun.error ?? "empty response"}` }));
+      if (!sculptor?.raw) return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Dream Sculptor correction failed after ${initialValidationError}: ${sculptorRun.error ?? "empty response"}` }));
       applied = await bridge(config, {
         action: "apply_dream_sculptor_result", request_id: requestId,
         raw_model_response: sculptor.raw, captures, atlas: built.atlas,
         memory_workspace: configuredMemoryWorkspace,
       });
     }
-    if (applied.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(applied.message ?? applied.error ?? "Dream Sculptor apply failed") }));
-    if (applied.outcome === "no_memory") return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
-    if (applied.outcome === "defer" || !Array.isArray(applied.outcomes)) return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: String(applied.defer_reason ?? "Dream Sculptor deferred") }));
+    if (applied.ok !== true) return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(applied.message ?? applied.error ?? "Dream Sculptor apply failed") }));
+    if (applied.outcome === "no_memory") return records.map(record => ({ captureId: record.capture_id, status: "evaluated_no_new_propositions" }));
+    if (applied.outcome === "defer" || !Array.isArray(applied.outcomes)) return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(applied.defer_reason ?? "Dream Sculptor deferred") }));
 
     let outcomes = applied.outcomes as Array<Record<string, unknown>>;
     const provisional = outcomes.filter(item => item.outcome === "revision_confirmation_required");
@@ -686,27 +724,27 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     });
     return records.map(record => {
       const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
-      if (!related.length) return { captureId: record.capture_id, status: "no_memory" };
-      if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" };
-      if (related.some(item => item.outcome === "revision_confirmation_required")) return { captureId: record.capture_id, status: "retry", error: "revision confirmation remains retryable" };
-      if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "deferred", error: "one or more Capture Statements deferred" };
+      if (!related.length) return { captureId: record.capture_id, status: "evaluated_no_new_propositions" };
+      if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retryable_defer", error: "one or more independent Admissions failed" };
+      if (related.some(item => item.outcome === "revision_confirmation_required")) return { captureId: record.capture_id, status: "retryable_defer", error: "revision confirmation remains retryable" };
+      if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "retryable_defer", error: "one or more Capture Statements deferred" };
       const statementIds = related.flatMap(item => typeof item.statement_id === "string" ? [item.statement_id] : []);
       const reopenVerified = related.every(item => item.durable_commit && (item.durable_commit as Record<string, unknown>).reopen_verified === true);
       return reopenVerified
         ? { captureId: record.capture_id, status: "admitted" as const, statementIds }
-        : { captureId: record.capture_id, status: "retry" as const, error: "Admission reopen verification failed" };
+        : { captureId: record.capture_id, status: "retryable_defer" as const, error: "Admission reopen verification failed" };
     });
   };
   const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[], executionId: string): Promise<AbsorptionResult[]> => {
     const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "absorption configuration or model temporarily unavailable" }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: "absorption configuration or model temporarily unavailable" }));
     }
-    const requestId = `cartography-${batchId}`;
+    const requestIdBase = `cartography-${batchId}`;
     const providerKey = `${batchId}:${executionId}`;
     const directives = captureStore ? await Promise.all(records.map(record => captureStore.directive(record.capture_id))) : [];
     if (directives.length !== records.length || directives.some(item => item?.finalized !== true)) {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: "Capture absorption directive is not finalized" }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: "Capture absorption directive is not finalized" }));
     }
     const captures = records.map((record, index) => ({
       capture_id: record.capture_id,
@@ -714,8 +752,8 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       assistant_utf8: record.assistant_utf8,
       captured_epoch_ms: record.captured_epoch_ms,
       timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
-      user_role_mode: directives[index]!.user_role_mode,
-      assistant_role_mode: directives[index]!.assistant_role_mode,
+      assistant_origin_kind: directives[index]!.assistant_role_mode === "memory_derived" ? "recalled_memory"
+        : directives[index]!.assistant_role_mode === "context_only" ? "model_inference" : "assistant",
       memory_tool_actions: directives[index]!.memory_tool_actions,
       recalled_statement_ids: directives[index]!.recalled_statement_ids,
     }));
@@ -729,29 +767,51 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       captured_epoch_ms: record.captured_epoch_ms,
       timezone_offset_minutes: record.reference_timezone_offset_minutes ?? 0,
     }));
+    const sourceGroups = buildCaptureSourceWindowGroups(
+      records, config.writer_source_window_bytes ?? 12000,
+      config.writer_source_group_bytes ?? 32000, config.writer_source_overlap_codepoints ?? 128,
+    );
+    if (!sourceGroups.length) return records.map(record => ({ captureId: record.capture_id, status: "structural_invalid", error: "Capture has no source text" }));
+    const priorStates = captureStore ? await Promise.all(records.map(record => captureStore.currentState(record.capture_id))) : [];
+    const priorContinuation = priorStates.find(state => state.continuation)?.continuation;
+    const groupIndex = priorContinuation?.group_index ?? 0;
+    const continuationPass = priorContinuation?.pass_index ?? 0;
+    const requestId = `${requestIdBase}:group:${groupIndex}:pass:${continuationPass}`;
+    if (groupIndex >= sourceGroups.length) {
+      return records.map(record => ({ captureId: record.capture_id, status: "incomplete_continuation", statementIds: priorStates.flatMap(state => state.statement_ids ?? []), error: "continuation budget requires a later worker execution", continuation: priorContinuation }));
+    }
+    const sourceWindows = sourceGroups[groupIndex];
+    const priorStatementIds = [...new Set(priorStates.flatMap(state => state.statement_ids ?? []))].sort();
+    const memoryIdentity = await bridge(config, { action: "read_memory_evaluation_fingerprint", memory_workspace: configuredMemoryWorkspace });
+    if (memoryIdentity.ok !== true || typeof memoryIdentity.current_memory_fingerprint !== "string") {
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: "current memory fingerprint is unavailable" }));
+    }
     const writerBuilt = await bridge(config, {
       action: "build_proposition_writer_prompt", request_id: requestId, captures, context_captures: contextCaptures,
-      max_statements: config.max_statements ?? 8,
+      max_statements: config.max_statements ?? 8, source_windows: sourceWindows,
+      continuation: { pass: continuationPass, prior_statement_ids: priorStatementIds },
+      current_memory_fingerprint: memoryIdentity.current_memory_fingerprint,
     });
     if (writerBuilt.ok !== true || typeof writerBuilt.prompt !== "string") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writerBuilt.message ?? writerBuilt.error ?? "Proposition Writer prompt failed") }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(writerBuilt.message ?? writerBuilt.error ?? "Proposition Writer prompt failed") }));
     }
     const writerRun = await runDreamSubagentDetailed(api, config, writerBuilt.prompt, model, `${providerKey}:writer`);
     let writerAttempt = writerRun.attempt;
     let writerProviderCalls = 1;
     let writerProviderMs = writerAttempt?.providerMs ?? 0;
     if (!writerAttempt?.raw) {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer failed: ${writerRun.error ?? "empty response"}` }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Proposition Writer failed: ${writerRun.error ?? "empty response"}` }));
     }
     let writer = await bridge(config, {
       action: "parse_proposition_writer_result", request_id: requestId,
       raw_model_response: writerAttempt.raw, captures, context_captures: contextCaptures,
+      source_windows: sourceWindows, continuation_pass: continuationPass, evaluation_id: writerBuilt.evaluation_id,
     });
     if (writer.ok !== true) {
       await trace(config, { status: "correction_required", stage: "proposition_writer_validation", batch_id: batchId, ...outputEvidence(writerAttempt.raw), ...writer });
       const validationError = String(writer.message ?? writer.error ?? "Proposition Writer validation failed");
       if (!writerFormatRepairable(writer)) {
-        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer semantic validation failed: ${validationError}` }));
+        return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Proposition Writer semantic validation failed: ${validationError}` }));
       }
       const correction = await runDreamSubagentDetailed(
         api, config,
@@ -762,25 +822,49 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       writerProviderMs += correction.attempt?.providerMs ?? 0;
       writerAttempt = correction.attempt;
       if (!writerAttempt?.raw) {
-        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Proposition Writer correction failed: ${correction.error ?? "empty response"}` }));
+        return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Proposition Writer correction failed: ${correction.error ?? "empty response"}` }));
       }
       writer = await bridge(config, {
         action: "parse_proposition_writer_result", request_id: requestId,
         raw_model_response: writerAttempt.raw, captures, context_captures: contextCaptures,
+        source_windows: sourceWindows, continuation_pass: continuationPass, evaluation_id: writerBuilt.evaluation_id,
       });
       if (writer.ok !== true) {
-        return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(writer.message ?? writer.error ?? "Proposition Writer correction validation failed") }));
+        return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(writer.message ?? writer.error ?? "Proposition Writer correction validation failed") }));
       }
     }
-    if (writer.outcome === "no_memory") return records.map(record => ({ captureId: record.capture_id, status: "no_memory" }));
-    if (writer.outcome === "defer") return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: String(writer.defer_reason ?? "Proposition Writer deferred") }));
+    const contextFingerprint = sha256Text(JSON.stringify(contextCaptures.map(item => [item.capture_id, item.captured_epoch_ms])));
+    const completeSourceCoverage = sha256Text(JSON.stringify(sourceGroups.flat()));
+    const evaluation: CaptureEvaluationIdentity = {
+      writer_schema: String(writerBuilt.schema_version), prompt_version: String(writerBuilt.prompt_version),
+      context_fingerprint: contextFingerprint, current_memory_fingerprint: String(memoryIdentity.current_memory_fingerprint),
+      source_coverage: sha256Text(JSON.stringify(sourceWindows)), evaluation_epoch_ms: Date.now(),
+    };
+    const coverageRanges = (throughGroup: number) => sourceGroups.flatMap((group, index) => index <= throughGroup ? group.map(window => ({ capture_id: window.capture_id, role: window.role, start: window.start, end: window.end })) : []);
+    const uncoveredRanges = (afterGroup: number) => sourceGroups.flatMap((group, index) => index > afterGroup ? group.map(window => ({ capture_id: window.capture_id, role: window.role, start: window.start, end: window.end })) : []);
+    const nextContinuation = (nextGroup: number, nextPass: number): CaptureContinuation => ({
+      group_index: nextGroup, pass_index: nextPass, total_groups: sourceGroups.length,
+      covered_ranges: coverageRanges(groupIndex), uncovered_ranges: uncoveredRanges(groupIndex),
+    });
+    const continuationBudgetError = (nextPass: number): string | undefined =>
+      nextPass > 0 && nextPass % (config.writer_max_continuation_passes ?? 16) === 0
+        ? "incomplete_budget_exhausted; a later worker execution will continue"
+        : undefined;
+    if (writer.outcome === "retryable_defer") return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", statementIds: priorStatementIds, error: String(writer.reason_text ?? "Proposition Writer retryable defer"), evaluation }));
+    if (writer.outcome === "zero_new_propositions") {
+      if (groupIndex + 1 < sourceGroups.length) return records.map(record => ({ captureId: record.capture_id, status: "incomplete_continuation", statementIds: priorStatementIds, evaluation, continuation: nextContinuation(groupIndex + 1, 0) }));
+      return records.map(record => ({ captureId: record.capture_id, status: "evaluated_no_new_propositions", statementIds: priorStatementIds, evaluation: { ...evaluation, source_coverage: completeSourceCoverage } }));
+    }
+    if (writer.outcome === "incomplete_continuation" && (!Array.isArray(writer.propositions) || writer.propositions.length === 0)) {
+      return records.map(record => ({ captureId: record.capture_id, status: "incomplete_continuation", statementIds: priorStatementIds, evaluation, continuation: nextContinuation(groupIndex, continuationPass + 1), error: continuationBudgetError(continuationPass + 1) }));
+    }
 
     let cartography = await bridge(config, {
       action: "build_field_cartographer_prompt", request_id: requestId,
       writer_result: writer, memory_workspace: configuredMemoryWorkspace, turn: 1,
     });
     if (cartography.ok !== true || cartography.status !== "cartographer_decision" || typeof cartography.prompt !== "string") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(cartography.message ?? cartography.error ?? cartography.status ?? "Field Cartographer prompt failed") }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(cartography.message ?? cartography.error ?? cartography.status ?? "Field Cartographer prompt failed") }));
     }
     const cartographerSessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
     const cartographerRaw: string[] = [];
@@ -816,10 +900,10 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       }
     }
     if (cartographerError || cartography.status !== "complete") {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: `Field Cartographer failed: ${cartographerError ?? "turn budget exhausted"}` }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Field Cartographer failed: ${cartographerError ?? "turn budget exhausted"}` }));
     }
     if (cartography.outcome === "defer") {
-      return records.map(record => ({ captureId: record.capture_id, status: "deferred", error: String(cartography.reason_text ?? "Field Cartographer deferred") }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(cartography.reason_text ?? "Field Cartographer deferred") }));
     }
     let applied = await bridge(config, {
       action: "apply_field_cartography_result", request_id: requestId,
@@ -827,7 +911,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       memory_workspace: configuredMemoryWorkspace,
     });
     if (applied.ok !== true || !Array.isArray(applied.outcomes)) {
-      return records.map(record => ({ captureId: record.capture_id, status: "retry", error: String(applied.message ?? applied.error ?? "Field Cartographer apply failed") }));
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(applied.message ?? applied.error ?? "Field Cartographer apply failed") }));
     }
     let outcomes = applied.outcomes as Array<Record<string, unknown>>;
     for (const item of outcomes.filter(value => value.outcome === "revision_confirmation_required")) {
@@ -865,24 +949,47 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     });
     return records.map(record => {
       const related = outcomes.filter(item => Array.isArray(item.source_capture_ids) && item.source_capture_ids.includes(record.capture_id));
-      if (!related.length) return { captureId: record.capture_id, status: "no_memory" };
-      if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retry", error: "one or more independent Admissions failed" };
-      if (related.some(item => item.outcome === "revision_confirmation_required")) return { captureId: record.capture_id, status: "retry", error: "revision confirmation remains retryable" };
-      if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "deferred", error: "one or more Capture Statements deferred" };
-      const statementIds = related.flatMap(item => typeof item.statement_id === "string" ? [item.statement_id] : []);
+      if (related.some(item => item.outcome === "error")) return { captureId: record.capture_id, status: "retryable_defer", statementIds: priorStatementIds, error: "one or more independent Admissions failed", evaluation };
+      if (related.some(item => item.outcome === "revision_confirmation_required")) return { captureId: record.capture_id, status: "retryable_defer", statementIds: priorStatementIds, error: "revision confirmation remains retryable", evaluation };
+      if (related.some(item => item.outcome !== "applied")) return { captureId: record.capture_id, status: "retryable_defer", statementIds: priorStatementIds, error: "one or more Capture Statements deferred", evaluation };
+      const statementIds = [...new Set([...priorStatementIds, ...related.flatMap(item => typeof item.statement_id === "string" ? [item.statement_id] : [])])].sort();
       const reopenVerified = related.every(item => item.durable_commit && (item.durable_commit as Record<string, unknown>).reopen_verified === true);
-      return reopenVerified
-        ? { captureId: record.capture_id, status: "admitted" as const, statementIds }
-        : { captureId: record.capture_id, status: "retry" as const, error: "Admission reopen verification failed" };
+      if (!reopenVerified && related.length) return { captureId: record.capture_id, status: "retryable_defer" as const, statementIds, error: "Admission reopen verification failed", evaluation };
+      if (writer.outcome === "incomplete_continuation") return { captureId: record.capture_id, status: "incomplete_continuation" as const, statementIds, evaluation, continuation: nextContinuation(groupIndex, continuationPass + 1), error: continuationBudgetError(continuationPass + 1) };
+      if (groupIndex + 1 < sourceGroups.length) return { captureId: record.capture_id, status: "incomplete_continuation" as const, statementIds, evaluation, continuation: nextContinuation(groupIndex + 1, 0) };
+      return related.length
+        ? { captureId: record.capture_id, status: "admitted" as const, statementIds, evaluation: { ...evaluation, source_coverage: completeSourceCoverage } }
+        : { captureId: record.capture_id, status: "evaluated_no_new_propositions" as const, statementIds, evaluation: { ...evaluation, source_coverage: completeSourceCoverage } };
     });
   };
   void absorbCapturedBatchLegacy;
+  const reevaluationNeeded = async (record: CaptureRecord, state: CaptureStateEvent): Promise<boolean> => {
+    const evaluation = state.evaluation;
+    if (!captureStore || !evaluation || state.status === "evaluated_no_new_propositions_legacy") return true;
+    if (evaluation.writer_schema !== "nollm_openclaw_content_neutral_proposition_writer_v4" ||
+        evaluation.prompt_version !== "proposition-writer-v4-content-neutral-evidence-continuation") return true;
+    const contextRecords = await captureStore.contextBefore(
+      [record], config.writer_context_max_captures ?? 4, config.writer_context_max_chars ?? 6000,
+    );
+    const contextFingerprint = sha256Text(JSON.stringify(contextRecords.map(item => [item.capture_id, item.captured_epoch_ms])));
+    if (evaluation.context_fingerprint !== contextFingerprint) return true;
+    const groups = buildCaptureSourceWindowGroups(
+      [record], config.writer_source_window_bytes ?? 12000,
+      config.writer_source_group_bytes ?? 32000, config.writer_source_overlap_codepoints ?? 128,
+    );
+    if (evaluation.source_coverage !== sha256Text(JSON.stringify(groups.flat()))) return true;
+    if (!configuredMemoryWorkspace) return false;
+    const identity = await bridge(config, { action: "read_memory_evaluation_fingerprint", memory_workspace: configuredMemoryWorkspace });
+    return identity.ok === true && typeof identity.current_memory_fingerprint === "string" &&
+      identity.current_memory_fingerprint !== evaluation.current_memory_fingerprint;
+  };
   const absorptionWorker = captureStore && config.absorption_enabled !== false ? new AbsorptionWorker(captureStore, {
     batchMaxCaptures: config.absorption_batch_max_captures ?? 4,
     batchMaxChars: config.absorption_batch_max_chars ?? 24000,
     staleClaimMs: config.absorption_stale_claim_ms ?? 300000,
     retryBackoffMs: config.absorption_retry_backoff_ms ?? 1000,
     directiveFinalizationMs: config.absorption_directive_finalization_ms ?? 30000,
+    reevaluationNeeded,
   }, absorbCapturedBatch) : undefined;
   let absorptionTimer: NodeJS.Timeout | undefined;
   let absorptionServiceRunning = false;

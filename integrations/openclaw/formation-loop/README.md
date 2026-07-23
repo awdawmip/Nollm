@@ -1,6 +1,6 @@
 # Nollm OpenClaw Formation Loop
 
-This adapter provides durable Capture, background Writer v3 and Cartography,
+This adapter provides durable Capture, background content-neutral Writer v4 and Cartography,
 and same-run main-agent single-entry geometric Recall through public
 `nollm-access` APIs.
 
@@ -16,11 +16,11 @@ one expansion may increase the same selected entry to eight Statements or 6000
 characters. The active user Recall path starts no independent Reader child.
 
 Every visible user/assistant turn is durably Captured, including turns that use
-Nollm Recall. An append-only role directive controls only background absorption:
-user text remains source eligible, while recalled assistant text is context-only.
-Missing or late directives fail safely to context-only assistant handling.
+Nollm Recall. User, assistant, tool-associated, and recalled-derived source text
+uses one Writer contract. Origin metadata is preserved only as provenance;
+missing directives do not create content-eligibility classes.
 
-The preselection Surface is routing-only. It exposes bounded routing anchors,
+The preselection Surface is routing-only. It exposes uniformly bounded content previews,
 occupancy, child availability, and opaque operation-local entry aliases, but no
 complete Statement bodies. Full Statement content appears only after one entry
 is selected by Recall or same-entry expansion. The active profile enforces one

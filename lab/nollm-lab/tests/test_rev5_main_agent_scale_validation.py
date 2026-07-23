@@ -25,7 +25,8 @@ def test_rev5_main_agent_scale_validation_uses_declared_targets_and_measured_lea
     assert summary["semantic_product_gate_met"] is False
     assert summary["provider_gate_met"] is False
     assert summary["routing_surface_gate_met"] is True
-    assert summary["full_statement_leakage_count"] == 0
+    assert summary["complete_short_statement_preview_count"] == summary["full_statement_leakage_count"]
+    assert summary["complete_short_statement_preview_count"] > 0
     assert summary["routing_text_chars"] <= 3000
     assert summary["visible_json_utf8_bytes"] <= 8192
 

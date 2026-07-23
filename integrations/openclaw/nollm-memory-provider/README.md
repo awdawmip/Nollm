@@ -1,6 +1,14 @@
+# HISTORICAL_INVALID_FOR_CONTENT_ADMISSION
+
+This package is quarantined historical evidence. It rejects secret-shaped input,
+uses stable-sentence promotion, and suppresses transient facts such as weather;
+those policies violate the current content-neutral memory contract. It must not
+be installed, activated, copied, or migrated into Capture, Formation, Admission,
+or Recall. Its executable entry point fails closed.
+
 # @nollm/openclaw-memory
 
-Nollm native active memory provider for OpenClaw W2-01 Direct Active Memory trial.
+Historical Nollm active memory provider for the closed OpenClaw W2-01 trial.
 
 This package is **not** the historical `nollm-memory-companion`. The companion
 remains an experimental tool surface that delegates to legacy `memory-core`.

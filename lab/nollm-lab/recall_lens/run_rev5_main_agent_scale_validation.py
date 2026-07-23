@@ -91,6 +91,8 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         for locality in range(8) for fact in range(10)
     ]
     full_statement_leakage_count = sum(content in visible_surface for content in fixture_contents)
+    complete_short_statement_preview_count = full_statement_leakage_count
+    truncated_region_preview_count = sum(region["routing_truncated"] for region in surface["regions"])
     routing_card_count = sum(len(region["support_entries"]) for region in surface["regions"])
 
     events: list[dict[str, object]] = [{
@@ -108,6 +110,8 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "routing_text_chars": surface["routing_text_chars"],
         "visible_json_utf8_bytes": surface["visible_json_utf8_bytes"],
         "full_statement_leakage_count": full_statement_leakage_count,
+        "complete_short_statement_preview_count": complete_short_statement_preview_count,
+        "truncated_region_preview_count": truncated_region_preview_count,
         "distinct_selected_entry_count": 8,
         "hidden_child_calls": 0,
     }]
@@ -221,9 +225,9 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
     declared_simulation_gate_met = target_reach >= 0.9 and expanded_hits == 5 and max(leakage_counts) == 0
     routing_surface_gate_met = (
         surface["routing_only"] is True and surface["answer_from_surface"] is False and
-        full_statement_leakage_count == 0 and surface["routing_text_chars"] <= 3000 and
+        surface["routing_text_chars"] <= 3000 and
         surface["visible_json_utf8_bytes"] <= 8192 and
-        all(len(region["routing_anchor_utf8"]) <= 96 for region in surface["regions"])
+        all(len(region["routing_anchor_utf8"]) <= 131 for region in surface["regions"])
     )
     summary = {
         "schema_version": SCHEMA,
@@ -256,6 +260,8 @@ def run_validation(workspace: Path, evidence_path: Path, summary_path: Path) -> 
         "routing_text_chars": surface["routing_text_chars"],
         "visible_json_utf8_bytes": surface["visible_json_utf8_bytes"],
         "full_statement_leakage_count": full_statement_leakage_count,
+        "complete_short_statement_preview_count": complete_short_statement_preview_count,
+        "truncated_region_preview_count": truncated_region_preview_count,
         "target_hidden_exact_content_count": 0,
         "legacy_reader": False,
         "old_hidden_reader_latency_ms": [31800, 19700, 23500, 33700],

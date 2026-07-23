@@ -19,7 +19,12 @@ eligible for Provider Live validation.
 
 Active-memory installation also requires an explicit Capture scope. The tool is
 bound only when the actual Host-derived scope equals that configured scope.
-Every visible turn remains an immutable Raw Capture; append-only role directives
-prevent recalled assistant text from becoming a new proposition source. Atlas
-Surface output is routing-only and full Statement bodies remain unavailable
-until a single entry is selected.
+Every visible turn remains an immutable Raw Capture. Writer v4 treats user,
+assistant, tool-associated, and recalled-derived source text uniformly; role and
+tool fields are provenance, never eligibility. Append-only state v2 preserves
+zero-delta evaluation identity, retryable deferral, source-window coverage, and
+restartable continuation. Oversized Captures receive dedicated work items.
+
+Atlas v2 exposes at most two uniformly generated 64-codepoint previews per
+region. `surface`, `open_region`, `recall`, `expand`, and `none` remain bound to
+one server-issued, run-scoped operation; one final entry supplies recalled bodies.

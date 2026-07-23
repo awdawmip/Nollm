@@ -4,18 +4,20 @@ import {
   definePluginEntry,
 } from "openclaw/plugin-sdk/plugin-entry";
 import { ConfigSchema } from "./config.js";
-import { createNollmProvider } from "./provider.js";
+
+// HISTORICAL_INVALID_FOR_CONTENT_ADMISSION: retained only as audit evidence.
 
 const plugin: OpenClawPluginDefinition = definePluginEntry({
   id: "nollm",
   name: "Nollm Memory",
-  description: "Nollm native active memory provider for OpenClaw Functional Alpha.",
+  description: "HISTORICAL_INVALID_FOR_CONTENT_ADMISSION; quarantined and fail-closed.",
   kind: "memory",
   configSchema: buildJsonPluginConfigSchema(
     ConfigSchema as unknown as Parameters<typeof buildJsonPluginConfigSchema>[0]
   ),
   register(api) {
-    createNollmProvider(api);
+    void api;
+    throw new Error("HISTORICAL_INVALID_FOR_CONTENT_ADMISSION");
   },
 });
 

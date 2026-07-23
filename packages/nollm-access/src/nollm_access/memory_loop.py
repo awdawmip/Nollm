@@ -5,12 +5,29 @@ from time import perf_counter_ns
 import hashlib
 import json
 
-from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, JunctionRequest, PhysicalFieldScope, RelationGroupJunctionRequest, SurfaceAggregateAddress
+from nollm_core import (
+    AtomHandle,
+    CoreRuntime,
+    GeometryAddress,
+    JunctionRequest,
+    PhysicalFieldScope,
+    RelationGroupJunctionRequest,
+    SurfaceAggregateAddress,
+)
 
-from .cartography import LocalDetailPage, ProgressiveAtlasPage, ProgressiveAtlasPolicy, ProgressiveAtlasRegion
+from .cartography import (
+    LocalDetailPage,
+    ProgressiveAtlasPage,
+    ProgressiveAtlasPolicy,
+    ProgressiveAtlasRegion,
+)
 from .handle_store import FileHandleStore
 from .locality import AtlasNode, AtlasPath, LocalityAtlas, LocalityCandidateRef
-from .placement_contract import AccessDecision, ProvisionalRevisionDecision, RevisionConfirmationResult
+from .placement_contract import (
+    AccessDecision,
+    ProvisionalRevisionDecision,
+    RevisionConfirmationResult,
+)
 from .recall_lens import JunctionSemanticPlan
 from .runtime import AccessRuntime
 from .statement import MemoryStatement
@@ -26,7 +43,9 @@ BATCH_PLACEMENT_SCHEMA_VERSION = "nollm_openclaw_batch_placement_v1"
 DEFAULT_FIELD_SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
 _Q32_ONE = 1 << 32
 _MIN_FRONTIER_RING = 4
-_MIN_FRONTIER_DISTANCE_SQUARED_Q32 = 3 * _MIN_FRONTIER_RING * _MIN_FRONTIER_RING * _Q32_ONE
+_MIN_FRONTIER_DISTANCE_SQUARED_Q32 = (
+    3 * _MIN_FRONTIER_RING * _MIN_FRONTIER_RING * _Q32_ONE
+)
 _MAX_FRONTIER_RADIUS = 1024
 
 
@@ -35,7 +54,9 @@ class RevisionTargetExcludedError(ValueError):
 
 
 class DurableReadbackError(RuntimeError):
-    def __init__(self, statement_id: str, handle: AtomHandle, errors: tuple[Exception, ...]) -> None:
+    def __init__(
+        self, statement_id: str, handle: AtomHandle, errors: tuple[Exception, ...]
+    ) -> None:
         super().__init__("placement committed but reopen readback is unavailable")
         self.statement_id = statement_id
         self.handle = handle
@@ -102,19 +123,38 @@ class AccessMemoryLoop:
         if entry is not None and not scope.contains(entry):
             raise ValueError("selected_entry must belong to the Physical FieldScope")
         with CoreRuntime(self._workspace) as core:
-            occupied = tuple(cell for cell in core.occupied_cells() if scope.contains(cell))
+            occupied = tuple(
+                cell for cell in core.occupied_cells() if scope.contains(cell)
+            )
             candidates: list[dict[str, object]] = []
             if entry is not None:
-                candidates.append(self._candidate(core, "placement:existing:0", "existing_cell", entry))
+                candidates.append(
+                    self._candidate(
+                        core, "placement:existing:0", "existing_cell", entry
+                    )
+                )
                 for index, address in enumerate(entry.lateral(1)):
-                    candidates.append(self._candidate(core, f"placement:lateral:{index}", "lateral_ring_1", address))
+                    candidates.append(
+                        self._candidate(
+                            core,
+                            f"placement:lateral:{index}",
+                            "lateral_ring_1",
+                            address,
+                        )
+                    )
             frontier = self._expand_surface_frontier(scope, occupied)
-            candidates.append(self._candidate(core, "placement:expand:0", "expand_surface", frontier))
-        if len(candidates) > 8 or len({item["candidate_id"] for item in candidates}) != len(candidates):
+            candidates.append(
+                self._candidate(core, "placement:expand:0", "expand_surface", frontier)
+            )
+        if len(candidates) > 8 or len(
+            {item["candidate_id"] for item in candidates}
+        ) != len(candidates):
             raise AssertionError("placement candidates must be unique and bounded")
         return candidates
 
-    def candidate_statement_context(self, candidates: object) -> list[dict[str, object]]:
+    def candidate_statement_context(
+        self, candidates: object
+    ) -> list[dict[str, object]]:
         if type(candidates) is not list or len(candidates) > 8:
             raise TypeError("candidates must be a bounded list")
         return self._candidate_statement_context(candidates, 8)
@@ -130,7 +170,11 @@ class AccessMemoryLoop:
         statement_store = FileStatementStore(self._workspace)
         context = []
         for candidate in candidates:
-            if type(candidate) is not dict or type(candidate.get("candidate_id")) is not str or type(candidate.get("existing_handles")) is not list:
+            if (
+                type(candidate) is not dict
+                or type(candidate.get("candidate_id")) is not str
+                or type(candidate.get("existing_handles")) is not list
+            ):
                 raise TypeError("candidate is invalid")
             statements = []
             for raw_handle in candidate["existing_handles"]:
@@ -140,12 +184,19 @@ class AccessMemoryLoop:
                     statement = statement_store.get(binding.current_statement_id)
                 except (KeyError, FileNotFoundError):
                     continue
-                statements.append({
-                    "statement_id": statement.statement_id,
-                    "content_utf8": statement.content_utf8[:256],
-                    "handle": handle.to_mapping(),
-                })
-            context.append({"candidate_id": candidate["candidate_id"], "statements": statements[:3]})
+                statements.append(
+                    {
+                        "statement_id": statement.statement_id,
+                        "content_utf8": statement.content_utf8[:256],
+                        "handle": handle.to_mapping(),
+                    }
+                )
+            context.append(
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "statements": statements[:3],
+                }
+            )
         return context
 
     def bounded_physical_entries(
@@ -161,42 +212,82 @@ class AccessMemoryLoop:
         if type(scope) is not PhysicalFieldScope:
             raise TypeError("scope must be PhysicalFieldScope")
         with CoreRuntime(self._workspace) as core:
-            cells = tuple(sorted(
-                (cell for cell in core.occupied_cells() if scope.contains(cell)),
-                key=lambda item: item.stable_key(),
-            ))[:max_entries]
-            candidates = [self._candidate(core, f"physical-entry:{index}", "existing_cell", cell) for index, cell in enumerate(cells)]
+            cells = tuple(
+                sorted(
+                    (cell for cell in core.occupied_cells() if scope.contains(cell)),
+                    key=lambda item: item.stable_key(),
+                )
+            )[:max_entries]
+            candidates = [
+                self._candidate(core, f"physical-entry:{index}", "existing_cell", cell)
+                for index, cell in enumerate(cells)
+            ]
         contexts = self._candidate_statement_context(candidates, max_entries)
         statements = {item["candidate_id"]: item["statements"] for item in contexts}
-        return [{
-            "entry_id": item["candidate_id"],
-            "entry_cell": item["geometry_address"],
-            "occupancy_count": item["occupancy"]["count"],
-            "statements": statements[item["candidate_id"]],
-        } for item in candidates]
+        return [
+            {
+                "entry_id": item["candidate_id"],
+                "entry_cell": item["geometry_address"],
+                "occupancy_count": item["occupancy"]["count"],
+                "statements": statements[item["candidate_id"]],
+            }
+            for item in candidates
+        ]
 
-    def batch_placement_view(self, request_id: str, max_existing: int = 16, max_empty: int = 16) -> dict[str, object]:
+    def batch_placement_view(
+        self, request_id: str, max_existing: int = 16, max_empty: int = 16
+    ) -> dict[str, object]:
         self._require_request(request_id)
-        if type(max_existing) is not int or not 1 <= max_existing <= 32 or type(max_empty) is not int or not 1 <= max_empty <= 32:
+        if (
+            type(max_existing) is not int
+            or not 1 <= max_existing <= 32
+            or type(max_empty) is not int
+            or not 1 <= max_empty <= 32
+        ):
             raise ValueError("batch placement view budgets are invalid")
         with CoreRuntime(self._workspace) as core:
             state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
-            occupied = tuple(sorted(
-                (cell for cell in core.occupied_cells() if DEFAULT_FIELD_SCOPE.contains(cell)),
-                key=lambda item: item.stable_key(),
-            ))
+            occupied = tuple(
+                sorted(
+                    (
+                        cell
+                        for cell in core.occupied_cells()
+                        if DEFAULT_FIELD_SCOPE.contains(cell)
+                    ),
+                    key=lambda item: item.stable_key(),
+                )
+            )
             selected_occupied = occupied[:max_existing]
-            candidates = [self._candidate(core, f"batch:existing:{index}", "existing_cell", cell) for index, cell in enumerate(selected_occupied)]
+            candidates = [
+                self._candidate(core, f"batch:existing:{index}", "existing_cell", cell)
+                for index, cell in enumerate(selected_occupied)
+            ]
             occupied_keys = {cell.stable_key() for cell in occupied}
             empty: list[GeometryAddress] = []
             if not occupied:
-                origin = GeometryAddress(DEFAULT_FIELD_SCOPE.profile_id, DEFAULT_FIELD_SCOPE.chart_id, DEFAULT_FIELD_SCOPE.reference_layer, 0, 0)
+                origin = GeometryAddress(
+                    DEFAULT_FIELD_SCOPE.profile_id,
+                    DEFAULT_FIELD_SCOPE.chart_id,
+                    DEFAULT_FIELD_SCOPE.reference_layer,
+                    0,
+                    0,
+                )
                 empty.append(origin)
-                empty.extend(sorted(origin.lateral(_MIN_FRONTIER_RING), key=lambda item: item.stable_key())[:max_empty - 1])
+                empty.extend(
+                    sorted(
+                        origin.lateral(_MIN_FRONTIER_RING),
+                        key=lambda item: item.stable_key(),
+                    )[: max_empty - 1]
+                )
             else:
                 for cell in selected_occupied:
-                    for candidate in sorted(cell.lateral(1), key=lambda item: item.stable_key()):
-                        if candidate.stable_key() in occupied_keys or candidate in empty:
+                    for candidate in sorted(
+                        cell.lateral(1), key=lambda item: item.stable_key()
+                    ):
+                        if (
+                            candidate.stable_key() in occupied_keys
+                            or candidate in empty
+                        ):
                             continue
                         empty.append(candidate)
                         if len(empty) >= max_empty:
@@ -207,19 +298,40 @@ class AccessMemoryLoop:
                 if frontier not in empty:
                     empty.append(frontier)
             for index, cell in enumerate(empty[:max_empty]):
-                relation = "expand_surface" if all(
-                    self._physical_distance_squared_q32(cell, occupied_cell) >= _MIN_FRONTIER_DISTANCE_SQUARED_Q32
-                    for occupied_cell in occupied
-                ) else "lateral_ring_1"
-                candidates.append(self._candidate(core, f"batch:empty:{index}", relation, cell))
-        contexts = self._candidate_statement_context(candidates, max_existing + max_empty)
+                relation = (
+                    "expand_surface"
+                    if all(
+                        self._physical_distance_squared_q32(cell, occupied_cell)
+                        >= _MIN_FRONTIER_DISTANCE_SQUARED_Q32
+                        for occupied_cell in occupied
+                    )
+                    else "lateral_ring_1"
+                )
+                candidates.append(
+                    self._candidate(core, f"batch:empty:{index}", relation, cell)
+                )
+        contexts = self._candidate_statement_context(
+            candidates, max_existing + max_empty
+        )
         statements = {item["candidate_id"]: item["statements"] for item in contexts}
-        projected = [{**item, "statements": statements[item["candidate_id"]]} for item in candidates]
-        fingerprint = hashlib.sha256(json.dumps(
-            {"core_state_sha256": state_sha256, "candidates": projected},
-            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        ).encode("utf-8")).hexdigest()
-        return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "core_state_sha256": state_sha256, "view_fingerprint": fingerprint, "candidates": projected}
+        projected = [
+            {**item, "statements": statements[item["candidate_id"]]}
+            for item in candidates
+        ]
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                {"core_state_sha256": state_sha256, "candidates": projected},
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        return {
+            "schema_version": BATCH_PLACEMENT_SCHEMA_VERSION,
+            "core_state_sha256": state_sha256,
+            "view_fingerprint": fingerprint,
+            "candidates": projected,
+        }
 
     def build_locality_atlas(
         self,
@@ -234,7 +346,12 @@ class AccessMemoryLoop:
             raise TypeError("scope must be PhysicalFieldScope")
         with CoreRuntime(self._workspace) as core:
             state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
-            occupied = tuple(sorted((cell for cell in core.occupied_cells() if scope.contains(cell)), key=lambda item: item.stable_key()))
+            occupied = tuple(
+                sorted(
+                    (cell for cell in core.occupied_cells() if scope.contains(cell)),
+                    key=lambda item: item.stable_key(),
+                )
+            )
             occupied_set = frozenset(occupied)
             candidates: list[LocalityCandidateRef] = []
             nodes: list[AtlasNode] = []
@@ -259,20 +376,46 @@ class AccessMemoryLoop:
                 else:
                     projections = self._surface_projections(core, scope, selected_order)
                     if len(projections) != order_projection_counts[selected_order]:
-                        raise RuntimeError("Surface order count changed during Atlas construction")
+                        raise RuntimeError(
+                            "Surface order count changed during Atlas construction"
+                        )
                 covered = frozenset(
-                    cell for projection in projections for cell in projection.source_cells if cell in occupied_set
+                    cell
+                    for projection in projections
+                    for cell in projection.source_cells
+                    if cell in occupied_set
                 )
                 for projection in projections:
-                    source_cells = tuple(sorted(set(projection.source_cells) & occupied_set, key=lambda item: item.stable_key()))
+                    source_cells = tuple(
+                        sorted(
+                            set(projection.source_cells) & occupied_set,
+                            key=lambda item: item.stable_key(),
+                        )
+                    )
                     if not source_cells:
-                        raise RuntimeError("occupied Surface projection has no current source Cell")
+                        raise RuntimeError(
+                            "occupied Surface projection has no current source Cell"
+                        )
                     cells = self._region_support(source_cells, 4)
-                    support_overflow = self._support_coverage_radius(source_cells, cells) > 4
-                    material = json.dumps({"state": state_sha256, "surface": projection.address.to_mapping()}, sort_keys=True, separators=(",", ":")).encode("ascii")
+                    support_overflow = (
+                        self._support_coverage_radius(source_cells, cells) > 4
+                    )
+                    material = json.dumps(
+                        {
+                            "state": state_sha256,
+                            "surface": projection.address.to_mapping(),
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("ascii")
                     digest = hashlib.sha256(material).hexdigest()
                     candidate_id = f"locality:{digest}"
-                    raw = [self._candidate(core, f"{candidate_id}:{cell_index}", "existing_cell", cell) for cell_index, cell in enumerate(cells)]
+                    raw = [
+                        self._candidate(
+                            core, f"{candidate_id}:{cell_index}", "existing_cell", cell
+                        )
+                        for cell_index, cell in enumerate(cells)
+                    ]
                     contexts = self._candidate_statement_context(raw, 4)
                     representatives = []
                     seen_statements = set()
@@ -281,28 +424,90 @@ class AccessMemoryLoop:
                             if statement["statement_id"] not in seen_statements:
                                 representatives.append(statement)
                                 seen_statements.add(statement["statement_id"])
-                    neighbor_counts = tuple(sum(neighbor in occupied_set for neighbor in cell.lateral(1)) for cell in cells)
-                    candidates.append(LocalityCandidateRef(
-                        candidate_id, cells, True, any(value < 6 for value in neighbor_counts),
-                        max(6 - value for value in neighbor_counts), min(neighbor_counts), tuple(representatives[:3]),
-                        len(source_cells), "geometry_center_farthest_v1", support_overflow,
-                    ))
+                    neighbor_counts = tuple(
+                        sum(neighbor in occupied_set for neighbor in cell.lateral(1))
+                        for cell in cells
+                    )
+                    candidates.append(
+                        LocalityCandidateRef(
+                            candidate_id,
+                            cells,
+                            True,
+                            any(value < 6 for value in neighbor_counts),
+                            max(6 - value for value in neighbor_counts),
+                            min(neighbor_counts),
+                            tuple(representatives[:3]),
+                            len(source_cells),
+                            "geometry_center_farthest_v1",
+                            support_overflow,
+                        )
+                    )
                     node_id = f"atlas-node:{digest}"
-                    nodes.append(AtlasNode(
-                        node_id, selected_order, projection.address.to_mapping(), (),
-                        len(source_cells), projection.native_atom_count,
-                        projection.truncated, tuple(representatives[:3]), len(source_cells), len(cells),
-                        "geometry_center_farthest_v1", support_overflow,
-                    ))
-                    paths.append(AtlasPath(
-                        f"atlas-path:{digest}", (node_id,), () if support_overflow else (candidate_id,),
-                    ))
+                    nodes.append(
+                        AtlasNode(
+                            node_id,
+                            selected_order,
+                            projection.address.to_mapping(),
+                            (),
+                            len(source_cells),
+                            projection.native_atom_count,
+                            projection.truncated,
+                            tuple(representatives[:3]),
+                            len(source_cells),
+                            len(cells),
+                            "geometry_center_farthest_v1",
+                            support_overflow,
+                        )
+                    )
+                    paths.append(
+                        AtlasPath(
+                            f"atlas-path:{digest}",
+                            (node_id,),
+                            () if support_overflow else (candidate_id,),
+                        )
+                    )
             else:
-                frontier = core.junction_candidates(JunctionRequest(scope, (), (), 1, 1))[0]
-                candidates.append(LocalityCandidateRef(frontier.candidate_id, (frontier.cell,), False, False, 6, 0, (), 0, "empty_field_frontier_v1", False))
+                frontier = core.junction_candidates(
+                    JunctionRequest(scope, (), (), 1, 1)
+                )[0]
+                candidates.append(
+                    LocalityCandidateRef(
+                        frontier.candidate_id,
+                        (frontier.cell,),
+                        False,
+                        False,
+                        6,
+                        0,
+                        (),
+                        0,
+                        "empty_field_frontier_v1",
+                        False,
+                    )
+                )
                 node_id = f"atlas-node:{frontier.candidate_id}"
-                nodes.append(AtlasNode(node_id, 0, frontier.cell.to_mapping(), (), 0, 0, False, (), 0, 1, "empty_field_frontier_v1", False))
-                paths.append(AtlasPath(f"atlas-path:{frontier.candidate_id}", (node_id,), (frontier.candidate_id,)))
+                nodes.append(
+                    AtlasNode(
+                        node_id,
+                        0,
+                        frontier.cell.to_mapping(),
+                        (),
+                        0,
+                        0,
+                        False,
+                        (),
+                        0,
+                        1,
+                        "empty_field_frontier_v1",
+                        False,
+                    )
+                )
+                paths.append(
+                    AtlasPath(
+                        f"atlas-path:{frontier.candidate_id}",
+                        (node_id,),
+                        (frontier.candidate_id,),
+                    )
+                )
             uncovered = occupied_set - covered
             certificate = {
                 "occupied_field_cell_count": len(occupied),
@@ -321,12 +526,26 @@ class AccessMemoryLoop:
             "candidates": [item.to_mapping() for item in candidates],
             "coverage_certificate": certificate,
         }
-        fingerprint = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        fingerprint = hashlib.sha256(
+            json.dumps(
+                payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
         return LocalityAtlas(
-            request_id, scope, state_sha256, fingerprint, tuple(candidates), tuple(nodes), tuple(paths),
-            certificate["occupied_field_cell_count"], certificate["covered_field_cell_count"],
-            certificate["uncovered_field_cell_count"], certificate["selected_aggregation_order"],
-            certificate["region_count"], certificate["overflow"], tuple(order_projection_counts),
+            request_id,
+            scope,
+            state_sha256,
+            fingerprint,
+            tuple(candidates),
+            tuple(nodes),
+            tuple(paths),
+            certificate["occupied_field_cell_count"],
+            certificate["covered_field_cell_count"],
+            certificate["uncovered_field_cell_count"],
+            certificate["selected_aggregation_order"],
+            certificate["region_count"],
+            certificate["overflow"],
+            tuple(order_projection_counts),
         )
 
     def build_progressive_atlas(
@@ -337,53 +556,139 @@ class AccessMemoryLoop:
     ) -> ProgressiveAtlasPage:
         """Build the finest complete root page that fits the prompt policy."""
         self._require_request(request_id)
-        if type(policy) is not ProgressiveAtlasPolicy or type(scope) is not PhysicalFieldScope:
+        if (
+            type(policy) is not ProgressiveAtlasPolicy
+            or type(scope) is not PhysicalFieldScope
+        ):
             raise TypeError("progressive Atlas policy and scope are required")
         with CoreRuntime(self._workspace) as core:
             state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
-            occupied = tuple(cell for cell in core.occupied_cells() if scope.contains(cell))
-            atlas_fingerprint = self._progressive_atlas_fingerprint(state_sha256, scope, policy)
+            occupied = tuple(
+                cell for cell in core.occupied_cells() if scope.contains(cell)
+            )
+            atlas_fingerprint = self._progressive_atlas_fingerprint(
+                state_sha256, scope, policy
+            )
             if not occupied:
-                frontier = core.junction_candidates(JunctionRequest(scope, (), (), 1, 1))[0]
+                frontier = core.junction_candidates(
+                    JunctionRequest(scope, (), (), 1, 1)
+                )[0]
                 address = SurfaceAggregateAddress(
-                    scope.profile_id, scope.chart_id, scope.identity, scope.reference_layer,
-                    0, frontier.cell.q, frontier.cell.r, scope.reference_layer % 8,
+                    scope.profile_id,
+                    scope.chart_id,
+                    scope.identity,
+                    scope.reference_layer,
+                    0,
+                    frontier.cell.q,
+                    frontier.cell.r,
+                    scope.reference_layer % 8,
                 )
-                identity = {"kind": "physical_cell_v1", "cell": frontier.cell.to_mapping()}
+                identity = {
+                    "kind": "physical_cell_v1",
+                    "cell": frontier.cell.to_mapping(),
+                }
                 region_id = self._progressive_region_id(state_sha256, identity)
-                candidate = self._candidate(core, "progressive-entry:empty", "expand_surface", frontier.cell)
+                candidate = self._candidate(
+                    core, "progressive-entry:empty", "expand_surface", frontier.cell
+                )
                 region = ProgressiveAtlasRegion(
-                    region_id, identity, 0, 0, 0, 0,
-                    (self._entry_mapping(atlas_fingerprint, region_id, candidate, ()),), (), False, False,
+                    region_id,
+                    identity,
+                    0,
+                    0,
+                    0,
+                    0,
+                    (self._entry_mapping(atlas_fingerprint, region_id, candidate, ()),),
+                    (),
+                    False,
+                    False,
                 )
                 return self._make_progressive_page(
-                    request_id, scope, state_sha256, atlas_fingerprint, None, 0, 0,
-                    (region,), 0, 0, 0, False, policy,
+                    request_id,
+                    scope,
+                    state_sha256,
+                    atlas_fingerprint,
+                    None,
+                    0,
+                    0,
+                    (region,),
+                    0,
+                    0,
+                    0,
+                    False,
+                    policy,
                 )
             orders = core.surface_orders(scope, policy.max_order)
             for order_info in orders:
                 if order_info.occupied_cell_count > policy.max_regions_per_page:
                     continue
                 projections = self._surface_projections(core, scope, order_info.order)
-                regions = tuple(self._progressive_region(core, state_sha256, atlas_fingerprint, projection, policy, scope) for projection in projections)
+                regions = tuple(
+                    self._progressive_region(
+                        core, state_sha256, atlas_fingerprint, projection, policy, scope
+                    )
+                    for projection in projections
+                )
                 try:
                     return self._make_progressive_page(
-                        request_id, scope, state_sha256, atlas_fingerprint, None, 0, order_info.order,
-                        regions, len(occupied), len(occupied), 0, False, policy,
+                        request_id,
+                        scope,
+                        state_sha256,
+                        atlas_fingerprint,
+                        None,
+                        0,
+                        order_info.order,
+                        regions,
+                        len(occupied),
+                        len(occupied),
+                        0,
+                        False,
+                        policy,
                     )
                 except OverflowError:
                     continue
-            regions = self._physical_partition_regions(core, state_sha256, atlas_fingerprint, occupied, policy, 0, 0, len(occupied))
+            regions = self._physical_partition_regions(
+                core,
+                state_sha256,
+                atlas_fingerprint,
+                occupied,
+                policy,
+                0,
+                0,
+                len(occupied),
+            )
             try:
                 return self._make_progressive_page(
-                    request_id, scope, state_sha256, atlas_fingerprint, None, 0, None,
-                    regions, len(occupied), len(occupied), 0, False, policy,
+                    request_id,
+                    scope,
+                    state_sha256,
+                    atlas_fingerprint,
+                    None,
+                    0,
+                    None,
+                    regions,
+                    len(occupied),
+                    len(occupied),
+                    0,
+                    False,
+                    policy,
                 )
             except OverflowError:
                 pass
             return self._make_progressive_page(
-                request_id, scope, state_sha256, atlas_fingerprint, None, 0, None,
-                (), len(occupied), 0, len(occupied), True, policy,
+                request_id,
+                scope,
+                state_sha256,
+                atlas_fingerprint,
+                None,
+                0,
+                None,
+                (),
+                len(occupied),
+                0,
+                len(occupied),
+                True,
+                policy,
             )
 
     def open_progressive_region(
@@ -394,11 +699,17 @@ class AccessMemoryLoop:
     ) -> ProgressiveAtlasPage:
         """Open every occupied direct child of one current Atlas region."""
         self._require_request(request_id)
-        if type(parent_page) is not ProgressiveAtlasPage or type(region_id) is not str or not region_id:
+        if (
+            type(parent_page) is not ProgressiveAtlasPage
+            or type(region_id) is not str
+            or not region_id
+        ):
             raise TypeError("parent page and region identity are required")
         if parent_page.overflow:
             raise ValueError("cannot descend an overflow Atlas page")
-        region = next((item for item in parent_page.regions if item.region_id == region_id), None)
+        region = next(
+            (item for item in parent_page.regions if item.region_id == region_id), None
+        )
         if region is None:
             raise ValueError("region is not visible on the parent page")
         if region.leaf:
@@ -407,53 +718,121 @@ class AccessMemoryLoop:
             raise ValueError("Cartography depth budget is exhausted")
         with CoreRuntime(self._workspace) as core:
             state_sha256 = hashlib.sha256(core.export_state_bytes()).hexdigest()
-            expected_atlas = self._progressive_atlas_fingerprint(state_sha256, parent_page.scope, parent_page.policy)
-            if state_sha256 != parent_page.core_state_sha256 or expected_atlas != parent_page.atlas_fingerprint:
+            expected_atlas = self._progressive_atlas_fingerprint(
+                state_sha256, parent_page.scope, parent_page.policy
+            )
+            if (
+                state_sha256 != parent_page.core_state_sha256
+                or expected_atlas != parent_page.atlas_fingerprint
+            ):
                 raise ValueError("Progressive Atlas changed before region descent")
             if any(
-                item.region_id != self._progressive_region_id(state_sha256, item.geometry_identity)
+                item.region_id
+                != self._progressive_region_id(state_sha256, item.geometry_identity)
                 for item in parent_page.regions
             ):
                 raise ValueError("Progressive Atlas region identity is not canonical")
             if region.geometry_identity.get("kind") == "complete_physical_partition_v1":
-                occupied = tuple(sorted(
-                    (cell for cell in core.occupied_cells() if parent_page.scope.contains(cell)),
-                    key=lambda item: item.stable_key(),
-                ))
+                occupied = tuple(
+                    sorted(
+                        (
+                            cell
+                            for cell in core.occupied_cells()
+                            if parent_page.scope.contains(cell)
+                        ),
+                        key=lambda item: item.stable_key(),
+                    )
+                )
                 identity = region.geometry_identity
                 if identity.get("total") != len(occupied):
-                    raise ValueError("Progressive Atlas partition changed before descent")
+                    raise ValueError(
+                        "Progressive Atlas partition changed before descent"
+                    )
                 start, end = identity.get("start"), identity.get("end")
-                if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(occupied):
+                if (
+                    type(start) is not int
+                    or type(end) is not int
+                    or not 0 <= start < end <= len(occupied)
+                ):
                     raise ValueError("Progressive Atlas partition identity is invalid")
                 selected = occupied[start:end]
                 regions = self._physical_partition_regions(
-                    core, state_sha256, expected_atlas, selected, parent_page.policy,
-                    int(identity.get("level", 0)) + 1, start, len(occupied),
+                    core,
+                    state_sha256,
+                    expected_atlas,
+                    selected,
+                    parent_page.policy,
+                    int(identity.get("level", 0)) + 1,
+                    start,
+                    len(occupied),
                 )
-                child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
+                child_order = (
+                    None
+                    if any(
+                        item.geometry_identity.get("kind")
+                        == "complete_physical_partition_v1"
+                        for item in regions
+                    )
+                    else 0
+                )
                 covered = len(selected)
             else:
                 address = SurfaceAggregateAddress.from_mapping(region.geometry_identity)
-                projection = self._projection_by_address(core, parent_page.scope, address)
+                projection = self._projection_by_address(
+                    core, parent_page.scope, address
+                )
                 selected = tuple(projection.source_cells)
                 regions = self._physical_partition_regions(
-                    core, state_sha256, expected_atlas, selected, parent_page.policy, 1, 0, len(selected),
+                    core,
+                    state_sha256,
+                    expected_atlas,
+                    selected,
+                    parent_page.policy,
+                    1,
+                    0,
+                    len(selected),
                 )
-                child_order = None if any(item.geometry_identity.get("kind") == "complete_physical_partition_v1" for item in regions) else 0
+                child_order = (
+                    None
+                    if any(
+                        item.geometry_identity.get("kind")
+                        == "complete_physical_partition_v1"
+                        for item in regions
+                    )
+                    else 0
+                )
                 covered = len(selected)
             try:
                 return self._make_progressive_page(
-                    request_id, parent_page.scope, state_sha256, expected_atlas, region.region_id,
-                    parent_page.depth + 1, child_order, regions,
-                    parent_page.occupied_field_cell_count, covered, max(0, region.source_cell_count - covered), False,
+                    request_id,
+                    parent_page.scope,
+                    state_sha256,
+                    expected_atlas,
+                    region.region_id,
+                    parent_page.depth + 1,
+                    child_order,
+                    regions,
+                    parent_page.occupied_field_cell_count,
+                    covered,
+                    max(0, region.source_cell_count - covered),
+                    False,
                     parent_page.policy,
                 )
             except OverflowError:
                 return self._make_progressive_page(
-                    request_id, parent_page.scope, state_sha256, expected_atlas, region.region_id,
-                    parent_page.depth + 1, region.aggregation_order - 1, (),
-                    parent_page.occupied_field_cell_count, 0, region.source_cell_count, True, parent_page.policy,
+                    request_id,
+                    parent_page.scope,
+                    state_sha256,
+                    expected_atlas,
+                    region.region_id,
+                    parent_page.depth + 1,
+                    region.aggregation_order - 1,
+                    (),
+                    parent_page.occupied_field_cell_count,
+                    0,
+                    region.source_cell_count,
+                    True,
+                    parent_page.policy,
                 )
 
     def local_detail_page(
@@ -465,13 +844,21 @@ class AccessMemoryLoop:
         limit: int = 16,
     ) -> LocalDetailPage:
         self._require_request(request_id)
-        if type(page) is not ProgressiveAtlasPage or type(region_id) is not str or not region_id:
+        if (
+            type(page) is not ProgressiveAtlasPage
+            or type(region_id) is not str
+            or not region_id
+        ):
             raise TypeError("page and region identity are required")
-        if after_statement_id is not None and (type(after_statement_id) is not str or not after_statement_id):
+        if after_statement_id is not None and (
+            type(after_statement_id) is not str or not after_statement_id
+        ):
             raise TypeError("after_statement_id must be null or text")
         if type(limit) is not int or not 1 <= limit <= 32:
             raise ValueError("local detail limit must be in [1,32]")
-        region = next((item for item in page.regions if item.region_id == region_id), None)
+        region = next(
+            (item for item in page.regions if item.region_id == region_id), None
+        )
         if region is None:
             raise ValueError("region is not visible on the page")
         with CoreRuntime(self._workspace) as core:
@@ -482,12 +869,25 @@ class AccessMemoryLoop:
             if identity.get("kind") == "physical_cell_v1":
                 cells = (self._cell(identity["cell"]),)
             elif identity.get("kind") == "complete_physical_partition_v1":
-                occupied = tuple(sorted((cell for cell in core.occupied_cells() if page.scope.contains(cell)), key=lambda item: item.stable_key()))
-                cells = occupied[identity["start"]:identity["end"]]
+                occupied = tuple(
+                    sorted(
+                        (
+                            cell
+                            for cell in core.occupied_cells()
+                            if page.scope.contains(cell)
+                        ),
+                        key=lambda item: item.stable_key(),
+                    )
+                )
+                cells = occupied[identity["start"] : identity["end"]]
             else:
-                projection = self._projection_by_address(core, page.scope, SurfaceAggregateAddress.from_mapping(identity))
+                projection = self._projection_by_address(
+                    core, page.scope, SurfaceAggregateAddress.from_mapping(identity)
+                )
                 cells = projection.source_cells
-            handles = tuple(handle for cell in cells for handle, _atom in core.atoms_at(cell))
+            handles = tuple(
+                handle for cell in cells for handle, _atom in core.atoms_at(cell)
+            )
         handle_store = FileHandleStore(self._workspace)
         statement_store = FileStatementStore(self._workspace)
         by_id = {}
@@ -504,9 +904,21 @@ class AccessMemoryLoop:
             }
         all_statements = sorted(by_id.values(), key=lambda item: item["statement_id"])
         if after_statement_id is not None:
-            all_statements = [item for item in all_statements if item["statement_id"] > after_statement_id]
+            all_statements = [
+                item
+                for item in all_statements
+                if item["statement_id"] > after_statement_id
+            ]
         selected = tuple(all_statements[:limit])
-        return LocalDetailPage(request_id, state_sha256, page.atlas_fingerprint, region_id, selected, len(all_statements), len(all_statements) > limit)
+        return LocalDetailPage(
+            request_id,
+            state_sha256,
+            page.atlas_fingerprint,
+            region_id,
+            selected,
+            len(all_statements),
+            len(all_statements) > limit,
+        )
 
     def _physical_partition_regions(
         self,
@@ -525,33 +937,67 @@ class AccessMemoryLoop:
         if len(ordered) <= policy.max_regions_per_page:
             output = []
             for index, cell in enumerate(ordered):
-                candidate = self._candidate(core, f"progressive-entry:{start_offset + index}", "existing_cell", cell)
-                context = self._candidate_statement_context([candidate], 1)[0]["statements"]
+                candidate = self._candidate(
+                    core,
+                    f"progressive-entry:{start_offset + index}",
+                    "existing_cell",
+                    cell,
+                )
+                context = self._candidate_statement_context([candidate], 1)[0][
+                    "statements"
+                ]
+                representatives = tuple(
+                    self._routing_preview(item) for item in context[:2]
+                )
                 identity = {"kind": "physical_cell_v1", "cell": cell.to_mapping()}
                 region_id = self._progressive_region_id(state_sha256, identity)
-                output.append(ProgressiveAtlasRegion(
-                    region_id, identity, 0, 1,
-                    candidate["occupancy"]["count"], 0,
-                    (self._entry_mapping(atlas_fingerprint, region_id, candidate, tuple(context)),), tuple(context[:3]), False, False,
-                ))
+                output.append(
+                    ProgressiveAtlasRegion(
+                        region_id,
+                        identity,
+                        0,
+                        1,
+                        candidate["occupancy"]["count"],
+                        0,
+                        (
+                            self._entry_mapping(
+                                atlas_fingerprint, region_id, candidate, tuple(context)
+                            ),
+                        ),
+                        representatives,
+                        False,
+                        False,
+                    )
+                )
             return tuple(output)
-        chunk_size = (len(ordered) + policy.max_regions_per_page - 1) // policy.max_regions_per_page
+        chunk_size = (
+            len(ordered) + policy.max_regions_per_page - 1
+        ) // policy.max_regions_per_page
         output = []
         for local_start in range(0, len(ordered), chunk_size):
-            chunk = ordered[local_start:local_start + chunk_size]
+            chunk = ordered[local_start : local_start + chunk_size]
             global_start = start_offset + local_start
             global_end = global_start + len(chunk)
             support = self._region_support(chunk, policy.support_limit)
             candidates = [
-                self._candidate(core, f"progressive-support:{global_start}:{index}", "existing_cell", cell)
+                self._candidate(
+                    core,
+                    f"progressive-support:{global_start}:{index}",
+                    "existing_cell",
+                    cell,
+                )
                 for index, cell in enumerate(support)
             ]
-            contexts = self._candidate_statement_context(candidates, policy.support_limit)
+            contexts = self._candidate_statement_context(
+                candidates, policy.support_limit
+            )
             representatives = []
             for context in contexts:
                 if context["statements"]:
-                    representatives.append(context["statements"][0])
-                if len(representatives) == 3:
+                    representatives.append(
+                        self._routing_preview(context["statements"][0])
+                    )
+                if len(representatives) == 2:
                     break
             identity = {
                 "kind": "complete_physical_partition_v1",
@@ -561,14 +1007,28 @@ class AccessMemoryLoop:
                 "level": level,
             }
             region_id = self._progressive_region_id(state_sha256, identity)
-            output.append(ProgressiveAtlasRegion(
-                region_id, identity, policy.max_order,
-                len(chunk), sum(len(core.atoms_at(cell)) for cell in chunk),
-                min(len(chunk), policy.max_regions_per_page),
-                tuple(self._entry_mapping(atlas_fingerprint, region_id, candidate, ()) for candidate in candidates),
-                tuple(representatives), False,
-                self._support_coverage_radius(chunk, support) > 4,
-            ))
+            output.append(
+                ProgressiveAtlasRegion(
+                    region_id,
+                    identity,
+                    policy.max_order,
+                    len(chunk),
+                    sum(len(core.atoms_at(cell)) for cell in chunk),
+                    min(len(chunk), policy.max_regions_per_page),
+                    tuple(
+                        self._entry_mapping(
+                            atlas_fingerprint,
+                            region_id,
+                            candidate,
+                            tuple(context["statements"]),
+                        )
+                        for candidate, context in zip(candidates, contexts)
+                    ),
+                    tuple(representatives),
+                    False,
+                    self._support_coverage_radius(chunk, support) > 4,
+                )
+            )
         return tuple(output)
 
     def _progressive_region(
@@ -580,9 +1040,16 @@ class AccessMemoryLoop:
         policy: ProgressiveAtlasPolicy,
         scope: PhysicalFieldScope,
     ) -> ProgressiveAtlasRegion:
-        support = self._region_support(tuple(projection.source_cells), policy.support_limit)
-        support_overflow = self._support_coverage_radius(tuple(projection.source_cells), support) > 4
-        candidates = [self._candidate(core, f"progressive-entry:{index}", "existing_cell", cell) for index, cell in enumerate(support)]
+        support = self._region_support(
+            tuple(projection.source_cells), policy.support_limit
+        )
+        support_overflow = (
+            self._support_coverage_radius(tuple(projection.source_cells), support) > 4
+        )
+        candidates = [
+            self._candidate(core, f"progressive-entry:{index}", "existing_cell", cell)
+            for index, cell in enumerate(support)
+        ]
         contexts = self._candidate_statement_context(candidates, policy.support_limit)
         identity = projection.address.to_mapping()
         region_id = self._progressive_region_id(state_sha256, identity)
@@ -590,20 +1057,44 @@ class AccessMemoryLoop:
         seen = set()
         entries = []
         for candidate, context in zip(candidates, contexts):
-            entries.append(self._entry_mapping(atlas_fingerprint, region_id, candidate, tuple(context["statements"])))
+            entries.append(
+                self._entry_mapping(
+                    atlas_fingerprint,
+                    region_id,
+                    candidate,
+                    tuple(context["statements"]),
+                )
+            )
             for statement in context["statements"]:
                 if statement["statement_id"] not in seen:
-                    representatives.append(statement)
+                    representatives.append(self._routing_preview(statement))
                     seen.add(statement["statement_id"])
         child_count = 0
         if projection.address.aggregation_order > 0:
             children = core.surface_descend(scope, projection.address, None, 256)
             child_count = len(children.cells) + int(children.has_more)
         return ProgressiveAtlasRegion(
-            region_id, identity, projection.address.aggregation_order,
-            len(projection.source_cells), projection.native_atom_count, child_count,
-            tuple(entries), tuple(representatives[:3]), projection.truncated, support_overflow,
+            region_id,
+            identity,
+            projection.address.aggregation_order,
+            len(projection.source_cells),
+            projection.native_atom_count,
+            child_count,
+            tuple(entries),
+            tuple(representatives[:2]),
+            projection.truncated,
+            support_overflow,
         )
+
+    @staticmethod
+    def _routing_preview(statement: dict[str, object]) -> dict[str, object]:
+        content = statement["content_utf8"]
+        excerpt = content[:64]
+        return {
+            "statement_id": statement["statement_id"],
+            "content_utf8": excerpt,
+            "truncated": len(content) > len(excerpt),
+        }
 
     @staticmethod
     def _entry_mapping(
@@ -630,16 +1121,32 @@ class AccessMemoryLoop:
 
     @staticmethod
     def _progressive_region_id(state_sha256: str, identity: dict[str, object]) -> str:
-        payload = json.dumps({"state": state_sha256, "geometry_identity": identity}, sort_keys=True, separators=(",", ":")).encode("ascii")
+        payload = json.dumps(
+            {"state": state_sha256, "geometry_identity": identity},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
         return f"atlas-region:{hashlib.sha256(payload).hexdigest()}"
 
     @staticmethod
-    def _progressive_atlas_fingerprint(state_sha256: str, scope: PhysicalFieldScope, policy: ProgressiveAtlasPolicy) -> str:
-        payload = json.dumps({"state": state_sha256, "scope": scope.to_mapping(), "policy": policy.to_mapping()}, sort_keys=True, separators=(",", ":")).encode("ascii")
+    def _progressive_atlas_fingerprint(
+        state_sha256: str, scope: PhysicalFieldScope, policy: ProgressiveAtlasPolicy
+    ) -> str:
+        payload = json.dumps(
+            {
+                "state": state_sha256,
+                "scope": scope.to_mapping(),
+                "policy": policy.to_mapping(),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
         return hashlib.sha256(payload).hexdigest()
 
     @staticmethod
-    def _projection_by_address(core: CoreRuntime, scope: PhysicalFieldScope, address: SurfaceAggregateAddress) -> object:
+    def _projection_by_address(
+        core: CoreRuntime, scope: PhysicalFieldScope, address: SurfaceAggregateAddress
+    ) -> object:
         after = None
         while True:
             page = core.surface_page(scope, address.aggregation_order, after, 256)
@@ -681,41 +1188,87 @@ class AccessMemoryLoop:
             "overflow": overflow,
             "policy": policy.to_mapping(),
         }
-        page_fingerprint = hashlib.sha256(json.dumps(base, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        page_fingerprint = hashlib.sha256(
+            json.dumps(
+                base, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
         serialized = 0
         for _ in range(4):
-            probe = {**base, "page_fingerprint": page_fingerprint, "serialized_utf8_bytes": serialized, "estimated_token_units": (serialized + 3) // 4}
-            new_size = len(json.dumps(probe, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8"))
+            probe = {
+                **base,
+                "page_fingerprint": page_fingerprint,
+                "serialized_utf8_bytes": serialized,
+                "estimated_token_units": (serialized + 3) // 4,
+            }
+            new_size = len(
+                json.dumps(
+                    probe, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                ).encode("utf-8")
+            )
             if new_size == serialized:
                 break
             serialized = new_size
         if not overflow and serialized > policy.max_prompt_bytes:
             raise OverflowError("Progressive Atlas page exceeds the prompt byte budget")
         return ProgressiveAtlasPage(
-            request_id, scope, state_sha256, atlas_fingerprint, page_fingerprint, parent_region_id,
-            depth, order, regions, occupied_count, covered_count, uncovered_count,
-            serialized, (serialized + 3) // 4, overflow, policy,
+            request_id,
+            scope,
+            state_sha256,
+            atlas_fingerprint,
+            page_fingerprint,
+            parent_region_id,
+            depth,
+            order,
+            regions,
+            occupied_count,
+            covered_count,
+            uncovered_count,
+            serialized,
+            (serialized + 3) // 4,
+            overflow,
+            policy,
         )
 
     @classmethod
-    def _region_support(cls, source_cells: tuple[GeometryAddress, ...], limit: int) -> tuple[GeometryAddress, ...]:
+    def _region_support(
+        cls, source_cells: tuple[GeometryAddress, ...], limit: int
+    ) -> tuple[GeometryAddress, ...]:
         if len(source_cells) <= limit:
             return source_cells
         center = min(
             source_cells,
-            key=lambda cell: (sum(cls._hex_distance(cell, other) for other in source_cells), cell.stable_key()),
+            key=lambda cell: (
+                sum(cls._hex_distance(cell, other) for other in source_cells),
+                cell.stable_key(),
+            ),
         )
         selected = [center]
         while len(selected) < limit:
-            selected.append(max(
-                (cell for cell in source_cells if cell not in selected),
-                key=lambda cell: (min(cls._hex_distance(cell, current) for current in selected), tuple(-value if type(value) is int else value for value in cell.stable_key())),
-            ))
+            selected.append(
+                max(
+                    (cell for cell in source_cells if cell not in selected),
+                    key=lambda cell: (
+                        min(cls._hex_distance(cell, current) for current in selected),
+                        tuple(
+                            -value if type(value) is int else value
+                            for value in cell.stable_key()
+                        ),
+                    ),
+                )
+            )
         return tuple(sorted(selected, key=lambda item: item.stable_key()))
 
     @classmethod
-    def _support_coverage_radius(cls, source_cells: tuple[GeometryAddress, ...], support: tuple[GeometryAddress, ...]) -> int:
-        return max(min(cls._hex_distance(cell, anchor) for anchor in support) for cell in source_cells)
+    def _support_coverage_radius(
+        cls,
+        source_cells: tuple[GeometryAddress, ...],
+        support: tuple[GeometryAddress, ...],
+    ) -> int:
+        return max(
+            min(cls._hex_distance(cell, anchor) for anchor in support)
+            for cell in source_cells
+        )
 
     @staticmethod
     def _hex_distance(left: GeometryAddress, right: GeometryAddress) -> int:
@@ -723,7 +1276,9 @@ class AccessMemoryLoop:
         return max(abs(dq), abs(dr), abs(dq + dr))
 
     @staticmethod
-    def _surface_projections(core: CoreRuntime, scope: PhysicalFieldScope, order: int) -> tuple:
+    def _surface_projections(
+        core: CoreRuntime, scope: PhysicalFieldScope, order: int
+    ) -> tuple:
         projections = []
         after = None
         while True:
@@ -743,57 +1298,138 @@ class AccessMemoryLoop:
         max_empty: int = 16,
     ) -> dict[str, object]:
         self._require_request(request_id)
-        if type(statements) is not list or not statements or type(decisions) is not list or len(decisions) != len(statements):
-            raise TypeError("batch Statements and decisions must be equal non-empty lists")
-        formed = [_statement if type(_statement) is MemoryStatement else MemoryStatement.from_mapping(_statement) for _statement in statements]
+        if (
+            type(statements) is not list
+            or not statements
+            or type(decisions) is not list
+            or len(decisions) != len(statements)
+        ):
+            raise TypeError(
+                "batch Statements and decisions must be equal non-empty lists"
+            )
+        formed = [
+            _statement
+            if type(_statement) is MemoryStatement
+            else MemoryStatement.from_mapping(_statement)
+            for _statement in statements
+        ]
         if len({item.statement_id for item in formed}) != len(formed):
             raise ValueError("batch Statement identities must be unique")
         view = self.batch_placement_view(request_id + ":view", max_existing, max_empty)
-        if type(view_fingerprint) is not str or view_fingerprint != view["view_fingerprint"]:
+        if (
+            type(view_fingerprint) is not str
+            or view_fingerprint != view["view_fingerprint"]
+        ):
             raise ValueError("batch placement view changed before apply")
         candidates = {item["candidate_id"]: item for item in view["candidates"]}
         operations = []
         outcomes = []
         used_empty = set()
         for statement, raw in zip(formed, decisions, strict=True):
-            if type(raw) is not dict or raw.get("statement_id") != statement.statement_id or type(raw.get("outcome")) is not str or type(raw.get("reason_text")) is not str:
+            if (
+                type(raw) is not dict
+                or raw.get("statement_id") != statement.statement_id
+                or type(raw.get("outcome")) is not str
+                or type(raw.get("reason_text")) is not str
+            ):
                 raise ValueError("batch decision does not bind its Statement")
             if raw["outcome"] == "defer":
                 if set(raw) != {"statement_id", "outcome", "reason_text"}:
                     raise ValueError("deferred batch decision has invalid fields")
-                outcomes.append({"statement_id": statement.statement_id, "outcome": "defer", "reason": raw["reason_text"]})
+                outcomes.append(
+                    {
+                        "statement_id": statement.statement_id,
+                        "outcome": "defer",
+                        "reason": raw["reason_text"],
+                    }
+                )
                 continue
-            if raw["outcome"] != "apply" or type(raw.get("action")) is not str or type(raw.get("candidate_id")) is not str:
+            if (
+                raw["outcome"] != "apply"
+                or type(raw.get("action")) is not str
+                or type(raw.get("candidate_id")) is not str
+            ):
                 raise ValueError("batch decision has invalid outcome")
             try:
                 candidate = candidates[raw["candidate_id"]]
             except KeyError as exc:
-                raise ValueError("batch decision selected an unavailable candidate") from exc
+                raise ValueError(
+                    "batch decision selected an unavailable candidate"
+                ) from exc
             action = raw["action"]
             address = GeometryAddress.from_mapping(candidate["geometry_address"])
             if action in {"new_local", "expand_surface"}:
-                if set(raw) != {"statement_id", "outcome", "action", "candidate_id", "reason_text"}:
+                if set(raw) != {
+                    "statement_id",
+                    "outcome",
+                    "action",
+                    "candidate_id",
+                    "reason_text",
+                }:
                     raise ValueError("new batch placement has invalid fields")
-                if action == "expand_surface" and candidate["relation_kind"] != "expand_surface":
+                if (
+                    action == "expand_surface"
+                    and candidate["relation_kind"] != "expand_surface"
+                ):
                     raise ValueError("expand_surface requires a frontier candidate")
-                if candidate["occupancy"]["count"] == 0 and candidate["candidate_id"] in used_empty:
-                    raise ValueError("batch cannot place two new Statements into one empty candidate")
+                if (
+                    candidate["occupancy"]["count"] == 0
+                    and candidate["candidate_id"] in used_empty
+                ):
+                    raise ValueError(
+                        "batch cannot place two new Statements into one empty candidate"
+                    )
                 if candidate["occupancy"]["count"] == 0:
                     used_empty.add(candidate["candidate_id"])
-                decision = AccessDecision(f"batch:{request_id}:{statement.statement_id}", statement.statement_id, "new", address, None, None, raw["reason_text"], "llm")
+                decision = AccessDecision(
+                    f"batch:{request_id}:{statement.statement_id}",
+                    statement.statement_id,
+                    "new",
+                    address,
+                    None,
+                    None,
+                    raw["reason_text"],
+                    "llm",
+                )
             elif action == "reuse":
-                if set(raw) != {"statement_id", "outcome", "action", "candidate_id", "existing_handle", "reason_text"}:
+                if set(raw) != {
+                    "statement_id",
+                    "outcome",
+                    "action",
+                    "candidate_id",
+                    "existing_handle",
+                    "reason_text",
+                }:
                     raise ValueError("reuse batch placement has invalid fields")
                 handle = AtomHandle.from_mapping(raw["existing_handle"])
                 if handle.to_mapping() not in candidate["existing_handles"]:
-                    raise ValueError("reuse Handle is not supplied by the selected candidate")
-                decision = AccessDecision(f"batch:{request_id}:{statement.statement_id}", statement.statement_id, "reuse", None, handle, None, raw["reason_text"], "llm")
+                    raise ValueError(
+                        "reuse Handle is not supplied by the selected candidate"
+                    )
+                decision = AccessDecision(
+                    f"batch:{request_id}:{statement.statement_id}",
+                    statement.statement_id,
+                    "reuse",
+                    None,
+                    handle,
+                    None,
+                    raw["reason_text"],
+                    "llm",
+                )
             elif action == "revision_current":
-                raise ValueError("batch revision_current requires the separate bounded confirmation path")
+                raise ValueError(
+                    "batch revision_current requires the separate bounded confirmation path"
+                )
             else:
                 raise ValueError("unsupported batch placement action")
             operations.append((statement, decision))
-            outcomes.append({"statement_id": statement.statement_id, "outcome": "pending_apply", "action": action})
+            outcomes.append(
+                {
+                    "statement_id": statement.statement_id,
+                    "outcome": "pending_apply",
+                    "action": action,
+                }
+            )
         verified_by_statement = {}
         statement_store = FileStatementStore(self._workspace)
         for statement, decision in operations:
@@ -832,7 +1468,9 @@ class AccessMemoryLoop:
                     "durable_commit": error.to_mapping(),
                 }
             except Exception as error:
-                if not existed_before and statement_store.exists(statement.statement_id):
+                if not existed_before and statement_store.exists(
+                    statement.statement_id
+                ):
                     statement_store.discard_new(statement)
                 verified_by_statement[statement.statement_id] = {
                     "statement_id": statement.statement_id,
@@ -843,14 +1481,22 @@ class AccessMemoryLoop:
                 verified_by_statement[statement.statement_id] = {
                     "statement_id": statement.statement_id,
                     "outcome": "applied",
-                    "action": next(item["action"] for item in outcomes if item["statement_id"] == statement.statement_id),
+                    "action": next(
+                        item["action"]
+                        for item in outcomes
+                        if item["statement_id"] == statement.statement_id
+                    ),
                     "durable_commit": durable,
                 }
         verified = [
             verified_by_statement.get(outcome["statement_id"], outcome)
             for outcome in outcomes
         ]
-        return {"schema_version": BATCH_PLACEMENT_SCHEMA_VERSION, "view_fingerprint": view_fingerprint, "outcomes": verified}
+        return {
+            "schema_version": BATCH_PLACEMENT_SCHEMA_VERSION,
+            "view_fingerprint": view_fingerprint,
+            "outcomes": verified,
+        }
 
     def apply_junction_plans(
         self,
@@ -862,7 +1508,11 @@ class AccessMemoryLoop:
     ) -> dict[str, object]:
         """Apply validated semantic plans while keeping exact Cell selection in Core."""
         self._require_request(request_id)
-        if type(plans) is not tuple or not plans or any(type(item) is not JunctionSemanticPlan for item in plans):
+        if (
+            type(plans) is not tuple
+            or not plans
+            or any(type(item) is not JunctionSemanticPlan for item in plans)
+        ):
             raise TypeError("plans must be a non-empty JunctionSemanticPlan tuple")
         if type(atlas) is not LocalityAtlas:
             raise TypeError("atlas must be LocalityAtlas")
@@ -870,153 +1520,270 @@ class AccessMemoryLoop:
             raise ValueError("Locality Atlas is not active and field-complete")
         if revision_confirmations is None:
             confirmations: dict[str, object] = {}
-        elif type(revision_confirmations) is dict and all(type(key) is str for key in revision_confirmations):
+        elif type(revision_confirmations) is dict and all(
+            type(key) is str for key in revision_confirmations
+        ):
             confirmations = revision_confirmations
         else:
             raise TypeError("revision_confirmations must be a Statement-keyed mapping")
         if provenance_by_statement is None:
             provenances: dict[str, StatementProvenance] = {}
-        elif type(provenance_by_statement) is dict and all(type(key) is str and type(value) is StatementProvenance for key, value in provenance_by_statement.items()):
+        elif type(provenance_by_statement) is dict and all(
+            type(key) is str and type(value) is StatementProvenance
+            for key, value in provenance_by_statement.items()
+        ):
             provenances = provenance_by_statement
         else:
-            raise TypeError("provenance_by_statement must be a Statement-keyed provenance mapping")
+            raise TypeError(
+                "provenance_by_statement must be a Statement-keyed provenance mapping"
+            )
         if set(provenances) - {plan.statement.statement_id for plan in plans}:
             raise ValueError("provenance contains an unknown Statement")
 
         # Confirmation proves semantic supersession only. It does not prove that
         # the Core field or current Handle binding remained unchanged meanwhile.
-        reopened = self.build_locality_atlas(request_id + ":reopen", len(atlas.candidates), atlas.scope)
-        if reopened.core_state_sha256 != atlas.core_state_sha256 or reopened.atlas_fingerprint != atlas.atlas_fingerprint:
+        reopened = self.build_locality_atlas(
+            request_id + ":reopen", len(atlas.candidates), atlas.scope
+        )
+        if (
+            reopened.core_state_sha256 != atlas.core_state_sha256
+            or reopened.atlas_fingerprint != atlas.atlas_fingerprint
+        ):
             raise ValueError("Locality Atlas changed before Junction apply")
-        prepared: list[tuple[JunctionSemanticPlan, AccessDecision | None, dict[str, object] | None]] = []
+        prepared: list[
+            tuple[JunctionSemanticPlan, AccessDecision | None, dict[str, object] | None]
+        ] = []
         for plan in plans:
             if plan.atlas_fingerprint != atlas.atlas_fingerprint:
-                raise ValueError("semantic plan does not bind the current Locality Atlas")
+                raise ValueError(
+                    "semantic plan does not bind the current Locality Atlas"
+                )
             if plan.action == "defer":
                 prepared.append((plan, None, None))
                 continue
             if plan.action in {"new_local", "expand_surface", "independent_seed"}:
-                prepared.append((plan, None, {
-                    "relation_groups": plan.relation_groups,
-                    "placement_mode": "independent_seed" if plan.action == "independent_seed" else "related_growth",
-                }))
+                prepared.append(
+                    (
+                        plan,
+                        None,
+                        {
+                            "relation_groups": plan.relation_groups,
+                            "placement_mode": "independent_seed"
+                            if plan.action == "independent_seed"
+                            else "related_growth",
+                        },
+                    )
+                )
                 continue
             handle = plan.existing_handle
             assert handle is not None
-            if not any(handle.geometry_address in group for group in plan.relation_groups):
-                raise ValueError("existing Handle is not supplied by a resolved Lens relation group")
+            if not any(
+                handle.geometry_address in group for group in plan.relation_groups
+            ):
+                raise ValueError(
+                    "existing Handle is not supplied by a resolved Lens relation group"
+                )
             action = "reuse" if plan.action == "reuse" else "revision_current"
             decision = AccessDecision(
-                f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
-                action, None, handle, None, plan.reason_text, "llm",
+                f"junction:{request_id}:{plan.statement.statement_id}",
+                plan.statement.statement_id,
+                action,
+                None,
+                handle,
+                None,
+                plan.reason_text,
+                "llm",
             )
             prepared.append((plan, decision, None))
 
         outcomes = []
         for plan, decision, placement in prepared:
-            if decision is None and placement is not None and "relation_groups" in placement:
+            if (
+                decision is None
+                and placement is not None
+                and "relation_groups" in placement
+            ):
                 with CoreRuntime(self._workspace) as core:
                     if placement["placement_mode"] == "independent_seed":
-                        occupied = tuple(cell for cell in core.occupied_cells() if atlas.scope.contains(cell))
+                        occupied = tuple(
+                            cell
+                            for cell in core.occupied_cells()
+                            if atlas.scope.contains(cell)
+                        )
                         seed_cell = self._expand_surface_frontier(atlas.scope, occupied)
                         candidates = ()
                     elif placement["relation_groups"]:
-                        candidates = core.relation_group_junction_candidates(RelationGroupJunctionRequest(
-                            atlas.scope, placement["relation_groups"], 4, 2, 8,
-                        ))
+                        candidates = core.relation_group_junction_candidates(
+                            RelationGroupJunctionRequest(
+                                atlas.scope,
+                                placement["relation_groups"],
+                                4,
+                                2,
+                                8,
+                            )
+                        )
                     else:
-                        candidates = core.junction_candidates(JunctionRequest(atlas.scope, (), (), 1, 1))
+                        candidates = core.junction_candidates(
+                            JunctionRequest(atlas.scope, (), (), 1, 1)
+                        )
                 if placement["placement_mode"] == "independent_seed":
                     decision = AccessDecision(
-                        f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
-                        "new", seed_cell, None, None, plan.reason_text, "llm",
+                        f"junction:{request_id}:{plan.statement.statement_id}",
+                        plan.statement.statement_id,
+                        "new",
+                        seed_cell,
+                        None,
+                        None,
+                        plan.reason_text,
+                        "llm",
                     )
                     placement = {
                         "placement_mode": "independent_seed",
-                        "seed": {"cell": seed_cell.to_mapping(), "relation_neutral": True},
+                        "seed": {
+                            "cell": seed_cell.to_mapping(),
+                            "relation_neutral": True,
+                        },
                     }
                     candidates = None
                 elif not candidates:
-                    outcomes.append({
-                        "statement_id": plan.statement.statement_id,
-                        "source_capture_ids": list(plan.source_capture_ids),
-                        "outcome": "defer",
-                        "reason": "lens_geometry_unrealized",
-                    })
+                    outcomes.append(
+                        {
+                            "statement_id": plan.statement.statement_id,
+                            "source_capture_ids": list(plan.source_capture_ids),
+                            "outcome": "defer",
+                            "reason": "lens_geometry_unrealized",
+                        }
+                    )
                     continue
                 if candidates is None:
                     pass
-                elif hasattr(candidates[0], "all_groups_realized") and not candidates[0].all_groups_realized:
-                    raise RuntimeError("Core exposed an unrealized relation-group Junction")
+                elif (
+                    hasattr(candidates[0], "all_groups_realized")
+                    and not candidates[0].all_groups_realized
+                ):
+                    raise RuntimeError(
+                        "Core exposed an unrealized relation-group Junction"
+                    )
                 else:
                     decision = AccessDecision(
-                        f"junction:{request_id}:{plan.statement.statement_id}", plan.statement.statement_id,
-                        "new", candidates[0].cell, None, None, plan.reason_text, "llm",
+                        f"junction:{request_id}:{plan.statement.statement_id}",
+                        plan.statement.statement_id,
+                        "new",
+                        candidates[0].cell,
+                        None,
+                        None,
+                        plan.reason_text,
+                        "llm",
                     )
-                    placement = {"placement_mode": "related_growth", "junction": candidates[0].to_mapping()}
+                    placement = {
+                        "placement_mode": "related_growth",
+                        "junction": candidates[0].to_mapping(),
+                    }
             if decision is None:
-                outcomes.append({
-                    "statement_id": plan.statement.statement_id,
-                    "source_capture_ids": list(plan.source_capture_ids),
-                    "outcome": "defer",
-                    "reason": plan.reason_text if placement is None else placement["reason"],
-                })
-                continue
-            confirmation_value = confirmations.get(plan.statement.statement_id)
-            if decision.action == "revision_current" and confirmation_value is None:
-                provisional = self._provisional_revision(plan.statement, decision, self._relation_group_locator(plan.relation_groups))
-                outcomes.append({
-                    "statement_id": plan.statement.statement_id,
-                    "source_capture_ids": list(plan.source_capture_ids),
-                    "outcome": "revision_confirmation_required",
-                    "provisional_revision": provisional.to_mapping(),
-                })
-                continue
-            if decision.action == "revision_current":
-                confirmation = RevisionConfirmationResult.from_mapping(confirmation_value)
-                provisional = self._provisional_revision(plan.statement, decision, self._relation_group_locator(plan.relation_groups))
-                if confirmation.provisional_id != provisional.provisional_id or not confirmation.confirmed:
-                    outcomes.append({
+                outcomes.append(
+                    {
                         "statement_id": plan.statement.statement_id,
                         "source_capture_ids": list(plan.source_capture_ids),
                         "outcome": "defer",
-                        "reason": "revision was not confirmed",
-                    })
+                        "reason": plan.reason_text
+                        if placement is None
+                        else placement["reason"],
+                    }
+                )
+                continue
+            confirmation_value = confirmations.get(plan.statement.statement_id)
+            if decision.action == "revision_current" and confirmation_value is None:
+                provisional = self._provisional_revision(
+                    plan.statement,
+                    decision,
+                    self._relation_group_locator(plan.relation_groups),
+                )
+                outcomes.append(
+                    {
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "revision_confirmation_required",
+                        "provisional_revision": provisional.to_mapping(),
+                    }
+                )
+                continue
+            if decision.action == "revision_current":
+                confirmation = RevisionConfirmationResult.from_mapping(
+                    confirmation_value
+                )
+                provisional = self._provisional_revision(
+                    plan.statement,
+                    decision,
+                    self._relation_group_locator(plan.relation_groups),
+                )
+                if (
+                    confirmation.provisional_id != provisional.provisional_id
+                    or not confirmation.confirmed
+                ):
+                    outcomes.append(
+                        {
+                            "statement_id": plan.statement.statement_id,
+                            "source_capture_ids": list(plan.source_capture_ids),
+                            "outcome": "defer",
+                            "reason": "revision was not confirmed",
+                        }
+                    )
                     continue
             statement_store = FileStatementStore(self._workspace)
             provenance_store = FileStatementProvenanceStore(self._workspace)
             provenance = provenances.get(plan.statement.statement_id)
             if provenance is not None:
-                if provenance.statement_id != plan.statement.statement_id or provenance.content_sha256 != hashlib.sha256(plan.statement.content_utf8.encode("utf-8")).hexdigest():
-                    raise ValueError("Statement provenance does not bind the planned Statement")
+                if (
+                    provenance.statement_id != plan.statement.statement_id
+                    or provenance.content_sha256
+                    != hashlib.sha256(
+                        plan.statement.content_utf8.encode("utf-8")
+                    ).hexdigest()
+                ):
+                    raise ValueError(
+                        "Statement provenance does not bind the planned Statement"
+                    )
             existed_before = statement_store.exists(plan.statement.statement_id)
-            provenance_existed_before = provenance is not None and provenance_store.exists(plan.statement.statement_id)
+            provenance_existed_before = (
+                provenance is not None
+                and provenance_store.exists(plan.statement.statement_id)
+            )
             if existed_before:
                 try:
                     with self._runtime() as access:
-                        existing_handle = access.saved_handle(plan.statement.statement_id)
+                        existing_handle = access.saved_handle(
+                            plan.statement.statement_id
+                        )
                     durable = self._durable_readback(plan.statement, existing_handle)
                 except KeyError:
                     pass
                 except DurableReadbackError as error:
-                    outcomes.append({
-                        "statement_id": plan.statement.statement_id,
-                        "source_capture_ids": list(plan.source_capture_ids),
-                        "outcome": error.commit_state,
-                        "durable_commit": error.to_mapping(),
-                    })
+                    outcomes.append(
+                        {
+                            "statement_id": plan.statement.statement_id,
+                            "source_capture_ids": list(plan.source_capture_ids),
+                            "outcome": error.commit_state,
+                            "durable_commit": error.to_mapping(),
+                        }
+                    )
                     continue
                 else:
                     if provenance is not None:
                         provenance_store.put(provenance)
-                    outcomes.append({
-                        "statement_id": plan.statement.statement_id,
-                        "source_capture_ids": list(plan.source_capture_ids),
-                        "outcome": "applied",
-                        "action": "replay_existing",
-                        "durable_commit": durable,
-                        **({} if provenance is None else {"provenance_sha256": provenance.digest()}),
-                    })
+                    outcomes.append(
+                        {
+                            "statement_id": plan.statement.statement_id,
+                            "source_capture_ids": list(plan.source_capture_ids),
+                            "outcome": "applied",
+                            "action": "replay_existing",
+                            "durable_commit": durable,
+                            **(
+                                {}
+                                if provenance is None
+                                else {"provenance_sha256": provenance.digest()}
+                            ),
+                        }
+                    )
                     continue
             try:
                 with self._runtime() as access:
@@ -1026,34 +1793,50 @@ class AccessMemoryLoop:
                     handle = access.apply(decision)
                 durable = self._durable_readback(plan.statement, handle)
             except DurableReadbackError as error:
-                outcomes.append({
-                    "statement_id": plan.statement.statement_id,
-                    "source_capture_ids": list(plan.source_capture_ids),
-                    "outcome": error.commit_state,
-                    "durable_commit": error.to_mapping(),
-                    **({} if placement is None else placement),
-                })
+                outcomes.append(
+                    {
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": error.commit_state,
+                        "durable_commit": error.to_mapping(),
+                        **({} if placement is None else placement),
+                    }
+                )
             except Exception as error:
-                if provenance is not None and not provenance_existed_before and provenance_store.exists(plan.statement.statement_id):
+                if (
+                    provenance is not None
+                    and not provenance_existed_before
+                    and provenance_store.exists(plan.statement.statement_id)
+                ):
                     provenance_store.discard_new(provenance)
-                if not existed_before and statement_store.exists(plan.statement.statement_id):
+                if not existed_before and statement_store.exists(
+                    plan.statement.statement_id
+                ):
                     statement_store.discard_new(plan.statement)
-                outcomes.append({
-                    "statement_id": plan.statement.statement_id,
-                    "source_capture_ids": list(plan.source_capture_ids),
-                    "outcome": "error",
-                    "error": str(error),
-                })
+                outcomes.append(
+                    {
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "error",
+                        "error": str(error),
+                    }
+                )
             else:
-                outcomes.append({
-                    "statement_id": plan.statement.statement_id,
-                    "source_capture_ids": list(plan.source_capture_ids),
-                    "outcome": "applied",
-                    "action": plan.action,
-                    "durable_commit": durable,
-                    **({} if provenance is None else {"provenance_sha256": provenance.digest()}),
-                    **({} if placement is None else placement),
-                })
+                outcomes.append(
+                    {
+                        "statement_id": plan.statement.statement_id,
+                        "source_capture_ids": list(plan.source_capture_ids),
+                        "outcome": "applied",
+                        "action": plan.action,
+                        "durable_commit": durable,
+                        **(
+                            {}
+                            if provenance is None
+                            else {"provenance_sha256": provenance.digest()}
+                        ),
+                        **({} if placement is None else placement),
+                    }
+                )
         return {
             "schema_version": "nollm_access_junction_apply_v2",
             "atlas_fingerprint": atlas.atlas_fingerprint,
@@ -1065,21 +1848,37 @@ class AccessMemoryLoop:
         return {**provenance.to_mapping(), "provenance_sha256": provenance.digest()}
 
     def current_statement_for_handle(self, handle: object) -> str:
-        parsed = handle if type(handle) is AtomHandle else AtomHandle.from_mapping(handle)
+        parsed = (
+            handle if type(handle) is AtomHandle else AtomHandle.from_mapping(handle)
+        )
         with self._runtime() as access:
             return access.handle_store.statement_for_handle(parsed)
 
     @staticmethod
-    def _relation_group_locator(groups: tuple[tuple[GeometryAddress, ...], ...]) -> dict[str, object]:
+    def _relation_group_locator(
+        groups: tuple[tuple[GeometryAddress, ...], ...],
+    ) -> dict[str, object]:
         mapping = [[cell.to_mapping() for cell in group] for group in groups]
-        payload = json.dumps(mapping, sort_keys=True, separators=(",", ":")).encode("ascii")
-        return {"candidate_id": f"relation-groups:{hashlib.sha256(payload).hexdigest()}", "relation_groups": mapping}
+        payload = json.dumps(mapping, sort_keys=True, separators=(",", ":")).encode(
+            "ascii"
+        )
+        return {
+            "candidate_id": f"relation-groups:{hashlib.sha256(payload).hexdigest()}",
+            "relation_groups": mapping,
+        }
 
-    def local_context(self, entry_cells: object, request_id: str) -> list[dict[str, object]]:
+    def local_context(
+        self, entry_cells: object, request_id: str
+    ) -> list[dict[str, object]]:
         self._require_request(request_id)
         if type(entry_cells) is not list or len(entry_cells) != 1:
             raise TypeError("entry_cells must contain exactly one entry")
-        cells = tuple(sorted((self._cell(item) for item in entry_cells), key=lambda item: item.stable_key()))
+        cells = tuple(
+            sorted(
+                (self._cell(item) for item in entry_cells),
+                key=lambda item: item.stable_key(),
+            )
+        )
         result = self.navigator().recall_entry(request_id, cells[0])
         return list(result.items)
 
@@ -1095,7 +1894,12 @@ class AccessMemoryLoop:
         max_chars: int = 3000,
     ) -> dict[str, object]:
         self._require_request(request_id)
-        if type(max_results) is not int or type(max_chars) is not int or not 1 <= max_results <= 16 or not 1 <= max_chars <= 12000:
+        if (
+            type(max_results) is not int
+            or type(max_chars) is not int
+            or not 1 <= max_results <= 16
+            or not 1 <= max_chars <= 12000
+        ):
             raise ValueError("bounded Locality budget is outside the active limits")
         cell = self._cell(entry_cell)
         result = self.navigator().recall_entry(request_id, cell)
@@ -1104,21 +1908,26 @@ class AccessMemoryLoop:
         rendered_chars = 0
         for rank, item in enumerate(result.items, 1):
             content = item["content_utf8"]
-            if len(selected) >= max_results or rendered_chars + len(content) > max_chars:
+            if (
+                len(selected) >= max_results
+                or rendered_chars + len(content) > max_chars
+            ):
                 continue
             provenance_digest = None
             if provenance_store.exists(item["statement_id"]):
                 provenance_digest = provenance_store.get(item["statement_id"]).digest()
-            selected.append({
-                "statement_id": item["statement_id"],
-                "content_utf8": item["content_utf8"],
-                "provenance_sha256": provenance_digest,
-                "score_q16": item["score_q16"],
-                "fallback_error": item["fallback_error"],
-                "path": item["path"],
-                "path_is_not_truth_proof": True,
-                "entry_relative_rank": rank,
-            })
+            selected.append(
+                {
+                    "statement_id": item["statement_id"],
+                    "content_utf8": item["content_utf8"],
+                    "provenance_sha256": provenance_digest,
+                    "score_q16": item["score_q16"],
+                    "fallback_error": item["fallback_error"],
+                    "path": item["path"],
+                    "path_is_not_truth_proof": True,
+                    "entry_relative_rank": rank,
+                }
+            )
             rendered_chars += len(content)
         return {
             "schema_version": "nollm_access_bounded_locality_v1",
@@ -1127,7 +1936,8 @@ class AccessMemoryLoop:
             "rendered_chars": rendered_chars,
             "available_count": len(result.items),
             "has_more": len(selected) < len(result.items),
-            "budget_exhausted": result.budget_exhausted or len(selected) < len(result.items),
+            "budget_exhausted": result.budget_exhausted
+            or len(selected) < len(result.items),
             "max_results": max_results,
             "max_chars": max_chars,
             "window_mode": "full_window",
@@ -1148,8 +1958,12 @@ class AccessMemoryLoop:
             raise TypeError("statement must be MemoryStatement")
         self._require_request(request_id)
         decision_started = perf_counter_ns()
-        candidates = self.placement_candidates(selected_entry, request_id + ":candidates", scope)
-        decision, public_action, selected = self._decision(placement, statement, request_id, candidates)
+        candidates = self.placement_candidates(
+            selected_entry, request_id + ":candidates", scope
+        )
+        decision, public_action, selected = self._decision(
+            placement, statement, request_id, candidates
+        )
         decision_validation_us = (perf_counter_ns() - decision_started) // 1_000
         empty_timing = {
             "decision_validation_us": decision_validation_us,
@@ -1163,13 +1977,22 @@ class AccessMemoryLoop:
             "durable_readback_us": 0,
         }
         if decision is None:
-            return {"outcome": "defer", "statement_id": statement.statement_id, "core_write_count": 0, "revision_confirmation_count": 0, "durable_commit": None, "operation_timing": empty_timing}
+            return {
+                "outcome": "defer",
+                "statement_id": statement.statement_id,
+                "core_write_count": 0,
+                "revision_confirmation_count": 0,
+                "durable_commit": None,
+                "operation_timing": empty_timing,
+            }
         confirmation_count = 0
         if decision.action == "revision_current":
             provisional = self._provisional_revision(statement, decision, selected)
             excluded = self._excluded_revision_target_keys(excluded_revision_targets)
             if self._handle_key(provisional.existing_handle.to_mapping()) in excluded:
-                raise RevisionTargetExcludedError("revision target was rejected earlier in this operation")
+                raise RevisionTargetExcludedError(
+                    "revision target was rejected earlier in this operation"
+                )
             if revision_confirmation is None:
                 return {
                     "outcome": "revision_confirmation_required",
@@ -1180,10 +2003,14 @@ class AccessMemoryLoop:
                     "durable_commit": None,
                     "operation_timing": empty_timing,
                 }
-            confirmation = RevisionConfirmationResult.from_mapping(revision_confirmation)
+            confirmation = RevisionConfirmationResult.from_mapping(
+                revision_confirmation
+            )
             confirmation_count = 1
             if confirmation.provisional_id != provisional.provisional_id:
-                raise ValueError("revision confirmation does not bind the provisional decision")
+                raise ValueError(
+                    "revision confirmation does not bind the provisional decision"
+                )
             if not confirmation.confirmed:
                 return {
                     "outcome": "revision_rejected",
@@ -1238,7 +2065,9 @@ class AccessMemoryLoop:
             "candidate_id": selected["candidate_id"] if selected is not None else None,
             "handle": result.to_mapping() if type(result) is AtomHandle else None,
             "durable_commit": durable_commit,
-            "core_write_count": 1 if public_action in {"new_local", "expand_surface", "revision_current"} else 0,
+            "core_write_count": 1
+            if public_action in {"new_local", "expand_surface", "revision_current"}
+            else 0,
             "revision_confirmation_count": confirmation_count,
             "operation_timing": {
                 "decision_validation_us": decision_validation_us,
@@ -1253,7 +2082,9 @@ class AccessMemoryLoop:
             },
         }
 
-    def _durable_readback(self, statement: MemoryStatement, result: object) -> dict[str, object]:
+    def _durable_readback(
+        self, statement: MemoryStatement, result: object
+    ) -> dict[str, object]:
         if type(result) is not AtomHandle:
             raise RuntimeError("applied placement did not return an AtomHandle")
         errors = []
@@ -1268,7 +2099,9 @@ class AccessMemoryLoop:
                 return value
         raise DurableReadbackError(statement.statement_id, result, tuple(errors))
 
-    def _durable_readback_once(self, statement: MemoryStatement, result: AtomHandle) -> dict[str, object]:
+    def _durable_readback_once(
+        self, statement: MemoryStatement, result: AtomHandle
+    ) -> dict[str, object]:
         statement_store = FileStatementStore(self._workspace)
         persisted = statement_store.get(statement.statement_id)
         if persisted != statement:
@@ -1316,13 +2149,20 @@ class AccessMemoryLoop:
         )
 
     @classmethod
-    def _excluded_revision_target_keys(cls, value: object) -> frozenset[tuple[object, ...]]:
+    def _excluded_revision_target_keys(
+        cls, value: object
+    ) -> frozenset[tuple[object, ...]]:
         if value is None:
             return frozenset()
         if type(value) is not list or len(value) > 1:
-            raise TypeError("excluded_revision_targets must be a list with at most one Handle")
+            raise TypeError(
+                "excluded_revision_targets must be a list with at most one Handle"
+            )
         try:
-            return frozenset(cls._handle_key(AtomHandle.from_mapping(item).to_mapping()) for item in value)
+            return frozenset(
+                cls._handle_key(AtomHandle.from_mapping(item).to_mapping())
+                for item in value
+            )
         except (KeyError, TypeError, ValueError) as exc:
             raise TypeError("excluded revision target is invalid") from exc
 
@@ -1337,7 +2177,10 @@ class AccessMemoryLoop:
         self._require_open()
         if type(statement_ids) is not list or not statement_ids:
             raise TypeError("statement_ids must be a non-empty string list")
-        if any(type(statement_id) is not str or not statement_id for statement_id in statement_ids):
+        if any(
+            type(statement_id) is not str or not statement_id
+            for statement_id in statement_ids
+        ):
             raise TypeError("statement_ids must be a non-empty string list")
         if len(statement_ids) != len(set(statement_ids)):
             raise ValueError("statement_ids must be unique")
@@ -1352,9 +2195,15 @@ class AccessMemoryLoop:
                 current = statements.get(binding.current_statement_id)
                 atom = core.get(handle)
                 if atom.payload_utf8 != current.content_utf8:
-                    raise RuntimeError(f"durable Core Atom readback mismatch: {statement_id}")
+                    raise RuntimeError(
+                        f"durable Core Atom readback mismatch: {statement_id}"
+                    )
                 verified.append(statement.statement_id)
-        return {"status": "verified", "statement_ids": verified, "reopen_verified": True}
+        return {
+            "status": "verified",
+            "statement_ids": verified,
+            "reopen_verified": True,
+        }
 
     def _decision(
         self,
@@ -1363,17 +2212,35 @@ class AccessMemoryLoop:
         request_id: str,
         candidates: list[dict[str, object]],
     ) -> tuple[AccessDecision | None, str, dict[str, object] | None]:
-        if type(raw) is not dict or raw.get("schema_version") != PLACEMENT_SCHEMA_VERSION or type(raw.get("outcome")) is not str:
+        if (
+            type(raw) is not dict
+            or raw.get("schema_version") != PLACEMENT_SCHEMA_VERSION
+            or type(raw.get("outcome")) is not str
+        ):
             raise ValueError("invalid placement envelope")
         if raw["outcome"] == "defer":
-            if set(raw) != {"schema_version", "outcome", "reason_text"} or type(raw["reason_text"]) is not str:
+            if (
+                set(raw) != {"schema_version", "outcome", "reason_text"}
+                or type(raw["reason_text"]) is not str
+            ):
                 raise ValueError("invalid deferred placement")
             return None, "defer", None
-        if raw["outcome"] != "apply" or set(raw) != {"schema_version", "outcome", "decision"} or type(raw["decision"]) is not dict:
+        if (
+            raw["outcome"] != "apply"
+            or set(raw) != {"schema_version", "outcome", "decision"}
+            or type(raw["decision"]) is not dict
+        ):
             raise ValueError("invalid placement outcome")
         value = raw["decision"]
-        if value.get("statement_id") != statement.statement_id or type(value.get("action")) is not str or type(value.get("candidate_id")) is not str or type(value.get("reason_text")) is not str:
-            raise ValueError("decision does not bind the formed statement and candidate")
+        if (
+            value.get("statement_id") != statement.statement_id
+            or type(value.get("action")) is not str
+            or type(value.get("candidate_id")) is not str
+            or type(value.get("reason_text")) is not str
+        ):
+            raise ValueError(
+                "decision does not bind the formed statement and candidate"
+            )
         by_id = {item["candidate_id"]: item for item in candidates}
         try:
             selected = by_id[value["candidate_id"]]
@@ -1383,9 +2250,15 @@ class AccessMemoryLoop:
         if action in {"new_local", "expand_surface"}:
             if set(value) != {"statement_id", "action", "candidate_id", "reason_text"}:
                 raise ValueError("new placement contains unrelated fields")
-            if action == "expand_surface" and selected["relation_kind"] != "expand_surface":
+            if (
+                action == "expand_surface"
+                and selected["relation_kind"] != "expand_surface"
+            ):
                 raise ValueError("expand_surface requires the frontier candidate")
-            if action == "new_local" and selected["relation_kind"] not in {"existing_cell", "lateral_ring_1"}:
+            if action == "new_local" and selected["relation_kind"] not in {
+                "existing_cell",
+                "lateral_ring_1",
+            }:
                 raise ValueError("new_local requires a selected locality")
             occupancy = selected.get("occupancy")
             if type(occupancy) is not dict or type(occupancy.get("count")) is not int:
@@ -1393,17 +2266,27 @@ class AccessMemoryLoop:
             if selected["relation_kind"] != "existing_cell" and occupancy["count"] != 0:
                 raise ValueError("new placement selected an occupied candidate")
             target = GeometryAddress.from_mapping(selected["geometry_address"])
-            return AccessDecision(
-                f"placement:{request_id}:{statement.statement_id}",
-                statement.statement_id,
-                "new",
-                target,
-                None,
-                None,
-                value["reason_text"],
-                "llm",
-            ), action, selected
-        if action not in {"reuse", "revision_current"} or set(value) != {"statement_id", "action", "candidate_id", "existing_handle", "reason_text"}:
+            return (
+                AccessDecision(
+                    f"placement:{request_id}:{statement.statement_id}",
+                    statement.statement_id,
+                    "new",
+                    target,
+                    None,
+                    None,
+                    value["reason_text"],
+                    "llm",
+                ),
+                action,
+                selected,
+            )
+        if action not in {"reuse", "revision_current"} or set(value) != {
+            "statement_id",
+            "action",
+            "candidate_id",
+            "existing_handle",
+            "reason_text",
+        }:
             raise ValueError("unknown or malformed candidate placement action")
         handle = AtomHandle.from_mapping(value["existing_handle"])
         available_handles = {
@@ -1412,17 +2295,23 @@ class AccessMemoryLoop:
             if type(item) is dict
         }
         if self._handle_key(handle.to_mapping()) not in available_handles:
-            raise ValueError("existing handle is not available in the selected candidate")
-        return AccessDecision(
-            f"placement:{request_id}:{statement.statement_id}",
-            statement.statement_id,
+            raise ValueError(
+                "existing handle is not available in the selected candidate"
+            )
+        return (
+            AccessDecision(
+                f"placement:{request_id}:{statement.statement_id}",
+                statement.statement_id,
+                action,
+                None,
+                handle,
+                None,
+                value["reason_text"],
+                "llm",
+            ),
             action,
-            None,
-            handle,
-            None,
-            value["reason_text"],
-            "llm",
-        ), action, selected
+            selected,
+        )
 
     @staticmethod
     def _candidate(
@@ -1446,11 +2335,15 @@ class AccessMemoryLoop:
         scope: PhysicalFieldScope,
         occupied: tuple[GeometryAddress, ...],
     ) -> GeometryAddress:
-        origin = GeometryAddress(scope.profile_id, scope.chart_id, scope.reference_layer, 0, 0)
+        origin = GeometryAddress(
+            scope.profile_id, scope.chart_id, scope.reference_layer, 0, 0
+        )
         if not occupied:
             return origin
         for ring in range(1, _MAX_FRONTIER_RADIUS + 1):
-            for candidate in sorted(origin.lateral(ring), key=lambda item: item.stable_key()):
+            for candidate in sorted(
+                origin.lateral(ring), key=lambda item: item.stable_key()
+            ):
                 if all(
                     AccessMemoryLoop._physical_distance_squared_q32(candidate, cell)
                     >= _MIN_FRONTIER_DISTANCE_SQUARED_Q32
@@ -1460,7 +2353,9 @@ class AccessMemoryLoop:
         raise RuntimeError("no bounded Surface frontier is available")
 
     @staticmethod
-    def _physical_distance_squared_q32(left: GeometryAddress, right: GeometryAddress) -> int:
+    def _physical_distance_squared_q32(
+        left: GeometryAddress, right: GeometryAddress
+    ) -> int:
         if (
             left.profile_id != "default_dream_v1"
             or right.profile_id != "default_dream_v1"
@@ -1468,7 +2363,9 @@ class AccessMemoryLoop:
             or left.layer != 0
             or right.layer != 0
         ):
-            raise ValueError("frontier distance requires one default_dream_v1 layer 0 physical plane")
+            raise ValueError(
+                "frontier distance requires one default_dream_v1 layer 0 physical plane"
+            )
         dq, dr = left.q - right.q, left.r - right.r
         # Pointy-top axial centers: distance^2 = 3 * (dq^2 + dq*dr + dr^2) * s0^2.
         return 3 * (dq * dq + dq * dr + dr * dr) * _Q32_ONE
@@ -1507,7 +2404,11 @@ class AccessMemoryLoop:
         self._require_open()
         core = CoreRuntime(self._workspace)
         try:
-            access = AccessRuntime(core, FileStatementStore(self._workspace), FileHandleStore(self._workspace))
+            access = AccessRuntime(
+                core,
+                FileStatementStore(self._workspace),
+                FileHandleStore(self._workspace),
+            )
         except Exception:
             core.close()
             raise

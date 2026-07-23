@@ -6,13 +6,24 @@ import os
 import sys
 
 from .adapter import (
-    AccessFormationClient, FormationAdapterError, FormationDecisionParser,
-    FormationPromptBuilder, FormationResultRenderer, OpenClawEventTranslator,
-    OpenClawFormationConfig, formation_schema_bytes, sha256_hex,
+    AccessFormationClient,
+    FormationAdapterError,
+    FormationDecisionParser,
+    FormationPromptBuilder,
+    FormationResultRenderer,
+    OpenClawEventTranslator,
+    OpenClawFormationConfig,
+    formation_schema_bytes,
+    sha256_hex,
 )
 from .dream_adapter import (
-    DREAM_PROMPT_VERSION, build_dream_format_repair_prompt, build_dream_prompt, dream_schema_bytes,
-    process_dream_result, request_from_mapping, sha256_hex as dream_sha256_hex,
+    DREAM_PROMPT_VERSION,
+    build_dream_format_repair_prompt,
+    build_dream_prompt,
+    dream_schema_bytes,
+    process_dream_result,
+    request_from_mapping,
+    sha256_hex as dream_sha256_hex,
 )
 from .memory_loop import (
     advance_placement_traversal,
@@ -30,15 +41,24 @@ from .memory_loop import (
     build_batch_placement_prompt,
     apply_batch_placement,
 )
-from .sculptor import apply_dream_sculptor_result, build_dream_sculptor_prompt, parse_dream_sculptor_result
+from .sculptor import (
+    apply_dream_sculptor_result,
+    build_dream_sculptor_prompt,
+    parse_dream_sculptor_result,
+)
 from .cartographer import (
     advance_field_cartographer,
     apply_field_cartography_result,
     build_field_cartographer_prompt,
     build_proposition_writer_prompt,
     parse_proposition_writer_result,
+    read_memory_evaluation_fingerprint,
 )
-from .main_agent_recall import build_main_agent_surface, recall_main_agent_locality
+from .main_agent_recall import (
+    build_main_agent_surface,
+    open_main_agent_region,
+    recall_main_agent_locality,
+)
 
 
 def _well_formed(value: object) -> object:
@@ -53,7 +73,8 @@ def _well_formed(value: object) -> object:
 
 def _config(envelope: dict[str, object]) -> OpenClawFormationConfig:
     return OpenClawFormationConfig(
-        str(envelope["openclaw_command"]), str(envelope["model"]),
+        str(envelope["openclaw_command"]),
+        str(envelope["model"]),
         str(envelope.get("prompt_version", "aold-v3")),
         str(envelope.get("schema_version", "aold-formation-v1")),
     )
@@ -66,196 +87,465 @@ def main() -> None:
             wire = base64.b64decode(wire, validate=True).decode("utf-8")
         envelope = _well_formed(json.loads(wire))
         action = envelope.get("action")
+        if action == "read_memory_evaluation_fingerprint":
+            result = read_memory_evaluation_fingerprint(envelope["memory_workspace"])
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
         if action == "build_proposition_writer_prompt":
             result = build_proposition_writer_prompt(
-                envelope["captures"], envelope["request_id"], envelope.get("max_statements", 8),
+                envelope["captures"],
+                envelope["request_id"],
+                envelope.get("max_statements", 8),
                 envelope.get("context_captures"),
+                envelope.get("source_windows"),
+                envelope.get("continuation"),
+                envelope.get("current_memory_fingerprint"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "parse_proposition_writer_result":
             result = parse_proposition_writer_result(
-                envelope["raw_model_response"], envelope["captures"], envelope["request_id"],
+                envelope["raw_model_response"],
+                envelope["captures"],
+                envelope["request_id"],
                 envelope.get("context_captures"),
+                envelope.get("source_windows"),
+                envelope.get("continuation_pass", 0),
+                envelope.get("evaluation_id"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_field_cartographer_prompt":
             result = build_field_cartographer_prompt(
-                envelope["writer_result"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("turn", 1), envelope.get("page"), envelope.get("local_detail"),
+                envelope["writer_result"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("turn", 1),
+                envelope.get("page"),
+                envelope.get("local_detail"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "advance_field_cartographer":
             result = advance_field_cartographer(
-                envelope["raw_model_response"], envelope["writer_result"], envelope["page"],
-                envelope["memory_workspace"], envelope["request_id"], envelope["turn"],
+                envelope["raw_model_response"],
+                envelope["writer_result"],
+                envelope["page"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope["turn"],
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "apply_field_cartography_result":
             result = apply_field_cartography_result(
-                envelope["cartography_result"], envelope["writer_result"], envelope["captures"],
-                envelope["memory_workspace"], envelope["request_id"], envelope.get("revision_confirmations"),
+                envelope["cartography_result"],
+                envelope["writer_result"],
+                envelope["captures"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("revision_confirmations"),
                 envelope.get("only_statement_ids"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_dream_sculptor_prompt":
             result = build_dream_sculptor_prompt(
-                envelope["captures"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("candidate_limit", 512), envelope.get("max_statements", 8),
+                envelope["captures"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("candidate_limit", 512),
+                envelope.get("max_statements", 8),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "parse_dream_sculptor_result":
             result = parse_dream_sculptor_result(
-                envelope["raw_model_response"], envelope["captures"], envelope["atlas"], envelope["request_id"],
+                envelope["raw_model_response"],
+                envelope["captures"],
+                envelope["atlas"],
+                envelope["request_id"],
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "apply_dream_sculptor_result":
             result = apply_dream_sculptor_result(
-                envelope["raw_model_response"], envelope["captures"], envelope["atlas"],
-                envelope["memory_workspace"], envelope["request_id"], envelope.get("revision_confirmations"),
+                envelope["raw_model_response"],
+                envelope["captures"],
+                envelope["atlas"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("revision_confirmations"),
                 envelope.get("only_statement_ids"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
-        if action in {"build_dream_prompt", "parse_dream_result", "build_dream_format_repair_prompt"}:
+        if action in {
+            "build_dream_prompt",
+            "parse_dream_result",
+            "build_dream_format_repair_prompt",
+        }:
             if action == "build_dream_format_repair_prompt":
-                prompt = build_dream_format_repair_prompt(str(envelope["raw_model_response"]), str(envelope["failure"]))
-                print(json.dumps({
-                    "ok": True, "prompt": prompt, "prompt_version": "dream-format-repair-v1",
-                    "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
-                    "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
-                }, ensure_ascii=True, separators=(",", ":")))
+                prompt = build_dream_format_repair_prompt(
+                    str(envelope["raw_model_response"]), str(envelope["failure"])
+                )
+                print(
+                    json.dumps(
+                        {
+                            "ok": True,
+                            "prompt": prompt,
+                            "prompt_version": "dream-format-repair-v1",
+                            "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
+                            "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
+                        },
+                        ensure_ascii=True,
+                        separators=(",", ":"),
+                    )
+                )
                 return
             request = request_from_mapping(envelope["request"])
             if action == "build_dream_prompt":
                 version = str(envelope.get("prompt_version", DREAM_PROMPT_VERSION))
                 prompt = build_dream_prompt(request, version)
-                print(json.dumps({
-                    "ok": True, "prompt": prompt, "prompt_version": version,
-                    "schema_version": request.schema_version,
-                    "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
-                    "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
-                }, ensure_ascii=True, separators=(",", ":")))
+                print(
+                    json.dumps(
+                        {
+                            "ok": True,
+                            "prompt": prompt,
+                            "prompt_version": version,
+                            "schema_version": request.schema_version,
+                            "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
+                            "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
+                        },
+                        ensure_ascii=True,
+                        separators=(",", ":"),
+                    )
+                )
                 return
             workspace = envelope.get("statement_store_workspace")
             result = process_dream_result(
-                str(envelope["raw_model_response"]), request, str(envelope["result_id"]),
-                None if workspace is None else __import__("pathlib").Path(str(workspace)),
+                str(envelope["raw_model_response"]),
+                request,
+                str(envelope["result_id"]),
+                None
+                if workspace is None
+                else __import__("pathlib").Path(str(workspace)),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_placement_prompt":
-            result = build_placement_prompt(envelope["statement"], envelope["memory_workspace"], envelope["request_id"], envelope.get("surface_budget"))
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = build_placement_prompt(
+                envelope["statement"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("surface_budget"),
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "advance_placement_traversal":
-            result = advance_placement_traversal(envelope["statement"], envelope["traversal_state"], envelope["raw_model_response"], envelope["memory_workspace"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = advance_placement_traversal(
+                envelope["statement"],
+                envelope["traversal_state"],
+                envelope["raw_model_response"],
+                envelope["memory_workspace"],
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "apply_placement":
             result = apply_placement(
-                envelope["raw_model_response"], envelope["statement"], envelope["memory_workspace"],
-                envelope["request_id"], envelope.get("selected_entry"), envelope.get("revision_confirmation"),
+                envelope["raw_model_response"],
+                envelope["statement"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("selected_entry"),
+                envelope.get("revision_confirmation"),
                 envelope.get("excluded_revision_targets"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_revision_confirmation_prompt":
-            result = build_revision_confirmation_prompt(envelope["provisional_revision"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = build_revision_confirmation_prompt(
+                envelope["provisional_revision"]
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "parse_revision_confirmation":
-            result = parse_revision_confirmation(envelope["raw_model_response"], envelope["provisional_revision"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = parse_revision_confirmation(
+                envelope["raw_model_response"], envelope["provisional_revision"]
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_revision_redecision_prompt":
-            result = build_revision_redecision_prompt(envelope["original_prompt"], envelope["provisional_revision"], envelope["confirmation"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = build_revision_redecision_prompt(
+                envelope["original_prompt"],
+                envelope["provisional_revision"],
+                envelope["confirmation"],
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_recall_prompt":
-            result = build_recall_prompt(envelope["query"], envelope["memory_workspace"], envelope["request_id"], envelope.get("surface_budget"))
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = build_recall_prompt(
+                envelope["query"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("surface_budget"),
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "advance_recall_traversal":
-            result = advance_recall_traversal(envelope["query"], envelope["traversal_state"], envelope["raw_model_response"], envelope["memory_workspace"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = advance_recall_traversal(
+                envelope["query"],
+                envelope["traversal_state"],
+                envelope["raw_model_response"],
+                envelope["memory_workspace"],
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "render_recall_injection":
-            result = render_recall_injection(envelope["raw_model_response"], envelope["candidates"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = render_recall_injection(
+                envelope["raw_model_response"], envelope["candidates"]
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "verify_admitted_statements":
-            result = verify_admitted_statements(envelope["statement_ids"], envelope["memory_workspace"])
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            result = verify_admitted_statements(
+                envelope["statement_ids"], envelope["memory_workspace"]
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_fast_recall_prompt":
             result = build_fast_recall_prompt(
-                envelope["query"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("max_entries", 32), envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+                envelope["query"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("max_entries", 32),
+                envelope.get("max_statements", 8),
+                envelope.get("max_chars", 6000),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "apply_fast_recall_selection":
             result = apply_fast_recall_selection(
-                envelope["raw_model_response"], envelope["entries"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("max_statements", 8), envelope.get("max_chars", 6000),
+                envelope["raw_model_response"],
+                envelope["entries"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("max_statements", 8),
+                envelope.get("max_chars", 6000),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_main_agent_surface":
             result = build_main_agent_surface(
-                envelope["memory_workspace"], envelope["operation_id"], envelope["policy"],
+                envelope["memory_workspace"],
+                envelope["operation_id"],
+                envelope["policy"],
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
+        if action == "open_main_agent_region":
+            result = open_main_agent_region(
+                envelope["memory_workspace"],
+                envelope["operation_id"],
+                envelope["parent_page"],
+                envelope["atlas_region_id"],
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "recall_main_agent_locality":
             result = recall_main_agent_locality(
-                envelope["memory_workspace"], envelope["operation_id"],
-                envelope["expected_core_state_sha256"], envelope["expected_atlas_fingerprint"],
-                envelope["expected_page_fingerprint"], envelope["policy"], envelope["entry"],
+                envelope["memory_workspace"],
+                envelope["operation_id"],
+                envelope["expected_core_state_sha256"],
+                envelope["expected_atlas_fingerprint"],
+                envelope["expected_page_fingerprint"],
+                envelope["policy"],
+                envelope["entry"],
                 envelope["budget_option_id"],
+                envelope.get("page"),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "build_batch_placement_prompt":
             result = build_batch_placement_prompt(
-                envelope["statements"], envelope["memory_workspace"], envelope["request_id"],
-                envelope.get("max_existing", 16), envelope.get("max_empty", 16),
+                envelope["statements"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("max_existing", 16),
+                envelope.get("max_empty", 16),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         if action == "apply_batch_placement":
             result = apply_batch_placement(
-                envelope["raw_model_response"], envelope["statements"], envelope["memory_workspace"],
-                envelope["request_id"], envelope["view_fingerprint"], envelope.get("max_existing", 16), envelope.get("max_empty", 16),
+                envelope["raw_model_response"],
+                envelope["statements"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope["view_fingerprint"],
+                envelope.get("max_existing", 16),
+                envelope.get("max_empty", 16),
             )
-            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
             return
         request = OpenClawEventTranslator().translate(envelope["request"])
         config = _config(envelope)
         if action == "build_prompt":
-            prompt = FormationPromptBuilder().build(request, config, envelope.get("retry_error"))
-            print(json.dumps({
-                "ok": True, "prompt": prompt,
-                "prompt_version": config.prompt_version, "schema_version": config.schema_version,
-                "prompt_sha256": sha256_hex(prompt.encode("utf-8")),
-                "schema_sha256": sha256_hex(formation_schema_bytes(config)),
-            }, ensure_ascii=True, separators=(",", ":")))
+            prompt = FormationPromptBuilder().build(
+                request, config, envelope.get("retry_error")
+            )
+            print(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "prompt": prompt,
+                        "prompt_version": config.prompt_version,
+                        "schema_version": config.schema_version,
+                        "prompt_sha256": sha256_hex(prompt.encode("utf-8")),
+                        "schema_sha256": sha256_hex(formation_schema_bytes(config)),
+                    },
+                    ensure_ascii=True,
+                    separators=(",", ":"),
+                )
+            )
             return
         if action != "parse_result":
-            raise FormationAdapterError("invalid_action", "action must be build_prompt or parse_result")
-        decision = FormationDecisionParser().parse(str(envelope["raw_model_response"]), request, config, str(envelope["decision_id"]))
+            raise FormationAdapterError(
+                "invalid_action", "action must be build_prompt or parse_result"
+            )
+        decision = FormationDecisionParser().parse(
+            str(envelope["raw_model_response"]),
+            request,
+            config,
+            str(envelope["decision_id"]),
+        )
         statements = AccessFormationClient().form(request, decision)
         result = FormationResultRenderer().render(request, decision, statements)
-        print(json.dumps({"ok": True, "result": result}, ensure_ascii=True, separators=(",", ":")))
+        print(
+            json.dumps(
+                {"ok": True, "result": result}, ensure_ascii=True, separators=(",", ":")
+            )
+        )
     except (KeyError, TypeError, ValueError, FormationAdapterError) as exc:
-        print(json.dumps({"ok": False, "error": getattr(exc, "category", "invalid_input"), "message": str(exc)}, ensure_ascii=True, separators=(",", ":")))
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": getattr(exc, "category", "invalid_input"),
+                    "message": str(exc),
+                },
+                ensure_ascii=True,
+                separators=(",", ":"),
+            )
+        )
 
 
 if __name__ == "__main__":

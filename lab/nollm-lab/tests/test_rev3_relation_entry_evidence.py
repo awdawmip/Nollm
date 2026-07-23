@@ -75,9 +75,9 @@ def test_rev3_live_growth_record_binds_chat_and_host_bytes() -> None:
 def test_active_distribution_manifest_declares_rev4_bounded_wires() -> None:
     manifest = json.loads((ROOT / "distributions/nollm-openclaw/manifest.json").read_text(encoding="utf-8"))
 
-    assert manifest["propositionWriterWire"] == "nollm_openclaw_contextual_proposition_writer_v3"
+    assert manifest["propositionWriterWire"] == "nollm_openclaw_content_neutral_proposition_writer_v4"
     assert manifest["fieldCartographerWire"] == "nollm_openclaw_field_cartographer_v2"
-    assert manifest["progressiveAtlasPageWire"] == "nollm_access_progressive_atlas_page_v1"
+    assert manifest["progressiveAtlasPageWire"] == "nollm_access_progressive_atlas_page_v2"
     assert manifest["localDetailPageWire"] == "nollm_access_local_detail_page_v1"
     assert manifest["fastRecallWire"] == "nollm_openclaw_single_call_entry_recall_v1"
     assert manifest["cartographerMaxRegions"] == 32
