@@ -11,7 +11,7 @@
 - Prior report: [AOLD Content-Neutral Memory Report](AOLD_CONTENT_NEUTRAL_MEMORY_REPORT.md)
 - Input checkpoint: `a6551feb89322826f4faa3b0c98c8b8c6152d5d4`
 
-Current offline evidence: [AOLD Single Active Content-Neutral Pipeline Report](AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md)
+Current offline evidence: `docs/project/AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md`
 
 Current state:
 

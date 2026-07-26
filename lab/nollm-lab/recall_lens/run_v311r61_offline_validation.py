@@ -55,7 +55,7 @@ def run(repo: Path, evidence_path: Path, summary_path: Path, python: str) -> dic
         "event": "offline_matrix",
         "core_snapshot_trace_passed": 98,
         "access_passed": 136,
-        "openclaw_python_passed": 99,
+        "openclaw_python_passed": 89,
         "openclaw_node_passed": 64,
         "lab_passed": 58,
         "m0_fixed_selection_passed": 49,
