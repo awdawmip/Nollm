@@ -1,15 +1,23 @@
-# Nollm V3.11 Rev6 Content-Neutral Memory Rules
+# Nollm V3.11 Rev6.1 Single Active Content-Neutral Pipeline Rules
 
 ## Authority
 
 - Read `docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md` first.
-- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_20260723.md`.
+- Active architecture amendment: `docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_1_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_20260724.md`.
 - Content-neutral authority: `docs/architecture/NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md`.
 - Active route: `docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`.
-- Current task: `docs/project/tasks/NOLLM_A_O_L_D_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_TASK_20260723.md`.
-- `c40f8bf6a5be6184e5e56236c96d2817fed4bee5` is the immutable runtime-integrity input checkpoint. Its one-cell counterexample is invalid because fast Recall entry IDs collided.
+- Current task: `docs/project/tasks/NOLLM_A_O_L_D_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_PROVIDER_LIVE_TASK_20260724.md`.
+- Current audit: `docs/project/NOLLM_A6551FE_CONTENT_NEUTRAL_IMPLEMENTATION_AUDIT_20260724.md`.
+- `a6551feb89322826f4faa3b0c98c8b8c6152d5d4` is the immutable Rev6 input checkpoint.
 
 ## Current closure contract
+
+- Normal Host registration has one active content-neutral Capture/absorption pipeline and never falls back to Legacy Formation.
+- Legacy Formation prompts and parsers are offline migration assets with zero active import/action reachability.
+- Tool-originated propositions require immutable, scope-bound exact Tool Evidence; action labels alone are not provenance.
+- Continuation, source coverage, Statement lineage, and evaluation identity are owned per Capture, never per batch union.
+- A final zero delta cannot overwrite a Capture that already admitted Statements.
+- Provider Live remains an acceptance gate and may run only when the execution environment explicitly authorizes Live OpenClaw and model calls.
 
 - The active Writer schema is Rev5 only; legacy Writer parsing is offline migration only.
 - LLMs quote Evidence; deterministic code computes exact spans.

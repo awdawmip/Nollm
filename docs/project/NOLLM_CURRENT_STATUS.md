@@ -1,13 +1,13 @@
 # Nollm Current Status
 
-Date: 2026-07-24
+Date: 2026-07-26
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_A_O_L_D_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_TASK_20260723.md
-status: AOLD_CONTENT_NEUTRAL_MEMORY_IN_PROGRESS_AT_6cbaeb710cb9f0f7b3744d4971b982ab82a344f7
-input HEAD: 8f19a9b8654d203b0b6aef1fa16f0c0c99d420ea
-input classification: ROLE_AWARE_CAPTURE_WITH_CONTENT_ELIGIBILITY_DRIFT_CHECKPOINT_AT_8f19a9b
+task: NOLLM_A_O_L_D_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_PROVIDER_LIVE_TASK_20260724.md
+status: AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_a6551feb89322826f4faa3b0c98c8b8c6152d5d4
+input HEAD: a6551feb89322826f4faa3b0c98c8b8c6152d5d4
+input classification: CONTENT_NEUTRAL_WRITER_AND_CONTINUATION_PROTOTYPE_CHECKPOINT_AT_a6551fe
 ```
 
 Active truth:
@@ -18,16 +18,17 @@ Active truth:
 - Oversize Captures and Statement limits require deterministic continuation with complete coverage.
 - Historical secret rejection, stable promotion, and weather suppression are invalid for active admission.
 - Scope/workspace isolation provides safety; canonical content is not redacted by category.
-- `8f19a9b` preserves role metadata and routing-only evidence but contains the eligibility drift being corrected.
+- `a6551fe` preserves the content-neutral Writer v4, progressive routing, exact Capture Evidence, and Core boundary.
 - Core tree `83bb1fb4d28a0ee2a2a3f3f3efc85f1b4ba7c0c7` is frozen and unchanged.
-- Offline Gates A-F pass at implementation commit `6cbaeb7`; Provider/Live Gate G was not run and is not claimed.
+- Rev6.1 implementation is open: active Legacy fallback, exact Tool Evidence, per-Capture continuation isolation, zero-delta terminal truth, and full active reachability remain to close.
+- Provider/Live Gate G is not yet run and is not claimed.
 - Frozen deterministic 128/300/1000-Statement routing evidence has zero uncovered cells and one final entry per run.
 - Core remains unchanged from the input checkpoint.
 
 Task vector:
 
 ```text
-CORE 93% | SNAPSHOT 50% | TRACE 40% | ACCESS 90% |
-HISTORY 10% | AUDIT 10% | OPENCLAW 89% |
-LAB 85% | DISTRIBUTIONS 92%
+CORE 93% | SNAPSHOT 50% | TRACE 40% | ACCESS 91% |
+HISTORY 10% | AUDIT 10% | OPENCLAW 90% |
+LAB 86% | DISTRIBUTIONS 92%
 ```

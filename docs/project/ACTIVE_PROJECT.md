@@ -1,25 +1,24 @@
 # Active Project Basis
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
-- Active architecture: [V3.11 Rev6 Content-Neutral Formation and Recoverable Absorption](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_20260723.md)
+- Active architecture: [V3.11 Rev6.1 Single Active Content-Neutral Pipeline](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_1_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_20260724.md)
 - Content-neutral authority: [Memory Eligibility Decision](../architecture/NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md)
 - Active route: `NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`
-- Current task: [Content-Neutral Formation, Recoverable Absorption, and Progressive Routing](tasks/NOLLM_A_O_L_D_CONTENT_NEUTRAL_FORMATION_RECOVERABLE_ABSORPTION_PROGRESSIVE_ROUTING_TASK_20260723.md)
+- Current task: [Single Active Content-Neutral Pipeline, Tool Evidence, and Per-Capture Continuation](tasks/NOLLM_A_O_L_D_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_PROVIDER_LIVE_TASK_20260724.md)
 - Current status: [NOLLM_CURRENT_STATUS.md](NOLLM_CURRENT_STATUS.md)
 - Canonical ledger: [NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current audit: [Content Admission Filter Self-Audit](NOLLM_CONTENT_ADMISSION_FILTER_SELF_AUDIT_20260723.md)
-- Current report: [AOLD Content-Neutral Memory Report](AOLD_CONTENT_NEUTRAL_MEMORY_REPORT.md)
-- Input checkpoint: `8f19a9b8654d203b0b6aef1fa16f0c0c99d420ea`
+- Current audit: [a6551fe Content-Neutral Implementation Audit](NOLLM_A6551FE_CONTENT_NEUTRAL_IMPLEMENTATION_AUDIT_20260724.md)
+- Prior report: [AOLD Content-Neutral Memory Report](AOLD_CONTENT_NEUTRAL_MEMORY_REPORT.md)
+- Input checkpoint: `a6551feb89322826f4faa3b0c98c8b8c6152d5d4`
 
 Current state:
 
 ```text
-AOLD_CONTENT_NEUTRAL_MEMORY_IN_PROGRESS_AT_6cbaeb710cb9f0f7b3744d4971b982ab82a344f7
+AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_a6551feb89322826f4faa3b0c98c8b8c6152d5d4
 ```
 
-`8f19a9b` is reclassified as a role-aware Capture checkpoint with content
-eligibility drift. Raw Capture, scope isolation, exact Evidence, single-entry
-Recall, and Core remain preserved. Active work removes source-role admission
-bans and permanent semantic terminal states, adds lossless continuation, and
-restores uniform content-neutral progressive routing. Offline Gates A-F pass;
-Provider/Live Gate G was not run and remains the explicit open limit.
+`a6551fe` is the Rev6 content-neutral Writer and continuation checkpoint. Rev6.1
+closes active Legacy fallback, adds immutable Tool Evidence, isolates progress
+per Capture, preserves successful terminal state after a final zero delta, and
+replaces the narrow classifier scan with active entrypoint reachability. Provider
+Live remains an explicit acceptance gate and is not yet claimed.
