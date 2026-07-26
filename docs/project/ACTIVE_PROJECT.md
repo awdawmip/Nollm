@@ -16,7 +16,7 @@ Current offline evidence: `docs/project/AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REP
 Current state:
 
 ```text
-AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_2091de6
+AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_dfddac9
 ```
 
 `a6551fe` is the Rev6 content-neutral Writer and continuation checkpoint. Rev6.1
@@ -24,4 +24,4 @@ closes active Legacy fallback, adds immutable Tool Evidence, isolates progress
 per Capture, preserves successful terminal state after a final zero delta, and
 replaces the narrow classifier scan with active entrypoint reachability. Provider
 Live remains an explicit acceptance gate and is not yet claimed. Offline Gates
-A-F, H, and I pass at evidence commit `2091de6`.
+A-F, H, and I pass at evidence commit `dfddac9`.

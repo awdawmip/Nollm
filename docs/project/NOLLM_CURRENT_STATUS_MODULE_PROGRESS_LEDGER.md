@@ -3,7 +3,7 @@
 **Date**: 2026-07-26
 **Input HEAD**: `a6551feb89322826f4faa3b0c98c8b8c6152d5d4`
 **Audit**: `docs/project/NOLLM_A6551FE_CONTENT_NEUTRAL_IMPLEMENTATION_AUDIT_20260724.md`
-**Status**: `AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_2091de6`
+**Status**: `AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_dfddac9`
 
 Percentages are planning estimates, never permanent completion claims.
 
@@ -19,6 +19,6 @@ Percentages are planning estimates, never permanent completion claims.
 | LAB | IMPLEMENTED | 96% | high | full active reachability, 128/300/1000 routing, synthetic Tool/continuation evidence | Provider diversity evidence | +10% |
 | DISTRIBUTIONS | IMPLEMENTED | 96% | high | v4/v2 wire truth, active import/profile truth, migration classification | final release remains out of scope | +4% |
 
-Rev6.1 offline Gates A-F, H, and I pass at `2091de6`. Gate G Provider/Live remains pending. Core,
+Rev6.1 offline Gates A-F, H, and I pass at `dfddac9`. Gate G Provider/Live remains pending. Core,
 multi-cell, multi-entry Recall, semantic indexes, and content-category admission
 remain outside this task.

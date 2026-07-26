@@ -5,7 +5,7 @@ Date: 2026-07-26
 ## Result
 
 ```text
-AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_2091de6
+AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_dfddac9
 ```
 
 Offline Gates A-F, H, and I pass. Gate G real Provider/OpenClaw Live was not
@@ -17,7 +17,7 @@ executed, so this report does not claim `VALIDATED`.
 input HEAD:          a6551feb89322826f4faa3b0c98c8b8c6152d5d4
 implementation HEAD: 94caab0
 classification HEAD: 1e6c67b
-evidence HEAD:       2091de6
+evidence HEAD:       dfddac9
 delivery HEAD:       resolve from final bundle list-heads
 ```
 
