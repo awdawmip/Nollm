@@ -11,14 +11,17 @@
 - Prior report: [AOLD Content-Neutral Memory Report](AOLD_CONTENT_NEUTRAL_MEMORY_REPORT.md)
 - Input checkpoint: `a6551feb89322826f4faa3b0c98c8b8c6152d5d4`
 
+Current offline evidence: [AOLD Single Active Content-Neutral Pipeline Report](AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md)
+
 Current state:
 
 ```text
-AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_a6551feb89322826f4faa3b0c98c8b8c6152d5d4
+AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_2091de6
 ```
 
 `a6551fe` is the Rev6 content-neutral Writer and continuation checkpoint. Rev6.1
 closes active Legacy fallback, adds immutable Tool Evidence, isolates progress
 per Capture, preserves successful terminal state after a final zero delta, and
 replaces the narrow classifier scan with active entrypoint reachability. Provider
-Live remains an explicit acceptance gate and is not yet claimed.
+Live remains an explicit acceptance gate and is not yet claimed. Offline Gates
+A-F, H, and I pass at evidence commit `2091de6`.
