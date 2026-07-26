@@ -444,6 +444,17 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             evidence="Explicit V3.11 Rev6 final-gate command.",
             review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
         ), "ACTIVE_VALIDATION", "lab:content-neutral-memory")
+    if p in {
+        "lab/nollm-lab/recall_lens/run_v311r61_active_pipeline_gate.mjs",
+        "lab/nollm-lab/recall_lens/run_v311r61_python_import_gate.py",
+    }:
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", "active validation",
+            "validation workspace only", "development",
+            "Current single active pipeline reachability and import-graph gate.",
+            evidence="Explicit V3.11 Rev6.1 Gate F command.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "ACTIVE_VALIDATION", "lab:single-active-content-neutral-pipeline")
     if p.startswith("reference/python/tests/m0/"):
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active governance test", "development-only state", "development", "Executed by the current M0 governance gate.", evidence="Explicit current final-gate suite reference/python/tests/m0.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_TEST", "governance:m0")
     if p in {
@@ -482,6 +493,20 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             evidence="File is under the machine-enforced distributions metadata root.",
             review_status="DEPENDENCY_REVIEWED",
             reviewed_at=REVIEWED_AT,
+        )
+    if p in {
+        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/adapter.py",
+        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/dream_adapter.py",
+        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/sculptor.py",
+        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/legacy_bridge.py",
+        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/legacy_cartographer.py",
+    }:
+        return Classification(
+            "OPENCLAW", "MIGRATION_ASSET", "KEEP", "HIGH",
+            "offline Formation migration", "none", "none",
+            "Rev6.1 isolates this historical contract from every active plugin action and import path.",
+            evidence="Reachable only through explicit offline migration modules and tests.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
         )
     if p.startswith("integrations/openclaw/formation-loop/"):
         return Classification(

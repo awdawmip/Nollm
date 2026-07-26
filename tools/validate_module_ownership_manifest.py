@@ -51,7 +51,7 @@ VALIDATION_GATES = {
     "lab:translation-covariant-live", "repository:manifest", "repository:boundary",
     "lab:statement-formation-corpus", "lab:statement-formation-fixtures",
     "openclaw:formation-live", "openclaw:dream-agent-live",
-    "lab:content-neutral-memory",
+    "lab:content-neutral-memory", "lab:single-active-content-neutral-pipeline",
 }
 GATE_TARGETS = {
     "package:core": "packages/nollm-core/tests",
@@ -84,6 +84,7 @@ GATE_TARGETS = {
     "openclaw:formation-live": "lab/nollm-lab/openclaw_formation/validate_live_plugin_evidence.py",
     "openclaw:dream-agent-live": "lab/nollm-lab/dream_agent/reports/verify_live_evidence.py",
     "lab:content-neutral-memory": "lab/nollm-lab/recall_lens/run_v311r6_content_neutral_memory_validation.py",
+    "lab:single-active-content-neutral-pipeline": "lab/nollm-lab/recall_lens/run_v311r61_active_pipeline_gate.mjs",
 }
 
 
