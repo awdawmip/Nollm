@@ -7513,7 +7513,7 @@
   },
   {
     "asset_class": "",
-    "classification_evidence": "Resolved from docs/project/ACTIVE_PROJECT.md.",
+    "classification_evidence": "Exact stable governance path.",
     "confidence": "HIGH",
     "current_namespace": "docs/project",
     "file_type": "md",
@@ -7527,10 +7527,10 @@
     "owner": "DISTRIBUTION",
     "path": "docs/project/AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md",
     "public_api": "governance",
-    "reason": "Linked from the single active project basis.",
+    "reason": "Stable repository navigation or first-principles authority.",
     "review_status": "CODE_REVIEWED",
     "reviewed_at": "2026-07-12",
-    "runtime_role": "active repository governance",
+    "runtime_role": "stable repository governance",
     "secondary_owner": "",
     "target_path": "",
     "validation_gate": ""
