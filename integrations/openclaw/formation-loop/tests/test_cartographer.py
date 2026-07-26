@@ -16,8 +16,10 @@ from nollm_openclaw_formation.cartographer import (
     apply_field_cartography_result,
     build_field_cartographer_prompt,
     build_proposition_writer_prompt,
-    migrate_legacy_proposition_writer_result,
     parse_proposition_writer_result,
+)
+from nollm_openclaw_formation.legacy_cartographer import (
+    migrate_legacy_proposition_writer_result,
 )
 from nollm_openclaw_formation.memory_loop import (
     BATCH_PLACEMENT_SCHEMA_VERSION,
@@ -33,6 +35,69 @@ CAPTURE = {
     "captured_epoch_ms": 1_784_361_600_000,
     "timezone_offset_minutes": 480,
 }
+
+
+def test_multi_capture_writer_progress_is_explicit_and_independent():
+    second = {
+        "capture_id": "capture-two",
+        "user_utf8": "第二条来源。",
+        "assistant_utf8": "继续。",
+        "captured_epoch_ms": CAPTURE["captured_epoch_ms"] + 1,
+        "timezone_offset_minutes": 480,
+    }
+    captures = [CAPTURE, second]
+    windows = [
+        {
+            "capture_id": capture["capture_id"],
+            "role": role,
+            "start": 0,
+            "end": len(capture[f"{role}_utf8"]),
+            "text_utf8": capture[f"{role}_utf8"],
+            "window_index": 0,
+            "window_count": 1,
+        }
+        for capture in captures
+        for role in ("assistant", "user")
+    ]
+    continuation = {
+        "captures": [
+            {
+                "capture_id": "capture-one",
+                "status": "complete",
+                "covered_source_windows": [
+                    {"role": "assistant", "window_index": 0},
+                    {"role": "user", "window_index": 0},
+                ],
+            },
+            {
+                "capture_id": "capture-two",
+                "status": "continue",
+                "covered_source_windows": [
+                    {"role": "assistant", "window_index": 0},
+                    {"role": "user", "window_index": 0},
+                ],
+            },
+        ]
+    }
+    raw = json.dumps(
+        {
+            "schema_version": PROPOSITION_WRITER_SCHEMA_VERSION,
+            "outcome": "incomplete_continuation",
+            "propositions": [],
+            "reason_text": "capture-two has more propositions",
+            "continuation": continuation,
+        }
+    )
+    parsed = parse_proposition_writer_result(
+        raw, captures, "multi-progress", source_windows=windows
+    )
+    assert parsed["capture_progress"] == continuation["captures"]
+    missing = json.loads(raw)
+    missing["continuation"] = {"remaining": True}
+    with pytest.raises(Exception, match="per-Capture progress"):
+        parse_proposition_writer_result(
+            json.dumps(missing), captures, "multi-progress-missing", source_windows=windows
+        )
 
 
 @pytest.mark.parametrize(
@@ -421,7 +486,6 @@ def test_memory_derived_assistant_is_eligible_with_exact_derived_provenance():
         "assistant",
         "model_inference",
         "recalled_memory",
-        "tool",
     ]
     proposition["derived_from_statement_ids"] = ["old-statement"]
     parsed = parse_proposition_writer_result(
@@ -431,6 +495,37 @@ def test_memory_derived_assistant_is_eligible_with_exact_derived_provenance():
 
     built = build_proposition_writer_prompt([capture], "memory-echo-prompt")
     assert "do not classify or suppress source content by role" in built["prompt"]
+
+
+def test_writer_accepts_exact_tool_evidence_and_does_not_infer_it_from_action_labels():
+    capture = {
+        **CAPTURE,
+        "assistant_origin_kind": "assistant",
+        "memory_tool_actions": ["surface"],
+        "recalled_statement_ids": [],
+    }
+    tool = {
+        "tool_evidence_id": "tool-evidence-one",
+        "tool_result_utf8": '{"status":"failed","detail":"credential-shaped value"}',
+        "observed_epoch_ms": CAPTURE["captured_epoch_ms"] - 1,
+        "source_capture_ids": [CAPTURE["capture_id"]],
+    }
+    raw = json.loads(_writer_raw("工具返回 credential-shaped value。"))
+    proposition = raw["propositions"][0]
+    proposition["evidence_refs"] = [{
+        "evidence_ref_id": "tool-ref",
+        "tool_evidence_id": tool["tool_evidence_id"],
+        "role": "tool",
+        "quote_utf8": "credential-shaped value",
+    }]
+    proposition["resolved_references"] = []
+    proposition["origin_kinds"] = ["tool"]
+    parsed = parse_proposition_writer_result(
+        json.dumps(raw, ensure_ascii=False), [capture], "tool-writer", tool_evidence=[tool]
+    )
+    span = parsed["propositions"][0]["evidence_spans"][0]
+    assert span["tool_evidence_id"] == tool["tool_evidence_id"]
+    assert span["role"] == "tool"
 
 
 def test_active_writer_rejects_legacy_and_explicit_migration_marks_coarse_provenance():

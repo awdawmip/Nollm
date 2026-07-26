@@ -42,7 +42,7 @@ if ($captureRoot -and (Test-Path -LiteralPath (Join-Path $captureRoot "captures"
   }
 }
 
-$terminal = @("admitted", "no_memory", "deferred")
+$terminal = @("evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy", "structural_invalid", "admitted", "reused", "revised")
 $pending = @($states | Where-Object { $_.status -notin $terminal })
 $now = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $oldestPendingAgeMs = if ($pending.Count) { $now - (($pending | Measure-Object event_epoch_ms -Minimum).Minimum) } else { 0 }
@@ -67,6 +67,23 @@ $oldWorkspacePresent = if ($OldWorkspace) {
 }
 $gatewayTask = Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object TaskName -eq "OpenClaw Gateway" | Select-Object -First 1
 $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path $captureRoot "worker.lock")))
+$toolEvidence = @()
+$toolEvidenceCorrupt = @()
+$toolRoot = if ($captureRoot) { Join-Path $captureRoot "tool-evidence" } else { $null }
+if ($toolRoot -and (Test-Path -LiteralPath $toolRoot)) {
+  foreach ($file in Get-ChildItem -LiteralPath $toolRoot -Filter "*.json" -File) {
+    try {
+      $item = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
+      $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes([string]$item.tool_result_utf8))).ToLowerInvariant()
+      if ($item.schema_version -ne "nollm_openclaw_tool_evidence_v1" -or $sha -ne $item.result_sha256) { throw "invalid Tool Evidence identity or result hash" }
+      $toolEvidence += $item
+    } catch { $toolEvidenceCorrupt += [pscustomobject]@{ file=$file.Name; error=[string]$_ } }
+  }
+}
+$continuations = @($states | Where-Object status -eq "incomplete_continuation")
+$uncoveredRangeCount = @($continuations | ForEach-Object { @($_.continuation.uncovered_ranges).Count } | Measure-Object -Sum).Sum
+$retryStates = @($states | Where-Object { $_.status -in @("retryable_defer", "retryable_defer_legacy", "incomplete_continuation") })
+$oldestRetryEpochMs = if ($retryStates.Count) { ($retryStates | Measure-Object event_epoch_ms -Minimum).Minimum } else { $null }
 
 [pscustomobject]@{
   profile = if ($config.write_mode -eq "statement-store") { "active-memory" } else { "shadow-observation" }
@@ -89,10 +106,32 @@ $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path
   processing_batches = @($states | Where-Object status -eq "processing" | Select-Object -ExpandProperty batch_id -Unique)
   last_admitted_epoch_ms = $lastAdmitted.event_epoch_ms
   last_error = $lastError.error
-  retry_count = @($states | Where-Object status -eq "retry").Count
+  state_counts = [ordered]@{
+    captured = @($states | Where-Object status -eq "captured").Count
+    processing = @($states | Where-Object status -eq "processing").Count
+    retryable_defer = @($states | Where-Object status -eq "retryable_defer").Count
+    retryable_defer_legacy = @($states | Where-Object status -eq "retryable_defer_legacy").Count
+    evaluated_no_new_propositions = @($states | Where-Object status -eq "evaluated_no_new_propositions").Count
+    evaluated_no_new_propositions_legacy = @($states | Where-Object status -eq "evaluated_no_new_propositions_legacy").Count
+    incomplete_continuation = $continuations.Count
+    structural_invalid = @($states | Where-Object status -eq "structural_invalid").Count
+    admitted = @($states | Where-Object status -eq "admitted").Count
+    reused = @($states | Where-Object status -eq "reused").Count
+    revised = @($states | Where-Object status -eq "revised").Count
+  }
+  retry_count = $retryStates.Count
+  oldest_retry_epoch_ms = $oldestRetryEpochMs
+  continuation_capture_count = $continuations.Count
+  uncovered_source_range_count = if ($uncoveredRangeCount) { $uncoveredRangeCount } else { 0 }
+  explicit_reevaluation_available = $true
   admitted_count = @($states | Where-Object status -eq "admitted").Count
-  no_memory_count = @($states | Where-Object status -eq "no_memory").Count
-  deferred_count = @($states | Where-Object status -eq "deferred").Count
+  legacy_no_memory_count = @($states | Where-Object status -eq "no_memory").Count
+  legacy_deferred_count = @($states | Where-Object status -eq "deferred").Count
+  active_no_memory_terminal = $false
+  active_deferred_terminal = $false
+  tool_evidence_count = $toolEvidence.Count
+  tool_evidence_corrupt_count = $toolEvidenceCorrupt.Count
+  tool_evidence_corruption = $toolEvidenceCorrupt
   pending_fallback_enabled = ($config.pending_fallback_enabled -ne $false)
   pending_fallback_max_captures = if ($config.pending_fallback_max_captures) { $config.pending_fallback_max_captures } else { 4 }
   pending_fallback_max_chars = if ($config.pending_fallback_max_chars) { $config.pending_fallback_max_chars } else { 6000 }
@@ -109,6 +148,7 @@ $workerLockPresent = [bool]($captureRoot -and (Test-Path -LiteralPath (Join-Path
   routing_text_max_chars = 3000
   routing_anchor_max_chars = 131
   legacy_reader = $false
+  legacy_formation_enabled = $false
   proposition_writer_schema_version = "nollm_openclaw_content_neutral_proposition_writer_v4"
   host_allow_model_override = $configEnvelope.subagent.allowModelOverride
   provider_model = if ($config.model) { $config.model } else { @($config.allowed_models) -join "," }

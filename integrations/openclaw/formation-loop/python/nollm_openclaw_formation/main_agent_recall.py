@@ -4,8 +4,8 @@ import json
 
 from nollm_access import AccessMemoryLoop, ProgressiveAtlasPage, ProgressiveAtlasPolicy
 
-from .adapter import FormationAdapterError
-from .sculptor import _workspace
+from .errors import FormationAdapterError
+from .memory_loop import _workspace
 
 
 MAIN_AGENT_RECALL_SCHEMA_VERSION = "nollm_openclaw_main_agent_geometry_recall_v2"

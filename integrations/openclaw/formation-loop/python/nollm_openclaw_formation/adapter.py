@@ -13,12 +13,7 @@ from nollm_access import (
     StatementFormationRequest, StatementSelection, assemble_formed_statements,
     validate_formation_decision,
 )
-
-
-class FormationAdapterError(ValueError):
-    def __init__(self, category: str, message: str) -> None:
-        super().__init__(message)
-        self.category = category
+from .errors import FormationAdapterError
 
 
 @dataclass(frozen=True)

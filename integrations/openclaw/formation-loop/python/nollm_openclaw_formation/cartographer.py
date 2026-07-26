@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from nollm_access import (
     AccessMemoryLoop,
+    FileStatementStore,
     ResolvedReferenceProvenance,
     StatementProvenance,
     ProgressiveAtlasPage,
@@ -14,9 +15,9 @@ from nollm_access import (
     validate_dream_sculptor_plans,
 )
 
-from .adapter import FormationAdapterError
-from .dream_adapter import repair_dream_json
-from .sculptor import _captures, _workspace
+from .errors import FormationAdapterError
+from .json_repair import repair_json_envelope
+from .writer_inputs import captures as _captures, workspace as _workspace
 
 
 PROPOSITION_WRITER_SCHEMA_VERSION = (
@@ -46,6 +47,49 @@ def read_memory_evaluation_fingerprint(memory_workspace: object) -> dict[str, ob
         return {"current_memory_fingerprint": loop.core_state_sha256()}
 
 
+def read_statement_continuation_context(
+    memory_workspace: object, statement_ids: object
+) -> dict[str, object]:
+    if (
+        type(statement_ids) is not list
+        or statement_ids != sorted(set(statement_ids))
+        or any(type(item) is not str or not item for item in statement_ids)
+    ):
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "Statement IDs must be canonical"
+        )
+    workspace = _workspace(memory_workspace)
+    store = FileStatementStore(workspace)
+    with AccessMemoryLoop(workspace) as loop:
+        items = []
+        for statement_id in statement_ids:
+            statement = store.get(statement_id)
+            provenance = loop.statement_provenance(statement_id)
+            items.append(
+                {
+                    "statement_id": statement_id,
+                    "content_sha256": hashlib.sha256(
+                        statement.content_utf8.encode("utf-8")
+                    ).hexdigest(),
+                    "content_utf8": statement.content_utf8,
+                    "source_ranges": [
+                        {
+                            key: span[key]
+                            for key in (
+                                "capture_id",
+                                "role",
+                                "start",
+                                "end",
+                            )
+                            if key in span
+                        }
+                        for span in provenance.get("evidence_spans", [])
+                    ],
+                }
+            )
+    return {"statements": items}
+
+
 def _evidence_capture(value: dict[str, object]) -> dict[str, object]:
     return {
         key: value[key]
@@ -67,6 +111,7 @@ def build_proposition_writer_prompt(
     source_windows: object = None,
     continuation: object = None,
     current_memory_fingerprint: object = None,
+    tool_evidence: object = None,
 ) -> dict[str, object]:
     clean = _captures(captures)
     context = _validated_context_captures(clean, context_captures)
@@ -78,6 +123,7 @@ def build_proposition_writer_prompt(
         )
     windows = _source_windows(clean, source_windows)
     continuation_value = _continuation_input(continuation)
+    tools = _tool_evidence(tool_evidence, clean)
     if current_memory_fingerprint is None:
         current_memory_fingerprint = hashlib.sha256(
             b"unbound-offline-writer-test"
@@ -104,14 +150,19 @@ def build_proposition_writer_prompt(
                 "assistant_origin_kind": item.get("assistant_origin_kind", "assistant"),
                 "memory_tool_actions": item.get("memory_tool_actions", []),
                 "recalled_statement_ids": item.get("recalled_statement_ids", []),
+                "tool_evidence_ids": [
+                    tool["tool_evidence_id"]
+                    for tool in tools
+                    if item["capture_id"] in tool["source_capture_ids"]
+                ],
             }
             for item in items
         ]
 
     prompt = f"""You are Nollm's private content-neutral Proposition Writer.
 Form complete Evidence-backed MemoryStatements from the supplied source windows. Canonical memory eligibility never depends on sensitivity, expected lifetime, importance, source role, tool origin, or content category. User, assistant, tool-associated, model-inferred, temporary, credential-shaped, weather, medical, legal, and financial text all use this same contract. Source origin is provenance only. A recalled-derived assistant statement may produce a genuinely new inference; compare it with current memory through reuse, revision, zero delta, or a new derived Statement. Never apply a blanket source-role ban and never redact canonical content by category. context_only_evidence is bounded earlier narrative context used only to resolve pronouns, time, location, and event continuity; it is not part of this pass's source coverage.
-Every proposition cites natural Evidence quote refs. Quote exact text from one supplied Capture role and give each quote an operation-local evidence_ref_id. Never calculate or output start, end, Unicode offsets, Python slices, or span-array indexes. If the same quote occurs more than once, disambiguate with zero-based occurrence_hint or short exact left/right context. source_capture_ids may contain only IDs listed in absorption_sources. context_capture_ids may contain only IDs listed in context_only_evidence and must exactly name context Captures used by Evidence or timestamp basis. User and assistant source spans are equally eligible; do not classify or suppress source content by role. Any normalized absolute date, location, event, or coreference not verbatim in the source requires a resolved_reference whose basis_evidence_ref_ids cross-link the exact quoted Evidence refs, or whose timestamp_basis_capture_ids name a supplied Capture timestamp. Separate direct_queries, which the new proposition answers, from broader entry_queries, which name a plausible shared retrieval neighborhood a future reader could enter before knowing the new answer. Do not inspect or mention any field, Atlas, region, Locality, action, Handle, coordinate, Topic, entity, vector, graph, or placement.
-Return exactly one raw JSON object with no markdown. Active outcomes are plan, zero_new_propositions, retryable_defer, and incomplete_continuation. zero_new_propositions means this exact evaluation found no delta and is re-evaluable. retryable_defer is never permanent. incomplete_continuation means more source material or propositions remain.
+Every proposition cites natural Evidence quote refs. Quote exact text from one supplied Capture role or immutable Tool Evidence and give each quote an operation-local evidence_ref_id. Capture refs use capture_id with role user or assistant. Tool refs use tool_evidence_id with role tool. Never infer exact tool provenance from an action label. Never calculate or output start, end, Unicode offsets, Python slices, or span-array indexes. If the same quote occurs more than once, disambiguate with zero-based occurrence_hint or short exact left/right context. source_capture_ids may contain only IDs listed in absorption_sources. context_capture_ids may contain only IDs listed in context_only_evidence and must exactly name context Captures used by Evidence or timestamp basis. User and assistant source spans are equally eligible. Exact Tool Evidence source spans use the same content-neutral contract; do not classify or suppress source content by role. Any normalized absolute date, location, event, or coreference not verbatim in the source requires a resolved_reference whose basis_evidence_ref_ids cross-link the exact quoted Evidence refs, or whose timestamp_basis_capture_ids name a supplied Capture timestamp. Separate direct_queries, which the new proposition answers, from broader entry_queries, which name a plausible shared retrieval neighborhood a future reader could enter before knowing the new answer. Do not inspect or mention any field, Atlas, region, Locality, action, Handle, coordinate, Topic, entity, vector, graph, or placement.
+Return exactly one raw JSON object with no markdown. Active outcomes are plan, zero_new_propositions, retryable_defer, and incomplete_continuation. zero_new_propositions means this exact evaluation found no delta and is re-evaluable. retryable_defer is never permanent. incomplete_continuation means more source material or propositions remain. For multiple absorption sources, continuation must be {{"captures":[{{"capture_id":"exact id","status":"complete|continue|retryable_defer","covered_source_windows":[{{"role":"user|assistant","window_index":0}}]}}]}} with one canonical item per Capture. Each complete or continue item must list every source window supplied for that Capture; retryable_defer may list none. This permits one Capture to finish while another continues or retries.
 Every proposition object must contain exactly these eleven keys: draft_id, outcome, content_utf8, source_capture_ids, context_capture_ids, evidence_refs, resolved_references, direct_queries, entry_queries, origin_kinds, derived_from_statement_ids. Proposition outcome must be "statement". origin_kinds is a sorted subset of assistant, model_inference, recalled_memory, tool, user and must match the cited roles and supplied provenance. derived_from_statement_ids must be sorted and may contain only supplied recalled Statement IDs.
 schema_version: {PROPOSITION_WRITER_SCHEMA_VERSION}
 plan: {{"schema_version":"{PROPOSITION_WRITER_SCHEMA_VERSION}","outcome":"plan","propositions":[{{"draft_id":"d1","outcome":"statement","content_utf8":"complete proposition","source_capture_ids":["source capture id"],"context_capture_ids":[],"evidence_refs":[{{"evidence_ref_id":"e1","capture_id":"source or context capture id","role":"user|assistant","quote_utf8":"exact quote","occurrence_hint":0}}],"resolved_references":[],"direct_queries":[{{"query_id":"direct-1","query_utf8":"question directly answered by the new proposition"}}],"entry_queries":[{{"query_id":"entry-1","query_utf8":"broader shared retrieval question"}}],"origin_kinds":["user"],"derived_from_statement_ids":[]}}],"reason_text":null,"continuation":null}}
@@ -121,6 +172,7 @@ Draft IDs and source Capture IDs must be unique and sorted. Maximum Statements: 
 request_id: {request_id}
 absorption_sources: {json.dumps(wire(clean), ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
 source_windows: {json.dumps(windows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
+tool_evidence: {json.dumps(tools, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
 continuation_input: {json.dumps(continuation_value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))}
 context_only_evidence: {json.dumps(wire(context), ensure_ascii=False, sort_keys=True, separators=(",", ":"))}"""
     prompt_bytes = len(prompt.encode("utf-8"))
@@ -143,6 +195,7 @@ context_only_evidence: {json.dumps(wire(context), ensure_ascii=False, sort_keys=
         ),
         "field_input_count": 0,
         "source_windows": windows,
+        "tool_evidence": tools,
         "continuation": continuation_value,
         "current_memory_fingerprint": current_memory_fingerprint,
         "evaluation_id": hashlib.sha256(
@@ -151,6 +204,10 @@ context_only_evidence: {json.dumps(wire(context), ensure_ascii=False, sort_keys=
                     "schema": PROPOSITION_WRITER_SCHEMA_VERSION,
                     "prompt": PROPOSITION_WRITER_PROMPT_VERSION,
                     "source_windows": windows,
+                    "tool_evidence": [
+                        [item["tool_evidence_id"], hashlib.sha256(item["tool_result_utf8"].encode("utf-8")).hexdigest()]
+                        for item in tools
+                    ],
                     "context": [item["capture_id"] for item in context],
                     "memory": current_memory_fingerprint,
                 },
@@ -170,6 +227,7 @@ def parse_proposition_writer_result(
     source_windows: object = None,
     continuation_pass: object = 0,
     evaluation_id: object = None,
+    tool_evidence: object = None,
 ) -> dict[str, object]:
     clean = _captures(captures)
     context = _validated_context_captures(clean, context_captures)
@@ -178,11 +236,12 @@ def parse_proposition_writer_result(
             "invalid_writer_result", "Writer response and request_id are required"
         )
     try:
-        repaired, diagnostics = repair_dream_json(raw_response)
+        repaired, diagnostics = repair_json_envelope(raw_response)
         value = json.loads(repaired)
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
     windows = _source_windows(clean, source_windows)
+    tools = _tool_evidence(tool_evidence, clean)
     if evaluation_id is None and type(request_id) is str:
         evaluation_id = hashlib.sha256(
             (request_id + "\0" + PROPOSITION_WRITER_SCHEMA_VERSION).encode("utf-8")
@@ -206,12 +265,14 @@ def parse_proposition_writer_result(
         raise FormationAdapterError(
             "invalid_writer_schema", "invalid Proposition Writer envelope"
         )
+    capture_progress = _capture_result_progress(
+        value["continuation"], clean, windows, value["outcome"]
+    )
     if value["outcome"] in {"zero_new_propositions", "retryable_defer"}:
         if (
             value["propositions"]
             or type(value["reason_text"]) is not str
             or not value["reason_text"]
-            or value["continuation"] is not None
         ):
             raise FormationAdapterError(
                 "invalid_writer_schema", "invalid re-evaluable Writer outcome"
@@ -221,6 +282,7 @@ def parse_proposition_writer_result(
             "propositions": [],
             "reason_text": value["reason_text"],
             "continuation": None,
+            "capture_progress": capture_progress,
             "evaluation_id": evaluation_id,
             "continuation_pass": continuation_pass,
             "json_repair": diagnostics,
@@ -229,7 +291,13 @@ def parse_proposition_writer_result(
         if (
             type(value["reason_text"]) is not str
             or not value["reason_text"]
-            or value["continuation"] != {"remaining": True}
+            or (
+                value["continuation"] != {"remaining": True}
+                and not (
+                    type(value["continuation"]) is dict
+                    and set(value["continuation"]) == {"captures"}
+                )
+            )
         ):
             raise FormationAdapterError(
                 "invalid_writer_schema", "invalid Writer continuation outcome"
@@ -239,6 +307,7 @@ def parse_proposition_writer_result(
             "propositions": [],
             "reason_text": value["reason_text"],
             "continuation": value["continuation"],
+            "capture_progress": capture_progress,
             "evaluation_id": evaluation_id,
             "continuation_pass": continuation_pass,
             "json_repair": diagnostics,
@@ -247,10 +316,21 @@ def parse_proposition_writer_result(
         value["outcome"] not in {"plan", "incomplete_continuation"}
         or not 1 <= len(value["propositions"]) <= 8
         or value["reason_text"] is not None
-        or (value["outcome"] == "plan" and value["continuation"] is not None)
+        or (
+            value["outcome"] == "plan"
+            and value["continuation"] is not None
+            and not (
+                type(value["continuation"]) is dict
+                and set(value["continuation"]) == {"captures"}
+            )
+        )
         or (
             value["outcome"] == "incomplete_continuation"
             and value["continuation"] != {"remaining": True}
+            and not (
+                type(value["continuation"]) is dict
+                and set(value["continuation"]) == {"captures"}
+            )
         )
     ):
         raise FormationAdapterError(
@@ -265,6 +345,7 @@ def parse_proposition_writer_result(
             evidence_map,
             context,
             windows,
+            tools,
             evaluation_id,
             continuation_pass,
         )
@@ -280,77 +361,10 @@ def parse_proposition_writer_result(
         "propositions": list(propositions),
         "reason_text": None,
         "continuation": value["continuation"],
+        "capture_progress": capture_progress,
         "evaluation_id": evaluation_id,
         "continuation_pass": continuation_pass,
         "context_capture_ids": [item["capture_id"] for item in context],
-        "json_repair": diagnostics,
-    }
-
-
-def migrate_legacy_proposition_writer_result(
-    raw_response: object,
-    captures: object,
-    request_id: object,
-) -> dict[str, object]:
-    """Explicit offline-only conversion that never claims exact Rev5 provenance."""
-    clean = _captures(captures)
-    if type(raw_response) is not str or type(request_id) is not str or not request_id:
-        raise FormationAdapterError(
-            "invalid_writer_result", "Writer response and request_id are required"
-        )
-    try:
-        repaired, diagnostics = repair_dream_json(raw_response)
-        value = json.loads(repaired)
-    except json.JSONDecodeError as exc:
-        raise FormationAdapterError("invalid_json", str(exc)) from exc
-    if (
-        type(value) is dict
-        and value.get("schema_version")
-        == LEGACY_CONTEXTUAL_PROPOSITION_WRITER_SCHEMA_VERSION
-        and set(value) == {"schema_version", "outcome", "propositions", "defer_reason"}
-        and value.get("outcome") in {"no_memory", "defer"}
-    ):
-        if (
-            value["propositions"] != []
-            or type(value["defer_reason"]) is not str
-            or not value["defer_reason"]
-        ):
-            raise FormationAdapterError(
-                "invalid_writer_schema", "legacy terminal Writer outcome is invalid"
-            )
-        return {
-            "outcome": "zero_new_propositions"
-            if value["outcome"] == "no_memory"
-            else "retryable_defer",
-            "propositions": [],
-            "reason_text": value["defer_reason"],
-            "continuation": None,
-            "migrated_from_version": LEGACY_CONTEXTUAL_PROPOSITION_WRITER_SCHEMA_VERSION,
-            "legacy_outcome": value["outcome"],
-            "provenance_precision": "legacy",
-            "json_repair": diagnostics,
-        }
-    if (
-        type(value) is not dict
-        or value.get("schema_version") != LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION
-        or value.get("outcome") != "plan"
-        or type(value.get("propositions")) is not list
-    ):
-        raise FormationAdapterError(
-            "invalid_writer_schema",
-            "explicit migration requires legacy Writer v1 plan or v3 terminal result",
-        )
-    source_map = {item["capture_id"]: item for item in clean}
-    propositions = [
-        _legacy_proposition(item, source_map, source_map)
-        for item in value["propositions"]
-    ]
-    return {
-        "outcome": "plan",
-        "propositions": propositions,
-        "defer_reason": None,
-        "migrated_from_version": LEGACY_PROPOSITION_WRITER_SCHEMA_VERSION,
-        "provenance_precision": "coarse",
         "json_repair": diagnostics,
     }
 
@@ -434,7 +448,7 @@ def advance_field_cartographer(
         )
     page = ProgressiveAtlasPage.from_mapping(page_value)
     try:
-        repaired, diagnostics = repair_dream_json(raw_response)
+        repaired, diagnostics = repair_json_envelope(raw_response)
         value = json.loads(repaired)
     except json.JSONDecodeError as exc:
         raise FormationAdapterError("invalid_json", str(exc)) from exc
@@ -938,9 +952,169 @@ def _source_windows(
     )
 
 
+def _capture_result_progress(
+    value: object,
+    captures: list[dict[str, object]],
+    windows: list[dict[str, object]],
+    outcome: object,
+) -> list[dict[str, object]]:
+    expected = {
+        item["capture_id"]: [
+            {"role": window["role"], "window_index": window["window_index"]}
+            for window in windows
+            if window["capture_id"] == item["capture_id"]
+        ]
+        for item in captures
+    }
+    if value is None or value == {"remaining": True}:
+        if len(captures) != 1:
+            raise FormationAdapterError(
+                "invalid_writer_continuation",
+                "multi-Capture Writer output requires per-Capture progress",
+            )
+        status = (
+            "retryable_defer"
+            if outcome == "retryable_defer"
+            else "continue"
+            if outcome == "incomplete_continuation"
+            else "complete"
+        )
+        capture_id = captures[0]["capture_id"]
+        return [
+            {
+                "capture_id": capture_id,
+                "status": status,
+                "covered_source_windows": []
+                if status == "retryable_defer"
+                else expected[capture_id],
+            }
+        ]
+    if type(value) is not dict or set(value) != {"captures"}:
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "Writer Capture progress is invalid"
+        )
+    progress = value["captures"]
+    if type(progress) is not list:
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "Writer Capture progress is invalid"
+        )
+    clean = []
+    for item in progress:
+        if (
+            type(item) is not dict
+            or set(item) != {"capture_id", "status", "covered_source_windows"}
+            or item.get("capture_id") not in expected
+            or item.get("status")
+            not in {"complete", "continue", "retryable_defer"}
+            or type(item.get("covered_source_windows")) is not list
+        ):
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "Writer Capture progress item is invalid"
+            )
+        covered = item["covered_source_windows"]
+        if any(
+            type(window) is not dict
+            or set(window) != {"role", "window_index"}
+            or window["role"] not in {"user", "assistant"}
+            or type(window["window_index"]) is not int
+            for window in covered
+        ):
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "covered source windows are invalid"
+            )
+        canonical = sorted(covered, key=lambda window: (window["role"], window["window_index"]))
+        if covered != canonical or len({(window["role"], window["window_index"]) for window in covered}) != len(covered):
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "covered source windows must be canonical"
+            )
+        if item["status"] != "retryable_defer" and covered != expected[item["capture_id"]]:
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "Capture progress must cover its supplied windows"
+            )
+        if item["status"] == "retryable_defer" and covered not in ([], expected[item["capture_id"]]):
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "retry coverage must be empty or complete"
+            )
+        clean.append(item)
+    if [item["capture_id"] for item in clean] != sorted(expected) or len(clean) != len(expected):
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "Capture progress identities must be complete and canonical"
+        )
+    statuses = {item["status"] for item in clean}
+    if outcome == "incomplete_continuation" and "continue" not in statuses:
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "incomplete outcome requires a continuing Capture"
+        )
+    if outcome == "retryable_defer" and statuses != {"retryable_defer"}:
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "retryable outcome requires retryable Capture progress"
+        )
+    if outcome == "zero_new_propositions" and "continue" in statuses:
+        raise FormationAdapterError(
+            "invalid_writer_continuation", "zero outcome cannot leave a continuing Capture"
+        )
+    return clean
+
+
 def _continuation_input(value: object) -> dict[str, object]:
     if value is None:
         return {"pass": 0, "prior_statement_ids": []}
+    if type(value) is dict and set(value) == {"captures"}:
+        captures = value["captures"]
+        if type(captures) is not list or not captures:
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "Capture progress must be non-empty"
+            )
+        identities = []
+        for item in captures:
+            if (
+                type(item) is not dict
+                or set(item)
+                != {"capture_id", "pass", "group_index", "prior_statements"}
+                or type(item["capture_id"]) is not str
+                or not item["capture_id"]
+                or type(item["pass"]) is not int
+                or item["pass"] < 0
+                or type(item["group_index"]) is not int
+                or item["group_index"] < 0
+                or type(item["prior_statements"]) is not list
+            ):
+                raise FormationAdapterError(
+                    "invalid_writer_continuation", "Capture progress is invalid"
+                )
+            statement_ids = []
+            for statement in item["prior_statements"]:
+                if (
+                    type(statement) is not dict
+                    or set(statement)
+                    != {
+                        "statement_id",
+                        "content_sha256",
+                        "content_utf8",
+                        "source_ranges",
+                    }
+                    or type(statement["statement_id"]) is not str
+                    or not statement["statement_id"]
+                    or type(statement["content_sha256"]) is not str
+                    or len(statement["content_sha256"]) != 64
+                    or type(statement["content_utf8"]) is not str
+                    or not statement["content_utf8"]
+                    or type(statement["source_ranges"]) is not list
+                ):
+                    raise FormationAdapterError(
+                        "invalid_writer_continuation", "Prior proposition context is invalid"
+                    )
+                statement_ids.append(statement["statement_id"])
+            if statement_ids != sorted(set(statement_ids)):
+                raise FormationAdapterError(
+                    "invalid_writer_continuation", "Prior propositions must be canonical"
+                )
+            identities.append(item["capture_id"])
+        if identities != sorted(set(identities)):
+            raise FormationAdapterError(
+                "invalid_writer_continuation", "Capture progress identities must be canonical"
+            )
+        return value
     keys = {"pass", "prior_statement_ids"}
     if (
         type(value) is not dict
@@ -963,12 +1137,62 @@ def _continuation_input(value: object) -> dict[str, object]:
     return value
 
 
+def _tool_evidence(
+    value: object, captures: list[dict[str, object]]
+) -> list[dict[str, object]]:
+    if value is None:
+        return []
+    capture_ids = {item["capture_id"] for item in captures}
+    keys = {
+        "tool_evidence_id",
+        "tool_result_utf8",
+        "observed_epoch_ms",
+        "source_capture_ids",
+    }
+    if type(value) is not list:
+        raise FormationAdapterError(
+            "invalid_tool_evidence", "Tool Evidence must be a list"
+        )
+    clean = []
+    for item in value:
+        if (
+            type(item) is not dict
+            or set(item) != keys
+            or type(item["tool_evidence_id"]) is not str
+            or not item["tool_evidence_id"].startswith("tool-evidence-")
+            or type(item["tool_result_utf8"]) is not str
+            or type(item["observed_epoch_ms"]) is not int
+        ):
+            raise FormationAdapterError(
+                "invalid_tool_evidence", "Tool Evidence fields are invalid"
+            )
+        source_ids = item["source_capture_ids"]
+        if (
+            type(source_ids) is not list
+            or not source_ids
+            or source_ids != sorted(set(source_ids))
+            or any(capture_id not in capture_ids for capture_id in source_ids)
+        ):
+            raise FormationAdapterError(
+                "invalid_tool_evidence", "Tool Evidence Capture binding is invalid"
+            )
+        clean.append(item)
+    if [item["tool_evidence_id"] for item in clean] != sorted(
+        {item["tool_evidence_id"] for item in clean}
+    ):
+        raise FormationAdapterError(
+            "invalid_tool_evidence", "Tool Evidence identities must be canonical"
+        )
+    return clean
+
+
 def _proposition(
     value: object,
     sources: dict[str, dict[str, object]],
     evidence: dict[str, dict[str, object]],
     context: list[dict[str, object]],
     source_windows: list[dict[str, object]],
+    tool_evidence: list[dict[str, object]],
     evaluation_id: str,
     continuation_pass: int,
 ) -> dict[str, object]:
@@ -1020,12 +1244,23 @@ def _proposition(
         raise FormationAdapterError(
             "invalid_writer_schema", "Writer context Capture IDs are invalid"
         )
+    tool_map = {item["tool_evidence_id"]: item for item in tool_evidence}
+    resolver_evidence = [
+        _evidence_capture(item) for item in evidence.values()
+    ] + [
+        {
+            "tool_evidence_id": item["tool_evidence_id"],
+            "tool_result_utf8": item["tool_result_utf8"],
+            "observed_epoch_ms": item["observed_epoch_ms"],
+        }
+        for item in tool_evidence
+    ]
     try:
         spans = [
             item.to_mapping()
             for item in resolve_evidence_quote_refs(
                 value["evidence_refs"],
-                [_evidence_capture(item) for item in evidence.values()],
+                resolver_evidence,
             )
         ]
     except (TypeError, ValueError) as exc:
@@ -1035,13 +1270,22 @@ def _proposition(
             else "invalid Writer Evidence quote ref"
         )
         raise FormationAdapterError(error, str(exc)) from exc
-    if not any(span["capture_id"] in source_ids for span in spans):
+    def is_source_span(span: dict[str, object]) -> bool:
+        if span["role"] != "tool":
+            return span["capture_id"] in source_ids
+        identity = span["tool_evidence_id"]
+        return identity in tool_map and bool(
+            set(tool_map[identity]["source_capture_ids"]) & set(source_ids)
+        )
+
+    if not any(is_source_span(span) for span in spans):
         raise FormationAdapterError(
             "invalid_writer_schema", "each proposition requires source-Capture Evidence"
         )
-    source_spans = [span for span in spans if span["capture_id"] in source_ids]
+    source_spans = [span for span in spans if is_source_span(span)]
     if any(
-        not any(
+        span["role"] != "tool"
+        and not any(
             window["capture_id"] == span["capture_id"]
             and window["role"] == span["role"]
             and window["start"] <= span["start"]
@@ -1069,10 +1313,6 @@ def _proposition(
             "invalid_writer_schema", "derived Statement IDs are invalid"
         )
     expected_origins = {span["role"] for span in source_spans}
-    if any(
-        sources[capture_id].get("memory_tool_actions", []) for capture_id in source_ids
-    ):
-        expected_origins.add("tool")
     if derived:
         expected_origins.update({"model_inference", "recalled_memory"})
     origins = value["origin_kinds"]
@@ -1081,7 +1321,9 @@ def _proposition(
             "invalid_writer_schema", "origin kinds do not match Evidence provenance"
         )
     used_context_ids = {
-        span["capture_id"] for span in spans if span["capture_id"] not in source_ids
+        span["capture_id"]
+        for span in spans
+        if span["role"] != "tool" and span["capture_id"] not in source_ids
     }
     references = _resolved_references(value["resolved_references"], spans, evidence)
     used_context_ids.update(

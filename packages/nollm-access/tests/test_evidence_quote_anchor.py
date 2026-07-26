@@ -64,3 +64,22 @@ def test_quote_resolver_handles_long_capture_without_normalization():
     span = resolve_evidence_quote_refs([ref(" exact tail ")], [capture(text)])[0]
     assert span.start == 100_000
     assert span.end == len(text)
+
+
+def test_tool_evidence_quote_uses_exact_tool_result_and_identity():
+    tool = {
+        "tool_evidence_id": "tool-evidence-one",
+        "tool_result_utf8": '{"error":"credential-shaped value"}',
+        "observed_epoch_ms": 2,
+    }
+    reference = {
+        "evidence_ref_id": "tool-ref",
+        "tool_evidence_id": "tool-evidence-one",
+        "role": "tool",
+        "quote_utf8": "credential-shaped value",
+    }
+    span = resolve_evidence_quote_refs([reference], [tool])[0]
+    assert span.role == "tool"
+    assert span.capture_id == "tool-evidence-one"
+    assert span.to_mapping()["tool_evidence_id"] == "tool-evidence-one"
+    assert tool["tool_result_utf8"][span.start:span.end] == "credential-shaped value"

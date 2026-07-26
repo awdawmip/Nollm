@@ -1,16 +1,7 @@
-from .adapter import (
-    AccessFormationClient,
-    FormationDecisionParser,
-    FormationPromptBuilder,
-    FormationResultRenderer,
-    OpenClawEventTranslator,
-    OpenClawFormationConfig,
-    OpenClawLLMClient,
-    OpenClawSessionMapper,
-)
+"""Active content-neutral OpenClaw bridge package.
 
-__all__ = [
-    "AccessFormationClient", "FormationDecisionParser", "FormationPromptBuilder",
-    "FormationResultRenderer", "OpenClawEventTranslator", "OpenClawFormationConfig",
-    "OpenClawLLMClient", "OpenClawSessionMapper",
-]
+Legacy Formation APIs have no package-root public API. Explicit offline migration
+imports ``nollm_openclaw_formation.adapter`` or invokes ``legacy_bridge``.
+"""
+
+__all__: list[str] = []

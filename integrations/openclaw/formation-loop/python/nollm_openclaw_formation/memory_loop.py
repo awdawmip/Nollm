@@ -23,8 +23,8 @@ from nollm_access import (
     placement_action_semantics_prompt,
 )
 
-from .adapter import FormationAdapterError
-from .dream_adapter import repair_dream_json
+from .errors import FormationAdapterError
+from .json_repair import repair_json_envelope as repair_dream_json
 
 
 TRAVERSAL_SCHEMA_VERSION = "nollm_openclaw_bounded_approximate_surface_traversal_v1"

@@ -5,7 +5,26 @@ import json
 import os
 import sys
 
-from .errors import FormationAdapterError
+from .adapter import (
+    AccessFormationClient,
+    FormationAdapterError,
+    FormationDecisionParser,
+    FormationPromptBuilder,
+    FormationResultRenderer,
+    OpenClawEventTranslator,
+    OpenClawFormationConfig,
+    formation_schema_bytes,
+    sha256_hex,
+)
+from .dream_adapter import (
+    DREAM_PROMPT_VERSION,
+    build_dream_format_repair_prompt,
+    build_dream_prompt,
+    dream_schema_bytes,
+    process_dream_result,
+    request_from_mapping,
+    sha256_hex as dream_sha256_hex,
+)
 from .memory_loop import (
     advance_placement_traversal,
     advance_recall_traversal,
@@ -21,6 +40,11 @@ from .memory_loop import (
     apply_fast_recall_selection,
     build_batch_placement_prompt,
     apply_batch_placement,
+)
+from .sculptor import (
+    apply_dream_sculptor_result,
+    build_dream_sculptor_prompt,
+    parse_dream_sculptor_result,
 )
 from .cartographer import (
     advance_field_cartographer,
@@ -48,27 +72,27 @@ def _well_formed(value: object) -> object:
     return value
 
 
+def _config(envelope: dict[str, object]) -> OpenClawFormationConfig:
+    return OpenClawFormationConfig(
+        str(envelope["openclaw_command"]),
+        str(envelope["model"]),
+        str(envelope.get("prompt_version", "aold-v3")),
+        str(envelope.get("schema_version", "aold-formation-v1")),
+    )
+
+
 def main() -> None:
     try:
         wire = sys.stdin.read()
         if os.environ.get("NOLLM_BRIDGE_BASE64") == "1":
             wire = base64.b64decode(wire, validate=True).decode("utf-8")
         envelope = _well_formed(json.loads(wire))
-        action = envelope.get("action")
-        if action in {
-            "build_dream_sculptor_prompt",
-            "parse_dream_sculptor_result",
-            "apply_dream_sculptor_result",
-            "build_dream_prompt",
-            "parse_dream_result",
-            "build_dream_format_repair_prompt",
-            "build_prompt",
-            "parse_result",
-        }:
+        if envelope.get("offline_migration") is not True:
             raise FormationAdapterError(
-                "legacy_action_isolated",
-                "Use nollm_openclaw_formation.legacy_bridge with offline_migration=true",
+                "offline_migration_required",
+                "Legacy bridge is available only for explicit offline migration",
             )
+        action = envelope.get("action")
         if action == "read_memory_evaluation_fingerprint":
             result = read_memory_evaluation_fingerprint(envelope["memory_workspace"])
             print(
@@ -160,6 +184,106 @@ def main() -> None:
                 envelope["request_id"],
                 envelope.get("revision_confirmations"),
                 envelope.get("only_statement_ids"),
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
+        if action == "build_dream_sculptor_prompt":
+            result = build_dream_sculptor_prompt(
+                envelope["captures"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("candidate_limit", 512),
+                envelope.get("max_statements", 8),
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
+        if action == "parse_dream_sculptor_result":
+            result = parse_dream_sculptor_result(
+                envelope["raw_model_response"],
+                envelope["captures"],
+                envelope["atlas"],
+                envelope["request_id"],
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
+        if action == "apply_dream_sculptor_result":
+            result = apply_dream_sculptor_result(
+                envelope["raw_model_response"],
+                envelope["captures"],
+                envelope["atlas"],
+                envelope["memory_workspace"],
+                envelope["request_id"],
+                envelope.get("revision_confirmations"),
+                envelope.get("only_statement_ids"),
+            )
+            print(
+                json.dumps(
+                    {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
+                )
+            )
+            return
+        if action in {
+            "build_dream_prompt",
+            "parse_dream_result",
+            "build_dream_format_repair_prompt",
+        }:
+            if action == "build_dream_format_repair_prompt":
+                prompt = build_dream_format_repair_prompt(
+                    str(envelope["raw_model_response"]), str(envelope["failure"])
+                )
+                print(
+                    json.dumps(
+                        {
+                            "ok": True,
+                            "prompt": prompt,
+                            "prompt_version": "dream-format-repair-v1",
+                            "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
+                            "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
+                        },
+                        ensure_ascii=True,
+                        separators=(",", ":"),
+                    )
+                )
+                return
+            request = request_from_mapping(envelope["request"])
+            if action == "build_dream_prompt":
+                version = str(envelope.get("prompt_version", DREAM_PROMPT_VERSION))
+                prompt = build_dream_prompt(request, version)
+                print(
+                    json.dumps(
+                        {
+                            "ok": True,
+                            "prompt": prompt,
+                            "prompt_version": version,
+                            "schema_version": request.schema_version,
+                            "prompt_sha256": dream_sha256_hex(prompt.encode("utf-8")),
+                            "schema_sha256": dream_sha256_hex(dream_schema_bytes()),
+                        },
+                        ensure_ascii=True,
+                        separators=(",", ":"),
+                    )
+                )
+                return
+            workspace = envelope.get("statement_store_workspace")
+            result = process_dream_result(
+                str(envelope["raw_model_response"]),
+                request,
+                str(envelope["result_id"]),
+                None
+                if workspace is None
+                else __import__("pathlib").Path(str(workspace)),
             )
             print(
                 json.dumps(
@@ -390,7 +514,44 @@ def main() -> None:
                 )
             )
             return
-        raise FormationAdapterError("invalid_action", "action is not in the active bridge allowlist")
+        request = OpenClawEventTranslator().translate(envelope["request"])
+        config = _config(envelope)
+        if action == "build_prompt":
+            prompt = FormationPromptBuilder().build(
+                request, config, envelope.get("retry_error")
+            )
+            print(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "prompt": prompt,
+                        "prompt_version": config.prompt_version,
+                        "schema_version": config.schema_version,
+                        "prompt_sha256": sha256_hex(prompt.encode("utf-8")),
+                        "schema_sha256": sha256_hex(formation_schema_bytes(config)),
+                    },
+                    ensure_ascii=True,
+                    separators=(",", ":"),
+                )
+            )
+            return
+        if action != "parse_result":
+            raise FormationAdapterError(
+                "invalid_action", "action must be build_prompt or parse_result"
+            )
+        decision = FormationDecisionParser().parse(
+            str(envelope["raw_model_response"]),
+            request,
+            config,
+            str(envelope["decision_id"]),
+        )
+        statements = AccessFormationClient().form(request, decision)
+        result = FormationResultRenderer().render(request, decision, statements)
+        print(
+            json.dumps(
+                {"ok": True, "result": result}, ensure_ascii=True, separators=(",", ":")
+            )
+        )
     except (KeyError, TypeError, ValueError, FormationAdapterError) as exc:
         print(
             json.dumps(

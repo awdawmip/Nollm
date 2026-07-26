@@ -39,7 +39,12 @@ test("manifest exposes one internal main-agent geometry Recall tool", () => {
   assert.equal(manifest.configSchema.properties.physical_entry_resolution_policy_version.const, manifest.contracts.physicalEntryResolutionPolicyVersion);
   assert.equal(manifest.configSchema.properties.traversal_correction_max_attempts.const, manifest.contracts.traversalCorrectionMaxAttempts);
   assert.equal(manifest.version, "0.17.0");
-  assert.equal(manifest.configSchema.properties.dream_sculptor_schema_version.const, manifest.contracts.dreamSculptorWire);
+  assert.equal("dream_sculptor_schema_version" in manifest.configSchema.properties, false);
+  assert.equal("dreamSculptorWire" in manifest.contracts, false);
+  assert.equal(manifest.captureAbsorptionDirectiveWire, "nollm_openclaw_capture_absorption_directive_v2");
+  assert.equal(manifest.contracts.toolEvidenceWire, "nollm_openclaw_tool_evidence_v1");
+  assert.deepEqual(manifest.contracts.activeSemanticPipeline, ["content-neutral-proposition-writer-v4", "field-cartographer-v2", "access-apply"]);
+  assert.equal(manifest.contracts.legacyFormationPublicApi, "none");
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.maximum, 512);
   assert.equal(manifest.configSchema.properties.locality_atlas_candidate_limit.default, 512);
   assert.equal(manifest.configSchema.properties.proposition_writer_schema_version.const, "nollm_openclaw_content_neutral_proposition_writer_v4");
@@ -61,7 +66,7 @@ test("manifest exposes one internal main-agent geometry Recall tool", () => {
   assert.equal(manifest.contracts.evidenceFilenameContract, "run_scoped_live_then_immutable_freeze_v1");
   assert.equal(manifest.contracts.atlasCoverageRequired, true);
   assert.equal(manifest.contracts.junctionRealizedOnly, true);
-  assert.equal(manifest.contracts.dreamSculptorCommonProviderCalls, 0);
+  assert.equal("dreamSculptorCommonProviderCalls" in manifest.contracts, false);
   assert.equal(manifest.contracts.captureStateWire, "nollm_openclaw_capture_state_event_v2");
   assert.equal(manifest.contracts.contentEligibilityPolicy, "content-neutral");
   assert.equal(manifest.contracts.sensitiveClassifier, false);
@@ -262,6 +267,13 @@ test("main-agent operations are server-issued, run-scoped, retryable, and preser
     assert.equal(recalledCaptures.length, 1);
     const recalledDirective = await new CaptureStore(capture).directive(recalledCaptures[0].capture_id);
     assert.equal(recalledDirective.assistant_role_mode, "memory_derived");
+    assert.equal(recalledDirective.tool_evidence_ids.length, 1);
+    const recalledToolEvidence = await new CaptureStore(capture).readToolEvidence(recalledDirective.tool_evidence_ids[0]);
+    assert.equal(recalledToolEvidence.tool_name, "nollm_memory");
+    assert.equal(recalledToolEvidence.succeeded, true);
+    assert.equal(recalledToolEvidence.visibility, "main_agent_visible");
+    assert.equal(recalledToolEvidence.result_encoding, "canonical_json");
+    assert.deepEqual(JSON.parse(recalledToolEvidence.tool_result_utf8), recalled);
     assert.equal(recalledDirective.finalized, false);
     const endEvent = { success: true, runId: "run-a", messages: [
       { role: "user", content: "recalled question" }, { role: "assistant", content: "recalled answer" },

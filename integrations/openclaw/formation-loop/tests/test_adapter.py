@@ -220,7 +220,7 @@ def test_dream_json_repair_rejects_semantic_or_ambiguous_changes(raw):
         parse_dream_result(raw, _dream_request(), "result")
 
 
-def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
+def test_active_bridge_isolates_legacy_dream_action():
     envelope = {
         "action": "build_dream_prompt", "prompt_version": "dream-v1",
         "request": {
@@ -234,6 +234,33 @@ def test_bridge_normalizes_unpaired_surrogate_before_access_contract():
         input=json.dumps(envelope), text=True, capture_output=True, check=True,
     )
     result = json.loads(completed.stdout)
+    assert result == {
+        "ok": False,
+        "error": "legacy_action_isolated",
+        "message": "Use nollm_openclaw_formation.legacy_bridge with offline_migration=true",
+    }
+
+
+def test_legacy_bridge_requires_explicit_offline_migration_and_normalizes_wire():
+    envelope = {
+        "action": "build_dream_prompt", "prompt_version": "dream-v1",
+        "request": {
+            "request_id": "r-surrogate", "schema_version": "nollm_access_dream_formation_v1",
+            "material": {"material_id": "m-surrogate", "turns": [{"role": "user", "content_utf8": "bad\udc94text"}]},
+            "max_statements": 8, "max_statement_chars": 4096, "max_total_chars": 8192,
+        },
+    }
+    denied = subprocess.run(
+        [sys.executable, "-m", "nollm_openclaw_formation.legacy_bridge"],
+        input=json.dumps(envelope), text=True, capture_output=True, check=True,
+    )
+    assert json.loads(denied.stdout)["error"] == "offline_migration_required"
+    allowed = subprocess.run(
+        [sys.executable, "-m", "nollm_openclaw_formation.legacy_bridge"],
+        input=json.dumps({**envelope, "offline_migration": True}), text=True,
+        capture_output=True, check=True,
+    )
+    result = json.loads(allowed.stdout)
     assert result["ok"] is True
     assert "bad\ufffdtext" in result["prompt"]
 

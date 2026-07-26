@@ -81,6 +81,45 @@ test("role directives are append-only, reopenable, and default assistant to cont
   assert.equal(fallback.finalized, true);
 }));
 
+test("Tool Evidence is immutable exact scope-bound and directive-addressable", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const { record } = await store.publish(input({ mainRunIdentity: "run-1" }));
+  const first = await store.publishToolEvidence({
+    scopeKey: "user-a", workspaceKey: "user-a", sessionKey: "session-1", mainRunIdentity: "run-1",
+    toolCallId: "tool-call-1", toolName: "shell", input: { b: 2, a: 1 },
+    result: { status: "failed", detail: "credential-shaped value" }, succeeded: false,
+    visibility: "main_agent_visible", observedEpochMs: 900,
+  });
+  const replay = await store.publishToolEvidence({
+    scopeKey: "user-a", workspaceKey: "user-a", sessionKey: "session-1", mainRunIdentity: "run-1",
+    toolCallId: "tool-call-1", toolName: "shell", input: { a: 1, b: 2 },
+    result: { detail: "credential-shaped value", status: "failed" }, succeeded: false,
+    visibility: "main_agent_visible", observedEpochMs: 999,
+  });
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.record.observed_epoch_ms, 900);
+  assert.equal(first.record.tool_result_utf8, '{"detail":"credential-shaped value","status":"failed"}');
+  assert.equal((await store.readToolEvidence(first.record.tool_evidence_id)).result_sha256.length, 64);
+  await assert.rejects(store.publishToolEvidence({
+    scopeKey: "user-a", workspaceKey: "user-a", sessionKey: "session-1", mainRunIdentity: "run-1",
+    toolCallId: "tool-call-1", toolName: "shell", result: "different", succeeded: false,
+    visibility: "main_agent_visible",
+  }), /immutable Tool Evidence conflict/);
+  const directive = await store.publishDirective({
+    captureId: record.capture_id, mainRunIdentity: "run-1", assistantRoleMode: "source",
+    memoryToolActions: [], recalledStatementIds: [], toolEvidenceIds: [first.record.tool_evidence_id],
+    sequence: 1, finalized: true,
+  });
+  assert.deepEqual(directive.directive.tool_evidence_ids, [first.record.tool_evidence_id]);
+
+  const other = await store.publish(input({ scopeKey: "user-b", turnIdentity: "run-b", mainRunIdentity: "run-b" }));
+  await assert.rejects(store.publishDirective({
+    captureId: other.record.capture_id, mainRunIdentity: "run-b", assistantRoleMode: "source",
+    memoryToolActions: [], recalledStatementIds: [], toolEvidenceIds: [first.record.tool_evidence_id],
+    sequence: 1, finalized: true,
+  }), /scope does not match Capture/);
+}));
+
 test("pending fallback is cross-session, scope isolated, bounded, and admission removes it", () => workspace(async root => {
   const store = new CaptureStore(root);
   const one = await store.publish(input());
@@ -168,7 +207,7 @@ test("source windows cover UTF-8 content deterministically with bounded overlap"
   }
 }));
 
-test("incomplete continuation resumes immediately after worker restart", () => workspace(async root => {
+test("incomplete continuation preserves cursor and resumes after bounded budget backoff", () => workspace(async root => {
   const store = new CaptureStore(root);
   const { record } = await store.publish(input());
   const evaluation = {
@@ -176,15 +215,62 @@ test("incomplete continuation resumes immediately after worker restart", () => w
     current_memory_fingerprint: "memory", source_coverage: "partial", evaluation_epoch_ms: 2000,
   };
   const continuation = { group_index: 0, pass_index: 1, total_groups: 1, covered_ranges: [], uncovered_ranges: [{ capture_id: record.capture_id, role: "user", start: 1, end: 2 }] };
-  const first = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 100 }, async () => [
+  const first = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 100, retryBackoffMs: 100 }, async () => [
     { captureId: record.capture_id, status: "incomplete_continuation", statementIds: ["statement:one"], evaluation, continuation },
   ]);
   assert.equal((await first.runOnce(2000)).status, "completed");
-  const second = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 100 }, async () => [
+  const second = new AbsorptionWorker(store, { batchMaxCaptures: 1, batchMaxChars: 1000, staleClaimMs: 100, retryBackoffMs: 100 }, async () => [
     { captureId: record.capture_id, status: "admitted", statementIds: ["statement:one", "statement:two"], evaluation },
   ]);
-  assert.equal((await second.runOnce(2001)).status, "completed");
+  assert.equal((await second.runOnce(2001)).status, "idle");
+  assert.equal((await second.runOnce(2102)).status, "completed");
   assert.deepEqual((await store.currentState(record.capture_id)).statement_ids, ["statement:one", "statement:two"]);
+}));
+
+test("one worker invocation advances only incomplete Captures across bounded passes", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const a = await store.publish(input({ turnIdentity: "run-a", mainRunIdentity: "run-a" }));
+  const b = await store.publish(input({ turnIdentity: "run-b", mainRunIdentity: "run-b" }));
+  for (const item of [a, b]) await store.publishDirective({
+    captureId: item.record.capture_id, mainRunIdentity: item.record.turn_identity_sha256 === a.record.turn_identity_sha256 ? "run-a" : "run-b",
+    assistantRoleMode: "source", sequence: 1, finalized: true,
+  });
+  const seen = [];
+  const continuation = captureId => ({ group_index: 0, pass_index: 1, total_groups: 1, covered_ranges: [], uncovered_ranges: [{ capture_id: captureId, role: "user", start: 0, end: 1 }] });
+  const worker = new AbsorptionWorker(store, {
+    batchMaxCaptures: 2, batchMaxChars: 1000, staleClaimMs: 1000, continuationPassesPerRun: 3,
+  }, async (_batch, records) => {
+    seen.push(records.map(record => record.capture_id));
+    if (seen.length === 1) return [
+      { captureId: a.record.capture_id, status: "admitted", statementIds: ["statement:a"] },
+      { captureId: b.record.capture_id, status: "incomplete_continuation", statementIds: ["statement:b1"], continuation: continuation(b.record.capture_id) },
+    ];
+    return [{ captureId: b.record.capture_id, status: "admitted", statementIds: ["statement:b1", "statement:b2"] }];
+  });
+  assert.equal((await worker.runOnce(2000)).status, "completed");
+  assert.deepEqual(seen, [[a.record.capture_id, b.record.capture_id].sort(), [b.record.capture_id]]);
+  assert.deepEqual((await store.currentState(a.record.capture_id)).statement_ids, ["statement:a"]);
+  assert.deepEqual((await store.currentState(b.record.capture_id)).statement_ids, ["statement:b1", "statement:b2"]);
+}));
+
+test("batch terminal state keeps retry and 20-to-1 Statement lineages isolated", () => workspace(async root => {
+  const store = new CaptureStore(root);
+  const a = await store.publish(input({ turnIdentity: "run-a-20", mainRunIdentity: "run-a-20" }));
+  const b = await store.publish(input({ turnIdentity: "run-b-1", mainRunIdentity: "run-b-1" }));
+  const aIds = Array.from({ length: 20 }, (_, index) => `statement:a:${String(index).padStart(2, "0")}`);
+  const worker = new AbsorptionWorker(store, {
+    batchMaxCaptures: 2, batchMaxChars: 1000, staleClaimMs: 1000,
+  }, async (_batch, records) => records.map(record => record.capture_id === a.record.capture_id
+    ? { captureId: record.capture_id, status: "retryable_defer", statementIds: aIds, error: "continue later" }
+    : { captureId: record.capture_id, status: "admitted", statementIds: ["statement:b:00"] }));
+  await worker.runOnce(3000);
+  const aState = await store.currentState(a.record.capture_id);
+  const bState = await store.currentState(b.record.capture_id);
+  assert.equal(aState.status, "retryable_defer");
+  assert.deepEqual(aState.statement_ids, aIds);
+  assert.equal(bState.status, "admitted");
+  assert.deepEqual(bState.statement_ids, ["statement:b:00"]);
+  assert.equal(bState.statement_ids.some(id => id.startsWith("statement:a:")), false);
 }));
 
 test("zero-new evaluation is skipped only while its identity remains current", () => workspace(async root => {
