@@ -14,10 +14,11 @@
 Current state:
 
 ```text
-AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS_AT_GATE_A
+AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS_AT_2787525fd3325201197a72bc69bffc3427a7d8ba
 ```
 
 V3.12 supersedes the split active Recall and Placement/Cartography operation
 model. Rev6.1 content neutrality, exact Tool Evidence, per-Capture continuation,
 single-entry geometry, and all immutable Raw Capture remain required inputs.
-The unified contract and Provider Live evidence are not yet claimed at Gate A.
+The unified contract is offline-validated. Provider/Host Live evidence remains
+unavailable, so the task stays IN_PROGRESS rather than claiming final acceptance.

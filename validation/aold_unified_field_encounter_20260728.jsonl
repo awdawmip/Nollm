@@ -1,0 +1,18 @@
+{"gate":"0","record_type":"repository_invariant","status":"pass","agents_bytes":0,"agents_sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855","agents_git_blob":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"}
+{"gate":"A","record_type":"baseline","status":"pass","input_head":"42eed8e609fabeb1b583c88959f82e728bd6df69","implementation_head":"2787525fd3325201197a72bc69bffc3427a7d8ba","input_classification":"V3_11_REV6_1_OFFLINE_CLOSED_PROVIDER_LIVE_PENDING"}
+{"gate":"B","record_type":"asset_map","status":"pass","document":"docs/architecture/module-ownership/V3_12_FIELD_ENCOUNTER_REALLOCATION.md"}
+{"gate":"C-F","record_type":"access_matrix","status":"pass","tests":14,"root_operation_neutral":true,"facts_and_vacancies_same_locality":true,"conditional_commit":true,"stale_zero_write":true}
+{"gate":"G-H","record_type":"openclaw_python","status":"pass","passed":92,"failed":0,"field_encounter_bridge_tests":3,"main_agent_tool":"nollm_field_encounter","hidden_semantic_sessions":1,"cartographer_child_sessions":0}
+{"gate":"G-H","record_type":"openclaw_node","status":"pass","passed":63,"failed":0,"skipped_migration_witnesses":2,"active_wire":"nollm_openclaw_field_encounter_v1"}
+{"gate":"I","record_type":"query_only","status":"pass","fact_effect":"recall","vacancy_effect":"none","core_write_count":0,"single_entry":true}
+{"gate":"I","record_type":"proposition_only","status":"pass","effects":["reuse","provisional_revision","place","defer"],"vacancy_kinds":["LOCAL_VACANCY","BOUNDARY_VACANCY","JUNCTION_VACANCY","NEUTRAL_SEED_VACANCY"]}
+{"gate":"I","record_type":"mixed","status":"pass","one_operation":true,"one_root":true,"recall_and_place":true}
+{"gate":"I","record_type":"scale","status":"pass","field_sizes":[128,300,1000],"witnesses":["test_progressive_root_is_complete_bounded_and_not_a_stable_prefix","test_300_cell_cartography_descends_by_complete_bounded_pages","test_1027_cell_root_remains_complete_and_under_64k","test_large_atlas_covers_every_field_cell_without_projection_sampling"],"max_prompt_bytes":65536,"stable_key_sampling":false}
+{"gate":"I","record_type":"anti_drift_scan","status":"pass","active_code_forbidden_matches":0,"request_mode_field_matches":0,"core_diff_files":0}
+{"gate":"K","record_type":"pytest_group","group":"core","status":"pass","passed":88,"failed":0}
+{"gate":"K","record_type":"pytest_group","group":"snapshot","status":"pass","passed":7,"failed":0}
+{"gate":"K","record_type":"pytest_group","group":"trace","status":"pass","passed":3,"failed":0}
+{"gate":"K","record_type":"pytest_group","group":"access","status":"pass","passed":150,"failed":0,"warnings":8}
+{"gate":"K","record_type":"pytest_group","group":"distribution_boundary","status":"pass","passed":17,"failed":0}
+{"gate":"J","record_type":"provider_host_live","status":"not_run","blocking":false,"reason":"No isolated V3.12 D-drive OpenClaw profile and Provider/Host connection was available; stale C-drive Host state was excluded from acceptance."}
+{"gate":"L","record_type":"capability_status","status":"AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS_AT_2787525fd3325201197a72bc69bffc3427a7d8ba","offline_gates_passed":["0","A","B","C","D","E","F","G","H","I","K"],"live_gate":"not_run"}
