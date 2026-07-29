@@ -12,6 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MAX_TRACKED_JSONL_BYTES = 1_048_576
 JSONL_ALLOWLIST = {
+    "experiments/grf/datasets/concentrated_facts.jsonl",
+    "experiments/grf/datasets/false_stitch_decoys.jsonl",
+    "experiments/grf/datasets/scattered_facts.jsonl",
     "lab/nollm-lab/statement_formation/datasets/statement_formation_v1.jsonl",
 }
 RUNS_ALLOWLIST = {

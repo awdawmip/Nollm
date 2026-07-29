@@ -47,12 +47,19 @@ inputs. GRF8 is an engineering checkpoint, not accepted architecture.
 
 ## Validation
 
-The bounded complete repository matrix is run from a clean committed source:
+Run the active package and governance gates from a clean committed source:
 
 ```powershell
-.\tools\run_nollm_test_matrix.ps1 -RepoRoot (Get-Location).Path
+python -m pytest -q packages/nollm-core/tests
+python -m pytest -q packages/nollm-snapshot/tests packages/nollm-trace/tests
+python -m pytest -q packages/nollm-access/tests
+python -m pytest -q integrations/openclaw/formation-loop/tests
+python -m pytest -q reference/python/tests/m0
+python tools/generate_module_ownership_manifest.py --check
+python tools/validate_module_ownership_manifest.py
+python tools/check_active_tree_assets.py
 ```
 
-Package, OpenClaw, Lab, boundary, and ownership checks may be run directly while
-developing. `reference/python/run_tests.py` is a historical legacy-inclusive
-diagnostic, not the active acceptance entrypoint.
+Generated evidence and archives follow the
+[active repository asset policy](docs/project/NOLLM_ACTIVE_REPOSITORY_ASSET_POLICY.md)
+and are written outside the Git tree.

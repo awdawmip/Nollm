@@ -56,11 +56,14 @@ def test_dynamic_import_and_getattr_fail_contract_validation(tmp_path) -> None:
     assert any("dynamic import_module" in error for error in errors)
 
 
-def test_history_lab_scripts_are_not_active() -> None:
+def test_history_lab_scripts_are_archived_outside_the_active_tree() -> None:
     rows = manifest_rows()
     history = [row for row in rows if str(row["path"]).startswith("lab/nollm-lab/history/")]
-    assert history
-    assert all(row["owner"] == "LAB" and row["lifecycle_status"] == "HISTORICAL" for row in history)
+    assert history == []
+    plan = json.loads((ROOT / "docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.json").read_text(encoding="utf-8"))
+    archived = [row for row in plan["assets"] if str(row["path"]).startswith("lab/nollm-lab/history/")]
+    assert archived
+    assert all(str(row["classification"]).startswith("ARCHIVE_") for row in archived)
 
 
 def test_lab_asset_classes_follow_stable_directories() -> None:

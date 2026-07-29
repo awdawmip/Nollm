@@ -8,15 +8,15 @@
     "bytes": 25349983,
     "classification_counts": {
       "ARCHIVE_GENERATED": 24,
-      "ARCHIVE_HISTORICAL": 1259,
+      "ARCHIVE_HISTORICAL": 1253,
       "BLOCKED_ACTIVE_DEPENDENCY": 4,
-      "KEEP_ACTIVE": 276,
-      "KEEP_ACTIVE_FIXTURE": 2,
+      "KEEP_ACTIVE": 279,
+      "KEEP_ACTIVE_FIXTURE": 5,
       "KEEP_LEGACY_REGRESSION": 60,
       "KEEP_MIGRATION": 480
     },
-    "archive_files": 1283,
-    "archive_bytes": 16875107
+    "archive_files": 1277,
+    "archive_bytes": 16834376
   },
   "assets": [
     {
@@ -5033,31 +5033,31 @@
     },
     {
       "path": "docs/project/NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE",
       "owner": "LEGACY",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Current project or route authority explicitly retained by the curation gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::docs/project/NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md",
+      "archive_destination": "",
       "git_blob_sha": "a7b003d6087b75703e3c3449a46d751c412e9a62",
       "bytes": 4660,
       "sha256": "FE580F8F76B448F20390A266CCEA1B4D9D437DCB6A9413314D3661BB247B57F7",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "docs/project/NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "docs/project/NOLLM_PROJECT_BOOK_V3_4_CORE_FUNCTION_PRIORITY_20260713.md",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE",
       "owner": "LEGACY",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Current project or route authority explicitly retained by the curation gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::docs/project/NOLLM_PROJECT_BOOK_V3_4_CORE_FUNCTION_PRIORITY_20260713.md",
+      "archive_destination": "",
       "git_blob_sha": "23db4a1709b8a17f3ab04b54e881b52947c885ea",
       "bytes": 874,
       "sha256": "77363608381826886CB6D3141518C422C491BC682AA8E57A101A20BE1994AD73",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "docs/project/NOLLM_PROJECT_BOOK_V3_4_CORE_FUNCTION_PRIORITY_20260713.md",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "docs/project/NOLLM_REPOSITORY_COMPATIBILITY_MATRIX.md",
@@ -5117,17 +5117,17 @@
     },
     {
       "path": "docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE",
       "owner": "LEGACY",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Current project or route authority explicitly retained by the curation gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md",
+      "archive_destination": "",
       "git_blob_sha": "14f1f9c017e1b2967f171507f6664e611b22cdb1",
       "bytes": 4751,
       "sha256": "D0BBB6C6E86A903F6E031C983486865D102297562FBD44C7A86F619BE9580534",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "docs/project/NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "docs/project/NOLLM_ROUTE_V3_2_OPENCLAW_FIRST_SEMANTIC_LOOP_20260712.md",
@@ -8925,45 +8925,45 @@
     },
     {
       "path": "experiments/grf/datasets/concentrated_facts.jsonl",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE_FIXTURE",
       "owner": "LAB",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Required immutable dataset for the retained GRF legacy regression gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::experiments/grf/datasets/concentrated_facts.jsonl",
+      "archive_destination": "",
       "git_blob_sha": "114d2d6757d9542ced0518ebc47653dbe9c76a0c",
       "bytes": 9006,
       "sha256": "32C73AA4605E62186D1BE2E10B6784882D31330F52E1C50CB9350477A2121D7C",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "experiments/grf/datasets/concentrated_facts.jsonl",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "experiments/grf/datasets/false_stitch_decoys.jsonl",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE_FIXTURE",
       "owner": "LAB",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Required immutable dataset for the retained GRF legacy regression gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::experiments/grf/datasets/false_stitch_decoys.jsonl",
+      "archive_destination": "",
       "git_blob_sha": "4a212b80805f176c4354d1f7f243d6297bd046a5",
       "bytes": 9072,
       "sha256": "8A9F2CF78F5BC813ED4ACC46AA38C32F7230E809231CDA3A4AB1D4933D9B2027",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "experiments/grf/datasets/false_stitch_decoys.jsonl",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "experiments/grf/datasets/scattered_facts.jsonl",
-      "classification": "ARCHIVE_HISTORICAL",
+      "classification": "KEEP_ACTIVE_FIXTURE",
       "owner": "LAB",
       "old_lifecycle": "HISTORICAL",
-      "reason": "Historical evidence, report, task, fixture, or validation asset with no retained import dependency.",
+      "reason": "Required immutable dataset for the retained GRF legacy regression gate.",
       "imported_by": [],
-      "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::experiments/grf/datasets/scattered_facts.jsonl",
+      "archive_destination": "",
       "git_blob_sha": "766552ec0cf3262cea59bcd2cfa61e610704ed3c",
       "bytes": 12368,
       "sha256": "122B08CE18966B3AE57217EF36AB46EA057D403308F3D66453DF93B5A321F157",
-      "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
-      "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
+      "replacement_or_current_authority": "experiments/grf/datasets/scattered_facts.jsonl",
+      "removal_safety": "RETAIN_IN_ACTIVE_TREE"
     },
     {
       "path": "experiments/grf/grf7r2_evidence_pack.py",

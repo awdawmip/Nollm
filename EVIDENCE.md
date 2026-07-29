@@ -8,7 +8,7 @@ The current status remains `AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS` with
 Historical tracked evidence at input commit
 `7e608754b939d564f1387650f25424f2cd943f33` is preserved in
 `NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip` with SHA-256
-`6F61BB60589060484709536330F196EDE29BB22BE4BE8AC906EA640B0B8B7B7D`.
+`933C7248A969FF840781814E5C3B6BA2C3B1DF68C2B4CE888DD60258E5DFD43A`.
 Its embedded manifests bind canonical Git blob bytes, paths, hashes, owners,
 and lifecycle classifications. Generated evidence must use
 `NOLLM_ARTIFACT_ROOT` and must not return to the active tree.

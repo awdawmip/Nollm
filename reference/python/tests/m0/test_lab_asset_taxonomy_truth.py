@@ -8,6 +8,11 @@ ACTIVE_CLASSES = {
     "ACTIVE_LIBRARY", "ACTIVE_TOOL", "ACTIVE_FIXTURE", "ACTIVE_TEST",
     "ACTIVE_VALIDATION", "ACTIVE_REPOSITORY_TOOL",
 }
+GRF_DATASET_FIXTURES = {
+    "experiments/grf/datasets/concentrated_facts.jsonl",
+    "experiments/grf/datasets/false_stitch_decoys.jsonl",
+    "experiments/grf/datasets/scattered_facts.jsonl",
+}
 
 
 def lab_rows() -> list[dict[str, object]]:
@@ -31,7 +36,15 @@ def test_stable_suites_have_exact_classes() -> None:
 
 def test_broad_lab_roots_are_not_default_active() -> None:
     historical_roots = ("examples/", "experiments/", "validation/")
-    assert all(row["asset_class"] not in ACTIVE_CLASSES for row in lab_rows() if row["path"].startswith(historical_roots))
+    rows = [row for row in lab_rows() if row["path"].startswith(historical_roots)]
+    assert all(
+        row["asset_class"] not in ACTIVE_CLASSES
+        for row in rows
+        if row["path"] not in GRF_DATASET_FIXTURES
+    )
+    fixtures = [row for row in rows if row["path"] in GRF_DATASET_FIXTURES]
+    assert {row["path"] for row in fixtures} == GRF_DATASET_FIXTURES
+    assert all(row["asset_class"] == "ACTIVE_FIXTURE" for row in fixtures)
 
 
 def test_statement_formation_assets_have_explicit_gates() -> None:

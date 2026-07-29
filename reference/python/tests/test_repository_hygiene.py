@@ -7,10 +7,11 @@ from conftest import cleanup_generated_python_artifacts
 
 ROOT = Path(__file__).resolve().parents[3]
 REQUIRED_FIXTURES = {
+    "AGENTS.md",
+    "docs/project/ACTIVE_PROJECT.md",
+    "docs/project/NOLLM_ACTIVE_REPOSITORY_ASSET_POLICY.md",
+    "docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.json",
     "protocol/v2/LAYER_CONSTITUTION.md",
-    "docs/project/NOLLM_SOURCE_TOPOLOGY_V2.md",
-    "docs/history/V1_RETIREMENT_RECORD.md",
-    "docs/history/OPENCLAW_V2_MIGRATION_ASSET_BOUNDARY.md",
 }
 FIXTURE_EXTENSIONS = {".json", ".jsonl", ".md", ".yaml", ".yml"}
 
@@ -49,19 +50,15 @@ def test_committed_fixtures_do_not_contain_machine_local_absolute_paths() -> Non
 
 
 def test_canonical_test_command_is_documented() -> None:
-    docs = [
-        ROOT / "README.md",
-        ROOT / "reference" / "python" / "PACKAGING.md",
-    ]
-    for path in docs:
-        text = path.read_text(encoding="utf-8")
-        assert "python3 run_tests.py" in text or "python run_tests.py" in text
-        assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" in text
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "legacy-inclusive repository diagnostic" in readme
-    assert "not the primary V2 component acceptance gate" in readme
-    assert "TQ1 matrix" in readme
-    assert "parentless evidence capsule" in readme
+    for command in (
+        "python -m pytest -q packages/nollm-core/tests",
+        "python -m pytest -q packages/nollm-access/tests",
+        "python tools/generate_module_ownership_manifest.py --check",
+        "python tools/check_active_tree_assets.py",
+    ):
+        assert command in readme
+    assert "NOLLM_ACTIVE_REPOSITORY_ASSET_POLICY.md" in readme
 
 
 def relative_paths(paths) -> list[str]:

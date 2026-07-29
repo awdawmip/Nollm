@@ -29,7 +29,7 @@
     },
     "OPENCLAW": {
       "roots": ["integrations/openclaw"],
-      "allowed": ["ACCESS"]
+      "allowed": ["ACCESS", "CORE"]
     },
     "LAB": {
       "roots": ["lab/nollm-lab", "experiments", "validation", "reference/python/tests"],

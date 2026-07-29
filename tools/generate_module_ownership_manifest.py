@@ -470,6 +470,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
     if p.startswith("tools/") and name in {"generate_module_ownership_manifest.py", "validate_module_ownership_manifest.py", "check_module_boundaries.py", "check_active_tree_assets.py", "verify_v311r61_single_active_pipeline.py"}:
         gate = "repository:boundary" if name == "check_module_boundaries.py" else "lab:single-active-content-neutral-pipeline" if name == "verify_v311r61_single_active_pipeline.py" else "repository:manifest"
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active repository tool", "governance state", "development", "Current machine-governance entrypoint.", evidence="Explicit current final-gate repository command.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_REPOSITORY_TOOL", gate)
+    if p.startswith("experiments/grf/datasets/"):
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", "active fixture",
+            "versioned validation input", "development",
+            "Immutable dataset required by the retained GRF compatibility regression gate.",
+            evidence="Direct file input to reference/python/tests/grf/test_grf_larger_validation.py.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "ACTIVE_FIXTURE", "compatibility:grf")
     if p.startswith("experiments/") and "/results/" in p:
         return lab_asset(Classification("LAB", "HISTORICAL", "KEEP", "HIGH", "historical result", "frozen validation output", "none", "Frozen experiment output is not executable current-gate input.", evidence="Stable experiment results directory convention.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "HISTORICAL_RESULT")
     if p.startswith("validation/") and PurePosixPath(p).suffix.lower() in {".md", ".json"}:
@@ -510,14 +518,19 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             evidence="Reachable only through explicit offline migration modules and tests.",
             review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
         )
-    if p in {
-        "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/field_encounter.py",
-        "integrations/openclaw/formation-loop/tests/test_openclaw_field_encounter.py",
-    }:
+    if p == "integrations/openclaw/formation-loop/tests/test_openclaw_field_encounter.py":
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH",
+            "OpenClaw Field Encounter conformance test", "development-only state", "development",
+            "The V3.12 integration test exercises public Access and Core contracts without owning production behavior.",
+            evidence=f"Current OpenClaw conformance test with direct imports {imports}.",
+            review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
+        ), "ACTIVE_TEST", "openclaw:formation-live")
+    if p == "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/field_encounter.py":
         return Classification(
             "OPENCLAW", "ACTIVE", "KEEP", "MEDIUM",
             "active OpenClaw Field Encounter integration", "host/plugin state", "public",
-            "The current V3.12 bridge uses the public Access surface and a public Core physical-scope contract; direct Core use remains an explicit ownership boundary to close without changing this curation task's production behavior.",
+            "The current V3.12 bridge uses the public Access surface and the public Core physical-scope contract; private Core imports remain forbidden.",
             evidence=f"V3.12 current source or conformance test with direct imports {imports}.",
             review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT,
         )
@@ -592,6 +605,7 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
     if p in {
         "docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.csv",
         "docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.json",
+        "docs/architecture/module-ownership/MAINLINE_ASSET_CURATION_BOUNDARY_REPORT.json",
         "docs/architecture/module-ownership/V3_12_FIELD_ENCOUNTER_REALLOCATION.md",
         "docs/project/AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md",
         "docs/project/tasks/NOLLM_C_S_T_A_H_U_O_L_D_MAINLINE_ACTIVE_ASSET_CURATION_TASK_20260730.md",

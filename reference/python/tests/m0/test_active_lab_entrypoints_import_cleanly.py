@@ -19,6 +19,7 @@ def test_active_lab_entrypoints_import_cleanly() -> None:
         ROOT / "packages/nollm-snapshot/src",
         ROOT / "packages/nollm-trace/src",
         ROOT / "packages/nollm-access/src",
+        ROOT / "lab/nollm-lab",
         ROOT / "reference/python",
     ]
     existing_pythonpath = os.environ.get("PYTHONPATH")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+import json
 from pathlib import Path
 
 
@@ -40,11 +41,15 @@ class ArchitectureLanguageTests(unittest.TestCase):
         self.assertIn("historical or superseded", corpus.lower())
 
     def test_historical_v2_language_is_preserved_but_superseded(self) -> None:
+        plan = json.loads((ROOT / "docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.json").read_text(encoding="utf-8"))
+        by_path = {row["path"]: row for row in plan["assets"]}
         for path in HISTORICAL_DOCS:
-            self.assertTrue(path.is_file(), path)
-        historical = "\n".join(path.read_text(encoding="utf-8") for path in HISTORICAL_DOCS)
-        self.assertIn("L0 Constitution and Protocol", historical)
-        self.assertIn("not active architecture", historical)
+            relative = path.relative_to(ROOT).as_posix()
+            if relative.startswith("docs/history/"):
+                self.assertFalse(path.exists(), path)
+                self.assertEqual(by_path[relative]["classification"], "ARCHIVE_HISTORICAL")
+            else:
+                self.assertTrue(path.is_file(), path)
         current = "\n".join(path.read_text(encoding="utf-8") for path in CURRENT_DOCS)
         self.assertNotIn("V2 is the only active architecture", current)
 
