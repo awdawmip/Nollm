@@ -2,8 +2,9 @@
 
 Composition target: `nollm-minimal` plus the Access-only OpenClaw adapter.
 The active wire binds `default_dream_v1` / `nollm_rotated_physical_field_v1`,
-uses one final Recall entry, and keeps Placement writes on physical layer 0.
-OpenClaw never imports Core directly; Access owns Surface, Recall, and Placement.
+uses one final Field Encounter Locality, and keeps conditional writes on physical
+layer 0. OpenClaw never imports Core directly; Access owns the operation-neutral
+Surface, fact/vacancy terminals, Recall effects, and Placement effects.
 
 Live activation is the installed invisible dream agent. Capture and absorption
 remain enabled, while debug Evidence is disabled by default. Validation enables
@@ -26,5 +27,12 @@ zero-delta evaluation identity, retryable deferral, source-window coverage, and
 restartable continuation. Oversized Captures receive dedicated work items.
 
 Atlas v2 exposes at most two uniformly generated 64-codepoint previews per
-region. `surface`, `open_region`, `recall`, `expand`, and `none` remain bound to
-one server-issued, run-scoped operation; one final entry supplies recalled bodies.
+region. `nollm_field_encounter` exposes `surface`, `open_region`,
+`enter_locality`, `expand_same_entry`, `select_fact`, `select_vacancy`, `none`,
+and `defer` on one server-issued, run-scoped operation. Facts and legal vacancies
+share the selected Locality. The background Proposition Writer continues into
+the same Wire and same hidden Host session; Cartographer child sessions are zero.
+The prior Recall-only and Field Cartographer wires remain migration-only.
+
+V3.12 Provider/Host Live validation is not complete, so this distribution does
+not claim final live acceptance.
