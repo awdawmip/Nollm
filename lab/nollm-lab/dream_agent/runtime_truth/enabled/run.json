@@ -1,9 +1,0 @@
-{
-  "mode": "enabled",
-  "batch": 1783871092632,
-  "sample_count": 15,
-  "profile": "user-active",
-  "model": "meituan/LongCat-2.0",
-  "provider": "meituan",
-  "completed_at": 1783871523591
-}

@@ -1,9 +1,0 @@
-{
-  "round": 3,
-  "prompt_version": "dream-v2",
-  "write_mode": "statement-store",
-  "eligible_inputs": 15,
-  "started_at": 1783862967039,
-  "completed_at": 1783863496062,
-  "evidence_path": "C:\\Users\\chaos\\nollm_aold_invisible_dream_agent_work\\lab\\nollm-lab\\dream_agent\\runs\\round-3\\events.jsonl"
-}

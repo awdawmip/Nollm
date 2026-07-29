@@ -1,9 +1,0 @@
-{
-  "mode": "disabled",
-  "batch": 1783869695416,
-  "sample_count": 15,
-  "profile": "aold-rev1-control",
-  "model": "meituan/LongCat-2.0",
-  "provider": "meituan",
-  "completed_at": 1783870070386
-}

@@ -1,9 +1,0 @@
-notebook: openclaw
-aliases:
-  nollm:
-    anchor: project:nollm
-  external notebook:
-    anchor: project:nollm
-  not an llm:
-    anchor: decision:identity
-

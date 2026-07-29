@@ -16,7 +16,7 @@
       "KEEP_MIGRATION": 480
     },
     "archive_files": 1283,
-    "archive_bytes": 16875281
+    "archive_bytes": 16875107
   },
   "assets": [
     {
@@ -7672,8 +7672,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::examples/grf/grf8_codex_fixture_example.ps1",
       "git_blob_sha": "7323533a9de4d4e814624f7e6193a0acd99b4801",
-      "bytes": 46,
-      "sha256": "B071F283BBD146F500DF1B3A9F35DE673287A99396FED62845C9A6F6A5CBEDEF",
+      "bytes": 45,
+      "sha256": "D1AD869DF741D86CBAE2A9A1E48A27D9133C0E7AAC7F344A2EB652BE5296A6F9",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -7686,8 +7686,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::examples/grf/grf8_file_host_example.ps1",
       "git_blob_sha": "681778b63ae736b479d20b6391f3cae5c17d0ffb",
-      "bytes": 410,
-      "sha256": "46C19BB53C40B76246556F7CFC8313FF35F21BFFC01E7633291A8C24C2BD6E3D",
+      "bytes": 399,
+      "sha256": "F009E525F1F854EB42AD7B17EB559A683465C4EC3EB17B3406D60A322A4358D3",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -7700,8 +7700,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::examples/grf/grf8_openclaw_fixture_example.ps1",
       "git_blob_sha": "7323533a9de4d4e814624f7e6193a0acd99b4801",
-      "bytes": 46,
-      "sha256": "B071F283BBD146F500DF1B3A9F35DE673287A99396FED62845C9A6F6A5CBEDEF",
+      "bytes": 45,
+      "sha256": "D1AD869DF741D86CBAE2A9A1E48A27D9133C0E7AAC7F344A2EB652BE5296A6F9",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -13910,8 +13910,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::lab/nollm-lab/dream_agent/runtime_truth/run-runtime-truth.ps1",
       "git_blob_sha": "9716815064aed338361324cb991cd5eecde378d7",
-      "bytes": 2852,
-      "sha256": "C7D878DD1B567488E20910D8C644AD854670C8C0FE8A0AB4E043F178BA6BCC48",
+      "bytes": 2804,
+      "sha256": "397836F236B296C4B53B8D531C0A7099E3F4C789A66CCECD4A63DA5495A0A504",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -14574,8 +14574,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::lab/nollm-lab/latency/run_windows_live_latency.ps1",
       "git_blob_sha": "4cb685b0cca87da3580a947521c031e0278e13df",
-      "bytes": 5290,
-      "sha256": "131746CF22D5AC680761D61F86A37B393EAC07BD2F2758DEF158F76D4F324C33",
+      "bytes": 5217,
+      "sha256": "38AE616DDFCE74F00B5229C704EDCF3155EDE021B9B82AE511AC5901069993C1",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -29580,8 +29580,8 @@
       "imported_by": [],
       "archive_destination": "NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip::tools/run_nollm_test_matrix.ps1",
       "git_blob_sha": "9affd5fb2a39a1a3b83a08c020c0b532b7dd325a",
-      "bytes": 1393,
-      "sha256": "47C1318D8E4A605E49C4348F0E4CACED0999FAD9B8AE91E41C8CB79CAD61E96C",
+      "bytes": 1353,
+      "sha256": "F7A1857C471147EEB35E62AA0308E79A3361E31FD9692E2DD81458043E226DB8",
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     },
@@ -31727,5 +31727,6 @@
       "replacement_or_current_authority": "Git commit 7e608754b939d564f1387650f25424f2cd943f33; external archive NOLLM_HISTORICAL_ASSETS_20260730_7e60875.zip",
       "removal_safety": "ARCHIVE_AND_VERIFY_BEFORE_GIT_RM"
     }
-  ]
+  ],
+  "hash_basis": "Git blob bytes; workspace CRLF/LF transformations are excluded."
 }
