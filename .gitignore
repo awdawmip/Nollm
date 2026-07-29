@@ -39,6 +39,7 @@ outputs/
 *.tar
 *.tar.gz
 *.tgz
+*.7z
 
 # OS
 .DS_Store
@@ -48,6 +49,17 @@ Thumbs.db
 integrations/openclaw/nollm-memory-provider/node_modules/
 work/
 *.bundle
+*.baiduyun.uploading.cfg
+
+# Durable generated evidence belongs under NOLLM_ARTIFACT_ROOT.
+/validation/live/
+/validation/frozen/
+**/results/
+**/runtime_truth/
+**/receipts/
+# dream_agent/runs contains an active runner, so generated run roots are exact.
+/lab/nollm-lab/openclaw/runs/
+/lab/nollm-lab/recall_lens/runs/
 
 # W2-01 local private trial reports and snapshots
 .local-runs/
