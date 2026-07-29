@@ -1,34 +1,31 @@
 # Nollm Current Status
 
-Date: 2026-07-26
+Date: 2026-07-29
 
 ```text
 route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-task: NOLLM_A_O_L_D_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_PROVIDER_LIVE_TASK_20260724.md
-status: AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_dfddac9
-input HEAD: a6551feb89322826f4faa3b0c98c8b8c6152d5d4
-input classification: CONTENT_NEUTRAL_WRITER_AND_CONTINUATION_PROTOTYPE_CHECKPOINT_AT_a6551fe
+architecture: NOLLM_ARCHITECTURE_BOOK_V3_12_UNIFIED_FIELD_ENCOUNTER_READ_WRITE_DUALITY_20260728.md
+task: NOLLM_A_O_L_D_UNIFIED_FIELD_ENCOUNTER_MATCH_VACANCY_RECALL_PLACEMENT_TASK_20260728.md
+status: AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS_AT_GATE_A
+input HEAD: 42eed8e609fabeb1b583c88959f82e728bd6df69
+input classification: V3_11_REV6_1_OFFLINE_CLOSED_PROVIDER_LIVE_PENDING
 ```
 
 Active truth:
 
-- Canonical memory is content-neutral; source role and content category are provenance, not admission eligibility.
-- Every visible turn remains immutable Raw Capture.
-- Active `no_memory` and permanent semantic `deferred` outcomes are invalid and must become re-evaluable zero-delta or retry states.
-- Oversize Captures and Statement limits require deterministic continuation with complete coverage.
-- Historical secret rejection, stable promotion, and weather suppression are invalid for active admission.
-- Scope/workspace isolation provides safety; canonical content is not redacted by category.
-- `a6551fe` preserves the content-neutral Writer v4, progressive routing, exact Capture Evidence, and Core boundary.
-- Core tree `83bb1fb4d28a0ee2a2a3f3f3efc85f1b4ba7c0c7` is frozen and unchanged.
-- Rev6.1 offline implementation is closed: active Legacy reachability is zero, Tool Evidence is exact, per-Capture continuation is isolated, and zero-delta terminals preserve prior success.
-- Provider/Live Gate G is not yet run and is not claimed.
-- Frozen deterministic 128/300/1000-Statement routing evidence has zero uncovered cells and one final entry per run.
-- Core remains unchanged from the input checkpoint.
+- One operation-neutral Field Encounter is the only active target for Recall, Reuse, Revision, Placement, NONE, and Defer.
+- V3.12 implementation has not been claimed at Gate A; existing split Recall and Writer/Cartographer paths are migration inputs.
+- Canonical memory remains content-neutral and every visible turn remains immutable Raw Capture.
+- Rev6.1 exact Capture/Tool Evidence, per-Capture continuation, and successful terminal preservation remain mandatory.
+- Core physical geometry and public contracts are unchanged and frozen for regression in this task.
+- One Statement maps to one Atom, one Handle, and one Cell; all traversals remain single-entry.
+- Query/fact indexes, semantic Python routing, vectors, graphs, embeddings, persistent paths, and multi-entry Recall remain forbidden.
+- Provider/Host Live is permitted only after offline Gates 0-I pass and must be reported truthfully if unavailable or incomplete.
+- Root `AGENTS.md` is intentionally the canonical empty file under the V3.12 task.
 
 Task vector:
 
 ```text
-CORE 93% | SNAPSHOT 50% | TRACE 40% | ACCESS 97% |
-HISTORY 10% | AUDIT 10% | OPENCLAW 97% |
-LAB 96% | DISTRIBUTIONS 96%
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +15% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +15% | LAB +15% | DISTRIBUTIONS +5%
 ```

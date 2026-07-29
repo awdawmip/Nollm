@@ -1,27 +1,23 @@
 # Active Project Basis
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
-- Active architecture: [V3.11 Rev6.1 Single Active Content-Neutral Pipeline](../architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV6_1_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_20260724.md)
+- Active architecture: [V3.12 Unified Field Encounter](../architecture/NOLLM_ARCHITECTURE_BOOK_V3_12_UNIFIED_FIELD_ENCOUNTER_READ_WRITE_DUALITY_20260728.md)
 - Content-neutral authority: [Memory Eligibility Decision](../architecture/NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md)
 - Active route: `NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md`
-- Current task: [Single Active Content-Neutral Pipeline, Tool Evidence, and Per-Capture Continuation](tasks/NOLLM_A_O_L_D_SINGLE_ACTIVE_CONTENT_NEUTRAL_PIPELINE_TOOL_EVIDENCE_PER_CAPTURE_CONTINUATION_PROVIDER_LIVE_TASK_20260724.md)
+- Current task: [Unified Field Encounter, Match/Vacancy, Recall/Placement](tasks/NOLLM_A_O_L_D_UNIFIED_FIELD_ENCOUNTER_MATCH_VACANCY_RECALL_PLACEMENT_TASK_20260728.md)
 - Current status: [NOLLM_CURRENT_STATUS.md](NOLLM_CURRENT_STATUS.md)
 - Canonical ledger: [NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
-- Current audit: [a6551fe Content-Neutral Implementation Audit](NOLLM_A6551FE_CONTENT_NEUTRAL_IMPLEMENTATION_AUDIT_20260724.md)
-- Prior report: [AOLD Content-Neutral Memory Report](AOLD_CONTENT_NEUTRAL_MEMORY_REPORT.md)
-- Input checkpoint: `a6551feb89322826f4faa3b0c98c8b8c6152d5d4`
-
-Current offline evidence: `docs/project/AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md`
+- Starting state: [V3_12_UNIFIED_FIELD_ENCOUNTER_STARTING_STATE.md](V3_12_UNIFIED_FIELD_ENCOUNTER_STARTING_STATE.md)
+- Preserved Rev6.1 evidence: [AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md](AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md)
+- Dynamic input checkpoint: `42eed8e609fabeb1b583c88959f82e728bd6df69`
 
 Current state:
 
 ```text
-AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_IN_PROGRESS_AT_dfddac9
+AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS_AT_GATE_A
 ```
 
-`a6551fe` is the Rev6 content-neutral Writer and continuation checkpoint. Rev6.1
-closes active Legacy fallback, adds immutable Tool Evidence, isolates progress
-per Capture, preserves successful terminal state after a final zero delta, and
-replaces the narrow classifier scan with active entrypoint reachability. Provider
-Live remains an explicit acceptance gate and is not yet claimed. Offline Gates
-A-F, H, and I pass at evidence commit `dfddac9`.
+V3.12 supersedes the split active Recall and Placement/Cartography operation
+model. Rev6.1 content neutrality, exact Tool Evidence, per-Capture continuation,
+single-entry geometry, and all immutable Raw Capture remain required inputs.
+The unified contract and Provider Live evidence are not yet claimed at Gate A.
