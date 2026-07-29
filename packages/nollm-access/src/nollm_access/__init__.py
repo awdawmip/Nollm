@@ -50,7 +50,31 @@ from .placement_contract import (
 )
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
 from .recall_lens import DREAM_SCULPTOR_SCHEMA_VERSION, JunctionSemanticPlan, LensBasisSpan, RecallLens, validate_dream_sculptor_plans
-from .runtime import AccessConsistencyError, AccessRollbackFailure, AccessRuntime
+from .runtime import (
+    AccessConsistencyError,
+    AccessRollbackFailure,
+    AccessRuntime,
+    ConditionalAccessApplyResult,
+)
+from .field_encounter import (
+    ENCOUNTER_ACTIONS,
+    ENCOUNTER_WRITER_WIRE_VERSION,
+    FIELD_ENCOUNTER_SCHEMA_VERSION,
+    FIELD_ENCOUNTER_WIRE_VERSION,
+    SEMANTIC_RELATIONS,
+    VACANCY_KINDS,
+    EncounterCommitRequest,
+    EncounterCommitResult,
+    EncounterEffect,
+    EncounterFactCard,
+    EncounterVacancyCard,
+    FieldEncounterEngine,
+    FieldEncounterOperation,
+    FieldEncounterPage,
+    FieldEncounterRequest,
+    FieldEncounterResult,
+    PendingProposition,
+)
 from .statement import MemoryStatement
 from .statement_store import FileStatementStore, StatementStore
 from .evidence_anchor import EvidenceQuoteRef, ExactEvidenceSpan, resolve_evidence_quote_refs
@@ -113,6 +137,24 @@ __all__ = [
     "ActiveSurfaceSelection",
     "AccessConsistencyError",
     "AccessRollbackFailure",
+    "ConditionalAccessApplyResult",
+    "ENCOUNTER_ACTIONS",
+    "ENCOUNTER_WRITER_WIRE_VERSION",
+    "FIELD_ENCOUNTER_SCHEMA_VERSION",
+    "FIELD_ENCOUNTER_WIRE_VERSION",
+    "SEMANTIC_RELATIONS",
+    "VACANCY_KINDS",
+    "EncounterCommitRequest",
+    "EncounterCommitResult",
+    "EncounterEffect",
+    "EncounterFactCard",
+    "EncounterVacancyCard",
+    "FieldEncounterEngine",
+    "FieldEncounterOperation",
+    "FieldEncounterPage",
+    "FieldEncounterRequest",
+    "FieldEncounterResult",
+    "PendingProposition",
     "EvidenceStore",
     "EvidenceSpan",
     "FileEvidenceStore",

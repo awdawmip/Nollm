@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from threading import RLock
 
@@ -106,6 +107,52 @@ class AccessRuntime:
     def apply(self, decision: AccessDecision) -> object | None:
         with self._operation():
             return self._apply_locked(decision)
+
+    def apply_if_state(
+        self,
+        expected_core_state_sha256: str,
+        statement: MemoryStatement,
+        decision: AccessDecision,
+    ) -> "ConditionalAccessApplyResult":
+        if (
+            type(expected_core_state_sha256) is not str
+            or len(expected_core_state_sha256) != 64
+        ):
+            raise ValueError("expected_core_state_sha256 must be SHA-256 text")
+        if type(statement) is not MemoryStatement:
+            raise TypeError("statement must be MemoryStatement")
+        if type(decision) is not AccessDecision:
+            raise TypeError("decision must be AccessDecision")
+        if decision.statement_id != statement.statement_id:
+            raise ValueError("decision does not bind the conditional Statement")
+        with self._operation():
+            current = sha256(self._core.export_state_bytes()).hexdigest()
+            if current != expected_core_state_sha256:
+                return ConditionalAccessApplyResult(
+                    "stale_zero_write", None, False, current
+                )
+            existed_before = self._evidence_store.exists(statement.statement_id)
+            try:
+                if hasattr(self._evidence_store, "put"):
+                    self._evidence_store.put(statement)
+                else:
+                    self._evidence_store.put_original(statement)
+                result = self._apply_locked(decision)
+            except Exception:
+                if not existed_before and hasattr(self._evidence_store, "discard_new"):
+                    self._evidence_store.discard_new(statement)
+                raise
+            except BaseException:
+                if (
+                    not existed_before
+                    and self._last_commit_state == "pre_commit"
+                    and hasattr(self._evidence_store, "discard_new")
+                ):
+                    self._evidence_store.discard_new(statement)
+                raise
+            return ConditionalAccessApplyResult(
+                "committed", result, not existed_before, current
+            )
 
     def _apply_locked(self, decision: AccessDecision) -> object | None:
         self._set_commit_state("pre_commit")
@@ -252,6 +299,29 @@ class AccessConsistencyError(RuntimeError):
         self.original_error = original_error
         self.rollback_failures = rollback_failures
         self.commit_state = "commit_state_unknown"
+
+
+@dataclass(frozen=True)
+class ConditionalAccessApplyResult:
+    commit_state: str
+    result: object | None
+    statement_created: bool
+    observed_core_state_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.commit_state not in {"stale_zero_write", "committed"}:
+            raise ValueError("unknown conditional Access commit state")
+        if type(self.statement_created) is not bool:
+            raise TypeError("statement_created must be bool")
+        if (
+            type(self.observed_core_state_sha256) is not str
+            or len(self.observed_core_state_sha256) != 64
+        ):
+            raise ValueError("observed Core state must be SHA-256 text")
+        if self.commit_state == "stale_zero_write" and (
+            self.result is not None or self.statement_created
+        ):
+            raise ValueError("stale conditional commit must be zero-write")
 
 
 @dataclass(frozen=True)
