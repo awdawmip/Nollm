@@ -195,6 +195,17 @@ type MainAgentRecallOperation = {
   selectedRegionId?: string;
   expanded: boolean;
 };
+type MainAgentEncounterOperation = {
+  scope: MainAgentRunScope;
+  createdAt: number;
+  lastUsedAt: number;
+  expiresAt: number;
+  request: Record<string, unknown>;
+  history: Array<Record<string, string>>;
+  selectedEntryId?: string;
+  selectedRegionId?: string;
+  expanded: boolean;
+};
 type RunMemoryUseState = {
   scope: MainAgentRunScope;
   actions: Set<MemoryToolAction>;
@@ -377,6 +388,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   const scheduled = new Set<string>();
   const childParents = new Map<string, { parentRunId?: string; requestedModel?: string }>();
   const mainAgentRecallOperations = new Map<string, MainAgentRecallOperation>();
+  const mainAgentEncounterOperations = new Map<string, MainAgentEncounterOperation>();
   const mainAgentToolBindings = new Map<string, MainAgentRunScope>();
   const hostToolBindings = new Map<string, HostToolBinding>();
   const successfulMainAgentRecallCalls = new Set<string>();
@@ -459,17 +471,26 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     for (const [operationId, operation] of mainAgentRecallOperations) {
       if (operation.expiresAt <= now) mainAgentRecallOperations.delete(operationId);
     }
+    for (const [operationId, operation] of mainAgentEncounterOperations) {
+      if (operation.expiresAt <= now) mainAgentEncounterOperations.delete(operationId);
+    }
   };
   const clearRunOperations = (sessionKey: string | undefined, runId: string | undefined) => {
     if (!sessionKey || !runId) return;
     for (const [operationId, operation] of mainAgentRecallOperations) {
       if (operation.scope.sessionKey === sessionKey && operation.scope.runId === runId) mainAgentRecallOperations.delete(operationId);
     }
+    for (const [operationId, operation] of mainAgentEncounterOperations) {
+      if (operation.scope.sessionKey === sessionKey && operation.scope.runId === runId) mainAgentEncounterOperations.delete(operationId);
+    }
   };
   const clearSessionOperations = (sessionKey: string | undefined) => {
     if (!sessionKey) return;
     for (const [operationId, operation] of mainAgentRecallOperations) {
       if (operation.scope.sessionKey === sessionKey) mainAgentRecallOperations.delete(operationId);
+    }
+    for (const [operationId, operation] of mainAgentEncounterOperations) {
+      if (operation.scope.sessionKey === sessionKey) mainAgentEncounterOperations.delete(operationId);
     }
   };
   api.on("before_tool_call", (event, ctx) => {
@@ -485,7 +506,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       workspaceId: configuredMemoryWorkspace ?? "",
     };
     hostToolBindings.set(ctx.toolCallId, { ...binding, toolName: event.toolName, input: event.params, observedEpochMs: Date.now() });
-    if (event.toolName === "nollm_memory") mainAgentToolBindings.set(ctx.toolCallId, binding);
+    if (event.toolName === "nollm_field_encounter") mainAgentToolBindings.set(ctx.toolCallId, binding);
   });
   api.on("after_tool_call", async (event, ctx) => {
     if (!ctx.toolCallId) return;
@@ -512,7 +533,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       await publishRunDirectives(state, published.record.observed_epoch_ms);
     }
     hostToolBindings.delete(ctx.toolCallId);
-    if (event.toolName !== "nollm_memory") return;
+    if (event.toolName !== "nollm_field_encounter") return;
     const binding = mainAgentToolBindings.get(ctx.toolCallId);
     if (binding && successfulMainAgentRecallCalls.delete(ctx.toolCallId)) {
       await trace(config, {
@@ -523,7 +544,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     }
     mainAgentToolBindings.delete(ctx.toolCallId);
   });
-  if (config.enabled !== false && config.main_agent_recall_enabled !== false && typeof api.registerTool === "function") {
+  if (false && config.enabled !== false && config.main_agent_recall_enabled !== false && typeof api.registerTool === "function") {
     api.registerTool({
       name: "nollm_memory",
       label: "Nollm memory",
@@ -658,7 +679,225 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       },
     });
   }
+  if (config.enabled !== false && config.main_agent_recall_enabled !== false && typeof api.registerTool === "function") {
+    type EncounterToolParams = {
+      action: "surface" | "open_region" | "enter_locality" | "expand_same_entry" | "select_fact" | "select_vacancy" | "none" | "defer";
+      operation_id?: string;
+      region_id?: string;
+      entry_id?: string;
+      candidate_id?: string;
+      semantic_relation?: "same" | "revision" | "related_distinct" | "unrelated" | "uncertain";
+      recalled_fact_ids?: string[];
+      stimulus_material?: string[];
+      pending_proposition?: Record<string, unknown>;
+      revision_confirmation?: Record<string, unknown>;
+    };
+    api.registerTool({
+      name: "nollm_field_encounter",
+      label: "Nollm Field Encounter",
+      description: "Traverse one operation-neutral field Surface, enter one Locality, then select a visible fact or legal vacancy, or return none/defer.",
+      parameters: Type.Object({
+        action: Type.Union([Type.Literal("surface"), Type.Literal("open_region"), Type.Literal("enter_locality"), Type.Literal("expand_same_entry"), Type.Literal("select_fact"), Type.Literal("select_vacancy"), Type.Literal("none"), Type.Literal("defer")]),
+        operation_id: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
+        region_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
+        entry_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
+        candidate_id: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
+        semantic_relation: Type.Optional(Type.Union([Type.Literal("same"), Type.Literal("revision"), Type.Literal("related_distinct"), Type.Literal("unrelated"), Type.Literal("uncertain")])),
+        recalled_fact_ids: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 256 }), { maxItems: 16 })),
+        stimulus_material: Type.Optional(Type.Array(Type.String({ minLength: 1, maxLength: 32000 }), { minItems: 1, maxItems: 32 })),
+        pending_proposition: Type.Optional(Type.Object({
+          proposition_id: Type.String({ minLength: 1, maxLength: 256 }),
+          content_utf8: Type.String({ minLength: 1, maxLength: 32000 }),
+          evidence_refs: Type.Array(Type.String({ minLength: 1, maxLength: 4096 }), { minItems: 1, maxItems: 64 }),
+          origin_kinds: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), { minItems: 1, maxItems: 16 }),
+          derived_from_statement_ids: Type.Array(Type.String({ minLength: 1, maxLength: 256 }), { maxItems: 32 }),
+          formation_version: Type.String({ minLength: 1, maxLength: 128 }),
+        }, { additionalProperties: false })),
+        revision_confirmation: Type.Optional(Type.Object({
+          schema_version: Type.Literal("nollm_access_revision_confirmation_v1"),
+          provisional_id: Type.String({ minLength: 1, maxLength: 256 }),
+          outcome: Type.Union([Type.Literal("confirm_revision"), Type.Literal("reject_revision"), Type.Literal("defer")]),
+          relation: Type.Union([Type.Literal("same_subject_same_slot_supersedes"), Type.Literal("different_subject_or_non_superseding"), Type.Literal("uncertain")]),
+        }, { additionalProperties: false })),
+      }, { additionalProperties: false }),
+      async execute(toolCallId: string, params: EncounterToolParams) {
+        const result = (value: Record<string, unknown>) => ({ content: [{ type: "text" as const, text: JSON.stringify(value) }], details: value });
+        const visible = (value: Record<string, unknown>) => result({ ...value, legacy_reader: false, hidden_child_calls: 0 });
+        if (!configuredMemoryWorkspace || !config.python_executable || !config.nollm_repo_root) return visible({ status: "unavailable", reason: "Nollm memory workspace is not configured" });
+        const binding = mainAgentToolBindings.get(toolCallId);
+        if (!binding) return visible({ status: "run_scope_unavailable" });
+        expireOperations();
+        if (params.action === "surface") {
+          if (!params.stimulus_material?.length || params.operation_id || params.region_id || params.entry_id || params.candidate_id || params.semantic_relation || params.recalled_fact_ids || params.revision_confirmation) return visible({ status: "invalid_parameters" });
+          const operationId = `encounter-${randomUUID()}`;
+          const now = Date.now();
+          const request = {
+            scope_id: binding.scopeId, workspace_id: binding.workspaceId,
+            stimulus_material: params.stimulus_material, optional_pending_proposition: params.pending_proposition ?? null,
+            field_scope: { profile_id: "default_dream_v1", chart_id: "default", physical_layers: [0], reference_layer: 0, phase_policy: "physical_layer_mod8", max_relative_layer_delta: 8 },
+            surface_policy: atlasPolicy(), locality_max_results: 8, locality_max_chars: 6000, vacancy_budget: 8,
+            expected_state_identity: null, created_at_ms: null, ttl_ms: operationTtlMs(),
+          };
+          const built = await bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: operationId, request, history: [] });
+          if (built.ok !== true || built.status !== "surface" || typeof built.request !== "object" || built.request === null) return visible(built);
+          reserveMainAgentOperationSlot(mainAgentEncounterOperations, now);
+          mainAgentEncounterOperations.set(operationId, { scope: binding, createdAt: now, lastUsedAt: now, expiresAt: now + operationTtlMs(), request: built.request as Record<string, unknown>, history: [], expanded: false });
+          await recordMemoryAction(binding, "surface");
+          return visible({ ...built, expires_at: now + operationTtlMs() });
+        }
+        if (!params.operation_id) return visible({ status: "operation_missing" });
+        const operation = mainAgentEncounterOperations.get(params.operation_id);
+        if (!operation) return visible({ status: "operation_missing" });
+        if (!sameMainAgentRun(operation.scope, binding)) return visible({ status: "operation_scope_mismatch" });
+        operation.lastUsedAt = Date.now();
+        operation.expiresAt = operation.lastUsedAt + operationTtlMs();
+        const replay = (extra: Record<string, unknown> = {}) => bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: params.operation_id, request: operation.request, history: operation.history, ...extra });
+        if (params.action === "open_region") {
+          if (!params.region_id || operation.selectedEntryId || params.entry_id || params.candidate_id || params.semantic_relation) return visible({ status: "invalid_parameters" });
+          operation.history = [...operation.history, { action: "open_region", region_id: params.region_id }];
+          const opened = await replay();
+          if (opened.ok !== true) operation.history.pop();
+          else await recordMemoryAction(binding, "open_region");
+          return visible({ ...opened, expires_at: operation.expiresAt });
+        }
+        if (params.action === "enter_locality") {
+          if (!params.region_id || !params.entry_id || operation.selectedEntryId || params.candidate_id || params.semantic_relation) return visible({ status: "invalid_parameters" });
+          operation.history = [...operation.history, { action: "enter_locality", region_id: params.region_id, entry_id: params.entry_id }];
+          const locality = await replay();
+          if (locality.ok !== true || locality.status !== "locality") operation.history.pop();
+          else {
+            operation.selectedEntryId = params.entry_id;
+            operation.selectedRegionId = params.region_id;
+            await recordMemoryAction(binding, "enter_locality", { entry_id: params.entry_id });
+          }
+          return visible({ ...locality, expires_at: operation.expiresAt });
+        }
+        if (params.action === "expand_same_entry") {
+          if (!operation.selectedEntryId || operation.expanded || params.region_id || params.entry_id || params.candidate_id || params.semantic_relation) return visible({ status: "invalid_expansion" });
+          const locality = await replay();
+          if (locality.ok === true) operation.expanded = true;
+          await recordMemoryAction(binding, "expand_same_entry", { entry_id: operation.selectedEntryId });
+          return visible({ ...locality, expires_at: operation.expiresAt });
+        }
+        if (!operation.selectedEntryId || params.region_id || params.entry_id || params.pending_proposition) return visible({ status: "invalid_terminal" });
+        const selectsCandidate = params.action === "select_fact" || params.action === "select_vacancy";
+        if (selectsCandidate !== Boolean(params.candidate_id)) return visible({ status: "invalid_terminal" });
+        if ((params.action === "none" || params.action === "defer") && (params.semantic_relation || params.revision_confirmation)) return visible({ status: "invalid_terminal" });
+        const terminal = { action: params.action, candidate_id: params.candidate_id ?? null, semantic_relation: params.semantic_relation ?? null, recalled_fact_ids: params.recalled_fact_ids ?? [] };
+        const pending = operation.request.optional_pending_proposition as Record<string, unknown> | null;
+        const shouldCommit = pending && (params.action === "select_vacancy" || (params.action === "select_fact" && (params.semantic_relation === "same" || params.semantic_relation === "revision")));
+        const commit = shouldCommit ? { statement: { statement_id: pending.proposition_id, content_utf8: pending.content_utf8, source_handle: null, context_refs: pending.evidence_refs }, revision_confirmation: params.revision_confirmation ?? null } : undefined;
+        const terminalResult = await replay({ terminal, ...(commit ? { commit } : {}) });
+        if (terminalResult.ok === true) {
+          mainAgentEncounterOperations.delete(params.operation_id);
+          const statementIds = Array.isArray(terminalResult.recalled_statement_ids) ? terminalResult.recalled_statement_ids as string[] : [];
+          if (statementIds.length) successfulMainAgentRecallCalls.add(toolCallId);
+          await recordMemoryAction(binding, params.action, { entry_id: operation.selectedEntryId, statement_ids: statementIds });
+        }
+        return visible(terminalResult);
+      },
+    });
+  }
+  const executeWriterEncounter = async (
+    proposition: Record<string, unknown>, requestId: string, model: string | undefined,
+    providerKey: string, sessionKey: string,
+  ): Promise<{ outcome: Record<string, unknown>; turns: number; providerMs: number; raw: string[]; resolved: Record<string, string>[] }> => {
+    const sourceCaptureIds = Array.isArray(proposition.source_capture_ids) ? proposition.source_capture_ids as string[] : [];
+    const tokenized = await bridge(config, { action: "field_encounter_evidence_ref_tokens", evidence_refs: proposition.evidence_refs });
+    if (tokenized.ok !== true || !Array.isArray(tokenized.tokens)) throw new Error(String(tokenized.message ?? tokenized.error ?? "Evidence tokenization failed"));
+    const statementId = `encounter-${sha256Text(JSON.stringify([requestId, proposition.draft_id, proposition.content_utf8]))}`;
+    const pendingProposition = {
+      proposition_id: statementId, content_utf8: proposition.content_utf8,
+      evidence_refs: tokenized.tokens, origin_kinds: proposition.origin_kinds,
+      derived_from_statement_ids: proposition.derived_from_statement_ids,
+      formation_version: String(proposition.writer_schema ?? "nollm_openclaw_content_neutral_proposition_writer_v4"),
+    };
+    const operationId = `writer-encounter-${sha256Text(`${requestId}\0${String(proposition.draft_id)}`).slice(0, 48)}`;
+    const request = {
+      scope_id: config.capture_scope_id ?? "local-default-user", workspace_id: configuredMemoryWorkspace,
+      stimulus_material: [String(proposition.content_utf8), ...((proposition.entry_queries as Array<Record<string, unknown>> | undefined) ?? []).map(item => String(item.query_utf8))],
+      optional_pending_proposition: pendingProposition,
+      field_scope: { profile_id: "default_dream_v1", chart_id: "default", physical_layers: [0], reference_layer: 0, phase_policy: "physical_layer_mod8", max_relative_layer_delta: 8 },
+      surface_policy: atlasPolicy(), locality_max_results: 8, locality_max_chars: 6000, vacancy_budget: 8,
+      expected_state_identity: null, created_at_ms: null, ttl_ms: operationTtlMs(),
+    };
+    let response = await bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: operationId, request, history: [] });
+    if (response.ok !== true || typeof response.request !== "object" || response.request === null) throw new Error(String(response.message ?? response.error ?? "Encounter Surface failed"));
+    const normalizedRequest = response.request;
+    const history: Array<Record<string, string>> = [];
+    const raw: string[] = [];
+    const resolved: Record<string, string>[] = [];
+    let providerMs = 0;
+    let turns = 0;
+    while (turns < (config.cartographer_max_turns ?? 4)) {
+      const built = await bridge(config, { action: "build_field_encounter_prompt", response, pending_proposition: pendingProposition, turn: turns + 1 });
+      if (built.ok !== true || typeof built.prompt !== "string") throw new Error(String(built.message ?? built.error ?? "Encounter prompt failed"));
+      const run = await runDreamSubagentInSession(api, config, built.prompt, model, `${providerKey}:encounter:${String(proposition.draft_id)}:${turns + 1}`, sessionKey);
+      turns += 1;
+      providerMs += run.attempt?.providerMs ?? 0;
+      if (!run.attempt?.raw) throw new Error(run.error ?? "Encounter decision was empty");
+      raw.push(run.attempt.raw);
+      resolved.push(run.attempt.resolved);
+      const parsed = await bridge(config, { action: "parse_field_encounter_decision", raw_model_response: run.attempt.raw, response });
+      if (parsed.ok !== true || typeof parsed.decision !== "object" || parsed.decision === null) throw new Error(String(parsed.message ?? parsed.error ?? "Encounter decision was invalid"));
+      const decision = parsed.decision as Record<string, unknown>;
+      if (decision.action === "open_region" || decision.action === "enter_locality") {
+        history.push(decision as Record<string, string>);
+        response = await bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: operationId, request: normalizedRequest, history });
+        if (response.ok !== true) throw new Error(String(response.message ?? response.error ?? "Encounter navigation failed"));
+        continue;
+      }
+      const terminal = { action: decision.action, candidate_id: decision.candidate_id, semantic_relation: decision.semantic_relation, recalled_fact_ids: decision.recalled_fact_ids };
+      let terminalResult = await bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: operationId, request: normalizedRequest, history, terminal });
+      if (terminalResult.ok !== true) throw new Error(String(terminalResult.message ?? terminalResult.error ?? "Encounter terminal failed"));
+      const effect = terminalResult.effect as Record<string, unknown> | undefined;
+      if (effect?.commit_eligible === true) {
+        let confirmation: Record<string, unknown> | null = null;
+        if (effect.effect_kind === "provisional_revision") {
+          const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: effect.provisional_revision });
+          if (confirmationBuilt.ok !== true || typeof confirmationBuilt.prompt !== "string") throw new Error("Revision confirmation prompt failed");
+          const confirmationRun = await runDreamSubagentInSession(api, config, confirmationBuilt.prompt, model, `${providerKey}:encounter-revision:${String(proposition.draft_id)}`, sessionKey);
+          turns += 1;
+          providerMs += confirmationRun.attempt?.providerMs ?? 0;
+          if (!confirmationRun.attempt?.raw) throw new Error(confirmationRun.error ?? "Revision confirmation was empty");
+          raw.push(confirmationRun.attempt.raw);
+          resolved.push(confirmationRun.attempt.resolved);
+          const parsedConfirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun.attempt.raw, provisional_revision: effect.provisional_revision });
+          if (parsedConfirmation.ok !== true || typeof parsedConfirmation.confirmation !== "object") throw new Error("Revision confirmation was invalid");
+          confirmation = parsedConfirmation.confirmation as Record<string, unknown>;
+        }
+        const commit = { statement: { statement_id: statementId, content_utf8: proposition.content_utf8, source_handle: null, context_refs: tokenized.tokens }, revision_confirmation: confirmation };
+        terminalResult = await bridge(config, { action: "run_field_encounter", memory_workspace: configuredMemoryWorkspace, operation_id: operationId, request: normalizedRequest, history, terminal, commit });
+        if (terminalResult.ok !== true) throw new Error(String(terminalResult.message ?? terminalResult.error ?? "Encounter commit failed"));
+      }
+      const commitState = (terminalResult.commit as Record<string, unknown> | undefined)?.commit_state;
+      const terminalEffect = terminalResult.effect as Record<string, unknown>;
+      const admitted = commitState === "committed_and_verified";
+      return {
+        outcome: {
+          outcome: admitted ? "admitted" : terminalEffect.retryable === true || commitState === "not_committed" ? "defer" : terminalEffect.effect_kind === "reuse" ? "admitted" : "error",
+          statement_id: statementId, source_capture_ids: sourceCaptureIds,
+          action: terminalEffect.effect_kind, commit_state: commitState ?? null,
+          root_identity: terminalResult.request && response.root_identity,
+          terminal_result_identity: terminalResult.terminal_result_identity,
+        },
+        turns, providerMs, raw, resolved,
+      };
+    }
+    throw new Error("Encounter turn budget exhausted");
+  };
+
   const absorbCapturedBatch = async (batchId: string, records: CaptureRecord[], executionId: string): Promise<AbsorptionResult[]> => {
+    const sessionKey = `agent:nollm-dream-agent:subagent:${randomUUID()}`;
+    try {
+      return await absorbCapturedBatchInSession(batchId, records, executionId, sessionKey);
+    } finally {
+      if (!config.persist_subagent_transcripts) {
+        try { await api.runtime.subagent.deleteSession({ sessionKey, deleteTranscript: true }); } catch { /* diagnostic cleanup is best effort */ }
+      }
+    }
+  };
+  const absorbCapturedBatchInSession = async (batchId: string, records: CaptureRecord[], executionId: string, encounterSessionKey: string): Promise<AbsorptionResult[]> => {
     const model = batchAbsorptionModel(config, records);
     if (!usableModel(model) || !config.python_executable || !config.nollm_repo_root || !configuredMemoryWorkspace || config.write_mode !== "statement-store") {
       return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: "absorption configuration or model temporarily unavailable" }));
@@ -750,7 +989,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     if (writerBuilt.ok !== true || typeof writerBuilt.prompt !== "string") {
       return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(writerBuilt.message ?? writerBuilt.error ?? "Proposition Writer prompt failed") }));
     }
-    const writerRun = await runDreamSubagentDetailed(api, config, writerBuilt.prompt, model, `${providerKey}:writer`);
+    const writerRun = await runDreamSubagentInSession(api, config, writerBuilt.prompt, model, `${providerKey}:writer`, encounterSessionKey);
     let writerAttempt = writerRun.attempt;
     let writerProviderCalls = 1;
     let writerProviderMs = writerAttempt?.providerMs ?? 0;
@@ -768,10 +1007,10 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (!writerFormatRepairable(writer)) {
         return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Proposition Writer semantic validation failed: ${validationError}` }));
       }
-      const correction = await runDreamSubagentDetailed(
+      const correction = await runDreamSubagentInSession(
         api, config,
         writerFormatRepairPrompt(writerAttempt.raw, validationError),
-        model, `${providerKey}:writer-correction`,
+        model, `${providerKey}:writer-correction`, encounterSessionKey,
       );
       writerProviderCalls += 1;
       writerProviderMs += correction.attempt?.providerMs ?? 0;
@@ -827,6 +1066,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
           : completeWithoutDelta(item));
     }
 
+    if (false) { // Non-active migration witness for pre-V3.12 bundles.
     let cartography = await bridge(config, {
       action: "build_field_cartographer_prompt", request_id: requestId,
       writer_result: writer, memory_workspace: configuredMemoryWorkspace, turn: 1,
@@ -849,11 +1089,11 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         cartographerTurns += 1;
         cartographerProviderMs += run.attempt?.providerMs ?? 0;
         if (!run.attempt?.raw) { cartographerError = run.error ?? "empty response"; break; }
-        cartographerRaw.push(run.attempt.raw);
-        cartographerResolved.push(run.attempt.resolved);
+        cartographerRaw.push(run.attempt!.raw);
+        cartographerResolved.push(run.attempt!.resolved);
         cartography = await bridge(config, {
           action: "advance_field_cartographer", request_id: requestId,
-          raw_model_response: run.attempt.raw, writer_result: writer,
+          raw_model_response: run.attempt!.raw, writer_result: writer,
           page: cartography.page, memory_workspace: configuredMemoryWorkspace, turn,
         });
         if (cartography.ok !== true) { cartographerError = String(cartography.message ?? cartography.error ?? "invalid Cartographer output"); break; }
@@ -885,16 +1125,16 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
     for (const item of outcomes.filter(value => value.outcome === "revision_confirmation_required")) {
       const confirmationBuilt = await bridge(config, { action: "build_revision_confirmation_prompt", provisional_revision: item.provisional_revision });
       if (confirmationBuilt.ok !== true || typeof confirmationBuilt.prompt !== "string") continue;
-      const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt, model, `${providerKey}:revision-confirmation:${String(item.statement_id ?? "unknown")}`);
+      const confirmationRun = await runDreamSubagent(api, config, confirmationBuilt.prompt as string, model, `${providerKey}:revision-confirmation:${String(item.statement_id ?? "unknown")}`);
       if (!confirmationRun?.raw || typeof item.statement_id !== "string") continue;
-      const confirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun.raw, provisional_revision: item.provisional_revision });
+      const confirmation = await bridge(config, { action: "parse_revision_confirmation", raw_model_response: confirmationRun!.raw, provisional_revision: item.provisional_revision });
       if (confirmation.ok !== true || !confirmation.confirmation) continue;
       const revisionApplied = await bridge(config, {
         action: "apply_field_cartography_result", request_id: requestId,
         cartography_result: cartography, writer_result: writer, captures: [...captures, ...contextCaptures],
         memory_workspace: configuredMemoryWorkspace,
-        revision_confirmations: { [item.statement_id]: confirmation.confirmation },
-        only_statement_ids: [item.statement_id],
+        revision_confirmations: { [item.statement_id as string]: confirmation.confirmation },
+        only_statement_ids: [item.statement_id as string],
       });
       if (revisionApplied.ok === true && Array.isArray(revisionApplied.outcomes)) {
         const replacement = (revisionApplied.outcomes as Array<Record<string, unknown>>)[0];
@@ -911,9 +1151,38 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       writer_context_chars: contextCaptures.reduce((total, item) => total + item.user_utf8.length + item.assistant_utf8.length, 0),
       cartographer_sessions: 1, cartographer_turns: cartographerTurns,
       cartographer_provider_ms: cartographerProviderMs, common_one_writer_call: writerProviderCalls === 1,
-      atlas_fingerprint: cartography.atlas_fingerprint, writer_raw: outputEvidence(writerAttempt.raw),
-      writer_resolved: writerAttempt.resolved, cartographer_raw: cartographerRaw.map(outputEvidence),
+      atlas_fingerprint: cartography.atlas_fingerprint, writer_raw: outputEvidence(writerAttempt!.raw),
+      writer_resolved: writerAttempt!.resolved, cartographer_raw: cartographerRaw.map(outputEvidence),
       cartographer_resolved: cartographerResolved, validated_plans: applied.plans, durable_outcomes: outcomes,
+    });
+    }
+    const encounterRuns: Array<{ outcome: Record<string, unknown>; turns: number; providerMs: number; raw: string[]; resolved: Record<string, string>[] }> = [];
+    try {
+      for (const proposition of writer.propositions as Array<Record<string, unknown>>) {
+        encounterRuns.push(await executeWriterEncounter(
+          { ...proposition, writer_schema: writer.schema_version }, requestId, model,
+          providerKey, encounterSessionKey,
+        ));
+      }
+    } catch (error) {
+      return records.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: `Field Encounter failed: ${String(error)}` }));
+    }
+    const outcomes = encounterRuns.map(item => item.outcome);
+    const errors = outcomes.filter(item => item.outcome === "error");
+    const deferred = outcomes.filter(item => item.outcome === "defer");
+    await trace(config, {
+      status: errors.length || deferred.length ? "partial" : "completed", stage: "absorption_batch",
+      batch_id: batchId, capture_count: records.length, statement_count: outcomes.length,
+      proposition_writer_provider_calls: writerProviderCalls, proposition_writer_provider_ms: writerProviderMs,
+      writer_context_capture_count: contextCaptures.length,
+      writer_context_chars: contextCaptures.reduce((total, item) => total + item.user_utf8.length + item.assistant_utf8.length, 0),
+      hidden_semantic_sessions: 1, cartographer_sessions: 0,
+      encounter_turns: encounterRuns.reduce((total, item) => total + item.turns, 0),
+      encounter_provider_ms: encounterRuns.reduce((total, item) => total + item.providerMs, 0),
+      common_one_writer_call: writerProviderCalls === 1,
+      writer_raw: outputEvidence(writerAttempt.raw), writer_resolved: writerAttempt.resolved,
+      encounter_raw: encounterRuns.flatMap(item => item.raw.map(outputEvidence)),
+      encounter_resolved: encounterRuns.flatMap(item => item.resolved), durable_outcomes: outcomes,
     });
     return records.map(record => {
       const item = progress.find(value => value.record.capture_id === record.capture_id)!;
@@ -987,6 +1256,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
       if (absorptionTimer) clearTimeout(absorptionTimer);
       absorptionTimer = undefined;
       mainAgentRecallOperations.clear();
+      mainAgentEncounterOperations.clear();
       mainAgentToolBindings.clear();
       successfulMainAgentRecallCalls.clear();
       runMemoryUseStates.clear();
@@ -1313,6 +1583,7 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
   });
   api.on("gateway_stop", () => {
     mainAgentRecallOperations.clear();
+    mainAgentEncounterOperations.clear();
     mainAgentToolBindings.clear();
     hostToolBindings.clear();
     successfulMainAgentRecallCalls.clear();

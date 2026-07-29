@@ -6,11 +6,13 @@ import { join } from "node:path";
 import plugin, { REVISION_CONFIRMATION_MAX_CALLS, REVISION_REDECISION_MAX_CALLS, asciiJson, assertMutableEvidencePath, batchAbsorptionModel, boundedTurns, extractAssistantText, extractResolvedModel, extractUserTurns, formationRetryable, latencyScenario, modelOverride, placementRetryable, registerDreamAgent, reserveMainAgentOperationSlot, selectedRecallPaths, shouldApplyPlacement, surfaceBudget, traversalCorrectionPrompt, traversalRetryable, turnKey, wellFormedText, writerFormatRepairPrompt, writerFormatRepairable } from "../dist/index.js";
 import { CaptureStore } from "../dist/capture.js";
 
-test("manifest exposes one internal main-agent geometry Recall tool", () => {
+test("manifest exposes one operation-neutral Field Encounter tool", () => {
   const manifest = JSON.parse(fs.readFileSync(new URL("../openclaw.plugin.json", import.meta.url)));
-  assert.deepEqual(manifest.contracts.tools, ["nollm_memory"]);
-  assert.equal(manifest.contracts.mainAgentRecallWire, "nollm_openclaw_main_agent_geometry_recall_v2");
-  assert.deepEqual(manifest.contracts.toolActions, ["surface", "open_region", "recall", "expand", "none"]);
+  assert.deepEqual(manifest.contracts.tools, ["nollm_field_encounter"]);
+  assert.equal(manifest.contracts.mainAgentRecallWire, "nollm_openclaw_field_encounter_v1");
+  assert.deepEqual(manifest.contracts.toolActions, ["surface", "open_region", "enter_locality", "expand_same_entry", "select_fact", "select_vacancy", "none", "defer"]);
+  assert.equal(manifest.contracts.encounterWriterHiddenSemanticSessions, 1);
+  assert.equal(manifest.contracts.cartographerChildSessions, 0);
   assert.equal(manifest.contracts.legacyReader, false);
   assert.equal(manifest.configSchema.properties.recall_hidden_call_budget.const, 0);
   assert.equal(manifest.configSchema.properties.main_agent_recall_enabled.default, true);
@@ -56,7 +58,7 @@ test("manifest exposes one internal main-agent geometry Recall tool", () => {
   assert.equal(manifest.contracts.progressiveAtlasPageWire, "nollm_access_progressive_atlas_page_v2");
   assert.equal(manifest.contracts.localDetailPageWire, "nollm_access_local_detail_page_v1");
   assert.equal(manifest.contracts.propositionWriterWire, "nollm_openclaw_content_neutral_proposition_writer_v4");
-  assert.equal(manifest.contracts.fieldCartographerWire, "nollm_openclaw_field_cartographer_v2");
+  assert.equal(manifest.contracts.fieldCartographerWire, "inactive_migration_only");
   assert.equal(manifest.contracts.fastRecallWire, "nollm_openclaw_single_call_entry_recall_v1");
   assert.equal(manifest.contracts.propositionWriterCommonProviderCalls, 1);
   assert.equal(manifest.contracts.cartographerMaxRegions, 32);
@@ -157,11 +159,11 @@ test("plugin registers channel delivery, recall preparation, and Gateway complet
   assert.equal(toolCount, 0);
 });
 
-test("active plugin registers one parameter-bounded main-agent memory tool", async () => {
+test("active plugin registers one parameter-bounded Field Encounter tool", async () => {
   let tool; const hooks = new Map();
   registerDreamAgent({ pluginConfig: {}, on(name, handler) { hooks.set(name, handler); }, registerTool(value) { tool = value; } });
-  assert.equal(tool.name, "nollm_memory");
-  assert.deepEqual(Object.keys(tool.parameters.properties).sort(), ["action", "budget_option_id", "entry_id", "operation_id", "region_id"]);
+  assert.equal(tool.name, "nollm_field_encounter");
+  assert.deepEqual(Object.keys(tool.parameters.properties).sort(), ["action", "candidate_id", "entry_id", "operation_id", "pending_proposition", "recalled_fact_ids", "region_id", "revision_confirmation", "semantic_relation", "stimulus_material"]);
   for (const forbidden of ["q", "r", "layer", "query", "statement_id", "topic"]) assert.equal(forbidden in tool.parameters.properties, false);
   const unavailable = await tool.execute("call", { action: "surface", operation_id: "same-run" });
   assert.equal(unavailable.details.status, "unavailable");
@@ -180,7 +182,7 @@ test("main-agent operation slot reservation expires TTL state and bounds 64+ ope
   assert.equal(operations.has("active-0"), false);
 });
 
-test("main-agent operations are server-issued, run-scoped, retryable, and preserve recalled Raw Capture", async () => {
+test.skip("pre-V3.12 Recall-only operation integration remains a migration witness", async () => {
   const root = fs.mkdtempSync(join(tmpdir(), "nollm-native-tool-"));
   const memory = join(root, "memory");
   const capture = join(root, "capture");
@@ -534,7 +536,7 @@ test("plugin entry is an ordinary hook plugin", () => {
   assert.equal(typeof plugin.register, "function");
 });
 
-test("background absorption splits one Writer call from one bounded Cartographer session", () => {
+test.skip("pre-V3.12 Writer and Cartographer topology remains a migration witness", () => {
   const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf("const absorbCapturedBatch =");
   const end = source.indexOf("const absorptionWorker", start);
@@ -562,6 +564,25 @@ test("background absorption splits one Writer call from one bounded Cartographer
   assert.match(body, /stage: "proposition_writer_validation"/);
   assert.match(body, /runDreamSubagentInSession/);
   assert.match(body, /validated_plans: applied\.plans, durable_outcomes: outcomes/);
+});
+
+test("background Writer continues into Field Encounter in one hidden Host session", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf("const executeWriterEncounter =");
+  const end = source.indexOf("const absorptionWorker", start);
+  const body = source.slice(start, end);
+  assert.match(body, /action: "build_proposition_writer_prompt"/);
+  assert.match(body, /action: "parse_proposition_writer_result"/);
+  assert.match(body, /action: "run_field_encounter"/);
+  assert.match(body, /action: "build_field_encounter_prompt"/);
+  assert.match(body, /action: "parse_field_encounter_decision"/);
+  assert.match(body, /runDreamSubagentInSession/);
+  assert.match(body, /encounterSessionKey/);
+  assert.match(body, /hidden_semantic_sessions: 1, cartographer_sessions: 0/);
+  assert.match(body, /writer-correction/);
+  assert.match(body, /source_capture_ids/);
+  assert.equal(body.includes("const cartographerSessionKey"), true);
+  assert.match(body, /if \(false\) \{ \/\/ Non-active migration witness/);
 });
 
 test("background absorption timer follows the Host service lifecycle", () => {

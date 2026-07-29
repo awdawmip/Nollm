@@ -36,6 +36,12 @@ from .main_agent_recall import (
     open_main_agent_region,
     recall_main_agent_locality,
 )
+from .field_encounter import (
+    build_field_encounter_prompt,
+    evidence_ref_tokens,
+    parse_field_encounter_decision,
+    run_field_encounter,
+)
 
 
 def _well_formed(value: object) -> object:
@@ -86,6 +92,33 @@ def main() -> None:
                     {"ok": True, **result}, ensure_ascii=True, separators=(",", ":")
                 )
             )
+            return
+        if action == "field_encounter_evidence_ref_tokens":
+            result = evidence_ref_tokens(envelope["evidence_refs"])
+            print(json.dumps({"ok": True, "tokens": result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "run_field_encounter":
+            result = run_field_encounter(
+                envelope["memory_workspace"],
+                envelope["operation_id"],
+                envelope["request"],
+                envelope.get("history", []),
+                envelope.get("terminal"),
+                envelope.get("commit"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "build_field_encounter_prompt":
+            result = build_field_encounter_prompt(
+                envelope["response"], envelope["pending_proposition"], envelope["turn"]
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "parse_field_encounter_decision":
+            result = parse_field_encounter_decision(
+                envelope["raw_model_response"], envelope["response"]
+            )
+            print(json.dumps({"ok": True, "decision": result}, ensure_ascii=True, separators=(",", ":")))
             return
         if action == "build_proposition_writer_prompt":
             result = build_proposition_writer_prompt(

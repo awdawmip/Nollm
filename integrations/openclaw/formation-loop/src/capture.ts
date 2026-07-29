@@ -54,7 +54,7 @@ export type CaptureRecord = {
   reference_timezone_offset_minutes?: number;
 };
 
-export type MemoryToolAction = "surface" | "open_region" | "recall" | "expand" | "none";
+export type MemoryToolAction = "surface" | "open_region" | "enter_locality" | "expand_same_entry" | "select_fact" | "select_vacancy" | "none" | "defer" | "recall" | "expand";
 export type AssistantRoleMode = "source" | "context_only" | "memory_derived";
 export type CaptureAbsorptionDirective = {
   schema_version: typeof CAPTURE_DIRECTIVE_SCHEMA | typeof LEGACY_CAPTURE_DIRECTIVE_SCHEMA;

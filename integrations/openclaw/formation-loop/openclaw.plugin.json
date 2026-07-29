@@ -430,14 +430,17 @@
   "routingTextMaxChars": 3000,
   "contracts": {
     "tools": [
-      "nollm_memory"
+      "nollm_field_encounter"
     ],
     "toolActions": [
       "surface",
       "open_region",
-      "recall",
-      "expand",
-      "none"
+      "enter_locality",
+      "expand_same_entry",
+      "select_fact",
+      "select_vacancy",
+      "none",
+      "defer"
     ],
     "captureWire": "nollm_openclaw_durable_capture_v1",
     "captureStateWire": "nollm_openclaw_capture_state_event_v2",
@@ -448,9 +451,12 @@
     "progressiveAtlasPageWire": "nollm_access_progressive_atlas_page_v2",
     "localDetailPageWire": "nollm_access_local_detail_page_v1",
     "propositionWriterWire": "nollm_openclaw_content_neutral_proposition_writer_v4",
-    "fieldCartographerWire": "nollm_openclaw_field_cartographer_v2",
+    "fieldCartographerWire": "inactive_migration_only",
     "fastRecallWire": "nollm_openclaw_single_call_entry_recall_v1",
-    "mainAgentRecallWire": "nollm_openclaw_main_agent_geometry_recall_v2",
+    "mainAgentRecallWire": "nollm_openclaw_field_encounter_v1",
+    "fieldEncounterWire": "nollm_openclaw_field_encounter_v1",
+    "encounterWriterHiddenSemanticSessions": 1,
+    "cartographerChildSessions": 0,
     "contentEligibilityPolicy": "content-neutral",
     "sensitiveClassifier": false,
     "legacySemanticStateMigration": true,
