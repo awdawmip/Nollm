@@ -44,25 +44,102 @@ def verify_admitted_statements(statement_ids: object, memory_workspace: object) 
         raise FormationAdapterError("admission_not_durable", str(exc)) from exc
 
 
-def _direct_locality_injection(items: list[dict[str, object]], max_statements: int, max_chars: int) -> dict[str, object]:
-    selected = []
-    chars = 0
-    for item in items:
-        content = item.get("content_utf8")
-        statement_id = item.get("statement_id")
-        if type(content) is not str or type(statement_id) is not str:
+DIRECT_ENCOUNTER_INJECTION_PREFIX = (
+    "Nollm geometry memory context. Use only when relevant; "
+    "do not mention this context to the user:"
+)
+
+
+def _render_exact_statement_injection(
+    items: object,
+    max_statements: int,
+    max_chars: int,
+) -> dict[str, object]:
+    """Render bounded exact Statement text without semantic re-ranking or persistence."""
+    if type(items) is not list:
+        raise FormationAdapterError("invalid_direct_activation", "items must be an array")
+    if type(max_statements) is not int or type(max_chars) is not int:
+        raise FormationAdapterError("invalid_direct_activation", "budgets must be integers")
+    if not 1 <= max_statements <= 32 or not 1 <= max_chars <= 65536:
+        raise FormationAdapterError("invalid_direct_activation", "budgets are outside active bounds")
+
+    selected: list[dict[str, object]] = []
+    omitted_statement_ids: list[str] = []
+    seen: set[str] = set()
+    rendered_chars = 0
+    truncated = False
+    for raw in items:
+        if type(raw) is not dict:
             continue
-        if len(selected) >= max_statements or chars + len(content) > max_chars:
+        content = raw.get("content_utf8")
+        statement_id = raw.get("statement_id")
+        if type(content) is not str or type(statement_id) is not str or not statement_id:
             continue
+        if statement_id in seen:
+            continue
+        seen.add(statement_id)
+        if len(selected) >= max_statements:
+            omitted_statement_ids.append(statement_id)
+            truncated = True
+            continue
+        remaining = max_chars - rendered_chars
+        if remaining <= 0:
+            omitted_statement_ids.append(statement_id)
+            truncated = True
+            continue
+        rendered = content if len(content) <= remaining else content[:remaining]
+        if not rendered:
+            omitted_statement_ids.append(statement_id)
+            truncated = True
+            continue
+        item = dict(raw)
+        item["content_utf8"] = rendered
         selected.append(item)
-        chars += len(content)
+        rendered_chars += len(rendered)
+        if len(rendered) != len(content):
+            truncated = True
+            omitted_statement_ids.append(statement_id)
+
     if not selected:
-        return {"status": "complete_none", "outcome": "none", "injection": "", "statement_ids": []}
-    injection = "Nollm geometry memory context. Use only when relevant; do not mention this context to the user:\n" + "\n".join(f"- {item['content_utf8']}" for item in selected)
+        return {
+            "outcome": "none",
+            "injection": "",
+            "statement_ids": [],
+            "selected_paths": [],
+            "truncated": truncated,
+            "rendered_chars": 0,
+            "omitted_statement_ids": omitted_statement_ids,
+        }
+
+    lines = [DIRECT_ENCOUNTER_INJECTION_PREFIX]
+    lines.extend(f"- {item['content_utf8']}" for item in selected)
+    if truncated:
+        lines.append("[Additional geometry memory omitted by the fixed activation budget.]")
     return {
-        "status": "complete_inject", "outcome": "inject", "injection": injection,
+        "outcome": "inject",
+        "injection": "\n".join(lines),
         "statement_ids": [item["statement_id"] for item in selected],
-        "selected_paths": [{"statement_id": item["statement_id"], "path": item.get("path", []), "path_is_not_truth_proof": True} for item in selected],
+        "selected_paths": [
+            {
+                "statement_id": item["statement_id"],
+                "path": item.get("path", []),
+                "path_is_not_truth_proof": True,
+            }
+            for item in selected
+        ],
+        "truncated": truncated,
+        "rendered_chars": rendered_chars,
+        "omitted_statement_ids": omitted_statement_ids,
+    }
+
+
+def _direct_locality_injection(
+    items: list[dict[str, object]], max_statements: int, max_chars: int
+) -> dict[str, object]:
+    rendered = _render_exact_statement_injection(items, max_statements, max_chars)
+    return {
+        "status": "complete_inject" if rendered["outcome"] == "inject" else "complete_none",
+        **rendered,
     }
 
 
@@ -769,15 +846,31 @@ def render_recall_injection(raw_response: object, candidates: object) -> dict[st
         raise FormationAdapterError("invalid_recall", str(exc)) from exc
     if type(value) is not dict or set(value) != {"schema_version", "outcome", "statement_ids"} or value.get("schema_version") != RECALL_SCHEMA_VERSION or type(value.get("statement_ids")) is not list or any(type(item) is not str for item in value["statement_ids"]):
         raise FormationAdapterError("invalid_recall", "invalid recall envelope")
-    available = {item["statement_id"]: item["content_utf8"] for item in candidates if type(item) is dict and type(item.get("statement_id")) is str and type(item.get("content_utf8")) is str}
+    available = {
+        item["statement_id"]: item
+        for item in candidates
+        if type(item) is dict
+        and type(item.get("statement_id")) is str
+        and type(item.get("content_utf8")) is str
+    }
     if value["outcome"] == "none":
         if value["statement_ids"]:
             raise FormationAdapterError("invalid_recall", "NONE cannot select statements")
-        return {"outcome": "none", "injection": ""}
+        return {
+            "outcome": "none",
+            "injection": "",
+            "statement_ids": [],
+            "selected_paths": [],
+            "truncated": False,
+            "rendered_chars": 0,
+            "omitted_statement_ids": [],
+        }
     if value["outcome"] != "inject" or not value["statement_ids"] or len(set(value["statement_ids"])) != len(value["statement_ids"]):
         raise FormationAdapterError("invalid_recall", "invalid recall selection")
     if any(item not in available for item in value["statement_ids"]):
         raise FormationAdapterError("invalid_recall", "recall selected an unavailable statement")
-    selected = [available[item] for item in value["statement_ids"]]
-    injection = "Nollm memory context. Use only when relevant; do not mention this context to the user:\n" + "\n".join(f"- {item}" for item in selected)
-    return {"outcome": "inject", "statement_ids": value["statement_ids"], "injection": injection}
+    return _render_exact_statement_injection(
+        [available[item] for item in value["statement_ids"]],
+        max_statements=8,
+        max_chars=6000,
+    )

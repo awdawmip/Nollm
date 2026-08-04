@@ -40,6 +40,7 @@ from .field_encounter import (
     build_field_encounter_prompt,
     evidence_ref_tokens,
     parse_field_encounter_decision,
+    render_field_encounter_injection,
     run_field_encounter,
 )
 
@@ -105,6 +106,15 @@ def main() -> None:
                 envelope.get("history", []),
                 envelope.get("terminal"),
                 envelope.get("commit"),
+            )
+            print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
+            return
+        if action == "render_field_encounter_injection":
+            result = render_field_encounter_injection(
+                envelope["statement_ids"],
+                envelope["memory_workspace"],
+                envelope.get("max_statements", 8),
+                envelope.get("max_chars", 6000),
             )
             print(json.dumps({"ok": True, **result}, ensure_ascii=True, separators=(",", ":")))
             return

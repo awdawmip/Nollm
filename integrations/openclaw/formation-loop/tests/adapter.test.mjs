@@ -593,3 +593,16 @@ test("background absorption timer follows the Host service lifecycle", () => {
   assert.match(source, /if \(absorptionTimer\) clearTimeout\(absorptionTimer\)/);
   assert.match(source, /if \(!absorptionServiceRunning\) return/);
 });
+
+test("main-agent Field Encounter renders direct activation locally", () => {
+  const source = fs.readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+  const start = source.indexOf('name: "nollm_field_encounter"');
+  const end = source.indexOf("const executeWriterEncounter =", start);
+  const body = source.slice(start, end);
+  assert.match(body, /action: "render_field_encounter_injection"/);
+  assert.match(body, /direct_activation_render_us/);
+  assert.match(body, /statement_ids: statementIds/);
+  assert.equal(body.includes("runHiddenAgent"), false);
+  assert.equal(body.includes("MemoryActivationPacket"), false);
+  assert.equal(body.includes("activation_epoch"), false);
+});
