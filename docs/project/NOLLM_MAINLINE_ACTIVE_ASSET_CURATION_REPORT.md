@@ -32,7 +32,7 @@ Capability status remains `AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS` with
 - Remote deleted: `codex/grf-unified-roadmap-full-implementation`, `codex/grf7-global-sharded-field-real-runtime`, `codex/grf7r-evidence-integrity-real-global-runtime`, `codex/grf7r2-final-closure`, `codex/grf7r3-compact-evidence-handoff`, `codex/grf8-real-data-productization`, and `codex/hx1-trusted-host-staged-plan-execution-bridge`.
 - Retained remote evidence branches: `evidence/w2-02-isolated-active-trial-20260627T1528Z`, `evidence/w2-03-target-bound-active-trial-20260628T073600Z`, and `evidence/w2-03r-main-agent-active-cutover-20260628T094800Z`; each has one commit not in main.
 - All 22 tags were preserved.
-- The linked V3.12 worktree registration was removed through `git worktree remove`. Windows reported a long-path deletion error after unregistering it, so the non-Git orphan directory remains at `D:\Nollm\workspaces\nollm_v312_unified_field_encounter_work` and was not force-deleted.
+- The linked V3.12 worktree registration was removed through `git worktree remove`. Windows reported a long-path deletion error after unregistering it, so the non-Git orphan directory remains at `<NOLLM_ROOT>\workspaces\nollm_v312_unified_field_encounter_work` and was not force-deleted.
 - Independent verification clones and five repositories with tracked dirty state were preserved.
 
 ## Engineering Verification

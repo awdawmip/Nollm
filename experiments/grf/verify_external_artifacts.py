@@ -43,7 +43,11 @@ def verify(root: Path) -> tuple[bool, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=Path(os.environ.get("NOLLM_GRF7R_EXTERNAL_ROOT", r"C:\Users\chaos\nollm_grf7_external_evidence_20260710")))
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(os.environ.get("NOLLM_GRF7R_EXTERNAL_ROOT", str(Path.home() / "nollm_grf7_external_evidence_20260710"))),
+    )
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--generation-command", default="python experiments/grf/run_grf7r_real_global_workload.py && python experiments/grf/run_grf7r_runtime_semantics.py && python experiments/grf/run_grf7r_long_running_validation.py && python experiments/grf/run_grf7r_workflow_validation.py")
     args = parser.parse_args()

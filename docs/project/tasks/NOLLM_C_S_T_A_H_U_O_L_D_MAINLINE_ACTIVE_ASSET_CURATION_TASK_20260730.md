@@ -198,8 +198,8 @@ tag 清理；
 
 ```powershell
 git clone `
-  "D:\Nollm\bundles\nollm_aold_unified_field_encounter_20260728_7e60875.bundle" `
-  "D:\Nollm\worktrees\nollm-mainline-curation"
+  "<NOLLM_ROOT>\bundles\nollm_aold_unified_field_encounter_20260728_7e60875.bundle" `
+  "<NOLLM_ROOT>\worktrees\nollm-mainline-curation"
 ```
 
 不得 reset、clean 或覆盖已有工作区。
@@ -442,7 +442,7 @@ reference 中仍被活动测试引用的部分。
 默认：
 
 ```text
-D:\Nollm\archives\
+<NOLLM_ROOT>\archives\
 ```
 
 归档文件：
@@ -655,9 +655,9 @@ validation/frozen/
 统一：
 
 ```text
-NOLLM_ARTIFACT_ROOT=D:\Nollm\artifacts
-NOLLM_ARCHIVE_ROOT=D:\Nollm\archives
-NOLLM_BUNDLE_ROOT=D:\Nollm\bundles
+NOLLM_ARTIFACT_ROOT=<NOLLM_ROOT>\artifacts
+NOLLM_ARCHIVE_ROOT=<NOLLM_ROOT>\archives
+NOLLM_BUNDLE_ROOT=<NOLLM_ROOT>\bundles
 ```
 
 活动 Lab/validation 脚本默认输出仓库外；测试可使用临时目录。
@@ -1142,14 +1142,14 @@ nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle
 
 ```powershell
 git bundle create `
-  "D:\Nollm\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle" `
+  "<NOLLM_ROOT>\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle" `
   --all
 
 git bundle verify `
-  "D:\Nollm\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle"
+  "<NOLLM_ROOT>\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle"
 
 Get-FileHash `
-  "D:\Nollm\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle" `
+  "<NOLLM_ROOT>\bundles\nollm_mainline_active_asset_curation_20260730_<shorthead>.bundle" `
   -Algorithm SHA256
 ```
 

@@ -549,7 +549,7 @@ test("W1-03 T6: native response schema mismatch returns sidecar_invalid_response
   assert.equal(result.error.code, "sidecar_invalid_response");
 });
 function realPythonPath() {
-  const fallback = "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe";
+  const fallback = "C:/Users/<USER>/AppData/Local/Programs/Python/Python314/python.exe";
   return process.env.PYTHON_EXECUTABLE || fallback;
 }
 function realPythonAvailable() {

@@ -88,13 +88,13 @@ The Markdown report follows this fixed order:
 Input paths such as:
 
 ```text
-C:\Users\Administrator\.openclaw\workspace
+C:\Users\<USER>\.openclaw\workspace
 ```
 
 are normalized to:
 
 ```text
-C:/Users/Administrator/.openclaw/workspace
+C:/Users/<USER>/.openclaw/workspace
 ```
 
 Public-facing Markdown uses placeholders:

@@ -175,7 +175,11 @@ def _git(*args: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--external-root", type=Path, default=Path(os.environ.get("NOLLM_GRF7R_EXTERNAL_ROOT", r"C:\Users\chaos\nollm_grf7_external_evidence_20260710")))
+    parser.add_argument(
+        "--external-root",
+        type=Path,
+        default=Path(os.environ.get("NOLLM_GRF7R_EXTERNAL_ROOT", str(Path.home() / "nollm_grf7_external_evidence_20260710"))),
+    )
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--probe", type=Path)
     args = parser.parse_args()

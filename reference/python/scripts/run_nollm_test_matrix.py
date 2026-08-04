@@ -1213,7 +1213,7 @@ def resolve_receipt_root(value: str | None, head: str | None) -> Path:
         return Path(value).resolve()
     if head is None:
         raise MatrixError("receipt_root_required", "receipt root is required when head is unknown")
-    return Path("C:/Users/chaos/nollm_test_runs") / head
+    return Path.home() / "nollm_test_runs" / head
 
 
 def resolve_worktree_root(value: str | None, head: str | None) -> Path:
@@ -1221,7 +1221,7 @@ def resolve_worktree_root(value: str | None, head: str | None) -> Path:
         return Path(value).resolve()
     if head is None:
         raise MatrixError("worktree_root_required", "worktree root is required when head is unknown")
-    return Path("C:/Users/chaos/nollm_test_worktrees") / head
+    return Path.home() / "nollm_test_worktrees" / head
 
 
 def git_stdout(repo_root: Path, *args: str) -> str:

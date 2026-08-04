@@ -13,7 +13,7 @@ $DisplayOutput = $OutputDirectory -replace "\\", "/"
 Write-Host "Running Nollm P0-01 live preflight to: $DisplayOutput"
 
 pwsh -NoProfile -ExecutionPolicy Bypass -File `
-  "C:/Users/chaos/nollm/integrations/openclaw/nollm-memory-provider/tools/windows-live-preflight.ps1" `
+  "C:/Users/<USER>/nollm/integrations/openclaw/nollm-memory-provider/tools/windows-live-preflight.ps1" `
   -OutputDirectory $OutputDirectory `
   -OpenClawCommand $OpenClawCommand `
   -Profile $Profile

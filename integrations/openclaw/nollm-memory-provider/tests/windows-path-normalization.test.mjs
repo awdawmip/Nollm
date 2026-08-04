@@ -48,7 +48,7 @@ describe("T1 Windows path normalization", () => {
     if (c.expected_public !== undefined) {
       it(`${c.name}: public path matches fixture`, () => {
         const info = normalizePortablePath(c.input);
-        const home = process.platform === "win32" ? process.env.USERPROFILE : "C:/Users/Administrator";
+        const home = process.platform === "win32" ? process.env.USERPROFILE : "C:/Users/<USER>";
         const publicPath = protectPath(info.normalized_path, home);
         assert.strictEqual(publicPath, c.expected_public);
       });

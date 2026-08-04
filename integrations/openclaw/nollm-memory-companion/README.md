@@ -162,8 +162,8 @@ To repair an existing install on Windows:
 ```powershell
 python scripts/install_openclaw_nollm_companion.py `
   --repair-runtime `
-  --python-executable "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe" `
-  --workspace "C:/Users/Administrator/.openclaw/workspace" `
+  --python-executable "C:/Users/<USER>/AppData/Local/Programs/Python/Python314/python.exe" `
+  --workspace "C:/Users/<USER>/.openclaw/workspace" `
   --repo-root "C:/path/to/nollm"
 ```
 

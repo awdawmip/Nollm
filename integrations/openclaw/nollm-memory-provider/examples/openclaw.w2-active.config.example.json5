@@ -9,12 +9,12 @@
         enabled: true,
         config: {
           // Absolute Windows paths with forward slashes.
-          pythonExecutable: "C:/Users/Administrator/AppData/Local/Programs/Python/Python314/python.exe",
+          pythonExecutable: "C:/Users/<USER>/AppData/Local/Programs/Python/Python314/python.exe",
           pythonArgs: [],
           nollmRepoRoot: "C:/path/to/nollm",
-          workspaceRoot: "C:/Users/Administrator/.openclaw/workspace",
-          nativeStoreRoot: "C:/Users/Administrator/.openclaw/workspace/.nollm-memory/native-companion-v1",
-          trialRoot: "C:/Users/Administrator/.openclaw/workspace/.nollm-memory/active-trials",
+          workspaceRoot: "C:/Users/<USER>/.openclaw/workspace",
+          nativeStoreRoot: "C:/Users/<USER>/.openclaw/workspace/.nollm-memory/native-companion-v1",
+          trialRoot: "C:/Users/<USER>/.openclaw/workspace/.nollm-memory/active-trials",
           commandTimeoutMs: 15000,
           maxFacts: 4,
           maxContextCharacters: 1400,

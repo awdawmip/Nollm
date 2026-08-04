@@ -64,7 +64,7 @@ latency comparison, restart, or concurrent-session results.
 ## Migration
 
 Nollm repositories, taskpacks, bundles, artifacts, and logs were consolidated
-under `D:\Nollm`. Git histories, dirty states, bundle verification, and copied
+under `<NOLLM_ROOT>`. Git histories, dirty states, bundle verification, and copied
 file hashes were checked before C-drive cleanup. Two old C-drive workspace
 directories remained locked by the desktop process; no task execution used
 them after the verified D-drive worktree was created.

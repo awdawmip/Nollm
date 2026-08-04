@@ -3,14 +3,14 @@
   "cases": [
     {
       "name": "simple_backslash",
-      "input": "C:\\Users\\Administrator\\.openclaw\\workspace",
-      "expected_normalized": "C:/Users/Administrator/.openclaw/workspace",
+      "input": "C:\\Users\\<USER>\\.openclaw\\workspace",
+      "expected_normalized": "C:/Users/<USER>/.openclaw/workspace",
       "expected_public": "%USERPROFILE%/.openclaw/workspace"
     },
     {
       "name": "already_forward_slash",
-      "input": "C:/Users/Administrator/.openclaw/workspace",
-      "expected_normalized": "C:/Users/Administrator/.openclaw/workspace",
+      "input": "C:/Users/<USER>/.openclaw/workspace",
+      "expected_normalized": "C:/Users/<USER>/.openclaw/workspace",
       "expected_public": "%USERPROFILE%/.openclaw/workspace"
     },
     {

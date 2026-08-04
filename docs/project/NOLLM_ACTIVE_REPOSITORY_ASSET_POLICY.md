@@ -37,9 +37,9 @@ visual clutter are not deletion authority.
 ## External Output Roots
 
 ```text
-NOLLM_ARTIFACT_ROOT=D:\Nollm\artifacts
-NOLLM_ARCHIVE_ROOT=D:\Nollm\archives
-NOLLM_BUNDLE_ROOT=D:\Nollm\bundles
+NOLLM_ARTIFACT_ROOT=<NOLLM_ROOT>\artifacts
+NOLLM_ARCHIVE_ROOT=<NOLLM_ROOT>\archives
+NOLLM_BUNDLE_ROOT=<NOLLM_ROOT>\bundles
 ```
 
 Tests use temporary directories. Repository tools fail closed when a durable
