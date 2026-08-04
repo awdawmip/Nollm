@@ -3,6 +3,7 @@
 **Date**: 2026-08-04
 **Repository baseline at Gate 0**: `0f8870277712d5fb340ac5dfdf737051ace2fe69`
 **Current branch tip before report checkpoint**: `845771893ee763d56a703ddb4a1f802ec42005bd`
+**Report checkpoint**: `cabf486b`
 **Task input HEAD**: `8182f98ffa13ddbc6bdaa788f97648c30666f236`
 **Curation authority**: `docs/architecture/module-ownership/ACTIVE_ASSET_CURATION_PLAN.json`
 **Lifecycle authority**: `docs/architecture/module-ownership/ACTIVE_ASSET_LIFECYCLE_PLAN.json`
@@ -38,4 +39,5 @@ a replacement, complete tests, and `REMOVABLE` status.
   projection or durable terminal Field Encounter was observed.
 - The task is therefore fail-closed at the live conformance gate. No mainline
   promotion and no legacy deletion is authorized by this record.
+- Draft GitHub delivery: `https://github.com/awdawmip/Nollm/pull/1`.
 - Full report: `docs/project/V3_13_REV1_DIRECT_ACTIVATION_REPORT.md`.

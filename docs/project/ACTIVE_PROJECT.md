@@ -24,11 +24,12 @@ HEAD layers:
 ```text
 repository baseline: 0f8870277712d5fb340ac5dfdf737051ace2fe69
 branch: codex/aold-v313r1-direct-activation
-branch tip: 845771893ee763d56a703ddb4a1f802ec42005bd
+latest governance: 845771893ee763d56a703ddb4a1f802ec42005bd
+report checkpoint: cabf486b
+draft GitHub PR: https://github.com/awdawmip/Nollm/pull/1
 task input: 8182f98ffa13ddbc6bdaa788f97648c30666f236
 latest capability: 65353968
 latest Provider Live: attempted; run_scope_unavailable; not closed
-latest governance: 84577189
 latest taskpack bundle head: 8182f98ffa13ddbc6bdaa788f97648c30666f236
 ```
 
