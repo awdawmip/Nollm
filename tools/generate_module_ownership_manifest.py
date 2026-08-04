@@ -608,7 +608,6 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         "docs/architecture/module-ownership/MAINLINE_ASSET_CURATION_BOUNDARY_REPORT.json",
         "docs/architecture/module-ownership/V3_12_FIELD_ENCOUNTER_REALLOCATION.md",
         "docs/project/AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md",
-        "docs/project/tasks/NOLLM_C_S_T_A_H_U_O_L_D_MAINLINE_ACTIVE_ASSET_CURATION_TASK_20260730.md",
     }:
         return Classification("DISTRIBUTION", "ACTIVE", "KEEP", "HIGH", "current repository governance", "none", "governance", "Current V3.12 capability or mainline curation authority.", evidence="Exact current governance path reviewed by the mainline curation gate.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT)
     if p.startswith("docs/architecture/module-ownership/"):
