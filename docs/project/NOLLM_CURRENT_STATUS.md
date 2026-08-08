@@ -1,35 +1,39 @@
 # Nollm Current Status
 
-Date: 2026-07-30
+Date: 2026-08-04
 
 ```text
-route: NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md
-architecture: NOLLM_ARCHITECTURE_BOOK_V3_12_UNIFIED_FIELD_ENCOUNTER_READ_WRITE_DUALITY_20260728.md
-task: NOLLM_C_S_T_A_H_U_O_L_D_MAINLINE_ACTIVE_ASSET_CURATION_TASK_20260730.md
-capability status: AOLD_UNIFIED_FIELD_ENCOUNTER_IN_PROGRESS
-repository status: MAINLINE_ACTIVE_ASSET_CURATED_AT_1ee023341d90bdcca4172783047b31639ff402b5
-curation input HEAD: 7e608754b939d564f1387650f25424f2cd943f33
-capability input: V3_11_REV6_1_OFFLINE_CLOSED_PROVIDER_LIVE_PENDING
+route: NOLLM_ROUTE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_20260804.md
+architecture: NOLLM_ARCHITECTURE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_DEFERRED_NEURAL_ADAPTER_20260804.md
+task: NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md
+capability status: V3_13_REV1_DIRECT_ACTIVATION_OFFLINE_VALIDATED_LIVE_PENDING
+repository status: REPORT_CHECKPOINT_AT_cabf486b
+task input HEAD: 8182f98ffa13ddbc6bdaa788f97648c30666f236
+capability input: 65353968
+provider live status: ATTEMPTED_NOT_CLOSED_RUN_SCOPE_UNAVAILABLE
+draft GitHub PR: https://github.com/awdawmip/Nollm/pull/1
 ```
 
 Active truth:
 
-- One operation-neutral Field Encounter is the only active target for Recall, Reuse, Revision, Placement, NONE, and Defer.
-- Offline V3.12 Field Encounter, conditional commit, one active OpenClaw Wire, and single-session Writer are implemented and regression-validated.
-- Canonical memory remains content-neutral and every visible turn remains immutable Raw Capture.
-- Rev6.1 exact Capture/Tool Evidence, per-Capture continuation, and successful terminal preservation remain mandatory.
-- Core physical geometry and public contracts are unchanged and frozen for regression in this task.
-- One Statement maps to one Atom, one Handle, and one Cell; all traversals remain single-entry.
-- Query/fact indexes, semantic Python routing, vectors, graphs, embeddings, persistent paths, and multi-entry Recall remain forbidden.
-- Provider/Host Live is permitted only after offline Gates 0-I pass and must be reported truthfully if unavailable or incomplete.
-- Provider/Host Live was not run because no isolated V3.12 D-drive Host profile was available; status remains IN_PROGRESS.
-- Root `AGENTS.md` is intentionally the canonical empty file under the V3.12 task.
-- GitHub `main` contains the complete linear V3.12 history and the verified curation commits; historical assets are recoverable from Git history and the external manifest-bound archive.
-- Provider/Host Live remains pending. Mainline and asset curation do not change that limitation.
+- V3.12 Unified Field Encounter remains the only active read/write operation.
+- Direct activation consumes FieldEncounterResult statement IDs and reads current Statement values in returned order.
+- Activation is exact text, fixed-budget, operation-local, and discarded at the end of the Host run.
+- No MemoryActivationPacket, formal Model Adapter, activation epoch, semantic index, or persistent activation cache is part of this task.
+- Core physical geometry, Access public contracts, content neutrality, immutable Raw Capture, and single-entry traversal remain required.
+- Provider/Host Live is a required evidence gate. It is not claimed until the same baseline samples are replayed and measured.
+- The standard post-stage matrix produced zero Direct Activation responses. An isolated allowlist probe made the tool visible, but the Host returned `run_scope_unavailable` on every call, so live Direct Activation remains open.
+- The global OpenClaw config currently contains an invalid historical plugin path; the task uses an isolated profile and does not mutate the global config.
+- Root `AGENTS.md` remains the canonical empty file.
+- The final evidence report is [V3_13_REV1_DIRECT_ACTIVATION_REPORT.md](V3_13_REV1_DIRECT_ACTIVATION_REPORT.md); external raw evidence is under `D:\Nollm\artifacts\V3_13_REV1_*`.
 
 Task vector:
 
 ```text
-CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS 0% |
-HISTORY 0% | AUDIT 0% | OPENCLAW 0% | LAB +5% | DISTRIBUTIONS +10%
+CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
+HISTORY 0% | AUDIT 0% | OPENCLAW +15% | LAB +10% | DISTRIBUTIONS +5%
 ```
+
+The vector is a planning weight, not a permanent completion claim. Final status
+must separate offline evidence, Provider/Host evidence, environment blocks, and
+unverified work.

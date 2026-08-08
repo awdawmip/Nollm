@@ -1,0 +1,84 @@
+{
+  "schema_version": "nollm_active_asset_lifecycle_plan_v1",
+  "authority": "V3.13 Rev1 Direct Encounter Activation",
+  "task": "NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md",
+  "repository_head_at_gate_0": "0f8870277712d5fb340ac5dfdf737051ace2fe69",
+  "task_input_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+  "source_curation_authority": "ACTIVE_ASSET_CURATION_PLAN.json",
+  "removal_rule": "Only an entry with live_coverage, zero_active_imports, replacement, complete_tests, and lifecycle=REMOVABLE may be deleted.",
+  "default_for_unlisted_assets": "RETAIN_UNTIL_EXPLICIT_REVIEW",
+  "entries": [
+    {
+      "path": "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/bridge.py",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": ["integrations/openclaw/formation-loop/python/nollm_openclaw_formation/memory_loop.py"],
+      "replacement": "none",
+      "migration_capability": "direct Field Encounter bridge",
+      "removal_conditions": ["not applicable; active bridge"],
+      "validation": ["targeted Python tests", "OpenClaw Python tests", "Node plugin tests"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    },
+    {
+      "path": "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/field_encounter.py",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": ["integrations/openclaw/formation-loop/python/nollm_openclaw_formation/memory_loop.py"],
+      "replacement": "none",
+      "migration_capability": "current FieldEncounterResult projection",
+      "removal_conditions": ["not applicable; active renderer input"],
+      "validation": ["direct activation behavior matrix", "targeted Python tests"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    },
+    {
+      "path": "integrations/openclaw/formation-loop/python/nollm_openclaw_formation/memory_loop.py",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": ["integrations/openclaw/formation-loop/src/index.ts"],
+      "replacement": "none",
+      "migration_capability": "operation-local exact text activation",
+      "removal_conditions": ["not applicable; active memory loop"],
+      "validation": ["targeted Python tests", "OpenClaw Python tests", "live query/write/mixed evidence"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    },
+    {
+      "path": "integrations/openclaw/formation-loop/src/index.ts",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": [],
+      "replacement": "none",
+      "migration_capability": "active Host plugin wiring",
+      "removal_conditions": ["not applicable; active plugin entry"],
+      "validation": ["TypeScript build", "Node tests", "plugin:check"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    },
+    {
+      "path": "integrations/openclaw/formation-loop/tests/test_openclaw_field_encounter.py",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": [],
+      "replacement": "none",
+      "migration_capability": "offline direct activation witness",
+      "removal_conditions": ["retain as regression coverage"],
+      "validation": ["targeted Python tests", "OpenClaw Python suite"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    },
+    {
+      "path": "integrations/openclaw/formation-loop/tests/test_memory_loop.py",
+      "owner": "OPENCLAW",
+      "target_owner": "OPENCLAW",
+      "current_importers": [],
+      "replacement": "none",
+      "migration_capability": "offline memory loop witness",
+      "removal_conditions": ["retain as regression coverage"],
+      "validation": ["targeted Python tests", "OpenClaw Python suite"],
+      "verified_head": "8182f98ffa13ddbc6bdaa788f97648c30666f236",
+      "lifecycle": "KEEP_ACTIVE"
+    }
+  ]
+}

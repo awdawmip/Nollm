@@ -13,6 +13,7 @@ from nollm_core import CoreRuntime, GeometryAddress
 from nollm_openclaw_formation.field_encounter import (
     build_field_encounter_prompt,
     parse_field_encounter_decision,
+    render_field_encounter_injection,
     run_field_encounter,
 )
 
@@ -141,3 +142,46 @@ def test_writer_prompt_and_parser_accept_only_visible_encounter_ids(tmp_path):
         surface,
     )
     assert decision["entry_id"] == entry["entry_id"]
+
+
+def test_direct_encounter_activation_rereads_current_statement_and_skips_stale_ids(tmp_path):
+    _seed(tmp_path)
+    rendered = render_field_encounter_injection(
+        ["missing", "existing"],
+        str(tmp_path),
+        max_statements=8,
+        max_chars=6000,
+    )
+    assert rendered["outcome"] == "inject"
+    assert rendered["statement_ids"] == ["existing"]
+    assert rendered["stale_statement_ids"] == ["missing"]
+    assert rendered["current_statement_projection"] is True
+    assert rendered["operation_local"] is True
+    assert rendered["persistent_state_written"] is False
+    assert "room 401" in rendered["injection"]
+
+
+def test_direct_encounter_activation_is_bounded_and_marks_truncation(tmp_path):
+    _seed(tmp_path)
+    rendered = render_field_encounter_injection(
+        ["existing"],
+        str(tmp_path),
+        max_statements=1,
+        max_chars=12,
+    )
+    assert rendered["outcome"] == "inject"
+    assert rendered["truncated"] is True
+    assert rendered["rendered_chars"] == 12
+    assert rendered["statement_ids"] == ["existing"]
+    assert "[Additional geometry memory omitted" in rendered["injection"]
+
+
+def test_direct_encounter_activation_all_stale_is_none_and_writes_nothing(tmp_path):
+    rendered = render_field_encounter_injection(
+        ["missing"], str(tmp_path), max_statements=8, max_chars=6000
+    )
+    assert rendered["outcome"] == "none"
+    assert rendered["injection"] == ""
+    assert rendered["statement_ids"] == []
+    assert rendered["stale_statement_ids"] == ["missing"]
+    assert not (tmp_path / "direct_activation").exists()

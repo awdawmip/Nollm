@@ -788,13 +788,32 @@ export function registerDreamAgent(api: OpenClawPluginApi): void {
         const shouldCommit = pending && (params.action === "select_vacancy" || (params.action === "select_fact" && (params.semantic_relation === "same" || params.semantic_relation === "revision")));
         const commit = shouldCommit ? { statement: { statement_id: pending.proposition_id, content_utf8: pending.content_utf8, source_handle: null, context_refs: pending.evidence_refs }, revision_confirmation: params.revision_confirmation ?? null } : undefined;
         const terminalResult = await replay({ terminal, ...(commit ? { commit } : {}) });
+        let directActivation: Record<string, unknown> | undefined;
+        let directActivationRenderUs = 0;
         if (terminalResult.ok === true) {
           mainAgentEncounterOperations.delete(params.operation_id);
           const statementIds = Array.isArray(terminalResult.recalled_statement_ids) ? terminalResult.recalled_statement_ids as string[] : [];
-          if (statementIds.length) successfulMainAgentRecallCalls.add(toolCallId);
+          if (statementIds.length) {
+            const renderStartedMonoNs = systemLatencyClock.monotonicNs();
+            const rendered = await bridge(config, {
+              action: "render_field_encounter_injection",
+              statement_ids: statementIds,
+              memory_workspace: configuredMemoryWorkspace,
+              max_statements: config.max_statements ?? 8,
+              max_chars: config.max_total_chars ?? 8192,
+            });
+            directActivationRenderUs = durationUs(renderStartedMonoNs, systemLatencyClock.monotonicNs());
+            directActivation = rendered.ok === true
+              ? rendered
+              : { outcome: "none", injection: "", statement_ids: [], error: rendered.error ?? "direct_activation_unavailable" };
+            if (directActivation.outcome === "inject") successfulMainAgentRecallCalls.add(toolCallId);
+          }
           await recordMemoryAction(binding, params.action, { entry_id: operation.selectedEntryId, statement_ids: statementIds });
         }
-        return visible(terminalResult);
+        return visible({
+          ...terminalResult,
+          ...(directActivation ? { direct_activation: directActivation, direct_activation_render_us: directActivationRenderUs } : {}),
+        });
       },
     });
   }

@@ -429,3 +429,23 @@ def test_revision_confirmation_wire_rejects_without_write_and_blacklists_target(
     assert error.value.category == "revision_target_excluded"
     with AccessMemoryLoop(tmp_path) as loop:
         assert loop.binding(old.statement_id)["current_statement_id"] == old.statement_id
+
+
+def test_recall_renderers_share_exact_bounded_text_contract():
+    candidates = [
+        {"statement_id": "s1", "content_utf8": "甲乙丙丁", "path": ["coverage"]},
+        {"statement_id": "s2", "content_utf8": "second", "path": []},
+    ]
+    rendered = render_recall_injection(
+        json.dumps({
+            "schema_version": RECALL_SCHEMA_VERSION,
+            "outcome": "inject",
+            "statement_ids": ["s1", "s2"],
+        }),
+        candidates,
+    )
+    assert rendered["statement_ids"] == ["s1", "s2"]
+    assert rendered["selected_paths"][0]["path"] == ["coverage"]
+    assert rendered["selected_paths"][0]["path_is_not_truth_proof"] is True
+    assert rendered["truncated"] is False
+    assert "甲乙丙丁" in rendered["injection"]

@@ -1,89 +1,101 @@
 {
-  "id": "nollm",
+  "id": "nollm-memory",
   "name": "Nollm Memory",
+  "description": "Geometry-native long-term memory slot for OpenClaw.",
   "kind": "memory",
-  "description": "HISTORICAL_INVALID_FOR_CONTENT_ADMISSION; quarantined and fail-closed.",
-  "x-nollm-status": "HISTORICAL_INVALID_FOR_CONTENT_ADMISSION",
-  "version": "0.2.0-w2.1",
   "activation": {
-    "onStartup": false
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": [
+      "memory_search",
+      "memory_get"
+    ]
+  },
+  "uiHints": {
+    "dataRoot": {
+      "label": "Nollm data root",
+      "advanced": true
+    },
+    "autoCapture": {
+      "label": "Automatic capture",
+      "help": "Requires the Formation Loop writer migration in this beta."
+    },
+    "pythonExecutable": {
+      "label": "Development Python",
+      "advanced": true
+    },
+    "nollmRepoRoot": {
+      "label": "Development repository root",
+      "advanced": true
+    },
+    "memoryWorkspace": {
+      "label": "Existing memory workspace",
+      "advanced": true
+    }
   },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
-    "required": [
-      "pythonExecutable",
-      "nollmRepoRoot",
-      "workspaceRoot",
-      "nativeStoreRoot"
-    ],
     "properties": {
-      "pythonExecutable": {
-        "type": "string",
-        "description": "Absolute path to the Python interpreter used to run the Nollm active sidecar."
+      "dataRoot": {
+        "type": "string"
       },
-      "pythonArgs": {
+      "memoryWorkspace": {
+        "type": "string"
+      },
+      "runtimeExecutable": {
+        "type": "string"
+      },
+      "runtimeArgs": {
         "type": "array",
-        "items": { "type": "string" },
-        "default": [],
-        "description": "Discrete argv values passed to the Python interpreter before the sidecar script."
+        "items": {
+          "type": "string"
+        },
+        "default": []
+      },
+      "pythonExecutable": {
+        "type": "string"
       },
       "nollmRepoRoot": {
-        "type": "string",
-        "description": "Absolute path to the Nollm repository."
+        "type": "string"
       },
-      "workspaceRoot": {
-        "type": "string",
-        "description": "Absolute path to the OpenClaw workspace root."
+      "autoCapture": {
+        "type": "boolean",
+        "default": false
       },
-      "nativeStoreRoot": {
-        "type": "string",
-        "description": "Absolute path to the native companion store directory (e.g. <workspace>/.nollm-memory/native-companion-v1)."
+      "importMemoryCore": {
+        "type": "boolean",
+        "default": true
       },
-      "trialRoot": {
-        "type": "string",
-        "description": "Absolute path to the active-trials directory. Defaults to <nativeStoreRoot>/../active-trials."
+      "debug": {
+        "type": "boolean",
+        "default": false
       },
       "commandTimeoutMs": {
         "type": "integer",
-        "default": 15000,
         "minimum": 1000,
-        "maximum": 60000,
-        "description": "Sidecar command timeout in milliseconds."
+        "maximum": 300000,
+        "default": 120000
       },
-      "maxFacts": {
+      "operationTtlMs": {
         "type": "integer",
-        "default": 4,
+        "minimum": 1000,
+        "maximum": 3600000,
+        "default": 300000
+      },
+      "maxResults": {
+        "type": "integer",
         "minimum": 1,
-        "maximum": 20,
-        "description": "Maximum facts injected per turn."
+        "maximum": 32,
+        "default": 8
       },
       "maxContextCharacters": {
         "type": "integer",
-        "default": 1400,
         "minimum": 200,
         "maximum": 65536,
-        "description": "Maximum characters of rendered memory context injected per turn."
-      },
-      "captureMode": {
-        "type": "string",
-        "default": "deterministic_explicit_v1",
-        "enum": ["deterministic_explicit_v1"],
-        "description": "W2 active capture mode: deterministic explicit stable-sentence promotion only."
-      },
-      "trialMode": {
-        "type": "string",
-        "default": "active_empirical_v1",
-        "enum": ["active_empirical_v1"],
-        "description": "W2 trial mode: local-only redacted operator metrics."
-      },
-      "trialId": {
-        "type": "string",
-        "description": "Controller-assigned active empirical trial id."
+        "default": 8192
       }
     }
-  },
-  "contracts": {
-    "tools": []
   }
 }

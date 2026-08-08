@@ -8,6 +8,8 @@ from nollm_access import (
     EncounterCommitRequest,
     FieldEncounterEngine,
     FieldEncounterRequest,
+    FileHandleStore,
+    FileStatementStore,
     MemoryStatement,
     PendingProposition,
     ProgressiveAtlasPolicy,
@@ -17,7 +19,7 @@ from nollm_core import PhysicalFieldScope
 
 from .errors import FormationAdapterError
 from .main_agent_recall import _project_page
-from .memory_loop import _workspace
+from .memory_loop import _render_exact_statement_injection, _workspace
 from .json_repair import repair_json_envelope
 
 
@@ -345,6 +347,70 @@ def run_field_encounter(
     finally:
         engine.cancel(operation_id)
 
+
+
+def render_field_encounter_injection(
+    statement_ids: object,
+    memory_workspace: object,
+    max_statements: object = 8,
+    max_chars: object = 6000,
+) -> dict[str, object]:
+    """Re-read current Statement bindings and render one operation-local context block."""
+    if type(statement_ids) is not list or any(
+        type(statement_id) is not str or not statement_id
+        for statement_id in statement_ids
+    ):
+        raise FormationAdapterError(
+            "invalid_direct_activation",
+            "statement_ids must be a bounded string array",
+        )
+    if len(statement_ids) > 16 or len(statement_ids) != len(set(statement_ids)):
+        raise FormationAdapterError(
+            "invalid_direct_activation",
+            "statement_ids must be unique and contain at most 16 items",
+        )
+    if type(max_statements) is not int or type(max_chars) is not int:
+        raise FormationAdapterError(
+            "invalid_direct_activation", "budgets must be integers"
+        )
+
+    root = _workspace(memory_workspace)
+    statements = FileStatementStore(root)
+    handles = FileHandleStore(root)
+    current_items: list[dict[str, object]] = []
+    stale_statement_ids: list[str] = []
+    seen_current: set[str] = set()
+    for requested_id in statement_ids:
+        try:
+            handle = handles.get(requested_id)
+            binding = handles.binding_for_handle(handle)
+            current_id = binding.current_statement_id
+            current = statements.get(current_id)
+        except (FileNotFoundError, KeyError, OSError, RuntimeError, TypeError, ValueError):
+            stale_statement_ids.append(requested_id)
+            continue
+        if current_id in seen_current:
+            continue
+        seen_current.add(current_id)
+        current_items.append(
+            {
+                "statement_id": current.statement_id,
+                "content_utf8": current.content_utf8,
+                "path": [],
+            }
+        )
+
+    rendered = _render_exact_statement_injection(
+        current_items, max_statements, max_chars
+    )
+    return {
+        **rendered,
+        "requested_statement_ids": list(statement_ids),
+        "stale_statement_ids": stale_statement_ids,
+        "current_statement_projection": True,
+        "operation_local": True,
+        "persistent_state_written": False,
+    }
 
 def evidence_ref_tokens(value: object) -> list[str]:
     if type(value) is not list:

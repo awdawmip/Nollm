@@ -1,9 +1,8 @@
 {
   "name": "@nollm/openclaw-memory",
-  "version": "0.1.0-alpha.1",
-  "private": true,
+  "version": "0.1.0-beta.1",
   "type": "module",
-  "description": "Nollm native active memory provider for OpenClaw Functional Alpha.",
+  "description": "Geometry-native long-term memory slot for OpenClaw.",
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js"
@@ -11,39 +10,52 @@
   "files": [
     "dist",
     "openclaw.plugin.json",
-    "fixtures",
-    "examples",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "openclaw": {
     "extensions": [
+      "./src/index.js"
+    ],
+    "runtimeExtensions": [
       "./dist/index.js"
-    ]
+    ],
+    "compat": {
+      "pluginApi": ">=2026.6.11",
+      "minGatewayVersion": "2026.6.11"
+    },
+    "build": {
+      "openclawVersion": "2026.6.11",
+      "pluginSdkVersion": "2026.6.11"
+    },
+    "install": {
+      "clawhubSpec": "@nollm/openclaw-memory",
+      "defaultChoice": "clawhub",
+      "minHostVersion": ">=2026.6.11"
+    }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "plugin:build": "npm run build && openclaw plugins build --entry ./dist/index.js",
-    "plugin:check": "npm run build && openclaw plugins build --entry ./dist/index.js --check && openclaw plugins validate --entry ./dist/index.js",
-    "plugin:validate": "npm run plugin:check",
-    "test": "npm run build && node --test \"tests/*.test.mjs\""
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test tests/v314-*.test.mjs",
+    "plugin:check": "npm run build && openclaw plugins validate --entry ./dist/index.js",
+    "pack:dry-run": "npm run build && npm pack --dry-run"
   },
   "peerDependencies": {
-    "openclaw": ">=2026.5.17"
+    "openclaw": ">=2026.6.11"
   },
   "peerDependenciesMeta": {
     "openclaw": {
       "optional": true
     }
   },
-  "dependencies": {
-    "typebox": "^1.1.38"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "openclaw": "^2026.6.9",
-    "typescript": "^5.9.0"
-  },
   "engines": {
-    "node": ">=22"
-  }
+    "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awdawmip/Nollm.git",
+    "directory": "integrations/openclaw/nollm-memory-provider"
+  },
+  "license": "MIT"
 }
