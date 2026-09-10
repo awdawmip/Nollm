@@ -55,27 +55,28 @@ def expand_approximate_coverage(source: GeometryAddress, direction: str) -> Phys
 
 
 def clear_approximate_coverage_cache() -> None:
+    """Discard all derived kernel state; the next call reconstructs it."""
     _expand_cached.cache_clear()
+    _phase_footprint.cache_clear()
+    _compiled_sample_offsets_q40.cache_clear()
+    _sample_offsets_q40.cache_clear()
 
 
 @lru_cache(maxsize=8192)
 def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageExpansion:
     target_layer = source.layer - 1 if direction == "coverage_up" else source.layer + 1
     matrix = _TRANSFORMS[direction]
-    hits: dict[tuple[int, int], int] = {}
-    for offset_x, offset_y in _sample_offsets_q40():
-        q_fixed = (
-            matrix[0] * source.q
-            + matrix[1] * source.r
-            + _round_ratio(matrix[4] * offset_x + matrix[5] * offset_y, _Q40_ONE)
-        )
-        r_fixed = (
-            matrix[2] * source.q
-            + matrix[3] * source.r
-            + _round_ratio(matrix[6] * offset_x + matrix[7] * offset_y, _Q40_ONE)
-        )
-        target = _nearest_axial_q40(q_fixed, r_fixed)
-        hits[target] = hits.get(target, 0) + 1
+    center_q = matrix[0] * source.q + matrix[1] * source.r
+    center_r = matrix[2] * source.q + matrix[3] * source.r
+    # A two-cell fundamental domain preserves half-to-even rounding parity.
+    # Dividing by one cell would lose tie information under odd translations.
+    block_q, phase_q = divmod(center_q, 2 * _Q40_ONE)
+    block_r, phase_r = divmod(center_r, 2 * _Q40_ONE)
+    anchor_q, anchor_r = 2 * block_q, 2 * block_r
+    hits = {
+        (anchor_q + q, anchor_r + r): count
+        for q, r, count in _phase_footprint(direction, phase_q, phase_r)
+    }
 
     retained = tuple(
         (target, count)
@@ -127,6 +128,48 @@ def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageE
         approximation_policy_id=APPROXIMATION_POLICY_ID,
         min_hit_count=MIN_HIT_COUNT,
     )
+
+
+# Implementation identity only: the v1 geometric/approximation contract and
+# persisted registry identity stay unchanged because every output is identical.
+_PHASE_KERNEL_IMPLEMENTATION = "parity_preserving_q40_phase_kernel_v1"
+
+
+@lru_cache(maxsize=2)
+def _compiled_sample_offsets_q40(direction: str) -> tuple[tuple[int, int], ...]:
+    """Compile the fixed sample stencil once per direction, without floats."""
+    matrix = _TRANSFORMS[direction]
+    return tuple(
+        (
+            _round_ratio(matrix[4] * x + matrix[5] * y, _Q40_ONE),
+            _round_ratio(matrix[6] * x + matrix[7] * y, _Q40_ONE),
+        )
+        for x, y in _sample_offsets_q40()
+    )
+
+
+@lru_cache(maxsize=8192)
+def _phase_footprint(
+    direction: str, phase_q: int, phase_r: int,
+) -> tuple[tuple[int, int, int], ...]:
+    """Return a counted, translation-relative footprint, not a layer template.
+
+    Carrier: direction, both exact Q40 residues modulo two cells, and the
+    multiplicity of every quadrature sample. Future observations are counted
+    targets, Q16 normalization, stable ordering and storage-boundary checks.
+    No semantic data, source IDs, physical layers or absolute anchors are kept.
+
+    For even integers a,b, cube rounding obeys
+    N(q+a*S,r+b*S) = N(q,r)+(a,b), S=2**40. Half-to-even
+    rounding and all three error comparisons are unchanged, including ties.
+    Thus this factorization is exact for the existing fixed-point quadrature;
+    it is not a claim about exact real-area overlap or eight repeated states.
+    """
+    counts: dict[tuple[int, int], int] = {}
+    for q_offset, r_offset in _compiled_sample_offsets_q40(direction):
+        target = _nearest_axial_q40(phase_q + q_offset, phase_r + r_offset)
+        counts[target] = counts.get(target, 0) + 1
+    return tuple((q, r, count) for (q, r), count in sorted(counts.items()))
 
 
 @lru_cache(maxsize=1)
