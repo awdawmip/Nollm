@@ -1,0 +1,137 @@
+name: Nollm ideal overlap enclosure admission
+on:
+  push:
+    branches: [validation/ideal-overlap-20260910]
+permissions:
+  contents: read
+concurrency:
+  group: nollm-ideal-overlap-20260910
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      candidate: ${{ steps.prepare.outputs.candidate }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: d2edaa31a6107cdf8213285f4c788157a24e4d81
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - id: prepare
+        name: Verify tested blobs and regenerate only canonical ownership outputs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,os,subprocess
+          from pathlib import Path
+          base='d2edaa31a6107cdf8213285f4c788157a24e4d81'
+          branch='refs/heads/lab/ideal-overlap-enclosure-20260910'
+          def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
+          assert git('rev-parse','HEAD')==base
+          expected={
+            'lab/nollm-lab/geometry/certified_overlap.py':'d4e48009d5dce3701fc2c9bd0f5a4e28ef5f7996',
+            'lab/nollm-lab/geometry/tests/test_certified_overlap.py':'2f77c4409631d3abd8960511f5e1952f23fe69a2',
+            'lab/nollm-lab/geometry/run_certified_coverage_validation.py':'8293b08db8ad32b3e0c03e2947380057804cd2cf',
+            'lab/nollm-lab/geometry/CERTIFIED_OVERLAP.md':'be67990abf7cc37809beb88960c315e9f559b3f3',
+            'docs/project/ACTIVE_PROJECT.md':'4349fcf06b1eb6ced9a3770b99e752f101ddf7cb',
+            'docs/project/NOLLM_CURRENT_STATUS.md':'4b6dc3de39ce59d83e5d9fea1c70d43818e7ec15',
+          }
+          for p,sha in expected.items():
+            data=Path(p).read_bytes()
+            assert hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest()==sha,p
+          assert git('diff','e798a72b34f1d62725cc31163a4e5ee144656932','--','packages','integrations','reference')==''
+          subprocess.run(['python','tools/generate_module_ownership_manifest.py','--write'],check=True)
+          allowed={f'docs/architecture/module-ownership/{x}' for x in ('MODULE_OWNERSHIP_MANIFEST.json','MODULE_OWNERSHIP_MANIFEST.csv','UNCLASSIFIED_TRACKED_FILES.txt')}
+          changed=set(git('diff','--name-only').splitlines())
+          assert changed<=allowed,changed
+          subprocess.run(['python','tools/generate_module_ownership_manifest.py','--check'],check=True)
+          subprocess.run(['python','tools/validate_module_ownership_manifest.py'],check=True)
+          subprocess.run(['python','tools/check_active_tree_assets.py'],check=True)
+          subprocess.run(['git','diff','--check'],check=True)
+          if changed:
+            git('config','user.name','github-actions[bot]')
+            git('config','user.email','41898282+github-actions[bot]@users.noreply.github.com')
+            git('add','--',*sorted(changed))
+            git('commit','-m','governance: include ideal-overlap Lab assets in canonical ownership')
+          head=git('rev-parse','HEAD')
+          assert git('ls-remote','--refs','origin',branch).split()[0]==base,'Concurrent task head; stop without overwrite'
+          subprocess.run(['git','push','origin','HEAD:'+branch],check=True)
+          assert git('ls-remote','--refs','origin',branch).split()[0]==head
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('candidate='+head+'\n')
+          print('EXACT_CANDIDATE='+head)
+          PY
+  validate:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.prepare.outputs.candidate }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pytest==9.1.1 zstandard==0.25.0
+      - name: Package regressions, mathematics and broad physical error measurement
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,sys
+          from pathlib import Path
+          root=Path.cwd();out=Path(os.environ['RUNNER_TEMP'])/'overlap-evidence';out.mkdir(exist_ok=True)
+          all_paths=[str(p) for p in sorted((root/'packages').glob('*/src'))]+[str(root/'reference/python'),str(root/'integrations/openclaw/formation-loop/python')]
+          matrix=[
+            (['-m','pytest','-q','packages/nollm-core/tests'],['packages/nollm-core/src']),
+            (['-m','pytest','-q','packages/nollm-snapshot/tests','packages/nollm-trace/tests'],['packages/nollm-core/src','packages/nollm-snapshot/src','packages/nollm-trace/src']),
+            (['-m','pytest','-q','packages/nollm-access/tests'],['packages/nollm-core/src','packages/nollm-access/src','packages/nollm-snapshot/src','packages/nollm-trace/src']),
+            (['-m','pytest','-q','integrations/openclaw/formation-loop/tests'],all_paths),
+            (['-m','pytest','-q','reference/python/tests/m0'],all_paths),
+            (['-m','pytest','-q','lab/nollm-lab/geometry/tests/test_certified_overlap.py'],[]),
+            (['tools/generate_module_ownership_manifest.py','--check'],all_paths),
+            (['tools/validate_module_ownership_manifest.py'],all_paths),
+            (['tools/check_active_tree_assets.py'],all_paths),
+          ]
+          if os.environ['RUNNER_OS']=='Linux':
+            matrix.append((['lab/nollm-lab/geometry/run_certified_coverage_validation.py','--per-phase-direction','128','--output',str(out/'coverage.json')],all_paths))
+          else:
+            matrix.append((['lab/nollm-lab/geometry/run_certified_coverage_validation.py','--per-phase-direction','4','--output',str(out/'coverage.json')],all_paths))
+          results=[]
+          for i,(args,paths) in enumerate(matrix):
+            env=os.environ.copy();env['PYTHONPATH']=os.pathsep.join(str(root/p) for p in paths)
+            cmd=[sys.executable,*args]
+            print('::group::'+' '.join(args),flush=True)
+            run=subprocess.run(cmd,env=env,text=True,encoding='utf-8',stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            print(run.stdout,flush=True);print('::endgroup::',flush=True)
+            (out/f'gate-{i}.txt').write_text(run.stdout,encoding='utf-8')
+            results.append({'command':args,'exit_code':run.returncode})
+          sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          result={'candidate':sha,'os':os.environ['RUNNER_OS'],'python':sys.version,'gates':results}
+          (out/'result.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+          print(json.dumps(result,indent=2))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+            f.write(f'# Overlap enclosure admission\nCandidate `{sha}`\nOS {result["os"]}\n\n')
+            for x in results:f.write(f'- {"PASS" if x["exit_code"]==0 else "FAIL"}: `{" ".join(x["command"])}`\n')
+          sys.exit(int(any(x['exit_code'] for x in results)))
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: overlap-evidence-${{ runner.os }}
+          path: ${{ runner.temp }}/overlap-evidence
+          retention-days: 30
