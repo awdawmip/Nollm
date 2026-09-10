@@ -28,7 +28,7 @@ or silently turn a tight oracle interval into a product accuracy guarantee.
 - Lifecycle authority: [ACTIVE_ASSET_LIFECYCLE_PLAN.json](../architecture/module-ownership/ACTIVE_ASSET_LIFECYCLE_PLAN.json)
 - Boundary report: [MODULE_BOUNDARY_REPORT.json](../architecture/module-ownership/MODULE_BOUNDARY_REPORT.json)
 - Preserved V3.12 capability record: [AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md](AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md)
-- Current mathematical unit, derivation, executable gates and limitations: [Ideal overlap enclosures](../../lab/nollm-lab/geometry/CERTIFIED_OVERLAP.md)
+- Current mathematical unit, derivation, executable gates and limitations: [Ideal overlap enclosures](../architecture/CERTIFIED_OVERLAP.md)
 
 ## Retained production kernel contract
 

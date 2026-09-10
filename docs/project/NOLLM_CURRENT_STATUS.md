@@ -32,7 +32,7 @@ Scope: LAB mathematical kernel and validation; no production geometry switch.
   current production kernel unchanged. Generated reports stay outside Git.
 
 Derivation, input domain, numerical convention and reproducible commands:
-[Ideal overlap enclosures](../../lab/nollm-lab/geometry/CERTIFIED_OVERLAP.md).
+[Ideal overlap enclosures](../architecture/CERTIFIED_OVERLAP.md).
 The single active router is [ACTIVE_PROJECT.md](ACTIVE_PROJECT.md).
 Exact test counts, broad measurements and final admission head belong to the
 PR/workflow evidence, not a guessed completion percentage.
