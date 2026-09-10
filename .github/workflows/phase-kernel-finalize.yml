@@ -1,0 +1,70 @@
+name: Archive verified merged phase-kernel refs
+on:
+  push:
+    branches: [maintenance/phase-kernel-finalize-20260910]
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: nollm-phase-finalize-20260910
+  cancel-in-progress: false
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - name: Verify merge and atomically preserve original tips before ref removal
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          repo='awdawmip/Nollm'
+          kernel='refs/heads/kernel/q40-phase-20260910'
+          candidate='0c7d88a9f94c008f07fc0e7ccef17c37036d722f'
+          merge='e798a72b34f1d62725cc31163a4e5ee144656932'
+          transport='refs/heads/maintenance/phase-kernel-finalize-20260910'
+          assert os.environ['GITHUB_REPOSITORY']==repo
+          assert os.environ['GITHUB_REF']==transport
+          def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+          def refs():return {line.split()[1]:line.split()[0] for line in git('ls-remote','--refs','origin').splitlines()}
+          request=urllib.request.Request('https://api.github.com/repos/'+repo+'/pulls/4',headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(request,timeout=30) as response:pr=json.load(response)
+          assert pr['merged'] and pr['head']['sha']==candidate and pr['merge_commit_sha']==merge
+          snapshot=refs();main=snapshot['refs/heads/main']
+          for sha in (main,candidate,merge):
+            if subprocess.run(['git','cat-file','-e',sha+'^{commit}'],capture_output=True).returncode:
+              subprocess.run(['git','fetch','--no-tags','origin',sha],check=True)
+          assert subprocess.run(['git','merge-base','--is-ancestor',candidate,main],capture_output=True).returncode==0
+          assert subprocess.run(['git','merge-base','--is-ancestor',merge,main],capture_output=True).returncode==0
+          assert git('rev-parse',merge+'^{tree}')==git('rev-parse',candidate+'^{tree}'),'Merged tree differs from tested candidate'
+          entries=[
+            (kernel,candidate,'refs/tags/archive/2026-09-10/kernel-q40-phase'),
+            (transport,os.environ['GITHUB_SHA'],'refs/tags/archive/2026-09-10/phase-kernel-finalize'),
+          ]
+          specs=[];leases=[]
+          for source,sha,target in entries:
+            assert snapshot.get(source) in (None,sha),'Concurrent source change; no refs modified'
+            assert snapshot.get(target) in (None,sha),'Archive collision; no refs modified'
+            if snapshot.get(source) is None:
+              assert snapshot.get(target)==sha,'Missing source without verified retained tip'
+              continue
+            if target not in snapshot:
+              specs.append(sha+':'+target);leases.append('--force-with-lease='+target+':')
+            specs.append(':'+source);leases.append('--force-with-lease='+source+':'+sha)
+          if specs:subprocess.run(['git','push','--atomic',*leases,'origin',*specs],check=True)
+          final=refs()
+          for source,sha,target in entries:
+            assert source not in final and final.get(target)==sha
+          result={'merged_pr':4,'merge':merge,'tested_candidate':candidate,'merged_tree_matches_tested_tree':True,
+            'retained':[{'original':s,'sha':h,'retained_ref':t} for s,h,t in entries],
+            'remaining_branches':{k:v for k,v in final.items() if k.startswith('refs/heads/')}}
+          print(json.dumps(result,indent=2))
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+            f.write('# Verified final reconciliation\n\n```json\n'+json.dumps(result,indent=2)+'\n```\n')
+          PY
