@@ -1,39 +1,66 @@
 # Nollm Current Status
 
-Date: 2026-08-04
+Date: 2026-09-10
 
-```text
-route: NOLLM_ROUTE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_20260804.md
-architecture: NOLLM_ARCHITECTURE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_DEFERRED_NEURAL_ADAPTER_20260804.md
-task: NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md
-capability status: V3_13_REV1_DIRECT_ACTIVATION_OFFLINE_VALIDATED_LIVE_PENDING
-repository status: REPORT_CHECKPOINT_AT_cabf486b
-task input HEAD: 8182f98ffa13ddbc6bdaa788f97648c30666f236
-capability input: 65353968
-provider live status: ATTEMPTED_NOT_CLOSED_RUN_SCOPE_UNAVAILABLE
-draft GitHub PR: https://github.com/awdawmip/Nollm/pull/1
-```
+## Current baseline and active work
 
-Active truth:
+The implementation baseline is V3.14 native OpenClaw memory-slot integration at
+`91bd14ab394e87931b45baaaa87671f30fcfd706`, following merged PR #2
+(`6c4f93cef77bb2c03c98777015416843e5bbaf8d`). PR #1 / V3.13 is inherited
+history, not an open competing mainline task.
 
-- V3.12 Unified Field Encounter remains the only active read/write operation.
-- Direct activation consumes FieldEncounterResult statement IDs and reads current Statement values in returned order.
-- Activation is exact text, fixed-budget, operation-local, and discarded at the end of the Host run.
-- No MemoryActivationPacket, formal Model Adapter, activation epoch, semantic index, or persistent activation cache is part of this task.
-- Core physical geometry, Access public contracts, content neutrality, immutable Raw Capture, and single-entry traversal remain required.
-- Provider/Host Live is a required evidence gate. It is not claimed until the same baseline samples are replayed and measured.
-- The standard post-stage matrix produced zero Direct Activation responses. An isolated allowlist probe made the tool visible, but the Host returned `run_scope_unavailable` on every call, so live Direct Activation remains open.
-- The global OpenClaw config currently contains an invalid historical plugin path; the task uses an isolated profile and does not mutate the global config.
-- Root `AGENTS.md` remains the canonical empty file.
-- The final evidence report is [V3_13_REV1_DIRECT_ACTIVATION_REPORT.md](V3_13_REV1_DIRECT_ACTIVATION_REPORT.md); external raw evidence is under `D:\Nollm\artifacts\V3_13_REV1_*`.
+The current user-authorized task is to build a new kernel, integrate validated
+compatible work and cold-store branches whose unique history should not enter
+main. Its development branch is `kernel/q40-phase-20260910`; the governing
+amendment is in `docs/project/ACTIVE_PROJECT.md`.
 
-Task vector:
+Implemented in this branch:
 
-```text
-CORE 0% | SNAPSHOT 0% | TRACE 0% | ACCESS +5% |
-HISTORY 0% | AUDIT 0% | OPENCLAW +15% | LAB +10% | DISTRIBUTIONS +5%
-```
+- A parity-preserving Q40 phase kernel replaces repeated per-source sample
+  transformation with two compiled directional stencils and a counted relative
+  footprint. Even integer anchors preserve half-to-even midpoint behavior.
+- The existing 96-sample approximate geometry contract, thresholds, all output
+  fields, coordinate limits, single-entry traversal and canonical state identity
+  are preserved. This is not a claim of certified exact real-area Coverage.
+- Cache clearing now discards every derived kernel cache; no cache is memory
+  truth and no semantic or source-to-entry index is introduced.
+- Five additional independent integer-reference and boundary/cache tests were
+  added while retaining the existing regression tests. The isolated five-test
+  run passed. Full package and repository gate outcomes are recorded by the
+  corresponding PR/workflow; an implementation checkpoint is not Live approval.
 
-The vector is a planning weight, not a permanent completion claim. Final status
-must separate offline evidence, Provider/Host evidence, environment blocks, and
-unverified work.
+## Unchanged capability boundaries
+
+V3.12 Unified Field Encounter remains the unified read/write operation. The
+V3.14 integration direction is OpenClaw's exclusive native memory slot with
+standard `memory_search` / `memory_get`, not a second custom memory tool.
+Evidence stays immutable, semantic decisions stay with the real LLM/Host and
+Access, and Core stays deterministic and semantic-blind. Physical Memory Layer
+and Aggregation Order remain distinct.
+
+The native provider package remains a development/beta capability baseline.
+Packaged platform runtime, automatic capture/Formation migration, clean public
+install/update/uninstall, Windows Provider Live and ClawHub release still require
+separate validation. This kernel task changes no Host installation or global
+OpenClaw configuration and makes no new current-version compatibility claim.
+
+The old V3.13 Direct Activation run reported `run_scope_unavailable`; that is
+historical evidence, not proof of the current V3.14 provider's Live behavior.
+The preserved report is
+[V3_13_REV1_DIRECT_ACTIVATION_REPORT.md](V3_13_REV1_DIRECT_ACTIVATION_REPORT.md).
+No old environment observation or empty-AGENTS statement is silently carried
+forward as current fact.
+
+## Admission and next mathematical boundary
+
+Before promotion, validate the kernel against the frozen predecessor, retain
+its exact integer output contract, run available package/governance gates and
+record the exact tested commit. Do not call a partial or pending test suite
+passed. Compatible already-contained branches need no duplicate merge; unique
+branches must remain recoverable before any original ref is removed.
+
+Certified area-overlap evaluation, explicit quadrature error bounds, any
+phase-region atlas and any changed geometric contract remain distinct future
+work. The ideal eight-layer transform identity does not authorize an exact
+shortcut through rounded Q40 steps. Memory-quality improvement, large-scale
+performance and Provider Live are not established by kernel parity alone.
