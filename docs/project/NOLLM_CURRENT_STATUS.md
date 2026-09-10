@@ -1,66 +1,61 @@
 # Nollm Current Status
 
-Date: 2026-09-10
+Date: 2026-09-10.
 
-## Current baseline and active work
+## Completed baseline
 
-The implementation baseline is V3.14 native OpenClaw memory-slot integration at
-`91bd14ab394e87931b45baaaa87671f30fcfd706`, following merged PR #2
-(`6c4f93cef77bb2c03c98777015416843e5bbaf8d`). PR #1 / V3.13 is inherited
-history, not an open competing mainline task.
+V3.14 native OpenClaw memory-slot integration plus the parity-preserving Q40 phase
+kernel was merged through PR #4, main `e798a72b34f1d62725cc31163a4e5ee144656932`.
+Its validated source `0c7d88a` passed 394 offline tests and three ownership/asset
+gates (run 34456184728). This is completed work, not a task to restart. Six old
+contained development branches were archived, four incompatible histories were
+cold-stored, and the merged kernel/temporary transports were archived. Original
+tips remain recoverable.
 
-The current user-authorized task is to build a new kernel, integrate validated
-compatible work and cold-store branches whose unique history should not enter
-main. Its development branch is `kernel/q40-phase-20260910`; the governing
-amendment is in `docs/project/ACTIVE_PROJECT.md`.
+## Current usable-direction increment
 
-Implemented in this branch:
+Status: IMPLEMENTED, with admission tied to the corresponding PR/run.
+Scope: LAB mathematical kernel and validation; no production geometry switch.
 
-- A parity-preserving Q40 phase kernel replaces repeated per-source sample
-  transformation with two compiled directional stencils and a counted relative
-  footprint. Even integer anchors preserve half-to-even midpoint behavior.
-- The existing 96-sample approximate geometry contract, thresholds, all output
-  fields, coordinate limits, single-entry traversal and canonical state identity
-  are preserved. This is not a claim of certified exact real-area Coverage.
-- Cache clearing now discards every derived kernel cache; no cache is memory
-  truth and no semantic or source-to-entry index is introduced.
-- Five additional independent integer-reference and boundary/cache tests were
-  added while retaining the existing regression tests. The isolated five-test
-  run passed. Full package and repository gate outcomes are recorded by the
-  corresponding PR/workflow; an implementation checkpoint is not Live approval.
+- `certified_overlap.py` encloses ideal adjacent-layer source-area shares using
+  directed integer radical arithmetic and exact rational clipping.
+- Every possibly positive target is enumerated from geometric bounds, independent
+  of which targets the 96-sample kernel happens to hit. Positive, zero and
+  unresolved overlap are kept distinct.
+- Bounded precision refinement produces a per-request area-interval width or
+  raises an explicit budget failure. Tight oracle intervals are not a claim of
+  small production error.
+- `compare_q16` encloses total variation and missed mass while retaining target
+  identity. It measures against supplied normalized Q16 weights, including tiny
+  true overlaps omitted by the production sampling.
+- The runner executes the existing broad fixtures, existing Decimal oracle and
+  current production kernel unchanged. Generated reports stay outside Git.
 
-## Unchanged capability boundaries
+Derivation, input domain, numerical convention and reproducible commands:
+[Ideal overlap enclosures](../architecture/CERTIFIED_OVERLAP.md).
+The single active router is [ACTIVE_PROJECT.md](ACTIVE_PROJECT.md).
+Exact test counts, broad measurements and final admission head belong to the
+PR/workflow evidence, not a guessed completion percentage.
 
-V3.12 Unified Field Encounter remains the unified read/write operation. The
-V3.14 integration direction is OpenClaw's exclusive native memory slot with
-standard `memory_search` / `memory_get`, not a second custom memory tool.
-Evidence stays immutable, semantic decisions stay with the real LLM/Host and
-Access, and Core stays deterministic and semantic-blind. Physical Memory Layer
-and Aggregation Order remain distinct.
+## Retained limits
 
-The native provider package remains a development/beta capability baseline.
-Packaged platform runtime, automatic capture/Formation migration, clean public
-install/update/uninstall, Windows Provider Live and ClawHub release still require
-separate validation. This kernel task changes no Host installation or global
-OpenClaw configuration and makes no new current-version compatibility claim.
+The production Core still uses the admitted 96-sample Q40 approximation with its
+existing Q16 semantics, boundaries and state identity. Lab is not imported by a
+production package. A replacement integer evaluator, changed geometric outputs,
+full phase-region atlas and stored-state migration have not been admitted here.
+The new containment argument is executable and reviewable but not formally
+verified in a proof assistant. Per-request certificates do not establish a
+uniform whole-domain bound for the production approximation.
 
-The old V3.13 Direct Activation run reported `run_scope_unavailable`; that is
-historical evidence, not proof of the current V3.14 provider's Live behavior.
-The preserved report is
+Evidence stays immutable. Semantic decisions stay with the real LLM/Host and
+Access. Single-entry Unified Field Encounter and separate Physical Memory Layer /
+Aggregation Order remain active. No semantic index, saved entry or fact-to-entry
+mapping is introduced.
+
+The native provider remains a development/beta baseline. Packaged platform
+runtime, automatic capture/Formation migration, clean public install/update/
+uninstall, current OpenClaw-version compatibility, Windows Provider Live and
+ClawHub release still require separate verification. No Host/global configuration
+or user workspace is changed by this increment. Historical V3.13 Live evidence
+is not a present diagnosis; see the preserved
 [V3_13_REV1_DIRECT_ACTIVATION_REPORT.md](V3_13_REV1_DIRECT_ACTIVATION_REPORT.md).
-No old environment observation or empty-AGENTS statement is silently carried
-forward as current fact.
-
-## Admission and next mathematical boundary
-
-Before promotion, validate the kernel against the frozen predecessor, retain
-its exact integer output contract, run available package/governance gates and
-record the exact tested commit. Do not call a partial or pending test suite
-passed. Compatible already-contained branches need no duplicate merge; unique
-branches must remain recoverable before any original ref is removed.
-
-Certified area-overlap evaluation, explicit quadrature error bounds, any
-phase-region atlas and any changed geometric contract remain distinct future
-work. The ideal eight-layer transform identity does not authorize an exact
-shortcut through rounded Q40 steps. Memory-quality improvement, large-scale
-performance and Provider Live are not established by kernel parity alone.
