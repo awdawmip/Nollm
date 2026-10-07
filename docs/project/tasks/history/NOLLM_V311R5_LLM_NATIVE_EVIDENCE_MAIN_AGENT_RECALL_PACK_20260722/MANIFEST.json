@@ -1,0 +1,9 @@
+{
+  "input_bundle": "nollm_aold_contextual_writer_shared_retrieval_growth_20260721_a4d8e31.bundle",
+  "input_bundle_sha256": "9bc3cbe6a8952461c555f9b4bd5fba283a194a4d0f764dd1c2d2c3cc7b9c66aa",
+  "architecture": "docs/architecture/NOLLM_ARCHITECTURE_AMENDMENT_V3_11_REV5_LLM_NATIVE_EVIDENCE_ANCHORS_MAIN_AGENT_GEOMETRIC_RECALL_20260722.md",
+  "architecture_sha256": "f27dd133a71f71989bc9f412f7ddc6988d544b59bc41b43f03ced42f45cb6e72",
+  "taskbook": "docs/project/tasks/NOLLM_A_O_L_D_LLM_NATIVE_EVIDENCE_STALE_PLAN_MAIN_AGENT_RECALL_SELECTIVITY_TASK_20260722.md",
+  "taskbook_sha256": "c62a77b74f249735dbde6238df21a89e060201d2f04faa8e21eb56b739e5bb3d",
+  "readme_sha256": "aa39f06899e9924adb9b31b001c1a12468eba112b5fac9cf949122fdb1cc424b"
+}

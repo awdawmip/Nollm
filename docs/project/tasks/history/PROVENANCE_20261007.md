@@ -1,0 +1,3 @@
+# Historical metadata preservation (2026-10-07)
+
+This non-main archival branch preserves only the two README.md and two MANIFEST.json files (2,092 UTF-8 bytes) from the Nollm V3.11 Rev4 (2026-07-21) and Rev5 (2026-07-22) execution packs, verbatim. Their declarations are historical provenance, not active instructions or current acceptance evidence. The referenced bundle bytes were not available for verification; their presence, contents and recorded hashes remain unverified. This addition does not preserve the original bundles, taskbooks, source code or complete private history, and does not establish implementation or test success. It is not intended for merge into the active main tree.

@@ -1,1 +1,0 @@
-"""Optional audit package skeleton."""

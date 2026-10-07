@@ -1,1 +1,0 @@
-"""Optional history package skeleton."""
