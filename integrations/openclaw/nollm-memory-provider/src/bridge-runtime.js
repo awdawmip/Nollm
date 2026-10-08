@@ -1,14 +1,36 @@
 import { spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
+import { StringDecoder } from "node:string_decoder";
 import path from "node:path";
 import { safeAgentSegment } from "./config.js";
 
 const MAX_OUTPUT_BYTES = 1024 * 1024;
 
-function appendBounded(current, chunk) {
-  const next = current + chunk.toString("utf8");
-  if (Buffer.byteLength(next, "utf8") <= MAX_OUTPUT_BYTES) return next;
-  return next.slice(0, MAX_OUTPUT_BYTES);
+function outputBuffer() {
+  return { buffer: Buffer.alloc(MAX_OUTPUT_BYTES), bytes: 0, overflow: false };
+}
+
+function appendBounded(output, chunk) {
+  const copied = Math.min(chunk.length, MAX_OUTPUT_BYTES - output.bytes);
+  chunk.copy(output.buffer, output.bytes, 0, copied);
+  output.bytes += copied;
+  if (copied < chunk.length) output.overflow = true;
+}
+
+function decodeOutput(output) {
+  const decoder = new StringDecoder("utf8");
+  const text = decoder.write(output.buffer.subarray(0, output.bytes));
+  return output.overflow ? text : text + decoder.end();
+}
+
+function outputDetail(output, label, prefix = "") {
+  const text = decodeOutput(output);
+  const lead = prefix + (prefix && text ? "\n" : "");
+  const truncated = output.overflow || text.length > 4000 - lead.length;
+  const suffix = truncated ? `\n[${label} truncated]` : "";
+  let end = Math.min(text.length, 4000 - lead.length - suffix.length);
+  if (end > 0 && /[\uD800-\uDBFF]/.test(text[end - 1]) && /[\uDC00-\uDFFF]/.test(text[end])) end -= 1;
+  return lead + text.slice(0, end) + suffix;
 }
 
 function spawnJson(command, args, stdin, timeoutMs, env, signal) {
@@ -18,8 +40,8 @@ function spawnJson(command, args, stdin, timeoutMs, env, signal) {
       return;
     }
     const child = spawn(command, args, { shell: false, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], env });
-    let stdout = "";
-    let stderr = "";
+    const stdout = outputBuffer();
+    const stderr = outputBuffer();
     let settled = false;
     const finish = (value) => {
       if (settled) return;
@@ -37,19 +59,23 @@ function spawnJson(command, args, stdin, timeoutMs, env, signal) {
       finish({ ok: false, error: "bridge_timeout", retryable: true });
     }, timeoutMs);
     signal?.addEventListener("abort", abort, { once: true });
-    child.stdout.on("data", (chunk) => { stdout = appendBounded(stdout, chunk); });
-    child.stderr.on("data", (chunk) => { stderr = appendBounded(stderr, chunk); });
+    child.stdout.on("data", (chunk) => { appendBounded(stdout, chunk); });
+    child.stderr.on("data", (chunk) => { appendBounded(stderr, chunk); });
     child.on("error", (error) => finish({ ok: false, error: "bridge_process_error", detail: String(error), retryable: true }));
     child.on("close", (code) => {
       if (settled) return;
       if (code !== 0) {
-        finish({ ok: false, error: "bridge_process_error", detail: (stderr || stdout).slice(0, 4000), retryable: true });
+        finish({ ok: false, error: "bridge_process_error", detail: outputDetail(stderr.bytes ? stderr : stdout, stderr.bytes ? "stderr" : "stdout"), retryable: true });
+        return;
+      }
+      if (stdout.overflow) {
+        finish({ ok: false, error: "bridge_invalid_json", detail: outputDetail(stderr, "stderr", `stdout exceeded ${MAX_OUTPUT_BYTES} bytes`), retryable: true });
         return;
       }
       try {
-        finish(JSON.parse(stdout));
+        finish(JSON.parse(decodeOutput(stdout)));
       } catch {
-        finish({ ok: false, error: "bridge_invalid_json", detail: stderr.slice(0, 4000), retryable: true });
+        finish({ ok: false, error: "bridge_invalid_json", detail: outputDetail(stderr, "stderr"), retryable: true });
       }
     });
     child.stdin.end(stdin, "utf8");
