@@ -7,19 +7,24 @@ kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee14465
 That task and branch reconciliation are completed. Its working branch was
 archived; do not recreate it or restart V3.13/PR #1 from a historical taskbook.
 
-The current user instruction is to continue along usable directions. The next
-bounded unit is **independent ideal-overlap enclosure and per-request production
-error measurement**, on `lab/ideal-overlap-enclosure-20260910`. It adds a Lab-only
-mathematical kernel, tests and a reusable validation command. It does not switch
-production geometry, rewrite memory, install a Host, change semantic ownership
-or silently turn a tight oracle interval into a product accuracy guarantee.
+Current scope: preserve and migrate existing Nollm code, including unfinished WIP;
+feature development is paused. The user authorizes publication of all Nollm code
+to `awdawmip/Nollm`, excluding secrets and personal data. Verify each batch by
+source paths, exact bytes/hashes and fixed-commit remote readback; record existing
+test outcomes or `NOT_RUN`. Passing all historical tests, completing real bridge
+integration, receiving full Git history or all 60 historical ZIPs are not
+prerequisites for accepting a verified code batch. Record remaining migration
+gaps separately; batch acceptance does not establish functional readiness or full
+migration. Canceled operations remain canceled. Actual access denials and platform
+restrictions remain binding; this scope does not authorize bypassing them or
+resuming canceled calls.
 
 ## Governing and inherited sources
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
 - Inherited architecture, subject to the V3.14 mainline and current amendments: [V3.13 Rev1 Direct Encounter Activation](../architecture/NOLLM_ARCHITECTURE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_DEFERRED_NEURAL_ADAPTER_20260804.md)
 - Inherited route, not the current execution dispatch: [V3.13 Rev1 Direct Encounter Activation](NOLLM_ROUTE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_20260804.md)
-- Preserved previous task and Live restrictions: [A-O-L-D Direct Encounter Activation, Provider Live and GitHub Delivery](tasks/NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md)
+- Historical task; Live restrictions apply to Live acceptance, not current code-preservation dispatch: [A-O-L-D Direct Encounter Activation, Provider Live and GitHub Delivery](tasks/NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md)
 - Content-neutral authority: [Memory Eligibility Decision](../architecture/NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md)
 - Current status: [NOLLM_CURRENT_STATUS.md](NOLLM_CURRENT_STATUS.md)
 - Inherited module capability ledger: [NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md](NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md)
@@ -46,7 +51,7 @@ it is not exact real-area Coverage and is not eight translation templates.
 PR #4 records the completed 394-test and ownership/asset admission. Its original
 implementation derivation remains in Git history and the PR; it is not restarted.
 
-## Current unit and gates
+## Retained Lab unit and functional admission gates
 
 Lab computes source-share enclosures using outward-rounded algebraic radicals
 and exact rational inner/outer half-plane clipping. Candidate completeness comes
