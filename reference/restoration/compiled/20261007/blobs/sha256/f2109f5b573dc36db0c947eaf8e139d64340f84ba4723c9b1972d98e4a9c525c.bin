@@ -1,0 +1,21 @@
+import { Type } from "typebox";
+import type { NormalizedConfig, PluginConfig, SidecarResult } from "./types.js";
+export declare const ConfigSchema: Type.TObject<{
+    pythonCommand: Type.TOptional<Type.TString>;
+    nollmRepoRoot: Type.TString;
+    nollmDataRoot: Type.TString;
+    alphaFixturePath: Type.TString;
+    commandTimeoutMs: Type.TOptional<Type.TInteger>;
+    maxFacts: Type.TOptional<Type.TInteger>;
+    maxCharacters: Type.TOptional<Type.TInteger>;
+    maxContextCharacters: Type.TOptional<Type.TInteger>;
+    captureMode: Type.TOptional<Type.TLiteral<"receipt_only">>;
+    allowAgentIds: Type.TOptional<Type.TArray<Type.TString>>;
+}>;
+export declare function isLegacyPathSegment(absPath: string): boolean;
+export declare function normalizeConfig(config: PluginConfig): NormalizedConfig;
+export declare function configurationRequiredStatus(config: PluginConfig): SidecarResult & {
+    status?: "configuration_required";
+    required_fields?: string[];
+    message?: string;
+};

@@ -1,0 +1,2 @@
+import type { NormalizedConfig, SidecarResult } from "./types.js";
+export declare function runSidecarCommand(config: NormalizedConfig, command: "prepare" | "capture" | "status", payload: Record<string, unknown>, signal?: AbortSignal): Promise<SidecarResult>;

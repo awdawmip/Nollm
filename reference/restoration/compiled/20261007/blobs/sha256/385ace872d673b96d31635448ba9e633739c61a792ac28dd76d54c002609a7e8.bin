@@ -1,0 +1,3 @@
+import type { MemoryPluginRuntime } from "openclaw/plugin-sdk/memory-core-host-runtime-core";
+import type { NormalizedConfig } from "./types.js";
+export declare function createNollmCompatibilityRuntime(config: NormalizedConfig): MemoryPluginRuntime;

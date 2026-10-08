@@ -1,0 +1,22 @@
+export function createNollmCompatibilityRuntime(_config) {
+    const runtime = {
+        async getMemorySearchManager(_params) {
+            return {
+                manager: null,
+                error: "nollm compatibility runtime disabled in active W2 config",
+            };
+        },
+        resolveMemoryBackendConfig(_params) {
+            return {
+                backend: "builtin",
+                provider: "nollm",
+                custom: {
+                    backendKind: "nollm",
+                    compatibilityShim: false,
+                    activeMode: true,
+                },
+            };
+        },
+    };
+    return runtime;
+}

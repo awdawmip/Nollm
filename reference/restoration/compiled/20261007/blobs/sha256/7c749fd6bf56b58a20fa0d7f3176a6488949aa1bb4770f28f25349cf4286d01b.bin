@@ -1,0 +1,12 @@
+export function sidecarFailure(code, message, retryable) {
+    return {
+        ok: false,
+        error: { code, message, retryable },
+    };
+}
+export function safeErrorMessage(error) {
+    if (error instanceof Error) {
+        return error.message.slice(0, 240);
+    }
+    return "Nollm sidecar adapter error.";
+}

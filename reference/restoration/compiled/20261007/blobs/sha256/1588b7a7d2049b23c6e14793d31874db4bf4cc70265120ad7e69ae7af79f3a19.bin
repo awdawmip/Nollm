@@ -1,0 +1,24 @@
+export interface TurnIdentityEvent {
+    runId?: string;
+    sessionId?: string;
+}
+export interface HookContext {
+    agentId?: string;
+    sessionId?: string;
+    sessionKey?: string;
+    runId?: string;
+}
+export interface TurnMessage {
+    role?: string;
+    content?: unknown;
+}
+export declare function normalizeMessageContent(content: unknown): string;
+export declare function extractLatestUserText(messages: TurnMessage[]): string;
+export declare function resolveNollmTurnIdentity(ctx: HookContext, event?: TurnIdentityEvent, config?: {
+    allowAgentIds?: string[];
+}): {
+    agentId: string;
+    sessionId: string;
+    runId: string;
+    warnings: string[];
+};

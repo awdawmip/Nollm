@@ -1,0 +1,26 @@
+export declare class NollmCompatibilityReferenceRegistry {
+    private entries;
+    private generation;
+    nextGeneration(): number;
+    issueRef(params: {
+        agentId: string;
+        managerScope: string;
+        managerGeneration: number;
+        fieldId: string;
+        fieldRevisionId: string;
+        shardId: string;
+        boundedExcerpt: string;
+        queryHash: string;
+    }): string;
+    resolveRef(ref: string, opts: {
+        agentId: string;
+        managerScope: string;
+        managerGeneration: number;
+        fieldRevisionId: string;
+    }): {
+        excerpt: string;
+        shardId: string;
+    } | null;
+    isIssuedRef(ref: string): boolean;
+    clear(): void;
+}

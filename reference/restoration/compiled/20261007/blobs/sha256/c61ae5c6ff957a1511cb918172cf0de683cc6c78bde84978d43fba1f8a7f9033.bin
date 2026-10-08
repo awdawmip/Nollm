@@ -1,0 +1,710 @@
+import { createHash, randomUUID } from "node:crypto";
+import { link, mkdir, open, readFile, readdir, stat, unlink } from "node:fs/promises";
+import { dirname, join } from "node:path";
+export const CAPTURE_SCHEMA = "nollm_openclaw_durable_capture_v1";
+export const LEGACY_CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v1";
+export const CAPTURE_STATE_SCHEMA = "nollm_openclaw_capture_state_event_v2";
+export const LEGACY_CAPTURE_DIRECTIVE_SCHEMA = "nollm_openclaw_capture_absorption_directive_v1";
+export const CAPTURE_DIRECTIVE_SCHEMA = "nollm_openclaw_capture_absorption_directive_v2";
+export const TOOL_EVIDENCE_SCHEMA = "nollm_openclaw_tool_evidence_v1";
+export const CAPTURE_PLUGIN_VERSION = "0.17.0";
+function sha256(value) {
+    return createHash("sha256").update(value, "utf8").digest("hex");
+}
+function canonical(value) {
+    return `${JSON.stringify(value)}\n`;
+}
+function canonicalJsonValue(value, seen = new Set()) {
+    if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number")
+        return value;
+    if (typeof value === "bigint")
+        return { encoding: "decimal", value: value.toString(10) };
+    if (typeof value === "undefined")
+        return null;
+    if (Buffer.isBuffer(value))
+        return { encoding: "base64", value: value.toString("base64") };
+    if (Array.isArray(value))
+        return value.map(item => canonicalJsonValue(item, seen));
+    if (typeof value === "object") {
+        if (seen.has(value))
+            throw new TypeError("tool result must not contain cycles");
+        seen.add(value);
+        const source = value;
+        const normalized = Object.fromEntries(Object.keys(source).sort().map(key => [key, canonicalJsonValue(source[key], seen)]));
+        seen.delete(value);
+        return normalized;
+    }
+    return String(value);
+}
+export function canonicalToolPayload(value) {
+    if (typeof value === "string") {
+        assertText(value, "tool result", true);
+        return { text: value, encoding: "utf8" };
+    }
+    if (Buffer.isBuffer(value))
+        return { text: value.toString("base64"), encoding: "base64" };
+    return { text: JSON.stringify(canonicalJsonValue(value)), encoding: "canonical_json" };
+}
+function assertText(value, name, allowEmpty = false) {
+    if (typeof value !== "string" || (!allowEmpty && value.length === 0))
+        throw new TypeError(`${name} must be a non-empty string`);
+    for (let index = 0; index < value.length; index += 1) {
+        const unit = value.charCodeAt(index);
+        if (unit < 0xd800 || unit > 0xdfff)
+            continue;
+        if (unit <= 0xdbff && index + 1 < value.length) {
+            const next = value.charCodeAt(index + 1);
+            if (next >= 0xdc00 && next <= 0xdfff) {
+                index += 1;
+                continue;
+            }
+        }
+        throw new TypeError(`${name} contains an isolated UTF-16 surrogate`);
+    }
+}
+export function buildCaptureSourceWindowGroups(records, maxWindowBytes = 12000, maxGroupBytes = 32000, overlapCodepoints = 128) {
+    if (!records.length || !Number.isInteger(maxWindowBytes) || maxWindowBytes < 1024 ||
+        !Number.isInteger(maxGroupBytes) || maxGroupBytes < maxWindowBytes ||
+        !Number.isInteger(overlapCodepoints) || overlapCodepoints < 0)
+        throw new TypeError("source window budgets are invalid");
+    const windows = [];
+    for (const record of records)
+        for (const role of ["user", "assistant"]) {
+            const points = [...record[`${role}_utf8`]];
+            if (!points.length)
+                continue;
+            const roleWindows = [];
+            let start = 0;
+            while (start < points.length) {
+                let end = start;
+                let bytes = 0;
+                while (end < points.length) {
+                    const pointBytes = Buffer.byteLength(points[end], "utf8");
+                    if (end > start && bytes + pointBytes > maxWindowBytes)
+                        break;
+                    bytes += pointBytes;
+                    end += 1;
+                }
+                roleWindows.push({ capture_id: record.capture_id, role, start, end, text_utf8: points.slice(start, end).join("") });
+                if (end === points.length)
+                    break;
+                const next = Math.max(start + 1, end - overlapCodepoints);
+                start = next;
+            }
+            roleWindows.forEach((window, index) => windows.push({ ...window, window_index: index, window_count: roleWindows.length }));
+        }
+    const groups = [];
+    let current = [];
+    let bytes = 0;
+    for (const window of windows) {
+        const size = Buffer.byteLength(window.text_utf8, "utf8");
+        if (current.length && bytes + size > maxGroupBytes) {
+            groups.push(current);
+            current = [];
+            bytes = 0;
+        }
+        current.push(window);
+        bytes += size;
+    }
+    if (current.length)
+        groups.push(current);
+    return groups;
+}
+async function publishImmutable(path, bytes) {
+    await mkdir(dirname(path), { recursive: true });
+    try {
+        const existing = await readFile(path, "utf8");
+        if (existing !== bytes)
+            throw new Error(`immutable file conflict: ${path}`);
+        return "replayed";
+    }
+    catch (error) {
+        if (error.code !== "ENOENT")
+            throw error;
+    }
+    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    const handle = await open(temporary, "wx", 0o600);
+    try {
+        await handle.writeFile(bytes, "utf8");
+        await handle.sync();
+    }
+    finally {
+        await handle.close();
+    }
+    try {
+        await link(temporary, path);
+    }
+    catch (error) {
+        if (error.code !== "EEXIST")
+            throw error;
+        const existing = await readFile(path, "utf8");
+        if (existing !== bytes)
+            throw new Error(`immutable file conflict: ${path}`);
+        return "replayed";
+    }
+    finally {
+        await unlink(temporary).catch(() => undefined);
+    }
+    return "created";
+}
+function parseRecord(text) {
+    const value = JSON.parse(text);
+    if (value.schema_version !== CAPTURE_SCHEMA || typeof value.capture_id !== "string" || typeof value.scope_id_sha256 !== "string" || typeof value.workspace_id_sha256 !== "string" ||
+        typeof value.session_key_sha256 !== "string" || typeof value.turn_identity_sha256 !== "string" ||
+        typeof value.main_run_id_sha256 !== "string" || typeof value.profile_id !== "string" ||
+        typeof value.visible_endpoint_kind !== "string" || typeof value.visible_epoch_ms !== "number" ||
+        typeof value.captured_epoch_ms !== "number" || typeof value.content_sha256 !== "string" ||
+        value.user_role !== "user" || value.assistant_role !== "assistant" || !Array.isArray(value.turn_order) || value.turn_order.join("\0") !== "user\0assistant" ||
+        typeof value.user_utf8 !== "string" || typeof value.assistant_utf8 !== "string" ||
+        value.user_utf8_bytes !== Buffer.byteLength(value.user_utf8, "utf8") || value.assistant_utf8_bytes !== Buffer.byteLength(value.assistant_utf8, "utf8") ||
+        typeof value.host_version !== "string" || typeof value.plugin_version !== "string" ||
+        (value.model_ref !== undefined && typeof value.model_ref !== "string") ||
+        (value.reference_timezone_offset_minutes !== undefined && (!Number.isInteger(value.reference_timezone_offset_minutes) || value.reference_timezone_offset_minutes < -840 || value.reference_timezone_offset_minutes > 840)))
+        throw new Error("invalid Capture record");
+    return value;
+}
+function parseEvent(text) {
+    const value = JSON.parse(text);
+    const legacyStatuses = ["captured", "processing", "retry", "deferred", "no_memory", "admitted"];
+    const currentStatuses = ["captured", "processing", "retryable_defer", "retryable_defer_legacy", "evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy", "incomplete_continuation", "structural_invalid", "admitted", "reused", "revised"];
+    if (![CAPTURE_STATE_SCHEMA, LEGACY_CAPTURE_STATE_SCHEMA].includes(value.schema_version) || typeof value.event_id !== "string" || typeof value.capture_id !== "string" ||
+        !(value.schema_version === LEGACY_CAPTURE_STATE_SCHEMA ? legacyStatuses : currentStatuses).includes(value.status) ||
+        typeof value.event_epoch_ms !== "number" || typeof value.attempt !== "number")
+        throw new Error("invalid Capture state event");
+    return value;
+}
+function parseDirective(text) {
+    const parsed = JSON.parse(text);
+    const value = parsed.schema_version === LEGACY_CAPTURE_DIRECTIVE_SCHEMA && parsed.tool_evidence_ids === undefined
+        ? { ...parsed, tool_evidence_ids: [] } : parsed;
+    const actions = ["surface", "open_region", "recall", "expand", "none"];
+    const sortedActions = [...(value.memory_tool_actions ?? [])].sort();
+    const sortedStatements = [...(value.recalled_statement_ids ?? [])].sort();
+    const sortedToolEvidence = [...(value.tool_evidence_ids ?? [])].sort();
+    if (![CAPTURE_DIRECTIVE_SCHEMA, LEGACY_CAPTURE_DIRECTIVE_SCHEMA].includes(value.schema_version) || typeof value.directive_id !== "string" ||
+        typeof value.capture_id !== "string" || typeof value.main_run_id_sha256 !== "string" ||
+        value.user_role_mode !== "source" || !["source", "context_only", "memory_derived"].includes(value.assistant_role_mode) ||
+        !Array.isArray(value.memory_tool_actions) || value.memory_tool_actions.some(item => !actions.includes(item)) ||
+        new Set(value.memory_tool_actions).size !== value.memory_tool_actions.length || value.memory_tool_actions.join("\0") !== sortedActions.join("\0") ||
+        (value.selected_entry_id_sha256 !== undefined && typeof value.selected_entry_id_sha256 !== "string") ||
+        !Array.isArray(value.recalled_statement_ids) || value.recalled_statement_ids.some(item => typeof item !== "string") ||
+        new Set(value.recalled_statement_ids).size !== value.recalled_statement_ids.length || value.recalled_statement_ids.join("\0") !== sortedStatements.join("\0") ||
+        !Array.isArray(value.tool_evidence_ids) || value.tool_evidence_ids.some(item => typeof item !== "string" || !item.startsWith("tool-evidence-")) ||
+        new Set(value.tool_evidence_ids).size !== value.tool_evidence_ids.length || value.tool_evidence_ids.join("\0") !== sortedToolEvidence.join("\0") ||
+        !Number.isInteger(value.directive_epoch_ms) || !Number.isInteger(value.sequence) || value.sequence < 0 ||
+        typeof value.finalized !== "boolean" || !["hook", "safe_default_missing", "safe_default_timeout"].includes(value.finalization_reason)) {
+        throw new Error("invalid Capture absorption directive");
+    }
+    return value;
+}
+function parseToolEvidence(text) {
+    const value = JSON.parse(text);
+    if (value.schema_version !== TOOL_EVIDENCE_SCHEMA || typeof value.tool_evidence_id !== "string" ||
+        !value.tool_evidence_id.startsWith("tool-evidence-") ||
+        [value.scope_id_sha256, value.workspace_id_sha256, value.session_key_sha256, value.main_run_id_sha256,
+            value.tool_call_id_sha256, value.result_sha256].some(item => typeof item !== "string" || item.length !== 64) ||
+        typeof value.tool_name !== "string" || !value.tool_name || typeof value.tool_result_utf8 !== "string" ||
+        !["utf8", "canonical_json", "base64"].includes(value.result_encoding) || sha256(value.tool_result_utf8) !== value.result_sha256 ||
+        typeof value.succeeded !== "boolean" || !["main_agent_visible", "internal"].includes(value.visibility) ||
+        !Number.isInteger(value.observed_epoch_ms) || typeof value.host_version !== "string" || typeof value.plugin_version !== "string" ||
+        (value.tool_input_utf8 !== undefined && typeof value.tool_input_utf8 !== "string") ||
+        (value.provider !== undefined && typeof value.provider !== "string") || (value.model !== undefined && typeof value.model !== "string")) {
+        throw new Error("invalid Tool Evidence record");
+    }
+    return value;
+}
+export class CaptureStore {
+    root;
+    constructor(root) {
+        assertText(root, "Capture root");
+        this.root = root;
+    }
+    capturePath(captureId) { return join(this.root, "captures", `${captureId}.json`); }
+    eventDirectory(captureId) { return join(this.root, "events", captureId); }
+    directiveDirectory(captureId) { return join(this.root, "directives", captureId); }
+    toolEvidencePath(toolEvidenceId) { return join(this.root, "tool-evidence", `${toolEvidenceId}.json`); }
+    async publishToolEvidence(input) {
+        for (const [name, value] of Object.entries({ scopeKey: input.scopeKey, workspaceKey: input.workspaceKey, sessionKey: input.sessionKey,
+            mainRunIdentity: input.mainRunIdentity, toolCallId: input.toolCallId, toolName: input.toolName }))
+            assertText(value, name);
+        const result = canonicalToolPayload(input.result);
+        const toolInput = input.input === undefined ? undefined : canonicalToolPayload(input.input).text;
+        const identity = {
+            scope_id_sha256: sha256(input.scopeKey), workspace_id_sha256: sha256(input.workspaceKey),
+            session_key_sha256: sha256(input.sessionKey), main_run_id_sha256: sha256(input.mainRunIdentity),
+            tool_call_id_sha256: sha256(input.toolCallId),
+        };
+        const toolEvidenceId = `tool-evidence-${sha256(canonical(identity))}`;
+        try {
+            const existing = await this.readToolEvidence(toolEvidenceId);
+            if (existing.tool_name !== input.toolName || existing.tool_input_utf8 !== toolInput || existing.tool_result_utf8 !== result.text ||
+                existing.result_encoding !== result.encoding || existing.succeeded !== input.succeeded || existing.visibility !== input.visibility ||
+                existing.provider !== input.provider || existing.model !== input.model)
+                throw new Error(`immutable Tool Evidence conflict: ${toolEvidenceId}`);
+            return { record: existing, replayed: true };
+        }
+        catch (error) {
+            if (error.code !== "ENOENT")
+                throw error;
+        }
+        const record = {
+            schema_version: TOOL_EVIDENCE_SCHEMA, tool_evidence_id: toolEvidenceId, ...identity,
+            tool_name: input.toolName, tool_input_utf8: toolInput, tool_result_utf8: result.text,
+            result_encoding: result.encoding, result_sha256: sha256(result.text), succeeded: input.succeeded,
+            visibility: input.visibility, observed_epoch_ms: input.observedEpochMs ?? Date.now(),
+            provider: input.provider, model: input.model, host_version: input.hostVersion ?? "unknown",
+            plugin_version: input.pluginVersion ?? CAPTURE_PLUGIN_VERSION,
+        };
+        const published = await publishImmutable(this.toolEvidencePath(toolEvidenceId), canonical(record));
+        return { record, replayed: published === "replayed" };
+    }
+    async readToolEvidence(toolEvidenceId) {
+        return parseToolEvidence(await readFile(this.toolEvidencePath(toolEvidenceId), "utf8"));
+    }
+    async publish(input) {
+        const started = performance.now();
+        assertText(input.scopeKey, "scopeKey");
+        assertText(input.sessionKey, "sessionKey");
+        assertText(input.turnIdentity, "turnIdentity");
+        assertText(input.userUtf8, "userUtf8");
+        assertText(input.assistantUtf8, "assistantUtf8");
+        const profileId = input.profileId ?? "default";
+        const mainRunIdentity = input.mainRunIdentity ?? input.turnIdentity;
+        const endpointKind = input.endpointKind ?? "visible_assistant_delivery";
+        const hostVersion = input.hostVersion ?? "unknown";
+        const pluginVersion = input.pluginVersion ?? CAPTURE_PLUGIN_VERSION;
+        assertText(profileId, "profileId");
+        assertText(mainRunIdentity, "mainRunIdentity");
+        assertText(endpointKind, "endpointKind");
+        assertText(hostVersion, "hostVersion");
+        assertText(pluginVersion, "pluginVersion");
+        const scopeHash = sha256(input.scopeKey);
+        const workspaceHash = sha256(input.workspaceKey ?? input.scopeKey);
+        const sessionHash = sha256(input.sessionKey);
+        const turnHash = sha256(input.turnIdentity);
+        const contentHash = sha256(canonical({ user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8 }));
+        const captureId = `capture-${sha256(canonical({ scope_id_sha256: scopeHash, workspace_id_sha256: workspaceHash, turn_identity_sha256: turnHash }))}`;
+        try {
+            const existing = await this.read(captureId);
+            if (existing.scope_id_sha256 !== scopeHash || existing.workspace_id_sha256 !== workspaceHash || existing.session_key_sha256 !== sessionHash || existing.turn_identity_sha256 !== turnHash || existing.content_sha256 !== contentHash || existing.user_utf8 !== input.userUtf8 || existing.assistant_utf8 !== input.assistantUtf8) {
+                throw new Error(`immutable Capture conflict: ${captureId}`);
+            }
+            return { record: existing, replayed: true, publish_ms: performance.now() - started };
+        }
+        catch (error) {
+            if (error.code !== "ENOENT")
+                throw error;
+        }
+        const record = {
+            schema_version: CAPTURE_SCHEMA, capture_id: captureId, scope_id_sha256: scopeHash, workspace_id_sha256: workspaceHash,
+            session_key_sha256: sessionHash, turn_identity_sha256: turnHash,
+            main_run_id_sha256: sha256(mainRunIdentity), profile_id: profileId,
+            visible_endpoint_kind: endpointKind, visible_epoch_ms: input.visibleEpochMs ?? input.capturedEpochMs ?? Date.now(),
+            captured_epoch_ms: input.capturedEpochMs ?? Date.now(), content_sha256: contentHash,
+            user_role: "user", assistant_role: "assistant", turn_order: ["user", "assistant"],
+            user_utf8: input.userUtf8, assistant_utf8: input.assistantUtf8,
+            user_utf8_bytes: Buffer.byteLength(input.userUtf8, "utf8"), assistant_utf8_bytes: Buffer.byteLength(input.assistantUtf8, "utf8"),
+            host_version: hostVersion, plugin_version: pluginVersion, model_ref: input.modelRef,
+            reference_timezone_offset_minutes: input.timezoneOffsetMinutes ?? -new Date(input.capturedEpochMs ?? Date.now()).getTimezoneOffset(),
+        };
+        const result = await publishImmutable(this.capturePath(captureId), canonical(record));
+        if (result === "created")
+            await this.appendEvent(captureId, "captured", { attempt: 0, eventEpochMs: record.captured_epoch_ms });
+        return { record, replayed: result === "replayed", publish_ms: performance.now() - started };
+    }
+    async read(captureId) {
+        return parseRecord(await readFile(this.capturePath(captureId), "utf8"));
+    }
+    async publishDirective(input) {
+        assertText(input.captureId, "captureId");
+        assertText(input.mainRunIdentity, "mainRunIdentity");
+        if (!Number.isInteger(input.sequence) || input.sequence < 0)
+            throw new TypeError("directive sequence is invalid");
+        const record = await this.read(input.captureId);
+        const runHash = sha256(input.mainRunIdentity);
+        if (record.main_run_id_sha256 !== runHash)
+            throw new Error("Capture directive run identity mismatch");
+        const actions = [...new Set(input.memoryToolActions ?? [])].sort();
+        const statementIds = [...new Set(input.recalledStatementIds ?? [])].sort();
+        const toolEvidenceIds = [...new Set(input.toolEvidenceIds ?? [])].sort();
+        const toolEvidence = await Promise.all(toolEvidenceIds.map(id => this.readToolEvidence(id)));
+        if (toolEvidence.some(item => item.scope_id_sha256 !== record.scope_id_sha256 || item.workspace_id_sha256 !== record.workspace_id_sha256 ||
+            item.session_key_sha256 !== record.session_key_sha256 || item.main_run_id_sha256 !== record.main_run_id_sha256)) {
+            throw new Error("Tool Evidence scope does not match Capture");
+        }
+        const base = {
+            capture_id: input.captureId, main_run_id_sha256: runHash, user_role_mode: "source",
+            assistant_role_mode: input.assistantRoleMode, memory_tool_actions: actions,
+            selected_entry_id_sha256: input.selectedEntryId ? sha256(input.selectedEntryId) : undefined,
+            recalled_statement_ids: statementIds, tool_evidence_ids: toolEvidenceIds, directive_epoch_ms: input.directiveEpochMs ?? Date.now(),
+            sequence: input.sequence, finalized: input.finalized,
+            finalization_reason: input.finalizationReason ?? "hook",
+        };
+        const directiveId = `directive-${sha256(canonical(base))}`;
+        const directive = { schema_version: CAPTURE_DIRECTIVE_SCHEMA, directive_id: directiveId, ...base };
+        const result = await publishImmutable(join(this.directiveDirectory(input.captureId), `${directiveId}.json`), canonical(directive));
+        return { directive, replayed: result === "replayed" };
+    }
+    async directives(captureId) {
+        let names;
+        try {
+            names = await readdir(this.directiveDirectory(captureId));
+        }
+        catch (error) {
+            if (error.code === "ENOENT")
+                return [];
+            throw error;
+        }
+        const values = await Promise.all(names.filter(name => name.endsWith(".json")).map(async (name) => parseDirective(await readFile(join(this.directiveDirectory(captureId), name), "utf8"))));
+        return values.sort((left, right) => left.sequence - right.sequence || left.directive_epoch_ms - right.directive_epoch_ms || left.directive_id.localeCompare(right.directive_id));
+    }
+    async directive(captureId) {
+        return (await this.directives(captureId)).at(-1);
+    }
+    async directiveForAbsorption(record, now, finalizationGraceMs) {
+        const current = await this.directive(record.capture_id);
+        if (current?.finalized)
+            return current;
+        if (current && now - record.captured_epoch_ms < finalizationGraceMs)
+            return undefined;
+        const fallback = await this.publishDirective({
+            captureId: record.capture_id, mainRunIdentity: record.main_run_id_sha256,
+            assistantRoleMode: "context_only", memoryToolActions: [], recalledStatementIds: [],
+            directiveEpochMs: record.captured_epoch_ms + finalizationGraceMs,
+            sequence: (current?.sequence ?? -1) + 1, finalized: true,
+            finalizationReason: current ? "safe_default_timeout" : "safe_default_missing",
+        }).catch(async (error) => {
+            // Legacy records expose only the run digest. Build the same safe fallback without mutating the Raw Capture.
+            if (!String(error).includes("run identity mismatch"))
+                throw error;
+            const base = {
+                capture_id: record.capture_id, main_run_id_sha256: record.main_run_id_sha256, user_role_mode: "source",
+                assistant_role_mode: "context_only", memory_tool_actions: [],
+                selected_entry_id_sha256: undefined, recalled_statement_ids: [], tool_evidence_ids: [],
+                directive_epoch_ms: record.captured_epoch_ms + finalizationGraceMs, sequence: (current?.sequence ?? -1) + 1,
+                finalized: true, finalization_reason: current ? "safe_default_timeout" : "safe_default_missing",
+            };
+            const directiveId = `directive-${sha256(canonical(base))}`;
+            const directive = { schema_version: CAPTURE_DIRECTIVE_SCHEMA, directive_id: directiveId, ...base };
+            const result = await publishImmutable(join(this.directiveDirectory(record.capture_id), `${directiveId}.json`), canonical(directive));
+            return { directive, replayed: result === "replayed" };
+        });
+        return fallback.directive;
+    }
+    async appendEvent(captureId, status, options) {
+        const base = { capture_id: captureId, status, event_epoch_ms: options.eventEpochMs ?? Date.now(), attempt: options.attempt,
+            batch_id: options.batchId, statement_ids: options.statementIds, error: options.error,
+            evaluation: options.evaluation, continuation: options.continuation };
+        const eventId = `event-${sha256(canonical(base))}`;
+        const event = { schema_version: CAPTURE_STATE_SCHEMA, event_id: eventId, ...base };
+        await publishImmutable(join(this.eventDirectory(captureId), `${eventId}.json`), canonical(event));
+        return event;
+    }
+    async events(captureId) {
+        let names;
+        try {
+            names = await readdir(this.eventDirectory(captureId));
+        }
+        catch (error) {
+            if (error.code === "ENOENT")
+                return [];
+            throw error;
+        }
+        const events = await Promise.all(names.filter(name => name.endsWith(".json")).map(async (name) => parseEvent(await readFile(join(this.eventDirectory(captureId), name), "utf8"))));
+        const terminalRank = (status) => status === "processing" ? 1 : status === "captured" ? 0 : 2;
+        return events.sort((left, right) => left.attempt - right.attempt || left.event_epoch_ms - right.event_epoch_ms || terminalRank(left.status) - terminalRank(right.status) || left.event_id.localeCompare(right.event_id));
+    }
+    async currentState(captureId) {
+        const events = await this.events(captureId);
+        if (!events.length) {
+            const record = await this.read(captureId);
+            return this.appendEvent(captureId, "captured", { attempt: 0, eventEpochMs: record.captured_epoch_ms });
+        }
+        const current = events[events.length - 1];
+        if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && current.status === "no_memory") {
+            return this.appendEvent(captureId, "evaluated_no_new_propositions_legacy", {
+                attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+                eventEpochMs: current.event_epoch_ms + 1,
+                evaluation: {
+                    writer_schema: "legacy_no_memory", prompt_version: "legacy_unknown",
+                    context_fingerprint: sha256("legacy-context"), current_memory_fingerprint: sha256("legacy-memory-unobserved"),
+                    source_coverage: "legacy_unverified", evaluation_epoch_ms: current.event_epoch_ms,
+                },
+            });
+        }
+        if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && current.status === "deferred") {
+            return this.appendEvent(captureId, "retryable_defer_legacy", {
+                attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+                error: current.error ?? "legacy deferred outcome requires retry", eventEpochMs: current.event_epoch_ms + 1,
+            });
+        }
+        if (current.schema_version === LEGACY_CAPTURE_STATE_SCHEMA && current.status === "retry") {
+            return this.appendEvent(captureId, "retryable_defer", {
+                attempt: current.attempt, batchId: current.batch_id, statementIds: current.statement_ids,
+                error: current.error ?? "legacy retry", eventEpochMs: current.event_epoch_ms + 1,
+            });
+        }
+        return current;
+    }
+    async requestReevaluation(captureId, reason, now = Date.now()) {
+        assertText(reason, "reevaluation reason");
+        const current = await this.currentState(captureId);
+        return this.appendEvent(captureId, "captured", {
+            attempt: current.attempt, eventEpochMs: now, error: `re-evaluate:${reason}`,
+        });
+    }
+    async scanRecords() {
+        let names;
+        try {
+            names = await readdir(join(this.root, "captures"));
+        }
+        catch (error) {
+            if (error.code === "ENOENT")
+                return { records: [], diagnostics: [] };
+            throw error;
+        }
+        const records = [];
+        const diagnostics = [];
+        for (const name of names.filter(name => name.endsWith(".json")).sort()) {
+            try {
+                records.push(parseRecord(await readFile(join(this.root, "captures", name), "utf8")));
+            }
+            catch (error) {
+                diagnostics.push({ file: name, error: String(error) });
+            }
+        }
+        records.sort((left, right) => left.captured_epoch_ms - right.captured_epoch_ms || left.capture_id.localeCompare(right.capture_id));
+        return { records, diagnostics };
+    }
+    async allRecords() {
+        return (await this.scanRecords()).records;
+    }
+    async contextBefore(sources, maxCaptures = 4, maxChars = 6000) {
+        if (!sources.length || !Number.isInteger(maxCaptures) || maxCaptures < 0 || !Number.isInteger(maxChars) || maxChars < 0) {
+            throw new TypeError("context source and budgets are invalid");
+        }
+        const anchor = sources[0];
+        if (sources.some(record => record.scope_id_sha256 !== anchor.scope_id_sha256 ||
+            record.workspace_id_sha256 !== anchor.workspace_id_sha256 ||
+            record.session_key_sha256 !== anchor.session_key_sha256 ||
+            record.profile_id !== anchor.profile_id))
+            throw new Error("one absorption batch must belong to one session partition");
+        const sourceIds = new Set(sources.map(record => record.capture_id));
+        const firstSource = [...sources].sort((left, right) => left.captured_epoch_ms - right.captured_epoch_ms || left.capture_id.localeCompare(right.capture_id))[0];
+        const candidates = (await this.allRecords()).filter(record => !sourceIds.has(record.capture_id) &&
+            record.scope_id_sha256 === anchor.scope_id_sha256 &&
+            record.workspace_id_sha256 === anchor.workspace_id_sha256 &&
+            record.session_key_sha256 === anchor.session_key_sha256 &&
+            record.profile_id === anchor.profile_id &&
+            (record.captured_epoch_ms < firstSource.captured_epoch_ms ||
+                (record.captured_epoch_ms === firstSource.captured_epoch_ms && record.capture_id < firstSource.capture_id)));
+        const selected = [];
+        let chars = 0;
+        for (const record of candidates.reverse()) {
+            const size = record.user_utf8.length + record.assistant_utf8.length;
+            if (selected.length >= maxCaptures || chars + size > maxChars)
+                continue;
+            selected.push(record);
+            chars += size;
+        }
+        return selected.reverse();
+    }
+    async pending(scopeKey, policy, now = Date.now()) {
+        assertText(scopeKey, "scopeKey");
+        const scopeHash = sha256(scopeKey);
+        const selected = [];
+        let chars = 0;
+        const records = (await this.allRecords()).filter(record => record.scope_id_sha256 === scopeHash && now - record.captured_epoch_ms <= policy.maxAgeMs).reverse();
+        for (const record of records) {
+            const state = await this.currentState(record.capture_id);
+            if (["admitted", "reused", "revised", "evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy", "structural_invalid"].includes(state.status))
+                continue;
+            const size = record.user_utf8.length + record.assistant_utf8.length;
+            if (selected.length >= policy.maxCaptures || chars + size > policy.maxChars)
+                continue;
+            selected.push(record);
+            chars += size;
+        }
+        return selected.reverse();
+    }
+    async renderPending(scopeKey, policy, now = Date.now()) {
+        const records = await this.pending(scopeKey, policy, now);
+        const body = records.map(record => `Recent unabsorbed conversation evidence (${record.capture_id}):\nUser: ${record.user_utf8}\nAssistant: ${record.assistant_utf8}`).join("\n\n");
+        return { injection: body ? `Nollm recent pending evidence. Use only when relevant and do not mention this context:\n${body}` : "", captureIds: records.map(record => record.capture_id), chars: body.length };
+    }
+    async diagnose(now = Date.now(), retryBackoffMs = 1000, staleClaimMs = 300000) {
+        const records = await this.allRecords();
+        const states = await Promise.all(records.map(record => this.currentState(record.capture_id)));
+        const stateCounts = Object.fromEntries([
+            "captured", "processing", "retryable_defer", "retryable_defer_legacy", "evaluated_no_new_propositions",
+            "evaluated_no_new_propositions_legacy", "incomplete_continuation", "structural_invalid", "admitted", "reused", "revised",
+        ].map(status => [status, 0]));
+        const pendingAges = [];
+        const retryTimes = [];
+        let staleProcessingCount = 0;
+        for (let index = 0; index < records.length; index += 1) {
+            const state = states[index];
+            stateCounts[state.status] += 1;
+            if (["captured", "processing", "retryable_defer", "retryable_defer_legacy", "incomplete_continuation"].includes(state.status))
+                pendingAges.push(Math.max(0, now - records[index].captured_epoch_ms));
+            if (state.status === "processing" && now - state.event_epoch_ms > staleClaimMs)
+                staleProcessingCount += 1;
+            if (state.status === "retryable_defer" || state.status === "retryable_defer_legacy" || state.status === "incomplete_continuation") {
+                const delay = Math.min(staleClaimMs, retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
+                retryTimes.push(state.event_epoch_ms + delay);
+            }
+        }
+        return {
+            state_counts: stateCounts,
+            pending_capture_count: pendingAges.length,
+            oldest_pending_age_ms: pendingAges.length ? Math.max(...pendingAges) : null,
+            next_retry_epoch_ms: retryTimes.length ? Math.min(...retryTimes) : null,
+            stale_processing_count: staleProcessingCount,
+        };
+    }
+}
+export class AbsorptionWorker {
+    store;
+    batchMaxCaptures;
+    batchMaxChars;
+    staleClaimMs;
+    retryBackoffMs;
+    directiveFinalizationMs;
+    continuationPassesPerRun;
+    reevaluationNeeded;
+    absorb;
+    active = false;
+    constructor(store, options, absorb) {
+        this.store = store;
+        this.batchMaxCaptures = options.batchMaxCaptures;
+        this.batchMaxChars = options.batchMaxChars;
+        this.staleClaimMs = options.staleClaimMs;
+        this.retryBackoffMs = options.retryBackoffMs ?? 1000;
+        this.directiveFinalizationMs = options.directiveFinalizationMs ?? 30000;
+        this.continuationPassesPerRun = options.continuationPassesPerRun ?? 1;
+        this.reevaluationNeeded = options.reevaluationNeeded ?? (async () => false);
+        this.absorb = absorb;
+        if (!Number.isInteger(this.continuationPassesPerRun) || this.continuationPassesPerRun < 1 || this.continuationPassesPerRun > 32)
+            throw new TypeError("continuationPassesPerRun must be in [1,32]");
+    }
+    async runOnce(now = Date.now()) {
+        if (this.active)
+            return { status: "busy", captureCount: 0 };
+        this.active = true;
+        const lockPath = join(this.store.root, "worker.lock");
+        await mkdir(this.store.root, { recursive: true });
+        let lock;
+        try {
+            lock = await open(lockPath, "wx", 0o600);
+        }
+        catch (error) {
+            this.active = false;
+            if (error.code === "EEXIST") {
+                try {
+                    const info = await stat(lockPath);
+                    if (now - info.mtimeMs <= this.staleClaimMs)
+                        return { status: "busy", captureCount: 0 };
+                    await unlink(lockPath);
+                    return this.runOnce(now);
+                }
+                catch {
+                    return { status: "busy", captureCount: 0 };
+                }
+            }
+            throw error;
+        }
+        try {
+            const available = (await Promise.all((await this.store.allRecords()).map(async (record) => ({
+                record, state: await this.store.currentState(record.capture_id),
+                directive: await this.store.directiveForAbsorption(record, now, this.directiveFinalizationMs),
+                reevaluation: false,
+            }))));
+            for (const item of available)
+                if (["evaluated_no_new_propositions", "evaluated_no_new_propositions_legacy"].includes(item.state.status)) {
+                    item.reevaluation = await this.reevaluationNeeded(item.record, item.state);
+                }
+            const ready = available.filter(item => item.directive?.finalized === true);
+            const retryReady = ({ state }) => {
+                if (!["retryable_defer", "retryable_defer_legacy", "incomplete_continuation"].includes(state.status))
+                    return false;
+                if (state.status === "incomplete_continuation")
+                    return state.error !== "incomplete_budget_exhausted" || now - state.event_epoch_ms >= this.retryBackoffMs;
+                const delay = Math.min(this.staleClaimMs, this.retryBackoffMs * (2 ** Math.max(0, state.attempt - 1)));
+                return now - state.event_epoch_ms >= delay;
+            };
+            const staleProcessing = ({ state }) => state.status === "processing" && now - state.event_epoch_ms > this.staleClaimMs;
+            const recoveryBatchId = ready.find(item => (retryReady(item) || staleProcessing(item)) && item.state.batch_id)?.state.batch_id;
+            const freshAnchor = recoveryBatchId ? undefined : ready.find(({ state, reevaluation }) => state.status === "captured" || reevaluation);
+            const candidates = [];
+            let chars = 0;
+            for (const { record, state, reevaluation } of ready) {
+                const recoverable = recoveryBatchId
+                    ? (retryReady({ state }) || staleProcessing({ state })) && state.batch_id === recoveryBatchId
+                    : state.status === "captured" || reevaluation;
+                if (freshAnchor && (record.scope_id_sha256 !== freshAnchor.record.scope_id_sha256 || record.workspace_id_sha256 !== freshAnchor.record.workspace_id_sha256 || record.session_key_sha256 !== freshAnchor.record.session_key_sha256 || record.profile_id !== freshAnchor.record.profile_id))
+                    continue;
+                const size = record.user_utf8.length + record.assistant_utf8.length;
+                if (!recoverable || candidates.length >= this.batchMaxCaptures)
+                    continue;
+                if (chars + size > this.batchMaxChars) {
+                    if (!candidates.length) {
+                        candidates.push(record);
+                        chars = size;
+                    }
+                    continue;
+                }
+                candidates.push(record);
+                chars += size;
+            }
+            if (!candidates.length)
+                return { status: "idle", captureCount: 0 };
+            const batchId = recoveryBatchId ?? `batch-${sha256(canonical(candidates.map(record => record.capture_id)))}`;
+            const attempts = new Map();
+            for (const record of candidates) {
+                const state = await this.store.currentState(record.capture_id);
+                const attempt = state.attempt + 1;
+                attempts.set(record.capture_id, attempt);
+                await this.store.appendEvent(record.capture_id, "processing", { attempt, batchId, eventEpochMs: now });
+            }
+            let pending = candidates;
+            let pass = 0;
+            while (pending.length && pass < this.continuationPassesPerRun) {
+                const executionId = sha256(canonical({ pass, captures: pending.map(record => [record.capture_id, attempts.get(record.capture_id)]) }));
+                let results;
+                try {
+                    results = await this.absorb(batchId, pending, executionId);
+                }
+                catch (error) {
+                    results = pending.map(record => ({ captureId: record.capture_id, status: "retryable_defer", error: String(error) }));
+                }
+                const byId = new Map(results.map(result => [result.captureId, result]));
+                const continuing = [];
+                for (const record of pending) {
+                    const result = byId.get(record.capture_id) ?? { captureId: record.capture_id, status: "retryable_defer", error: "missing absorption result" };
+                    await this.store.appendEvent(record.capture_id, result.status, {
+                        attempt: attempts.get(record.capture_id), batchId, statementIds: result.statementIds,
+                        error: result.error, evaluation: result.evaluation, continuation: result.continuation, eventEpochMs: now + pass + 1,
+                    });
+                    if (result.status === "incomplete_continuation")
+                        continuing.push(record);
+                }
+                pending = continuing;
+                pass += 1;
+            }
+            for (const record of pending) {
+                const state = await this.store.currentState(record.capture_id);
+                await this.store.appendEvent(record.capture_id, "incomplete_continuation", {
+                    attempt: attempts.get(record.capture_id), batchId, statementIds: state.statement_ids,
+                    error: "incomplete_budget_exhausted", evaluation: state.evaluation, continuation: state.continuation,
+                    eventEpochMs: now + pass + 1,
+                });
+            }
+            return { status: "completed", batchId, captureCount: candidates.length };
+        }
+        finally {
+            await lock.close();
+            await unlink(lockPath).catch(() => undefined);
+            this.active = false;
+        }
+    }
+}

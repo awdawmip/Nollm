@@ -1,0 +1,14 @@
+import type { MemoryContextEnvelope, SidecarResult } from "./types.js";
+export declare function validatePrepareResult(result: SidecarResult, config: {
+    maxFacts: number;
+    maxContextCharacters: number;
+}): SidecarResult | {
+    ok: true;
+    schema: "nollm.provider.prepare.v2";
+    context: MemoryContextEnvelope;
+};
+export declare function validateContextEnvelope(context: unknown, config: {
+    maxFacts: number;
+    maxContextCharacters: number;
+}): MemoryContextEnvelope | null;
+export declare function validateCaptureResult(result: SidecarResult): boolean;

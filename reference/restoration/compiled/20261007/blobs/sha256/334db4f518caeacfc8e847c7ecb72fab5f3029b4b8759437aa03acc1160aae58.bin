@@ -1,0 +1,11 @@
+import type { MemoryContextEnvelope, SidecarResult } from "./types.js";
+export declare function validatePrepareResult(result: SidecarResult, config: {
+    maxFacts: number;
+    maxCharacters: number;
+    maxContextCharacters: number;
+}): SidecarResult;
+export declare function validateContextEnvelope(context: unknown, config: {
+    maxFacts: number;
+    maxCharacters: number;
+    maxContextCharacters: number;
+}): MemoryContextEnvelope | null;

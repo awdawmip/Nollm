@@ -1,0 +1,777 @@
+{
+  "schema": "nollm_compiled_reference_manifest_v1",
+  "role": "REFERENCE_ONLY",
+  "observed_checkout_head_semantics": "Observation metadata only; not a generation input, embedded basis, Git parent, or proof of reproducibility.",
+  "verification_limits": {
+    "preserved_packet_bytes": "SHA256, byte count and raw Git blob verified for exactly these 50 selected members.",
+    "current_source_paths_rechecked": false,
+    "source_to_compiled_generation": "NOT_PROVEN",
+    "build_reproduction": "NOT_VERIFIED",
+    "runtime_restore": "NOT_VERIFIED",
+    "active_project_admission": "NOT_ASSERTED",
+    "install_or_auto_execute": false
+  },
+  "summary": {
+    "unique_payload_count": 50,
+    "unique_payload_bytes": 999911,
+    "original_path_mapping_count": 66,
+    "original_path_bytes": 1055577,
+    "duplicate_path_occurrences": 16,
+    "deduplicated_bytes_saved": 55666,
+    "observed_checkout_head_count": 9,
+    "variant_count": 3,
+    "compiled_javascript_payload_count": 33,
+    "typescript_declaration_payload_count": 17
+  },
+  "payloads": [
+    {
+      "raw_sha256": "0184030801070e87d91b82f27de7aba54f173c35ac6443a404e29322b051dd30",
+      "size_bytes": 17513,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/0184030801070e87d91b82f27de7aba54f173c35ac6443a404e29322b051dd30.bin",
+      "raw_git_blob": "2fecdb225f647570ea6fb2689d6939321624a8fa",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "1588b7a7d2049b23c6e14793d31874db4bf4cc70265120ad7e69ae7af79f3a19",
+      "size_bytes": 668,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/1588b7a7d2049b23c6e14793d31874db4bf4cc70265120ad7e69ae7af79f3a19.bin",
+      "raw_git_blob": "8a3b69c272722945c3ec4446c0ba8681e1482be2",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "171064c777c2e3dc529a167279f9d1c2457c74ecbe654086fd77d97826bbecdd",
+      "size_bytes": 7519,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/171064c777c2e3dc529a167279f9d1c2457c74ecbe654086fd77d97826bbecdd.bin",
+      "raw_git_blob": "6688dc22391112a1b72805debbc3baa18d4f3c8f",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "1bec6c1f1076b756dbd702ec555541d52f508d6a851811e6dd5bde02aaab3663",
+      "size_bytes": 2249,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/1bec6c1f1076b756dbd702ec555541d52f508d6a851811e6dd5bde02aaab3663.bin",
+      "raw_git_blob": "1ab31c76e6d864aa89a7fc071e8405c04b69b2dc",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "24e60069fb127cd2b29fb6c634fd53cb430a914f42eff3c0aa344a294abaf22a",
+      "size_bytes": 5707,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/24e60069fb127cd2b29fb6c634fd53cb430a914f42eff3c0aa344a294abaf22a.bin",
+      "raw_git_blob": "73977d9b15fbd3406731b218da482ae8e3cc1bc2",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "2796ac50605d192f8eda6aa5a95b0936ed815ecbc02b2b8ede72066c0c595bc7",
+      "size_bytes": 94138,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/2796ac50605d192f8eda6aa5a95b0936ed815ecbc02b2b8ede72066c0c595bc7.bin",
+      "raw_git_blob": "2f6ff14bea4b90ec431383fa914d5f43fc631244",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb",
+      "size_bytes": 1601,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb.bin",
+      "raw_git_blob": "67dc3a601144bc67c713f1d2c6a788923df09cd3",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "320da510182dd6b79139689d677607d1eff3d887ee0b8ebac0f71a73ad637d30",
+      "size_bytes": 5972,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/320da510182dd6b79139689d677607d1eff3d887ee0b8ebac0f71a73ad637d30.bin",
+      "raw_git_blob": "f7f35c8243f6a09ee3bd2d777ad048535c08e320",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "334db4f518caeacfc8e847c7ecb72fab5f3029b4b8759437aa03acc1160aae58",
+      "size_bytes": 446,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/334db4f518caeacfc8e847c7ecb72fab5f3029b4b8759437aa03acc1160aae58.bin",
+      "raw_git_blob": "843d14c71387665759ed91cd772481a7044b4dc8",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "33d08e9e7c666062bdb08f41d91a8b15d77145a5fe7845fb753be55ad0c549cd",
+      "size_bytes": 160952,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/33d08e9e7c666062bdb08f41d91a8b15d77145a5fe7845fb753be55ad0c549cd.bin",
+      "raw_git_blob": "88c03af9f4f1b94ef5f2ee1feeb49f13a9d8ab48",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "380585fb849138a66d8c625689832efce0cd4a49a3eeb6aed301a8be36f02f3b",
+      "size_bytes": 251,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/380585fb849138a66d8c625689832efce0cd4a49a3eeb6aed301a8be36f02f3b.bin",
+      "raw_git_blob": "bf3f1bfcc1ced7c6ea203c42851b3d1d67990b70",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "385ace872d673b96d31635448ba9e633739c61a792ac28dd76d54c002609a7e8",
+      "size_bytes": 250,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/385ace872d673b96d31635448ba9e633739c61a792ac28dd76d54c002609a7e8.bin",
+      "raw_git_blob": "130203cf9b72662cbbf84a188b09cbed2cf292a4",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "3a955a07313b80656a50a9f0ed52c81ca08e18c6c2828cd4f90e58ad0a6acc9b",
+      "size_bytes": 202,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/3a955a07313b80656a50a9f0ed52c81ca08e18c6c2828cd4f90e58ad0a6acc9b.bin",
+      "raw_git_blob": "d16de61ba31f9ed61ef33b424110bc2be5142291",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "3f79ef7dae2cc763f6200fb6f84d86070aab0054f410c3c3b34abdedf6b9fe6c",
+      "size_bytes": 153,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/3f79ef7dae2cc763f6200fb6f84d86070aab0054f410c3c3b34abdedf6b9fe6c.bin",
+      "raw_git_blob": "4a623eafb2f11671faceb1bac249c68a9815f884",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "42654d90c8359c56c29299e20551c73bca100b8052efabcbbab08f23ff648e98",
+      "size_bytes": 248,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/42654d90c8359c56c29299e20551c73bca100b8052efabcbbab08f23ff648e98.bin",
+      "raw_git_blob": "e308df27752c5dd9c3dd5d90a01ba20cc16928ad",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "4b20b455f17ef7578ede24517591f397ddd1bdbcdd1ba5b0161cfe44b7ed021f",
+      "size_bytes": 6705,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/4b20b455f17ef7578ede24517591f397ddd1bdbcdd1ba5b0161cfe44b7ed021f.bin",
+      "raw_git_blob": "76bc55fafb9a670973b09bb73331089a61abe64e",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "4b4eb4de1a350a4d77b0f2c67750d1669a4df3826dc11c70139a3079e9939d2f",
+      "size_bytes": 19055,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/4b4eb4de1a350a4d77b0f2c67750d1669a4df3826dc11c70139a3079e9939d2f.bin",
+      "raw_git_blob": "f5875bed8ba2112ec5bf5c6d4b9456da75115558",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "4cf975072c5c39f48bf59619df947f795ba458323932e5d49b1ba2f30a0413a0",
+      "size_bytes": 150,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/4cf975072c5c39f48bf59619df947f795ba458323932e5d49b1ba2f30a0413a0.bin",
+      "raw_git_blob": "7ecebcbbe2b50755d05368d52b104de7e77a8457",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "4da9eb32c1ac517b82d32bb4a44e5868783111b2460073069f59c148d3f0d91e",
+      "size_bytes": 7222,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/4da9eb32c1ac517b82d32bb4a44e5868783111b2460073069f59c148d3f0d91e.bin",
+      "raw_git_blob": "a99d51ed0679ee78403cf18eeb2c9f64f9206f55",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "4e888ee7bd833f37249fce705724d2a7a8a40cc58ae1fb320ea0b4cef59a566a",
+      "size_bytes": 568,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/4e888ee7bd833f37249fce705724d2a7a8a40cc58ae1fb320ea0b4cef59a566a.bin",
+      "raw_git_blob": "801b24413540f4907dcb26dda9eb8c581dc16d5e",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "5243ff890e5c5f711d4397b6aef59e64973b6edc5c7ac115ee9667c2cb8c00ba",
+      "size_bytes": 1768,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/5243ff890e5c5f711d4397b6aef59e64973b6edc5c7ac115ee9667c2cb8c00ba.bin",
+      "raw_git_blob": "6f4dc9527f08c64c8e7dcb672512f191d97ef5c0",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "5752ef97c820a71726a5cdcb404064b9d1b598dacb5388b1cdbd51fb2c538b26",
+      "size_bytes": 94135,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/5752ef97c820a71726a5cdcb404064b9d1b598dacb5388b1cdbd51fb2c538b26.bin",
+      "raw_git_blob": "1cae85d71ae3f5d615e9c217733595fcf8e0ff33",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "5dbda35c9931d5cff9c85c9faedd0c23b1296fd4996df9fb6df09fb0a17384aa",
+      "size_bytes": 1140,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/5dbda35c9931d5cff9c85c9faedd0c23b1296fd4996df9fb6df09fb0a17384aa.bin",
+      "raw_git_blob": "51707e300b527b7dc60d9a97ca68d3625a8b1863",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "6bfbcf3226840f769f43790a00b02d98a6d115d297cfcc7037c6dc38dbcf498e",
+      "size_bytes": 6299,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/6bfbcf3226840f769f43790a00b02d98a6d115d297cfcc7037c6dc38dbcf498e.bin",
+      "raw_git_blob": "f51fea89d0a2dc253ca63d4a83f171569687331d",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "6e78f0da03e382a54ed67100d598071cd9c6e9a371a666faceeaf7bde50858b6",
+      "size_bytes": 2548,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/6e78f0da03e382a54ed67100d598071cd9c6e9a371a666faceeaf7bde50858b6.bin",
+      "raw_git_blob": "cd7c1f8e28ed191331a5b6931f64ec4207d795e0",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "74fa16a80d124c7f1f49e1ee5b590fa86471f9714386e1a94b5247b18eb3ee93",
+      "size_bytes": 599,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/74fa16a80d124c7f1f49e1ee5b590fa86471f9714386e1a94b5247b18eb3ee93.bin",
+      "raw_git_blob": "9edd664d3ab5fcdf751cc0138e673d1407b1ee9c",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "7bd012e09568a8f5c5953d197bcd74b621a09a81b60b0950cf52d1a969475bce",
+      "size_bytes": 15734,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/7bd012e09568a8f5c5953d197bcd74b621a09a81b60b0950cf52d1a969475bce.bin",
+      "raw_git_blob": "f1cef2b9c6a70ccbda1437c09c037292f173055c",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "7c749fd6bf56b58a20fa0d7f3176a6488949aa1bb4770f28f25349cf4286d01b",
+      "size_bytes": 316,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/7c749fd6bf56b58a20fa0d7f3176a6488949aa1bb4770f28f25349cf4286d01b.bin",
+      "raw_git_blob": "1f35f02f4e3f4332645ce36d72b0666d301fe97c",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "814cebb711746c3d25da2286cd76cc9fb8f1ee4019ea07d8da8cc4b9a7edcb3f",
+      "size_bytes": 593,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/814cebb711746c3d25da2286cd76cc9fb8f1ee4019ea07d8da8cc4b9a7edcb3f.bin",
+      "raw_git_blob": "6be502d467676966a96e682665760a38279f6deb",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "8608adc2bd3647c1baad347681839eb53a0d42c4715965ff80672d3a3a1aa13d",
+      "size_bytes": 698,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/8608adc2bd3647c1baad347681839eb53a0d42c4715965ff80672d3a3a1aa13d.bin",
+      "raw_git_blob": "bf470448b67f81cd7cdc6ebb1abff36222fb0536",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "size_bytes": 11,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881.bin",
+      "raw_git_blob": "cb0ff5c3b541f646105198ee23ac0fc3d805023e",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "8f911b91a4ef35879e4fe7f3e17d3417d3a9bb0c5222f438ed759f7da305a65e",
+      "size_bytes": 3939,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/8f911b91a4ef35879e4fe7f3e17d3417d3a9bb0c5222f438ed759f7da305a65e.bin",
+      "raw_git_blob": "b433eb7784aba59fe907c9104acb1c99ff28f736",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "93e4bad7c45749f791f41436a3c2766b329a872ec07ba636f9ee10ee350e9310",
+      "size_bytes": 14308,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/93e4bad7c45749f791f41436a3c2766b329a872ec07ba636f9ee10ee350e9310.bin",
+      "raw_git_blob": "a3b1165fce4f91f3d5350e2afb6c4151ab25dcd4",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "969ed2be2db9b99871f219703223dc9fdfd1c6872ddf42539482348dc35e04bf",
+      "size_bytes": 531,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/969ed2be2db9b99871f219703223dc9fdfd1c6872ddf42539482348dc35e04bf.bin",
+      "raw_git_blob": "74bd16b9d9f719363744d348dd2f1e24ca5eb5ff",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "9a1e381ec21f7cf0df2e63d052ee19527e278bc1cee3ca7cd809f477627e0c9b",
+      "size_bytes": 17513,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/9a1e381ec21f7cf0df2e63d052ee19527e278bc1cee3ca7cd809f477627e0c9b.bin",
+      "raw_git_blob": "8e6cebd0407e380b84ac4aa4916bba4370c3b42c",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "9cf8d5aae07c9cddbe885dce81863c8c58cbc326a8b2912e32de40fa34ca22bd",
+      "size_bytes": 347,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/9cf8d5aae07c9cddbe885dce81863c8c58cbc326a8b2912e32de40fa34ca22bd.bin",
+      "raw_git_blob": "76b3b96fb0eb8001671ee6b0f9c5293d556a3d2d",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "a5a41d6c226e3dbb30cfd5c22c5f5c95bf9f091ac984b51c5e297026a7127b59",
+      "size_bytes": 1890,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/a5a41d6c226e3dbb30cfd5c22c5f5c95bf9f091ac984b51c5e297026a7127b59.bin",
+      "raw_git_blob": "eab13475f48f68e5e2da7b001c2f8d9f1201f730",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "b9ef0683a705c962b34c54a69d59e35964c62c730caf5d3a03d566d2edf0ae59",
+      "size_bytes": 5844,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/b9ef0683a705c962b34c54a69d59e35964c62c730caf5d3a03d566d2edf0ae59.bin",
+      "raw_git_blob": "9731db3f6f79500d1809b37943fee67e087dbf0d",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "bbd45f366df14ba09e7ad1dcad285ff14f093185e2eb7e921f97d6c0b39b7544",
+      "size_bytes": 654,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/bbd45f366df14ba09e7ad1dcad285ff14f093185e2eb7e921f97d6c0b39b7544.bin",
+      "raw_git_blob": "0ad532b55033f57dd3932da6d86474b5be0e62e5",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "bfce8cbba88291b338128d60679c7a86dbfc0e6fafa9e9e94545c51e3a69e99a",
+      "size_bytes": 109731,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/bfce8cbba88291b338128d60679c7a86dbfc0e6fafa9e9e94545c51e3a69e99a.bin",
+      "raw_git_blob": "ce40553e442b01ea3a15f7278ae838c620f1ebf1",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "c61ae5c6ff957a1511cb918172cf0de683cc6c78bde84978d43fba1f8a7f9033",
+      "size_bytes": 41797,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/c61ae5c6ff957a1511cb918172cf0de683cc6c78bde84978d43fba1f8a7f9033.bin",
+      "raw_git_blob": "7b360bd8b5efb0fbbf3c8c78b78ad3449d6e2a74",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "cce37a592df4695b82900da2f7e59db2c98d204e8929e48bdcc9b45933fae97f",
+      "size_bytes": 17513,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/cce37a592df4695b82900da2f7e59db2c98d204e8929e48bdcc9b45933fae97f.bin",
+      "raw_git_blob": "2f72b98d4f591c614aedd9d3eb16fc762f475972",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "d86c93d65894fd6a111dd6ab7eb451762a564481e9c0fe2e98cbaba1be41ee20",
+      "size_bytes": 89388,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/d86c93d65894fd6a111dd6ab7eb451762a564481e9c0fe2e98cbaba1be41ee20.bin",
+      "raw_git_blob": "7c7499e3eb789c9701f2f9cf79eb4c17d80acc10",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "d9887949f752ecf5a716b7133052b108ff5672e24d4007d37d76935f54118370",
+      "size_bytes": 1954,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/d9887949f752ecf5a716b7133052b108ff5672e24d4007d37d76935f54118370.bin",
+      "raw_git_blob": "eacdab9522733b9f23d42746f8394b4466806aec",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "d98a66b7518b70c018515aafd4da02fd5bb477c452fa5684b2c5ecee219a277c",
+      "size_bytes": 93772,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/d98a66b7518b70c018515aafd4da02fd5bb477c452fa5684b2c5ecee219a277c.bin",
+      "raw_git_blob": "6c39f1026cad1e8b9235b2ef46a700f997eb3d1c",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "dbbc18c1e539129e0c3c04c62c67d1c96509e2af7e5ea897e366e3880e508d5e",
+      "size_bytes": 136725,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/dbbc18c1e539129e0c3c04c62c67d1c96509e2af7e5ea897e366e3880e508d5e.bin",
+      "raw_git_blob": "2ab2aa10247813779e6e665095d8b65841f3a6d2",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "e99984ec5ae844cf9fe3aed8d252264e70c71ac216c8c911bec4dc2fcb5db771",
+      "size_bytes": 2124,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/e99984ec5ae844cf9fe3aed8d252264e70c71ac216c8c911bec4dc2fcb5db771.bin",
+      "raw_git_blob": "81a1fe25b2459ba94a11155385f7b7b20a640020",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "f2109f5b573dc36db0c947eaf8e139d64340f84ba4723c9b1972d98e4a9c525c",
+      "size_bytes": 990,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/f2109f5b573dc36db0c947eaf8e139d64340f84ba4723c9b1972d98e4a9c525c.bin",
+      "raw_git_blob": "98e3fbef6ed6b9a0727f77afb51fa7d20397b582",
+      "content_kind": "typescript_declaration"
+    },
+    {
+      "raw_sha256": "f84a390a1552f5c4ade11bb1a80c10b2132427392f2954a96b2b873e042fed09",
+      "size_bytes": 5222,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/f84a390a1552f5c4ade11bb1a80c10b2132427392f2954a96b2b873e042fed09.bin",
+      "raw_git_blob": "f645799a8ac785e259fabf73705a7f703fa1e027",
+      "content_kind": "compiled_javascript"
+    },
+    {
+      "raw_sha256": "fd8e3d9f1d2978edb3bf16d207c1e0b01ef9eb540ac4e6174f2b49d0456940d9",
+      "size_bytes": 259,
+      "repo_relative_blob_path": "reference/restoration/compiled/20261007/blobs/sha256/fd8e3d9f1d2978edb3bf16d207c1e0b01ef9eb540ac4e6174f2b49d0456940d9.bin",
+      "raw_git_blob": "e11cedd7d131649ce38bd014ec3f79030b8101aa",
+      "content_kind": "typescript_declaration"
+    }
+  ],
+  "path_mappings": [
+    {
+      "observed_checkout_head": "440b7d43ade67a2c1b8f67aa0fabf24c2b7297ef",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "0184030801070e87d91b82f27de7aba54f173c35ac6443a404e29322b051dd30"
+    },
+    {
+      "observed_checkout_head": "440b7d43ade67a2c1b8f67aa0fabf24c2b7297ef",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "5752ef97c820a71726a5cdcb404064b9d1b598dacb5388b1cdbd51fb2c538b26"
+    },
+    {
+      "observed_checkout_head": "440b7d43ade67a2c1b8f67aa0fabf24c2b7297ef",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "4f8b1c479a2634d3c1b6ae8039116154864275aa",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "7bd012e09568a8f5c5953d197bcd74b621a09a81b60b0950cf52d1a969475bce"
+    },
+    {
+      "observed_checkout_head": "4f8b1c479a2634d3c1b6ae8039116154864275aa",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "d86c93d65894fd6a111dd6ab7eb451762a564481e9c0fe2e98cbaba1be41ee20"
+    },
+    {
+      "observed_checkout_head": "4f8b1c479a2634d3c1b6ae8039116154864275aa",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/compat-registry.d.ts",
+      "raw_sha256": "8608adc2bd3647c1baad347681839eb53a0d42c4715965ff80672d3a3a1aa13d"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/compat-registry.js",
+      "raw_sha256": "d9887949f752ecf5a716b7133052b108ff5672e24d4007d37d76935f54118370"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/config.d.ts",
+      "raw_sha256": "5dbda35c9931d5cff9c85c9faedd0c23b1296fd4996df9fb6df09fb0a17384aa"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/config.js",
+      "raw_sha256": "4da9eb32c1ac517b82d32bb4a44e5868783111b2460073069f59c148d3f0d91e"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/context-validation.d.ts",
+      "raw_sha256": "4e888ee7bd833f37249fce705724d2a7a8a40cc58ae1fb320ea0b4cef59a566a"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/context-validation.js",
+      "raw_sha256": "24e60069fb127cd2b29fb6c634fd53cb430a914f42eff3c0aa344a294abaf22a"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/errors.d.ts",
+      "raw_sha256": "42654d90c8359c56c29299e20551c73bca100b8052efabcbbab08f23ff648e98"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/errors.js",
+      "raw_sha256": "7c749fd6bf56b58a20fa0d7f3176a6488949aa1bb4770f28f25349cf4286d01b"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/hook-context.d.ts",
+      "raw_sha256": "3a955a07313b80656a50a9f0ed52c81ca08e18c6c2828cd4f90e58ad0a6acc9b"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/hook-context.js",
+      "raw_sha256": "a5a41d6c226e3dbb30cfd5c22c5f5c95bf9f091ac984b51c5e297026a7127b59"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/identity.d.ts",
+      "raw_sha256": "1588b7a7d2049b23c6e14793d31874db4bf4cc70265120ad7e69ae7af79f3a19"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/identity.js",
+      "raw_sha256": "1bec6c1f1076b756dbd702ec555541d52f508d6a851811e6dd5bde02aaab3663"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/index.d.ts",
+      "raw_sha256": "3f79ef7dae2cc763f6200fb6f84d86070aab0054f410c3c3b34abdedf6b9fe6c"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/index.js",
+      "raw_sha256": "969ed2be2db9b99871f219703223dc9fdfd1c6872ddf42539482348dc35e04bf"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/memory-runtime.d.ts",
+      "raw_sha256": "380585fb849138a66d8c625689832efce0cd4a49a3eeb6aed301a8be36f02f3b"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/memory-runtime.js",
+      "raw_sha256": "bbd45f366df14ba09e7ad1dcad285ff14f093185e2eb7e921f97d6c0b39b7544"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/provider.d.ts",
+      "raw_sha256": "4cf975072c5c39f48bf59619df947f795ba458323932e5d49b1ba2f30a0413a0"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/provider.js",
+      "raw_sha256": "171064c777c2e3dc529a167279f9d1c2457c74ecbe654086fd77d97826bbecdd"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/sidecar.d.ts",
+      "raw_sha256": "9cf8d5aae07c9cddbe885dce81863c8c58cbc326a8b2912e32de40fa34ca22bd"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/sidecar.js",
+      "raw_sha256": "b9ef0683a705c962b34c54a69d59e35964c62c730caf5d3a03d566d2edf0ae59"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/types.d.ts",
+      "raw_sha256": "6e78f0da03e382a54ed67100d598071cd9c6e9a371a666faceeaf7bde50858b6"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-functional-alpha-w2",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/types.js",
+      "raw_sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/compat-registry.d.ts",
+      "raw_sha256": "8608adc2bd3647c1baad347681839eb53a0d42c4715965ff80672d3a3a1aa13d"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/compat-registry.js",
+      "raw_sha256": "d9887949f752ecf5a716b7133052b108ff5672e24d4007d37d76935f54118370"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/config.d.ts",
+      "raw_sha256": "f2109f5b573dc36db0c947eaf8e139d64340f84ba4723c9b1972d98e4a9c525c"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/config.js",
+      "raw_sha256": "f84a390a1552f5c4ade11bb1a80c10b2132427392f2954a96b2b873e042fed09"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/context-validation.d.ts",
+      "raw_sha256": "334db4f518caeacfc8e847c7ecb72fab5f3029b4b8759437aa03acc1160aae58"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/context-validation.js",
+      "raw_sha256": "4b20b455f17ef7578ede24517591f397ddd1bdbcdd1ba5b0161cfe44b7ed021f"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/errors.d.ts",
+      "raw_sha256": "42654d90c8359c56c29299e20551c73bca100b8052efabcbbab08f23ff648e98"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/errors.js",
+      "raw_sha256": "7c749fd6bf56b58a20fa0d7f3176a6488949aa1bb4770f28f25349cf4286d01b"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/hook-context.d.ts",
+      "raw_sha256": "3a955a07313b80656a50a9f0ed52c81ca08e18c6c2828cd4f90e58ad0a6acc9b"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/hook-context.js",
+      "raw_sha256": "74fa16a80d124c7f1f49e1ee5b590fa86471f9714386e1a94b5247b18eb3ee93"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/identity.d.ts",
+      "raw_sha256": "814cebb711746c3d25da2286cd76cc9fb8f1ee4019ea07d8da8cc4b9a7edcb3f"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/identity.js",
+      "raw_sha256": "e99984ec5ae844cf9fe3aed8d252264e70c71ac216c8c911bec4dc2fcb5db771"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/index.d.ts",
+      "raw_sha256": "3f79ef7dae2cc763f6200fb6f84d86070aab0054f410c3c3b34abdedf6b9fe6c"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/index.js",
+      "raw_sha256": "969ed2be2db9b99871f219703223dc9fdfd1c6872ddf42539482348dc35e04bf"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/memory-runtime.d.ts",
+      "raw_sha256": "385ace872d673b96d31635448ba9e633739c61a792ac28dd76d54c002609a7e8"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/memory-runtime.js",
+      "raw_sha256": "320da510182dd6b79139689d677607d1eff3d887ee0b8ebac0f71a73ad637d30"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/provider.d.ts",
+      "raw_sha256": "4cf975072c5c39f48bf59619df947f795ba458323932e5d49b1ba2f30a0413a0"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/provider.js",
+      "raw_sha256": "6bfbcf3226840f769f43790a00b02d98a6d115d297cfcc7037c6dc38dbcf498e"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/sidecar.d.ts",
+      "raw_sha256": "fd8e3d9f1d2978edb3bf16d207c1e0b01ef9eb540ac4e6174f2b49d0456940d9"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/sidecar.js",
+      "raw_sha256": "8f911b91a4ef35879e4fe7f3e17d3417d3a9bb0c5222f438ed759f7da305a65e"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/types.d.ts",
+      "raw_sha256": "5243ff890e5c5f711d4397b6aef59e64973b6edc5c7ac115ee9667c2cb8c00ba"
+    },
+    {
+      "observed_checkout_head": "664c6c0af1780cf14544a7d364302635623fec74",
+      "variant": "provider-synthetic-alpha-compat",
+      "original_repo_relative_path": "integrations/openclaw/nollm-memory-provider/dist/src/types.js",
+      "raw_sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "observed_checkout_head": "88d63b32329fbbcd18028de1ac83b2db3c988e33",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "c61ae5c6ff957a1511cb918172cf0de683cc6c78bde84978d43fba1f8a7f9033"
+    },
+    {
+      "observed_checkout_head": "88d63b32329fbbcd18028de1ac83b2db3c988e33",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "33d08e9e7c666062bdb08f41d91a8b15d77145a5fe7845fb753be55ad0c549cd"
+    },
+    {
+      "observed_checkout_head": "88d63b32329fbbcd18028de1ac83b2db3c988e33",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "c40f8bf6a5be6184e5e56236c96d2817fed4bee5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "4b4eb4de1a350a4d77b0f2c67750d1669a4df3826dc11c70139a3079e9939d2f"
+    },
+    {
+      "observed_checkout_head": "c40f8bf6a5be6184e5e56236c96d2817fed4bee5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "bfce8cbba88291b338128d60679c7a86dbfc0e6fafa9e9e94545c51e3a69e99a"
+    },
+    {
+      "observed_checkout_head": "c40f8bf6a5be6184e5e56236c96d2817fed4bee5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "dc1fd0d8a993944d59d770b8ba900c7b1ad025c5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "c61ae5c6ff957a1511cb918172cf0de683cc6c78bde84978d43fba1f8a7f9033"
+    },
+    {
+      "observed_checkout_head": "dc1fd0d8a993944d59d770b8ba900c7b1ad025c5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "dbbc18c1e539129e0c3c04c62c67d1c96509e2af7e5ea897e366e3880e508d5e"
+    },
+    {
+      "observed_checkout_head": "dc1fd0d8a993944d59d770b8ba900c7b1ad025c5",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "dd95606b36acae753ce137c5c449f6fa16a070b4",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "9a1e381ec21f7cf0df2e63d052ee19527e278bc1cee3ca7cd809f477627e0c9b"
+    },
+    {
+      "observed_checkout_head": "dd95606b36acae753ce137c5c449f6fa16a070b4",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "d98a66b7518b70c018515aafd4da02fd5bb477c452fa5684b2c5ecee219a277c"
+    },
+    {
+      "observed_checkout_head": "dd95606b36acae753ce137c5c449f6fa16a070b4",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    },
+    {
+      "observed_checkout_head": "e2ac451ec39befc5cfd539f1260268126ec072f7",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "93e4bad7c45749f791f41436a3c2766b329a872ec07ba636f9ee10ee350e9310"
+    },
+    {
+      "observed_checkout_head": "f9f01f56906c5ce64df4a4702f61d954a8402fb8",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/capture.js",
+      "raw_sha256": "cce37a592df4695b82900da2f7e59db2c98d204e8929e48bdcc9b45933fae97f"
+    },
+    {
+      "observed_checkout_head": "f9f01f56906c5ce64df4a4702f61d954a8402fb8",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/index.js",
+      "raw_sha256": "2796ac50605d192f8eda6aa5a95b0936ed815ecbc02b2b8ede72066c0c595bc7"
+    },
+    {
+      "observed_checkout_head": "f9f01f56906c5ce64df4a4702f61d954a8402fb8",
+      "variant": "formation-loop",
+      "original_repo_relative_path": "integrations/openclaw/formation-loop/dist/latency.js",
+      "raw_sha256": "30313b069276a24317b5565a78e43fa58d15cdef1ad74308bbae6472da94a8bb"
+    }
+  ],
+  "scope_note": "The existing provenance file covers only the four historical metadata files preserved in the first cold commit 659b28862c2b34984073d23551d0f0103e51d841. This manifest covers 50 historical compiled payloads as REFERENCE_ONLY; source-to-compiled correspondence, build reproduction, and runtime restoration remain unverified."
+}
