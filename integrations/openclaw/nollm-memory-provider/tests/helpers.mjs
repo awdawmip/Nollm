@@ -94,6 +94,9 @@ export function makeMockApi(config = {}) {
     registerMemoryCapability: (cap) => {
       events.capability = cap;
     },
+    registerTool: (factory, options) => {
+      (events.tools ||= []).push({ factory, options });
+    },
     on: (event, handler) => {
       (events[event] ||= []).push(handler);
     },
