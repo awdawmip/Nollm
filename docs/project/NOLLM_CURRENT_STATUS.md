@@ -1,6 +1,16 @@
 # Nollm Current Status
 
-Date: 2026-09-10.
+Updated 2026-11-18.
+
+## Repository memory feedback
+
+The Lab skill now reuses verified native fields across sessions. Access resolves
+the handles from a Core traversal in one binding read and validates each
+statement against the atom. The six-note working example includes the Core
+public API contract that the first change trial missed. The original five-note
+corpus is retained for replay. New experiment and mainline cycles start at the
+same accepted tip. [Measurements and reproduction](../../lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md)
+
 
 ## Completed baseline
 

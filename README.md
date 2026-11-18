@@ -261,6 +261,15 @@ In particular:
 
 The canonical project pointer is [`docs/project/ACTIVE_PROJECT.md`](docs/project/ACTIVE_PROJECT.md). Historical documents are evidence of how the architecture evolved, not instructions to restore superseded designs.
 
+### Repository memory skill
+
+The portable skill records reviewed engineering conclusions against Git blobs.
+Its host selects a physical entry, then Access returns the bounded neighborhood
+with evidence. Repeated queries can reuse the published native field. The
+[quickstart](lab/nollm-lab/repository_memory/README.md) includes installation
+and use in another Git repository. See the [change trials](lab/nollm-lab/repository_memory/comparison/README.md)
+and [timing comparison](lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md).
+
 ## Validation
 
 Typical package and governance checks:
@@ -275,6 +284,9 @@ python tools/generate_module_ownership_manifest.py --check
 python tools/validate_module_ownership_manifest.py
 python tools/check_active_tree_assets.py
 ```
+
+Keep generated evidence and archives outside the Git tree as described in the
+[active repository asset policy](docs/project/NOLLM_ACTIVE_REPOSITORY_ASSET_POLICY.md).
 
 Native memory-slot package checks live under:
 

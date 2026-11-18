@@ -53,7 +53,13 @@ class InstalledSkillTest(unittest.TestCase):
                  "also": ["formatter.py"]}]}))
             memory("capture", *manifest, "--draft", str(draft))
             recall = (*manifest, "--query", "emitter suffix")
+            ephemeral = memory("recall", *recall, "--no-cache", "--format", "view")
+            cache = Path(git("rev-parse", "--absolute-git-dir")) / "nollm-repository-memory" / "fields-v1"
+            self.assertFalse(cache.exists())
             hit = json.loads(memory("recall", *recall))
+            self.assertTrue(cache.is_dir())
+            self.assertIn(text, ephemeral.decode())
+            self.assertEqual(memory("recall", *recall, "--format", "view"), ephemeral)
             self.assertEqual((hit["entry_key"], hit["matches"][0]["text"]), ("emitter.suffix", text))
             source = (*manifest, "--key", "emitter.suffix", "--evidence-index", "1")
             original = subprocess.check_output(["git", "show", f"{first}:formatter.py"], cwd=repo)

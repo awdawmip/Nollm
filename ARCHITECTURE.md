@@ -1,6 +1,7 @@
 # Nollm Architecture
 
-The V3.1 architecture establishes package-level behavior in a modular monorepo.
+The V3.1 modular monorepo uses explicit package ownership.
+The [dependency rules](config/module-boundaries.json) define the allowed module imports.
 The [active project basis](docs/project/ACTIVE_PROJECT.md) is the authoritative
 navigation entry; older V2.2 project books are legacy references.
 
@@ -42,6 +43,6 @@ to Access. Snapshot, Trace, History, and Audit are distinct ownership domains.
 ## Legacy Boundary
 
 The old mixed GRF implementation remains available for migration regression but
-is absent from active distributions. OpenClaw adapters are paused migration
-assets. Evidence-first V2 and older layer constitutions remain historical and
-superseded rather than active architecture.
+is absent from active distributions. The GRF and V2 OpenClaw adapters remain
+migration assets. Evidence-first V2/V2.1/V2.2 and GRF8 are historical or superseded
+engineering inputs. GRF8 is an engineering checkpoint, not accepted architecture.

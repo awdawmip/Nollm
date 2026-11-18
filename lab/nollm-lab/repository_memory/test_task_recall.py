@@ -1,10 +1,14 @@
 """Automatic task routing over a real repository and reopened native field."""
+from concurrent.futures import ThreadPoolExecutor
+import errno
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from repo_notes import capture
 from task_recall import recall_task
@@ -80,6 +84,65 @@ class TaskRecallTest(unittest.TestCase):
         old = recall_task(self.repo, self.notes, "Registry", self.first)
         self.assertEqual(len(old["matches"]), 2)
         self.assertEqual(old["commit"], self.first)
+
+    def test_cache_reuses_native_field_across_queries_and_unrelated_commits(self):
+        cache = self.repo / ".git/nollm-repository-memory/fields-v1"
+        # Uncached and missed queries leave a new repo untouched.
+        reference = recall_task(self.repo, self.notes, "Registry", cache=False)
+        recall_task(self.repo, self.notes, "unmatched")
+        self.assertFalse(cache.exists())
+        self.assertEqual(recall_task(self.repo, self.notes, "Registry"), reference)
+        field, = cache.iterdir()
+        files = {p: p.stat().st_mtime_ns for p in field.rglob("*") if p.is_file()}
+        (self.repo / "unrelated.txt").write_text("unrelated change")
+        later = self.commit()
+        with patch("task_recall._build_field", side_effect=AssertionError("unexpected rebuild")):
+            warm = recall_task(self.repo, self.notes, "Registry")
+            self.assertEqual(warm, {**reference, "commit": later})
+            billed = recall_task(self.repo, self.notes, "计费")
+            self.assertEqual(billed["matches"][0]["key"], "billing")
+        self.assertEqual({p: p.stat().st_mtime_ns for p in field.rglob("*") if p.is_file()}, files)
+        self.assertEqual(list(cache.iterdir()), [field])
+
+        # Same source/version but reauthored text changes the field identity.
+        updated = capture(self.repo, self.manifest, {"reviewed_commit": self.first, "notes": [
+            {"key": "billing", "source": "billing.py", "text": "账单计费向上取整。"}
+        ]}, self.first)
+        self.assertEqual(recall_task(self.repo, updated, "计费")["matches"][0]["text"], "账单计费向上取整。")
+        self.assertEqual(len(list(cache.iterdir())), 2)
+
+    def test_concurrent_cold_cli_publishes_one_complete_field(self):
+        cache = self.repo / ".git/nollm-repository-memory/fields-v1"
+        cmd = [sys.executable, str(Path(__file__).with_name("task_recall.py")),
+               "--repo", str(self.repo), "--manifest", str(self.manifest), "--query", "registry"]
+        uncached = subprocess.check_output([*cmd, "--no-cache"])
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(subprocess.check_output, [cmd] * 4))
+        self.assertEqual(results, [uncached] * 4)
+        field, = cache.iterdir()
+        self.assertTrue(field.is_dir())
+        self.assertFalse(field.name.startswith(".build-"))
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            same_process = list(pool.map(lambda _: recall_task(self.repo, self.notes, "registry"), range(4)))
+        self.assertEqual(same_process, [json.loads(uncached)] * 4)
+
+    def test_interrupted_build_and_read_only_repository(self):
+        with patch("task_recall.write_field", side_effect=OSError(errno.EIO, "interrupted")):
+            with self.assertRaises(OSError):
+                recall_task(self.repo, self.notes, "Registry")
+        cache = self.repo / ".git/nollm-repository-memory/fields-v1"
+        self.assertEqual(list(cache.iterdir()), [])
+        expected = recall_task(self.repo, self.notes, "Registry", cache=False)
+        with patch("task_recall._cached_field", side_effect=OSError(errno.EROFS, "read-only")):
+            self.assertEqual(recall_task(self.repo, self.notes, "Registry"), expected)
+        self.assertEqual(recall_task(self.repo, self.notes, "Registry"), expected)
+        field, = cache.iterdir()
+        # Replace the published contents with an incomplete derived generation.
+        shutil.rmtree(field)
+        field.mkdir()
+        with self.assertRaises(KeyError):
+            recall_task(self.repo, self.notes, "Registry")
+        self.assertEqual(recall_task(self.repo, self.notes, "Registry", cache=False), expected)
 
     def test_cli_han_substrings_and_stale_sources(self):
         script = Path(__file__).with_name("task_recall.py")

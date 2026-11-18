@@ -1,0 +1,107 @@
+{
+  "schema": "nollm_repo_notes_v1",
+  "notes": [
+    {
+      "key": "CoreRuntime.public-operations",
+      "text": "Adding a public method on CoreRuntime changes a checked API contract. The allowlist test compares the sorted public callables declared by CoreRuntime with core_runtime_operations in CORE_PUBLIC_API_ALLOWLIST.json. A new method requires a matching entry in that list.",
+      "reviewed_commit": "314eb47490adcad22e37d6e05d2da3983e78956d",
+      "evidence": [
+        {
+          "path": "packages/nollm-core/tests/test_core_public_api_allowlist.py",
+          "blob": "b84988123f57923de5f367403f99fcf787a38467"
+        },
+        {
+          "path": "docs/architecture/module-ownership/CORE_PUBLIC_API_ALLOWLIST.json",
+          "blob": "a495a88a852b70c2607f293deed5d7619d50b8d3"
+        },
+        {
+          "path": "packages/nollm-core/src/nollm_core/state.py",
+          "blob": "97c30d0821fd144555680d71fca9b83396efe9e4"
+        }
+      ]
+    },
+    {
+      "key": "binding.current",
+      "text": "Attaching a second statement to an occupied handle preserves the current statement and records the newcomer as supporting evidence. Replacing the current statement is a separate revision operation.",
+      "reviewed_commit": "8a29bb509c972897c4b5d59a901715be23be604f",
+      "evidence": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/handle_store.py",
+          "blob": "58bc578c59e73ff17128948967f2f95fd4d089f8"
+        },
+        {
+          "path": "packages/nollm-access/tests/test_binding_store_invariants.py",
+          "blob": "b718b35207f00f9d99228f11dace383e8ff4c313"
+        }
+      ]
+    },
+    {
+      "key": "recall.evidence",
+      "text": "After Core selects a neighborhood, Access resolves the returned handles from a single read of the canonical bindings. In Core order, each item returns the current statement's text only if it matches the atom payload. A missing binding, missing or corrupt evidence, or a payload mismatch yields an item-level error.",
+      "reviewed_commit": "8a29bb509c972897c4b5d59a901715be23be604f",
+      "evidence": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/runtime.py",
+          "blob": "74a50c212a874143b4aa79fa035dd21677bff7b9"
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/handle_store.py",
+          "blob": "58bc578c59e73ff17128948967f2f95fd4d089f8"
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/statement_store.py",
+          "blob": "3dd61c8f6bf8abcf0de5495f28139c47d43ea331"
+        },
+        {
+          "path": "packages/nollm-access/tests/test_access_evidence_resolution.py",
+          "blob": "398308165eba5d368a5983ebd2591ef0255746a0"
+        }
+      ]
+    },
+    {
+      "key": "snapshot.scope",
+      "text": "SnapshotService copies the bytes exported by the supplied port and verifies by byte equality. A Core-only port therefore does not back up the separately stored statement files or handle bindings.",
+      "reviewed_commit": "8a29bb509c972897c4b5d59a901715be23be604f",
+      "evidence": [
+        {
+          "path": "packages/nollm-snapshot/src/nollm_snapshot/service.py",
+          "blob": "c6e0677ad8a4b59014f4bc793978ce66e86a3306"
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/statement_store.py",
+          "blob": "3dd61c8f6bf8abcf0de5495f28139c47d43ea331"
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/handle_store.py",
+          "blob": "58bc578c59e73ff17128948967f2f95fd4d089f8"
+        }
+      ]
+    },
+    {
+      "key": "statement.retry",
+      "text": "Retrying a write with the same statement ID and identical content leaves the stored statement intact. Reusing that ID with different content raises FileExistsError, so publish a revision under a new statement identity.",
+      "reviewed_commit": "314eb47490adcad22e37d6e05d2da3983e78956d",
+      "evidence": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/statement_store.py",
+          "blob": "3dd61c8f6bf8abcf0de5495f28139c47d43ea331"
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/statement.py",
+          "blob": "866761ffbc96970473e98e120d0e15c3a65bd920"
+        }
+      ]
+    },
+    {
+      "key": "statement.shape",
+      "text": "A Nollm memory statement carries an ID, meaningful text, an optional source handle, and zero or more context references. Its persisted mapping has exactly those four fields; a host can cite a Git source without changing Core.",
+      "reviewed_commit": "314eb47490adcad22e37d6e05d2da3983e78956d",
+      "evidence": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/statement.py",
+          "blob": "866761ffbc96970473e98e120d0e15c3a65bd920"
+        }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,23 @@
 # Active Project Basis
 
-Current authority rebase: 2026-09-10.
+Repository memory feedback cycle, 2026-11-18.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
 That task and branch reconciliation are completed. Its working branch was
 archived; do not recreate it or restart V3.13/PR #1 from a historical taskbook.
 
-Current scope: preserve and migrate existing Nollm code, including unfinished WIP;
-feature development is paused. The user authorizes publication of all Nollm code
+The repository memory experiment may feed measured improvements into main.
+Core selects results by physical geometry. Access resolves the resulting handles
+to their canonical evidence. The Lab skill may reuse these native files across
+sessions and must recheck Git evidence at the requested revision.
+
+Develop changes on `experiment/repository-memory`, compare baseline and candidate
+on the same inputs, and bring validated changes into main. Synchronize the
+experiment from the accepted main tip before its next trial. Preserve unsuccessful
+trials so later improvements can be compared against the original result.
+
+Existing migration work also continues, including unfinished WIP. The user authorizes publication of all Nollm code
 to `awdawmip/Nollm`, excluding secrets and personal data. Verify each batch by
 source paths, exact bytes/hashes and fixed-commit remote readback; record existing
 test outcomes or `NOT_RUN`. Passing all historical tests, completing real bridge

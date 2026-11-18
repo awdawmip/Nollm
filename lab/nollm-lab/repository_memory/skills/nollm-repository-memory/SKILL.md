@@ -28,24 +28,37 @@ mem() { python3 "$SKILL/scripts/memory.py" "$@"; }
 
 ## 接手一个局部任务
 
-1. 如果 manifest 存在，把任务中的行为、领域词和已知的符号名交给 `recall`。尽量沿用项目的命名；英文说明可以用代码标识符或英文术语查询。先看少量结果。
+1. 任务给出文件或符号时，直接用 `git show` 或 `git grep -n -F` 在目标提交中定位。需要接手一个行为判断、且已有清单时，把问题交给 `recall`。尽量沿用项目的命名；英文说明可以用代码标识符或英文术语查询。
 2. 读返回的说明键、正文和引用路径。用 `source` 核对选中的主文件和有关的辅助文件。证据索引从 0 开始，顺序与显示的引用路径一致。
 3. 如果查询没有命中、命中与任务无关，或任务需要的细节超出了说明，搜索目标提交的实现、调用方及测试。首次接手还没有 manifest 时直接从源码开始。若需要全景，再显式调用 `view` 阅读全部新鲜说明。
-4. 若要增加或改动公共接口，另行搜索接口契约、允许列表及相应的回归测试，核查跨包调用方。将这些文件列入证据，即使入口没有提到它们。
+4. 涉及公共接口时，从包的公开导出或端口声明追到实现和跨包调用方。检查归属清单所指的模块、当前契约和验证它的测试。只把能支持本条判断的文件填入 `source` 和 `also`。
 5. 检查相关路径的工作树差异，再决定修改方案。实现、测试通过后，在回复中标明判断所依据的提交、文件及验证结果。超出证据的推断要标明。
 
-下面的查询可在 Nollm 仓库用样本验证。把 `manifest` 指到 `$repo/lab/nollm-lab/repository_memory/examples/nollm-notes.json`。在其他仓库请换用该项目的真实查询、键和路径。
+下面的查询可在 Nollm 仓库用样本验证。示例命令单独指定样本清单。在其他仓库使用项目自己的 `$manifest`、查询、键和路径。
 
 ```sh
-mem recall --repo "$repo" --rev "$rev" --manifest "$manifest" \
+sample="$repo/lab/nollm-lab/repository_memory/examples/current-notes.json"
+mem recall --repo "$repo" --rev "$rev" --manifest "$sample" \
   --query 'Which statement stays current when another is attached to an occupied handle?' --limit 3 --format view
-mem source --repo "$repo" --rev "$rev" --manifest "$manifest" --key binding.current
-mem source --repo "$repo" --rev "$rev" --manifest "$manifest" --key recall.evidence --evidence-index 1
+mem source --repo "$repo" --rev "$rev" --manifest "$sample" --key binding.current
+mem source --repo "$repo" --rev "$rev" --manifest "$sample" --key recall.evidence --evidence-index 1
 git -C "$repo" grep -n 'current_statement' "$rev" -- packages/nollm-access
 git -C "$repo" diff "$rev" -- packages/nollm-access
 ```
 
 `--format view` 按原生召回顺序显示正文，每条说明下方是证据路径和 Git blob 短标识。检查结果是否切题；若输出 `no_match`，请直接搜源码。需要所选入口、遍历路径、核阅提交及完整 Git 对象标识时，用 `--format json`。新鲜度只覆盖声明过的证据在所选提交中的内容；未声明的调用方、未提交的改动和新增需求都可能改变判断的适用范围。
+
+以 Nollm 的公共方法 `CoreRuntime.export_state_bytes` 为例，已知名字时可直接运行如下查询。
+
+```sh
+git -C "$repo" grep -n -F 'export_state_bytes' "$rev" -- \
+  packages/nollm-core/src packages/nollm-snapshot \
+  docs/architecture/module-ownership/CORE_PUBLIC_API_ALLOWLIST.json
+```
+
+其中 Core 的 `state.py` 实现该方法，Snapshot 的 `ports.py` 声明调用方需要的接口，`service.py` 和 `tests/test_core_snapshot.py` 展示用法及字节相等断言。变更公开方法时，Core 的 `tests/test_core_public_api_allowlist.py` 检查操作名；签名和行为还需要调用方测试核实。需要确认文件归属时，按仓库相对路径到 `MODULE_OWNERSHIP_MANIFEST.csv` 查对应行。接手者可沿这些真实路径重新核查。
+
+同一个仓库反复查询时，`recall` 默认复用已写入磁盘的原生场。每次先按目标提交核验证据；新鲜条目集合、正文及其证据一致时，就能从本次任务选定的入口读取已有场。若希望本次只使用临时场，在 `recall` 命令末尾加 `--no-cache`。已生成的场保存在仓库 Git 目录的 `nollm-repository-memory/fields-v1/` 下，其中包含说明正文。可以在查询都结束后清理这个派生目录。
 
 ## 写入或更新一个判断
 
@@ -66,7 +79,7 @@ cat >"$draft" <<EOF
     "key": "binding.current",
     "text": "Attaching another statement to an occupied handle preserves the current statement. The newly attached statement is supporting evidence.",
     "source": "packages/nollm-access/src/nollm_access/handle_store.py",
-    "also": ["packages/nollm-access/src/nollm_access/runtime.py"]
+    "also": ["packages/nollm-access/tests/test_binding_store_invariants.py"]
   }]
 }
 EOF

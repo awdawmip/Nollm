@@ -40,6 +40,14 @@ def run_field_demo(repo: Path, manifest: dict, placements: list[tuple[str, int, 
 def replay_field(assessment: dict, placements: list[tuple[str, int, int]],
                  entry: tuple[int, int], limit: int = 16) -> dict:
     """Materialize a checked Git snapshot, reopen it and recall from one cell."""
+    with TemporaryDirectory(prefix="nollm-repository-field-") as temporary:
+        root = Path(temporary)
+        write_field(root, assessment, placements)
+        return read_field(root, assessment["commit"], entry, limit)
+
+
+def write_field(root: Path, assessment: dict, placements: list[tuple[str, int, int]]) -> None:
+    """Publish checked statements and host-selected placements into a fresh workspace."""
     by_key = {note["key"]: note for note in assessment["notes"]}
     chosen = []
     for key, q, r in placements:
@@ -61,48 +69,53 @@ def replay_field(assessment: dict, placements: list[tuple[str, int, int]],
     if not chosen:
         raise ValueError("supply at least one host-selected placement")
 
-    with TemporaryDirectory(prefix="nollm-repository-field-") as temporary:
-        root = Path(temporary)
-        with CoreRuntime(root) as core, AccessRuntime(
-            core, FileStatementStore(root), FileHandleStore(root)
-        ) as writer:
-            for statement, address in chosen:
-                writer.put_statement(statement)
-                writer.apply(AccessDecision(
-                    "host-new:" + statement.statement_id, statement.statement_id,
-                    "new", target_cell=address, decided_by="host",
-                    reason_text="Host chose a new placement in this empty repository field.",
-                ))
-
-        # A new runtime reloads the canonical files. Lookup by ID below is
-        # only to read citations for items the native geometric recall found.
-        with CoreRuntime(root) as core, AccessRuntime(
-            core, FileStatementStore(root), FileHandleStore(root)
-        ) as reader:
-            found = reader.recall(AccessRecallRequest(
-                "repository-field-recall", entry_cells=(_cell(*entry),),
-                allowed_kernels=("lateral",),
-                budget=RecallBudget(1, 8, 0, 1, 0, limit),
+    with CoreRuntime(root) as core, AccessRuntime(
+        core, FileStatementStore(root), FileHandleStore(root)
+    ) as writer:
+        for statement, address in chosen:
+            writer.put_statement(statement)
+            writer.apply(AccessDecision(
+                "host-new:" + statement.statement_id, statement.statement_id,
+                "new", target_cell=address, decided_by="host",
+                reason_text="Host chose a new placement in this empty repository field.",
             ))
-            recalled = []
-            for item in found.items:
-                if item.fallback_error:
-                    raise RuntimeError(f"native recall failed: {item.fallback_error}")
-                cited = reader.statement_store.get(item.statement_id)
-                recalled.append({
-                    "statement_id": item.statement_id,
-                    "text": item.evidence_utf8,
-                    "source": cited.source_handle,
-                    "evidence_blobs": list(cited.context_refs),
-                    "kernel_path": list(item.path),
-                })
-            return {
-                "source_commit": assessment["commit"],
-                "placed": core.placement_count(),
-                "entry": list(entry),
-                "budget_exhausted": found.budget_exhausted,
-                "recalled": recalled,
-            }
+
+
+def read_field(root: Path, commit: str, entry: tuple[int, int] | str, limit: int) -> dict:
+    """Reopen an existing field. Resolve a statement entry using its native binding."""
+    with CoreRuntime(root) as core, AccessRuntime(
+        core, FileStatementStore(root), FileHandleStore(root)
+    ) as reader:
+        by_statement = isinstance(entry, str)
+        if by_statement:
+            address = reader.handle_store.get(entry).geometry_address
+            entry = address.q, address.r
+        found = reader.recall(AccessRecallRequest(
+            "repository-field-recall", entry_cells=(_cell(*entry),),
+            allowed_kernels=("lateral",),
+            budget=RecallBudget(1, 8, 0, 1, 0, limit),
+        ))
+        recalled = []
+        for item in found.items:
+            if item.fallback_error:
+                raise RuntimeError(f"native recall failed: {item.fallback_error}")
+            cited = reader.statement_store.get(item.statement_id)
+            recalled.append({
+                "statement_id": item.statement_id,
+                "text": item.evidence_utf8,
+                "source": cited.source_handle,
+                "evidence_blobs": list(cited.context_refs),
+                "kernel_path": list(item.path),
+            })
+        result = {
+            "source_commit": commit,
+            "entry": list(entry),
+            "budget_exhausted": found.budget_exhausted,
+            "recalled": recalled,
+        }
+        if not by_statement:  # The explicit-placement demo reports field size.
+            result["placed"] = core.placement_count()
+        return result
 
 
 def main() -> None:
