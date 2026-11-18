@@ -56,9 +56,7 @@ class FileHandleStore:
         return self._path
 
     def state_bytes(self) -> bytes:
-        if not self.path.exists():
-            return self._encode(())
-        payload = self.path.read_bytes()
+        payload = self._read_bytes()
         self._decode(payload)
         return payload
 
@@ -131,7 +129,13 @@ class FileHandleStore:
         return self.binding_for_handle(handle).current_statement_id
 
     def _load(self) -> tuple[HandleBinding, ...]:
-        return self._decode(self.state_bytes())
+        return self._decode(self._read_bytes())
+
+    def _read_bytes(self) -> bytes:
+        try:
+            return self.path.read_bytes()
+        except FileNotFoundError:
+            return self._encode(())
 
     @staticmethod
     def _require_unbound_statement(bindings: list[HandleBinding], statement_id: str) -> None:

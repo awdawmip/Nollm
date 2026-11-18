@@ -224,11 +224,14 @@ class AccessRuntime:
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
         with self._operation():
             result = self._core.recall(request.to_core_request())
+            if not result.items:
+                return AccessRecallResult(result.request_id, (), result.budget_exhausted)
+            bindings = self._handle_store.bindings_for_handles(tuple(item.handle for item in result.items))
+            current = {binding.handle: binding.current_statement_id for binding in bindings}
             items = []
             for item in result.items:
-                try:
-                    statement_id = self._handle_store.statement_for_handle(item.handle)
-                except KeyError:
+                statement_id = current.get(item.handle)
+                if statement_id is None:
                     items.append(AccessRecallItem(item.handle, "", None, item.score_q16, "binding_missing", item.path))
                     continue
                 try:
