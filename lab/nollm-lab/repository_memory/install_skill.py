@@ -1,13 +1,33 @@
 """Install a portable repository-memory skill into a new directory."""
 import argparse
+import os
 from pathlib import Path
 from shutil import copy2
+import subprocess
 from tempfile import TemporaryDirectory
 
 
 LAB = Path(__file__).resolve().parent
 REPO = LAB.parents[2]
 SKILL_NAME = "nollm-repository-memory"
+HOST_DIRS = {
+    "codex": {"user": ".agents", "repo": ".agents"},
+    "opencode": {"user": ".agents", "repo": ".agents"},
+    "claude": {"user": ".claude", "repo": ".claude"},
+    "copilot": {"user": ".copilot", "repo": ".github"},
+}
+
+
+def host_destination(host, scope, repo):
+    if scope == "repo":
+        result = subprocess.run(["git", "-C", str(repo or "."), "rev-parse", "--show-toplevel"],
+                                capture_output=True)
+        if result.returncode:
+            raise ValueError("repository installation requires a Git worktree; use --repo PATH")
+        root = Path(os.fsdecode(result.stdout.removesuffix(b"\n").removesuffix(b"\r")))
+    else:
+        root = Path.home()
+    return root / HOST_DIRS[host][scope] / "skills" / SKILL_NAME
 
 
 def install(destination):
@@ -39,11 +59,19 @@ def install(destination):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dest", required=True, type=Path,
-                        help="new skill directory, including the skill name")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--dest", type=Path, help="new skill directory, including the skill name")
+    target.add_argument("--host", choices=HOST_DIRS, help="install into a host's skill directory")
+    parser.add_argument("--scope", choices=("user", "repo"), help="installation scope (default: user)")
+    parser.add_argument("--repo", type=Path, help="target worktree for --scope repo (default: current directory)")
     args = parser.parse_args()
+    if args.dest is not None and (args.scope or args.repo is not None):
+        parser.error("--scope and --repo select host locations; use --host with these options")
+    if args.repo is not None and args.scope != "repo":
+        parser.error("--repo requires --scope repo")
     try:
-        print(install(args.dest))
+        destination = args.dest or host_destination(args.host, args.scope or "user", args.repo)
+        print(install(destination))
     except (OSError, ValueError) as error:
         parser.exit(2, f"{parser.prog}: {error}\n")
 

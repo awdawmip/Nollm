@@ -263,7 +263,10 @@ The canonical project pointer is [`docs/project/ACTIVE_PROJECT.md`](docs/project
 
 ### Repository memory skill
 
-The portable skill records reviewed engineering conclusions against Git blobs.
+Codex, Claude Code, Copilot CLI and OpenCode can load the portable
+[repository memory skill](lab/nollm-lab/repository_memory/HOSTS.md). Start with a
+scoped brief when taking over a repository, or recall a specific engineering
+judgment during a local change. Each saved judgment cites reviewed Git blobs.
 Its host selects a physical entry, then Access returns the bounded neighborhood
 with evidence. Repeated queries can reuse the published native field. The
 [quickstart](lab/nollm-lab/repository_memory/README.md) includes installation

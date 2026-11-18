@@ -37,6 +37,36 @@ class RepositoryMemoryTest(unittest.TestCase):
                  "commit.gpgSign=false", "commit", "-qm", "test snapshot")
         return self.git("rev-parse", "HEAD")
 
+    def test_scoped_brief_uses_root_manifest_and_suppresses_stale_text(self):
+        nested = self.repo / "subdir"
+        nested.mkdir()
+        (nested / "README.md").write_text("A place to start.")
+        (nested / "helper.py").write_text("HELPER = 1")
+        self.commit()
+        script = Path(__file__).with_name("repo_notes.py").resolve()
+        command = [sys.executable, str(script), "brief", "--scope", "subdir", "--limit", "1"]
+        bare = subprocess.check_output(command, cwd=nested, text=True)
+        self.assertIn("Current notes (0)", bare)
+        self.assertIn("subdir/README.md\n  ... 1 more", bare)
+        conventional = self.repo / ".nollm/repository-notes.json"
+        self.assertFalse(conventional.exists())
+        draft = Path(self.temp.name) / "orient.json"
+        draft.write_text(json.dumps({"reviewed_commit": self.git("rev-parse", "HEAD"), "notes": [{
+            "key": "helper", "source": "subdir/helper.py", "also": ["schema[x].json"],
+            "text": "The helper relies on the schema."}]}))
+        subprocess.run([sys.executable, str(script), "capture", "--draft", str(draft)], cwd=nested,
+                       check=True, capture_output=True)
+        self.assertTrue(conventional.is_file())
+        self.assertIn("The helper relies on the schema.", subprocess.check_output(command, cwd=nested, text=True))
+        (self.repo / "schema[x].json").unlink()
+        self.commit()
+        stale = subprocess.check_output(command, cwd=nested, text=True)
+        self.assertIn("Needs review (1)\nhelper: schema[x].json", stale)
+        self.assertNotIn("relies on the schema", stale)
+        bad = subprocess.run([*command, "--manifest", "typo.json"], cwd=nested, capture_output=True, text=True)
+        self.assertEqual(bad.returncode, 2)
+        self.assertIn("manifest not found", bad.stderr)
+
     def test_support_change_is_selective_and_review_is_pinned(self):
         before = self.manifest.read_bytes()
         (self.repo / "schema[x].json").write_text("[2]")

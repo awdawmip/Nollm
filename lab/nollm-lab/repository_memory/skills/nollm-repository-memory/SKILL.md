@@ -1,104 +1,85 @@
 ---
 name: nollm-repository-memory
-description: 用带 Git 证据的工程判断接手仓库任务。Use when a user wants to recall, verify, update or hand off previously reviewed code behavior, identify which notes need rereading after a change, or find sources for a local modification.
+description: "在本地 Git 仓库中接手陌生项目、梳理模块职责与接口、追踪跨文件改动影响、复核过期判断或为下个会话留下源码证据。Use for repository onboarding, scoped architecture briefs, change-impact analysis, and durable engineering handoffs grounded in Git."
 ---
 
 # Nollm 仓库记忆
 
-用仓库作者或模型已核过的短说明定位证据。交付代码改动时，仍需检查当前实现、工作树改动及测试。一个键对应一个可单独复核的判断。
+根据用户的任务选择阅读范围。接手一个系统时先看全景；修改一个具体行为时先取相关判断；已知符号时直接查源码。每条记忆记录一个经过核对的工程判断，并绑定支持它的 Git 文件。作者可以是正在使用本 skill 的编码助手。
 
-## 运行入口
+下列请求都可以直接用自然语言提出。
 
-需要 Python 3.11+、Git 和目标仓库的本地 Git 对象。把 `SKILL` 设为本文件所在目录的绝对路径。从 Nollm 实验分支可以原地使用，也可以装成能独立移动的 skill。在 Nollm 根目录运行以下安装命令，目标目录须为新目录。
+- “我第一次接手这个仓库。梳理主要入口和模块职责，标出还没读的部分。”
+- “准备修改这个公共接口。找出受影响的调用方、契约和回归测试。”
+- “合并后复核上次的结论，把仍然成立的判断交给下一个会话。”
 
-```sh
-SKILL="$HOME/.agents/skills/nollm-repository-memory"
-python3 lab/nollm-lab/repository_memory/install_skill.py --dest "$SKILL"
-python3 "$SKILL/scripts/memory.py" --help
-```
+## 从目标仓库启动
 
-从目标仓库开始，每个会话先解析一次提交。优先使用项目已约定的 manifest，新项目可采用下列位置。草案路径和 manifest 路径相对于调用者的工作目录解析。
+需要 Git 和 Python 3.11+。从宿主加载的**本文件的位置**找到同目录下的 `scripts/memory.py`。在目标工作树内运行它；脚本和要分析的仓库可以在不同位置。以下为 POSIX shell 示例，请用实际目录替换第一行。独立 shell 调用需重新设置变量，或使用解析后的绝对路径直接执行同一命令。
 
 ```sh
+skill='/absolute/path/to/the/loaded/nollm-repository-memory'
 repo=$(git rev-parse --show-toplevel)
-rev=$(git -C "$repo" rev-parse HEAD)
+rev=$(git -C "$repo" rev-parse --verify HEAD)
 manifest="$repo/.nollm/repository-notes.json"
-mem() { python3 "$SKILL/scripts/memory.py" "$@"; }
+mem() {
+  command_name=$1
+  shift
+  python3 "$skill/scripts/memory.py" "$command_name" --repo "$repo" --rev "$rev" "$@"
+}
 ```
 
-## 接手一个局部任务
+优先沿用项目已有的清单路径。默认使用上面的 `manifest`。在尚无提交的新项目，先按任务实现或阅读工作树；等项目有了可核对的提交，再建立首批记忆。切换分支或提交后重新解析 `rev`。
 
-1. 任务给出文件或符号时，直接用 `git show` 或 `git grep -n -F` 在目标提交中定位。需要接手一个行为判断、且已有清单时，把问题交给 `recall`。尽量沿用项目的命名；英文说明可以用代码标识符或英文术语查询。
-2. 读返回的说明键、正文和引用路径。用 `source` 核对选中的主文件和有关的辅助文件。证据索引从 0 开始，顺序与显示的引用路径一致。
-3. 如果查询没有命中、命中与任务无关，或任务需要的细节超出了说明，搜索目标提交的实现、调用方及测试。首次接手还没有 manifest 时直接从源码开始。若需要全景，再显式调用 `view` 阅读全部新鲜说明。
-4. 涉及公共接口时，从包的公开导出或端口声明追到实现和跨包调用方。检查归属清单所指的模块、当前契约和验证它的测试。只把能支持本条判断的文件填入 `source` 和 `also`。
-5. 检查相关路径的工作树差异，再决定修改方案。实现、测试通过后，在回复中标明判断所依据的提交、文件及验证结果。超出证据的推断要标明。
+## 第一次接手或需要全景
 
-下面的查询可在 Nollm 仓库用样本验证。示例命令单独指定样本清单。在其他仓库使用项目自己的 `$manifest`、查询、键和路径。
+1. 从 `mem brief` 开始。它列出目标提交、所选范围的文件覆盖数、当前判断、待复核项和未记录路径样本。还没有清单时也可运行。若项目另有清单，传入 `--manifest "$manifest"`。用户只关心一个目录时，用 `--scope` 指定该目录的仓库相对路径。多个目录可重复传入 `--scope`。`--limit` 默认每类展示 5 项，查看省略数后再决定是否展开。
+2. 用引用路径去读模块说明、公开入口、实际实现和关键测试。可以用 `git -C "$repo" show "$rev:$path"` 读取选定文件。沿一次真实调用核对职责、数据流和约束。先写出能回答本次任务的结论。
+3. 要确认某一范围的文件覆盖情况，使用 `mem inventory --scope "$scope"`；已有清单时加 `--manifest "$manifest"`。范围用仓库相对的文件或目录，整库用 `.`。`primary`、`support`、`unrecorded` 表示文件在记忆中充当的角色。回答里说明已核对的范围，以及仍需打开的路径。
+4. 用户要求已有判断的完整正文时，用 `mem view --manifest "$manifest"`。用户要建立仓库记忆时，按模块分批核阅并执行下方的 `capture`。目录盘点得到的文件名只够确定阅读顺序，保存判断之前要读证据。
+
+## 回答局部问题或评估改动影响
+
+把任务中的领域词、项目原有标识符交给 `recall`。以下 `question`、`key`、`scope` 均取自实际任务或前一步输出。
 
 ```sh
-sample="$repo/lab/nollm-lab/repository_memory/examples/current-notes.json"
-mem recall --repo "$repo" --rev "$rev" --manifest "$sample" \
-  --query 'Which statement stays current when another is attached to an occupied handle?' --limit 3 --format view
-mem source --repo "$repo" --rev "$rev" --manifest "$sample" --key binding.current
-mem source --repo "$repo" --rev "$rev" --manifest "$sample" --key recall.evidence --evidence-index 1
-git -C "$repo" grep -n 'current_statement' "$rev" -- packages/nollm-access
-git -C "$repo" diff "$rev" -- packages/nollm-access
+mem recall --manifest "$manifest" --query "$question" --limit 3 --format view
+mem source --manifest "$manifest" --key "$key"
 ```
 
-`--format view` 按原生召回顺序显示正文，每条说明下方是证据路径和 Git blob 短标识。检查结果是否切题；若输出 `no_match`，请直接搜源码。需要所选入口、遍历路径、核阅提交及完整 Git 对象标识时，用 `--format json`。新鲜度只覆盖声明过的证据在所选提交中的内容；未声明的调用方、未提交的改动和新增需求都可能改变判断的适用范围。
+从短视图选出相关的键，再用 `source` 打开对应的 Git blob。默认读取主证据；需要辅助证据时加 `--evidence-index 1`，其他索引按显示顺序递增。需要核阅提交、完整对象 ID 或遍历路径时使用 `--format json`。没有清单、出现 `no_match` 或命中还不足以回答时，继续用源码搜索。
 
-以 Nollm 的公共方法 `CoreRuntime.export_state_bytes` 为例，已知名字时可直接运行如下查询。
+已知符号时可以从 `git -C "$repo" grep -n -F -e "$symbol" "$rev" --` 直接开始。修改公开接口时，沿公开声明找到实现、跨模块调用方、约束接口的清单和相应测试。对 SQL 迁移、配置或协议也可以引用 Git 中的定义；实际运行中的数据库或部署状态需要单独的运行证据。
 
-```sh
-git -C "$repo" grep -n -F 'export_state_bytes' "$rev" -- \
-  packages/nollm-core/src packages/nollm-snapshot \
-  docs/architecture/module-ownership/CORE_PUBLIC_API_ALLOWLIST.json
-```
+动手修改前，用 `git -C "$repo" status --short` 和 `git -C "$repo" diff "$rev" -- "$scope"` 检查现场。Git 记忆的核验范围是所选提交中的已声明证据；尚未提交的编辑、未引用的调用方和新增需求都需要本次核查。
 
-其中 Core 的 `state.py` 实现该方法，Snapshot 的 `ports.py` 声明调用方需要的接口，`service.py` 和 `tests/test_core_snapshot.py` 展示用法及字节相等断言。变更公开方法时，Core 的 `tests/test_core_public_api_allowlist.py` 检查操作名；签名和行为还需要调用方测试核实。需要确认文件归属时，按仓库相对路径到 `MODULE_OWNERSHIP_MANIFEST.csv` 查对应行。接手者可沿这些真实路径重新核查。
+## 保存本次核过的判断
 
-同一个仓库反复查询时，`recall` 默认复用已写入磁盘的原生场。每次先按目标提交核验证据；新鲜条目集合、正文及其证据一致时，就能从本次任务选定的入口读取已有场。若希望本次只使用临时场，在 `recall` 命令末尾加 `--no-cache`。已生成的场保存在仓库 Git 目录的 `nollm-repository-memory/fields-v1/` 下，其中包含说明正文。可以在查询都结束后清理这个派生目录。
+用户需要记录、维护或交接时，把本次实际读过的实现和佐证写成一个小批次。每条选一个可重复使用的稳定键，用一句或几句写清触发条件、行为和影响。将实际读过的提交完整 ID、仓库相对路径和正文写入临时 JSON 草案。下面是字段模板。
 
-## 写入或更新一个判断
-
-先用 `inventory` 看任务范围。已有清单时加 `--manifest "$manifest"`。输出中的 `primary` 表示作为说明主来源，`support` 表示仅作辅助证据，`unrecorded` 表示尚未引用。
-
-```sh
-mem inventory --repo "$repo" --rev "$rev" --scope packages/nollm-access
-```
-
-在准备保存的提交上用 `git show "$rev:<仓库相对路径>"` 阅读源码，核对测试或跨模块依赖。选择描述行为的稳定键，写清触发条件、结果和对调用者的影响。用一个草案提交这一轮核过的键。以下是在 Nollm 样本上的格式示例，使用时将正文和来源换成自己实际核过的内容。
-
-```sh
-draft=$(mktemp)
-cat >"$draft" <<EOF
+```json
 {
-  "reviewed_commit": "$rev",
+  "reviewed_commit": "<rev 的完整 Git 提交 ID>",
   "notes": [{
-    "key": "binding.current",
-    "text": "Attaching another statement to an occupied handle preserves the current statement. The newly attached statement is supporting evidence.",
-    "source": "packages/nollm-access/src/nollm_access/handle_store.py",
-    "also": ["packages/nollm-access/tests/test_binding_store_invariants.py"]
+    "key": "<稳定的行为键>",
+    "text": "<经源码核实的工程判断>",
+    "source": "<主证据路径>",
+    "also": ["<支持此结论的调用方、测试或契约路径>"]
   }]
 }
-EOF
-mem capture --repo "$repo" --rev "$rev" --draft "$draft" --manifest "$manifest"
-mem status --repo "$repo" --rev "$rev" --manifest "$manifest"
-rm "$draft"
 ```
 
-`source` 和 `also` 接受仓库相对的普通文件路径。每条引用都会参与新鲜度检查。相同键会更新，其他键保留各自的核阅提交。若发现新行为只存在于工作树，等相应改动有了 Git 提交，再核阅并写入。需要团队或另一台机器接手时，把清单和源码一同纳入项目约定的版本控制流程。
-
-## 处理变更和历史追溯
-
-新会话或切换分支后重新解析 `rev`，再运行以下命令。
+没有辅助证据时用空数组。将 `draft` 设为实际草案路径。一次写入可以含多条已核过的判断。
 
 ```sh
-rev=$(git -C "$repo" rev-parse HEAD)
-mem review --repo "$repo" --rev "$rev" --manifest "$manifest"
+mem capture --manifest "$manifest" --draft "$draft"
+mem status --manifest "$manifest"
 ```
 
-逐一检查被标记的键和 `changes` 中的路径。若文件移动，在新提交里找到接替的文件。重读主来源和必要的辅助来源，重写仍然成立的判断，并用新的核阅提交执行 `capture`。证据不足的条目可留在复核队列，默认视图和任务召回会将其排除。
+`capture` 按键更新，保留其余条目的原核阅版本。核阅的行为如果只存在于未提交修改，先在交接里写明工作树差异，待相应代码有了提交，再核阅并保存。团队可把清单与项目一同纳入版本控制。
 
-追溯还保存在清单中的旧判断时，使用它的 `reviewed_commit` 作为 `--rev` 调用 `source`。若同一键已经改写，从 Git 中取出历史版本的清单，再对历史源码提交执行 `view` 或 `source`。留意保存清单的提交可以晚于它引用的源码提交。把结论交给下一个会话时，一并给出清单位置、核阅提交、相关键以及需要重新核查的证据。
+## 变更后的复核与交接
+
+在新的 `rev` 执行 `mem review --manifest "$manifest"`，查看受影响的键和变更路径。辅助证据改变也会使该判断退出默认视图。逐条重读当前证据，文件移动时确认新路径；用新提交和同一键写回已确认的判断。证据暂缺的留在复核队列。追溯已被重写的判断时，从 Git 取出当时版本的清单，指定它记录的核阅提交运行 `source`。
+
+交接时给出目标提交、所选范围、判断键、来源和实际运行的测试，再列出仍需核实的事项。重复查询默认复用仓库 Git 目录下的原生场。若只需临时场，可在 `recall` 上加 `--no-cache`。

@@ -14,7 +14,7 @@ from tempfile import TemporaryDirectory
 from threading import RLock
 
 from field_demo import read_field, write_field
-from repo_notes import _git, format_note, inspect_notes
+from repo_notes import _git, format_note, inspect_notes, read_manifest
 
 
 # Ignore common prompt glue and generic path components when choosing an entry.
@@ -190,7 +190,7 @@ def recall_task(repo: Path, manifest: dict, query: str, rev: str = "HEAD",
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path("."))
-    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, help="default: .nollm/repository-notes.json at the Git root")
     parser.add_argument("--query", required=True)
     parser.add_argument("--rev", default="HEAD")
     parser.add_argument("--limit", type=int, default=3, help="maximum native results, 1 to 7")
@@ -200,7 +200,7 @@ def main(argv=None):
                         help="full native evidence or compact notes in the same format as view")
     args = parser.parse_args(argv)
     try:
-        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        manifest = read_manifest(args.repo, args.manifest)
         result = recall_task(args.repo, manifest, args.query, args.rev, args.limit, cache=not args.no_cache)
     except (KeyError, ValueError, OSError, RuntimeError) as error:
         parser.exit(2, f"{parser.prog}: {error}\n")

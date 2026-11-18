@@ -7,7 +7,7 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("recall", "source", "inventory", "capture",
+    parser.add_argument("command", choices=("brief", "recall", "source", "inventory", "capture",
                                             "review", "status", "view"))
     args = parser.parse_args(sys.argv[1:2])
 

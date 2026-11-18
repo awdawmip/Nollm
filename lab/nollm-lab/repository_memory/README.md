@@ -2,6 +2,23 @@
 
 这条实验分支让下一个读代码的人或模型可以接着使用已经核过的工程判断。例如，在同一个记忆位置附加第二条说明后，正常召回仍读哪一条？示例用两条带源码证据的说明回答这个问题。仓库里保存的是说明和 Git 证据；原生几何记忆演示在临时工作区内运行。
 
+## 在编码助手中开始
+
+在 Nollm 仓库根目录安装到 Codex 的个人技能目录，然后在要接手的 Git 仓库里打开新会话。需要 Python 3.11+ 和 Git。
+
+```sh
+python3 lab/nollm-lab/repository_memory/install_skill.py --host codex
+```
+
+```text
+$nollm-repository-memory 我第一次接手这个仓库。先看入口、实现和测试，再告诉我已核实哪些职责、还缺哪些证据。
+```
+
+刚开始的仓库可以用 `brief` 获取跟踪文件数和建议阅读的路径。已有记录时，它也会显示新鲜判断及待复核项。工具从目标工作树根目录定位 `.nollm/repository-notes.json`。团队可以指定另一份清单，也可以只对某个模块做简报。
+
+- [Codex、Claude Code、Copilot CLI 和 OpenCode 的安装目录、调用方法与验证](HOSTS.md)
+- [AOCI-CODE 的适用范围、工作流程与 Nollm 的对应操作](AOCI_COMPARISON.md)
+
 ## 先试读
 
 在本分支的仓库根目录运行。源码盘点与阅读只依赖 Git 和 Python 标准库；原生记忆演示直接导入仓库自带的 Core 与 Access。
@@ -9,6 +26,7 @@
 ```sh
 D=lab/nollm-lab/repository_memory
 M="$D/examples/current-notes.json"
+python3 "$D/repo_notes.py" brief --repo . --manifest "$M" --scope packages/nollm-access --limit 3
 python3 "$D/repo_notes.py" view --repo . --manifest "$M"
 python3 "$D/repo_notes.py" source --repo . --manifest "$M" --key binding.current
 python3 "$D/repo_notes.py" inventory --repo . --scope packages/nollm-access --manifest "$M"

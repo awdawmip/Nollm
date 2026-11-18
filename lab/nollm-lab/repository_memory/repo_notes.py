@@ -106,6 +106,23 @@ def _read(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def manifest_path(repo, explicit):
+    if explicit is not None:
+        return Path(explicit)
+    to_root = os.fsdecode(_git(repo, "rev-parse", "--show-cdup").rstrip(b"\n"))
+    return (Path(repo) / to_root).resolve() / ".nollm" / "repository-notes.json"
+
+
+def read_manifest(repo, explicit, *, optional=False):
+    path = manifest_path(repo, explicit)
+    try:
+        return _read(path)
+    except FileNotFoundError:
+        if explicit is None and optional:
+            return None
+        raise ValueError(f"manifest not found at {path}; use brief to explore, then capture reviewed notes") from None
+
+
 def _write(path, manifest):
     payload = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode()
     if path.exists() and path.read_bytes() == payload:
@@ -217,32 +234,71 @@ def format_note(note):
     return f"{note['key']}: {note['text']}\n  {refs}"
 
 
+def brief(repo, scopes, manifest, rev, limit):
+    """Show bounded orientation from the committed tree and fresh authored notes."""
+    if limit < 1:
+        raise ValueError("limit must be positive")
+    report = inventory(repo, scopes, manifest, rev)
+    files = report["files"]
+    review = report["review"]
+    needs_review = {row["key"] for row in review}
+    cited = {key for file in files for key in file["primary"] + file["support"]}
+    rows = manifest["notes"] if manifest is not None else []
+    current_keys = cited - needs_review
+    current = sorted((n for n in rows if n["key"] in current_keys), key=lambda n: n["key"])
+    gaps = [file["path"] for file in files if file["role"] == "unrecorded"]
+    # Offer authored project entrances first when the target has no notes yet.
+    entrances = {"readme", "agents", "architecture", "contributing"}
+    gaps.sort(key=lambda p: (PurePosixPath(p).stem.casefold() not in entrances, p.count("/"), p))
+    counts = report["counts"]
+    lines = [f"Commit {report['commit']} | Scope {', '.join(report['scopes'])}",
+             f"Tracked files {len(files)} | {counts['primary']} primary, {counts['support']} support, "
+             f"{counts['unrecorded']} unrecorded"]
+
+    def section(title, items, render):
+        lines.append(f"\n{title} ({len(items)})")
+        lines.extend(render(item) for item in items[:limit])
+        if len(items) > limit:
+            lines.append(f"  ... {len(items) - limit} more")
+
+    section("Current notes", current, format_note)
+    section("Needs review", review, lambda n: n["key"] + ": " + ", ".join(c["path"] for c in n["changes"]))
+    section("Unrecorded paths", gaps, str)
+    return "\n".join(lines)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("capture", "status", "review", "view", "inventory", "source"):
+    for name in ("brief", "capture", "status", "review", "view", "inventory", "source"):
         p = commands.add_parser(name)
         p.add_argument("--repo", default=".", help="path to local Git repository")
         p.add_argument("--rev", default="HEAD", help="revision to inspect (committed tree only)")
-        p.add_argument("--manifest", required=name != "inventory", type=Path)
+        p.add_argument("--manifest", type=Path, help="default: .nollm/repository-notes.json at the Git root")
         if name == "capture":
             p.add_argument("--draft", required=True, type=Path)
-        if name == "inventory":
-            p.add_argument("--scope", action="append", required=True, help="literal file or directory; '.' for all")
+        if name in ("brief", "inventory"):
+            p.add_argument("--scope", action="append", required=name == "inventory",
+                           help="literal repo-relative file or directory; '.' for all")
+        if name == "brief":
+            p.add_argument("--limit", type=int, default=5, help="maximum entries per section (default: 5)")
         if name == "source":
             p.add_argument("--key", required=True, help="key of an already selected note")
             p.add_argument("--evidence-index", type=int, default=0, help="0 for the primary source; 1 and up for support")
     args = parser.parse_args(argv)
     try:
-        if args.command == "inventory":
-            manifest = _read(args.manifest) if args.manifest else None
+        if args.command == "brief":
+            manifest = read_manifest(args.repo, args.manifest, optional=True)
+            print(brief(args.repo, args.scope or ["."], manifest, args.rev, args.limit))
+        elif args.command == "inventory":
+            manifest = read_manifest(args.repo, args.manifest, optional=True)
             print(json.dumps(inventory(args.repo, args.scope, manifest, args.rev), ensure_ascii=False, indent=2))
         elif args.command == "capture":
             draft = _read(args.draft)
-            result = capture(args.repo, args.manifest, draft, args.rev)
+            result = capture(args.repo, manifest_path(args.repo, args.manifest), draft, args.rev)
             print(f"Captured {len(draft['notes'])} reviewed notes; {len(result['notes'])} in manifest.")
         elif args.command == "source":
-            rows = _saved(_read(args.manifest))
+            rows = _saved(read_manifest(args.repo, args.manifest))
             note = next((n for n in rows if n["key"] == args.key), None)
             if note is None:
                 raise ValueError(f"unknown note: {args.key}")
@@ -255,7 +311,7 @@ def main(argv=None):
             blob = note["evidence"][args.evidence_index]["blob"]
             sys.stdout.buffer.write(_git(args.repo, "cat-file", "blob", blob))
         else:
-            result = inspect_notes(args.repo, _read(args.manifest), args.rev)
+            result = inspect_notes(args.repo, read_manifest(args.repo, args.manifest), args.rev)
             if args.command in ("status", "review"):
                 if args.command == "review":
                     result["notes"] = [n for n in result["notes"] if n["status"] != "current"]
