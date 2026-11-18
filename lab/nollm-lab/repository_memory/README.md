@@ -69,3 +69,22 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 [AOCI-CODE](https://github.com/aoci-spec/aoci-code) 将模型编写的源码说明保存在 Git 中，用版本变化驱动维护，主要入口会读取项目全景。[作者论文](https://arxiv.org/abs/2605.02421)提供了这种做法的研究背景。本分支采用 Nollm 自己的说明格式、证据处理和原生记忆接口，未复制 AOCI 的源码、资产或协议，也无需安装其服务。上游当前版本列明 [FSL-1.1-MIT](https://github.com/aoci-spec/aoci-code/blob/5be709e62d93861f56257e7ee7066f5d64d576c3/LICENSE)。
 
 建议下一项实验：让不了解答案的宿主在真实改动任务中选择入口，对比直接搜索源码、先读全景再回源、Nollm 按需召回再回源，统一记录答案正确性、来源、实际模型输入和首次启动代价。这样才能决定哪些场景值得接入日常开发。
+
+## 安装和使用完整 skill
+
+在仓库根目录执行以下命令。安装器将运行所需的 Python 文件放入新目录，安装品可以独立移动到另一台有 Git 和 Python 3.11+ 的机器。
+
+```sh
+D=lab/nollm-lab/repository_memory
+SKILL="$HOME/.agents/skills/nollm-repository-memory"
+python3 "$D/install_skill.py" --dest "$SKILL"
+python3 "$SKILL/scripts/memory.py" recall --repo . \
+  --manifest "$D/examples/nollm-notes.json" --format view \
+  --query 'Which statement stays current when another is attached to an occupied handle?'
+```
+
+`--format view` 返回适合阅读的短视图。需要入口、匹配词、遍历路径或完整 Git 对象 ID 时使用默认 JSON。仓库没有清单时，从 `inventory` 开始；对路径或符号已很明确的修改也可以直接搜索。
+
+- [Skill 使用说明与跨会话交接](skills/nollm-repository-memory/SKILL.md)
+- [架构、实施步骤与验收标准](ARCHITECTURE_AND_PLAN.md)
+- [三种阅读方式的改动对照与复现](comparison/README.md)

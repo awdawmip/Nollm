@@ -42,6 +42,7 @@ GATED_ASSET_CLASSES = {
     "ACTIVE_VALIDATION", "ACTIVE_REPOSITORY_TOOL", "LEGACY_REGRESSION",
 }
 VALIDATION_GATES = {
+    "lab:repository-memory",
     "package:core", "package:snapshot", "package:trace", "package:access",
     "governance:m0", "governance:architecture", "compatibility:grf",
     "lab:compiled-templates", "lab:geometry-parity", "lab:broad-residue-calibration", "lab:safe-writable-field", "lab:dense-locality-surface", "lab:dense-single-entry-recall", "lab:natural-multi-entry-observation", "lab:core-capability",
@@ -54,6 +55,7 @@ VALIDATION_GATES = {
     "lab:content-neutral-memory", "lab:single-active-content-neutral-pipeline",
 }
 GATE_TARGETS = {
+    "lab:repository-memory": "lab/nollm-lab/repository_memory",
     "package:core": "packages/nollm-core/tests",
     "package:snapshot": "packages/nollm-snapshot/tests",
     "package:trace": "packages/nollm-trace/tests",

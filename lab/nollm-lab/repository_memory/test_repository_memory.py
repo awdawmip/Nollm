@@ -1,5 +1,6 @@
 """Regression checks on real local Git commits and a temporary native field."""
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
@@ -87,6 +88,25 @@ class RepositoryMemoryTest(unittest.TestCase):
         self.commit()
         with self.assertRaisesRegex(ValueError, "deleted"):
             run_field_demo(self.repo, three, [("api", 0, 0)], (0, 0))
+
+    def test_review_queue_shows_changed_evidence_and_hides_old_judgment(self):
+        (self.repo / "schema[x].json").unlink()
+        target = self.commit()
+        command = ["review", "--repo", str(self.repo), "--manifest", str(self.manifest)]
+        output = StringIO()
+        with redirect_stdout(output):
+            main(command)
+        queue = json.loads(output.getvalue())
+        self.assertEqual(queue["commit"], target)
+        self.assertEqual([n["key"] for n in queue["notes"]], ["api"])
+        item = queue["notes"][0]
+        self.assertNotIn("text", item)
+        self.assertEqual(item["reviewed_commit"], self.first)
+        self.assertEqual(item["changes"][0]["path"], "schema[x].json")
+        historical = StringIO()
+        with redirect_stdout(historical):
+            main([*command, "--rev", self.first])
+        self.assertEqual(json.loads(historical.getvalue())["notes"], [])
 
     def test_scope_inventory_and_exact_evidence_output(self):
         scope = inventory(self.repo, ["."], self.notes)

@@ -32,6 +32,14 @@ def run_field_demo(repo: Path, manifest: dict, placements: list[tuple[str, int, 
     opening the temporary memory. This demo never opens a user's memory.
     """
     assessment = inspect_notes(repo, manifest, rev)
+    result = replay_field(assessment, placements, entry)
+    result["entry_selection"] = "explicit_host_choice"
+    return result
+
+
+def replay_field(assessment: dict, placements: list[tuple[str, int, int]],
+                 entry: tuple[int, int], limit: int = 16) -> dict:
+    """Materialize a checked Git snapshot, reopen it and recall from one cell."""
     by_key = {note["key"]: note for note in assessment["notes"]}
     chosen = []
     for key, q, r in placements:
@@ -63,7 +71,7 @@ def run_field_demo(repo: Path, manifest: dict, placements: list[tuple[str, int, 
                 writer.apply(AccessDecision(
                     "host-new:" + statement.statement_id, statement.statement_id,
                     "new", target_cell=address, decided_by="host",
-                    reason_text="Host chose a new placement in this empty demo field.",
+                    reason_text="Host chose a new placement in this empty repository field.",
                 ))
 
         # A new runtime reloads the canonical files. Lookup by ID below is
@@ -74,7 +82,7 @@ def run_field_demo(repo: Path, manifest: dict, placements: list[tuple[str, int, 
             found = reader.recall(AccessRecallRequest(
                 "repository-field-recall", entry_cells=(_cell(*entry),),
                 allowed_kernels=("lateral",),
-                budget=RecallBudget(1, 8, 0, 1, 0, 16),
+                budget=RecallBudget(1, 8, 0, 1, 0, limit),
             ))
             recalled = []
             for item in found.items:
@@ -92,7 +100,6 @@ def run_field_demo(repo: Path, manifest: dict, placements: list[tuple[str, int, 
                 "source_commit": assessment["commit"],
                 "placed": core.placement_count(),
                 "entry": list(entry),
-                "entry_selection": "explicit_host_choice",
                 "budget_exhausted": found.budget_exhausted,
                 "recalled": recalled,
             }

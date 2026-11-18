@@ -1,0 +1,14 @@
+{
+  "reviewed_commit": "314eb47490adcad22e37d6e05d2da3983e78956d",
+  "notes": [
+    {
+      "key": "CoreRuntime.public-operations",
+      "text": "Adding a public method on CoreRuntime changes a checked API contract. The allowlist test compares the sorted public callables declared by CoreRuntime with core_runtime_operations in CORE_PUBLIC_API_ALLOWLIST.json. A new method requires a matching entry in that list.",
+      "source": "packages/nollm-core/tests/test_core_public_api_allowlist.py",
+      "also": [
+        "docs/architecture/module-ownership/CORE_PUBLIC_API_ALLOWLIST.json",
+        "packages/nollm-core/src/nollm_core/state.py"
+      ]
+    }
+  ]
+}

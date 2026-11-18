@@ -392,6 +392,21 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "Paused OpenClaw dataset is retained but is not an input to the current final gate.",
             evidence="No current final-gate consumer.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT,
         ), "LEGACY_REFERENCE")
+    if p.startswith("lab/nollm-lab/repository_memory/"):
+        if name.startswith("test_"):
+            role, asset = "active test", "ACTIVE_TEST"
+        elif p.endswith(".py"):
+            role, asset = "active tool", "ACTIVE_TOOL"
+        elif p.endswith(".json"):
+            role, asset = "active fixture", "ACTIVE_FIXTURE"
+        else:
+            role, asset = "skill and experiment documentation", "ACTIVE_LIBRARY"
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", role, "experiment workspace", "development",
+            "Source-bound repository memory experiment on public package interfaces.",
+            evidence="Repository memory skill and comparison regression suite.",
+            review_status="CODE_REVIEWED", reviewed_at="2026-11-18",
+        ), asset, "lab:repository-memory")
     if p.startswith("lab/nollm-lab/geometry/"):
         active_tools = {
             "generate_compiled_templates.py": "lab:compiled-templates",

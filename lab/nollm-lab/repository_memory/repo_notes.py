@@ -211,10 +211,16 @@ def inventory(repo, scopes, manifest_dict=None, rev="HEAD"):
     return {"commit": commit, "scopes": scopes, "counts": counts, "files": files, "review": review}
 
 
+def format_note(note):
+    """Render one reviewed note and ordered references for the host's reading view."""
+    refs = ", ".join(f"{r['path']}@{r['blob'][:12]}" for r in note["evidence"])
+    return f"{note['key']}: {note['text']}\n  {refs}"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("capture", "status", "view", "inventory", "source"):
+    for name in ("capture", "status", "review", "view", "inventory", "source"):
         p = commands.add_parser(name)
         p.add_argument("--repo", default=".", help="path to local Git repository")
         p.add_argument("--rev", default="HEAD", help="revision to inspect (committed tree only)")
@@ -250,7 +256,9 @@ def main(argv=None):
             sys.stdout.buffer.write(_git(args.repo, "cat-file", "blob", blob))
         else:
             result = inspect_notes(args.repo, _read(args.manifest), args.rev)
-            if args.command == "status":
+            if args.command in ("status", "review"):
+                if args.command == "review":
+                    result["notes"] = [n for n in result["notes"] if n["status"] != "current"]
                 for note in result["notes"]:
                     if note["status"] != "current":
                         del note["text"]
@@ -258,8 +266,7 @@ def main(argv=None):
             else:
                 for note in result["notes"]:
                     if note["status"] == "current":
-                        refs = ", ".join(f"{r['path']}@{r['blob'][:12]}" for r in note["evidence"])
-                        print(f"{note['key']}: {note['text']}\n  {refs}")
+                        print(format_note(note))
     except (OSError, ValueError) as error:
         parser.exit(2, f"{parser.prog}: {error}\n")
     return 0
