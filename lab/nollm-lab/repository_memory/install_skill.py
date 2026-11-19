@@ -40,7 +40,8 @@ def install(destination):
              REPO / "LICENSE": Path("LICENSE")}
     runtime = Path("scripts/runtime")
     for name in ("field_demo.py", "repo_notes.py", "task_recall.py", "facts.py", "extra_languages.py", "records.py",
-                 "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json"):
+                 "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json",
+                 "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py"):
         files[LAB / name] = runtime / name
     for package in ("nollm-core", "nollm-access"):
         src = REPO / "packages" / package / "src"

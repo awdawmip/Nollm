@@ -12,6 +12,8 @@ TOOLS = {
     "route": "router.py",
     "field": "machine_field.py",
     "check-marks": "check_marks.py",
+    "geometry": "geometry_cli.py",
+    "geometry-native": "native_geo.py",
 }
 
 

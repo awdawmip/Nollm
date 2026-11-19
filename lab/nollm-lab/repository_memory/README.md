@@ -83,6 +83,10 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 
 宿主把“当前绑定”和“召回时核对当前正文”放在相邻位置，把快照职责放得远一些。程序只把新鲜说明转换为原生 `MemoryStatement`，通过 Access 写入，释放运行时，再从磁盘重开。一个物理入口、一步侧向传播，能取回入口和邻格的正文与引用，远处的快照说明不在结果中。这里坐标由宿主显式给出，文件名、内容关键词和说明键均不决定位置。临时场在演示结束后销毁。
 
+## 将 AOCI 标记放在几何坐标中
+
+已安装 skill 的 `geometry encode` 命令将代码卷转换成带校验的二进制坐标记录，`geometry query` 按公共字典解释相对位置并取回槽值。全局字典、对象身份和字段正文分别承担含义与内容。恢复出的规范化代码卷可供其他工具继续阅读。[编码、结构查询与恢复示例](skills/nollm-repository-memory/SKILL.md#aoci-代码卷的几何标记)
+
 ## 量化结果与复现
 
 ```sh
@@ -97,7 +101,7 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 
 ## 设计对照及后续实验
 
-[AOCI-CODE](https://github.com/aoci-spec/aoci-code) 将模型编写的源码说明保存在 Git 中，用版本变化驱动维护，主要入口会读取项目全景。[作者论文](https://arxiv.org/abs/2605.02421)提供了这种做法的研究背景。本分支采用 Nollm 自己的说明格式、证据处理和原生记忆接口，未复制 AOCI 的源码、资产或协议，也无需安装其服务。上游当前版本列明 [FSL-1.1-MIT](https://github.com/aoci-spec/aoci-code/blob/5be709e62d93861f56257e7ee7066f5d64d576c3/LICENSE)。
+[AOCI-CODE](https://github.com/aoci-spec/aoci-code) 将模型编写的源码说明保存在 Git 中，用版本变化驱动维护，主要入口会读取项目全景。[作者论文](https://arxiv.org/abs/2605.02421)提供了这种做法的研究背景。本分支采用 Nollm 自己的说明格式、证据处理和原生记忆接口。可选的 `geometry` 命令独立读写 AOCI 代码卷的规范字段，可直接处理本地卷。上游当前版本列明 [FSL-1.1-MIT](https://github.com/aoci-spec/aoci-code/blob/5be709e62d93861f56257e7ee7066f5d64d576c3/LICENSE)。
 
 真实改动任务的分组、验收测试、证据命中和输入计量见下方三种阅读方式的对照报告。
 

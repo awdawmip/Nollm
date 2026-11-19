@@ -119,3 +119,27 @@ python3 "$cli" field query --repo "$repo" --rev "$rev" --field "$out/field" \
 ```
 
 Host 以任务候选选一个物理入口；Core 在场中取邻近语句，Access 读回语句正文与引用。对照实验可用同一输入另建 `--layout shared` 的场。没有证据能够回答时，把源码搜索和回源结果一起交接。
+
+## AOCI 代码卷的几何标记
+
+当任务要求转换已有 AOCI 代码卷时，提供卷本身和项目的元数据字典。使用新输出路径。下例在 Codex 中调用已安装的 skill。
+
+```sh
+cli="$skill/scripts/memory.py"
+python3 "$cli" geometry encode --volume aoci.code.txt --meta aoci.meta.txt --out code.nlg
+python3 "$cli" geometry check --geometry code.nlg --meta aoci.meta.txt
+python3 "$cli" geometry query --geometry code.nlg --meta aoci.meta.txt --axis C=7 --field F
+python3 "$cli" geometry decode --geometry code.nlg --meta aoci.meta.txt --out restored.txt
+```
+
+`query` 按标签轴处理几何条件，`--field` 按相对位置读出 F、R、A 或 S 槽。多个 `--axis` 条件同时生效，`--min-importance` 按重要性过滤，`--feature-state present|missing` 区分可选 D 的有无。用 `--id` 指定对象。`decode --format json` 给出规范化对象；默认输出可重新导入的 AOCI 代码卷。列值、对象身份和关系正文保留，排版、注释与紧凑或点分标签的原始拼写按规范化格式输出。读取需使用编码时的标签字典。此命令验证几何编码的完整性；核实工程含义时回到对应源码与测试。
+
+要从编译好的卷进入 Nollm 的物理场，指定一个新目录。写入后可在独立进程中从原点查看相邻字段，或从解析成功的 R 引用沿定向桥抵达目标对象。
+
+```sh
+python3 "$cli" geometry-native write --geometry code.nlg --meta aoci.meta.txt --field native-field
+python3 "$cli" geometry-native probe --meta aoci.meta.txt --field native-field
+python3 "$cli" geometry-native read --meta aoci.meta.txt --field native-field --out physical-rows.json
+```
+
+原生读回按对象身份排序。R 引用的目标出现在同一卷时可以建桥；卷外引用保留目标标识以便回源。
