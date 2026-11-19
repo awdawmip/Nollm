@@ -5,10 +5,20 @@ import runpy
 import sys
 
 
+TOOLS = {
+    "recall": "task_recall.py",
+    "facts": "facts.py",
+    "records": "records.py",
+    "route": "router.py",
+    "field": "machine_field.py",
+    "check-marks": "check_marks.py",
+}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("brief", "recall", "source", "inventory", "capture",
-                                            "review", "status", "view"))
+    parser.add_argument("command", choices=("brief", "source", "inventory", "capture",
+                                            "review", "status", "view", *TOOLS))
     args = parser.parse_args(sys.argv[1:2])
 
     scripts = Path(__file__).resolve().parent
@@ -22,9 +32,9 @@ def main():
         sys.path[:0] = [str(runtime), str(packages / "nollm-core" / "src"),
                         str(packages / "nollm-access" / "src")]
 
-    if args.command == "recall":
+    if args.command in TOOLS:
         del sys.argv[1]
-        runpy.run_path(str(runtime / "task_recall.py"), run_name="__main__")
+        runpy.run_path(str(runtime / TOOLS[args.command]), run_name="__main__")
     else:
         runpy.run_path(str(runtime / "repo_notes.py"), run_name="__main__")
 

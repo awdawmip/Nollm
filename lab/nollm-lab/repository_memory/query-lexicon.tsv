@@ -1,0 +1,161 @@
+# Query-side vocabulary. Each value is a set of alternative identifier words.
+聚合	aggregate aggregation
+采集	collector collect
+订阅	subscribe subscription
+推送	push stream
+流式	stream
+延迟	latency
+心跳	heartbeat
+断线	disconnect
+重连	reconnect
+连接	connection
+恢复	recovery restore
+重放	replay
+重试	retry
+排队	queue
+队列	queue
+并发	concurrency concurrent
+线程	thread
+锁	lock
+事务	transaction
+原子	atomic
+幂等	idempotent idempotency
+重复	duplicate
+去重	dedup deduplicate
+过期	stale expired
+忽略	ignore
+回退	fallback rollback
+降级	fallback
+校验	validate validation
+验证	validate verification
+认证	auth authentication
+授权	authorize authorization
+凭据	credential
+权限	permission
+沙箱	sandbox
+注册	registry register
+发现	discovery
+目录册	catalog
+目录索引	catalog index
+元数据	metadata
+契约	contract
+约束	constraint
+协议	protocol
+兼容	compat compatibility
+旧版	legacy
+声明	declaration
+类型	type typed
+绑定	binding bind
+封装	adapter wrapper
+适配器	adapter
+适配	adapter adapt
+原生	native
+编译	compile compiler
+构建	build
+链接	link
+共享库	shared library
+动态库	shared library
+头文件	header
+向量	vector simd
+标量	scalar
+布局	layout
+内存	memory
+缓存	cache
+快照	snapshot
+检查点	checkpoint
+状态机	state machine
+持久化	persist persistence
+存储	store storage
+磁盘	disk
+数据库	database db
+数据表	table
+索引	index
+只读	readonly read
+读取	read load
+写入	write
+落盘	persist save
+保存	save
+导出	export exporter
+导入	import importer
+加载	load
+启动	startup bootstrap
+重启	restart recovery
+关机	shutdown
+关闭	close shutdown
+停止	stop
+进程	process
+守护	daemon
+宿主	host
+网关	gateway
+路由	route router
+端点	endpoint route
+请求	request
+响应	response
+事件	event
+浏览器	browser
+网页	web
+页面	page
+视图	view
+前端	frontend browser
+面板	panel dashboard
+仪表盘	dashboard
+工作台	workbench
+后端	backend server
+服务端	server
+任务	job task
+后台	background
+报表	report reporting
+报告	report
+图表	chart
+节点	node
+拓扑	topology graph
+依赖	dependency
+边界	boundary
+协议栈	protocol stack
+排序	sort rank
+排名	rank ranking
+优先级	priority precedence
+顺序	order sequence
+冲突	conflict
+过滤	filter
+门槛	gate threshold
+分片	shard
+合并	merge fusion
+融合	fusion
+序列化	serialization serialize
+反序列化	deserialize
+迁移	migration
+发布	release publish
+部署	deploy deployment
+打包	package packaging
+备份	backup
+重建	rebuild
+清理	cleanup
+日志	log journal
+命令	command
+命令行	cli command
+参数	param argument
+开关	flag enable
+配置	config configuration
+脚本	script
+用例	test case
+回归	regression test
+测试	test
+断言	assert
+夹具	fixture
+规则	rule policy
+表达式	expression
+语法	grammar syntax
+解析	parse parser
+时间戳	timestamp
+窗口	window
+边界值	boundary
+哈希	hash digest
+摘要	digest
+身份	identity
+阈值	threshold
+缺失	missing
+空值	null
+编码	encoding
+版本	version
+合成	aggregate

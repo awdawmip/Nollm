@@ -39,7 +39,8 @@ def install(destination):
              source / "scripts/memory.py": Path("scripts/memory.py"),
              REPO / "LICENSE": Path("LICENSE")}
     runtime = Path("scripts/runtime")
-    for name in ("field_demo.py", "repo_notes.py", "task_recall.py"):
+    for name in ("field_demo.py", "repo_notes.py", "task_recall.py", "facts.py", "extra_languages.py", "records.py",
+                 "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json"):
         files[LAB / name] = runtime / name
     for package in ("nollm-core", "nollm-access"):
         src = REPO / "packages" / package / "src"

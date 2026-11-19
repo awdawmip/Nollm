@@ -1,0 +1,13 @@
+{
+  "schema":"nollm.structural-facts.language-profiles.v1",
+  "compiler_revision":5,
+  "symbol_evidence":["path","blob","line","end","kind","name","qualname"],
+  "edge_evidence":["src","src_blob","dst","dst_blob","line","rel","confidence","token"],
+  "profiles":{
+    "js_lexical":{"languages":["javascript"],"witness":"named_function_or_class_declaration_or_direct_arrow_variable_binding","kind_prefix":"js_","confidence":"candidate"},
+    "ps_lexical":{"languages":["powershell"],"witness":"named_ps_declaration","kind_prefix":"ps_","confidence":"candidate"},
+    "sql_lexical":{"languages":["sql"],"witness":"create_ddl_object_identifier","kind_prefix":"sql_","confidence":"candidate"},
+    "html_parser":{"languages":["html"],"witness":"starttag_id_attribute_or_relative_asset","kind_prefix":"html_","confidence":"candidate"},
+    "css_lexical":{"languages":["css"],"witness":"custom_property_or_keyframes_declaration","kind_prefix":"css_","confidence":"candidate"}
+  }
+}

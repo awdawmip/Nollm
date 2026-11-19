@@ -18,6 +18,8 @@ $nollm-repository-memory 我第一次接手这个仓库。先看入口、实现�
 
 - [Codex、Claude Code、Copilot CLI 和 OpenCode 的安装目录、调用方法与验证](HOSTS.md)
 - [AOCI-CODE 的适用范围、工作流程与 Nollm 的对应操作](AOCI_COMPARISON.md)
+- [提取机器标记、查询架构关系和从原生场读回记录](skills/nollm-repository-memory/SKILL.md#提取机器标记并检验架构关系)
+- [机器事实表的字段、解析范围与证据含义](FACTS.md)
 
 ## 先试读
 

@@ -1,6 +1,6 @@
 ---
 name: nollm-repository-memory
-description: "在本地 Git 仓库中接手陌生项目、梳理模块职责与接口、追踪跨文件改动影响、复核过期判断或为下个会话留下源码证据。Use for repository onboarding, scoped architecture briefs, change-impact analysis, and durable engineering handoffs grounded in Git."
+description: "在本地 Git 仓库中梳理模块职责、提取和核验机器标记、追踪跨文件影响、复核过期判断或为下个会话留下源码证据。Use for repository onboarding, machine-readable architecture facts, change-impact analysis, and engineering handoffs grounded in Git."
 ---
 
 # Nollm 仓库记忆
@@ -83,3 +83,39 @@ mem status --manifest "$manifest"
 在新的 `rev` 执行 `mem review --manifest "$manifest"`，查看受影响的键和变更路径。辅助证据改变也会使该判断退出默认视图。逐条重读当前证据，文件移动时确认新路径；用新提交和同一键写回已确认的判断。证据暂缺的留在复核队列。追溯已被重写的判断时，从 Git 取出当时版本的清单，指定它记录的核阅提交运行 `source`。
 
 交接时给出目标提交、所选范围、判断键、来源和实际运行的测试，再列出仍需核实的事项。重复查询默认复用仓库 Git 目录下的原生场。若只需临时场，可在 `recall` 上加 `--no-cache`。
+
+## 提取机器标记并检验架构关系
+
+用户需要机器可读语料、追踪显式依赖、或对照几何布置的效果时，用 `facts` 从提交直接生成 JSONL。每个跟踪路径均有 Git 对象信息；符号声明、可解析导入和部分 C/C++、CMake 关系还带行号。用 `confidence` 区分静态规则唯一解析的边和待核的候选，查看 `diagnostics.jsonl` 了解解析缺口。安装目录内的 `scripts/runtime/language_profiles.json` 说明 JavaScript、PowerShell、SQL、HTML 与 CSS 的提取规则和候选级别。
+
+```sh
+out=$(mktemp -d)
+mem facts --out "$out/facts"
+mem route --facts "$out/facts" --mode graph --query '你的实际工程问题' --out "$out/seeds.json"
+```
+
+`lexical` 只用路径及标识符，`graph` 还利用有证据的相邻文件。命中是候选；根据返回路径和行号读原始 Git 源码，再形成工程判断。提交变化时为新版本重建输出。批量比较可传 `--queries questions.json`，每题含 `id` 和 `query`。
+
+待核验标记按行写入 JSONL。每条包括 `id`、`kind` 与该类所需的证据字段。例如，`symbol` 行含 `path`、`blob`、`line`、`qualname`、`symbol_kind`。用 `mem check-marks --marks marks.jsonl` 对当前提交重新取证，读取逐条状态与原因。设 `--require-verified` 可在任一条未验证时返回退出码 1。职责、约束等 `judgment` 标记保留人工复核状态。
+
+维护能复用的行为判断时，先运行下面的模板命令，再按实际证据填写每条判断的 `atoms`。每个三元组使用符号，例如 `["Reader","imports","Decoder"]`。模板内的哈希绑定原判断和证据，正文或证据一旦变动，需要按新版重审。
+
+```sh
+mem records --claim-template --manifest "$manifest" --out "$out/claims.json"
+# 填写 claims.json 中的 atoms 后执行
+mem records --manifest "$manifest" --claims "$out/claims.json" --out "$out/records.jsonl"
+mem route --facts "$out/facts" --mode semantic --records "$out/records.jsonl" \
+  --query '你的实际工程问题' --out "$out/seeds.json"
+```
+
+要把这些判断放入持久化原生场，在临时目录中执行：
+
+```sh
+cli="$skill/scripts/memory.py"
+python3 "$cli" field build --repo "$repo" --rev "$rev" --facts "$out/facts" \
+  --records "$out/records.jsonl" --layout architecture --field "$out/field"
+python3 "$cli" field query --repo "$repo" --rev "$rev" --field "$out/field" \
+  --seeds "$out/seeds.json" --include-records
+```
+
+Host 以任务候选选一个物理入口；Core 在场中取邻近语句，Access 读回语句正文与引用。对照实验可用同一输入另建 `--layout shared` 的场。没有证据能够回答时，把源码搜索和回源结果一起交接。
