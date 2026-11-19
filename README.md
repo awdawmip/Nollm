@@ -10,6 +10,28 @@ A useful mental model is:
 
 > The LLM works in the foreground; Nollm is where its memory can continue to form and, eventually, “dream” in the background.
 
+## Project understanding
+
+Nollm connects **evidence → geometry → one physical entry → bounded recall across
+upper and lower physical layers → original evidence**. Evidence remains the fact
+source. A real LLM makes semantic placement and entry decisions; deterministic
+Core executes geometry, including local occupancy and cross-layer Coverage.
+Recall relationships arise from that native field, not a separate semantic index.
+
+**Physical Memory Layer ≠ Aggregation Order.** Physical layers hold memory;
+aggregation orders are rebuildable observation scales, not additional memory
+layers. Upper/lower-layer Coverage is a physical relation, not a semantic parent
+hierarchy. AOCI can assist observation, engineering navigation and experiments;
+it does not replace native geometry, Coverage or evidence-backed relationships.
+
+This is a reading aid, not another specification. The
+[first-principles document](docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
+governs architectural invariants.
+[ACTIVE_PROJECT.md](docs/project/ACTIVE_PROJECT.md) is the canonical entry for
+current project direction, amendments and status. Continue into those sources
+for the task at hand; current implementation and experimental results do not by
+themselves redefine the project.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.
