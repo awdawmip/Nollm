@@ -126,4 +126,5 @@ python3 "$SKILL/scripts/memory.py" recall --repo . \
 
 - [Skill 使用说明与跨会话交接](skills/nollm-repository-memory/SKILL.md)
 - [架构、实施步骤与验收标准](ARCHITECTURE_AND_PLAN.md)
+- [项目缩影与原生几何架构研究](PROJECT_MINIATURE_DESIGN.md)
 - [三种阅读方式的改动对照与复现](comparison/README.md)
