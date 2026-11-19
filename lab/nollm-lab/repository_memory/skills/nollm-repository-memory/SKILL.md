@@ -84,6 +84,37 @@ mem status --manifest "$manifest"
 
 交接时给出目标提交、所选范围、判断键、来源和实际运行的测试，再列出仍需核实的事项。重复查询默认复用仓库 Git 目录下的原生场。若只需临时场，可在 `recall` 上加 `--no-cache`。
 
+## 用上下层覆盖组织源码判断
+
+**浏览已有代码场时，从聚合表面开始。** 将 `field` 指向原生工作区。先阅读本页的占用情况和已存语句预览，再根据任务选择要展开的窗口。默认由 Access 的阅读预算选择观察阶数；`--order 1` 可从一阶开始。初次调用只显示候选。
+
+```sh
+cli="$skill/scripts/memory.py"
+python3 "$cli" coverage surface --field "$field" --order 1
+python3 "$cli" coverage surface --field "$field" --order 1 --choose "$window_id"
+python3 "$cli" coverage surface --field "$field" --order 1 --choose "$window_id" --choose "$zero_id"
+python3 "$cli" coverage surface --field "$field" --order 1 --choose "$window_id" --choose "$zero_id" --choose "$physical_id"
+```
+
+每次用当前页返回的 `id` 设置下一个变量。每打开一层，观察阶数减一；从零阶窗口打开物理候选，再选一个，才会得到 `entry = [layer, q, r]`。要翻到下一页，追加 `--choose next`，返回上一页则去掉最后一次选择。给同次浏览保留相同的范围、分页和阶数参数。预览来自存档语句，随后用 `coverage recall --repo "$repo" --rev "$rev" --field "$field" --entry L Q R --direction both --steps 0` 核验选中位置的 Git 证据；继续查跨层判断时增加步数。
+
+**布置新场时，** 先读源码，明确一条共享实现支持哪些职责。Host 选择粗层入口；用 `coverage footprint` 在现场检查各入口的向下足迹，选共同覆盖、且在目标 beam 下可达的细格放置判断。每个判断在场中只写一次。现行 Access 将语义判断写到物理第 0 层；第 −1 层的入口本身可以空置。聚合视图的阶数是另外一个参数。
+
+下面这两个入口都能触及第 0 层的 `(-7, 8)`。将 `key` 设为清单里经核阅的判断键，将 `field` 设为要新建的目录。这里的坐标用于演示这次覆盖，实际工程请根据内容和足迹另选位置。
+
+```sh
+cli="$skill/scripts/memory.py"
+python3 "$cli" coverage footprint --entry -1 -7 5 --direction down
+python3 "$cli" coverage footprint --entry -1 -8 6 --direction down
+python3 "$cli" coverage build --repo "$repo" --rev "$rev" --manifest "$manifest" \
+  --field "$field" --place "$key" -7 8
+python3 "$cli" coverage recall --repo "$repo" --rev "$rev" --field "$field" \
+  --entry -1 -8 6 --direction down --steps 1 --beam 8 --limit 8
+python3 "$cli" coverage footprint --entry 0 -7 8 --direction up
+```
+
+`footprint` 返回从所给源格取的 96 个样本的命中数和归一化 Q16 权重。换方向时源格也变了，应单独检查。多个已核阅的键可在 `build` 里重复传 `--place KEY Q R`。`recall` 只接受一个物理入口，`--direction up|down|both` 选择可用的核；`--layer-delta` 限制与入口的层差，默认与 `--steps` 相同。读取结果给出实际核路径及分数，空入口也可传播。`--limit` 截断原生结果后，再用指定 Git 提交核对命中语句的所有证据。`current` 行含正文；其他状态给出复核线索。工程判断以引用的源码为准。
+
 ## 提取机器标记并检验架构关系
 
 用户需要机器可读语料、追踪显式依赖、或对照几何布置的效果时，用 `facts` 从提交直接生成 JSONL。每个跟踪路径均有 Git 对象信息；符号声明、可解析导入和部分 C/C++、CMake 关系还带行号。用 `confidence` 区分静态规则唯一解析的边和待核的候选，查看 `diagnostics.jsonl` 了解解析缺口。安装目录内的 `scripts/runtime/language_profiles.json` 说明 JavaScript、PowerShell、SQL、HTML 与 CSS 的提取规则和候选级别。

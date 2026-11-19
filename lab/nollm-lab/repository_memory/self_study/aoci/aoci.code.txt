@@ -1,0 +1,1130 @@
+#AOCI-CODE-VOLUME: 1
+
+===/<repository>/===
+.gitattributes[FC5T]: F:Configures Git line ending conversion for text, batch and PowerShell source | R:- | A:- | S:-
+.gitignore[FC4T]: F:Lists Git ignore rules for the repository root | R:- | A:- | S:-
+ARCHITECTURE.md[SG5T]: F:Documents Nollm Architecture covering Active Dependency Graph | R:code:config/module-boundaries.json,code:docs/project/ACTIVE_PROJECT.md | A:- | S:-
+EVIDENCE.md[SG5T]: F:Documents Active Evidence | R:code:docs/project/AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md | A:- | S:-
+LICENSE[SG5T]: F:States the repository license terms | R:- | A:- | S:-
+NOLLM_PROJECT_SPEC_V4_ENGINEERING_GRAVITY_20260616.md[SG5L]: F:Documents Nollm Project Specification V4 — Engineering Gravity Edition covering 1. Executive Definition | R:- | A:- | S:-
+README.md[SG5M]: F:Documents Nollm covering Why Nollm exists | R:code:docs/project/ACTIVE_PROJECT.md,code:lab/nollm-lab/repository_memory/HOSTS.md | A:- | S:-
+ROADMAP.md[SG5T]: F:Documents Nollm Roadmap covering M1: Package Core/Access Extraction | R:code:docs/project/ACTIVE_PROJECT.md | A:- | S:-
+requirements-validation.txt[FV5T]: F:Pins Python dependencies for repository validation | R:- | A:- | S:-
+
+===/<repository>/config/===
+module-boundaries.json[FD5T]: F:Declares module boundaries for config with fields schema_version, manifest, baseline, modules, python_packages | R:- | A:- | S:-
+
+===/<repository>/cortex/===
+ANCHOR_COMPOSER.md[SG5T]: F:Documents Anchor Composer covering Inputs | R:- | A:- | S:-
+CORTEX_PROMPT.md[SG5S]: F:Documents Cortex Prompt covering Stable CortexActionPlan Envelope | R:- | A:- | S:-
+MEMORY_INTENT.md[SG5T]: F:Documents Memory Intent covering Shape | R:- | A:- | S:-
+NOLLM_CORTEX.md[SG5T]: F:Documents Nollm Cortex covering Responsibilities | R:- | A:- | S:-
+NOLLM_EXTERNAL_AGENT_INSTRUCTIONS.md[SG5T]: F:Documents Nollm External Agent Instructions | R:- | A:- | S:-
+READ_WRITE_POLICY.md[SG5T]: F:Documents Read / Write Policy covering Responsibility Matrix | R:- | A:- | S:-
+RECALL_DIGEST_USAGE.md[SG5T]: F:Documents Recall Digest Usage covering Required Distinctions | R:- | A:- | S:-
+
+===/<repository>/distributions/===
+DISTRIBUTION_MATRIX.md[SG5T]: F:Documents M1 Distribution Matrix | R:- | A:- | S:-
+distribution-matrix.json[FD5T]: F:Declares distribution matrix for distributions with fields schema_version, active_runtime, forbidden_runtime, correctness_invariants, distributions | R:- | A:- | S:-
+
+===/<repository>/distributions/nollm-audited/===
+README.md[SG5T]: F:Documents nollm-audited | R:- | A:- | S:-
+manifest.json[FD5T]: F:Declares manifest for nollm audited with fields name, extends, runtime, optional, status | R:- | A:- | S:-
+
+===/<repository>/distributions/nollm-bare/===
+README.md[SG5T]: F:Documents nollm-bare | R:- | A:- | S:-
+manifest.json[FD5T]: F:Declares manifest for nollm bare with fields name, runtime, entrypoint, coverage, capabilities | R:- | A:- | S:-
+
+===/<repository>/distributions/nollm-debug/===
+README.md[SG5T]: F:Documents nollm-debug | R:- | A:- | S:-
+manifest.json[FD5T]: F:Declares manifest for nollm debug with fields name, extends, runtime, optional, development | R:- | A:- | S:-
+
+===/<repository>/distributions/nollm-minimal/===
+README.md[SG5T]: F:Documents nollm-minimal | R:- | A:- | S:-
+manifest.json[FD5T]: F:Declares manifest for nollm minimal with fields name, runtime, entrypoint, defaults, forbidden | R:- | A:- | S:-
+
+===/<repository>/distributions/nollm-openclaw/===
+README.md[SG5T]: F:Documents nollm-openclaw | R:- | A:- | S:-
+manifest.json[FD5T]: F:Declares manifest for nollm openclaw with fields name, extends, adapter, live_activation, validation_gate | R:- | A:- | S:-
+
+===/<repository>/docs/architecture/===
+CERTIFIED_OVERLAP.md[SG5S]: F:Specifies ideal-geometry overlap units, completeness, enclosure tests and functional admission limits. | R:code:lab/nollm-lab/geometry/certified_overlap.py | A:- | S:The certified overlap evaluator is a Lab reference. Its outputs are distinct from retained production quadrature.
+NOLLM_ARCHITECTURE_BOOK_V3_12_UNIFIED_FIELD_ENCOUNTER_READ_WRITE_DUALITY_20260728.md[SG5L]: F:Documents Nollm 架构书 V3.12：统一场相遇、读写对偶与事实／空位终态 covering 0. 架构结论 | R:- | A:- | S:-
+NOLLM_ARCHITECTURE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_DEFERRED_NEURAL_ADAPTER_20260804.md[SG5L]: F:Documents Nollm 架构书 V3.13 Rev1：Field Encounter 直接激活与神经适配延后 covering 0. 最终结论 | R:- | A:- | S:-
+NOLLM_CONTENT_NEUTRALITY_AND_MEMORY_ELIGIBILITY_DECISION_20260723.md[SG5M]: F:Documents Nollm 内容中立与记忆资格非歧视决定 covering 1. 决定 | R:- | A:- | S:-
+NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md[SG5L]: F:Documents Nollm 第一性原理与防漂移约束 covering 1. Nollm 的第一性原理目标 | R:- | A:- | S:-
+
+===/<repository>/docs/architecture/module-ownership/===
+ACTIVE_ASSET_LIFECYCLE_PLAN.csv[FD5T]: F:Tabulates ACTIVE ASSET LIFECYCLE PLAN by path, owner, target_owner, current_importers, replacement | R:- | A:- | S:-
+ACTIVE_ASSET_LIFECYCLE_PLAN.json[FD5T]: F:Declares ACTIVE ASSET LIFECYCLE PLAN for module ownership with fields schema_version, authority, task, repository_head_at_gate_0, task_input_head | R:- | A:- | S:-
+CORE_PUBLIC_API_ALLOWLIST.json[FD5T]: F:Declares CORE PUBLIC API ALLOWLIST for module ownership with fields schema_version, module, symbols, core_runtime_operations | R:- | A:- | S:-
+CORE_PUBLIC_API_CHANGELOG.md[SG5T]: F:Documents Core Public API Changelog | R:- | A:- | S:-
+DIRECT_ACTIVATION_PATH_MAP.md[SG5T]: F:Documents V3.13 Rev1 Direct Activation Path Map covering Live findings | R:- | A:- | S:-
+M0_BOUNDARY_BASELINE.json[FD5S]: F:Declares M0 BOUNDARY BASELINE for module ownership with fields compatibility_reexports, cycles_all, cycles_production, graph_all, graph_production | R:- | A:- | S:-
+MAINLINE_ASSET_CURATION_BOUNDARY_REPORT.json[FD5S]: F:Declares MAINLINE ASSET CURATION BOUNDARY REPORT for module ownership with fields compatibility_reexports, cycles_all, cycles_production, graph_all… | R:- | A:- | S:-
+MODULE_BOUNDARY_REPORT.json[FD5S]: F:Declares MODULE BOUNDARY REPORT for module ownership with fields compatibility_reexports, cycles_all, cycles_production, graph_all, graph_production | R:- | A:- | S:-
+MODULE_OWNERSHIP_MANIFEST.csv[FD5L]: F:Tabulates MODULE OWNERSHIP MANIFEST by path, file_type, current_namespace, owner, secondary_owner | R:- | A:- | S:-
+MODULE_OWNERSHIP_MANIFEST.json[FD5L]: F:Lists MODULE OWNERSHIP MANIFEST records keyed by asset_class, classification_evidence, confidence, current_namespace | R:- | A:- | S:-
+V3_12_FIELD_ENCOUNTER_REALLOCATION.md[SG5T]: F:Documents V3.12 Field Encounter Asset Reallocation covering Replacement Rules | R:- | A:- | S:-
+
+===/<repository>/docs/architecture/modules/===
+NOLLM_ACCESS_CHARTER.md[SG5T]: F:Documents Nollm Access Charter | R:- | A:- | S:-
+NOLLM_AUDIT_CHARTER.md[SG5T]: F:Documents Nollm Audit Charter | R:- | A:- | S:-
+NOLLM_CORE_CHARTER.md[SG5T]: F:Documents Nollm Core Charter | R:- | A:- | S:-
+NOLLM_DISTRIBUTIONS_CHARTER.md[SG5T]: F:Documents Nollm Distributions Charter | R:- | A:- | S:-
+NOLLM_HISTORY_CHARTER.md[SG5T]: F:Documents Nollm History Charter | R:- | A:- | S:-
+NOLLM_LAB_CHARTER.md[SG5T]: F:Documents Nollm Lab Charter | R:- | A:- | S:-
+NOLLM_OPENCLAW_CHARTER.md[SG5T]: F:Documents Nollm OpenClaw Charter | R:- | A:- | S:-
+NOLLM_SNAPSHOT_CHARTER.md[SG5T]: F:Documents Nollm Snapshot Charter | R:- | A:- | S:-
+NOLLM_TRACE_CHARTER.md[SG5T]: F:Documents Nollm Trace Charter | R:- | A:- | S:-
+
+===/<repository>/docs/project/===
+ACTIVE_PROJECT.md[SG5T]: F:Defines the active project basis and the admission gates for repository memory and coverage work. | R:code:docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md,code:docs/project/NOLLM_CURRENT_STATUS.md | A:- | S:-
+AOLD_SINGLE_CONTENT_NEUTRAL_PIPELINE_REPORT.md[SG5S]: F:Documents AOLD Single Active Content-Neutral Pipeline Report covering Result | R:- | A:- | S:-
+AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md[SG5T]: F:Documents AOLD Unified Field Encounter Report covering Result | R:- | A:- | S:-
+NOLLM_ACTIVE_REPOSITORY_ASSET_POLICY.md[SG5T]: F:Documents Nollm Active Repository Asset Policy covering Allowed In The Current Tree | R:- | A:- | S:-
+NOLLM_CURRENT_STATUS.md[SG5T]: F:Documents Nollm Current Status covering Repository memory feedback | R:code:lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md,code:docs/architecture/CERTIFIED_OVERLAP.md | A:- | S:-
+NOLLM_CURRENT_STATUS_MODULE_PROGRESS_LEDGER.md[SG5T]: F:Documents Nollm Canonical Module Progress Ledger covering V3.13 Rev1 closure record | R:- | A:- | S:-
+NOLLM_MAINLINE_ACTIVE_ASSET_CURATION_REPORT.md[SG5T]: F:Documents Nollm Mainline And Active Asset Curation Report covering Mainline | R:- | A:- | S:-
+NOLLM_PROJECT_BOOK_V3_1_CORE_PURITY_AND_EVOLVING_BASELINES_20260711.md[SG5S]: F:Documents Nollm Project Book V3.1: Core Purity And Evolving Baselines covering Architecture Principles | R:- | A:- | S:-
+NOLLM_PROJECT_BOOK_V3_4_CORE_FUNCTION_PRIORITY_20260713.md[SG5T]: F:Documents Nollm Project Book V3.4: Core Function Priority (Historical) | R:- | A:- | S:-
+NOLLM_ROUTE_BOOK_V3_13_REV1_DIRECT_ENCOUNTER_ACTIVATION_20260804.md[SG5S]: F:Documents Nollm 路线书 V3.13 Rev1：Direct Encounter Activation 与延后神经适配 covering 0. 一句话路线 | R:- | A:- | S:-
+NOLLM_ROUTE_BOOK_V3_9_FAST_STRUCTURAL_GEOMETRY_20260715.md[SG5S]: F:Documents Nollm 路线书 V3.9：快速结构几何与有界近似 Coverage covering 0. 一句话路线 | R:- | A:- | S:-
+V3_13_REV1_DIRECT_ACTIVATION_REPORT.md[SG5S]: F:Documents V3.13 Rev1 Direct Encounter Activation Execution Report covering Authority and scope | R:- | A:- | S:-
+V3_13_REV1_PROVIDER_BASELINE.md[SG5T]: F:Documents V3.13 Rev1 Provider/Host Baseline covering Provider and host | R:- | A:- | S:-
+V3_14_REMOTE_CHECKPOINT.md[SG5T]: F:Documents V3.14 Remote Checkpoint | R:- | A:- | S:-
+
+===/<repository>/docs/project/tasks/===
+NOLLM_A_O_L_D_DIRECT_ENCOUNTER_ACTIVATION_PROVIDER_LIVE_GITHUB_EXECUTION_TASK_20260804.md[SG5L]: F:Documents Nollm A-O-L-D：Direct Encounter Activation、Provider Live 与 GitHub 连续交付任务书 covering 0. 可验证结果 | R:- | A:- | S:-
+NOLLM_C_S_T_A_H_U_O_L_D_MAINLINE_ACTIVE_ASSET_CURATION_TASK_20260730.md[SG5L]: F:Documents Nollm 全模块：Main 主线整合与活动资产整理任务书 covering 0. 任务推进向量 | R:- | A:- | S:-
+
+===/<repository>/experiments/grf/datasets/===
+concentrated_facts.jsonl[FD5T]: F:Declares concentrated facts for datasets with fields id, text, group, source_window | R:- | A:- | S:-
+false_stitch_decoys.jsonl[FD5T]: F:Declares false stitch decoys for datasets with fields id, text, group, source_window | R:- | A:- | S:-
+scattered_facts.jsonl[FD5T]: F:Declares scattered facts for datasets with fields id, text, group, source_window | R:- | A:- | S:-
+
+===/<repository>/experiments/grf/===
+grf7r2_evidence_pack.py[XG5T]: F:Canonical GRF7R2 external evidence manifest and tar.zst pack helpers. | R:code:reference/python/nollm/grf/json_canonical.py | A:EvidenceSource,build_manifest,write_pack,verify_pack | S:-
+grf7r3_compact_evidence.py[XG5S]: F:GRF7R3 compact-audit manifest, sampler, and archive verification helpers. | R:code:reference/python/nollm/grf/json_canonical.py | A:EvidenceSource,sha_file,build_manifest,write_capsule | S:-
+verify_external_artifacts.py[XG5T]: F:Implements verify external artifacts through build_manifest, verify, main | R:- | A:build_manifest,verify,main | S:-
+verify_grf7r_evidence.py[XG5M]: F:Implements verify grf7r evidence through verify_all, write_outputs, verify_written_outputs | R:code:reference/python/nollm/grf/gate_evidence.py,code:reference/python/nollm/grf/json_canonical.py | A:verify_all,write_outputs,verify_written_outputs,main | S:-
+
+===/<repository>/integrations/adapters/===
+__init__.py[IB6T]: F:Replaceable host adapters for the active V2 GRF boundary. | R:- | A:- | S:-
+grf4_host_validation.py[IB6T]: F:Multi-host GRF4 conformance runner; adapters only map contract payloads. | R:code:integrations/adapters/grf_declared_host_adapter.py,code:integrations/adapters/grf_file_adapter.py | A:run_multi_host_conformance | S:-
+grf4r_failure_recovery.py[IB6T]: F:Destructive failure fixtures scoped to a temporary GRF4R workspace. | R:code:reference/python/nollm/grf/admission_bridge.py,code:reference/python/nollm/grf/facade.py | A:FailureRecoveryResult,run_failure_recovery | S:-
+grf4r_host_lifecycle.py[IB6S]: F:Production-like host lifecycle fixtures that only communicate with adapters. | R:code:integrations/adapters/grf_declared_host_adapter.py,code:integrations/adapters/grf_file_adapter.py | A:HostLifecycleResult,HostFixture,run_all_host_lifecycles | S:-
+grf5_operational_validation.py[IB6T]: F:Bounded long-running product Host validation with restarts and replay. | R:code:integrations/adapters/grf_product_host.py | A:OperationalResult,run_operational_validation | S:-
+grf7_runtime_fixture.py[IB6T]: F:Compatibility import for the GRF7R Facade-backed runtime. | R:code:integrations/adapters/grf7r_facade_runtime.py | A:FacadeRuntimeAdapter,LostHostResponse | S:-
+grf7r_facade_runtime.py[IB6M]: F:Durable host ownership wrapper around the public GRF Host Contract. | R:code:reference/python/nollm/grf/host_contract.py,code:reference/python/nollm/grf/json_canonical.py | A:LostHostResponse,HostRequestRegistryError,HostRequestRegistryEntry,HostRequestRegistry | S:-
+grf_adapter_conformance.py[IB6T]: F:Reusable conformance checks for replaceable GRF host adapters. | R:- | A:AdapterConformanceResult,AdapterContractTestSuite | S:-
+grf_adapter_contract.py[IB6T]: F:Shared adapter operation surface; methods only forward contract mappings. | R:- | A:GRFAdapter,GRFAdapterOperations | S:-
+grf_declared_host_adapter.py[IB6T]: F:Configuration-only adapter wrapper for declarative GRF host skeletons. | R:code:integrations/adapters/grf_file_adapter.py,code:integrations/adapters/grf_adapter_contract.py | A:GRFDeclaredHostAdapter | S:-
+grf_file_adapter.py[IB6T]: F:File-shaped JSON adapter; all GRF work crosses the host contract. | R:code:reference/python/nollm/grf/host_contract.py,code:integrations/adapters/grf_adapter_contract.py | A:GRFFileAdapter | S:-
+grf_product_host.py[IB6T]: F:File-backed product Host that reaches GRF only through a replaceable adapter. | R:code:integrations/adapters/grf_adapter_contract.py,code:integrations/adapters/grf_file_adapter.py | A:GRFProductHost,ProductHostError | S:-
+
+===/<repository>/integrations/codex/adapter/===
+README.md[SG5T]: F:Documents GRF Codex Adapter Skeleton | R:- | A:- | S:-
+capabilities.json[FD5T]: F:Declares capabilities for adapter with fields contract_version, capabilities, mode | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/formation-loop/===
+.gitignore[FC4T]: F:Lists Git ignore rules for integrations/openclaw/formation-loop | R:- | A:- | S:-
+README.md[SG5T]: F:Documents Nollm OpenClaw Formation Loop | R:- | A:- | S:-
+openclaw.plugin.json[FD5L]: F:Post-delivery background MemoryStatement formation through an OpenClaw-owned subagent. | R:- | A:- | S:-
+package-lock.json[FD5L]: F:Declares package lock for formation loop with fields name, version, lockfileVersion, requires, packages | R:- | A:- | S:-
+package.json[FD5T]: F:Declares package for formation loop with fields name, version, private, type, main | R:- | A:- | S:-
+tsconfig.json[FD5T]: F:Declares tsconfig for formation loop with fields compilerOptions, include | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/formation-loop/python/nollm_openclaw_formation/===
+__init__.py[IB6T]: F:Active content-neutral OpenClaw bridge package. | R:- | A:- | S:-
+adapter.py[IB6S]: F:Implements adapter through OpenClawFormationConfig, OpenClawSessionMapper, OpenClawEventTranslator | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:OpenClawFormationConfig,OpenClawSessionMapper,OpenClawEventTranslator,FormationPromptBuilder | S:-
+bridge.py[IB6L]: F:Implements bridge through main | R:code:integrations/openclaw/formation-loop/python/nollm_openclaw_formation/errors.py | A:main | S:-
+cartographer.py[IB6L]: F:Implements cartographer through read_memory_evaluation_fingerprint, read_statement_continuation_context, build_proposition_writer_prompt | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:read_memory_evaluation_fingerprint,read_statement_continuation_context,build_proposition_writer_prompt,parse_proposition_writer_result | S:-
+dream_adapter.py[IB6M]: F:Implements dream adapter through dream_schema_bytes, build_dream_prompt, build_dream_format_repair_prompt | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:dream_schema_bytes,build_dream_prompt,build_dream_format_repair_prompt,parse_dream_result | S:-
+errors.py[IB6T]: F:Implements errors through FormationAdapterError | R:- | A:FormationAdapterError | S:-
+field_encounter.py[IB6L]: F:Implements field encounter through run_field_encounter, render_field_encounter_injection, evidence_ref_tokens | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:run_field_encounter,render_field_encounter_injection,evidence_ref_tokens,build_field_encounter_prompt | S:-
+json_repair.py[IB6S]: F:Implements json repair through repair_json_envelope | R:- | A:repair_json_envelope | S:-
+legacy_bridge.py[IB6L]: F:Implements legacy bridge through main | R:code:integrations/openclaw/formation-loop/python/nollm_openclaw_formation/adapter.py | A:main | S:-
+legacy_cartographer.py[IB6T]: F:Implements legacy cartographer through migrate_legacy_proposition_writer_result | R:code:integrations/openclaw/formation-loop/python/nollm_openclaw_formation/cartographer.py | A:migrate_legacy_proposition_writer_result | S:-
+main_agent_recall.py[IB6M]: F:Implements main agent recall through build_main_agent_surface, open_main_agent_region, recall_main_agent_locality | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:build_main_agent_surface,open_main_agent_region,recall_main_agent_locality | S:-
+memory_loop.py[IB6L]: F:Implements memory loop through verify_admitted_statements, build_fast_recall_prompt, apply_fast_recall_selection | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:verify_admitted_statements,build_fast_recall_prompt,apply_fast_recall_selection,build_batch_placement_prompt | S:-
+sculptor.py[IB6M]: F:Implements sculptor through build_dream_sculptor_prompt, parse_dream_sculptor_result, apply_dream_sculptor_result | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:build_dream_sculptor_prompt,parse_dream_sculptor_result,apply_dream_sculptor_result | S:-
+writer_inputs.py[IB6S]: F:Implements writer inputs through workspace, captures | R:code:integrations/openclaw/formation-loop/python/nollm_openclaw_formation/errors.py | A:workspace,captures | S:-
+
+===/<repository>/integrations/openclaw/formation-loop/scripts/===
+diagnose.ps1[OV5S]: F:Runs diagnose for scripts | R:- | A:- | S:-
+disable.ps1[OV5T]: F:Runs disable for scripts | R:- | A:- | S:-
+enable.ps1[OV5T]: F:Runs enable for scripts | R:- | A:- | S:-
+install.ps1[OV5T]: F:Runs install for scripts | R:- | A:- | S:-
+run-natural-chat-smoke.ps1[OV5T]: F:Runs run natural chat smoke for scripts | R:- | A:- | S:-
+run-parser-smoke.ps1[OV5T]: F:Runs run parser smoke for scripts | R:- | A:- | S:-
+uninstall.ps1[OV5T]: F:Runs uninstall for scripts | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/formation-loop/src/===
+capture.ts[IE7L]: F:Exposes CAPTURE_SCHEMA, LEGACY_CAPTURE_STATE_SCHEMA, CAPTURE_STATE_SCHEMA for capture | R:- | A:CAPTURE_SCHEMA,LEGACY_CAPTURE_STATE_SCHEMA,CAPTURE_STATE_SCHEMA,LEGACY_CAPTURE_DIRECTIVE_SCHEMA | S:-
+index.ts[IE7L]: F:Exposes RunResult, DreamConfig, TRAVERSAL_CORRECTION_MAX_ATTEMPTS for index | R:- | A:RunResult,DreamConfig,TRAVERSAL_CORRECTION_MAX_ATTEMPTS,REVISION_CONFIRMATION_MAX_CALLS | S:-
+latency.ts[IE7T]: F:Exposes COMMIT_LATENCY_SCHEMA, RECALL_LATENCY_SCHEMA, LatencyClock for latency | R:- | A:COMMIT_LATENCY_SCHEMA,RECALL_LATENCY_SCHEMA,LatencyClock,systemLatencyClock | S:-
+
+===/<repository>/integrations/openclaw/formation-loop/tests/===
+adapter.test.mjs[TQ5L]: F:Tests manifest exposes one operation-neutral Field Encounter tool in tests | R:- | A:- | S:-
+capture.test.mjs[TQ5L]: F:Tests Capture publishes exact immutable bytes and duplicate hooks replay in tests | R:- | A:- | S:-
+latency.test.mjs[TQ5T]: F:Tests controlled monotonic clock yields exact nonnegative durations in tests | R:- | A:- | S:-
+test_adapter.py[TQ5M]: F:Tests adapter including exact span round trip and inheritance | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_cartographer.py[TQ5L]: F:Tests cartographer including multi capture writer progress is explicit and independent | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_main_agent_recall.py[TQ5S]: F:Tests main agent recall including main agent surface hides coordinates and recall is single entry bounded | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_memory_loop.py[TQ5L]: F:Tests memory loop including fast recall mechanical singleton uses zero hidden calls | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_openclaw_field_encounter.py[TQ5S]: F:Tests openclaw field encounter including bridge replays query operation without exposing physical addresses | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-access/src/nollm_access/memory_loop.py | A:- | S:-
+test_sculptor.py[TQ5S]: F:Tests sculptor including sculptor prompt teaches complete short term facts and geometry boundary | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/===
+README.md[SG5T]: F:Documents Nollm GRF OpenClaw Adapter | R:- | A:- | S:-
+openclaw.plugin.json[FD5T]: F:Geometry-native Nollm capture, bounded placement preparation, and explicit recall tools. | R:- | A:- | S:-
+package.json[FD5T]: F:Native OpenClaw adapter for geometry-native Nollm GRF workflows. | R:- | A:- | S:-
+pnpm-lock.yaml[FG5L]: F:Specifies pnpm lock for grf adapter | R:- | A:- | S:-
+pnpm-workspace.yaml[FG5T]: F:Specifies pnpm workspace for grf adapter | R:- | A:- | S:-
+tsconfig.json[FD5T]: F:Declares tsconfig for grf adapter with fields compilerOptions, include | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/dist/===
+index.d.ts[IE7T]: F:Implements index.d for dist | R:- | A:- | S:-
+index.js[IE7T]: F:Implements index for dist | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/scripts/===
+check-openclaw-update.ps1[OV5T]: F:Runs check openclaw update for scripts | R:- | A:- | S:-
+diagnose.ps1[OV5T]: F:Runs diagnose for scripts | R:- | A:- | S:-
+disable.ps1[OV5T]: F:Runs disable for scripts | R:- | A:- | S:-
+enable.ps1[OV5T]: F:Runs enable for scripts | R:- | A:- | S:-
+install.ps1[OV5T]: F:Runs install for scripts | R:- | A:- | S:-
+uninstall.ps1[OV5T]: F:Runs uninstall for scripts | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/skills/nollm-grf/===
+SKILL.md[SG5T]: F:Documents Nollm GRF | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/src/===
+index.ts[IE7T]: F:Implements index for src | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/grf-adapter/tests/===
+manifest.test.mjs[TQ5T]: F:Tests declares the six native tools in tests | R:code:integrations/openclaw/grf-adapter/openclaw.plugin.json | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-companion/===
+.gitignore[FC4T]: F:Lists Git ignore rules for integrations/openclaw/nollm-memory-companion | R:- | A:- | S:-
+README.md[SG5M]: F:Documents Nollm OpenClaw Memory Companion covering Prerequisites | R:- | A:- | S:-
+openclaw.plugin.json[FD5T]: F:Companion tools that delegate to the Nollm Python sidecar while OpenClaw memory-core remains the active owner. | R:- | A:- | S:-
+package-lock.json[FD5L]: F:Declares package lock for nollm memory companion with fields name, version, lockfileVersion, requires, packages | R:- | A:- | S:-
+package.json[FD5T]: F:OpenClaw companion tool plugin for the Nollm Python memory sidecar. | R:- | A:- | S:-
+tsconfig.json[FD5T]: F:Declares tsconfig for nollm memory companion with fields compilerOptions, include | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-companion/examples/===
+openclaw.config.example.json5[FD5T]: F:Declares openclaw.config.example for examples with fields | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-companion/skill/===
+SKILL.md[SG5T]: F:Documents Nollm OpenClaw Geometry Cortex Skill covering Explicit native companion memory | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-companion/src/===
+index.ts[IE7M]: F:Implements index for src | R:- | A:- | S:-
+schemas.ts[IE7S]: F:Exposes ConfigSchema, StatusInputSchema, FieldOverviewInputSchema for schemas | R:- | A:ConfigSchema,StatusInputSchema,FieldOverviewInputSchema,OpenWellInputSchema | S:-
+sidecar.ts[IE7L]: F:Exposes PythonExecutableError, normalizeConfig, resolvePythonExecutable for sidecar | R:- | A:PythonExecutableError,normalizeConfig,resolvePythonExecutable,buildSidecarArgv | S:-
+types.ts[IE7T]: F:Exposes PluginConfig, NormalizedConfig, PythonProbeErrorCode for types | R:- | A:PluginConfig,NormalizedConfig,PythonProbeErrorCode,SidecarErrorCode | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-companion/tests/===
+plugin-contract.test.mjs[TQ5L]: F:Tests default export exposes real defineToolPlugin metadata in tests | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/===
+CHANGELOG.md[SG5T]: F:Documents Changelog covering 0.1.0-beta.1 | R:- | A:- | S:-
+LICENSE[SG5T]: F:States the repository license terms | R:- | A:- | S:-
+README.md[SG5T]: F:Documents @nollm/openclaw-memory covering Current status | R:- | A:- | S:-
+openclaw.plugin.json[FD5S]: F:Geometry-native long-term memory slot for OpenClaw. | R:- | A:- | S:-
+package-lock.json[FD5T]: F:Declares package lock for nollm memory provider with fields name, version, lockfileVersion, requires, packages | R:- | A:- | S:-
+package.json[FD5T]: F:Geometry-native long-term memory slot for OpenClaw. | R:- | A:- | S:-
+tsconfig.json[FD5T]: F:Declares tsconfig for nollm memory provider with fields compilerOptions, include | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/docs/===
+P0_01_EVIDENCE_PROTOCOL.md[SG5T]: F:Documents P0-01 Evidence Branch Protocol covering Evidence branch name | R:- | A:- | S:-
+W2_01_ACTIVE_MEMORY_TRIAL.md[SG5T]: F:Documents W2-01 Direct Active Memory Trial covering Status | R:- | A:- | S:-
+WINDOWS_LIVE_PREFLIGHT.md[SG5S]: F:Documents Windows OpenClaw/Nollm Live Preflight covering Important constraints | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/examples/===
+openclaw.alpha.config.example.json5[FD5T]: F:Declares openclaw.alpha.config.example for examples with fields | R:- | A:- | S:-
+openclaw.w2-active.config.example.json5[FD5T]: F:Declares openclaw.w2 active.config.example for examples with fields | R:- | A:- | S:-
+windows-live-preflight.example.ps1[OV5T]: F:Runs windows live preflight.example for examples | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/fixtures/===
+alpha-field.json[FD5T]: F:Declares alpha field for fixtures with fields facts, field_id, revision_id, schema | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/scripts/===
+build.mjs[IE7T]: F:Implements build for scripts | R:- | A:- | S:-
+generate-f0-04-evidence.mjs[IE7M]: F:Implements generate f0 04 evidence for scripts | R:- | A:- | S:-
+host-integration-check.mjs[IE7M]: F:Implements host integration check for scripts | R:- | A:- | S:-
+integration-harness.mjs[IE7M]: F:Implements integration harness for scripts | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/src/===
+bridge-runtime.js[IE7S]: F:Exposes NollmBridgeRuntime for bridge runtime | R:code:integrations/openclaw/nollm-memory-provider/src/config.js | A:NollmBridgeRuntime | S:-
+compat-registry.ts[IE7T]: F:Exposes NollmCompatibilityReferenceRegistry for compat registry | R:- | A:NollmCompatibilityReferenceRegistry | S:-
+config.js[IE7T]: F:Exposes ConfigSchema, normalizeConfig, safeAgentSegment for config | R:- | A:ConfigSchema,normalizeConfig,safeAgentSegment | S:-
+config.ts[IE7M]: F:Exposes ConfigSchema, isLegacyPathSegment, normalizeConfig for config | R:- | A:ConfigSchema,isLegacyPathSegment,normalizeConfig,configurationRequiredStatus | S:-
+context-validation.ts[IE7S]: F:Exposes validatePrepareResult, validateContextEnvelope, validateCaptureResult for context validation | R:- | A:validatePrepareResult,validateContextEnvelope,validateCaptureResult | S:-
+errors.ts[IE7T]: F:Exposes sidecarFailure, safeErrorMessage for errors | R:- | A:sidecarFailure,safeErrorMessage | S:-
+hook-context.ts[IE7T]: F:Exposes formatMemoryContext, makeUnavailableBoundary for hook context | R:- | A:formatMemoryContext,makeUnavailableBoundary | S:-
+identity.ts[IE7T]: F:Exposes TurnIdentityEvent, HookContext, TurnMessage for identity | R:- | A:TurnIdentityEvent,HookContext,TurnMessage,normalizeMessageContent | S:-
+index.js[IE7T]: F:Registers the OpenClaw memory-kind Nollm plugin and delegates startup to the native provider. | R:code:integrations/openclaw/nollm-memory-provider/src/provider.js | A:- | S:-
+index.ts[IE7T]: F:Implements index for src | R:code:integrations/openclaw/nollm-memory-provider/src/config.js | A:- | S:-
+memory-runtime.ts[IE7T]: F:Exposes createNollmCompatibilityRuntime for memory runtime | R:- | A:createNollmCompatibilityRuntime | S:-
+memory-tools.js[IE7M]: F:Exposes MEMORY_SEARCH_SCHEMA, MEMORY_GET_SCHEMA, MemoryOperationRegistry for memory tools | R:- | A:MEMORY_SEARCH_SCHEMA,MEMORY_GET_SCHEMA,MemoryOperationRegistry,createMemorySearchFactory | S:-
+provider.js[IE7T]: F:Exposes buildNollmMemoryPrompt, createNollmProvider for provider | R:code:integrations/openclaw/nollm-memory-provider/src/config.js | A:buildNollmMemoryPrompt,createNollmProvider | S:-
+provider.ts[IE7M]: F:Exposes createNollmProvider for provider | R:code:integrations/openclaw/nollm-memory-provider/src/config.js | A:createNollmProvider | S:-
+sidecar.ts[IE7M]: F:Exposes ActiveCommand, runSidecarCommand for sidecar | R:- | A:ActiveCommand,runSidecarCommand | S:-
+types.ts[IE7S]: F:Exposes PluginConfig, NormalizedConfig, SidecarErrorCode for types | R:- | A:PluginConfig,NormalizedConfig,SidecarErrorCode,SidecarFailure | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/test-fixtures/===
+preflight-command-fixtures.json[FD5T]: F:Declares preflight command fixtures for test fixtures with fields schema, allowed_command_prefixes, forbidden_command_patterns | R:- | A:- | S:-
+redaction-cases.json[FD5T]: F:Declares redaction cases for test fixtures with fields schema, cases | R:- | A:- | S:-
+windows-path-cases.json[FD5T]: F:Declares windows path cases for test fixtures with fields schema, cases | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/tests/===
+capture-idempotency.test.mjs[TQ5M]: F:Tests same event twice -> TS calls sidecar twice and accepts Python deduplication in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+compat-registry.test.mjs[TQ5S]: F:Tests search issues nollm://compat/v1/<nonce> in tests | R:- | A:- | S:-
+compatibility-runtime.test.mjs[TQ5T]: F:Tests getMemorySearchManager returns null manager in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+config-validation.test.mjs[TQ5T]: F:Tests /tmp/x/memory rejected in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+context-validation.test.mjs[TQ5S]: F:Tests malformed prepare result schema -> unavailable in tests | R:- | A:- | S:-
+helpers.mjs[TQ5M]: F:Tests helpers in tests | R:- | A:makeTempDir,makeTempRepo,resolvePythonCommand,makeProviderConfig | S:-
+identity.test.mjs[TQ5T]: F:Tests user then assistant -> use user text in tests | R:- | A:- | S:-
+no-legacy-access.test.mjs[TQ5S]: F:Tests TypeScript provider source does not reference legacy surfaces in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+plugin-contract.test.mjs[TQ5T]: F:Tests has id nollm, kind memory, and empty contracts.tools in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+preflight-redaction.test.mjs[TQ5T]: F:Tests preflight redaction.test in tests | R:- | A:- | S:-
+preflight-report-schema.test.mjs[TQ5S]: F:Tests accepts a synthetic valid report in tests | R:- | A:- | S:-
+runtime-hook.integration.test.mjs[TQ5S]: F:Tests returns a NOLLM_MEMORY_CONTEXT_V1 envelope from sidecar in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+tool-surface.integration.test.mjs[TQ5T]: F:Tests manifest declares empty contracts.tools in tests | R:code:integrations/openclaw/nollm-memory-provider/tests/helpers.mjs | A:- | S:-
+v314-memory-tools.test.mjs[TQ5M]: F:Tests V3.14 registers memory capability and both tools without starting its service in tests | R:code:integrations/openclaw/nollm-memory-provider/src/provider.js | A:- | S:-
+v314-statement-items.test.mjs[TQ5S]: F:Tests wrapped Unicode Statement ID round-trips unchanged with existing CRLF pagination in tests | R:code:integrations/openclaw/nollm-memory-provider/src/memory-tools.js | A:- | S:-
+windows-live-preflight.static.test.mjs[TQ5T]: F:Tests script declares read_only mode in safety section in tests | R:- | A:- | S:-
+windows-path-normalization.test.mjs[TQ5T]: F:Tests windows path normalization.test in tests | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/nollm-memory-provider/tools/===
+preflight-report-schema.json[FD5S]: F:Declares preflight report schema for tools with fields $schema, $id, title, type, required | R:- | A:- | S:-
+windows-live-preflight.ps1[OV5L]: F:Runs windows live preflight for tools using ConvertTo-NollmPortablePath, Get-NollmPublicPath | R:- | A:- | S:-
+
+===/<repository>/integrations/openclaw/v2-adapter/===
+README.md[SG5T]: F:Documents GRF V2 Adapter Skeleton | R:- | A:- | S:-
+capabilities.json[FD5T]: F:Declares capabilities for v2 adapter with fields contract_version, capabilities, mode | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/dream_agent/reports/===
+verify_live_evidence.py[XG5S]: F:Implements verify live evidence through verify_round, main | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:verify_round,main | S:-
+
+===/<repository>/lab/nollm-lab/dream_agent/runs/===
+run-live-round.ps1[OV5T]: F:Runs run live round for runs | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/geometry/===
+__init__.py[XG5T]: F:Development-only geometry template generation. | R:- | A:- | S:-
+certified_overlap.py[XG5M]: F:Bounds ideal source-share overlap using directed interval transforms and rational convex clipping. | R:code:docs/architecture/CERTIFIED_OVERLAP.md | A:CertificationBudgetExceeded,DyadicInterval,ideal_transform,clip_halfplane | S:Candidate enumeration comes from geometry bounds. A zero lower bound with a positive upper bound does not certify support.
+compile_support.py[XG5S]: F:Implements compile support through hex_ring_one, normalize_q16_weights, CompileKernelEntry | R:- | A:hex_ring_one,normalize_q16_weights,CompileKernelEntry,CompileMetadata | S:-
+compiler.py[XG5S]: F:Implements compiler through CoverageTemplateCompiler | R:code:lab/nollm-lab/geometry/compile_support.py,code:lab/nollm-lab/geometry/physical_geometry.py | A:CoverageTemplateCompiler | S:-
+generate_compiled_templates.py[XG5T]: F:Implements generate compiled templates through canonical_document, render, main | R:code:lab/nollm-lab/geometry/compiler.py,code:lab/nollm-lab/geometry/research_profiles.py | A:canonical_document,render,main | S:-
+physical_geometry.py[XG5S]: F:Implements physical geometry through beta, sin_cos, layer_angle | R:- | A:beta,sin_cos,layer_angle,layer_side | S:-
+research_profiles.py[XG5T]: F:Implements research profiles through ResearchProfile, research_profiles, research_profile | R:code:lab/nollm-lab/geometry/compile_support.py | A:ResearchProfile,research_profiles,research_profile | S:-
+run_bounded_approximate_coverage_calibration.py[XG5S]: F:Implements run bounded approximate coverage calibration through validate, main | R:code:lab/nollm-lab/geometry/bounded_quadrature/__init__.py,code:lab/nollm-lab/geometry/oracle_decimal/__init__.py | A:validate,main | S:-
+run_broad_residue_coverage_calibration.py[XG5M]: F:Implements run broad residue coverage calibration through validate, main | R:code:lab/nollm-lab/geometry/bounded_quadrature/__init__.py,code:lab/nollm-lab/geometry/broad_residue/__init__.py | A:validate,main | S:-
+run_certified_coverage_validation.py[XG5S]: F:Bounded, reproducible Lab comparison; all generated output stays outside Git. | R:code:lab/nollm-lab/geometry/certified_overlap.py,code:lab/nollm-lab/geometry/broad_residue/__init__.py | A:validate,main | S:-
+run_core_translation_covariant_validation.py[XG5S]: F:Implements run core translation covariant validation through validate, main | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:lab/nollm-lab/geometry/oracle_decimal/__init__.py | A:validate,main | S:-
+run_dense_live_state_validation.py[XG5S]: F:Implements run dense live state validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_dense_locality_surface_validation.py[XG5S]: F:Implements run dense locality surface validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_dense_single_entry_recall_validation.py[XG5M]: F:Implements run dense single entry recall validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_lazy_surface_benchmark.py[XG5T]: F:Implements run lazy surface benchmark through benchmark, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:benchmark,main | S:-
+run_live_evidence_freeze_validation.py[XG5S]: F:Implements run live evidence freeze validation through validate, main | R:- | A:validate,main | S:-
+run_natural_multi_entry_observation.py[XG5T]: F:Implements run natural multi entry observation through validate, main | R:- | A:validate,main | S:-
+run_p1_dual_fact_repair_validation.py[XG5M]: F:Implements run p1 dual fact repair validation through inventory, validate_and_optionally_restore, place_existing_cr_with_real_host | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:inventory,validate_and_optionally_restore,place_existing_cr_with_real_host,replay_real_host_receipt | S:-
+run_p1_recovery_state_validation.py[XG5T]: F:Implements run p1 recovery state validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_revision_semantic_contrast_validation.py[XG5M]: F:Implements run revision semantic contrast validation through run, main | R:- | A:run,main | S:-
+run_rotated_physical_geometry_validation.py[XG5T]: F:Implements run rotated physical geometry validation through validate, main | R:code:lab/nollm-lab/geometry/physical_geometry.py | A:validate,main | S:-
+run_safe_writable_field_validation.py[XG5S]: F:Implements run safe writable field validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_surface_legal_action_validation.py[XG5S]: F:Implements run surface legal action validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_translation_covariant_coverage_validation.py[XG5S]: F:Implements run translation covariant coverage validation through oracle_a, validate, main | R:code:reference/python/nollm/dream_geometry/geometry/chart.py,code:reference/python/nollm/dream_geometry/geometry/hexgrid.py | A:oracle_a,validate,main | S:-
+run_translation_normalized_coverage_validation.py[XG5T]: F:Implements run translation normalized coverage validation through validate, main | R:code:lab/nollm-lab/geometry/oracle_decimal/__init__.py | A:validate,main | S:-
+run_traversal_correction_validation.py[XG5T]: F:Implements run traversal correction validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+test_oracle_decimal.py[TQ5T]: F:Tests oracle decimal including fractional target address depends on complete source address | R:code:lab/nollm-lab/geometry/oracle_decimal/__init__.py | A:- | S:-
+
+===/<repository>/lab/nollm-lab/geometry/bounded_quadrature/===
+__init__.py[XG5T]: F:Exports bounded quadrature public contracts including approximate_hits, sample_offsets | R:code:lab/nollm-lab/geometry/bounded_quadrature/prototype.py | A:approximate_hits,sample_offsets | S:-
+prototype.py[XG5T]: F:Implements prototype through sample_offsets, approximate_hits | R:- | A:sample_offsets,approximate_hits | S:-
+
+===/<repository>/lab/nollm-lab/geometry/broad_residue/===
+__init__.py[XG5T]: F:Exports broad residue public contracts including BroadFixture, broad_exact_fixtures, fast_diagnostic_fixtures | R:code:lab/nollm-lab/geometry/broad_residue/fixtures.py | A:BroadFixture,broad_exact_fixtures,fast_diagnostic_fixtures | S:-
+fixtures.py[XG5S]: F:Implements fixtures through BroadFixture, broad_exact_fixtures, fast_diagnostic_fixtures | R:- | A:BroadFixture,broad_exact_fixtures,fast_diagnostic_fixtures | S:-
+
+===/<repository>/lab/nollm-lab/geometry/oracle_decimal/===
+__init__.py[XG5T]: F:Exports oracle decimal public contracts including CoverageMember, coverage, fractional_target_axial | R:code:lab/nollm-lab/geometry/oracle_decimal/oracle.py | A:CoverageMember,coverage,fractional_target_axial,hex_vertices | S:-
+oracle.py[XG5M]: F:Implements oracle through CoverageMember, fractional_target_axial, hex_vertices | R:- | A:CoverageMember,fractional_target_axial,hex_vertices,coverage | S:-
+
+===/<repository>/lab/nollm-lab/geometry/tests/===
+test_certified_overlap.py[TQ5S]: F:Independent arithmetic/golden checks. Lab imports must never enter Core. | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/m1/===
+run_bounded_approximate_workspace_migration.py[XG5S]: F:Implements run bounded approximate workspace migration through migrate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:migrate,main | S:-
+run_core_capability_validation.py[XG5M]: F:Implements run core capability validation through code_tree_digest, MemorySink, FailingSink | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:code_tree_digest,MemorySink,FailingSink,cell | S:-
+run_geometry_parity.py[XG5T]: F:Implements run geometry parity through template_contract, profile_contract, main | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/coverage_template.py | A:template_contract,profile_contract,main | S:-
+run_m1_minimal_e2e.py[XG5M]: F:Implements run m1 minimal e2e through FailingTraceSink, cell, decision | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:FailingTraceSink,cell,decision,run | S:-
+run_rotated_layer0_workspace_migration.py[XG5M]: F:Implements run rotated layer0 workspace migration through migrate, self_check, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:migrate,self_check,main | S:-
+run_rotated_surface_coarsening_validation.py[XG5T]: F:Implements run rotated surface coarsening validation through validate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:validate,main | S:-
+run_translation_covariant_workspace_migration.py[XG5S]: F:Implements run translation covariant workspace migration through migrate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:migrate,main | S:-
+run_translation_normalized_workspace_migration.py[XG5S]: F:Implements run translation normalized workspace migration through migrate, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:migrate,main | S:-
+seed_translation_covariant_live_fixture.py[XG5T]: F:Implements seed translation covariant live fixture through seed, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:seed,main | S:-
+
+===/<repository>/lab/nollm-lab/openclaw_formation/===
+validate_live_plugin_evidence.py[XG5T]: F:Implements validate live plugin evidence through require, check, main | R:- | A:require,check,main | S:-
+
+===/<repository>/lab/nollm-lab/recall_lens/===
+run_v311r61_active_pipeline_gate.mjs[IE7S]: F:Implements run v311r61 active pipeline gate for recall lens | R:- | A:- | S:-
+run_v311r61_capture_pipeline_validation.mjs[IE7T]: F:Implements run v311r61 capture pipeline validation for recall lens | R:- | A:- | S:-
+run_v311r61_offline_validation.py[XG5S]: F:Implements run v311r61 offline validation through canonical, command_json, run | R:- | A:canonical,command_json,run,main | S:-
+run_v311r61_python_import_gate.py[XG5T]: F:Implements run v311r61 python import gate through main | R:- | A:main | S:-
+run_v311r6_content_neutral_memory_validation.py[XG5M]: F:Implements run v311r6 content neutral memory validation through run, main | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:run,main | S:-
+
+===/<repository>/lab/nollm-lab/repository_memory/===
+AOCI_COMPARISON.md[SG5T]: F:Documents 从 AOCI-CODE 的用法到 Nollm 仓库记忆 covering 在 AOCI-CODE 仓库实跑一次交接 | R:code:lab/nollm-lab/repository_memory/README.md,code:lab/nollm-lab/repository_memory/comparison/README.md | A:- | S:-
+ARCHITECTURE_AND_PLAN.md[SG5T]: F:Documents 仓库记忆 skill 的架构和验证计划 covering 谁负责什么 | R:code:lab/nollm-lab/repository_memory/comparison/README.md | A:- | S:-
+FACTS.md[SG5T]: F:Documents Committed structural facts covering Additional language profiles in compiler revision 5 | R:- | A:- | S:-
+HOSTS.md[SG5T]: F:Documents 在编程助手中使用仓库记忆 covering 选择宿主和范围 | R:- | A:- | S:-
+README.md[SG5S]: F:Introduces repository code judgments, Git evidence freshness, installation, comparison and source readback. | R:code:lab/nollm-lab/repository_memory/skills/nollm-repository-memory/SKILL.md,code:lab/nollm-lab/repository_memory/HOSTS.md | A:- | S:-
+aoci_rows.py[XG5S]: F:Import the semantic fields of repository-root AOCI code volumes, or render them canonically. | R:- | A:parse_volume,parse_dictionary,render_volume,main | S:-
+check_marks.py[XG5S]: F:Verify proposed machine marks against a fresh extraction from a committed Git tree. | R:code:lab/nollm-lab/repository_memory/facts.py | A:rows,Evidence,main | S:-
+evaluate_reads.py[XG5S]: F:Reproduce a file-byte cost model; this is not a retrieval or quality benchmark. | R:- | A:git,measure | S:-
+extra_languages.py[XG5M]: F:Conservative lexical witnesses for declarations outside Python and native builds. | R:- | A:line_starts,mask_span,skip_string,through | S:-
+facts.py[XG5M]: F:Compile a committed Git tree to deterministic, evidence-anchored structural facts (stdlib only). | R:code:lab/nollm-lab/repository_memory/extra_languages.py | A:dump,git,inventory,module_index | S:-
+field_demo.py[XG5S]: F:Replay host-selected repository notes in a fresh native Nollm field. | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:run_field_demo,replay_field,write_field,read_field | S:-
+geocode.py[XG5M]: F:Reversible relative hex-cell representation of normalized AOCI code/database objects. | R:- | A:dictionary_digest,compiled_cells,encode,object_id | S:-
+geometry_cli.py[XG5S]: F:Compile AOCI code volumes into geometric records and query their coordinates. | R:code:lab/nollm-lab/repository_memory/aoci_rows.py,code:lab/nollm-lab/repository_memory/geocode.py | A:encode_volume,records_from,axis_eq,select | S:-
+install_skill.py[XG5T]: F:Install a portable repository-memory skill into a new directory. | R:- | A:host_destination,install,main | S:-
+language_profiles.json[FD5T]: F:Declares language profiles for repository memory with fields schema, compiler_revision, symbol_evidence, edge_evidence, profiles | R:- | A:- | S:-
+machine_field.py[XG5M]: F:Place typed records in native Nollm, then read a single physical neighborhood per task. | R:code:lab/nollm-lab/repository_memory/field_demo.py,code:lab/nollm-lab/repository_memory/task_recall.py | A:jsonl,encoded,git_tree,arch_layout | S:-
+native_geo.py[XG5M]: F:Persist geometric AOCI objects in Nollm Core and Access, with no per-object label index. | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:canonical,address,fingerprint,ref_name | S:-
+query-lexicon.tsv[FD5S]: F:Tabulates query lexicon by # Query-side vocabulary. Each value is a set of alternative identifier words. | R:- | A:- | S:-
+records.py[XG5M]: F:Compile typed repository-memory records from a Git tree and an authored Nollm manifest. | R:- | A:canonical,sha,git,resolve | S:-
+repo_notes.py[XG5M]: F:Versioned, authored observations about explicitly chosen repository sources. | R:- | A:manifest_path,read_manifest,capture,inspect_notes | S:-
+router.py[XG5M]: F:Rank Git-pinned file candidates from machine facts, with reproducible ablations. | R:- | A:read_rows,wordforms,Fact,Concept | S:-
+task_recall.py[XG5M]: F:Select one physical entry for a repository task and recall its neighborhood. | R:code:lab/nollm-lab/repository_memory/field_demo.py,code:lab/nollm-lab/repository_memory/repo_notes.py | A:recall_task,main | S:-
+test_aoci_rows.py[TQ5T]: F:Tests aoci rows including extended name dotted and content | R:code:lab/nollm-lab/repository_memory/aoci_rows.py | A:- | S:-
+test_extra_languages.py[TQ5S]: F:Tests extra languages including javascript masks strings comments templates and regex | R:code:lab/nollm-lab/repository_memory/extra_languages.py,code:lab/nollm-lab/repository_memory/facts.py | A:- | S:-
+test_facts.py[TQ5S]: F:Tests facts including arrow candidates bind commit blob and exclude callbacks | R:code:lab/nollm-lab/repository_memory/facts.py | A:- | S:-
+test_geocode.py[TQ5S]: F:Tests geocode including jointly preserve all axes and roles | R:code:lab/nollm-lab/repository_memory/geocode.py | A:- | S:-
+test_geometry_install.py[TQ5T]: F:Exercise the installed geometric codec independently of its source checkout. | R:code:lab/nollm-lab/repository_memory/install_skill.py | A:- | S:-
+test_machine_install.py[TQ5S]: F:Exercise the machine commands from a relocated skill against a small, unrelated project. | R:- | A:- | S:-
+test_native_geo.py[TQ5T]: F:Native round trips, spatial queries, coordinate perturbations and source identity. | R:code:lab/nollm-lab/repository_memory/geometry_cli.py,code:lab/nollm-lab/repository_memory/native_geo.py | A:- | S:-
+test_records.py[TQ5S]: F:Tests records including all types pinned and spelling verified | R:code:lab/nollm-lab/repository_memory/records.py | A:- | S:-
+test_repository_memory.py[TQ5S]: F:Regression checks on real local Git commits and a temporary native field. | R:code:lab/nollm-lab/repository_memory/repo_notes.py | A:- | S:-
+test_router.py[TQ5T]: F:Regressions for abstention, Git provenance and the separation of the three routes. | R:code:lab/nollm-lab/repository_memory/router.py | A:- | S:-
+test_skill_install.py[TQ5S]: F:Run the installed, relocated skill against an unrelated repository. | R:- | A:- | S:-
+test_task_recall.py[TQ5S]: F:Automatic task routing over a real repository and reopened native field. | R:code:lab/nollm-lab/repository_memory/repo_notes.py,code:lab/nollm-lab/repository_memory/task_recall.py | A:- | S:-
+
+===/<repository>/lab/nollm-lab/repository_memory/comparison/===
+FIELD_PERFORMANCE.md[SG5T]: F:Documents 原生场复用的端到端耗时 covering 测量结果 | R:code:lab/nollm-lab/repository_memory/comparison/time_access_recall.py | A:- | S:-
+README.md[SG5T]: F:Documents 仓库记忆开发任务对照 covering 主实验 | R:code:lab/nollm-lab/repository_memory/comparison/time_packets.py,code:lab/nollm-lab/repository_memory/comparison/compare.py | A:- | S:-
+acceptance.py[XG5S]: F:Held-out checks. Run from the evaluator, outside participant directories. | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:test_binding_order_lookup_and_immutable_state,test_binding_single_and_closed,encode,test_statement_bytes_and_modern_roundtrip | S:-
+benchmark_field.py[XG5M]: F:Compare end-to-end native recall from the skill CLI at the last release and current checkout. | R:- | A:git,clone,build_manifest,summarize | S:-
+check_skill_discovery.py[XG5S]: F:Check installed skill discovery using the selected hosts' real CLI catalogs. | R:- | A:codex_catalog,list_skill,check,main | S:-
+compare.py[XG5T]: F:Prepare fresh three-arm change trials and score candidate patches. | R:- | A:run,packet,prepare,main | S:-
+observe.py[XG5T]: F:Participant interface. Run inside the trial directory created by compare.py. | R:- | A:main | S:-
+replay.py[XG5T]: F:Regrade an archived matrix on fresh package snapshots and verify recorded inputs. | R:code:lab/nollm-lab/repository_memory/comparison/compare.py,code:lab/nollm-lab/repository_memory/comparison/score.py | A:replay,main | S:-
+score.py[XG5S]: F:Score a prepared trial and save its auditable patch, reads and test results. | R:code:lab/nollm-lab/repository_memory/comparison/compare.py | A:test_result,check_code,token_counts,provider_usage | S:-
+time_access_recall.py[XG5T]: F:Time warm Access recall on 64 real bindings, with seven cells in range. | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:cell,registry_io,measure | S:-
+time_packets.py[XG5T]: F:Measure wall time to prepare an initial reading packet, excluding agent activity. | R:code:lab/nollm-lab/repository_memory/comparison/compare.py | A:measure | S:-
+
+===/<repository>/lab/nollm-lab/repository_memory/examples/===
+core-public-api-draft.json[FD5T]: F:Declares core public api draft for examples with fields reviewed_commit, notes | R:- | A:- | S:-
+current-notes.json[FD5S]: F:Declares current notes for examples with fields schema, notes | R:- | A:- | S:-
+nollm-notes.json[FD5T]: F:Declares nollm notes for examples with fields schema, notes | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/repository_memory/skills/nollm-repository-memory/===
+SKILL.md[SG5S]: F:Documents Nollm 仓库记忆 covering 从目标仓库启动 | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/===
+memory.py[XG5T]: F:Dispatches repository-memory commands from the installed host skill into its bundled tools. | R:code:lab/nollm-lab/repository_memory/install_skill.py | A:main | S:-
+
+===/<repository>/lab/nollm-lab/statement_formation/===
+README.md[SG5T]: F:Documents Statement Formation Corpus v1 | R:- | A:- | S:-
+corpus_support.py[XG5T]: F:Implements corpus support through load_cases, materialize, canonical_json | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:load_cases,materialize,canonical_json | S:-
+evaluate_fixture_decisions.py[XG5T]: F:Implements evaluate fixture decisions through evaluate, main | R:code:lab/nollm-lab/statement_formation/corpus_support.py,code:packages/nollm-access/src/nollm_access/__init__.py | A:evaluate,main | S:-
+validate_corpus.py[XG5T]: F:Implements validate corpus through validate, main | R:code:lab/nollm-lab/statement_formation/corpus_support.py,code:packages/nollm-access/src/nollm_access/__init__.py | A:validate,main | S:-
+
+===/<repository>/lab/nollm-lab/statement_formation/datasets/===
+statement_formation_v1.jsonl[FD5S]: F:Declares statement formation v1 for datasets with fields case_id, category, gold_decision, language, request | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/statement_formation/fixtures/===
+decision_proposals_v1.json[FD5M]: F:Lists decision proposals v1 records keyed by case_id, expectation, fixture_id, proposal | R:- | A:- | S:-
+
+===/<repository>/lab/nollm-lab/statement_formation/schema/===
+statement_formation_case_v1.json[FD5T]: F:Declares statement formation case v1 for schema with fields schema_version, required_fields, splits, offset_unit, gold_contract | R:- | A:- | S:-
+
+===/<repository>/legacy/quarantine/===
+README.md[SG5T]: F:Documents Legacy Quarantine | R:- | A:- | S:-
+
+===/<repository>/packages/===
+COMPATIBILITY_REEXPORTS.md[SG5T]: F:Documents Compatibility Re-exports | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-access/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-access | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-access/src/nollm_access/===
+__init__.py[AD8M]: F:Exports the Access recall, formation, placement, statement, evidence and field-encounter interfaces. | R:code:packages/nollm-access/src/nollm_access/runtime.py,code:packages/nollm-access/src/nollm_access/evidence_store.py,code:packages/nollm-access/src/nollm_access/dream.py,code:packages/nollm-access/src/nollm_access/formation.py | A:ACTIONS,PLACEMENT_ACTION_SEMANTICS,PLACEMENT_ACTION_SEMANTICS_VERSION,REVISION_CONFIRMATION_SCHEMA_VERSION | S:-
+cartography.py[AD8L]: F:Represents progressive atlas policies, regional previews and local detail pages. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:ProgressiveAtlasPolicy,ProgressiveAtlasRegion,ProgressiveAtlasPage,LocalDetailPage | S:-
+dream.py[AD8S]: F:Forms draft statements from bounded conversation turns and evidence captures. | R:code:packages/nollm-access/src/nollm_access/formation.py,code:packages/nollm-access/src/nollm_access/statement.py | A:ConversationTurn,ConversationMaterial,DreamFormationRequest,DreamMemoryDraft | S:-
+evidence_anchor.py[AD8S]: F:Resolves capture-relative quote references to exact spans in original evidence. | R:code:packages/nollm-access/src/nollm_access/formation.py,code:packages/nollm-access/tests/test_evidence_quote_anchor.py | A:EvidenceQuoteRef,ExactEvidenceSpan,resolve_evidence_quote_refs | S:-
+evidence_store.py[AD8T]: F:Adapts the older evidence-store interface to the canonical statement store. | R:code:packages/nollm-access/src/nollm_access/runtime.py,code:packages/nollm-access/src/nollm_access/statement.py,code:packages/nollm-access/src/nollm_access/statement_store.py | A:EvidenceStore,FileEvidenceStore | S:-
+field_encounter.py[AD8L]: F:Runs paged field encounters and applies admitted decisions for recall or placement through the Access loop. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-access/tests/test_field_encounter.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/cartography.py | A:PendingProposition,FieldEncounterRequest,EncounterFactCard,EncounterVacancyCard | S:-
+formation.py[AD8M]: F:Validates host decisions selecting raw evidence spans and assembles formed memory statements. | R:code:packages/nollm-access/src/nollm_access/evidence_anchor.py,code:packages/nollm-access/tests/test_statement_formation_boundaries.py,code:packages/nollm-access/src/nollm_access/statement.py | A:RawEvidenceRecord,EvidenceSpan,StatementSelection,StatementFormationRequest | S:-
+handle_store.py[AD8M]: F:Persists the mapping between statement IDs and current or supporting bindings for physical atom handles. | R:code:packages/nollm-access/src/nollm_access/runtime.py,code:packages/nollm-access/tests/test_binding_store_invariants.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:HandleBinding,FileHandleStore | S:Putting another statement on a bound handle preserves the original current statement and appends the new one to its supporting IDs.
+locality.py[AD8M]: F:Describes bounded candidate, node and path views for the placement locality atlas. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:LocalityCandidateRef,AtlasNode,AtlasPath,LocalityAtlas | S:-
+memory_loop.py[AD9L]: F:Coordinates progressive cartography, local context, placement, revision and durable readback within an Access workspace. | R:code:packages/nollm-access/src/nollm_access/field_encounter.py,code:packages/nollm-access/tests/test_surface_placement_memory_loop.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/cartography.py | A:RevisionTargetExcludedError,DurableReadbackError,AccessMemoryLoop | S:-
+placement_contract.py[AD8M]: F:Defines placement action semantics and the decision structures used to confirm provisional revisions. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/write_policy.py | A:placement_action_semantics_prompt,ProvisionalRevisionDecision,RevisionConfirmationResult,AccessDecision | S:-
+provenance.py[AD8M]: F:Persists resolved evidence references and statement provenance for later verification. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-access/src/nollm_access/evidence_anchor.py,code:packages/nollm-access/src/nollm_access/workspace_lock.py | A:ResolvedReferenceProvenance,StatementProvenance,FileStatementProvenanceStore | S:-
+recall.py[AD9T]: F:Defines the Access request and result shape for items bearing canonical statement evidence and physical path scores. | R:code:packages/nollm-access/src/nollm_access/runtime.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:AccessRecallRequest,AccessRecallItem,AccessRecallResult | S:-
+recall_lens.py[AD8M]: F:Validates evidence-backed semantic lens and junction plans from a dream sculptor. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/locality.py,code:packages/nollm-access/src/nollm_access/statement.py | A:LensBasisSpan,RecallLens,JunctionSemanticPlan,validate_dream_sculptor_plans | S:-
+runtime.py[AD9M]: F:Applies commands with binding updates and resolves Core recall handles against canonical statement evidence. | R:code:packages/nollm-access/src/nollm_access/handle_store.py,code:packages/nollm-access/tests/test_access_recall_canonical_contract.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/statement_store.py | A:AccessRuntime,AccessConsistencyError,ConditionalAccessApplyResult,AccessRollbackFailure | S:A payload mismatch keeps the handle and error status but withholds the statement text.
+statement.py[AD8T]: F:Represents a memory statement with validated identity, UTF-8 content and evidence metadata. | R:code:packages/nollm-access/src/nollm_access/statement_store.py | A:MemoryStatement | S:-
+statement_store.py[AD8S]: F:Persists and loads validated memory statement files using deterministic paths and atomic writes. | R:code:packages/nollm-access/src/nollm_access/statement.py,code:packages/nollm-access/tests/test_evidence_store_canonical_bytes.py,code:packages/nollm-access/src/nollm_access/workspace_lock.py | A:StatementStore,FileStatementStore | S:-
+surface_navigation.py[AD9L]: F:Navigates paged coarser observations, descends a shown Surface cell, and selects a physical entry for recall. | R:code:packages/nollm-access/src/nollm_access/surface_selection.py,code:packages/nollm-access/tests/test_surface_navigation.py,code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-access/src/nollm_access/handle_store.py | A:SurfaceStatementPreview,SurfaceCellView,PhysicalEntryCandidateView,SurfaceTraversalState | S:Physical entries open only on order zero. One shown candidate identifies a source cell after descent.
+surface_selection.py[AD8T]: F:Chooses the finest contiguous observed order meeting the page, cell and projection budget. | R:code:packages/nollm-access/src/nollm_access/surface_navigation.py,code:packages/nollm-access/tests/test_surface_selection.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:SurfaceBudgetProfile,ActiveSurfaceSelection,select_active_surface | S:If no eligible order fits, the coarsest eligible order is returned with overflow set.
+workspace_lock.py[AD8T]: F:Serializes Access workspace composition and operations using workspace-scoped locks. | R:code:packages/nollm-access/src/nollm_access/runtime.py | A:composition_lock,workspace_lock | S:-
+write_policy.py[AD8T]: F:Enforces the active semantic write field before placing a statement at a physical address. | R:code:packages/nollm-access/src/nollm_access/memory_loop.py,code:packages/nollm-access/tests/test_safe_writable_placement.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:ActiveSemanticWritePolicyError,ActiveSemanticWritePolicy | S:Writes must use default_dream_v1, chart default, layer zero and no explicit phase within the safe writable radius.
+
+===/<repository>/packages/nollm-access/tests/===
+test_access_decision_field_exclusivity.py[TQ5T]: F:Tests access decision field exclusivity including unrelated decision fields are rejected | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_access_evidence_resolution.py[TQ5T]: F:Tests access evidence resolution including recall distinguishes binding and payload failures | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_access_exception_atomicity.py[TQ5S]: F:Tests access exception atomicity including binding failure rolls back core | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_access_forbidden_semantics.py[TQ5T]: F:Tests access forbidden semantics including access has no python semantic decision surface | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_access_memory_loop.py[TQ5S]: F:Tests access memory loop including revision replaces current binding and recall after reopen | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_access_public_contract_strict_types.py[TQ5T]: F:Tests access public contract strict types including public access types rejected | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_access_recall_canonical_contract.py[TQ5T]: F:Tests access recall canonical contract including access recall rejects duplicate unknown and order | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_access_rejects_closed_core.py[TQ5T]: F:Tests access rejects closed core including closed core rejected | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_access_runtime.py[TQ5S]: F:Tests access runtime including capture new reuse defer and forget | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_binding_store_invariants.py[TQ5T]: F:Tests binding store invariants including one current and one statement per binding | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_dream_formation.py[TQ5T]: F:Tests dream formation including emit allows llm rewrite and has stable statement identity | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_evidence_quote_anchor.py[TQ5T]: F:Tests evidence quote anchor including quote resolver uses exact python codepoint offsets | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_evidence_store_canonical_bytes.py[TQ5T]: F:Tests evidence store canonical bytes including evidence rejects noncanonical and extra fields | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_evidence_store_immutability.py[TQ5T]: F:Tests evidence store immutability including concurrent different content never last writer wins | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_field_encounter.py[TQ5L]: F:Tests field encounter including request has no read write or mode fields | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-access/src/nollm_access/memory_loop.py | A:- | S:-
+test_forget_without_evidence.py[TQ5T]: F:Tests forget without evidence including forget succeeds when evidence is missing | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_lazy_surface_runtime.py[TQ5S]: F:Tests lazy surface runtime including order zero budget stops without building coarser orders | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_locality_atlas.py[TQ5T]: F:Tests locality atlas including empty atlas is finite stable and relation neutral | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_memory_statement_strict_types.py[TQ5T]: F:Tests memory statement strict types including memory statement rejects non string content | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_mixed_phase_access_recall.py[TQ5T]: F:Tests mixed phase access recall including mixed phase access entry order | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_placement_action_semantics.py[TQ5T]: F:Tests placement action semantics including semantic action contract is explicit without content classifier | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_progressive_cartography.py[TQ5S]: F:Tests progressive cartography including progressive root is complete bounded and not a stable prefix | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_recall_lens_contract.py[TQ5S]: F:Tests recall lens contract including sculptor plan compiles exact lens path into relation groups | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_reuse_validates_canonical_evidence.py[TQ5T]: F:Tests reuse validates canonical evidence including reuse rejects corrupt evidence before binding | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_revision_confirmation_contract.py[TQ5T]: F:Tests revision confirmation contract including confirmation requires exact wire and all semantic conditions | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_safe_writable_placement.py[TQ5T]: F:Tests safe writable placement including access rejects unsafe new target during decision preflight | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_single_entry_cross_layer_recall.py[TQ5T]: F:Tests single entry cross layer recall including single entry cross layer recall path and wire reopen | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_statement_formation.py[TQ5S]: F:Tests statement formation including raw evidence strict types and canonical round trip | R:code:packages/nollm-access/src/nollm_access/__init__.py | A:- | S:-
+test_statement_formation_boundaries.py[TQ5T]: F:Tests statement formation boundaries including formation ast has no semantic or geometry surface | R:- | A:- | S:-
+test_statement_provenance.py[TQ5S]: F:Tests statement provenance including statement provenance is canonical idempotent and reopenable | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-access/src/nollm_access/provenance.py | A:- | S:-
+test_surface_navigation.py[TQ5S]: F:Tests surface navigation including surface page previews are bounded current and deterministic | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_surface_placement_memory_loop.py[TQ5S]: F:Tests surface placement memory loop including candidates are unique bounded content independent and have six laterals | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_surface_selection.py[TQ5T]: F:Tests surface selection including selects finest affordable order from real core infos | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_workspace_coordinator_single_state_owner.py[TQ5T]: F:Tests workspace coordinator single state owner including same core shared and distinct owner rejected | R:code:packages/nollm-access/src/nollm_access/__init__.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+
+===/<repository>/packages/nollm-audit/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-audit | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-audit/src/nollm_audit/===
+__init__.py[LB5T]: F:Optional audit package skeleton. | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-core/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-core | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-core/src/nollm_core/===
+__init__.py[KB8T]: F:Exports the Core geometry, runtime, command, recall and Surface contracts. | R:code:packages/nollm-core/tests/test_core_public_api_allowlist.py,code:packages/nollm-core/src/nollm_core/atom.py,code:packages/nollm-core/src/nollm_core/bridge.py,code:packages/nollm-core/src/nollm_core/command.py | A:AtomHandle,ACTIVE_APPROXIMATION_POLICY,AmbiguousPhysicalCoverage,ApproximateCoveragePolicy | S:-
+approximate_coverage.py[KB9M]: F:Computes adjacent-layer hex overlap with a directional Q40 sample stencil and returns weighted target cells. | R:code:packages/nollm-core/src/nollm_core/physical_coverage.py,code:packages/nollm-core/tests/test_translation_covariant_physical_coverage.py,code:packages/nollm-core/src/nollm_core/coverage_contract.py,code:packages/nollm-core/src/nollm_core/fixed_point.py | A:expand_approximate_coverage,clear_approximate_coverage_cache | S:Up subtracts one layer. Two-cell residues retain tie parity; every sampled hit is retained by the active minimum of one. Weights are sampled source shares.
+atom.py[KB8T]: F:Defines stored atom identity and UTF-8 payload representation. | R:code:packages/nollm-core/src/nollm_core/handle.py,code:packages/nollm-core/src/nollm_core/validation.py | A:MemoryAtom | S:-
+axial.py[KB8T]: F:Computes hex-ring coordinates and distances in the axial lattice. | R:code:packages/nollm-core/src/nollm_core/coverage_template.py | A:AxialCoord,hex_distance,hex_ring | S:-
+bridge.py[KB8T]: F:Defines bounded directed bridge specifications and anchors over explicitly listed physical cells. | R:code:packages/nollm-core/src/nollm_core/recall.py,code:packages/nollm-core/tests/test_anchor_canonical_order.py,code:packages/nollm-core/src/nollm_core/geometry.py,code:packages/nollm-core/src/nollm_core/validation.py | A:GeometryAnchor,BridgeSpec | S:-
+command.py[KB8T]: F:Defines the typed put, remove, replace, move and bridge commands accepted by Core. | R:code:packages/nollm-core/src/nollm_core/state.py,code:packages/nollm-core/src/nollm_core/atom.py,code:packages/nollm-core/src/nollm_core/bridge.py,code:packages/nollm-core/src/nollm_core/geometry.py | A:PutCommand,RemoveCommand,ReplaceCommand,MoveCommand | S:-
+compiled_templates.py[KB8T]: F:Carries the compiled geometry template JSON bytes and SHA-256 digest consumed by KernelRegistry. | R:code:packages/nollm-core/src/nollm_core/kernel_registry.py | A:- | S:-
+coverage_contract.py[KB8S]: F:Defines the physical overlap policy, per-target sample and Q16 fields, residuals and expansion errors. | R:code:packages/nollm-core/src/nollm_core/approximate_coverage.py,code:packages/nollm-core/src/nollm_core/fixed_point.py,code:packages/nollm-core/src/nollm_core/geometry.py | A:UnsupportedPhysicalCoverage,AmbiguousPhysicalCoverage,ApproximateCoveragePolicy,PhysicalCoverageMember | S:-
+coverage_template.py[KB8M]: F:Validates compiled kernel entries and expands registered templates into target addresses. | R:code:packages/nollm-core/src/nollm_core/compiled_templates.py,code:packages/nollm-core/tests/test_lateral_registered_ring_contract.py,code:packages/nollm-core/src/nollm_core/fixed_point.py,code:packages/nollm-core/src/nollm_core/geometry.py | A:KernelEntry,CoverageTemplate,expand_template,validate_lateral_ring | S:-
+fixed_point.py[KB8T]: F:Scales nonnegative integer weights to the canonical Q16 total with deterministic remainder assignment. | R:code:packages/nollm-core/src/nollm_core/approximate_coverage.py,code:packages/nollm-core/tests/test_kernel_entry_canonical_contract.py | A:normalize_q16_weights | S:-
+geometry.py[KB8T]: F:Validates physical addresses and supplies deterministic serialization and sorting keys. | R:code:packages/nollm-core/src/nollm_core/profiles.py,code:packages/nollm-core/src/nollm_core/validation.py | A:GeometryAddress | S:-
+handle.py[KB8T]: F:Identifies an atom by its geometry address and local atom ID. | R:code:packages/nollm-core/src/nollm_core/geometry.py,code:packages/nollm-core/src/nollm_core/validation.py | A:AtomHandle | S:-
+junction.py[KB8M]: F:Solves geometric placement candidates for one source or relation-group junction requests. | R:code:packages/nollm-core/src/nollm_core/geometry.py,code:packages/nollm-core/tests/test_junction_candidates.py,code:packages/nollm-core/src/nollm_core/axial.py,code:packages/nollm-core/src/nollm_core/surface.py | A:JunctionRequest,JunctionCandidate,RelationGroupJunctionRequest,RelationGroupJunctionCandidate | S:-
+kernel_registry.py[KB9T]: F:Dispatches default vertical coverage dynamically and resolves registered templates for legacy coverage and lateral moves. | R:code:packages/nollm-core/src/nollm_core/physical_coverage.py,code:packages/nollm-core/tests/test_kernel_registry_identity_completeness.py,code:packages/nollm-core/src/nollm_core/compiled_templates.py,code:packages/nollm-core/src/nollm_core/coverage_template.py | A:KernelRegistry | S:Registry construction checks the compiled artifact digest. A default vertical relation cannot be replaced by indexing the static template table.
+physical_coverage.py[KB8T]: F:Exposes the active physical Coverage expansion, policy and exceptions at the compatibility import path. | R:code:packages/nollm-core/src/nollm_core/approximate_coverage.py,code:packages/nollm-core/src/nollm_core/coverage_contract.py | A:ACTIVE_APPROXIMATION_POLICY,AmbiguousPhysicalCoverage,ApproximateCoveragePolicy,PhysicalCoverageExpansion | S:This is a direct alias of the bounded approximate kernel.
+ports.py[KB8T]: F:Defines trace event and sink protocols consumed at the Core boundary. | R:code:packages/nollm-core/src/nollm_core/state.py | A:CoreTraceEvent,TraceSink | S:-
+profiles.py[KB8S]: F:Registers geometry runtime profiles and computes the registry identity digest. | R:code:packages/nollm-core/src/nollm_core/kernel_registry.py,code:packages/nollm-core/src/nollm_core/fixed_point.py | A:RuntimeProfile,available_profile_ids,runtime_profile,profile_registry_digest | S:-
+recall.py[KB9S]: F:Expands a bounded physical frontier and ranks occupied handles by their best path score. | R:code:packages/nollm-core/src/nollm_core/kernel_registry.py,code:packages/nollm-core/tests/test_core_recall_exact_geometry.py,code:packages/nollm-core/src/nollm_core/atom.py,code:packages/nollm-core/src/nollm_core/bridge.py | A:RecallBudget,CoreRecallRequest,CoreRecallItem,CoreRecallResult | S:Step scores multiply in Q16 with integer division. Kernel permissions, beam width and maximum layer delta can remove reachable evidence.
+state.py[KB9L]: F:Owns atom and bridge state, serializes commands, and serves recall and lazy Surface projections. | R:code:packages/nollm-core/src/nollm_core/surface.py,code:packages/nollm-core/tests/test_core_semantic_canonical_state.py,code:packages/nollm-core/src/nollm_core/atom.py,code:packages/nollm-core/src/nollm_core/bridge.py | A:clear_surface_order_cache,CoreRuntime | S:-
+storage.py[KB8T]: F:Serializes and persists canonical Core state documents in the workspace. | R:code:packages/nollm-core/src/nollm_core/state.py | A:canonical_state_bytes | S:-
+surface.py[KB9L]: F:Projects occupancy into order-zero cells and builds successively coarser weighted Surface memberships for paged descent. | R:code:packages/nollm-core/src/nollm_core/kernel_registry.py,code:packages/nollm-core/tests/test_adaptive_surface.py,code:packages/nollm-core/src/nollm_core/fixed_point.py,code:packages/nollm-core/src/nollm_core/geometry.py | A:PhysicalFieldScope,SurfaceGridSpec,SurfaceAggregateAddress,SurfaceCellProjection | S:One lower cell may contribute to several parents. Descent uses memberships recorded during aggregation. An observation order is distinct from a stored physical layer.
+validation.py[KB8T]: F:Checks exact primitive and mapping types at Core deserialization boundaries. | R:code:packages/nollm-core/src/nollm_core/geometry.py | A:exact_mapping,exact_str,exact_int,exact_list | S:-
+workspace_owner.py[KB8T]: F:Claims and releases exclusive Core runtime ownership of a workspace identity. | R:code:packages/nollm-core/src/nollm_core/state.py,code:packages/nollm-core/tests/test_core_workspace_single_owner_lifecycle.py | A:identity,claim,release | S:-
+
+===/<repository>/packages/nollm-core/tests/===
+test_adaptive_surface.py[TQ5S]: F:Tests adaptive surface including physical and surface address domains are separate | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_anchor_canonical_order.py[TQ5T]: F:Tests anchor canonical order including unsorted anchor cells rejected | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_atom_handle_contract.py[TQ5T]: F:Tests atom handle contract including minimal atom and addressed handle contracts | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_canonical_recall_contract.py[TQ5T]: F:Tests canonical recall contract including recall rejects noncanonical tuples | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_commands.py[TQ5T]: F:Tests core commands including put replace move remove and reopen | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_forbidden_surface.py[TQ5T]: F:Tests core forbidden surface including core has no semantic or global lookup surface | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_has_no_access_lifecycle_surface.py[TQ5T]: F:Tests core has no access lifecycle surface including core has no access lifecycle surface | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_has_no_security_capability_surface.py[TQ5T]: F:Tests core has no security capability surface including core has no security capability surface | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_public_api_allowlist.py[TQ5T]: F:Tests core public api allowlist including core public api matches allowlist | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_recall.py[TQ5T]: F:Tests core recall including explicit cell direct lateral coverage and bridge | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_recall_exact_geometry.py[TQ5T]: F:Tests core recall exact geometry including recall uses registered exact coverage | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_semantic_canonical_state.py[TQ5T]: F:Tests core semantic canonical state including reversed cells atoms and empty cells are rejected | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-core/src/nollm_core/storage.py | A:- | S:-
+test_core_state_encapsulation.py[TQ5T]: F:Tests core state encapsulation including store and cell bypass rejected | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_state_strict_validation.py[TQ5T]: F:Tests core state strict validation including runtime bytes equal store and reject noncanonical or duplicate state | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_core_stdlib_only.py[TQ5T]: F:Tests core stdlib only including core imports only stdlib and relative modules | R:- | A:- | S:-
+test_core_workspace_single_owner_lifecycle.py[TQ5T]: F:Tests core workspace single owner lifecycle including owner close reopen and closed rejection | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_junction_candidates.py[TQ5S]: F:Tests junction candidates including empty field returns stable origin frontier without writing | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_kernel_entry_canonical_contract.py[TQ5T]: F:Tests kernel entry canonical contract including bad kernel entry rejected | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_kernel_registry_identity_completeness.py[TQ5T]: F:Tests kernel registry identity completeness including runtime registry rejects noncanonical fanout | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_lateral_registered_ring_contract.py[TQ5T]: F:Tests lateral registered ring contract including ring two rejected even with custom fanout | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_lateral_registry_and_fanout.py[TQ5T]: F:Tests lateral registry and fanout including lateral is registered and ring two rejected | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_occupancy_band.py[TQ5T]: F:Tests occupancy band including occupancy band is an exact atom count policy | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_phase_total_order.py[TQ5T]: F:Tests phase total order including mixed none and string phase round trip and recall | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_profile_registry.py[TQ5T]: F:Tests profile registry including profile and kernel registry are finite and stable | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_profile_registry_identity.py[TQ5T]: F:Tests profile registry identity including profile and kernel identities are deterministic | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-core/src/nollm_core/profiles.py | A:- | S:-
+test_public_core_contract_strict_types.py[TQ5T]: F:Tests public core contract strict types including recall contract types | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_public_persistent_object_strict_types.py[TQ5T]: F:Tests public persistent object strict types including bad anchor and bridge types rejected before write | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_registry_deep_immutability.py[TQ5T]: F:Tests registry deep immutability including registry is deeply immutable and mapping does not alias | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_rotated_physical_profile.py[TQ5T]: F:Tests rotated physical profile including default profile has mandatory physical identity | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_safe_writable_field.py[TQ5T]: F:Tests safe writable field including public coverage policy describes storage and proven safe domains | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_trace_reentrancy_isolation.py[TQ5T]: F:Tests trace reentrancy isolation including trace callback cannot reenter public state operations | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_translation_covariant_physical_coverage.py[TQ5M]: F:Tests translation covariant physical coverage including all phases and directions use bounded quadrature contract | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-core/src/nollm_core/physical_coverage.py | A:- | S:-
+
+===/<repository>/packages/nollm-history/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-history | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-history/src/nollm_history/===
+__init__.py[LB5T]: F:Optional history package skeleton. | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-snapshot/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-snapshot | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-snapshot/src/nollm_snapshot/===
+__init__.py[LB5T]: F:Exports nollm snapshot public contracts including ConsistentStatePort, SnapshotDiff, SnapshotService | R:code:packages/nollm-snapshot/src/nollm_snapshot/diff.py,code:packages/nollm-snapshot/src/nollm_snapshot/ports.py | A:ConsistentStatePort,SnapshotDiff,SnapshotService | S:-
+diff.py[LB5T]: F:Implements diff through SnapshotDiff, structural_diff | R:- | A:SnapshotDiff,structural_diff | S:-
+ports.py[LB5T]: F:Implements ports through ConsistentStatePort | R:- | A:ConsistentStatePort | S:-
+service.py[LB5T]: F:Creates, restores, clones and verifies snapshots through a consistent state port. | R:code:packages/nollm-snapshot/src/nollm_snapshot/ports.py,code:packages/nollm-snapshot/src/nollm_snapshot/diff.py | A:SnapshotService | S:The payload comes directly from the port. SnapshotService does not add evidence or binding stores to it.
+
+===/<repository>/packages/nollm-snapshot/tests/===
+test_core_snapshot.py[TQ5T]: F:Tests core snapshot including snapshot create restore clone verify and diff new core | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:- | S:-
+test_m1c2_state_byte_identity.py[TQ5T]: F:Tests m1c2 state byte identity including store runtime and snapshot bytes match after mutations | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:- | S:-
+test_m1c3_mixed_phase_registry_identity.py[TQ5T]: F:Tests m1c3 mixed phase registry identity including mixed phase snapshot identity | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:- | S:-
+test_snapshot_diff.py[TQ5T]: F:Tests snapshot diff including snapshot diff is deterministic serializable and finite | R:code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:- | S:-
+
+===/<repository>/packages/nollm-trace/===
+pyproject.toml[FV5T]: F:Defines packaging for nollm-trace | R:- | A:- | S:-
+
+===/<repository>/packages/nollm-trace/src/nollm_trace/===
+__init__.py[LB5T]: F:Exports nollm trace public contracts including CompositeTraceSink, ConsoleTraceSink, JsonlTraceSink | R:code:packages/nollm-trace/src/nollm_trace/sinks.py | A:CompositeTraceSink,ConsoleTraceSink,JsonlTraceSink,MemoryTraceSink | S:-
+sinks.py[LB5T]: F:Provides memory, JSONL, console, metrics and composite sinks for Core trace events. | R:code:packages/nollm-core/src/nollm_core/ports.py,code:packages/nollm-core/src/nollm_core/__init__.py | A:NullTraceSink,MemoryTraceSink,JsonlTraceSink,ConsoleTraceSink | S:-
+
+===/<repository>/packages/nollm-trace/tests/===
+test_new_core_trace.py[TQ5T]: F:Tests new core trace including trace failure never changes new core results | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-trace/src/nollm_trace/__init__.py | A:- | S:-
+test_trace_owned_sinks_and_inspector.py[TQ5T]: F:Tests trace owned sinks and inspector including jsonl metrics and inspector are trace owned | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-trace/src/nollm_trace/__init__.py | A:- | S:-
+
+===/<repository>/protocol/===
+ACTIONS.md[SG5M]: F:Documents Actions covering Allowed Actions | R:- | A:- | S:-
+ANCHOR.md[SG5T]: F:Documents Anchor covering Purpose | R:- | A:- | S:-
+ANCHOR_FIELD.md[SG5T]: F:Documents Anchor Field covering Example | R:- | A:- | S:-
+ANNOTATION.md[SG5T]: F:Documents Annotation | R:- | A:- | S:-
+ARCHIVE.md[SG5S]: F:Documents Archive Protocol covering ArchiveManifest | R:- | A:- | S:-
+AUDIT.md[SG5T]: F:Documents Audit covering P6.0 Scope | R:- | A:- | S:-
+AUDIT_SCHEMA.md[SG5S]: F:Documents Audit Schema covering Required Top-Level Sections | R:- | A:- | S:-
+CARD.md[SG5T]: F:Documents Card covering Format | R:- | A:- | S:-
+CLUSTER_PRESSURE.md[SG5T]: F:Documents Cluster Pressure covering Definition | R:- | A:- | S:-
+DREAM_PLACEMENT.md[SG5T]: F:Documents Dream Placement covering Definition | R:- | A:- | S:-
+DREAM_SCALE_SCAN.md[SG5T]: F:Documents Dream Scale Scan covering Definition | R:- | A:- | S:-
+DREAM_SHARD.md[SG5S]: F:Documents Dream Shard covering Definition | R:- | A:- | S:-
+DRIFT_REPORT.md[SG5S]: F:Documents DRIFT_REPORT Protocol covering 1. Definition | R:- | A:- | S:-
+GRAVITY_MARK.md[SG5T]: F:Documents GRAVITY_MARK Protocol covering 1. Definition | R:- | A:- | S:-
+GRAVITY_WELL.md[SG5T]: F:Documents GRAVITY_WELL Protocol covering 1. Definition | R:- | A:- | S:-
+HISTORY.md[SG5T]: F:Documents History | R:- | A:- | S:-
+HONEYCOMB_FIELD.md[SG5T]: F:Documents Honeycomb Field covering Formulas | R:- | A:- | S:-
+JSON_ENVELOPE.md[SG5T]: F:Documents JSON Envelope covering Request | R:- | A:- | S:-
+LEDGER.md[SG5T]: F:Documents Ledger covering Purpose | R:- | A:- | S:-
+LEGACY_IMPORT.md[SG5M]: F:Documents Legacy Import Protocol covering Request | R:- | A:- | S:-
+MEMORY_ADDRESS.md[SG5T]: F:Documents Memory Address covering Address Pattern | R:- | A:- | S:-
+NOLLM_PROTOCOL.md[SG5T]: F:Documents Nollm Protocol covering Core Objects | R:- | A:- | S:-
+PARAMETER_EXPERIMENTS.md[SG5T]: F:Documents Parameter Experiments covering Definition | R:- | A:- | S:-
+PARAMETER_PROFILES.md[SG5T]: F:Documents Parameter Profiles covering Definition | R:- | A:- | S:-
+RAW_EVENT.md[SG5T]: F:Documents Raw Event Protocol | R:- | A:- | S:-
+READ.md[SG5T]: F:Documents Read | R:- | A:- | S:-
+RECALL_DIGEST.md[SG5T]: F:Documents Recall Digest covering Purpose | R:- | A:- | S:-
+RETURN_VECTOR.md[SG5T]: F:Documents RETURN_VECTOR Protocol covering 1. Definition | R:- | A:- | S:-
+REVIEW.md[SG5T]: F:Documents Active Inspection covering Default Queue | R:- | A:- | S:-
+SCALE_SCAN.md[SG5T]: F:Documents Scale Scan covering Complexity | R:- | A:- | S:-
+SOURCE.md[SG5T]: F:Documents Source covering Source Kinds | R:- | A:- | S:-
+STATUS.md[SG5T]: F:Documents Status covering Allowed Statuses | R:- | A:- | S:-
+TERMINOLOGY.md[SG5T]: F:Documents Terminology covering Project and Example Names | R:- | A:- | S:-
+TOOL_SURFACE.md[SG5S]: F:Documents Tool Surface covering V1 Surface Table | R:- | A:- | S:-
+TRUST.md[SG5T]: F:Documents Trust covering Allowed Values | R:- | A:- | S:-
+TYPES.md[SG5T]: F:Documents Types covering Allowed Types | R:- | A:- | S:-
+VALIDATION.md[SG5T]: F:Documents Validation covering Minimum Invariants | R:- | A:- | S:-
+
+===/<repository>/protocol/v2/===
+BA1_BATCH_ADMISSION_COORDINATOR.md[SG5T]: F:Documents BA1 Batch Admission Coordinator covering Objects | R:- | A:- | S:-
+CONSTITUTION.md[SG5T]: F:Documents Nollm V2 Constitution | R:- | A:- | S:-
+CX2_CORTEX_ACTION_PLAN.md[SG5S]: F:Documents CX2 CortexActionPlan v1 covering Object Nature | R:- | A:- | S:-
+CX2_EXTERNAL_MODEL_BOUNDARY.md[SG5T]: F:Documents CX2 External Model Boundary covering Allowed Model Behavior | R:- | A:- | S:-
+DA1_MEMORY_ADMISSION_CONTRACT.md[SG5T]: F:Documents DA1 Memory Admission Contract | R:- | A:- | S:-
+DA1_MEMORY_ADMISSION_CONVENTIONS.md[SG5T]: F:Documents DA1 Memory Admission Conventions | R:- | A:- | S:-
+DC1_CORTEX_COMPILER_CONTRACT.md[SG5T]: F:Documents DC1 Cortex Compiler Contract | R:- | A:- | S:-
+DC1_CORTEX_COMPILER_CONVENTIONS.md[SG5T]: F:Documents DC1 Cortex Compiler Conventions | R:- | A:- | S:-
+DE1_MEMORY_SUBSTRATE_CONTRACT.md[SG5T]: F:Documents DE1 Memory Substrate Contract covering Objects | R:- | A:- | S:-
+DE1_MEMORY_SUBSTRATE_CONVENTIONS.md[SG5T]: F:Documents DE1 Memory Substrate Conventions | R:- | A:- | S:-
+DF1_FIELD_SNAPSHOT_ASSEMBLY.md[SG5T]: F:Documents DF1 Field Snapshot Assembly | R:- | A:- | S:-
+DF1_RECALL_UNIVERSE_VIEW.md[SG5T]: F:Documents DF1 Recall Universe View | R:- | A:- | S:-
+DG2_FIELD_DYNAMICS_CONTRACT.md[SG5T]: F:Documents DG2 Field Dynamics Contract covering Trace | R:- | A:- | S:-
+DG5_EVIDENCE_PRESERVING_COMPACTION.md[SG5T]: F:Documents DG5 Evidence-Preserving Trace Compaction Protocol covering Contract | R:- | A:- | S:-
+DG6_ISOLATED_SNAPSHOT_COMPACTION_ADAPTER.md[SG5T]: F:Documents DG6 Isolated Snapshot Compaction Adapter | R:- | A:- | S:-
+DG7_EXPLICIT_REFERENCE_RUNTIME_POSITIVE_VERIFICATION.md[SG5T]: F:Documents DG7 Explicit Reference Runtime Positive Verification | R:- | A:- | S:-
+DI1_INTEGRATION_SHELL_CONTRACT.md[SG5S]: F:Documents DI1 Integration Shell Contract covering Typed Inputs | R:- | A:- | S:-
+DX1_SYNTHETIC_MEMORY_CYCLE_CONTRACT.md[SG5T]: F:Documents DX1 Synthetic Memory Cycle Contract covering Required Chain | R:- | A:- | S:-
+DX2_MULTI_ADMISSION_ASSEMBLY_RECALL_VALIDATION.md[SG5T]: F:Documents DX2 Multi-Admission Assembly-to-Recall Validation covering Contract | R:- | A:- | S:-
+GAT1_CHART_GROUPOID_VALIDATION.md[SG5T]: F:Documents GAT1 Chart Groupoid Validation covering Construction Rule | R:- | A:- | S:-
+GCM1_SPARSE_COLLISION_TRACE_COMPACTION_VALIDATION.md[SG5T]: F:Documents GCM1 Sparse-Collision Trace-Compaction Validation Protocol covering Inputs | R:- | A:- | S:-
+GEO1_GEOMETRY_EVIDENCE_CONSOLIDATION.md[SG5T]: F:Documents GEO1 Geometry Evidence Consolidation Protocol covering Source Policy | R:- | A:- | S:-
+GKC1_DIRECTIONAL_KERNEL_COMPOSITION_VALIDATION.md[SG5T]: F:Documents GKC1 Directional Kernel Composition Validation Protocol covering Inputs | R:- | A:- | S:-
+GKD1_BIDIRECTIONAL_COVERAGE_VALIDATION.md[SG5T]: F:Documents GKD1 Bidirectional Coverage Validation Protocol covering Inputs | R:- | A:- | S:-
+GPR1_GEOMETRY_PROFILE_REGIME_VALIDATION.md[SG5T]: F:Documents GPR1 Geometry Profile / Parameter-Regime Validation covering Contract | R:- | A:- | S:-
+GRA1_ROTATION_SCALE_RESONANCE_VALIDATION.md[SG5T]: F:Documents GRA1 Rotation-Scale Resonance Validation Protocol covering Inputs | R:- | A:- | S:-
+GRC1_RESONANCE_CONDITIONED_COVERAGE_VALIDATION.md[SG5T]: F:Documents GRC1 Resonance-Conditioned Coverage Validation Protocol covering Inputs | R:- | A:- | S:-
+GSC1_SPARSE_SHARD_SCALE_COVERAGE_VALIDATION.md[SG5T]: F:Documents GSC1 Sparse-Shard Scale-Coverage Validation Protocol covering Protocol Inputs | R:- | A:- | S:-
+GVR1_TRANSLATION_VARIATION_VALIDATION.md[SG5T]: F:Documents GVR1 Translation Variation Validation covering Construction Rule | R:- | A:- | S:-
+HAG1_FILE_FIRST_EXPLICIT_ADMISSION_GATEWAY.md[SG5T]: F:Documents HAG1 File-First Explicit Admission Gateway | R:- | A:- | S:-
+HCG1_FILE_FIRST_CAPTURE_GATEWAY.md[SG5T]: F:Documents HCG1 File-First Capture Gateway covering Capture Input | R:- | A:- | S:-
+HX1_TRUSTED_HOST_STAGED_EXECUTION.md[SG5T]: F:Documents HX1 Trusted Host Staged Execution | R:- | A:- | S:-
+INVARIANTS.md[SG5T]: F:Documents V2 Invariants | R:- | A:- | S:-
+LAYER_CONSTITUTION.md[SG5S]: F:Documents Nollm V2 Layer Constitution covering Layer Definitions | R:- | A:- | S:-
+LEGACY_BOUNDARY.md[SG5T]: F:Documents V2 Legacy Boundary covering Physical Presence Is Not Active | R:- | A:- | S:-
+MODULE_DEPENDENCY_RULES.md[SG5S]: F:Documents V2 Module Dependency Rules | R:- | A:- | S:-
+OBJECT_OWNERSHIP.md[SG5T]: F:Documents V2 Object Ownership | R:- | A:- | S:-
+RC1_DF1_DR1_RECALL_UNIVERSE_CONTRACT.md[SG5T]: F:Documents RC1 DF1 to DR1 RecallUniverse Contract covering Snapshot View | R:- | A:- | S:-
+RECALL_RESOLVER.md[SG5S]: F:Documents DR1 Recall Resolver Contract covering Inputs | R:- | A:- | S:-
+TQ1_BOUNDED_COMPLETE_TEST_MATRIX.md[SG5T]: F:Documents TQ1 Bounded Complete Test Matrix | R:- | A:- | S:-
+
+===/<repository>/protocol/v3/===
+CELL_ADDRESS.md[SG5T]: F:Documents GRF Cell Address | R:- | A:- | S:-
+COVERAGE_KERNEL.md[SG5T]: F:Documents GRF Coverage Kernel | R:- | A:- | S:-
+EVIDENCE_ISLAND.md[SG5T]: F:Documents GRF Evidence Island | R:- | A:- | S:-
+GRF4R_READINESS.md[SG5T]: F:Documents GRF4R Readiness Boundary | R:- | A:- | S:-
+GRF_CAPTURE.md[SG5T]: F:Documents GRF Capture Prototype | R:- | A:- | S:-
+GRF_CONTRACT_EVOLUTION.md[SG5T]: F:Documents GRF Contract Evolution | R:- | A:- | S:-
+GRF_FACADE.md[SG5T]: F:Documents GRF Prototype Facade | R:- | A:- | S:-
+GRF_FIELD_ENGINE.md[SG5T]: F:Documents GRF2 Field Engine | R:- | A:- | S:-
+GRF_GLOBAL_SHARDED_FIELD.md[SG5T]: F:Documents GRF Global Sharded Field | R:- | A:- | S:-
+GRF_HOST_CONTRACT.md[SG5T]: F:Documents GRF Host Contract V1 | R:- | A:- | S:-
+GRF_LEDGER.md[SG5T]: F:Documents GRF Ledger | R:- | A:- | S:-
+GRF_MIGRATION_BOUNDARY.md[SG5T]: F:Documents GRF Migration Boundary | R:- | A:- | S:-
+GRF_PLACEMENT_POLICY.md[SG5T]: F:Documents GRF Placement Policy | R:- | A:- | S:-
+GRF_PROFILE.md[SG5T]: F:Documents GRF Profile | R:- | A:- | S:-
+GRF_QUERY_GENERALIZATION.md[SG5T]: F:Documents GRF Query Generalization | R:- | A:- | S:-
+GRF_REPLAY.md[SG5T]: F:Documents GRF Replay | R:- | A:- | S:-
+GRF_STORAGE_LAYOUT.md[SG5T]: F:Documents GRF Storage Layout | R:- | A:- | S:-
+SOURCE_WINDOW.md[SG5T]: F:Documents GRF Source Window Prototype | R:- | A:- | S:-
+STITCH_PROPOSAL.md[SG5T]: F:Documents GRF Stitch Proposal | R:- | A:- | S:-
+
+===/<repository>/reference/python/===
+PACKAGING.md[SG5T]: F:Documents Packaging covering Test Command | R:- | A:- | S:-
+YAML_SUBSET.md[SG5T]: F:Documents YAML Subset covering Supported Constructs | R:- | A:- | S:-
+pyproject.toml[FV5T]: F:Defines packaging for nollm-reference — Reference filesystem CLI for Nollm. | R:- | A:- | S:-
+run_tests.py[LB5T]: F:Implements run tests through main | R:code:reference/python/nollm/pytest_env.py | A:main | S:-
+
+===/<repository>/reference/python/nollm/===
+__init__.py[LB5T]: F:Nollm reference filesystem CLI. | R:- | A:- | S:-
+annotation.py[LB5S]: F:Implements annotation through append_annotation, list_annotations, annotation_counts_by_card | R:code:reference/python/nollm/filesystem.py,code:reference/python/nollm/ids.py | A:append_annotation,list_annotations,annotation_counts_by_card | S:-
+archive.py[LB5L]: F:Implements archive through utc_now, memory_root_path, existing_memory_root_path | R:code:reference/python/nollm/archive_manifest.py,code:reference/python/nollm/path_safety.py | A:utc_now,memory_root_path,existing_memory_root_path,create_archive_snapshot | S:-
+archive_manifest.py[LB5T]: F:Implements archive manifest through sha256_bytes, canonical_json, manifest_hash | R:code:reference/python/nollm/safe_storage.py | A:sha256_bytes,canonical_json,manifest_hash,write_json | S:-
+audit.py[LB5M]: F:Implements audit through build_audit_report, validate_audit_report_shape, audit_type_matches | R:code:reference/python/nollm/filesystem.py,code:reference/python/nollm/validation.py | A:build_audit_report,validate_audit_report_shape,audit_type_matches,normalize_audit_for_compare | S:-
+chart_gluing.py[LB5S]: F:Implements chart gluing through LocalChartSpec, CandidateChartOverlap, GluingProposal | R:code:reference/python/nollm/geometry.py | A:LocalChartSpec,CandidateChartOverlap,GluingProposal,summarize_chart_overlap | S:-
+cli.py[LB5L]: F:Implements cli through build_parser, cmd_init, cmd_validate | R:code:reference/python/nollm/annotation.py,code:reference/python/nollm/audit.py | A:build_parser,cmd_init,cmd_validate,cmd_orient | S:-
+cluster_pressure.py[LB5M]: F:Implements cluster pressure through ALLOWED_COARSE_EMERGENCE_STATUSES, ClusterPressureSample, CoarseEmergenceCandidate | R:code:reference/python/nollm/dream_placement.py,code:reference/python/nollm/geometry.py | A:ALLOWED_COARSE_EMERGENCE_STATUSES,ClusterPressureSample,CoarseEmergenceCandidate,summarize_pressure | S:-
+companion_memory_matching.py[LB5M]: F:Implements companion memory matching through analyze_facets, is_generic_latin_token, is_generic_cjk_ngram | R:- | A:analyze_facets,is_generic_latin_token,is_generic_cjk_ngram,classify_query | S:-
+companion_memory_store.py[LB5L]: F:Implements companion memory store through CompanionMemoryError, remember_native_memory, recall_native_memory | R:code:reference/python/nollm/companion_memory_matching.py | A:CompanionMemoryError,remember_native_memory,recall_native_memory,get_native_memory | S:-
+cortex.py[LB5M]: F:Implements cortex through orient_notebook, surface_anchor, focus_cards | R:code:reference/python/nollm/filesystem.py | A:orient_notebook,surface_anchor,focus_cards,anchor_match | S:-
+coverage.py[LB5S]: F:Implements coverage through validate_source_coverage | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:validate_source_coverage | S:-
+dream_checks_manifest.py[LB5M]: F:Implements dream checks manifest through REQUIRED_REPORTS, OPTIONAL_REPORTS, FORBIDDEN_FLAG_KEYS | R:- | A:REQUIRED_REPORTS,OPTIONAL_REPORTS,FORBIDDEN_FLAG_KEYS,build_all_dream_checks_manifest | S:-
+dream_corpus_dry_run.py[LB5M]: F:Implements dream corpus dry run through CORPUS_PATHS, run_real_corpus_dry_run, write_real_corpus_dry_run_report | R:code:reference/python/nollm/cluster_pressure.py,code:reference/python/nollm/dream_placement.py | A:CORPUS_PATHS,run_real_corpus_dry_run,write_real_corpus_dry_run_report,validate_real_corpus_dry_run_report | S:-
+dream_cortex_recall.py[LB5L]: F:Implements dream cortex recall through DEMO_SCHEMA, DREAM_PACKET_SCHEMA, DREAMER_CONTRACT_SCHEMA | R:code:reference/python/nollm/geometry.py,code:reference/python/nollm/geometry_profiles.py | A:DEMO_SCHEMA,DREAM_PACKET_SCHEMA,DREAMER_CONTRACT_SCHEMA,DRIFT_SCHEMA | S:-
+dream_experiment_batch.py[LB5M]: F:Implements dream experiment batch through BATCH_WARNINGS, load_batch_fixture, build_batch_experiment_report | R:code:reference/python/nollm/dream_pipeline.py | A:BATCH_WARNINGS,load_batch_fixture,build_batch_experiment_report,validate_batch_experiment_report | S:-
+dream_golden_regression.py[LB5S]: F:Implements dream golden regression through GOLDEN_REPORTS, REGRESSION_WARNINGS, run_golden_regression | R:code:reference/python/nollm/dream_checks_manifest.py,code:reference/python/nollm/dream_corpus_dry_run.py | A:GOLDEN_REPORTS,REGRESSION_WARNINGS,run_golden_regression,normalize_report | S:-
+dream_pipeline.py[LB5M]: F:Implements dream pipeline through FORBIDDEN_REPORT_FIELDS, REPORT_WARNINGS, build_dream_geometry_run_report | R:code:reference/python/nollm/cluster_pressure.py,code:reference/python/nollm/dream_placement.py | A:FORBIDDEN_REPORT_FIELDS,REPORT_WARNINGS,build_dream_geometry_run_report,dream_geometry_run_report_to_record | S:-
+dream_placement.py[LB5M]: F:Implements dream placement through ALLOWED_PLACEMENT_STATUSES, PlacementEnergy, DreamPlacementCandidate | R:code:reference/python/nollm/chart_gluing.py,code:reference/python/nollm/geometry.py | A:ALLOWED_PLACEMENT_STATUSES,PlacementEnergy,DreamPlacementCandidate,validate_placement_energy | S:-
+dream_regression.py[LB5M]: F:Implements dream regression through REGRESSION_WARNINGS, default_dream_regression_cases, build_dream_regression_report | R:code:reference/python/nollm/dream_experiment_batch.py,code:reference/python/nollm/dream_pipeline.py | A:REGRESSION_WARNINGS,default_dream_regression_cases,build_dream_regression_report,validate_dream_regression_report | S:-
+dream_shard.py[LB5S]: F:Implements dream shard through ALLOWED_SHARD_STATUSES, ALLOWED_SHARD_SOURCES, DreamShard | R:- | A:ALLOWED_SHARD_STATUSES,ALLOWED_SHARD_SOURCES,DreamShard,normalize_shard_text | S:-
+dream_suite.py[LB5S]: F:Implements dream suite through SUITE_WARNINGS, build_dream_geometry_suite_report, validate_dream_geometry_suite_report | R:code:reference/python/nollm/dream_experiment_batch.py,code:reference/python/nollm/dream_pipeline.py | A:SUITE_WARNINGS,build_dream_geometry_suite_report,validate_dream_geometry_suite_report,write_dream_geometry_suite_report | S:-
+dream_triage.py[LB5M]: F:Implements dream triage through TRIAGE_REPORTS, FORBIDDEN_FLAGS, build_dream_triage_report | R:- | A:TRIAGE_REPORTS,FORBIDDEN_FLAGS,build_dream_triage_report,render_dream_triage_markdown | S:-
+engineering_rc_archive.py[LB5M]: F:Implements engineering rc archive through SCHEMA, build_engineering_rc_export_archive, verify_engineering_rc_export_archive | R:code:reference/python/nollm/engineering_rc_export.py | A:SCHEMA,build_engineering_rc_export_archive,verify_engineering_rc_export_archive,write_engineering_rc_archive_report | S:-
+engineering_rc_export.py[LB5M]: F:Implements engineering rc export through CANONICAL_COMMANDS, FORBIDDEN_SEMANTICS, HASH_MANIFEST_PATH | R:- | A:CANONICAL_COMMANDS,FORBIDDEN_SEMANTICS,HASH_MANIFEST_PATH,HASH_SCHEMA | S:-
+engineering_rc_final_smoke.py[LB5M]: F:Implements engineering rc final smoke through FORBIDDEN_SEMANTICS, SCHEMA, CommandResult | R:code:reference/python/nollm/pytest_env.py | A:FORBIDDEN_SEMANTICS,SCHEMA,CommandResult,SmokeCheck | S:-
+filesystem.py[LB5M]: F:Implements filesystem through notebook_name, card_address, ledger_address | R:code:reference/python/nollm/ids.py,code:reference/python/nollm/models.py | A:notebook_name,card_address,ledger_address,recall_address | S:-
+g_series_engineering_closure.py[LB5M]: F:Implements g series engineering closure through SCHEMA, STATUS, build_g_series_engineering_closure_report | R:code:reference/python/nollm/geometry_profiles.py,code:reference/python/nollm/gravity.py | A:SCHEMA,STATUS,build_g_series_engineering_closure_report,generate_g_series_runtime_reports | S:-
+geometry.py[LB5L]: F:Implements geometry through EPS, Axial, Cube | R:- | A:EPS,Axial,Cube,LayerSpec | S:-
+geometry_profiles.py[LB5M]: F:Implements geometry profiles through GeometryProfile, ProfileRole, TilingModel | R:code:reference/python/nollm/geometry.py | A:GeometryProfile,ProfileRole,TilingModel,canonical_geometry_profiles | S:-
+gravity.py[LB5L]: F:Implements gravity through ANCHOR_SIMILARITY_METHOD, GravityMark, GravityReport | R:code:reference/python/nollm/geometry.py,code:reference/python/nollm/geometry_profiles.py | A:ANCHOR_SIMILARITY_METHOD,GravityMark,GravityReport,GravityWell | S:-
+history.py[LB5S]: F:Implements history through ledger_query, object_history, ledger_event_matches | R:code:reference/python/nollm/filesystem.py | A:ledger_query,object_history,ledger_event_matches,compact_ledger_event | S:-
+honeycomb.py[LB5T]: F:Implements honeycomb through layer_rotation_degrees, layer_scale, layer_area_ratio | R:- | A:layer_rotation_degrees,layer_scale,layer_area_ratio,expected_hex_metadata | S:-
+ids.py[LB5T]: F:Implements ids through today_stamp, today_iso, slugify | R:- | A:today_stamp,today_iso,slugify,next_sequence | S:-
+legacy_extract.py[LB5T]: F:Implements legacy extract through extract_legacy_spans, idempotence_key | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:extract_legacy_spans,idempotence_key | S:-
+legacy_import.py[LB5L]: F:Implements legacy import through plan_legacy_import, run_legacy_import, reconcile_legacy_import | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:plan_legacy_import,run_legacy_import,reconcile_legacy_import,recover_legacy_import | S:-
+legacy_text.py[LB5T]: F:Implements legacy text through normalize_legacy_text, text_hash, source_range_hash | R:code:reference/python/nollm/archive_manifest.py | A:normalize_legacy_text,text_hash,source_range_hash | S:-
+local_gate.py[LB5M]: F:Implements local gate through GATE_WARNINGS, GateComponent, aggregate_local_gate_report | R:code:reference/python/nollm/dream_checks_manifest.py,code:reference/python/nollm/dream_triage.py | A:GATE_WARNINGS,GateComponent,aggregate_local_gate_report,build_local_gate_report | S:-
+minimal_ablation_experiment.py[LB5L]: F:Implements minimal ablation experiment through AblationCandidate, AblationCondition, AblationQuestion | R:code:reference/python/nollm/gravity.py | A:AblationCandidate,AblationCondition,AblationQuestion,DEFAULT_PROFILE | S:-
+mode3_trace_experiment.py[LB5M]: F:Implements mode3 trace experiment through GravityTraceItem, Mode3TraceResult, RecallCandidate | R:code:reference/python/nollm/gravity.py | A:GravityTraceItem,Mode3TraceResult,RecallCandidate,build_mode3_trace | S:-
+models.py[LB5T]: F:Defines models values CARD_TYPES, CARD_DIRS, STATUSES | R:- | A:- | S:-
+multi_step_coverage.py[LB5S]: F:Implements multi step coverage through SCHEMA, STATUS, coverage_support | R:code:reference/python/nollm/geometry.py,code:reference/python/nollm/geometry_profiles.py | A:SCHEMA,STATUS,coverage_support,multi_step_coverage_report | S:-
+native_field.py[LB5L]: F:Implements native field through shard_id_for, build_shard, existing_shards_by_key | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:shard_id_for,build_shard,existing_shards_by_key,stage_shards | S:-
+offset_sampling.py[LB5M]: F:Implements offset sampling through DEFAULT_PROFILE_IDS, DEFAULT_RANDOM_COUNT, DEFAULT_SEED | R:code:reference/python/nollm/geometry.py,code:reference/python/nollm/geometry_profiles.py | A:DEFAULT_PROFILE_IDS,DEFAULT_RANDOM_COUNT,DEFAULT_SEED,OffsetSample | S:-
+openclaw_active_memory_adapter.py[LB5L]: F:Implements openclaw active memory adapter through active_status, active_prepare, active_capture | R:code:reference/python/nollm/companion_memory_matching.py,code:reference/python/nollm/companion_memory_store.py | A:active_status,active_prepare,active_capture,active_trial_report | S:-
+openclaw_active_memory_config.py[LB5L]: F:Implements openclaw active memory config through DIRECT_TOOL_DENY, OCP4_ACTIVE_MEMORY_PROMPT_APPEND, OCP4_ACTIVE_MEMORY_TOOLS | R:- | A:DIRECT_TOOL_DENY,OCP4_ACTIVE_MEMORY_PROMPT_APPEND,OCP4_ACTIVE_MEMORY_TOOLS,OCP4_AGENT_ID | S:-
+openclaw_memory_adapter.py[LB5L]: F:Implements openclaw memory adapter through FORBIDDEN_SEMANTICS, GET_SCHEMA, COMMIT_SCHEMA | R:code:reference/python/nollm/dream_shard.py,code:reference/python/nollm/geometry_profiles.py | A:FORBIDDEN_SEMANTICS,GET_SCHEMA,COMMIT_SCHEMA,RECALL_SCHEMA | S:-
+openclaw_memory_provider_alpha.py[LB5L]: F:Nollm native active memory provider for OpenClaw Functional Alpha. | R:- | A:NollmProviderError,AlphaFact,AlphaField,ProviderConfig | S:-
+parameter_experiments.py[LB5S]: F:Implements parameter experiments through ParameterRegime, ParameterExperimentResult, default_parameter_regimes | R:- | A:ParameterRegime,ParameterExperimentResult,default_parameter_regimes,evaluate_parameter_regime | S:-
+path_safety.py[LB5S]: F:Implements path safety through validate_snapshot_id, validate_batch_id, validate_field_id | R:- | A:validate_snapshot_id,validate_batch_id,validate_field_id,validate_field_revision_id | S:-
+provenance.py[LB5L]: F:Implements provenance through parse_source_ref, build_source_span_links, canonical_source_spans | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:parse_source_ref,build_source_span_links,canonical_source_spans,validate_staged_publication | S:-
+pytest_env.py[LB5T]: F:Implements pytest env through isolated_pytest_env | R:- | A:isolated_pytest_env | S:-
+recall.py[LB5S]: F:Implements recall through deterministic_recall, render_markdown_digest, selected_anchor_fields | R:code:reference/python/nollm/cortex.py,code:reference/python/nollm/filesystem.py | A:deterministic_recall,render_markdown_digest,selected_anchor_fields,selected_scale_path | S:-
+reverse_cover.py[LB5L]: F:Implements reverse cover through DEFAULT_CASE_STEPS, DEFAULT_PROFILE_IDS, DEFAULT_TARGET_RADIUS | R:code:reference/python/nollm/geometry.py,code:reference/python/nollm/geometry_profiles.py | A:DEFAULT_CASE_STEPS,DEFAULT_PROFILE_IDS,DEFAULT_TARGET_RADIUS,ReverseCoverCase | S:-
+review.py[LB5S]: F:Implements review through build_review_queue, include_card, review_card | R:code:reference/python/nollm/annotation.py,code:reference/python/nollm/filesystem.py | A:build_review_queue,include_card,review_card,review_reason | S:-
+safe_root.py[LB5L]: F:Implements safe root through SafeRootError, SafeRoot, open_existing_root | R:- | A:SafeRootError,SafeRoot,open_existing_root,initialize_root | S:-
+safe_storage.py[LB5M]: F:Implements safe storage through SafeStorageError, open_existing_memory_root, initialize_memory_root | R:code:reference/python/nollm/safe_root.py | A:SafeStorageError,open_existing_memory_root,initialize_memory_root,open_existing_source_root | S:-
+scale_scan_traversal.py[LB5M]: F:Implements scale scan traversal through ALLOWED_SCALE_SCAN_STATUSES, ScaleScanStep, ScaleScanPlan | R:code:reference/python/nollm/geometry.py | A:ALLOWED_SCALE_SCAN_STATUSES,ScaleScanStep,ScaleScanPlan,make_linear_scale_scan_plan | S:-
+source_policy.py[LB5S]: F:Implements source policy through SourcePolicyEntry, enumerate_legacy_sources, validate_relative_source_path | R:code:reference/python/nollm/safe_storage.py | A:SourcePolicyEntry,enumerate_legacy_sources,validate_relative_source_path,resolve_source_path | S:-
+source_spans.py[LB5M]: F:Implements source spans through build_source_span_inventory, load_source_spans, write_source_spans | R:code:reference/python/nollm/archive.py,code:reference/python/nollm/archive_manifest.py | A:build_source_span_inventory,load_source_spans,write_source_spans,mark_spans_linked | S:-
+tool_api.py[LB5L]: F:Implements tool api through repo_root, load_tool_manifest, dispatch_tool_request | R:code:reference/python/nollm/annotation.py,code:reference/python/nollm/audit.py | A:repo_root,load_tool_manifest,dispatch_tool_request,success_response | S:-
+validation.py[LB5M]: F:Implements validation through validate_notebook, validate_recall_digest_shape, require_type | R:code:reference/python/nollm/filesystem.py,code:reference/python/nollm/honeycomb.py | A:validate_notebook,validate_recall_digest_shape,require_type,architecture_metadata_issues | S:-
+w2_forensic.py[LB5S]: F:Implements w2 forensic through now_iso, stamp, validate_segment | R:- | A:now_iso,stamp,validate_segment,validate_operation_id | S:-
+
+===/<repository>/reference/python/nollm/contracts/===
+MT1_R13_CONTRACT.md[SG5T]: F:Documents MT1-R13: SafeRoot V3 Capability Storage and Archive Transaction Closure covering Contract | R:- | A:- | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/===
+__init__.py[LB5T]: F:Dream Geometry V2 boundary package. | R:- | A:protocol,evidence,geometry,field | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/adapters/===
+__init__.py[LB5T]: F:Adapter boundary for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/adapters/errors.py,code:reference/python/nollm/dream_geometry/adapters/types.py | A:CapabilitiesInvocation,DI1ErrorCode,IntegrationReadContext,IntegrationResponse | S:-
+errors.py[LB5T]: F:Stable DI1 Integration Shell public error codes. | R:- | A:DI1ErrorCode,ERROR_MESSAGES | S:-
+integration_shell.py[LB5S]: F:Transport-neutral DI1 Integration Shell over sealed DR1 recall. | R:code:reference/python/nollm/dream_geometry/__init__.py,code:reference/python/nollm/dream_geometry/cortex/__init__.py | A:IntegrationShell,capabilities,handle | S:-
+public_recall_view.py[LB5S]: F:Public DI1 view over sealed DR1 recall digests. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py | A:PUBLIC_SELECTION_BASIS,PublicViewError,public_recall_envelope | S:-
+types.py[LB5T]: F:Immutable DI1 Integration Shell typed call boundary. | R:code:reference/python/nollm/dream_geometry/cortex/__init__.py,code:reference/python/nollm/dream_geometry/recall/__init__.py | A:CapabilitiesInvocation,IntegrationReadContext,IntegrationResponse,MAX_REQUEST_ID_LENGTH | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/adapters/snapshot_compaction/===
+__init__.py[LB5T]: F:DG6 isolated snapshot compaction adapter. | R:code:reference/python/nollm/dream_geometry/adapters/snapshot_compaction/adapter.py | A:DG6AdapterError,SnapshotCompactionAdapterPolicy,SnapshotCompactionProjection,expand_snapshot_compaction_projection | S:-
+adapter.py[LB5S]: F:DG6 isolated DF1 snapshot to DG5 compaction projection adapter. | R:code:reference/python/nollm/dream_geometry/assembly/types.py,code:reference/python/nollm/dream_geometry/compression/view.py | A:project_snapshot_compaction,validate_snapshot_compaction_projection,expand_snapshot_compaction_projection | S:-
+errors.py[LB5T]: F:DG6 structured adapter errors. | R:- | A:DG6AdapterError | S:-
+fingerprint.py[LB5T]: F:Canonical DG6 projection fingerprints. | R:code:reference/python/nollm/dream_geometry/adapters/snapshot_compaction/types.py | A:adapter_policy_payload,projection_identity_payload,projection_payload,projection_id_for | S:-
+types.py[LB5T]: F:Immutable DG6 snapshot compaction adapter value objects. | R:code:reference/python/nollm/dream_geometry/compression/__init__.py | A:SnapshotCompactionAdapterPolicy,SnapshotCompactionProjection | S:-
+validation.py[LB5S]: F:DG6 projection validation helpers. | R:code:reference/python/nollm/dream_geometry/assembly/types.py | A:validate_policy,validate_snapshot,snapshot_fingerprint,trace_manifest | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/admission/===
+__init__.py[LB5T]: F:DA1 Memory Admission / Write Orchestrator Foundation. | R:code:reference/python/nollm/dream_geometry/admission/errors.py,code:reference/python/nollm/dream_geometry/admission/store.py | A:CONTRACT_VERSION,FIELD_PROFILE_ID,AdmissionOutcome,AdmissionPlacementPlan | S:-
+errors.py[LB5T]: F:DA1 deterministic admission error codes. | R:- | A:DA1Rejection,reject | S:-
+orchestrator.py[LB5M]: F:DA1 deterministic Memory Admission orchestration. | R:code:reference/python/nollm/dream_geometry/cortex/__init__.py,code:reference/python/nollm/dream_geometry/field/__init__.py | A:MemoryAdmissionOrchestrator,OverlayEvidenceReader,PreflightResult,placement_plan_from_payload | S:-
+store.py[LB5M]: F:DA1 file-first AdmissionRecord store. | R:code:reference/python/nollm/dream_geometry/cortex/__init__.py,code:reference/python/nollm/dream_geometry/admission/errors.py | A:AdmissionStore,AdmissionWriteResult,open_store | S:-
+types.py[LB5L]: F:DA1 immutable Memory Admission value objects. | R:code:reference/python/nollm/dream_geometry/cortex/__init__.py,code:reference/python/nollm/dream_geometry/field/__init__.py | A:CONTRACT_VERSION,FIELD_PROFILE_ID,AdmissionOutcome,AdmissionPlacementPlan | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/assembly/===
+__init__.py[LB5T]: F:DF1 finite FieldSnapshot assembly. | R:code:reference/python/nollm/dream_geometry/assembly/builder.py,code:reference/python/nollm/dream_geometry/assembly/errors.py | A:AdmissionManifestEntry,AdmissionReplaySource,AssemblyAuditSummary,DF1AssemblyError | S:-
+builder.py[LB5M]: F:DF1 finite FieldSnapshot and DR1 RecallUniverse assembly. | R:code:reference/python/nollm/dream_geometry/admission/errors.py,code:reference/python/nollm/dream_geometry/cortex/__init__.py | A:assemble_field_snapshot,recall_universe_from_snapshot | S:-
+errors.py[LB5T]: F:DF1 finite field assembly error codes. | R:- | A:DF1AssemblyError,reject | S:-
+types.py[LB5M]: F:DF1 finite in-memory FieldSnapshot value objects. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:AdmissionManifestEntry,AdmissionReplaySource,AssemblyAuditSummary,DEFAULT_ASSEMBLY_POLICY_ID | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/batch_admission/===
+__init__.py[LB5T]: F:BA1 Batch Admission Coordinator. | R:code:reference/python/nollm/dream_geometry/batch_admission/coordinator.py | A:BA1_CANDIDATE_NOT_ELIGIBLE,BA1_CANDIDATE_UNAVAILABLE,BA1_DECISION_MEMBER_MISMATCH,BA1_DECISION_NEXT_ACTION_INVALID | S:-
+coordinator.py[LB5S]: F:BA1 host-explicit Batch Admission coordination. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:BatchAdmissionCoordinator,PreparedBatchMember | S:-
+errors.py[LB5T]: F:BA1 Batch Admission Coordinator errors. | R:- | A:BA1Rejection,BA1CommitInterrupted,reject | S:-
+types.py[LB5M]: F:BA1 immutable public value objects. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:BatchAdmissionMember,BatchAdmissionReceipt,BatchAdmissionRequest,BatchAdmissionWindow | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/capture/===
+__init__.py[LB5T]: F:CI1 Capture Ingress / Deferred Admission Foundation. | R:code:reference/python/nollm/dream_geometry/capture/errors.py,code:reference/python/nollm/dream_geometry/capture/ingress.py | A:CandidateStatus,CandidateTrigger,CaptureDiagnostics,CaptureError | S:-
+errors.py[LB5T]: F:CI1 Capture Ingress stable error codes. | R:- | A:CI1_CANDIDATE_FORBIDDEN,CI1_CAPTURE_ID_CONFLICT,CI1_COMMIT_FAILED,CI1_INVALID_POLICY | S:-
+ingress.py[LB5S]: F:CI1 Capture Ingress public entrypoint. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/capture/errors.py | A:CaptureIngress | S:-
+policy.py[LB5M]: F:CI1 policy validation and canonical fingerprints. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py,code:reference/python/nollm/dream_geometry/capture/types.py | A:canonical_policy_payload,canonical_request_payload,fingerprint,policy_fingerprint | S:-
+state_store.py[LB5M]: F:CI1 private state store for receipts, candidates, diagnostics, and windows. | R:code:reference/python/nollm/dream_geometry/capture/errors.py,code:reference/python/nollm/dream_geometry/capture/policy.py | A:CaptureStateStore,candidate_from_payload,candidate_payload,receipt_from_payload | S:-
+types.py[LB5S]: F:CI1 Capture Ingress immutable public objects. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:CandidateStatus,CandidateTrigger,CaptureDiagnostics,CaptureErrorInfo | S:-
+visibility.py[LB5T]: F:CI1 explicit physical visibility selectors. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/capture/errors.py | A:CaptureVisibility | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/compression/===
+__init__.py[LB5T]: F:DG5 evidence-preserving trace compaction capability. | R:code:reference/python/nollm/dream_geometry/compression/errors.py | A:CompactedTraceView,CompressionPlan,CompressionPlanningError,CompressionPolicy | S:-
+errors.py[LB5T]: F:DG5 structured compression errors. | R:- | A:CompressionPlanningError | S:-
+fingerprint.py[LB5S]: F:Canonical DG5 fingerprints for immutable trace compression views. | R:code:reference/python/nollm/dream_geometry/field/types.py,code:reference/python/nollm/dream_geometry/compression/types.py | A:trace_payload,trace_fingerprint,compaction_payload,compression_plan_payload_without_fingerprint | S:-
+planner.py[LB5T]: F:DG5 exact transport-view compression planning. | R:code:reference/python/nollm/dream_geometry/field/compaction.py,code:reference/python/nollm/dream_geometry/field/types.py | A:plan_trace_compaction | S:-
+types.py[LB5T]: F:Immutable DG5 evidence-preserving compression value objects. | R:code:reference/python/nollm/dream_geometry/field/types.py,code:reference/python/nollm/dream_geometry/compression/errors.py | A:CompressionPolicy,CompressionPlan,CompactedTraceEntry,CompactedTraceView | S:-
+validation.py[LB5T]: F:DG5 fail-closed compression plan and manifest validation. | R:code:reference/python/nollm/dream_geometry/field/types.py,code:reference/python/nollm/dream_geometry/compression/errors.py | A:validate_compression_plan | S:-
+view.py[LB5S]: F:DG5 immutable compacted trace views and lossless expansion. | R:code:reference/python/nollm/dream_geometry/field/compaction.py,code:reference/python/nollm/dream_geometry/field/types.py | A:build_compacted_trace_view,expand_compression_plan | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/cortex/===
+__init__.py[LB5T]: F:DC1 Cortex Compiler boundary for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/cortex/compiler.py,code:reference/python/nollm/dream_geometry/cortex/errors.py | A:CONTRACT_VERSION,AxisRay,ADMISSION_CURRENT_DC1_1,ADMISSION_LEGACY_DC1_READ_ONLY | S:-
+compiler.py[LB5L]: F:DC1 strict structured compiler for Growth Proposals and Query Probes. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/cortex/errors.py | A:compile_growth,compile_growth_legacy_reopen,compile_query,validate_compiled_growth_proposal | S:-
+errors.py[LB5T]: F:Stable DC1 rejection codes and structured exceptions. | R:- | A:DC1Rejection,reject | S:-
+store.py[LB5M]: F:DC1 file-first Cortex store for compiled Growth Proposals. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/cortex/errors.py | A:ADMISSION_CURRENT_DC1_1,ADMISSION_LEGACY_DC1_READ_ONLY,CompileGrowthResult,CortexStore | S:-
+types.py[LB5M]: F:Immutable DC1 Cortex Compiler value objects and canonical payloads. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:CONTRACT_VERSION,AxisRay,CompilationBudget,CompilationDecision | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/evidence/===
+__init__.py[LB5T]: F:DE1 Memory Substrate / Epistemic Core boundary for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/evidence/store.py,code:reference/python/nollm/dream_geometry/evidence/types.py | A:FORMAT_VERSION,DreamShard,InterpretationRecord,LedgerEvent | S:-
+store.py[LB5L]: F:DE1 file-first Memory Substrate store. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:MemorySubstrateStore,WriteResult,open_store | S:-
+types.py[LB5M]: F:DE1 Memory Substrate immutable value objects and canonical payloads. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:FORMAT_VERSION,DreamShard,InterpretationRecord,LedgerEvent | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/field/===
+__init__.py[LB5T]: F:Pure Field Dynamics boundary for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/field/compaction.py,code:reference/python/nollm/dream_geometry/field/cover.py | A:CoarseCover,CoverEligibility,CoverPolicy,CrystallizationDecision | S:-
+compaction.py[LB5T]: F:DG2 lossless Growth Trace compaction views. | R:code:reference/python/nollm/dream_geometry/field/types.py | A:compact_traces,expand_compaction | S:-
+cover.py[LB5S]: F:DG2 local Coarse Cover lifecycle. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py,code:reference/python/nollm/dream_geometry/field/types.py | A:build_local_covers,evaluate_cover_eligibility,crystallize_cover | S:-
+gravity.py[LB5T]: F:DG2 internal gravity snapshot calculation. | R:code:reference/python/nollm/dream_geometry/geometry/hexgrid.py,code:reference/python/nollm/dream_geometry/field/types.py | A:calculate_gravity_snapshot | S:-
+trace.py[LB5S]: F:DG2 deterministic Growth Trace propagation. | R:code:reference/python/nollm/dream_geometry/geometry/coverage.py,code:reference/python/nollm/dream_geometry/geometry/types.py | A:seed_to_trace,propagate_trace | S:-
+types.py[LB5L]: F:Frozen DG2 Field Dynamics value objects. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:TraceSeed,GrowthTrace,TraceResidual,VerifiedChartLink | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/geometry/===
+__init__.py[LB5T]: F:Pure geometry boundary for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/geometry/chart.py,code:reference/python/nollm/dream_geometry/geometry/coverage.py | A:AxialCoord,CellRef,CoverageDirection,CoverageDistribution | S:-
+chart.py[LB5S]: F:Local chart coordinate maps for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:SQRT3,axial_to_world,hex_polygon_vertices,hex_polygon_vertices_from_center | S:-
+coverage.py[LB5M]: F:Directed coverage kernels for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:CoverageCandidate,CoverageDirection,CoverageDistribution,CoverageKernel | S:-
+hexgrid.py[LB5S]: F:Hex-grid coordinate operations for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:AXIAL_DIRECTIONS,axial_to_cube,cube_to_axial,disk | S:-
+metrics.py[LB5S]: F:Finite anti-resonance metrics for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/geometry/coverage.py,code:reference/python/nollm/dream_geometry/geometry/types.py | A:AntiResonanceSummary,DistributionMetrics,branching_factor,coverage_ambiguity | S:-
+polygon.py[LB5S]: F:Convex polygon overlap for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:circumcircle_candidate_may_overlap,clip_convex_polygon,convex_polygon_intersection,convex_polygon_intersection_area | S:-
+schedules.py[LB5S]: F:Parameter schedules for DG1 V2 geometry validation. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:DEFAULT_PHASE_SAMPLES,LAYER_PHASE_POLICIES,LayerPhasePolicy,PARAMETER_MATRIX | S:-
+transform.py[LB5M]: F:Similarity transforms for the DG1 V2 geometry kernel. | R:code:reference/python/nollm/dream_geometry/geometry/types.py | A:CycleResidual,SimilarityTransform,TransformResidual,TransformValidation | S:-
+types.py[LB5M]: F:Immutable numeric types for the DG1 V2 geometry kernel. | R:- | A:DEFAULT_NUMERIC_MODE,DEFAULT_TOLERANCE,AxialCoord,CellRef | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/host_admission_gateway/===
+__init__.py[LB5T]: F:HAG1 file-first explicit admission gateway. | R:code:reference/python/nollm/dream_geometry/host_admission_gateway/gateway.py | A:admit,admit_from_text,canonical_json | S:-
+decode.py[LB5M]: F:Strict HAG1 request decoding. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:decode_admission_payload,load_json_text | S:-
+errors.py[LB5T]: F:HAG1 stable public errors. | R:- | A:HAGError,HAG_ADMISSION_INTERRUPTED,HAG_ADMISSION_REJECTED,HAG_INTERNAL_ERROR | S:-
+gateway.py[LB5M]: F:HAG1 file-first explicit admission gateway. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:admit,admit_from_text | S:-
+serialization.py[LB5T]: F:HAG1 canonical JSON serialization helpers. | R:- | A:canonical_json,error_envelope,fingerprint,ok_envelope | S:-
+types.py[LB5T]: F:Immutable HAG1 gateway values. | R:- | A:GatewayAdmission,GatewayAdmissionRequest,GatewayMember,GatewayPromotionDecision | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/host_capture_gateway/===
+__init__.py[LB5T]: F:HCG1 file-first capture gateway. | R:code:reference/python/nollm/dream_geometry/host_capture_gateway/gateway.py | A:capture,capture_from_text,read,read_from_text | S:-
+decode.py[LB5M]: F:Strict HCG1 request decoding. | R:code:reference/python/nollm/dream_geometry/capture/__init__.py | A:decode_capture_payload,decode_read_payload,load_json_text | S:-
+errors.py[LB5T]: F:HCG1 stable error values. | R:- | A:HCGError,HCG_CAPTURE_REJECTED,HCG_INTERNAL_ERROR,HCG_INVALID_JSON | S:-
+gateway.py[LB5M]: F:HCG1 file-first capture gateway. | R:code:reference/python/nollm/dream_geometry/capture/__init__.py,code:reference/python/nollm/dream_geometry/capture/errors.py | A:capture,capture_from_text,read,read_from_text | S:-
+serialization.py[LB5T]: F:HCG1 canonical JSON serialization helpers. | R:- | A:canonical_json,error_envelope,ok_envelope | S:-
+types.py[LB5T]: F:HCG1 public gateway request values. | R:code:reference/python/nollm/dream_geometry/capture/__init__.py | A:GatewayCaptureRequest,GatewayContext,GatewayReadRequest | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/host_execution/===
+__init__.py[LB5T]: F:HX1 trusted host staged execution bridge. | R:code:reference/python/nollm/dream_geometry/host_execution/bindings.py | A:CaptureReceiptView,HX1ExecutionError,HostAdmissionBinding,HostCaptureBinding | S:-
+bindings.py[LB5L]: F:HX1 host binding preflight. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:FORBIDDEN_WORK_DIRS,preflight_host_plan | S:-
+bridge.py[LB5M]: F:HX1 trusted host staged execution bridge. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:execute_host_plan,receipt_to_mapping | S:-
+errors.py[LB5T]: F:HX1 structured execution errors. | R:- | A:HX1ExecutionError,error_to_mapping,stable_message | S:-
+serialization.py[LB5S]: F:Canonical HX1 serialization. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:canonical_json,execution_input_fingerprint,receipt_to_mapping,stable_fingerprint | S:-
+types.py[LB5S]: F:Immutable HX1 host execution values. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:CaptureReceiptView,HostAdmissionBinding,HostCaptureBinding,HostDG6VerificationBinding | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/protocol/===
+__init__.py[LB5T]: F:Protocol contracts for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:ALLOWED_DEPENDENCIES,FORBIDDEN_DEPENDENCIES,ChartTransformState,CoverState | S:-
+contracts.py[LB5M]: F:Stable DG0 protocol contracts for Dream Geometry V2. | R:- | A:ChartTransformState,CoverState,DA1_ADMISSION_INVARIANTS,DE1_MEMORY_SUBSTRATE_INVARIANTS | S:-
+dependency_rules.py[LB5T]: F:Executable DG0 dependency firewall rules for Dream Geometry V2. | R:code:reference/python/nollm/dream_geometry/protocol/contracts.py | A:ALLOWED_DEPENDENCIES,DEPENDENCY_RULES,FORBIDDEN_DEPENDENCIES,is_dependency_allowed | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/recall/===
+__init__.py[LB5T]: F:Dream Geometry DR1 Recall Resolver. | R:code:reference/python/nollm/dream_geometry/recall/resolver.py,code:reference/python/nollm/dream_geometry/recall/types.py | A:EvidenceQualification,ProbeAtom,ProposalAdmission,ProposalReadRecord | S:-
+projection.py[LB5T]: F:Exact DR1 query and trace projection helpers. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/field/types.py | A:EXPLICIT_IN_QUERY,basis_ref_key,projection_for_trace,query_atoms | S:-
+qualification.py[LB5T]: F:DR1 evidence qualification from DE1 usage state only. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/recall/types.py | A:qualify_shard | S:-
+resolver.py[LB5L]: F:DR1 Recall Resolver foundation. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/evidence/__init__.py | A:resolve_recall | S:-
+time_projection.py[LB5T]: F:Strict caller-supplied relative-time projection validation for DR1. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/recall/projection.py | A:validate_runtime_time_resolution | S:-
+traversal.py[LB5T]: F:Read-only DR1 traversal diagnostics over supplied coverage distributions. | R:code:reference/python/nollm/dream_geometry/field/types.py,code:reference/python/nollm/dream_geometry/geometry/coverage.py | A:direction_warnings,traversal_records | S:-
+types.py[LB5M]: F:DR1 Recall Resolver immutable value objects. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/evidence/__init__.py | A:EvidenceQualification,ProbeAtom,ProposalAdmission,ProposalReadRecord | S:-
+universe.py[LB5M]: F:Strict finite RecallUniverse validation for DR1. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/evidence/__init__.py | A:validate_recall_universe | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/validation/===
+__init__.py[LB5T]: F:Validation boundary for Dream Geometry V2. | R:- | A:- | S:-
+da1_memory_admission_report.py[LB5S]: F:DA1 deterministic baseline report generation. | R:code:reference/python/nollm/dream_geometry/admission/__init__.py | A:build_report,write_report,main | S:-
+dc1_cortex_report.py[LB5M]: F:DC1 Cortex Compiler deterministic baseline report generator. | R:code:reference/python/nollm/dream_geometry/cortex/__init__.py,code:reference/python/nollm/dream_geometry/cortex/store.py | A:build_report,main,write_report | S:-
+de1_memory_substrate_report.py[LB5M]: F:DE1 Memory Substrate baseline report generator. | R:code:reference/python/nollm/dream_geometry/evidence/__init__.py,code:reference/python/nollm/dream_geometry/evidence/store.py | A:build_report,main,write_report | S:-
+dg1_baseline_report.py[LB5M]: F:DG1 pure geometry baseline report generator. | R:code:reference/python/nollm/dream_geometry/geometry/chart.py,code:reference/python/nollm/dream_geometry/geometry/coverage.py | A:build_report,main,write_report | S:-
+dg2_field_report.py[LB5M]: F:DG2 deterministic Field Dynamics baseline report generator. | R:code:reference/python/nollm/dream_geometry/field/__init__.py,code:reference/python/nollm/dream_geometry/field/types.py | A:build_report,main,write_report | S:-
+di1_integration_fixture.py[LB5T]: F:Synthetic DI1 Integration Shell fixtures for validation and tests. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:build_deferred_context,build_di1_context | S:-
+di1_integration_shell_report.py[LB5S]: F:DI1 Integration Shell deterministic baseline report generator. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:build_report,canonical_fingerprint,default_output_path,main | S:-
+dr1_fixture.py[LB5M]: F:Synthetic DR1 validation fixture shared by report and tests. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/evidence/__init__.py | A:add_synthetic_cover,build_fixture,query_probe,relative_time_resolution | S:-
+dr1_recall_report.py[LB5S]: F:DR1 Recall Resolver deterministic baseline report generator. | R:code:reference/python/nollm/dream_geometry/cortex/types.py,code:reference/python/nollm/dream_geometry/geometry/chart.py | A:build_report,default_output_path,main,write_report | S:-
+dx1_synthetic_cycle_fixture.py[LB5L]: F:DX1 synthetic end-to-end memory cycle fixture. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py,code:reference/python/nollm/dream_geometry/cortex/store.py | A:DISTRACTOR_IDS,DX1CycleFixture,REFERENCE_INSTANT,TARGET_SHARD_ID | S:-
+dx1_synthetic_cycle_report.py[LB5M]: F:DX1 synthetic end-to-end memory cycle baseline report generator. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:FORBIDDEN_PUBLIC_TOKENS,PUBLIC_SELECTION_BASIS,build_report,canonical_fingerprint | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/validation/cx2/===
+__init__.py[LB5T]: F:CX2 validation-only Cortex conformance package. | R:code:reference/python/nollm/dream_geometry/validation/cx2/fixtures.py | A:CX2PlanValidationError,CortexActionPlan,all_fixtures,invalid_fixtures | S:-
+fixtures.py[LB5M]: F:Synthetic CX2 conformance fixtures. | R:code:reference/python/nollm/dream_geometry/validation/cx2/types.py | A:all_fixtures,dg7_correspondence_fixture,invalid_fixtures,valid_fixtures | S:-
+serialization.py[LB5T]: F:Canonical CX2 serialization helpers. | R:- | A:canonical_json,canonical_markdown | S:-
+types.py[LB5M]: F:Immutable CX2 Cortex Action Plan values. | R:- | A:AdmissionRequestRef,AdmissionState,AssemblyDeclarer,CaptureRef | S:-
+validator.py[LB5L]: F:Deterministic CX2 Cortex Action Plan validator. | R:code:reference/python/nollm/dream_geometry/validation/cx2/types.py | A:REQUIRED_NON_INFERENCES,validate_cortex_action_plan | S:-
+
+===/<repository>/reference/python/nollm/dream_geometry/validation/dg7/===
+__init__.py[LB5T]: F:DG7 explicit reference runtime positive verification. | R:code:reference/python/nollm/dream_geometry/validation/dg7/runner.py | A:DG7RuntimeVerificationError,FIXED_SCENARIO_ID,RuntimePositiveVerificationReceipt,build_reference_scenario | S:-
+runner.py[LB5M]: F:DG7 explicit reference runtime runner. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py | A:DG7RuntimeVerificationError,RECEIPT_KIND,error_mapping,receipt_to_mapping | S:-
+scenario.py[LB5M]: F:Fixed DG7 explicit host scenario. | R:code:reference/python/nollm/dream_geometry/adapters/__init__.py,code:reference/python/nollm/dream_geometry/field/__init__.py | A:DG7ReferenceScenario,FIXED_SCENARIO_ID,RECORDED_AT,SCENARIO_VERSION | S:-
+serialization.py[LB5T]: F:Canonical DG7 serialization helpers. | R:- | A:canonical_json | S:-
+types.py[LB5T]: F:DG7 immutable receipt types. | R:- | A:RuntimeCaptureReceiptView,RuntimeIsolationSummary,RuntimePositiveVerificationReceipt | S:-
+
+===/<repository>/reference/python/nollm/grf/===
+__init__.py[LB5S]: F:GRF V3 prototype math kernel. | R:code:reference/python/nollm/grf/axial.py,code:reference/python/nollm/grf/cell_address.py | A:AxialCoord,CellAddress,CoverageTemplate,CoverageTemplateCompiler | S:-
+admission.py[LB5T]: F:Minimal GRF admission record. | R:code:reference/python/nollm/grf/placement.py | A:MinimalAdmissionRecord | S:-
+admission_bridge.py[LB5S]: F:Explicit decision-to-placement bridge; Core does not infer semantics. | R:code:reference/python/nollm/grf/admission.py,code:reference/python/nollm/grf/cell_address.py | A:MissingSourceFallback,GRFAdmissionBridgeResult,GRFAdmissionBridge,resolve_source_fallback | S:-
+axial.py[LB5T]: F:Integer axial and cube coordinates for GRF cells. | R:- | A:AxialCoord,CubeCoord,axial_to_cube,cube_to_axial | S:-
+bridge_kernel.py[LB5T]: F:Bridge kernels created by accepted stitch records. | R:code:reference/python/nollm/grf/fixed_point.py | A:BridgeKernel | S:-
+capture.py[LB5T]: F:Explicit file-first GRF capture prototype. | R:code:reference/python/nollm/grf/evidence.py,code:reference/python/nollm/grf/storage.py | A:GRFCaptureRequest,GRFCaptureReceipt,GRFCaptureIngress | S:-
+cell_address.py[LB5T]: F:Stable GRF cell addresses. | R:code:reference/python/nollm/grf/profiles.py | A:CellAddress | S:-
+contract_evolution.py[LB5T]: F:Host contract version registry and identity-preserving envelope migration. | R:code:reference/python/nollm/grf/host_contract.py | A:ContractVersion,ContractVersionRegistry,migrate_host_request | S:-
+coverage_template.py[LB5S]: F:Offline coverage template compiler and runtime lookup. | R:code:reference/python/nollm/grf/axial.py,code:reference/python/nollm/grf/cell_address.py | A:KernelEntry,CoverageTemplate,CoverageTemplateCompiler,expand_template | S:-
+eisenstein.py[LB5T]: F:Eisenstein integer helper for exact axial transforms. | R:code:reference/python/nollm/grf/axial.py | A:EisensteinInt | S:-
+evidence.py[LB5T]: F:Raw GRF evidence shard records. | R:- | A:EvidenceShardRecord | S:-
+evidence_island.py[LB5T]: F:Evidence islands for GRF stitching prototypes. | R:- | A:EvidenceShardRef,EvidenceIsland | S:-
+exporters.py[LB5T]: F:JSON export helpers for GRF prototype facade objects. | R:- | A:to_jsonable | S:-
+facade.py[LB5M]: F:Public prototype facade for GRF validation workflows. | R:code:reference/python/nollm/grf/admission_bridge.py,code:reference/python/nollm/grf/capture.py | A:GRFWorkspaceReport,GRFFacade,capture_request_from_mapping,admit_request_from_mapping | S:-
+field_engine.py[LB5S]: F:Geometry-native in-memory cell occupancy for bounded GRF validation. | R:code:reference/python/nollm/grf/trace_compat.py,code:reference/python/nollm/grf/axial.py | A:CellState,CellStore,FieldEngine | S:-
+fixed_point.py[LB5T]: F:Q16 fixed-point weights for GRF coverage templates. | R:- | A:q16_from_ratio,q16_mul,q16_sum,normalize_q16_weights | S:-
+gate_evidence.py[LB5S]: F:Computed GRF gate evidence and predicate evaluation. | R:- | A:GatePredicate,GateResult,GateEvidence | S:-
+geometry_storage.py[LB5T]: F:Direct, non-semantic filesystem locations for GRF geometry objects. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/path_encoding.py | A:partition_id,placement_path,evidence_path,admission_path | S:-
+grf2_validation.py[LB5T]: F:GRF2 large-scale validation metrics. | R:code:reference/python/nollm/grf/kernel_registry.py | A:GRF2ScaleMetrics,scale_metrics,baseline_comparison,failure_boundary_report | S:-
+grf8_quality_benchmark.py[LB5S]: F:Reproducible query-result metrics and ablations for the GRF8 fixture. | R:code:reference/python/nollm/grf/grf8_quality_dataset.py | A:QualityMetrics,ranker_for,benchmark,compare_baselines | S:-
+grf8_quality_dataset.py[LB5T]: F:Deterministic, auditable quality fixture for GRF8 query evaluation. | R:- | A:QualityEvidence,QualityQuery,build_quality_dataset,dataset_digest | S:-
+host_contract.py[LB5M]: F:Versioned host boundary for GRF Core without terminal dependencies. | R:code:reference/python/nollm/grf/exporters.py,code:reference/python/nollm/grf/facade.py | A:UnsupportedCapabilityError,HostRequestID,EvidenceIdentity,PlacementIdentity | S:-
+importers.py[LB5S]: F:Import-only migration boundary for GRF prototype inputs. | R:code:reference/python/nollm/grf/capture.py,code:reference/python/nollm/grf/cell_address.py | A:CaptureImportResult,MinimalPlacementAdmissionFixture,import_hcg_like_capture,import_oca_like_capture | S:-
+ingestion.py[LB5T]: F:Incremental exact-window ingestion without whole-file rebuilds. | R:code:reference/python/nollm/grf/capture.py,code:reference/python/nollm/grf/facade.py | A:IngestionResult,IncrementalIngestion | S:-
+json_canonical.py[LB5T]: F:Canonical JSON helpers for file-first GRF records. | R:- | A:canonical_dumps,canonical_loads,sha256_canonical | S:-
+kernel_registry.py[LB5T]: F:GRF kernel registry and compression estimates. | R:code:reference/python/nollm/grf/coverage_template.py,code:reference/python/nollm/grf/json_canonical.py | A:KernelKey,KernelCompressionReport,KernelRegistry | S:-
+kernel_store.py[LB5T]: F:In-memory GRF template store. | R:code:reference/python/nollm/grf/coverage_template.py | A:TemplateKey,InMemoryKernelStore | S:-
+ledger.py[LB5T]: F:Append-only GRF ledger. | R:code:reference/python/nollm/grf/json_canonical.py | A:GRFLedgerEvent,GRFLedger | S:-
+local_patch.py[LB5T]: F:Local GRF patch placement records. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:LocalPatch | S:-
+m0_ports.py[LB5S]: F:M0 compatibility adapters from the mixed GRF workspace to public ports. | R:code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:GRFWorkspaceConsistentStateAdapter,workspace_state_port | S:-
+openclaw_bridge.py[LB5T]: F:JSON-line bridge used only by the native OpenClaw GRF adapter. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/facade.py | A:dispatch,main | S:-
+path_encoding.py[LB5T]: F:Path-safe GRF object file naming. | R:- | A:safe_object_path | S:-
+placement.py[LB5M]: F:GRF placement and geometry mark prototype objects. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:PlacementCandidate,PlacementDecision,GeometryMark,PlacementRecord | S:-
+placement_protocol.py[LB5S]: F:Bounded host/LLM placement protocol; validation never infers semantics. | R:code:reference/python/nollm/grf/cell_address.py | A:NollmPlacementRequest,NollmPlacementDecision,validate_decision,decision_from_mapping | S:-
+profiles.py[LB5T]: F:GRF profile registry. | R:code:reference/python/nollm/grf/fixed_point.py | A:Profile,profiles,get_profile,performance_profile | S:-
+propagation.py[LB5T]: F:Sparse integer activation propagation for GRF recall. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:SparseActivation,ActivationFrontier,propagate_score | S:-
+readiness_validation.py[LB5T]: F:Executable GRF4R Core and geometry readiness checks. | R:code:reference/python/nollm/grf/kernel_registry.py,code:reference/python/nollm/grf/profiles.py | A:core_readiness | S:-
+real_sources.py[LB5S]: F:Exact file-source windows for the geometry-native ingestion path. | R:- | A:SourceDocument,SourceWindow,FileSourceConnector,MarkdownSource | S:-
+recall.py[LB5S]: F:Minimal structured GRF recall runtime. | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:RecallBudget,QueryProbe,resolve_grf_recall | S:-
+recall_digest.py[LB5T]: F:GRF recall result objects. | R:code:reference/python/nollm/grf/cell_address.py | A:RecallPath,CoverageReport,RecallDigest | S:-
+relation_field.py[LB5T]: F:Sparse relation propagation derived from placement geometry, without routes. | R:code:reference/python/nollm/grf/trace_compat.py,code:reference/python/nollm/grf/bridge_kernel.py | A:RelationField | S:-
+replay.py[LB5T]: F:Replay helpers for file-first GRF workspaces. | R:code:reference/python/nollm/grf/coverage_template.py,code:reference/python/nollm/grf/json_canonical.py | A:load_all_grf_objects,rebuild_relation_field_from_files,replay_recall | S:-
+resource_sampler.py[LB5T]: F:Cross-platform current and peak process RSS sampling. | R:- | A:ResourceSample,sample_process_resources | S:-
+scale_validation.py[LB5T]: F:Deterministic synthetic scale fixtures for GRF validation. | R:code:reference/python/nollm/grf/validation_bench.py | A:generate_scale_validation_items | S:-
+source_window.py[LB5T]: F:Explicit source window records for GRF evidence capture. | R:- | A:SourceWindowRecord | S:-
+stitching.py[LB5M]: F:Auditable GRF stitching proposal and record objects. | R:code:reference/python/nollm/grf/bridge_kernel.py,code:reference/python/nollm/grf/fixed_point.py | A:StitchTransform,StitchWitness,StitchProposal,StitchRecord | S:-
+storage.py[LB5M]: F:File-first GRF object storage. | R:code:reference/python/nollm/grf/admission.py,code:reference/python/nollm/grf/bridge_kernel.py | A:GRFFileStore | S:-
+trace_compat.py[LB5T]: F:Legacy GRF trace contract retained outside active distributions. | R:- | A:TraceEvent,TraceSink,NullTraceSink,safe_emit | S:-
+validation.py[LB5T]: F:Small GRF validation helpers used by tests and reports. | R:code:reference/python/nollm/grf/coverage_template.py,code:reference/python/nollm/grf/fixed_point.py | A:validation_summary,source_contains_forbidden_runtime_terms | S:-
+validation_bench.py[LB5T]: F:GRF1-E local mini validation helpers. | R:- | A:ValidationItem,load_jsonl,token_set,lexical_pairs | S:-
+
+===/<repository>/reference/python/scripts/===
+build_engineering_rc_export_archive.py[LB5T]: F:Implements build engineering rc export archive through main | R:code:reference/python/nollm/engineering_rc_archive.py | A:main | S:-
+check_engineering_rc_export.py[LB5T]: F:Implements check engineering rc export through main | R:code:reference/python/nollm/engineering_rc_export.py | A:main | S:-
+check_package_hygiene.py[LB5T]: F:Implements check package hygiene through main, find_issues, is_blocked_file | R:- | A:main,find_issues,is_blocked_file | S:-
+configure_ocp4_active_memory.py[LB5T]: F:Implements configure ocp4 active memory through main | R:code:reference/python/nollm/openclaw_active_memory_config.py | A:main | S:-
+configure_ocp6r_cortex_active_memory.py[LB5T]: F:Implements configure ocp6r cortex active memory through main | R:code:reference/python/nollm/openclaw_active_memory_config.py | A:main | S:-
+install_openclaw_nollm_companion.py[LB5L]: F:Implements install openclaw nollm companion through main, parse_args, build_initial_report | R:- | A:main,parse_args,build_initial_report,run_installer | S:-
+package_nollm_tq1_delivery_evidence.py[LB5L]: F:Implements package nollm tq1 delivery evidence through main, command_build_ref, command_verify_ref | R:- | A:main,command_build_ref,command_verify_ref,require_head | S:-
+parse_openclaw_memory_fixture.py[LB5T]: F:Implements parse openclaw memory fixture through main | R:code:reference/python/nollm/openclaw_memory_adapter.py | A:main | S:-
+run_all_dream_geometry_checks.py[LB5T]: F:Implements run all dream geometry checks through main | R:code:reference/python/nollm/dream_checks_manifest.py | A:main | S:-
+run_dg7_reference_runtime.py[LB5T]: F:Implements run dg7 reference runtime through main | R:code:reference/python/nollm/dream_geometry/validation/dg7/__init__.py | A:main | S:-
+run_dream_cortex_demo.py[LB5T]: F:Implements run dream cortex demo through main | R:code:reference/python/nollm/dream_cortex_recall.py | A:main | S:-
+run_dream_experiment_batch.py[LB5T]: F:Implements run dream experiment batch through main | R:code:reference/python/nollm/dream_experiment_batch.py | A:main | S:-
+run_dream_failure_triage.py[LB5T]: F:Implements run dream failure triage through main | R:code:reference/python/nollm/dream_triage.py | A:main | S:-
+run_dream_geometry_suite.py[LB5T]: F:Implements run dream geometry suite through main | R:code:reference/python/nollm/dream_suite.py | A:main | S:-
+run_dream_golden_regression.py[LB5T]: F:Implements run dream golden regression through main | R:code:reference/python/nollm/dream_golden_regression.py | A:main | S:-
+run_dream_regression_pack.py[LB5T]: F:Implements run dream regression pack through main | R:code:reference/python/nollm/dream_regression.py | A:main | S:-
+run_engineering_rc_final_smoke.py[LB5T]: F:Implements run engineering rc final smoke through main | R:code:reference/python/nollm/engineering_rc_final_smoke.py | A:main | S:-
+run_g_series_engineering_gate.py[LB5T]: F:Implements run g series engineering gate through main | R:code:reference/python/nollm/g_series_engineering_closure.py | A:main | S:-
+run_gravity_report_demo.py[LB5T]: F:Implements run gravity report demo through main | R:code:reference/python/nollm/gravity.py | A:main | S:-
+run_hx1_trusted_host_bridge.py[LB5T]: F:Implements run hx1 trusted host bridge through main | R:code:reference/python/nollm/dream_geometry/host_execution/__init__.py | A:main | S:-
+run_minimal_ablation_experiment.py[LB5T]: F:Implements run minimal ablation experiment through main | R:code:reference/python/nollm/minimal_ablation_experiment.py | A:main | S:-
+run_mode3_trace_experiment.py[LB5T]: F:Implements run mode3 trace experiment through main | R:code:reference/python/nollm/mode3_trace_experiment.py | A:main | S:-
+run_multi_step_coverage_metrics.py[LB5T]: F:Implements run multi step coverage metrics through main | R:code:reference/python/nollm/multi_step_coverage.py | A:main | S:-
+run_nollm_grf.py[LB5T]: F:Implements run nollm grf through main | R:code:reference/python/nollm/grf/exporters.py,code:reference/python/nollm/grf/facade.py | A:main | S:-
+run_nollm_host_admission_gateway.py[LB5T]: F:Run the HAG1 file-first explicit admission gateway. | R:code:reference/python/nollm/dream_geometry/host_admission_gateway/__init__.py | A:main | S:-
+run_nollm_host_capture_gateway.py[LB5T]: F:HCG1 file-first capture gateway CLI. | R:code:reference/python/nollm/dream_geometry/host_capture_gateway/__init__.py | A:main | S:-
+run_nollm_local_gate.py[LB5T]: F:Implements run nollm local gate through main | R:code:reference/python/nollm/local_gate.py | A:main | S:-
+run_nollm_test_matrix.py[LB5L]: F:Implements run nollm test matrix through main, command_plan, command_list_shards | R:- | A:main,command_plan,command_list_shards,command_run_shard | S:-
+run_nollm_test_shards.py[LB5M]: F:Implements run nollm test shards through main, run_test_shard, command_for_profile | R:code:reference/python/nollm/pytest_env.py | A:main,run_test_shard,command_for_profile,profile_manifest | S:-
+run_offset_sampling.py[LB5T]: F:Implements run offset sampling through main | R:code:reference/python/nollm/offset_sampling.py | A:main | S:-
+run_openclaw_dream_pipeline.py[LB5T]: F:Implements run openclaw dream pipeline through main | R:code:reference/python/nollm/dream_pipeline.py | A:main | S:-
+run_openclaw_nollm_active_memory.py[LB5S]: F:Implements run openclaw nollm active memory through main | R:code:reference/python/nollm/openclaw_active_memory_adapter.py | A:main | S:-
+run_openclaw_nollm_active_trial.py[LB5L]: F:Implements run openclaw nollm active trial through TargetBinding, main | R:code:reference/python/nollm/w2_forensic.py | A:TargetBinding,main | S:-
+run_openclaw_nollm_cortex.py[LB5M]: F:Implements run openclaw nollm cortex through main, configure_cortex | R:code:reference/python/nollm/openclaw_active_memory_config.py | A:main,configure_cortex | S:-
+run_openclaw_nollm_dreamer.py[LB5L]: F:Implements run openclaw nollm dreamer through main, configure_dreamer, refresh_field | R:code:reference/python/nollm/dream_cortex_recall.py,code:reference/python/nollm/openclaw_active_memory_config.py | A:main,configure_dreamer,refresh_field,build_dreamer_prompt | S:-
+run_openclaw_nollm_memory.py[LB5M]: F:Implements run openclaw nollm memory through main | R:code:reference/python/nollm/openclaw_memory_adapter.py,code:reference/python/nollm/dream_cortex_recall.py | A:main | S:-
+run_openclaw_nollm_provider.py[LB5T]: F:CLI entry point for the Nollm OpenClaw memory provider sidecar. | R:code:reference/python/nollm/openclaw_memory_provider_alpha.py | A:main | S:-
+run_real_corpus_dream_dry_run.py[LB5T]: F:Implements run real corpus dream dry run through main | R:code:reference/python/nollm/dream_corpus_dry_run.py | A:main | S:-
+run_reverse_cover_milp.py[LB5T]: F:Implements run reverse cover milp through main | R:code:reference/python/nollm/reverse_cover.py | A:main | S:-
+validate_ocp3b_live_e2e_evidence.py[LB5S]: F:Validate the committed OCP3b strict live E2E evidence package. | R:- | A:load_json,load_jsonl,sha256_file,validate_manifest | S:-
+
+===/<repository>/reference/python/tests/===
+conftest.py[TQ5T]: F:Tests conftest | R:- | A:- | S:-
+test_architecture_language.py[TQ5T]: F:Tests architecture language including active v31 architecture language is present | R:- | A:- | S:-
+test_no_forbidden_features.py[TQ5T]: F:Tests no forbidden features including no prohibited dependency or feature is introduced | R:- | A:- | S:-
+test_repository_hygiene.py[TQ5T]: F:Tests repository hygiene including repository tree has no generated artifacts | R:code:reference/python/tests/conftest.py | A:- | S:-
+
+===/<repository>/reference/python/tests/grf/===
+grf_runtime_fixture.py[TQ5T]: F:Tests grf runtime fixture | R:code:reference/python/nollm/grf/bridge_kernel.py,code:reference/python/nollm/grf/cell_address.py | A:- | S:-
+test_axial_cube_kernel.py[TQ5T]: F:Tests axial cube kernel including axial cube roundtrip and distance are integer | R:code:reference/python/nollm/grf/axial.py | A:- | S:-
+test_bridge_kernel_bounds.py[TQ5T]: F:Tests bridge kernel bounds including bridge kernel requires bounds and evidence | R:code:reference/python/nollm/grf/bridge_kernel.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_coverage_direction_semantics.py[TQ5T]: F:Tests coverage direction semantics including layer index direction is finer with increasing index | R:code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_coverage_template_normalization.py[TQ5T]: F:Tests coverage template normalization including templates report sum and residual | R:code:reference/python/nollm/grf/coverage_template.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_eisenstein_integer_kernel.py[TQ5T]: F:Tests eisenstein integer kernel including norm is multiplicative | R:code:reference/python/nollm/grf/axial.py,code:reference/python/nollm/grf/eisenstein.py | A:- | S:-
+test_evidence_island_creation.py[TQ5T]: F:Tests evidence island creation including evidence island requires non empty unique shards | R:code:reference/python/nollm/grf/evidence_island.py | A:- | S:-
+test_fixed_point_weights.py[TQ5T]: F:Tests fixed point weights including q16 denominator is 65536 | R:code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_geometry_mark.py[TQ5T]: F:Tests geometry mark including geometry mark declares non truth and inherits relation field | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_grf2_kernel_registry.py[TQ5T]: F:Tests grf2 kernel registry including kernel registry compression is independent from shard count | R:code:reference/python/nollm/grf/kernel_registry.py | A:- | S:-
+test_grf2_large_scale_validation.py[TQ5T]: F:Tests grf2 large scale validation including grf2 scale metrics cover large sizes and hard conditions | R:code:reference/python/nollm/grf/grf2_validation.py | A:- | S:-
+test_grf3_file_adapter.py[TQ5T]: F:Tests grf3 file adapter including file adapter only maps contract and translates errors | R:code:integrations/adapters/grf_file_adapter.py | A:- | S:-
+test_grf4r_adapter_conformance.py[TQ5T]: F:Tests grf4r adapter conformance including all adapters pass replaceable contract suite | R:code:integrations/adapters/grf_adapter_conformance.py,code:integrations/adapters/grf_declared_host_adapter.py | A:- | S:-
+test_grf4r_architecture_readiness.py[TQ5T]: F:Tests grf4r architecture readiness including core geometry and kernel are ready without terminal dependencies | R:code:reference/python/nollm/grf/readiness_validation.py | A:- | S:-
+test_grf7r2_evidence_pack.py[TQ5T]: F:Tests grf7r2 evidence pack including evidence pack rejects modified member | R:code:experiments/grf/grf7r2_evidence_pack.py | A:- | S:-
+test_grf7r3_compact_evidence.py[TQ5T]: F:Tests grf7r3 compact evidence including compact capsule binds manifest receipt and jsonl samples | R:code:experiments/grf/grf7r3_compact_evidence.py | A:- | S:-
+test_grf7r_external_artifacts.py[TQ5T]: F:Tests grf7r external artifacts including external artifact verifier detects missing and modified files | R:code:experiments/grf/verify_external_artifacts.py | A:- | S:-
+test_grf7r_gate_evidence.py[TQ5T]: F:Tests grf7r gate evidence including gate status is computed from predicates | R:code:reference/python/nollm/grf/gate_evidence.py,code:experiments/grf/verify_grf7r_evidence.py | A:- | S:-
+test_grf7r_host_registry.py[TQ5T]: F:Tests grf7r host registry including durable registry rejects cross host and mutated replay after restart | R:code:integrations/adapters/grf7r_facade_runtime.py | A:- | S:-
+test_grf7r_resource_sampler.py[TQ5T]: F:Tests grf7r resource sampler including linux proc backend parses current and peak bytes | R:code:reference/python/nollm/grf/resource_sampler.py | A:- | S:-
+test_grf8_quality_dataset.py[TQ5T]: F:Tests grf8 quality dataset including quality dataset has six categories and deterministic truth | R:code:reference/python/nollm/grf/grf8_quality_dataset.py,code:reference/python/nollm/grf/grf8_quality_benchmark.py | A:- | S:-
+test_grf8_real_sources.py[TQ5S]: F:Tests grf8 real sources including file connector preserves original meaningful units | R:code:reference/python/nollm/grf/real_sources.py,code:reference/python/nollm/grf/ingestion.py | A:- | S:-
+test_grf_capture_receipt.py[TQ5T]: F:Tests grf capture receipt including capture writes evidence only and reopens same bytes | R:code:reference/python/nollm/grf/capture.py,code:reference/python/nollm/grf/storage.py | A:- | S:-
+test_grf_evidence_shard_storage.py[TQ5T]: F:Tests grf evidence shard storage including evidence shard stores original content and hash | R:code:reference/python/nollm/grf/evidence.py,code:reference/python/nollm/grf/json_canonical.py | A:- | S:-
+test_grf_geometry_storage.py[TQ5T]: F:Tests grf geometry storage including negative cells use stable integer partitions | R:code:reference/python/tests/grf/grf_runtime_fixture.py,code:reference/python/nollm/grf/cell_address.py | A:- | S:-
+test_grf_import_hcg_like_capture.py[TQ5T]: F:Tests grf import hcg like capture including hcg like capture import preserves content and provenance refs | R:code:reference/python/nollm/grf/importers.py | A:- | S:-
+test_grf_import_oca_like_capture.py[TQ5T]: F:Tests grf import oca like capture including oca like capture import does not use message id as shard id | R:code:reference/python/nollm/grf/importers.py | A:- | S:-
+test_grf_larger_validation.py[TQ5T]: F:Tests grf larger validation including larger validation dataset counts and false friend families | R:code:reference/python/nollm/grf/validation_bench.py | A:- | S:-
+test_grf_ledger_append_only.py[TQ5T]: F:Tests grf ledger append only including duplicate same bytes idempotent and different bytes rejected | R:code:reference/python/tests/grf/grf_runtime_fixture.py,code:reference/python/nollm/grf/ledger.py | A:- | S:-
+test_grf_migration_boundary_no_legacy_imports.py[TQ5T]: F:Tests grf migration boundary no legacy imports including importers do not import legacy or runtime packages | R:code:reference/python/nollm/grf/importers.py | A:- | S:-
+test_grf_openclaw_bridge.py[TQ5T]: F:Tests grf openclaw bridge including openclaw bridge captures then applies explicit model decision | R:code:reference/python/nollm/grf/openclaw_bridge.py | A:- | S:-
+test_grf_placement_protocol.py[TQ5T]: F:Tests grf placement protocol including explicit new decision is accepted without semantic scoring | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/placement_protocol.py | A:- | S:-
+test_grf_recall_digest_replay.py[TQ5T]: F:Tests grf recall digest replay including replayed recall matches selected shards and path classes | R:code:reference/python/tests/grf/grf_runtime_fixture.py,code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_grf_rejected_stitch_replay.py[TQ5T]: F:Tests grf rejected stitch replay including rejected stitch survives reload as anti stitch evidence | R:code:reference/python/nollm/grf/fixed_point.py,code:reference/python/nollm/grf/replay.py | A:- | S:-
+test_grf_replay_relation_field.py[TQ5T]: F:Tests grf replay relation field including relation field rebuilds from files and ledger records | R:code:reference/python/tests/grf/grf_runtime_fixture.py,code:reference/python/nollm/grf/bridge_kernel.py | A:- | S:-
+test_grf_safe_path_encoding.py[TQ5T]: F:Tests grf safe path encoding including protocol id is hashed to path safe filename | R:code:reference/python/nollm/grf/path_encoding.py,code:reference/python/nollm/grf/storage.py | A:- | S:-
+test_grf_scale_validation_1000.py[TQ5T]: F:Tests grf scale validation 1000 including scale validation generator reaches 5000 and new false friends | R:code:reference/python/nollm/grf/scale_validation.py | A:- | S:-
+test_grf_source_window_storage.py[TQ5T]: F:Tests grf source window storage including source window persists protocol id with hash filename | R:code:reference/python/nollm/grf/source_window.py,code:reference/python/nollm/grf/storage.py | A:- | S:-
+test_grf_stable_serialization_roundtrip.py[TQ5T]: F:Tests grf stable serialization roundtrip including canonical json is stable and rejects float | R:code:reference/python/tests/grf/grf_runtime_fixture.py,code:reference/python/nollm/grf/json_canonical.py | A:- | S:-
+test_grf_storage_layout.py[TQ5T]: F:Tests grf storage layout including storage layout is created under workspace | R:code:reference/python/nollm/grf/storage.py | A:- | S:-
+test_local_patch_lifecycle.py[TQ5T]: F:Tests local patch lifecycle including patch rejects mixed profile or chart cells | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_minimal_admission_record.py[TQ5T]: F:Tests minimal admission record including minimal admission does not copy edges or confirm truth | R:code:reference/python/nollm/grf/admission.py,code:reference/python/nollm/grf/cell_address.py | A:- | S:-
+test_placement_evidence_fallback.py[TQ5T]: F:Tests placement evidence fallback including placement record requires source fallback and profile replay | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/placement.py | A:- | S:-
+test_profile_registry.py[TQ5T]: F:Tests profile registry including profile roles are explicit | R:code:reference/python/nollm/grf/profiles.py | A:- | S:-
+test_rejection_record.py[TQ5T]: F:Tests rejection record including rejection record keeps source fallback | R:code:reference/python/nollm/grf/placement.py | A:- | S:-
+test_relation_field_runtime.py[TQ5T]: F:Tests relation field runtime including relation field runtime uses template lookup without polygon or float | R:code:reference/python/nollm/grf/relation_field.py,code:reference/python/tests/grf/grf_runtime_fixture.py | A:- | S:-
+test_residual_semantics.py[TQ5T]: F:Tests residual semantics including normalization and approximation residuals are distinct | R:code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_runtime_no_float_exact_profile.py[TQ5T]: F:Tests runtime no float exact profile including exact profile runtime expands without float source | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_runtime_no_polygon.py[TQ5T]: F:Tests runtime no polygon including runtime source does not import or call polygon geometry | R:code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_sparse_activation.py[TQ5T]: F:Tests sparse activation including activation frontier merges and prunes deterministically | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_sparse_kernel_fanout.py[TQ5T]: F:Tests sparse kernel fanout including template and runtime fanout have hard bound | R:code:reference/python/nollm/grf/cell_address.py,code:reference/python/nollm/grf/coverage_template.py | A:- | S:-
+test_stitch_proposal_lifecycle.py[TQ5T]: F:Tests stitch proposal lifecycle including weak signals alone never accept | R:code:reference/python/nollm/grf/bridge_kernel.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+test_stitch_rejects_false_friend.py[TQ5T]: F:Tests stitch rejects false friend including false friend lexical hint is preserved as rejected anti stitch | R:code:reference/python/nollm/grf/fixed_point.py,code:reference/python/nollm/grf/stitching.py | A:- | S:-
+
+===/<repository>/reference/python/tests/m0/===
+test_active_basis_links_exist_and_are_unique.py[TQ5T]: F:Tests active basis links exist and are unique including active basis links exist and are unique | R:- | A:- | S:-
+test_active_governance_manifest_truth.py[TQ5T]: F:Tests active governance manifest truth including manifest classifies linked governance as active | R:- | A:- | S:-
+test_active_lab_entrypoints_import_cleanly.py[TQ5T]: F:Tests active lab entrypoints import cleanly including active lab entrypoints import cleanly | R:- | A:- | S:-
+test_active_lab_public_imports_resolve.py[TQ5T]: F:Tests active lab public imports resolve including active lab public imports resolve | R:- | A:- | S:-
+test_active_project_book_is_v34_and_role_correct.py[TQ5T]: F:Tests active project book is v34 and role correct including active project route is v313 and role correct | R:- | A:- | S:-
+test_agents_is_generic_concise_and_path_free.py[TQ5T]: F:Tests agents is generic concise and path free including agents is the canonical empty overlay | R:- | A:- | S:-
+test_distribution_composition.py[TQ5T]: F:Tests distribution composition including distribution manifests have finite schema | R:- | A:- | S:-
+test_lab_asset_taxonomy_truth.py[TQ5T]: F:Tests lab asset taxonomy truth including all lab assets have a valid class and gate coverage | R:- | A:- | S:-
+test_lab_public_core_boundary.py[TQ5T]: F:Tests lab public core boundary including lab imports no nollm core private submodules | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_legacy_project_books_are_not_active.py[TQ5T]: F:Tests legacy project books are not active including legacy project books are not active | R:- | A:- | S:-
+test_manifest_validation.py[TQ5S]: F:Tests manifest validation including rejects high file with forbidden import | R:- | A:- | S:-
+test_module_ports.py[TQ5S]: F:Tests module ports including snapshot create uses atomic state export | R:code:packages/nollm-core/src/nollm_core/__init__.py,code:packages/nollm-snapshot/src/nollm_snapshot/__init__.py | A:- | S:-
+test_package_imports.py[TQ5T]: F:Tests package imports including all m0 packages import from their src roots | R:- | A:- | S:-
+test_profile_metadata_ownership.py[TQ5T]: F:Tests profile metadata ownership including research profile metadata is lab owned | R:code:packages/nollm-core/src/nollm_core/__init__.py | A:- | S:-
+test_project_book_has_no_current_task_or_head.py[TQ5T]: F:Tests project book has no current task or head including project book has no current task or head | R:- | A:- | S:-
+test_real_ports.py[TQ5M]: F:Tests real ports including snapshot port round trips real grf workspace | R:code:reference/python/nollm/grf/__init__.py,code:reference/python/nollm/grf/fixed_point.py | A:- | S:-
+
+===/<repository>/tools/===
+check_active_tree_assets.py[XG5S]: F:Fail closed when archived or generated assets return to the active tree. | R:- | A:tracked_files,local_markdown_link_errors,validate,main | S:-
+check_module_boundaries.py[XG5M]: F:Report production and migration dependencies against M0C1 ownership rules. | R:- | A:Finding,tracked_files,module_name,python_imports | S:-
+generate_module_ownership_manifest.py[XG5L]: F:Generate or verify the evidence-based module ownership manifest. | R:- | A:Classification,tracked_files,module_name,imports_for | S:-
+validate_module_ownership_manifest.py[XG5M]: F:Validate ownership truthfulness and migration invariants. | R:code:tools/generate_module_ownership_manifest.py | A:package_exports,active_lab_contract_errors,resolve_import,validate_rows | S:-
+verify_v311r61_single_active_pipeline.py[XG5T]: F:Implements verify v311r61 single active pipeline through main | R:- | A:main | S:-

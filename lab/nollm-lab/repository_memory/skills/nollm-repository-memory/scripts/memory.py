@@ -11,6 +11,7 @@ TOOLS = {
     "records": "records.py",
     "route": "router.py",
     "field": "machine_field.py",
+    "coverage": "coverage_cli.py",
     "check-marks": "check_marks.py",
     "geometry": "geometry_cli.py",
     "geometry-native": "native_geo.py",
