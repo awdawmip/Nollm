@@ -1,0 +1,1430 @@
+{
+  "globally_distinct_directed_edges": {
+    "explored": {
+      "distinct_directed_edges": 311,
+      "forward_one_or_two_samples": 14,
+      "reverse_one_or_two_samples": 18,
+      "reverse_zero_samples": 0,
+      "unequal_forward_reverse_q16": 311
+    },
+    "winning": {
+      "distinct_directed_edges": 22,
+      "forward_one_or_two_samples": 0,
+      "reverse_one_or_two_samples": 0,
+      "reverse_zero_samples": 0,
+      "unequal_forward_reverse_q16": 22
+    }
+  },
+  "independent_frozen_boundary_control": {
+    "down_only": [
+      {
+        "direction": "coverage_down",
+        "ideal_source_share_ppm_bounds": [
+          4508,
+          4509
+        ],
+        "sampled_q16": 683,
+        "source": [
+          2,
+          0,
+          7
+        ],
+        "target": [
+          3,
+          5,
+          5
+        ]
+      },
+      {
+        "direction": "coverage_up",
+        "ideal_source_share_ppm_bounds": [
+          6375,
+          6376
+        ],
+        "sampled_q16": 0,
+        "source": [
+          3,
+          5,
+          5
+        ],
+        "target": [
+          2,
+          0,
+          7
+        ]
+      }
+    ],
+    "reopened_surface_witness": {
+      "coarse": [
+        2,
+        0,
+        2
+      ],
+      "fine": [
+        3,
+        2,
+        2
+      ],
+      "note": {
+        "blob": "0aa7267e2dd9e9358022fe441576405796238e73",
+        "commit": "691590dcc6009b59a9cf51dfe7a9e7a7516eca0b",
+        "finding": "Each higher Surface order groups the upward memberships computed for lower records.",
+        "lines": [
+          255,
+          275
+        ],
+        "path": "packages/nollm-core/src/nollm_core/surface.py"
+      },
+      "physical_recall_items": 0,
+      "state_bytes_unchanged_after_reopen_and_queries": true,
+      "surface_membership_q16": 683,
+      "surface_order": 1,
+      "surface_tile_count": 4,
+      "surface_total_mass_q16": 65536
+    },
+    "up_only": [
+      {
+        "direction": "coverage_down",
+        "ideal_source_share_ppm_bounds": [
+          6290,
+          6291
+        ],
+        "sampled_q16": 0,
+        "source": [
+          2,
+          0,
+          2
+        ],
+        "target": [
+          3,
+          2,
+          2
+        ]
+      },
+      {
+        "direction": "coverage_up",
+        "ideal_source_share_ppm_bounds": [
+          8895,
+          8896
+        ],
+        "sampled_q16": 683,
+        "source": [
+          3,
+          2,
+          2
+        ],
+        "target": [
+          2,
+          0,
+          2
+        ]
+      }
+    ]
+  },
+  "relevant_returned_files_by_best_path_length": {
+    "0": 7,
+    "2": 2
+  },
+  "semantics": "Raw physical candidates; semantic grades and token-limited displayed text are separate. Ranks beyond 10 use an offline replay increasing only max_results. Edge aggregates are unique directed edges per question, summed over questions. Equal-scoring intermediates compatible with Core's returned score and kernel tuple are all retained.",
+  "sessions": {
+    "Q01": {
+      "entry": [
+        0,
+        -1,
+        0
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 71,
+        "forward_one_or_two_samples": 2,
+        "reverse_one_or_two_samples": 5,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 71
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,-1,-1>0,-1,0": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "-1,-1,0>-2,-1,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,0,-1>-2,1,-2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "0,-1,0>-1,-1,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,-1,0>0,-1,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,-1,1>0,-2,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,-2,1>2,-1,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        30
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 2,
+          "required": "packages/nollm-access/src/nollm_access/dream.py",
+          "status": "in_native_top10"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 25,
+          "required": "packages/nollm-access/src/nollm_access/recall_lens.py",
+          "status": "below_result_cap"
+        }
+      ],
+      "missed_outside_two_step_support": 0,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 1,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 1,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/field_encounter.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/placement_contract.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py",
+        "packages/nollm-core/src/nollm_core/command.py",
+        "packages/nollm-core/src/nollm_core/junction.py",
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-core/src/nollm_core/state.py"
+      ],
+      "reachable_below_top10": 1,
+      "relevant_returned_files": 1,
+      "session": "r13",
+      "status": "physical_recall",
+      "two_step": 6,
+      "winning_cells": {
+        "0,-1,0": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        },
+        "0,-1,1": {
+          "compatible_routes": [
+            [
+              "0,-1,0>1,-1,1",
+              "1,-1,1>0,-1,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_down",
+            "coverage_up"
+          ],
+          "score_q16": 8761
+        },
+        "0,-2,1": {
+          "compatible_routes": [
+            [
+              "0,-1,0>-1,-1,0",
+              "-1,-1,0>0,-2,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 11946
+        }
+      },
+      "winning_edge_values": {
+        "-1,-1,0>0,-2,1": {
+          "hits": 30,
+          "kernel": "coverage_down",
+          "q16": 20480,
+          "reverse_hits": 45,
+          "reverse_q16": 30720
+        },
+        "0,-1,0>-1,-1,0": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        },
+        "0,-1,0>1,-1,1": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "1,-1,1>0,-1,1": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 4,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 4
+      },
+      "zero_step": 4
+    },
+    "Q02": {
+      "entry": [
+        0,
+        1,
+        0
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 71,
+        "forward_one_or_two_samples": 2,
+        "reverse_one_or_two_samples": 5,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 71
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,0,1>-2,-1,2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,1,0>-2,1,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,1,1>0,1,0": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "0,1,0>-1,1,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,1,-1>0,2,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,1,0>0,1,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,2,-1>2,1,-1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        30
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 4,
+          "required": "packages/nollm-core/src/nollm_core/state.py",
+          "status": "in_native_top10"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 9,
+          "required": "packages/nollm-core/src/nollm_core/workspace_owner.py",
+          "status": "in_native_top10"
+        }
+      ],
+      "missed_outside_two_step_support": 0,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 2,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 2,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-access/src/nollm_access/workspace_lock.py",
+        "packages/nollm-core/src/nollm_core/atom.py",
+        "packages/nollm-core/src/nollm_core/storage.py",
+        "packages/nollm-core/src/nollm_core/validation.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-core/src/nollm_core/state.py",
+        "packages/nollm-access/src/nollm_access/workspace_lock.py",
+        "packages/nollm-core/src/nollm_core/atom.py",
+        "packages/nollm-core/src/nollm_core/storage.py",
+        "packages/nollm-core/src/nollm_core/validation.py",
+        "packages/nollm-core/src/nollm_core/workspace_owner.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-core/src/nollm_core/state.py",
+        "packages/nollm-access/src/nollm_access/workspace_lock.py",
+        "packages/nollm-core/src/nollm_core/atom.py",
+        "packages/nollm-core/src/nollm_core/storage.py",
+        "packages/nollm-core/src/nollm_core/validation.py",
+        "packages/nollm-core/src/nollm_core/workspace_owner.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py",
+        "packages/nollm-core/src/nollm_core/command.py",
+        "packages/nollm-core/src/nollm_core/junction.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-access/src/nollm_access/handle_store.py",
+        "packages/nollm-access/src/nollm_access/recall.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/field_encounter.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/placement_contract.py"
+      ],
+      "reachable_below_top10": 0,
+      "relevant_returned_files": 2,
+      "session": "r08",
+      "status": "physical_recall",
+      "two_step": 6,
+      "winning_cells": {
+        "0,1,-1": {
+          "compatible_routes": [
+            [
+              "0,1,0>1,1,-1",
+              "1,1,-1>0,1,-1"
+            ]
+          ],
+          "kernels": [
+            "coverage_down",
+            "coverage_up"
+          ],
+          "score_q16": 8761
+        },
+        "0,1,0": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        },
+        "0,2,-1": {
+          "compatible_routes": [
+            [
+              "0,1,0>-1,1,0",
+              "-1,1,0>0,2,-1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 11946
+        }
+      },
+      "winning_edge_values": {
+        "-1,1,0>0,2,-1": {
+          "hits": 30,
+          "kernel": "coverage_down",
+          "q16": 20480,
+          "reverse_hits": 45,
+          "reverse_q16": 30720
+        },
+        "0,1,0>-1,1,0": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        },
+        "0,1,0>1,1,-1": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "1,1,-1>0,1,-1": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 4,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 4
+      },
+      "zero_step": 4
+    },
+    "Q03": {
+      "entry": [
+        0,
+        0,
+        -1
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 71,
+        "forward_one_or_two_samples": 2,
+        "reverse_one_or_two_samples": 5,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 71
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,0,-1>-2,1,-2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,1,-1>-2,2,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,1,-2>0,0,-1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "0,0,-1>-1,1,-2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,-1,-1>2,-1,0": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "1,-1,0>0,-1,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,0,-1>0,1,-2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        30
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 5,
+          "required": "packages/nollm-access/src/nollm_access/placement_contract.py",
+          "status": "in_native_top10"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 2,
+          "required": "packages/nollm-access/src/nollm_access/field_encounter.py",
+          "status": "in_native_top10"
+        }
+      ],
+      "missed_outside_two_step_support": 0,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 2,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 2,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/field_encounter.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/placement_contract.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/field_encounter.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/placement_contract.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py",
+        "packages/nollm-core/src/nollm_core/command.py",
+        "packages/nollm-core/src/nollm_core/junction.py",
+        "packages/nollm-access/src/nollm_access/runtime.py",
+        "packages/nollm-access/src/nollm_access/write_policy.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-core/src/nollm_core/state.py"
+      ],
+      "reachable_below_top10": 0,
+      "relevant_returned_files": 2,
+      "session": "r03",
+      "status": "physical_recall",
+      "two_step": 5,
+      "winning_cells": {
+        "0,-1,0": {
+          "compatible_routes": [
+            [
+              "0,0,-1>1,-1,0",
+              "1,-1,0>0,-1,0"
+            ]
+          ],
+          "kernels": [
+            "coverage_down",
+            "coverage_up"
+          ],
+          "score_q16": 8761
+        },
+        "0,0,-1": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        },
+        "0,1,-1": {
+          "compatible_routes": [
+            [
+              "0,0,-1>1,0,-1",
+              "1,0,-1>0,1,-1"
+            ]
+          ],
+          "kernels": [
+            "coverage_down",
+            "coverage_up"
+          ],
+          "score_q16": 8454
+        }
+      },
+      "winning_edge_values": {
+        "0,0,-1>1,-1,0": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "0,0,-1>1,0,-1": {
+          "hits": 41,
+          "kernel": "coverage_down",
+          "q16": 27989,
+          "reverse_hits": 56,
+          "reverse_q16": 38229
+        },
+        "1,-1,0>0,-1,0": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        },
+        "1,0,-1>0,1,-1": {
+          "hits": 29,
+          "kernel": "coverage_up",
+          "q16": 19797,
+          "reverse_hits": 22,
+          "reverse_q16": 15019
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 4,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 4
+      },
+      "zero_step": 5
+    },
+    "Q04": {
+      "entry": [
+        0,
+        -2,
+        1
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 69,
+        "forward_one_or_two_samples": 4,
+        "reverse_one_or_two_samples": 3,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 69
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,-1,0>-2,-1,-1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,-2,1>0,-1,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "0,-2,1>1,-1,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "1,-1,1>0,-2,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,-2,1>2,-1,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "1,-3,2>2,-4,3": {
+          "hits": 1,
+          "kernel": "coverage_down",
+          "q16": 683,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        29
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": null,
+          "required": "packages/nollm-access/src/nollm_access/memory_loop.py",
+          "status": "outside_two_step_support"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 8,
+          "required": "packages/nollm-access/src/nollm_access/provenance.py",
+          "status": "in_native_top10"
+        }
+      ],
+      "missed_outside_two_step_support": 1,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 1,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 1,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-access/src/nollm_access/evidence_anchor.py",
+        "packages/nollm-access/src/nollm_access/evidence_store.py",
+        "packages/nollm-access/src/nollm_access/statement.py",
+        "packages/nollm-access/src/nollm_access/statement_store.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py"
+      ],
+      "reachable_below_top10": 0,
+      "relevant_returned_files": 1,
+      "session": "r16",
+      "status": "physical_recall",
+      "two_step": 6,
+      "winning_cells": {
+        "0,-1,0": {
+          "compatible_routes": [
+            [
+              "0,-2,1>-1,-1,0",
+              "-1,-1,0>0,-1,0"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 13119
+        },
+        "0,-1,1": {
+          "compatible_routes": [
+            [
+              "0,-2,1>-1,-1,0",
+              "-1,-1,0>0,-1,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 7040
+        },
+        "0,-2,1": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        }
+      },
+      "winning_edge_values": {
+        "-1,-1,0>0,-1,0": {
+          "hits": 41,
+          "kernel": "coverage_down",
+          "q16": 27989,
+          "reverse_hits": 56,
+          "reverse_q16": 38229
+        },
+        "-1,-1,0>0,-1,1": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "0,-2,1>-1,-1,0": {
+          "hits": 45,
+          "kernel": "coverage_up",
+          "q16": 30720,
+          "reverse_hits": 30,
+          "reverse_q16": 20480
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 3,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 3
+      },
+      "zero_step": 4
+    },
+    "Q05": {
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 71,
+        "forward_one_or_two_samples": 2,
+        "reverse_one_or_two_samples": 5,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 71
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,-1,1>-2,-2,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,-1,2>0,0,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "-1,0,1>-2,-1,2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "0,0,1>-1,-1,2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,0,1>0,-1,2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,1,0>0,1,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,1,1>2,1,0": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        30
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 2,
+          "required": "packages/nollm-core/src/nollm_core/bridge.py",
+          "status": "in_native_top10"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 5,
+          "required": "packages/nollm-core/src/nollm_core/recall.py",
+          "status": "in_native_top10"
+        }
+      ],
+      "missed_outside_two_step_support": 0,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 2,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 2,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-access/src/nollm_access/handle_store.py",
+        "packages/nollm-access/src/nollm_access/recall.py",
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-access/src/nollm_access/handle_store.py",
+        "packages/nollm-access/src/nollm_access/recall.py",
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-access/src/nollm_access/handle_store.py",
+        "packages/nollm-access/src/nollm_access/recall.py",
+        "packages/nollm-core/src/nollm_core/__init__.py",
+        "packages/nollm-core/src/nollm_core/handle.py",
+        "packages/nollm-core/src/nollm_core/ports.py",
+        "packages/nollm-core/src/nollm_core/state.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-core/src/nollm_core/axial.py",
+        "packages/nollm-core/src/nollm_core/compiled_templates.py",
+        "packages/nollm-core/src/nollm_core/geometry.py",
+        "packages/nollm-core/src/nollm_core/profiles.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py",
+        "packages/nollm-access/src/nollm_access/cartography.py",
+        "packages/nollm-access/src/nollm_access/dream.py",
+        "packages/nollm-access/src/nollm_access/formation.py",
+        "packages/nollm-access/src/nollm_access/provenance.py",
+        "packages/nollm-access/src/nollm_access/__init__.py",
+        "packages/nollm-access/src/nollm_access/field_encounter.py",
+        "packages/nollm-access/src/nollm_access/locality.py",
+        "packages/nollm-access/src/nollm_access/memory_loop.py",
+        "packages/nollm-access/src/nollm_access/placement_contract.py",
+        "packages/nollm-access/src/nollm_access/recall_lens.py",
+        "packages/nollm-core/src/nollm_core/command.py",
+        "packages/nollm-core/src/nollm_core/junction.py"
+      ],
+      "reachable_below_top10": 0,
+      "relevant_returned_files": 2,
+      "session": "r11",
+      "status": "physical_recall",
+      "two_step": 5,
+      "winning_cells": {
+        "0,0,1": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        },
+        "0,1,0": {
+          "compatible_routes": [
+            [
+              "0,0,1>1,1,0",
+              "1,1,0>0,1,0"
+            ]
+          ],
+          "kernels": [
+            "coverage_down",
+            "coverage_up"
+          ],
+          "score_q16": 8761
+        },
+        "0,1,1": {
+          "compatible_routes": [
+            [
+              "0,0,1>-1,0,1",
+              "-1,0,1>0,1,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 11946
+        }
+      },
+      "winning_edge_values": {
+        "-1,0,1>0,1,1": {
+          "hits": 30,
+          "kernel": "coverage_down",
+          "q16": 20480,
+          "reverse_hits": 45,
+          "reverse_q16": 30720
+        },
+        "0,0,1>-1,0,1": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        },
+        "0,0,1>1,1,0": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "1,1,0>0,1,0": {
+          "hits": 56,
+          "kernel": "coverage_up",
+          "q16": 38229,
+          "reverse_hits": 41,
+          "reverse_q16": 27989
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 4,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 4
+      },
+      "zero_step": 5
+    },
+    "Q06": {
+      "entry": [
+        0,
+        -1,
+        2
+      ],
+      "explored_edges": {
+        "distinct_directed_edges": 69,
+        "forward_one_or_two_samples": 4,
+        "reverse_one_or_two_samples": 3,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 69
+      },
+      "explored_small_or_one_way_edges": {
+        "-1,-1,1>-2,-2,1": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "-1,-1,2>0,0,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "0,-1,2>1,0,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "1,-1,2>2,0,1": {
+          "hits": 2,
+          "kernel": "coverage_down",
+          "q16": 1365,
+          "reverse_hits": 4,
+          "reverse_q16": 2731
+        },
+        "1,-1,3>2,-1,4": {
+          "hits": 1,
+          "kernel": "coverage_down",
+          "q16": 683,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        },
+        "1,0,1>0,-1,2": {
+          "hits": 4,
+          "kernel": "coverage_up",
+          "q16": 2731,
+          "reverse_hits": 2,
+          "reverse_q16": 1365
+        }
+      },
+      "frontier_widths_before_visited_filter": [
+        8,
+        29
+      ],
+      "gold_groups": [
+        {
+          "alternatives": [],
+          "best_uncapped_rank": 3,
+          "required": "packages/nollm-core/src/nollm_core/geometry.py",
+          "status": "in_native_top10"
+        },
+        {
+          "alternatives": [],
+          "best_uncapped_rank": null,
+          "required": "packages/nollm-access/src/nollm_access/write_policy.py",
+          "status": "outside_two_step_support"
+        }
+      ],
+      "missed_outside_two_step_support": 1,
+      "native_precision_denominator": 10,
+      "native_precision_numerator": 1,
+      "native_recall_denominator": 2,
+      "native_recall_numerator": 1,
+      "one_step": 0,
+      "other_returned_files": [
+        "packages/nollm-core/src/nollm_core/axial.py",
+        "packages/nollm-core/src/nollm_core/compiled_templates.py",
+        "packages/nollm-core/src/nollm_core/profiles.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py"
+      ],
+      "ranked_native_top10": [
+        "packages/nollm-core/src/nollm_core/axial.py",
+        "packages/nollm-core/src/nollm_core/compiled_templates.py",
+        "packages/nollm-core/src/nollm_core/geometry.py",
+        "packages/nollm-core/src/nollm_core/profiles.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py"
+      ],
+      "ranked_reachable_before_top10": [
+        "packages/nollm-core/src/nollm_core/axial.py",
+        "packages/nollm-core/src/nollm_core/compiled_templates.py",
+        "packages/nollm-core/src/nollm_core/geometry.py",
+        "packages/nollm-core/src/nollm_core/profiles.py",
+        "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+        "packages/nollm-core/src/nollm_core/coverage_contract.py",
+        "packages/nollm-core/src/nollm_core/fixed_point.py",
+        "packages/nollm-core/src/nollm_core/physical_coverage.py",
+        "packages/nollm-core/src/nollm_core/surface.py",
+        "packages/nollm-access/src/nollm_access/surface_navigation.py",
+        "packages/nollm-core/src/nollm_core/bridge.py",
+        "packages/nollm-core/src/nollm_core/coverage_template.py",
+        "packages/nollm-core/src/nollm_core/kernel_registry.py",
+        "packages/nollm-core/src/nollm_core/recall.py",
+        "packages/nollm-access/src/nollm_access/surface_selection.py"
+      ],
+      "reachable_below_top10": 0,
+      "relevant_returned_files": 1,
+      "session": "r06",
+      "status": "physical_recall",
+      "two_step": 6,
+      "winning_cells": {
+        "0,-1,1": {
+          "compatible_routes": [
+            [
+              "0,-1,2>-1,-1,1",
+              "-1,-1,1>0,-1,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 13119
+        },
+        "0,-1,2": {
+          "compatible_routes": [
+            []
+          ],
+          "kernels": [],
+          "score_q16": 65536
+        },
+        "0,0,1": {
+          "compatible_routes": [
+            [
+              "0,-1,2>-1,-1,1",
+              "-1,-1,1>0,0,1"
+            ]
+          ],
+          "kernels": [
+            "coverage_up",
+            "coverage_down"
+          ],
+          "score_q16": 7040
+        }
+      },
+      "winning_edge_values": {
+        "-1,-1,1>0,-1,1": {
+          "hits": 41,
+          "kernel": "coverage_down",
+          "q16": 27989,
+          "reverse_hits": 56,
+          "reverse_q16": 38229
+        },
+        "-1,-1,1>0,0,1": {
+          "hits": 22,
+          "kernel": "coverage_down",
+          "q16": 15019,
+          "reverse_hits": 29,
+          "reverse_q16": 19797
+        },
+        "0,-1,2>-1,-1,1": {
+          "hits": 45,
+          "kernel": "coverage_up",
+          "q16": 30720,
+          "reverse_hits": 30,
+          "reverse_q16": 20480
+        }
+      },
+      "winning_edges": {
+        "distinct_directed_edges": 3,
+        "forward_one_or_two_samples": 0,
+        "reverse_one_or_two_samples": 0,
+        "reverse_zero_samples": 0,
+        "unequal_forward_reverse_q16": 3
+      },
+      "zero_step": 4
+    }
+  },
+  "summary": {
+    "explored_edges_distinct_directed_edges": 422,
+    "explored_edges_forward_one_or_two_samples": 16,
+    "explored_edges_reverse_one_or_two_samples": 26,
+    "explored_edges_reverse_zero_samples": 0,
+    "explored_edges_unequal_forward_reverse_q16": 422,
+    "missed_outside_two_step_support": 2,
+    "native_precision_denominator": 60,
+    "native_precision_numerator": 9,
+    "native_recall_denominator": 12,
+    "native_recall_numerator": 9,
+    "one_step": 0,
+    "reachable_below_top10": 1,
+    "sessions_with_recall": 6,
+    "two_step": 34,
+    "winning_edges_distinct_directed_edges": 22,
+    "winning_edges_forward_one_or_two_samples": 0,
+    "winning_edges_reverse_one_or_two_samples": 0,
+    "winning_edges_reverse_zero_samples": 0,
+    "winning_edges_unequal_forward_reverse_q16": 22,
+    "zero_step": 26
+  }
+}

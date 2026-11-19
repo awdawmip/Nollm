@@ -1,0 +1,315 @@
+{
+  "revision": "691590dcc6009b59a9cf51dfe7a9e7a7516eca0b",
+  "questions": [
+    {
+      "id": "Q01",
+      "question": "Design a regression test for the two paths that turn a Dream draft into a statement: ordinary Dream Formation and Dream Sculptor plan validation. Run each path twice with only the draft text edited. What should the test assert about the statement ID in each path, and which inputs explain the difference?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/dream.py",
+          "line_anchors": [
+            {
+              "start": 9,
+              "end": 11
+            },
+            {
+              "start": 129,
+              "end": 147
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/recall_lens.py",
+          "line_anchors": [
+            {
+              "start": 12,
+              "end": 13
+            },
+            {
+              "start": 139,
+              "end": 146
+            },
+            {
+              "start": 166,
+              "end": 172
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "For ordinary Dream Formation, assert different statement IDs for different draft text with the other inputs held fixed."
+        },
+        {
+          "id": "A2",
+          "accept": "The ordinary ID uses a dream:-prefixed SHA-256 of the schema version, result ID, draft ID and statement content. Accept equivalent pseudocode or a description identifying all four inputs."
+        },
+        {
+          "id": "A3",
+          "accept": "For the Dream Sculptor plan, assert equal IDs across the content-only edit. Its dream:-prefixed SHA-256 uses the sculptor schema version, request ID and draft ID. Accept equivalent pseudocode or description."
+        }
+      ],
+      "contradiction_rules": [
+        "Treat a claim that both identifiers hash draft content, or that both use the same upstream request/result identifier, as contradicting the corresponding atom. No executable test harness or actual hash values required."
+      ]
+    },
+    {
+      "id": "Q02",
+      "question": "In one Python process a service opens a Core workspace, then tries to open the same workspace through a directory symlink. What prevents both instances from becoming mutable owners? If a later startup fails while reading malformed state, why can the service repair the file and retry in that process?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-core/src/nollm_core/state.py",
+          "line_anchors": [
+            {
+              "start": 92,
+              "end": 115
+            },
+            {
+              "start": 118,
+              "end": 125
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-core/src/nollm_core/workspace_owner.py",
+          "line_anchors": [
+            {
+              "start": 6,
+              "end": 24
+            },
+            {
+              "start": 26,
+              "end": 28
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "Both path spellings resolve to the same canonical Core state-file identity (core/current_state.json), which the runtime claims when opening."
+        },
+        {
+          "id": "A2",
+          "accept": "The process-local guarded owner table records a weak reference for the identity and rejects another live owner with RuntimeError. Equivalent language identifying a live-owner check and local synchronized registry suffices."
+        },
+        {
+          "id": "A3",
+          "accept": "On a state-load exception the initializer marks that failed instance closed and explicitly releases its claim before propagating the error. Hence repairing and retrying after that failed open can acquire ownership, assuming no other live owner."
+        }
+      ],
+      "contradiction_rules": [
+        "An OS advisory/file lock, on-disk lockfile or distinct claims for the symlink and real path is inconsistent with the implementation. Garbage collection alone is insufficient to explain the explicit failed-load path."
+      ]
+    },
+    {
+      "id": "Q03",
+      "question": "A client is parsing a wire response that confirms a provisional Field Encounter revision. Which fields belong in the wire response, how is it bound to a particular proposal, and what happens if an otherwise valid confirmation for a different proposal is supplied to an eligible, unexpired commit?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/placement_contract.py",
+          "line_anchors": [
+            {
+              "start": 14,
+              "end": 21
+            },
+            {
+              "start": 114,
+              "end": 131
+            },
+            {
+              "start": 140,
+              "end": 145
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/field_encounter.py",
+          "line_anchors": [
+            {
+              "start": 605,
+              "end": 640
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "The wire mapping has exactly schema_version, outcome and relation. Confirmation uses the revision-confirmation schema with confirm_revision paired with same_subject_same_slot_supersedes. Accept reference to the schema constant in place of its literal."
+        },
+        {
+          "id": "A2",
+          "accept": "The wire parser receives the provisional ID separately from its caller and inserts it into the typed confirmation."
+        },
+        {
+          "id": "A3",
+          "accept": "The commit checks that the confirmation ID matches the terminal effect’s provisional revision (and that it is confirmed). On a mismatched ID it returns not_committed with revision_not_confirmed before applying a write."
+        }
+      ],
+      "contradiction_rules": [
+        "Giving the serialized full envelope with provisional_id as an accepted wire shape, or saying a valid confirm_revision for any proposal authorizes commit, contradicts the relevant atom. Assume all unrelated terminal bindings are valid."
+      ]
+    },
+    {
+      "id": "Q04",
+      "question": "An adapter passes the complete mapping from the memory loop’s statement provenance lookup directly into the provenance record parser. Will it round-trip for both supported schema versions? How should the adapter use the returned checksum to verify and reconstruct the record?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-access/src/nollm_access/memory_loop.py",
+          "line_anchors": [
+            {
+              "start": 1846,
+              "end": 1848
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/provenance.py",
+          "line_anchors": [
+            {
+              "start": 26,
+              "end": 32
+            },
+            {
+              "start": 205,
+              "end": 237
+            },
+            {
+              "start": 240,
+              "end": 274
+            },
+            {
+              "start": 337,
+              "end": 347
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "The lookup returns the provenance record fields plus provenance_sha256 computed from the record."
+        },
+        {
+          "id": "A2",
+          "accept": "Direct parsing fails for both v1 and v2 because both versions require an exact field set and provenance_sha256 is extra. Keep the checksum separately and parse the remaining mapping under its original schema."
+        },
+        {
+          "id": "A3",
+          "accept": "Compare the supplied checksum against the reconstructed record’s digest(), i.e. SHA-256 of the canonical provenance mapping without the checksum. Calling digest() suffices; a manual equivalent must use sorted compact literal-Unicode UTF-8 JSON plus a trailing newline."
+        }
+      ],
+      "contradiction_rules": [
+        "Comparing with content_sha256, hashing an envelope that contains its own checksum, or dropping the original schema version contradicts the corresponding atom."
+      ]
+    },
+    {
+      "id": "Q05",
+      "question": "A bridge has three distinct destination cells and max_fanout of two. A caller supplies the destinations in a preferred order that differs from their canonical order. What happens at construction, and, once the input is corrected, which two destinations can bridge-only recall follow? Can recall traverse this same bridge backwards from a destination that is outside its source anchor?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-core/src/nollm_core/bridge.py",
+          "line_anchors": [
+            {
+              "start": 13,
+              "end": 26
+            },
+            {
+              "start": 47,
+              "end": 61
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-core/src/nollm_core/recall.py",
+          "line_anchors": [
+            {
+              "start": 121,
+              "end": 138
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "Constructing the destination GeometryAnchor with noncanonical input raises ValueError; it requires unique cells already ordered by their stable keys. The constructor does not silently reorder them."
+        },
+        {
+          "id": "A2",
+          "accept": "Given an eligible bridge step from a source cell, recall selects the first two destination cells in ascending stable-key order, slicing by max_fanout."
+        },
+        {
+          "id": "A3",
+          "accept": "Bridge traversal is directed: the current cell must be in from_anchor, so the same bridge supplies no reverse step from a destination outside the source."
+        }
+      ],
+      "contradiction_rules": [
+        "Caller priority, nearest-distance selection, reverse traversal or automatic constructor sorting contradict the respective atoms. Assume the bridge step budgets permit traversal; no unrelated kernel or other bridge is in scope."
+      ]
+    },
+    {
+      "id": "Q06",
+      "question": "A client constructs a default-profile address at layer zero with q = r = 2**29, the default chart and no phase. It then validates that address for an active semantic write. What result should it expect at each step, and which coordinate calculation and bounds explain the difference?",
+      "required_sources": [
+        {
+          "path": "packages/nollm-core/src/nollm_core/geometry.py",
+          "line_anchors": [
+            {
+              "start": 18,
+              "end": 31
+            }
+          ],
+          "alternative_paths": []
+        },
+        {
+          "path": "packages/nollm-access/src/nollm_access/write_policy.py",
+          "line_anchors": [
+            {
+              "start": 8,
+              "end": 10
+            },
+            {
+              "start": 13,
+              "end": 23
+            },
+            {
+              "start": 28,
+              "end": 56
+            }
+          ],
+          "alternative_paths": []
+        }
+      ],
+      "mandatory_atoms": [
+        {
+          "id": "A1",
+          "accept": "The radius is max(abs(q), abs(r), abs(q+r)) = 2**30. Equivalent cube-coordinate arithmetic is acceptable."
+        },
+        {
+          "id": "A2",
+          "accept": "Core address construction succeeds because this default-profile radius is within its inclusive limit of 2**31 - 1, with the supplied layer, chart and phase valid."
+        },
+        {
+          "id": "A3",
+          "accept": "The active semantic write policy rejects the address because its inclusive radius limit is 2**30 - 1. Identifying the hex-radius policy failure suffices, optionally by naming ActiveSemanticWritePolicyError."
+        }
+      ],
+      "contradiction_rules": [
+        "Testing only q and r separately, applying the Core ceiling to the write validator, or claiming construction fails contradicts the relevant atom."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3197 @@
+{
+  "schema": "nollm-fair-observations-v1",
+  "source_revision": "691590dcc6009b59a9cf51dfe7a9e7a7516eca0b",
+  "gateway_sha256": "9680e18e7188d4afa840e90d9a6c77b8f08eb4508af98f7f95f96533a5e4bdb2",
+  "field_sha256": {
+    "layout.json": "df38f0f703d619101c50e2ea7a7793e19ba2e9424a5d940e5d302f3891134479",
+    "core/current_state.json": "0655d0e5e190e33dd2b5f1abb74d275cb8f0b5aeefbeab14b141bf6e3a990bb6"
+  },
+  "questions": {
+    "Q01": "Design a regression test for the two paths that turn a Dream draft into a statement: ordinary Dream Formation and Dream Sculptor plan validation. Run each path twice with only the draft text edited. What should the test assert about the statement ID in each path, and which inputs explain the difference?",
+    "Q02": "In one Python process a service opens a Core workspace, then tries to open the same workspace through a directory symlink. What prevents both instances from becoming mutable owners? If a later startup fails while reading malformed state, why can the service repair the file and retry in that process?",
+    "Q03": "A client is parsing a wire response that confirms a provisional Field Encounter revision. Which fields belong in the wire response, how is it bound to a particular proposal, and what happens if an otherwise valid confirmation for a different proposal is supplied to an eligible, unexpired commit?",
+    "Q04": "An adapter passes the complete mapping from the memory loop’s statement provenance lookup directly into the provenance record parser. Will it round-trip for both supported schema versions? How should the adapter use the returned checksum to verify and reconstruct the record?",
+    "Q05": "A bridge has three distinct destination cells and max_fanout of two. A caller supplies the destinations in a preferred order that differs from their canonical order. What happens at construction, and, once the input is corrected, which two destinations can bridge-only recall follow? Can recall traverse this same bridge backwards from a destination that is outside its source anchor?",
+    "Q06": "A client constructs a default-profile address at layer zero with q = r = 2**29, the default chart and no phase. It then validates that address for an active semantic write. What result should it expect at each step, and which coordinate calculation and bounds explain the difference?"
+  },
+  "sessions": [
+    {
+      "session": "r01",
+      "question": "Q01",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "31a8a50907792b538d4a65692e2d344a6d826eeebfc5fa3cb0e22e90dc9d923e",
+          "tokens": 199,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "Dream Formation|Dream Sculptor"
+          ],
+          "visible_sha256": "186d089fce35b1f680ba1f9b73740a6d2cf328449f2ac34dd7341ff9bea6354d",
+          "tokens": 154,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "90",
+            "235"
+          ],
+          "visible_sha256": "c9135a756ed4ad77222ce25ab55a045b58a902d3cf5f17ed7fb5076bdce8e18e",
+          "tokens": 930,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "95",
+            "225"
+          ],
+          "visible_sha256": "9d895ab4934798af35b3964ceba5ec51d2edecdf96cdde9bda69528b5d3cf944",
+          "tokens": 2221,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "Run each function twice with one valid draft, changing only content_utf8 from 'blue' to 'gold'. Keep request_id, result_id, draft_id and all other inputs fixed. Assert that both second-run statements contain 'gold'. For form_dream_statements, assert the two statement IDs differ. Its ID is 'dream:' plus the SHA-256 hex digest of the UTF-8 encoding of DREAM_SCHEMA_VERSION, result_id, draft_id and content_utf8 joined with NULs. For validate_dream_sculptor_plans, compare the statements on the returned plans and assert their IDs are equal. It applies the same encoding, delimiter, hash and prefix to just DREAM_SCULPTOR_SCHEMA_VERSION, request_id and draft_id. The edited text is stored separately.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/dream.py",
+            "lines": [
+              [
+                129,
+                147
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "lines": [
+              [
+                139,
+                146
+              ],
+              [
+                166,
+                175
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r02",
+      "question": "Q02",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "5ed22f258e5ba84ae307aa0875768bcc1fc7a4d3f52b5bff4eff6e0f15769706",
+          "tokens": 197,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat",
+            "1"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "3"
+          ],
+          "visible_sha256": "38738497672134aef446e5589a96588bb99f6a21e7e002e8fac6205db5b4193e",
+          "tokens": 1110,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "4"
+          ],
+          "visible_sha256": "032f882ed965cfafeb5868b4605e0d072e5bbf4a539ac29528a7583b72cc917d",
+          "tokens": 1176,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/workspace_owner.py"
+          ],
+          "visible_sha256": "3dea740c9f2870d14790a4f37009e998b36f13418ba987ea49f9806b33195571",
+          "tokens": 354,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "claim|workspace_owner|release|def close|_load"
+          ],
+          "visible_sha256": "2fead5f1589f2cc2236c32dc1e3364874c0b6b9b497145001f1784114d1f931c",
+          "tokens": 31,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "86",
+            "144"
+          ],
+          "visible_sha256": "b3c0e0dd6b5fe111680d08bea094778f69efa5effcff475aa3963e5bc834b94f",
+          "tokens": 661,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/tests/test_core_workspace_single_owner_lifecycle.py"
+          ],
+          "visible_sha256": "934d93ac8092ced9b1ab66e8dd802ecb82f464a933db8e0a498e43558aaf6a77",
+          "tokens": 13,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "CoreRuntime resolves the workspace and claims core/current_state.json before reading it. The claim key is the resolved state-file path, case-normalized on Windows, so the real directory and symlink share a key. A process-local RLock guards the check and insertion of an owner weak reference. While the first owner is live, the second claim raises RuntimeError. Normal close releases the claim. If a later constructor claims the key but reading or decoding malformed state raises, its exception handler marks that runtime CLOSED, releases its claim and re-raises. Release checks owner identity. The service can repair the file and reopen it immediately in the same process, without waiting for garbage collection.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/state.py",
+            "lines": [
+              [
+                92,
+                106
+              ],
+              [
+                111,
+                114
+              ],
+              [
+                118,
+                125
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/workspace_owner.py",
+            "lines": [
+              [
+                6,
+                24
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r03",
+      "question": "Q03",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "97b244d9bc03a924d60d12ac61f83d8061807151dba1608cea0c396c7d6db325",
+          "tokens": 195,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "fb4c1c89619149e028325374089768cf7c460dd2782e279235f8677f9c31f53d",
+          "tokens": 953,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "72439670a6afdfdfd9cd555d7963681f3ed602081a79ede16dfeb2e9cd45ef19",
+          "tokens": 870,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:92d55d6be18384d59f79"
+          ],
+          "visible_sha256": "179216497a12c68fbd25fc1a9d97652f3eb1f9251214b3bb93dbe61c18e2c935",
+          "tokens": 408,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:92d55d6be18384d59f79"
+            ],
+            "surface_calls": 4
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:583d5c40094437836eb2"
+          ],
+          "visible_sha256": "f052f7737f14a0f36386c48812ab76a43a2667d2aabbedb917d8b7e37bbd973c",
+          "tokens": 107,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:92d55d6be18384d59f79",
+              "surface:583d5c40094437836eb2"
+            ],
+            "surface_calls": 5
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:cee0b9f8e264f384af5b"
+          ],
+          "visible_sha256": "ced252d8d6b6734c1d9545d0995e157d3ca34d2dd230babaa5f657e26d806996",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:92d55d6be18384d59f79",
+              "surface:583d5c40094437836eb2",
+              "physical-entry:cee0b9f8e264f384af5b"
+            ],
+            "surface_calls": 6,
+            "entry": [
+              0,
+              0,
+              -1
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "474985c905b6624a0c3209cf8711f7d0c98e843bf64c44889f8fbd498378e1bd",
+          "tokens": 1403,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "confirmation|fingerprint|from_dict|to_dict|proposal"
+          ],
+          "visible_sha256": "428bb8cad7d259ea5e26b52eba458690ed425a90ab2370636276b2aa053f52d1",
+          "tokens": 78,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "1",
+            "158"
+          ],
+          "visible_sha256": "db25a00aa65c1036595527707278937d7e9212534ac03a13a5cbfa60af7ed335",
+          "tokens": 1986,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "confirm|provisional|expire|commit"
+          ],
+          "visible_sha256": "325384065f6c47341d48f1c268ef85ff1f3df56fdc0d2e6cc73a382bf3443631",
+          "tokens": 268,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "570",
+            "708"
+          ],
+          "visible_sha256": "34deccca0d252c9f954cbeae3bc9f0664fcfaeae6b613827970f110834b85328",
+          "tokens": 1400,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "340",
+            "397"
+          ],
+          "visible_sha256": "ee37045647eed812444c5e3f0f7ba489a719353087feaf445644660d3523bf59",
+          "tokens": 580,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": "c6b177fed2c9ab969de18b7575948b452ed066a97650be8743ed555a80adab44",
+      "submission": {
+        "answer": "The wire object has exactly three keys. Set schema_version to nollm_openclaw_revision_confirmation_v1. For approval, use outcome=confirm_revision and relation=same_subject_same_slot_supersedes. The other valid pairs are reject_revision/different_subject_or_non_superseding and defer/uncertain. The client passes the proposal’s provisional_id separately to from_wire_mapping, which attaches it to the result. Including the ID on the wire fails validation. The ID is revision: followed by the SHA-256 hex digest of compact, key-sorted UTF-8 JSON covering candidate_id, existing_handle, statement_id, current_statement_id, proposed_content_utf8 and current_content_utf8. For an otherwise valid commit, a confirmation bound to a different ID returns commit_state=not_committed and error_type=revision_not_confirmed before any write. The handle is null, core_write_count is 0 and reopen_verified is false.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "lines": [
+              [
+                15,
+                21
+              ],
+              [
+                65,
+                77
+              ],
+              [
+                114,
+                131
+              ],
+              [
+                134,
+                152
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "lines": [
+              [
+                367,
+                374
+              ],
+              [
+                605,
+                641
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r04",
+      "question": "Q04",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "e3a996cce189de464a2027c795635c97501702edede06878358b548f58eae0b7",
+          "tokens": 187,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "get_statement_provenance|lookup_statement_provenance|class ProvenanceRecord"
+          ],
+          "visible_sha256": "5333a821f46f850fdb675bbacce8ee6f61df96aaa3546b74bf3f1747243ddfa5",
+          "tokens": 6,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "search",
+            "provenance"
+          ],
+          "visible_sha256": "92f9bb64438e25bfa5a7f4759b2dfb6e2eb9641d96e7bdb0ead6751db715eb6a",
+          "tokens": 330,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "provenance|checksum"
+          ],
+          "visible_sha256": "40843eb8b2e0a0accb3148c8fad197a72c15c8d4c81b3356b4fb96fa713dab1c",
+          "tokens": 177,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "1898",
+            "1930"
+          ],
+          "visible_sha256": "037c2a2334fb55349d5a2e7fd81472a396181ca73bff3f0ae2d6dbd1e953d620",
+          "tokens": 367,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "1830",
+            "1854"
+          ],
+          "visible_sha256": "36a37c2ac547d238db7f13062e6a870cc343aaa2187b3c570d4bf3c5bebdc8e6",
+          "tokens": 268,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "90",
+            "282"
+          ],
+          "visible_sha256": "490cb96f00411e6391a9e2e18e759f0401784326a3a1e9177141fb572db894de",
+          "tokens": 2149,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "1",
+            "38"
+          ],
+          "visible_sha256": "7ff2e05df7470232045a7202140b6ab8fc66b61ed53e951e8ea0dd54102d6cea",
+          "tokens": 396,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "283",
+            "324"
+          ],
+          "visible_sha256": "55711c32e1b5136ef6318d4e0396debdf00d5e2616eaf337729fd35b2de47fd9",
+          "tokens": 426,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "No. statement_provenance() adds provenance_sha256 to the stored record’s mapping. StatementProvenance.from_mapping() raises ValueError on that extra key in both v1 and v2 because it requires the exact fields for the declared schema. Copy the response into a dict, save expected = payload.pop('provenance_sha256'), then reconstruct record = StatementProvenance.from_mapping(payload). Preserve content_sha256 and every schema field, including the four v2-only fields when present. Accept the record only if record.digest() == expected. That method hashes the canonical record mapping with SHA-256 and returns the hex digest. The bytes are compact, sorted-key JSON with ensure_ascii=False, encoded as UTF-8 with a trailing newline. The checksum itself is excluded from those bytes.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "lines": [
+              [
+                1846,
+                1848
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/provenance.py",
+            "lines": [
+              [
+                14,
+                15
+              ],
+              [
+                26,
+                32
+              ],
+              [
+                205,
+                237
+              ],
+              [
+                240,
+                274
+              ],
+              [
+                285,
+                306
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r05",
+      "question": "Q05",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "600ecb09445afbc3270926774de0b4d6f8b4c0006a9fbb43f6a749eedbb7ff03",
+          "tokens": 211,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "2"
+          ],
+          "visible_sha256": "86e2972353421a85d1d1062dba383f30e211746bec1746e397549058ef5696aa",
+          "tokens": 1257,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "3"
+          ],
+          "visible_sha256": "38738497672134aef446e5589a96588bb99f6a21e7e002e8fac6205db5b4193e",
+          "tokens": 1110,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/bridge.py"
+          ],
+          "visible_sha256": "ac8b3be81a00dfab4f5b31978f9b3fbab2b77a444ce8bb4715ed9497f12ed986",
+          "tokens": 1169,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/recall.py",
+            "from_anchor|to_anchor|max_fanout"
+          ],
+          "visible_sha256": "ccb5ae2ea984132b1e53062b600fbadccc149355e3f3c267e5f32c8c6f8cd436",
+          "tokens": 24,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/recall.py",
+            "110",
+            "151"
+          ],
+          "visible_sha256": "d2aca311d84f8718d9f44bac236b0c72c0e1cea5720f9eac06c3bbf9f3ab572c",
+          "tokens": 615,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/geometry.py"
+          ],
+          "visible_sha256": "c98e8662560c028c8f65da328a480832ac9d21f2e0e0e99a6c8622754056e037",
+          "tokens": 849,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py",
+              "packages/nollm-core/src/nollm_core/geometry.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "Constructing the destination GeometryAnchor raises ValueError(\"anchor cells must use canonical stable_key order\"). Supply all three cells in ascending stable_key order (profile_id, chart_id, layer, q, r, then phase with None treated as an empty string). With a bridge step available, recall from a source-anchor cell can follow the first and second destinations in that order. max_fanout=2 excludes the third. A destination outside the source anchor cannot traverse this bridge backwards because traversal checks membership in from_anchor.cells.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/bridge.py",
+            "lines": [
+              [
+                21,
+                26
+              ],
+              [
+                58,
+                61
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/geometry.py",
+            "lines": [
+              [
+                33,
+                34
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/recall.py",
+            "lines": [
+              [
+                132,
+                138
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r06",
+      "question": "Q06",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "3010dfe6eb1569a14fbac3e4353c2c3950802fb40aded7a2803b55698d0e9363",
+          "tokens": 198,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:d3c10defeaffb031cbf1"
+          ],
+          "visible_sha256": "9edfe7957e2c57effb5e74c6f228178f72d7df68c683b2bdfe0a3e21fa531119",
+          "tokens": 238,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:d3c10defeaffb031cbf1"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:bff410c952094434f668"
+          ],
+          "visible_sha256": "a48f8c5f6f34beb3649c4cf5b91bf7dee9c778829520bf3bd6fc873a2982bbb8",
+          "tokens": 104,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:d3c10defeaffb031cbf1",
+              "surface:bff410c952094434f668"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "recall",
+            "physical-entry:2c00871ba19dad285b82"
+          ],
+          "visible_sha256": "586c452ef7b65ec17506b8242fbb540c64692cc53d0c8dced721dfd35be07e30",
+          "tokens": 9,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:2c00871ba19dad285b82"
+          ],
+          "visible_sha256": "d2e9be24483288cb13c81ad0e87392a52596c0efb597f1796d659e72feb12fcc",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:d3c10defeaffb031cbf1",
+              "surface:bff410c952094434f668",
+              "physical-entry:2c00871ba19dad285b82"
+            ],
+            "surface_calls": 4,
+            "entry": [
+              0,
+              -1,
+              2
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "a4b6e7f57226535bd958ab3b270002ee1079f4ec27f9fa516c4dfd363d230e61",
+          "tokens": 1363,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/geometry.py",
+            "1",
+            "145"
+          ],
+          "visible_sha256": "c98e8662560c028c8f65da328a480832ac9d21f2e0e0e99a6c8622754056e037",
+          "tokens": 849,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/kernel_registry.py",
+            "semantic|active|radius|validate_address"
+          ],
+          "visible_sha256": "f9a820a88133bb08b133465ace197ec8c78fa4c8087b75ba65000fb77013c503",
+          "tokens": 12,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/profiles.py",
+            "1",
+            "150"
+          ],
+          "visible_sha256": "493cbedfd800c40db52e8fd62ec7284093e4e8301f9e0a9a17eb00277623e253",
+          "tokens": 1217,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/profiles.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+            "semantic|bound|radius|validat|MAX_|1 << 30|active"
+          ],
+          "visible_sha256": "4d5ffbc6ec8dc8325014ee203de189f13a06e39cf83e7af7bd33df218446d735",
+          "tokens": 86,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/profiles.py",
+              "packages/nollm-core/src/nollm_core/approximate_coverage.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+            "1",
+            "127"
+          ],
+          "visible_sha256": "2c95458a2134bc909616b7a2e9b05053bbdb198fdda96842e2c905f220672b39",
+          "tokens": 1635,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/profiles.py",
+              "packages/nollm-core/src/nollm_core/approximate_coverage.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+            "226",
+            "248"
+          ],
+          "visible_sha256": "a474d6fed3390f24c0e810e52e47cdabccd56c8ae6bf4069a26320bad465856e",
+          "tokens": 336,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/profiles.py",
+              "packages/nollm-core/src/nollm_core/approximate_coverage.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": "3a248c982166e3e6e1aba9151bef11f4954f934727d8b9477ad50f6afde0ac55",
+      "submission": {
+        "answer": "Construction succeeds for default_dream_v1. The default chart, null phase and layer 0 satisfy its checks, including the inclusive layer range [-64, 64]. The third cube coordinate is s = -(q + r) = -2^30, so max(|q|, |r|, |s|) is 2^30, within the constructor’s inclusive radius limit of 2^31 - 1. The inspected sources give insufficient evidence for the active semantic write’s bound or validation result.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/geometry.py",
+            "lines": [
+              [
+                18,
+                31
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r07",
+      "question": "Q01",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "31a8a50907792b538d4a65692e2d344a6d826eeebfc5fa3cb0e22e90dc9d923e",
+          "tokens": 199,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat",
+            "1"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "2"
+          ],
+          "visible_sha256": "86e2972353421a85d1d1062dba383f30e211746bec1746e397549058ef5696aa",
+          "tokens": 1257,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "statement_id|statement_from|sha256|^def "
+          ],
+          "visible_sha256": "9f5070769730371ae179c284cab9d962e219d6f22bcfce9763ce6ae758c5f129",
+          "tokens": 32,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "statement_id|statement_from|sha256|^def "
+          ],
+          "visible_sha256": "e8ffc988df2a9591413fa40582336202fac0b18a89355c81b81b8553a0446e47",
+          "tokens": 44,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "35",
+            "196"
+          ],
+          "visible_sha256": "ab4d5bdfe2058b715a167fc9626771265f388489d1684350c5362ce3b52e69ca",
+          "tokens": 1721,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "109",
+            "241"
+          ],
+          "visible_sha256": "d5f88bba583417d5c73e219efcd10a92c81442b7d97bcaeb16c2b95f26308f42",
+          "tokens": 2146,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "1",
+            "13"
+          ],
+          "visible_sha256": "7868a6da8ebf65c297fff0a1ecf497db1cd911ed054398501f79d711d6ab84cc",
+          "tokens": 137,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "1",
+            "18"
+          ],
+          "visible_sha256": "abc1f4eb1a1aa8a7eba5c6b330bebe08f289cff42559c6ebb1eca40ef1aac1aa",
+          "tokens": 224,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/recall_lens.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "Run form_dream_statements twice with a valid single-draft emit result, then run validate_dream_sculptor_plans twice with a valid single-plan fixture. Within each pair, change only content_utf8 from 'first' to 'edited'. Assert that each returned statement contains its supplied text. Assert different statement IDs for Formation and equal statement IDs for Sculptor, comparing the two runs within each path. Both IDs use the prefix dream: followed by the SHA-256 hex digest of NUL-separated fields encoded as UTF-8. Formation hashes DREAM_SCHEMA_VERSION, result.result_id, draft.draft_id and draft.content_utf8 in that order. Sculptor hashes DREAM_SCULPTOR_SCHEMA_VERSION, request_id and draft_id. It passes the edited text to MemoryStatement separately, so the same request and draft retain their ID.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/dream.py",
+            "lines": [
+              [
+                129,
+                147
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/recall_lens.py",
+            "lines": [
+              [
+                119,
+                128
+              ],
+              [
+                139,
+                147
+              ],
+              [
+                166,
+                175
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r08",
+      "question": "Q02",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "5ed22f258e5ba84ae307aa0875768bcc1fc7a4d3f52b5bff4eff6e0f15769706",
+          "tokens": 197,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "fb4c1c89619149e028325374089768cf7c460dd2782e279235f8677f9c31f53d",
+          "tokens": 953,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "72439670a6afdfdfd9cd555d7963681f3ed602081a79ede16dfeb2e9cd45ef19",
+          "tokens": 870,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "b82e2e0144bb6cc4e28306bc3dfc15be3033e9ce547477b4d8d107670752761c",
+          "tokens": 897,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "next"
+            ],
+            "surface_calls": 4
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:89f02aa475e4a0064d27"
+          ],
+          "visible_sha256": "f700c26c6d116065fa2c7cf4ab14090b12c28388f6550208f1872fa7ab2ef7d4",
+          "tokens": 412,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "next",
+              "surface:89f02aa475e4a0064d27"
+            ],
+            "surface_calls": 5
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:51b505ac629d424e7d41"
+          ],
+          "visible_sha256": "56f251037c8d4e959a965a8d6f15c2d0b8644089ae05ed25399655e6fc279bbc",
+          "tokens": 110,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "next",
+              "surface:89f02aa475e4a0064d27",
+              "surface:51b505ac629d424e7d41"
+            ],
+            "surface_calls": 6
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:13c8a0d96eb946ae7629"
+          ],
+          "visible_sha256": "777f3967b1d755d4d938b05473fe5044af260b2be70c65720b7f462808fe2728",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "next",
+              "surface:89f02aa475e4a0064d27",
+              "surface:51b505ac629d424e7d41",
+              "physical-entry:13c8a0d96eb946ae7629"
+            ],
+            "surface_calls": 7,
+            "entry": [
+              0,
+              1,
+              0
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "00d1d4806d74961a3fa7c57ada3fc17311c79fb43a1bed5af8491e2bcf91f53c",
+          "tokens": 1131,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/workspace_owner.py"
+          ],
+          "visible_sha256": "3dea740c9f2870d14790a4f37009e998b36f13418ba987ea49f9806b33195571",
+          "tokens": 354,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "workspace_owner|claim|release|read_state|except|def close|def __init__"
+          ],
+          "visible_sha256": "ac99a679f074035867aca044a097b4c27d8ff4842d1c21ecae1aeb7805a815e2",
+          "tokens": 55,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "85",
+            "130"
+          ],
+          "visible_sha256": "452daf1228cbed8eb248473aa0acec2a7a19f34bf1647d1fcfa038601747cf52",
+          "tokens": 573,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/tests/test_core_workspace_single_owner_lifecycle.py"
+          ],
+          "visible_sha256": "934d93ac8092ced9b1ab66e8dd802ecb82f464a933db8e0a498e43558aaf6a77",
+          "tokens": 13,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "def _decode_state_bytes|json.loads"
+          ],
+          "visible_sha256": "68c6870deb4134584feb47465a097c2e23375fd133492bd72ada9ae6e43922e0",
+          "tokens": 22,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "502",
+            "515"
+          ],
+          "visible_sha256": "0588cb4905729cc66b3df6f35890cdf6b8973e4ec66df116cbe922a47bec7edd",
+          "tokens": 194,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": "1a1eb5e114a7ff4de7a89a7deb40bba4c0edaca69de40342fee4b6ec85529fb0",
+      "submission": {
+        "answer": "CoreRuntime resolves the workspace and claims core/current_state.json before reading it. The claim uses the resolved state-file path, case-normalized on Windows, so the symlink and its target share a key. Under a process-wide RLock, the registry checks the weak reference for that key. A live owner makes the second constructor raise RuntimeError before it can load or mutate state. Closing the first runtime releases its claim. If a later constructor claims the key but reading or decoding malformed state raises, its exception handler marks it CLOSED, releases its own claim and re-raises. Release checks owner identity. The service can therefore repair the file and retry immediately in the same process without waiting for garbage collection.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/state.py",
+            "lines": [
+              [
+                92,
+                114
+              ],
+              [
+                118,
+                125
+              ],
+              [
+                502,
+                512
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/workspace_owner.py",
+            "lines": [
+              [
+                6,
+                28
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r09",
+      "question": "Q03",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "97b244d9bc03a924d60d12ac61f83d8061807151dba1608cea0c396c7d6db325",
+          "tokens": 195,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "FieldEncounter|Field Encounter"
+          ],
+          "visible_sha256": "556ea229a7b1f8ec503236dbf27dc713722b6aef97eb9e21e1a9d1871ff9aa52",
+          "tokens": 119,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "confirm|commit|proposal|provisional|receipt|wire"
+          ],
+          "visible_sha256": "afb73a4cffa445636f91dc801f09172c54267486da2a54b934f45ad42a0c72b2",
+          "tokens": 250,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "551",
+            "705"
+          ],
+          "visible_sha256": "f2e859a38cd82af5ce0821847a0f62226e4efc1e68b616f3c9f8ab5239f2f5ae",
+          "tokens": 1521,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "930",
+            "979"
+          ],
+          "visible_sha256": "d57c4dadda302430e8f0c8f974f083b79743cf7ffd3e8e65d28da1ccd29dd3f5",
+          "tokens": 550,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "RevisionConfirmation|revision_confirmation"
+          ],
+          "visible_sha256": "9438def088e284c797e364c89c2f0848dcb01710e9a9f1de8ff3ea71e37ee36c",
+          "tokens": 255,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "1",
+            "175"
+          ],
+          "visible_sha256": "55c84f86e82481b2ed1874d5e72eef107ed388bd443c06135e25996d6ae112bc",
+          "tokens": 2265,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/field_encounter.py",
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "367",
+            "379"
+          ],
+          "visible_sha256": "29d95f5c9c1c58315ad262cd71d48419709ce2d6c10390626064f81b8c4f01a2",
+          "tokens": 132,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/field_encounter.py",
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "The wire object has exactly three fields. For approval they are `schema_version` = `nollm_openclaw_revision_confirmation_v1`, `outcome` = `confirm_revision`, and `relation` = `same_subject_same_slot_supersedes`. The other valid pairs are `reject_revision` with `different_subject_or_non_superseding`, and `defer` with `uncertain`. The client supplies the proposal's nonempty `provisional_id` separately to `from_wire_mapping`. Including it on the wire raises ValueError. The resulting confirmation carries that ID in its full mapping. The proposal ID is `revision:` plus the SHA-256 hex digest of sorted, compact UTF-8 JSON covering the candidate ID, current and proposed statement IDs and contents, and existing handle mapping. On an otherwise valid, eligible, unexpired commit, the confirmation ID must equal the terminal proposal ID. A different ID returns `not_committed` with error `revision_not_confirmed`, the request's operation and statement IDs, no handle, zero core writes, and `reopen_verified=false`, before applying any write.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "lines": [
+              [
+                15,
+                21
+              ],
+              [
+                65,
+                78
+              ],
+              [
+                114,
+                153
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "lines": [
+              [
+                367,
+                374
+              ],
+              [
+                605,
+                641
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r10",
+      "question": "Q04",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "e3a996cce189de464a2027c795635c97501702edede06878358b548f58eae0b7",
+          "tokens": 187,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "2"
+          ],
+          "visible_sha256": "86e2972353421a85d1d1062dba383f30e211746bec1746e397549058ef5696aa",
+          "tokens": 1257,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "def .*provenance|checksum"
+          ],
+          "visible_sha256": "b85f34a6027d9174877e9616b63a45f6e9471e6d7df296712d11db3b7bf7af13",
+          "tokens": 22,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "1",
+            "230"
+          ],
+          "visible_sha256": "0d6e74380bc792bda206213aa597c636098c329ad4beb08ede36f369ee65aeb8",
+          "tokens": 2688,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "1844",
+            "1863"
+          ],
+          "visible_sha256": "13def66ab6b1421a4a3c456d6ffdd6f027fb24edee49efb4a5e1466f99df7fc0",
+          "tokens": 249,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "231",
+            "326"
+          ],
+          "visible_sha256": "a27a17fc319607e9cc37b41baa18761ec1a2c1a44e9fc9d4dd20c0c0ab170951",
+          "tokens": 892,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/memory_loop.py",
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "No. The lookup adds provenance_sha256 to the stored record’s mapping. StatementProvenance.from_mapping requires exactly the v1 keys or exactly those keys plus origin_kinds, derived_from_statement_ids, evaluation_id and continuation_pass for v2. The extra checksum raises ValueError in both versions. Copy the lookup result to a dict, save expected = payload.pop('provenance_sha256'), and reconstruct record = StatementProvenance.from_mapping(payload). Keep schema_version and content_sha256 in the payload. Accept the record only if record.digest() == expected. digest() hashes the record mapping serialized as sorted-key, compact JSON with ensure_ascii=False, encoded in UTF-8 with one trailing newline, and returns the SHA-256 hex digest.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "lines": [
+              [
+                1846,
+                1848
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/provenance.py",
+            "lines": [
+              [
+                14,
+                15
+              ],
+              [
+                26,
+                32
+              ],
+              [
+                205,
+                237
+              ],
+              [
+                239,
+                274
+              ],
+              [
+                285,
+                307
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r11",
+      "question": "Q05",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "600ecb09445afbc3270926774de0b4d6f8b4c0006a9fbb43f6a749eedbb7ff03",
+          "tokens": 211,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "fb4c1c89619149e028325374089768cf7c460dd2782e279235f8677f9c31f53d",
+          "tokens": 953,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "next"
+          ],
+          "visible_sha256": "72439670a6afdfdfd9cd555d7963681f3ed602081a79ede16dfeb2e9cd45ef19",
+          "tokens": 870,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:9e385cb7edf59479dbb9"
+          ],
+          "visible_sha256": "fcaef38ff51eebb560f08365be3055d83c40c19bb3e4c2acdae50e9d24cd6a2d",
+          "tokens": 650,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:9e385cb7edf59479dbb9"
+            ],
+            "surface_calls": 4
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:408577fe2aefda6a2f1e"
+          ],
+          "visible_sha256": "c91c126fe169b091cb303f1380d46ceaea1aee763d0496c86e62ef08bedefbb3",
+          "tokens": 106,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:9e385cb7edf59479dbb9",
+              "surface:408577fe2aefda6a2f1e"
+            ],
+            "surface_calls": 5
+          }
+        },
+        {
+          "argv": [
+            "recall",
+            "physical-entry:b75c7158cbde54f1d6c2"
+          ],
+          "visible_sha256": "586c452ef7b65ec17506b8242fbb540c64692cc53d0c8dced721dfd35be07e30",
+          "tokens": 9,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "status"
+          ],
+          "visible_sha256": "f93576e3dda07032c9e81bdf8225cd696a66c906235cd2631c705f41952a795e",
+          "tokens": 39,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:b75c7158cbde54f1d6c2"
+          ],
+          "visible_sha256": "8f855d55aa0bc267ba6202aae51e78e9dc21a4a2332445229e0d1d68644320e6",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "next",
+              "next",
+              "surface:9e385cb7edf59479dbb9",
+              "surface:408577fe2aefda6a2f1e",
+              "physical-entry:b75c7158cbde54f1d6c2"
+            ],
+            "surface_calls": 6,
+            "entry": [
+              0,
+              0,
+              1
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "a0938c393bdd81d830496a86a0b0215f7310f8099dc7124a98c701bb6a44d3ce",
+          "tokens": 1419,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/bridge.py"
+          ],
+          "visible_sha256": "ac8b3be81a00dfab4f5b31978f9b3fbab2b77a444ce8bb4715ed9497f12ed986",
+          "tokens": 1169,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/recall.py",
+            "bridge|fanout|from_anchor|to_anchor"
+          ],
+          "visible_sha256": "e7958714bdf3e8416d9926658b3a402e800459f05137ad1a8189c240390a09ec",
+          "tokens": 78,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/recall.py",
+            "85",
+            "147"
+          ],
+          "visible_sha256": "6e2c6b6b6e5d305cedae2ffd0af766eaf75785072c565fbce56f1736d0bc10d1",
+          "tokens": 1026,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/geometry.py"
+          ],
+          "visible_sha256": "f9a820a88133bb08b133465ace197ec8c78fa4c8087b75ba65000fb77013c503",
+          "tokens": 12,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        }
+      ],
+      "native_sha256": "ec8d3beaffeab25a9df4c8f8b63f97d305cc082c1714eb4791b0ddacaff05e6f",
+      "submission": {
+        "answer": "Constructing the destination GeometryAnchor raises ValueError because its cells must already be in ascending stable_key order. Once the caller supplies that order, a permitted bridge step from a source cell can follow the two destinations with the smallest stable_key values. The third is outside max_fanout. Recall cannot traverse this bridge backwards from a destination outside the source anchor because expansion requires the current cell to belong to from_anchor.cells.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/bridge.py",
+            "lines": [
+              [
+                18,
+                26
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/recall.py",
+            "lines": [
+              [
+                132,
+                138
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r12",
+      "question": "Q06",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "3010dfe6eb1569a14fbac3e4353c2c3950802fb40aded7a2803b55698d0e9363",
+          "tokens": 198,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "active.semantic.write|validate.*address|default.profile",
+            "1"
+          ],
+          "visible_sha256": "5824d1594650478b2fdb3a971e38c1b849d86eba47a49e76044315509c2363ec",
+          "tokens": 263,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "search",
+            "class .*Address|def .*cube",
+            "1"
+          ],
+          "visible_sha256": "865da4568a7e5613a1b9f2baa990a39a3051b7a5e208f9f4592c8d5a9945c707",
+          "tokens": 57,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/write_policy.py",
+            "1",
+            "110"
+          ],
+          "visible_sha256": "ffe0274208707ac692619afb0d53db5a07b0ac0fdfb7aa2931e38f0896f3e73f",
+          "tokens": 719,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/write_policy.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/geometry.py",
+            "1",
+            "140"
+          ],
+          "visible_sha256": "c98e8662560c028c8f65da328a480832ac9d21f2e0e0e99a6c8622754056e037",
+          "tokens": 849,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/write_policy.py",
+              "packages/nollm-core/src/nollm_core/geometry.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "GeometryAddress construction succeeds. The default chart, absent phase and layer 0 satisfy the default profile, whose layer range is [-64, 64]. The hex radius is max(abs(q), abs(r), abs(q+r)). Here q+r = 2**30, so the radius is 1,073,741,824, within the inclusive construction bound of 2**31 - 1. Active semantic write validation accepts the profile, chart, layer and phase, then raises ActiveSemanticWritePolicyError for hex_radius. The inclusive write limit is 2**30 - 1 (1,073,741,823), one below the required radius.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/geometry.py",
+            "lines": [
+              [
+                18,
+                31
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/write_policy.py",
+            "lines": [
+              [
+                8,
+                9
+              ],
+              [
+                28,
+                56
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r13",
+      "question": "Q01",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "31a8a50907792b538d4a65692e2d344a6d826eeebfc5fa3cb0e22e90dc9d923e",
+          "tokens": 199,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "a3df25db37b86520a705"
+          ],
+          "visible_sha256": "762451127f36a06dae225a354ae3285b03bc57f847d247183f2762654e12d72a",
+          "tokens": 10,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:a3df25db37b86520a705"
+          ],
+          "visible_sha256": "b21ca1354ba19b06eab7e60cd68f6772e055e3c04fac30a9c63d2f490dbeb62d",
+          "tokens": 240,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:a3df25db37b86520a705"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:1c087529330d8262ae7f"
+          ],
+          "visible_sha256": "57a3af5b5e4cd95401dee7ae58385edb917d7972622819df29859e1f77bcef99",
+          "tokens": 104,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:a3df25db37b86520a705",
+              "surface:1c087529330d8262ae7f"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "recall",
+            "physical-entry:ce79deee3272bec866e0"
+          ],
+          "visible_sha256": "586c452ef7b65ec17506b8242fbb540c64692cc53d0c8dced721dfd35be07e30",
+          "tokens": 9,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:ce79deee3272bec866e0"
+          ],
+          "visible_sha256": "fd130323dba30d1dbae89e2a65ce7efba94d0a8499357393c1df79a980c7feef",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:a3df25db37b86520a705",
+              "surface:1c087529330d8262ae7f",
+              "physical-entry:ce79deee3272bec866e0"
+            ],
+            "surface_calls": 4,
+            "entry": [
+              0,
+              -1,
+              0
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "bdfc61357aec0ee522bf1f7262881244cc085586aef3d9a5404294406106b224",
+          "tokens": 1309,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "statement_id|sculpt|hash|^def "
+          ],
+          "visible_sha256": "997df27a6ea4daa5442f9277c61854387483b7f48a1bdd842383afcb97ce2883",
+          "tokens": 29,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/dream.py",
+            "1",
+            "200"
+          ],
+          "visible_sha256": "7b8290fcc89fbee5c30089faa04b4ed40dcb18562140c80303fbbd8f536b8075",
+          "tokens": 2097,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/dream_sculptor.py",
+            "statement_id|MemoryStatement\\(|def validate|sha256|from \\."
+          ],
+          "visible_sha256": "934d93ac8092ced9b1ab66e8dd802ecb82f464a933db8e0a498e43558aaf6a77",
+          "tokens": 13,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/dream_sculptor_plan.py",
+            "statement_id|MemoryStatement\\(|def validate|sha256|from \\."
+          ],
+          "visible_sha256": "934d93ac8092ced9b1ab66e8dd802ecb82f464a933db8e0a498e43558aaf6a77",
+          "tokens": 13,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/__init__.py",
+            "[Ss]culptor"
+          ],
+          "visible_sha256": "f9a820a88133bb08b133465ace197ec8c78fa4c8087b75ba65000fb77013c503",
+          "tokens": 12,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/formation.py",
+            "[Ss]culpt|[Dd]ream|statement_id|sha256"
+          ],
+          "visible_sha256": "4c9a077284f44c0c6177845cf04a483b6a191bb5a37167abde8b951a19fbc26c",
+          "tokens": 44,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/formation.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/formation.py",
+            "212",
+            "254"
+          ],
+          "visible_sha256": "94fcb9338c82a12aad4394bddacc4f41a7a244cf1e675ed5eb900e240ccdfc6f",
+          "tokens": 555,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/formation.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/statement.py",
+            "[Ss]culpt|[Dd]ream|[Pp]lan"
+          ],
+          "visible_sha256": "fa4948880f53ec9aa409456d82ab48b85b08119a5d26d3193d32ef492ce6d681",
+          "tokens": 19,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/dream.py",
+              "packages/nollm-access/src/nollm_access/formation.py",
+              "packages/nollm-access/src/nollm_access/statement.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": "32ea6500217625931a458f6fc1cb339cf96d337f14571a3cc0fd91a24b65fa84",
+      "submission": {
+        "answer": "Call form_dream_statements twice with the same request and a one-draft emit result. Preserve result_id, draft_id and hints, changing only content_utf8 from 'first' to 'second'. Assert that each returned statement contains its corresponding text and that the two statement IDs differ. Each ID is 'dream:' plus the SHA-256 hex digest of the UTF-8 encoding of four NUL-separated fields in order: DREAM_SCHEMA_VERSION, result_id, draft_id and content_utf8. For Sculptor, use the same plan-validation fixture twice with the same text edit. The available source does not establish which inputs Sculptor uses for identity, so I cannot substantiate its expected ID assertion.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/dream.py",
+            "lines": [
+              [
+                73,
+                86
+              ],
+              [
+                120,
+                126
+              ],
+              [
+                129,
+                147
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r14",
+      "question": "Q02",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "5ed22f258e5ba84ae307aa0875768bcc1fc7a4d3f52b5bff4eff6e0f15769706",
+          "tokens": 197,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "mutable owner|workspace lock|workspace_lock|realpath|already open|exclusive owner"
+          ],
+          "visible_sha256": "e977d560b944efa410b0e652b534e7008351b47bdefc3d70a15b7a31e5e65778",
+          "tokens": 134,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/workspace_owner.py"
+          ],
+          "visible_sha256": "3dea740c9f2870d14790a4f37009e998b36f13418ba987ea49f9806b33195571",
+          "tokens": 354,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "workspace_owner|_owner_key|claim_workspace|release_workspace"
+          ],
+          "visible_sha256": "b27e2ef79e7aaf7fd3c0adae20f3b131d575c0000032dd6f1ed5f1b88ec4cb80",
+          "tokens": 62,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "40",
+            "155"
+          ],
+          "visible_sha256": "03eda4c65d853b8faafe21ab24493c06b43e4e875b383a70afa15855c85c7dfe",
+          "tokens": 1225,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/workspace_owner.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "CoreRuntime resolves the workspace and claims core/current_state.json before reading or creating state. The claim key is the resolved state-file path, case-normalized on Windows, so the directory symlink yields the same key. A process-local RLock guards the weak-reference registry's check and insertion. If the first owner is live, the second claim raises RuntimeError. Normal close releases the claim. If a later constructor claims the path and reading or decoding malformed state raises, it marks itself CLOSED, releases its own claim, and re-raises. Repairing the file and opening it again can therefore succeed immediately in the same process, without waiting for garbage collection.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/state.py",
+            "lines": [
+              [
+                92,
+                114
+              ],
+              [
+                118,
+                125
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/workspace_owner.py",
+            "lines": [
+              [
+                6,
+                28
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r15",
+      "question": "Q03",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "97b244d9bc03a924d60d12ac61f83d8061807151dba1608cea0c396c7d6db325",
+          "tokens": 195,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "confirm|digest|fingerprint|schema|proposal|wire"
+          ],
+          "visible_sha256": "0ecc4b13e2d4e238ff57e8377c7c5868d2e20f53b6ae5ea7a823ae505af5563b",
+          "tokens": 102,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "1",
+            "176"
+          ],
+          "visible_sha256": "3bb76d588c1d25e76249bacd89ec448789652c9addabe82114ef6475742d5406",
+          "tokens": 2276,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "confirmation|commit|expired|provisional_id"
+          ],
+          "visible_sha256": "b125de3e6fd4287c436a1bd7ae97c58eae3cf5a4da17f4163e8b9cac6a055444",
+          "tokens": 202,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "570",
+            "685"
+          ],
+          "visible_sha256": "17c1be95e9c88392c5c4793009eca936582b6e129e6e50fe918d4e29d20a0d4d",
+          "tokens": 1172,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "357",
+            "390"
+          ],
+          "visible_sha256": "90dd7fb96092c9570341749a91541aff894a14e88d9050422c29b96a3e5e3d56",
+          "tokens": 350,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/placement_contract.py",
+              "packages/nollm-access/src/nollm_access/field_encounter.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "An affirmative wire response is exactly {\"schema_version\":\"nollm_openclaw_revision_confirmation_v1\",\"outcome\":\"confirm_revision\",\"relation\":\"same_subject_same_slot_supersedes\"}. Extra keys, including provisional_id, are invalid. The other valid outcome/relation pairs are reject_revision/different_subject_or_non_superseding and defer/uncertain. The caller passes the proposal's provisional_id separately to from_wire_mapping, which attaches it to the result. The ID is revision: followed by the SHA-256 hex digest of compact, sorted-key UTF-8 JSON containing the candidate ID, existing handle mapping, and both statement IDs and contents. On an otherwise eligible, unexpired, correctly bound commit, a confirmation carrying a different provisional_id returns commit_state=not_committed and error_type=revision_not_confirmed before any write, with handle=null, core_write_count=0 and reopen_verified=false.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/placement_contract.py",
+            "lines": [
+              [
+                15,
+                21
+              ],
+              [
+                65,
+                77
+              ],
+              [
+                114,
+                131
+              ],
+              [
+                133,
+                153
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/field_encounter.py",
+            "lines": [
+              [
+                367,
+                374
+              ],
+              [
+                605,
+                640
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r16",
+      "question": "Q04",
+      "arm": "surface",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "e3a996cce189de464a2027c795635c97501702edede06878358b548f58eae0b7",
+          "tokens": 187,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "surface"
+          ],
+          "visible_sha256": "0da81c0706ce71f982800ffccf7f870b372b7ab472f8a33e04423be75caceaa6",
+          "tokens": 943,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [],
+            "surface_calls": 1
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:c355ddfec18c0b5b7179"
+          ],
+          "visible_sha256": "962df0d725022b34a25229716905337d931f8544db71c0da21bbce39e13464a8",
+          "tokens": 480,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:c355ddfec18c0b5b7179"
+            ],
+            "surface_calls": 2
+          }
+        },
+        {
+          "argv": [
+            "surface",
+            "surface:b45ba7caf7a09f40ff71"
+          ],
+          "visible_sha256": "ace793f8a840fd64e2e6634f65832c0a94afc50b08d1891f29eabade2cd190bb",
+          "tokens": 103,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:c355ddfec18c0b5b7179",
+              "surface:b45ba7caf7a09f40ff71"
+            ],
+            "surface_calls": 3
+          }
+        },
+        {
+          "argv": [
+            "recall",
+            "physical-entry:9fce614630ab62da1f95"
+          ],
+          "visible_sha256": "586c452ef7b65ec17506b8242fbb540c64692cc53d0c8dced721dfd35be07e30",
+          "tokens": 9,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "surface",
+            "physical-entry:9fce614630ab62da1f95"
+          ],
+          "visible_sha256": "5e03d4eef9fbe31113e128bb8658d165e5318926d52dd6ebb50a224380c61566",
+          "tokens": 15,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "pages": [
+              "surface:c355ddfec18c0b5b7179",
+              "surface:b45ba7caf7a09f40ff71",
+              "physical-entry:9fce614630ab62da1f95"
+            ],
+            "surface_calls": 4,
+            "entry": [
+              0,
+              -2,
+              1
+            ]
+          }
+        },
+        {
+          "argv": [
+            "recall"
+          ],
+          "visible_sha256": "eb52996ae058e90021237972fca7a3fca31db87cdfd90d37d7d9c23cf31db16a",
+          "tokens": 1309,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {
+            "recalled": true
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/memory_loop.py",
+            "def .*provenance|provenance_sha256"
+          ],
+          "visible_sha256": "f9a820a88133bb08b133465ace197ec8c78fa4c8087b75ba65000fb77013c503",
+          "tokens": 12,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "schema_version|from_dict|sha256|canonical|to_dict|class StatementProvenance"
+          ],
+          "visible_sha256": "1b0d42f978de95410fc109137448cb81d5619d77fd9a16dd99aa11e9b1261829",
+          "tokens": 129,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "155",
+            "375"
+          ],
+          "visible_sha256": "cb9855f7c294e4286748472f7492170bb6133b071c7b4eedb3a89de894a543f7",
+          "tokens": 2316,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/provenance.py",
+            "1",
+            "40"
+          ],
+          "visible_sha256": "9ce6b5ae898b4edf3361ee885168d59b50b23a6524295be193dec4ad95f9a3ab",
+          "tokens": 420,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-access/src/nollm_access/provenance.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "status"
+          ],
+          "visible_sha256": "77b50f895186b14c869210ea54452e9bd78e6868b3ed6de498f1261e26458a6b",
+          "tokens": 62,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        }
+      ],
+      "native_sha256": "fa67832abe200244adb943d193da1c6e967e8ca128670910a203ef55a4d001d7",
+      "submission": {
+        "answer": "No. Both v1 and v2 require a dict with exactly their schema’s keys. An extra checksum field makes StatementProvenance.from_mapping raise ValueError for either version. Copy the lookup mapping, pop the returned record checksum, and keep content_sha256 inside the payload. Preserve schema_version and the other fields, including origin_kinds, derived_from_statement_ids, evaluation_id and continuation_pass for v2 only. Reconstruct with record = StatementProvenance.from_mapping(payload) and accept it only if record.digest() equals the saved checksum. That digest is SHA-256 hex over record.to_mapping() serialized as sorted-key compact JSON, with non-ASCII characters unescaped, encoded as UTF-8 with one trailing newline. The available source does not establish the lookup checksum field’s spelling.",
+        "citations": [
+          {
+            "path": "packages/nollm-access/src/nollm_access/provenance.py",
+            "lines": [
+              [
+                14,
+                15
+              ],
+              [
+                26,
+                32
+              ],
+              [
+                205,
+                237
+              ],
+              [
+                240,
+                274
+              ],
+              [
+                285,
+                307
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r17",
+      "question": "Q05",
+      "arm": "search",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "600ecb09445afbc3270926774de0b4d6f8b4c0006a9fbb43f6a749eedbb7ff03",
+          "tokens": 211,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "search",
+            "max_fanout"
+          ],
+          "visible_sha256": "31c2c0504f43722a3a3193c465742868ae454db0d2c802f259050fb903734e02",
+          "tokens": 83,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/bridge.py",
+            "1",
+            "120"
+          ],
+          "visible_sha256": "ac8b3be81a00dfab4f5b31978f9b3fbab2b77a444ce8bb4715ed9497f12ed986",
+          "tokens": 1169,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/recall.py",
+            "75",
+            "215"
+          ],
+          "visible_sha256": "9b960c3c5f4f16dcd7020c41e9d63b5ba85876bb9fe6389edd381b826c88cbae",
+          "tokens": 1220,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/bridge.py",
+              "packages/nollm-core/src/nollm_core/recall.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "Constructing the destination anchor raises ValueError because its cells must already be in canonical stable_key() order. Supply all three in that order. From a source-anchor cell, with bridge traversal allowed and sufficient budget, recall can follow the two destinations with the smallest stable keys. The third is outside this bridge’s fanout. A destination outside the source anchor cannot traverse the bridge backwards because traversal requires membership in from_anchor and emits targets only from to_anchor.",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/bridge.py",
+            "lines": [
+              [
+                18,
+                26
+              ],
+              [
+                58,
+                61
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-core/src/nollm_core/recall.py",
+            "lines": [
+              [
+                132,
+                138
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "session": "r18",
+      "question": "Q06",
+      "arm": "flat",
+      "calls": [
+        {
+          "argv": [
+            "start"
+          ],
+          "visible_sha256": "3010dfe6eb1569a14fbac3e4353c2c3950802fb40aded7a2803b55698d0e9363",
+          "tokens": 198,
+          "bucket": "control",
+          "truncated": false,
+          "changes": {
+            "started": true
+          }
+        },
+        {
+          "argv": [
+            "flat"
+          ],
+          "visible_sha256": "e27a853b4c23d20cba264e82e372d20331132a0acfc8b0800dc1b9dd9f228ace",
+          "tokens": 1221,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "3"
+          ],
+          "visible_sha256": "38738497672134aef446e5589a96588bb99f6a21e7e002e8fac6205db5b4193e",
+          "tokens": 1110,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "flat",
+            "4"
+          ],
+          "visible_sha256": "032f882ed965cfafeb5868b4605e0d072e5bbf4a539ac29528a7583b72cc917d",
+          "tokens": 1176,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-core/src/nollm_core/geometry.py",
+            "1",
+            "115"
+          ],
+          "visible_sha256": "c98e8662560c028c8f65da328a480832ac9d21f2e0e0e99a6c8622754056e037",
+          "tokens": 849,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "find",
+            "packages/nollm-core/src/nollm_core/state.py",
+            "radius|active_address|validate.*address|active.*bound|1 << 30"
+          ],
+          "visible_sha256": "045cc86159b0840411d0b33d44eae68f2835d4cbb6b2120b796bf3e0194cd97c",
+          "tokens": 18,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/state.py"
+            ]
+          }
+        },
+        {
+          "argv": [
+            "flat",
+            "2"
+          ],
+          "visible_sha256": "86e2972353421a85d1d1062dba383f30e211746bec1746e397549058ef5696aa",
+          "tokens": 1257,
+          "bucket": "discovery",
+          "truncated": false,
+          "changes": {}
+        },
+        {
+          "argv": [
+            "open",
+            "packages/nollm-access/src/nollm_access/write_policy.py"
+          ],
+          "visible_sha256": "ffe0274208707ac692619afb0d53db5a07b0ac0fdfb7aa2931e38f0896f3e73f",
+          "tokens": 719,
+          "bucket": "source",
+          "truncated": false,
+          "changes": {
+            "opened": [
+              "packages/nollm-core/src/nollm_core/geometry.py",
+              "packages/nollm-core/src/nollm_core/state.py",
+              "packages/nollm-access/src/nollm_access/write_policy.py"
+            ]
+          }
+        }
+      ],
+      "native_sha256": null,
+      "submission": {
+        "answer": "GeometryAddress construction succeeds. The default chart and null phase satisfy default_dream_v1, and layer 0 is within [-64,64]. The hex radius is max(|q|, |r|, |q+r|). With q = r = 2^29, the sum gives a radius of 2^30, within the inclusive construction limit of 2^31 - 1. Active semantic write validation passes the profile, chart, layer and phase checks, then raises ActiveSemanticWritePolicyError for hex_radius. The actual radius is 1073741824, one above the inclusive write limit of 2^30 - 1 (1073741823).",
+        "citations": [
+          {
+            "path": "packages/nollm-core/src/nollm_core/geometry.py",
+            "lines": [
+              [
+                18,
+                31
+              ]
+            ]
+          },
+          {
+            "path": "packages/nollm-access/src/nollm_access/write_policy.py",
+            "lines": [
+              [
+                8,
+                9
+              ],
+              [
+                28,
+                34
+              ],
+              [
+                37,
+                57
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

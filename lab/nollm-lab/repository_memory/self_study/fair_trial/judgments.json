@@ -1,0 +1,524 @@
+{
+  "r01": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Asserts different Formation IDs and equal Sculptor IDs, with the prefix, hash, schema versions and respective input lists given.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Asserts different Formation IDs and equal Sculptor IDs, with the prefix, hash, schema versions and respective input lists given."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It changes only the text, asserts inequality for Formation and equality for Sculptor, and gives the complete prefixed hash inputs for each."
+      }
+    }
+  },
+  "r02": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Resolves both paths to current_state.json, rejects a live owner under the process-local lock, and closes and releases the failed claimant before re-raising.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Resolves both paths to current_state.json, rejects a live owner under the process-local lock, and closes and releases the failed claimant before re-raising."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It identifies the common resolved state-file key, locked live-owner check and RuntimeError. It also describes marking the failed owner closed and releasing its claim before re-raising."
+      }
+    }
+  },
+  "r03": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Specifies the affirmative schema, outcome and relation, binds the separately supplied provisional ID, and gives both mismatch result codes and zero writes.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Specifies the affirmative schema, outcome and relation, binds the separately supplied provisional ID, and gives both mismatch result codes and zero writes."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It supplies the complete approval wire shape, puts the caller-supplied ID into the parsed result and gives both mismatch return values before any write."
+      }
+    }
+  },
+  "r04": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Identifies provenance_sha256, explains strict parsing for both schemas, and compares the saved checksum with digest() after reconstructing the original record.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Identifies provenance_sha256, explains strict parsing for both schemas, and compares the saved checksum with digest() after reconstructing the original record."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It names the added digest field, explains why both exact-field schemas reject it, then removes it and verifies the reconstructed record digest."
+      }
+    }
+  },
+  "r05": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Rejects the given unsorted distinct destinations, selects the first two after stable-key ordering, and rules out reverse traversal from outside the source anchor.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Rejects the given unsorted distinct destinations, selects the first two after stable-key ordering, and rules out reverse traversal from outside the source anchor."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It identifies the constructor error for these distinct out-of-order cells, selects the first two after stable-key ordering, and rejects reverse traversal from outside the source."
+      }
+    }
+  },
+  "r06": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": false
+    },
+    "material_contradiction": false,
+    "rationale": "Computes the cube radius as 2^30 and correctly permits construction under 2^31 - 1. Leaves the active write result and radius ceiling unanswered.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": false
+        },
+        "material_contradiction": false,
+        "rationale": "Computes the cube radius as 2^30 and correctly permits construction under 2^31 - 1. Leaves the active write result and radius ceiling unanswered."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": false
+        },
+        "material_contradiction": false,
+        "rationale": "It computes the cube radius and correctly explains successful construction under the inclusive Core bound. It supplies neither the write-policy rejection nor its radius limit."
+      }
+    }
+  },
+  "r07": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Specifies both paired assertions and both dream:-prefixed SHA-256 input lists, distinguishing request ID from result ID and showing where content enters identity.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Specifies both paired assertions and both dream:-prefixed SHA-256 input lists, distinguishing request ID from result ID and showing where content enters identity."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It compares the two runs within each path and identifies both prefixed hashes and every input, including content only for Formation."
+      }
+    }
+  },
+  "r08": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Identifies the shared canonical state-file key, the locked weak-reference check and RuntimeError, and the explicit close and release on load failure.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Identifies the shared canonical state-file key, the locked weak-reference check and RuntimeError, and the explicit close and release on load failure."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It explains symlink canonicalization to the same state file, the locked weak-reference check and the failed initializer\u2019s close, release and re-raise sequence."
+      }
+    }
+  },
+  "r09": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Names all three affirmative wire fields and values, explains the external provisional ID, and requires a match to the terminal proposal before writing. Both mismatch result codes are supplied.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Names all three affirmative wire fields and values, explains the external provisional ID, and requires a match to the terminal proposal before writing. Both mismatch result codes are supplied."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It identifies all wire fields and the approval pair, attaches the ID out of band, and states the terminal proposal ID check and both pre-write mismatch return values."
+      }
+    }
+  },
+  "r10": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Identifies the extra provenance_sha256 key, both exact field checks, and the original-schema reconstruction and digest comparison.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Identifies the extra provenance_sha256 key, both exact field checks, and the original-schema reconstruction and digest comparison."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It distinguishes the added provenance checksum from content_sha256, preserves the version-specific payload and compares the reconstructed digest with the extracted value."
+      }
+    }
+  },
+  "r11": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "The noncanonical listing of the distinct cells raises ValueError. The corrected bridge takes the two smallest stable keys and cannot expand from a cell outside from_anchor.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "The noncanonical listing of the distinct cells raises ValueError. The corrected bridge takes the two smallest stable keys and cannot expand from a cell outside from_anchor."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It answers the ordering failure for the distinct inputs, picks the smallest two stable keys and ties forward-only traversal to source membership."
+      }
+    }
+  },
+  "r12": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Computes the hex radius from q+r, permits construction under the inclusive Core limit, and identifies the active write radius error and exact limit.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Computes the hex radius from q+r, permits construction under the inclusive Core limit, and identifies the active write radius error and exact limit."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It computes the hex radius as 2**30 and correctly compares it against both inclusive bounds to explain success followed by rejection."
+      }
+    }
+  },
+  "r13": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": false
+    },
+    "material_contradiction": false,
+    "rationale": "Gives the differing Formation IDs and all four hashed inputs, including the prefix and algorithm. Leaves the expected Sculptor comparison and its hash inputs unanswered.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": false
+        },
+        "material_contradiction": false,
+        "rationale": "Gives the differing Formation IDs and all four hashed inputs, including the prefix and algorithm. Leaves the expected Sculptor comparison and its hash inputs unanswered."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": false
+        },
+        "material_contradiction": false,
+        "rationale": "It gives the changed Formation ID and all four prefixed-hash inputs. It gives neither the equal-ID assertion nor the Sculptor hash inputs."
+      }
+    }
+  },
+  "r14": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Explains canonical state-file identity, locked weak-reference registration with live-owner rejection, and explicit release by the closed failed initializer before retry.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Explains canonical state-file identity, locked weak-reference registration with live-owner rejection, and explicit release by the closed failed initializer before retry."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It identifies the common resolved state-file path, rejects a second live owner under the registry lock, and explicitly closes and releases the failed claimant before re-raising."
+      }
+    }
+  },
+  "r15": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Gives the exact affirmative wire mapping, attaches the separately supplied proposal ID, and reports not_committed with revision_not_confirmed before any write on mismatch.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Gives the exact affirmative wire mapping, attaches the separately supplied proposal ID, and reports not_committed with revision_not_confirmed before any write on mismatch."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It provides the exact affirmative wire mapping and separate ID binding, then identifies the pre-write mismatch rejection and both required return values."
+      }
+    }
+  },
+  "r16": {
+    "atoms": {
+      "A1": false,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Identifies an extra record checksum but expressly leaves its provenance_sha256 key unnamed. Explains both exact-schema failures, preserves schema_version, and compares the saved checksum with record.digest().",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": false,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Identifies an extra record checksum but expressly leaves its provenance_sha256 key unnamed. Explains both exact-schema failures, preserves schema_version, and compares the saved checksum with record.digest()."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": false,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It leaves the lookup checksum key unnamed, which misses provenance_sha256 in A1. It correctly diagnoses the extra field for both schemas, preserves the schema and verifies the parsed record with digest()."
+      }
+    }
+  },
+  "r17": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "For the three distinct cells, rejects the noncanonical order with ValueError, follows the two smallest stable keys, and requires source membership for directed traversal.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "For the three distinct cells, rejects the noncanonical order with ValueError, follows the two smallest stable keys, and requires source membership for directed traversal."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "For the three distinct cells given, it identifies the ordering ValueError, the two smallest stable keys and the source-membership test that rules out reverse traversal."
+      }
+    }
+  },
+  "r18": {
+    "atoms": {
+      "A1": true,
+      "A2": true,
+      "A3": true
+    },
+    "material_contradiction": false,
+    "rationale": "Correctly derives radius 2^30, checks it against both inclusive ceilings and identifies construction success followed by the active write radius error.",
+    "independent_reviews": {
+      "ivory": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "Correctly derives radius 2^30, checks it against both inclusive ceilings and identifies construction success followed by the active write radius error."
+      },
+      "cedar": {
+        "atoms": {
+          "A1": true,
+          "A2": true,
+          "A3": true
+        },
+        "material_contradiction": false,
+        "rationale": "It computes the radius using q+r, explains Core acceptance under 2**31-1, and gives the write rejection one unit above 2**30-1."
+      }
+    }
+  }
+}

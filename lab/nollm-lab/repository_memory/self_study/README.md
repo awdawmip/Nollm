@@ -72,3 +72,5 @@ python "$D/evaluate.py" --repo . --field "$OUT/fitted" --out "$OUT/fitted.json"
 ```
 
 这组结果支持把上下覆盖用于共享上下文和单入口局部发现。需要完整列举某个窗口时走 Surface；要核实工程判断时回到对应 Git 版本。下一轮应固定布局，在未用于布置和诊断的新任务上，对齐宿主、步数、候选页数与可读 token 后，再比较 Surface 选入口与平面 AOCI。
+
+等预算的后续实验已在相同场上完成：18 个独立首答会话，使用六道新题和事前冻结的判分要点。[完整结果、逐题失败与复算](fair_trial/README.md)
