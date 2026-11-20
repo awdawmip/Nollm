@@ -28,6 +28,15 @@ migration. Canceled operations remain canceled. Actual access denials and platfo
 restrictions remain binding; this scope does not authorize bypassing them or
 resuming canceled calls.
 
+## Current exploratory development: Enterprise Math memory
+
+The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)
+is the current task for extending repository memory into a usable internal research component.
+The user expanded the earlier understanding study into exploratory implementation and actual LLM use,
+with no defensive code or redundant validation/hash machinery in this experiment.
+Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
+for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
+
 ## Governing and inherited sources
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
@@ -89,3 +98,4 @@ memory-slot tools remain the OpenClaw integration direction. Packaging, automati
 capture/Formation migration, current-version compatibility, Windows Provider Live,
 public ClawHub release and measured memory quality remain independently unclosed.
 The four cold branches and existing archive tags are preserved, not reactivated.
+
