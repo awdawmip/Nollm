@@ -43,6 +43,9 @@ def install(destination):
                  "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json",
                  "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py", "coverage_cli.py"):
         files[LAB / name] = runtime / name
+    em = LAB / "enterprise_math"
+    for path in (em / "research.py", *(em / "field").rglob("*.json")):
+        files[path] = runtime / path.relative_to(LAB)
     for package in ("nollm-core", "nollm-access"):
         src = REPO / "packages" / package / "src"
         for path in (src / package.replace("-", "_")).rglob("*.py"):

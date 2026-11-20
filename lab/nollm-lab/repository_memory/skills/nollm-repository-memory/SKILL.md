@@ -1,6 +1,6 @@
 ---
 name: nollm-repository-memory
-description: "在本地 Git 仓库中梳理模块职责、提取和核验机器标记、追踪跨文件影响、复核过期判断或为下个会话留下源码证据。Use for repository onboarding, machine-readable architecture facts, change-impact analysis, and engineering handoffs grounded in Git."
+description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交接有证据的判断。进取数论 TASK 可用 em 入口导航、展开和修订已有研究记忆。Use for repository onboarding, change-impact analysis, Git-grounded handoffs and Enterprise Math research memory."
 ---
 
 # Nollm 仓库记忆
@@ -14,6 +14,16 @@ description: "在本地 Git 仓库中梳理模块职责、提取和核验机器�
 - “合并后复核上次的结论，把仍然成立的判断交给下一个会话。”
 
 ## 从目标仓库启动
+
+对于进取数论 TASK，使用本 skill 自带的研究场。从实际安装位置设置
+`cli=/path/to/nollm-repository-memory/scripts/memory.py`，运行
+`python3 "$cli" em walk`，按当前问题选择预览，依次追加本页显示的候选 ID；
+最终选中一个物理入口会返回邻域中的完整判断。已知公式或标识时可用
+`em find '字面片段'`。用 `em show ID` 查看版本和引用，`em source --id ID --number 1 --repo /path/to/enterprise-math`
+展开固定 Git 原文行。形成新理解时，用 `em save --help` 查看写入命令；
+正文走 stdin，Host 选择新坐标或指明被更正的版本。已有场位于
+`scripts/runtime/enterprise_math/field/`（安装版）或实验目录的
+`enterprise_math/field/`（仓库版）。可用 `em --field PATH` 打开另一份持久场。
 
 需要 Git 和 Python 3.11+。从宿主加载的**本文件的位置**找到同目录下的 `scripts/memory.py`。在目标工作树内运行它；脚本和要分析的仓库可以在不同位置。以下为 POSIX shell 示例，请用实际目录替换第一行。独立 shell 调用需重新设置变量，或使用解析后的绝对路径直接执行同一命令。
 
