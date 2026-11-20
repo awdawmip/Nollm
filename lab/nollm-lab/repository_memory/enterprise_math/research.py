@@ -25,7 +25,12 @@ KERNELS = {
 
 def save(field, repo, rev, note_id, body, citations, at, revise):
     commit = _commit(repo, rev)
-    primary, *others = [f"{commit}:{citation}" for citation in citations]
+    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations], at, revise)
+
+
+def save_statement(field, note_id, body, sources, at, revise):
+    """Save Host-authored understanding with already selected, pinned source references."""
+    primary, *others = sources
     with CoreRuntime(field) as core, AccessRuntime(
         core, FileStatementStore(field), FileHandleStore(field)
     ) as access:
@@ -45,7 +50,8 @@ def save(field, repo, rev, note_id, body, citations, at, revise):
 def describe(field, note_id):
     statement = FileStatementStore(field).get(note_id)
     sources = [statement.source_handle]
-    result = {"id": note_id, "text": statement.content_utf8, "sources": sources}
+    result = {"id": note_id, "text": statement.content_utf8, "sources": sources,
+              "current": FileHandleStore(field).exists(note_id)}
     for ref in statement.context_refs:
         if ref.startswith("revises:"):
             result["revises"] = ref.removeprefix("revises:")
@@ -140,7 +146,6 @@ def main():
                       args.cite, args.at, args.revise)
     elif args.op == "show":
         result = describe(args.field, args.id)
-        result["current"] = FileHandleStore(args.field).exists(args.id)
     elif args.op == "source":
         if args.id is None:
             reference = f"{_commit(args.repo, args.rev)}:{args.at}"

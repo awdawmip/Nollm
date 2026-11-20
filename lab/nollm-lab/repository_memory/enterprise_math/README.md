@@ -70,12 +70,23 @@ em --field "$field" show x6.opt.updated
 
 Core 的活动写入层为 0；不同语义粒度的判断可以同处这一层。聚合阶数控制 Surface 的观察尺度。覆盖、邻接和预览帮助模型找到判断；定理证明和接纳状态沿 EM 原文。这个适配器只保存 Host 理解与 Git 窗口，不定期抓取或重排全库。FREE A 接入时需沿 EM 当时的来源规则选择可用视图。
 
+## 供已有服务调用
+
+已安装 skill 的 `scripts/runtime/` 可以作为 Python 模块路径，一次加载 `enterprise_math.research` 后直接调用。场目录由宿主显式传入，放在独立持久目录；更新运行时代码时继续使用原工作场。
+
+- `save_statement(field, note_id, body, sources, at, revise)` 接收 Host 已经选定的固定来源引用，例如 `提交:路径#L起行-L末行`。`sources` 的顺序就是后续回源顺序；新增使用 `at=(q,r)`，原位更正使用 `revise=当前版本ID`。返回版本 ID、物理坐标和修订目标。
+- `describe(field, note_id)` 返回正文、来源、`current` 和适用的 `revises`。`current` 指该工作场的当前绑定，不判断来源库是否有更新。
+- `walk` 与 `literal_matches` 复用同一场；词法查询单列辅助路径，Surface 导航仍由 Host 逐页选择一个最终物理入口。
+- `excerpt(repo, reference)` 保留本地 Git 回源；已有服务也可用自己的精确来源读取接口展开同样的引用。原 CLI 的 `save --repo --rev --cite` 继续把 Git 引用解析后调用 `save_statement`。
+
+服务无需为了保存理解另建一份 Git 工作树；出处由现有来源读取链提供。所有访问同一场的操作由同一个实际访问点串行处理，沿本实验单写者方式使用。新建空场可显式打开并关闭一次 `CoreRuntime(field)`；也可在初次部署时复制已有场，后续启动直接打开原目录。`walk`、`show` 和 `find` 对已经存在的场不改写持久状态。
+
 ## 针对性回归
 
-从 Nollm 根目录执行。科研回归通过已安装的 CLI 对比更正前后的证据窗口、当前绑定、相邻召回与远格排除。安装回归覆盖既有 skill 入口。两项测试文件共三个用例通过。
+从 Nollm 根目录执行。科研回归通过已安装的 CLI 对比更正前后的证据窗口、当前绑定、相邻召回与远格排除。安装回归覆盖既有 skill 入口。新增直接 API 回归覆盖无需 Git 工作树的保存、固定来源顺序、原位修订与独立进程读取；既有安装回归继续按实际受影响范围使用。
 
 ```sh
 D=lab/nollm-lab/repository_memory
-python3 -m unittest discover -s "$D" -p test_enterprise_math.py
+python3 -m unittest discover -s "$D" -p 'test_enterprise_math*.py'
 python3 -m unittest discover -s "$D" -p test_skill_install.py
 ```
