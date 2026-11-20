@@ -37,6 +37,11 @@ with no defensive code or redundant validation/hash machinery in this experiment
 Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
 for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
 
+PR #7 now ships the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md).
+Start a new TASK session with `memory.py em walk`. A cold reader derived a prefix-set rule, saved it,
+and another reader used it on a different CRT baseline. The [development trials](../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)
+include the direct-source and same-content lexical comparisons and the cost of forming and revising the field.
+
 ## Governing and inherited sources
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)

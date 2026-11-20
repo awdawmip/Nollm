@@ -1,6 +1,6 @@
 # 进取数论外部研究记忆：Nollm 内部探索开发
 
-日期：2026-11-20（UTC+08:00）。状态：**可执行的探索开发任务；原型和效果尚待实施**。
+日期：2026-11-20（UTC+08:00）。状态：**PR #7 已实现 TASK 探索原型，并完成真实会话续接与对照试用**。
 
 主执行仓库：`awdawmip/Nollm`。基于 `experiment/repository-memory` 继续开发；本任务分支为 `experiment/enterprise-math-memory-20261120`。进取数论是首个真实使用项目。
 
@@ -103,6 +103,8 @@
 
 ## 7. 当前交接状态
 
-本任务 PR 交付任务书、Codex 提示词及活动入口链接。尚未在本轮实现或运行上述原型，尚无新的记忆质量或上下文节省结果。现有仓库能力及历史试验保留其原有范围。
+本 PR 已提交 [适配器、原生持久场与加载方法](../../../lab/nollm-lab/repository_memory/enterprise_math/README.md)。新会话从 `memory.py em walk` 开始；用 `source` 展开指定 EM 提交的原文窗口，`save` 支持新增理解与局部更正。
+
+[实际试用](../../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)记录了 CRT 与 X6 的跨线边界、初版与修订版、真实读者新写的查询集判据及另一会话的复用。两次原生答题的工具输出少于直接查来源；加上形成、修订和续写开销，本轮尚未回收成本。
 
 执行者可用同目录的 [Codex 提示词](NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md) 继续。

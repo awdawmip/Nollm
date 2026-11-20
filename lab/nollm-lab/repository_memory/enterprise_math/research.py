@@ -45,8 +45,7 @@ def save(field, repo, rev, note_id, body, citations, at, revise):
 def describe(field, note_id):
     statement = FileStatementStore(field).get(note_id)
     sources = [statement.source_handle]
-    result = {"id": note_id, "current": FileHandleStore(field).exists(note_id),
-              "text": statement.content_utf8, "sources": sources}
+    result = {"id": note_id, "text": statement.content_utf8, "sources": sources}
     for ref in statement.context_refs:
         if ref.startswith("revises:"):
             result["revises"] = ref.removeprefix("revises:")
@@ -111,9 +110,9 @@ def main():
     browse = commands.add_parser("walk", help="observe a Surface page; selecting a physical candidate recalls its neighborhood")
     browse.add_argument("choices", nargs="*", help="successive candidate ids shown on pages, or next")
     browse.add_argument("--order", type=int, help="initial aggregation order; default: Access budget")
-    browse.add_argument("--page-size", type=int, default=3)
-    browse.add_argument("--steps", type=int, default=1)
-    browse.add_argument("--limit", type=int, default=5)
+    browse.add_argument("--page-size", type=int, default=3, help="1 to 8 candidates per Surface page (default: 3)")
+    browse.add_argument("--steps", type=int, default=1, help="kernel steps from the selected physical entry (default: 1)")
+    browse.add_argument("--limit", type=int, default=5, help="maximum returned statements after traversal (default: 5)")
     browse.add_argument("--via", choices=KERNELS, default="local")
     search = commands.add_parser("find", help="case-insensitive literal in current IDs or bodies (auxiliary)")
     search.add_argument("term")
@@ -141,6 +140,7 @@ def main():
                       args.cite, args.at, args.revise)
     elif args.op == "show":
         result = describe(args.field, args.id)
+        result["current"] = FileHandleStore(args.field).exists(args.id)
     elif args.op == "source":
         if args.id is None:
             reference = f"{_commit(args.repo, args.rev)}:{args.at}"

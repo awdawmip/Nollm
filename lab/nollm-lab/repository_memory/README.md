@@ -1,5 +1,7 @@
 # Nollm 仓库记忆实验 / Repository Memory
 
+进取数论 TASK 可以直接打开随分支保存的研究场，按问题选择物理入口、回到 EM 原文，并把新判断留给后续会话。[科研适配器与加载命令](enterprise_math/README.md) · [冷会话实际试用](enterprise_math/TRIAL.md)
+
 从 Nollm 自身的源码理解上下层覆盖，可直接打开 [正式 AOCI 工程索引](self_study/aoci/README.md) 或运行 [旋转蜂巢覆盖与单入口实验](self_study/README.md)。
 
 这条实验分支让下一个读代码的人或模型可以接着使用已经核过的工程判断。例如，在同一个记忆位置附加第二条说明后，正常召回仍读哪一条？示例用两条带源码证据的说明回答这个问题。仓库里保存的是说明和 Git 证据；原生几何记忆演示在临时工作区内运行。
