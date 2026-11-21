@@ -31,7 +31,7 @@ resuming canceled calls.
 ## Current exploratory development: Enterprise Math memory
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)
-is the current task for extending repository memory into a usable internal research component.
+defines the implementation basis for extending repository memory into a usable internal research component.
 The user expanded the earlier understanding study into exploratory implementation and actual LLM use,
 with no defensive code or redundant validation/hash machinery in this experiment.
 Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
@@ -41,6 +41,12 @@ PR #7 now ships the [research CLI and populated native field](../../lab/nollm-la
 Start a new TASK session with `memory.py em walk`. A cold reader derived a prefix-set rule, saved it,
 and another reader used it on a different CRT baseline. The [development trials](../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)
 include the direct-source and same-content lexical comparisons and the cost of forming and revising the field.
+
+The current follow-up is the [research-value test and development task](tasks/NOLLM_RESEARCH_VALUE_TESTS_20261121.md),
+with its [Codex prompt](tasks/NOLLM_RESEARCH_VALUE_CODEX_PROMPT_20261121.md).
+The [2026-11-21 evidence](../../lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/REPORT.md)
+contains same-content source/flat/native readers and actual navigation scaling diagnostics.
+Use the measured failures and explicit missing tests to choose the next useful work; the public development cases are not withheld evidence.
 
 ## Governing and inherited sources
 

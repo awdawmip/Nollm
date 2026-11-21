@@ -1,0 +1,283 @@
+{
+  "purpose": "synthetic geometry reachability and engineering cost; no semantic-quality claim",
+  "runtime": "/workspace/scratch/4eeff3663e39/nollm_mcp_20261120/runtime/scripts/runtime",
+  "nollm_revision": "ddf7dc00b2cea43dccc5d783d20aa88e21de4e0b",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "size": 512,
+  "source": "Synthetic notes generated only inside a temporary local field",
+  "navigation": "Current adapter, default order, page size 3, steps 1, limit 5, via local",
+  "page_size": 3,
+  "selector": "Geometry-membership oracle over generated placements; not an LLM or semantic router",
+  "measurement": "Wall-clock milliseconds; repeated in-process calls may benefit from disposable kernel caches; CLI probes use a fresh process each time",
+  "build": {
+    "total_ms": 16378.260343993134,
+    "write_median_ms": 30.97793550023198,
+    "last_16_write_median_ms": 56.56267549966287,
+    "canonical_core_bytes": 208275,
+    "all_file_bytes": 514904,
+    "all_file_count": 514
+  },
+  "reopen": {
+    "samples_ms": [
+      21.816436999870348,
+      20.844742999543087,
+      26.327421000132745,
+      21.29820699974516,
+      22.875002000546374
+    ],
+    "median_ms": 21.816436999870348,
+    "occupied_cells": 512
+  },
+  "fresh_process_root_walk": [
+    {
+      "ms": 1194.326486999671,
+      "stdout_bytes": 1347,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 2
+    },
+    {
+      "ms": 975.1239959996383,
+      "stdout_bytes": 1347,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 2
+    },
+    {
+      "ms": 918.4773119995953,
+      "stdout_bytes": 1347,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 2
+    }
+  ],
+  "oracle_build_ms": 514.8898190000182,
+  "surface_occupied_counts_order_0_to_8": [
+    512,
+    407,
+    340,
+    285,
+    235,
+    193,
+    163,
+    148,
+    133
+  ],
+  "navigation_trials": [
+    {
+      "target_id": "synthetic-0000",
+      "target_cell": [
+        0,
+        0,
+        0
+      ],
+      "reached_and_recalled": false,
+      "failure": "RuntimeError: Surface traversal call limit reached",
+      "api_calls": 24,
+      "replayed_surface_calls": 300,
+      "total_ms": 40641.374632003135,
+      "output_bytes": 25522,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:3c79201ffa076efd4074",
+        "next",
+        "surface:1f525be7b089247826af"
+      ],
+      "calls": [
+        {
+          "ms": 168.17394300051092,
+          "output_bytes": 1006,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 295.1261059997705,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 414.7645970006124,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 3
+        },
+        {
+          "ms": 507.4621730000217,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 4
+        },
+        {
+          "ms": 658.4509949998392,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 5
+        },
+        {
+          "ms": 769.9477400001342,
+          "output_bytes": 1070,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 6
+        },
+        {
+          "ms": 883.177464000255,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 7
+        },
+        {
+          "ms": 994.0476259998832,
+          "output_bytes": 1006,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 8
+        },
+        {
+          "ms": 1120.530797000356,
+          "output_bytes": 1009,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 9
+        },
+        {
+          "ms": 1252.8588220002348,
+          "output_bytes": 1075,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 10
+        },
+        {
+          "ms": 1326.323668000441,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 11
+        },
+        {
+          "ms": 1499.3993370007956,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 12
+        },
+        {
+          "ms": 1573.9819720001833,
+          "output_bytes": 1075,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 13
+        },
+        {
+          "ms": 1768.0869010000606,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 14
+        },
+        {
+          "ms": 1891.8133530005434,
+          "output_bytes": 1072,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 15
+        },
+        {
+          "ms": 2085.345387000416,
+          "output_bytes": 1070,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 16
+        },
+        {
+          "ms": 2079.4848059995275,
+          "output_bytes": 1077,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 17
+        },
+        {
+          "ms": 2211.9537089993173,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 18
+        },
+        {
+          "ms": 2430.118236000453,
+          "output_bytes": 1072,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 19
+        },
+        {
+          "ms": 2436.435880999852,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 20
+        },
+        {
+          "ms": 2581.6803640000217,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 21
+        },
+        {
+          "ms": 2708.2580200003576,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 22
+        },
+        {
+          "ms": 4331.383112999902,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 23
+        },
+        {
+          "ms": 4652.569621999646,
+          "output_bytes": 1072,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 24
+        }
+      ]
+    }
+  ],
+  "temporary_field_deleted_on_exit": true
+}

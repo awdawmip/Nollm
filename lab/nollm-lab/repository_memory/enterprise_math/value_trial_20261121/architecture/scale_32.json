@@ -1,0 +1,531 @@
+{
+  "purpose": "synthetic geometry reachability and engineering cost; no semantic-quality claim",
+  "runtime": "/workspace/scratch/4eeff3663e39/nollm_mcp_20261120/runtime/scripts/runtime",
+  "nollm_revision": "ddf7dc00b2cea43dccc5d783d20aa88e21de4e0b",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "size": 32,
+  "source": "Synthetic notes generated only inside a temporary local field",
+  "navigation": "Current adapter, default order, page size 3, steps 1, limit 5, via local",
+  "selector": "Geometry-membership oracle over generated placements; not an LLM or semantic router",
+  "measurement": "Wall-clock milliseconds; repeated in-process calls may benefit from disposable kernel caches; CLI probes use a fresh process each time",
+  "build": {
+    "total_ms": 281.59457099900465,
+    "write_median_ms": 8.636813000066468,
+    "last_16_write_median_ms": 9.100101000058203,
+    "canonical_core_bytes": 13471,
+    "all_file_bytes": 32656,
+    "all_file_count": 34
+  },
+  "reopen": {
+    "samples_ms": [
+      6.268549000196799,
+      5.215340999711771,
+      6.394113999704132,
+      5.321888999787916,
+      4.611379999914789
+    ],
+    "median_ms": 5.321888999787916,
+    "occupied_cells": 32
+  },
+  "fresh_process_root_walk": [
+    {
+      "ms": 338.18197499931557,
+      "stdout_bytes": 1277,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 0
+    },
+    {
+      "ms": 283.193659999597,
+      "stdout_bytes": 1277,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 0
+    },
+    {
+      "ms": 247.83394999940356,
+      "stdout_bytes": 1277,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 0
+    }
+  ],
+  "oracle_build_ms": 68.95665000047302,
+  "surface_occupied_counts_order_0_to_8": [
+    32,
+    33,
+    33,
+    34,
+    34,
+    35,
+    35,
+    36,
+    36
+  ],
+  "navigation_trials": [
+    {
+      "target_id": "synthetic-0000",
+      "target_cell": [
+        0,
+        0,
+        0
+      ],
+      "reached_and_recalled": true,
+      "failure": null,
+      "api_calls": 24,
+      "replayed_surface_calls": 299,
+      "total_ms": 11989.545982999516,
+      "output_bytes": 24311,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:3f8be418f69d6a3da521",
+        "next",
+        "surface:567001f5c7cc53a975d9",
+        "next",
+        "surface:2ce705b350a212961918",
+        "next",
+        "surface:e0c75841484604ee38f3",
+        "next",
+        "surface:269573b93a94b64bbaec",
+        "next",
+        "surface:5593c4f0dec544ae4428",
+        "next",
+        "surface:857c7be58132a66509cf",
+        "next",
+        "surface:f0cb3df8271bb3ca43bc",
+        "next",
+        "surface:cc595e6c2e1701f746dd",
+        "physical-entry:2b9a4f907ead46e3c4dc"
+      ],
+      "calls": [
+        {
+          "ms": 23.303122000470466,
+          "output_bytes": 944,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 43.854644000020926,
+          "output_bytes": 947,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 48.70850700081064,
+          "output_bytes": 1005,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 3
+        },
+        {
+          "ms": 82.17655400039803,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 4
+        },
+        {
+          "ms": 114.78266300036921,
+          "output_bytes": 1064,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 5
+        },
+        {
+          "ms": 101.27228199962701,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 6
+        },
+        {
+          "ms": 163.53563200027565,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 7
+        },
+        {
+          "ms": 268.02192099967215,
+          "output_bytes": 1065,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 8
+        },
+        {
+          "ms": 355.80709499936347,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 9
+        },
+        {
+          "ms": 408.7884780001332,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 10
+        },
+        {
+          "ms": 644.5321459996194,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 11
+        },
+        {
+          "ms": 398.59426299972256,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 12
+        },
+        {
+          "ms": 274.9903300000369,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 13
+        },
+        {
+          "ms": 343.23309599949425,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 14
+        },
+        {
+          "ms": 236.96374999963155,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 15
+        },
+        {
+          "ms": 278.0615840001701,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 16
+        },
+        {
+          "ms": 364.46939100005693,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 17
+        },
+        {
+          "ms": 438.28526499964937,
+          "output_bytes": 1064,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 18
+        },
+        {
+          "ms": 432.5382349998108,
+          "output_bytes": 1062,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 19
+        },
+        {
+          "ms": 4484.293229999821,
+          "output_bytes": 1060,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 20
+        },
+        {
+          "ms": 1115.3288149998843,
+          "output_bytes": 705,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 21
+        },
+        {
+          "ms": 548.9112880004541,
+          "output_bytes": 703,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 22
+        },
+        {
+          "ms": 377.97309899997344,
+          "output_bytes": 345,
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 23
+        },
+        {
+          "ms": 441.1205930000506,
+          "output_bytes": 1543,
+          "kind": "entry",
+          "order": null,
+          "surface_calls": 23
+        }
+      ]
+    },
+    {
+      "target_id": "synthetic-0016",
+      "target_cell": [
+        0,
+        2,
+        -2
+      ],
+      "reached_and_recalled": true,
+      "failure": null,
+      "api_calls": 16,
+      "replayed_surface_calls": 135,
+      "total_ms": 3674.785321001764,
+      "output_bytes": 13289,
+      "choices": [
+        "next",
+        "surface:645a4ab8b304ba5da2f6",
+        "surface:4418febb852578da9e9d",
+        "surface:cfbceabba5628bd990fa",
+        "next",
+        "surface:fa815dd7daf6765c4586",
+        "next",
+        "surface:bf1435fb91654524d68c",
+        "next",
+        "surface:12a6195d402360ea0264",
+        "surface:6cfca2e73d6c0ca20aae",
+        "surface:b9937c48c55d8081890b",
+        "next",
+        "surface:247547e937b0e3ef48ad",
+        "physical-entry:a0dfc7682899500c41f2"
+      ],
+      "calls": [
+        {
+          "ms": 24.54416199998377,
+          "output_bytes": 944,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 44.14602399992873,
+          "output_bytes": 947,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 47.78608499964321,
+          "output_bytes": 947,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 3
+        },
+        {
+          "ms": 64.00201799988281,
+          "output_bytes": 947,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 4
+        },
+        {
+          "ms": 85.63172400045005,
+          "output_bytes": 885,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 5
+        },
+        {
+          "ms": 103.36597700006678,
+          "output_bytes": 438,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 6
+        },
+        {
+          "ms": 108.52837599941267,
+          "output_bytes": 885,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 7
+        },
+        {
+          "ms": 117.13591600073414,
+          "output_bytes": 753,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 8
+        },
+        {
+          "ms": 127.12739500057069,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 9
+        },
+        {
+          "ms": 149.61657100047887,
+          "output_bytes": 438,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 10
+        },
+        {
+          "ms": 191.08178300029977,
+          "output_bytes": 1059,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 11
+        },
+        {
+          "ms": 249.24076400020567,
+          "output_bytes": 1062,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 12
+        },
+        {
+          "ms": 250.77360100021906,
+          "output_bytes": 705,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 13
+        },
+        {
+          "ms": 184.4309029993383,
+          "output_bytes": 318,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 14
+        },
+        {
+          "ms": 1146.7322540001987,
+          "output_bytes": 346,
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 15
+        },
+        {
+          "ms": 780.6417680003506,
+          "output_bytes": 1548,
+          "kind": "entry",
+          "order": null,
+          "surface_calls": 15
+        }
+      ]
+    },
+    {
+      "target_id": "synthetic-0031",
+      "target_cell": [
+        0,
+        2,
+        -3
+      ],
+      "reached_and_recalled": true,
+      "failure": null,
+      "api_calls": 11,
+      "replayed_surface_calls": 65,
+      "total_ms": 2441.8459930011522,
+      "output_bytes": 5865,
+      "choices": [
+        "surface:55d5806227b76210a93b",
+        "surface:c91a1d81f1b4108a23e1",
+        "surface:42adc9bf73692ff474a3",
+        "surface:45b1b9a913afa75cdc41",
+        "surface:175d4cc20dbe02aeffa2",
+        "surface:f2080f72664977b21668",
+        "surface:5a7e5f629c8dde0f5705",
+        "surface:38d5a877185c3d399553",
+        "surface:0ad95e89d83dd58b3507",
+        "physical-entry:959f55a5e3416de4cc8b"
+      ],
+      "calls": [
+        {
+          "ms": 26.897394000116037,
+          "output_bytes": 944,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 42.49035300017567,
+          "output_bytes": 511,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 2
+        },
+        {
+          "ms": 834.8419820003983,
+          "output_bytes": 317,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 3
+        },
+        {
+          "ms": 379.1412210002818,
+          "output_bytes": 510,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 4
+        },
+        {
+          "ms": 86.17584300009185,
+          "output_bytes": 316,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 5
+        },
+        {
+          "ms": 108.06626100020367,
+          "output_bytes": 509,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 6
+        },
+        {
+          "ms": 236.13079999995534,
+          "output_bytes": 317,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 7
+        },
+        {
+          "ms": 299.1174480002883,
+          "output_bytes": 511,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 8
+        },
+        {
+          "ms": 120.90445299963903,
+          "output_bytes": 317,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 9
+        },
+        {
+          "ms": 156.21124900008,
+          "output_bytes": 346,
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 10
+        },
+        {
+          "ms": 151.8689889999223,
+          "output_bytes": 1267,
+          "kind": "entry",
+          "order": null,
+          "surface_calls": 10
+        }
+      ]
+    }
+  ],
+  "temporary_field_deleted_on_exit": true
+}
