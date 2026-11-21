@@ -62,6 +62,22 @@ class ResearchApiTest(unittest.TestCase):
             self.assertEqual(current["revises"], "bound.v1")
             self.assertTrue(current["current"])
 
+            call("save_statement", "other", "A second proposition", [original], (40, 0), None)
+            self.assertEqual(call("links"), [])
+            call("stitch", "bound-to-other", "bound.v2", "other")
+            state_file = field / "core" / "current_state.json"
+            before_read = state_file.read_bytes()
+            link, = call("links", "bound-to-other")
+            self.assertEqual(link["bridge_id"], "bound-to-other")
+            self.assertEqual(link["from_anchor"]["cells"][0]["q"], 0)
+            self.assertEqual(link["to_anchor"]["cells"][0]["q"], 40)
+            self.assertEqual(call("links"), [link])
+            self.assertEqual(call("links", "absent-link"), [])
+            self.assertEqual(state_file.read_bytes(), before_read)
+            call("unstitch", "bound-to-other")
+            self.assertEqual(call("links", "bound-to-other"), [])
+            self.assertTrue(call("describe", "bound.v2")["current"])
+
 
 if __name__ == "__main__":
     unittest.main()

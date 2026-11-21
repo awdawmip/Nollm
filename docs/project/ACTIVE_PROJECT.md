@@ -48,6 +48,8 @@ The [2026-11-21 evidence](../../lab/nollm-lab/repository_memory/enterprise_math/
 contains same-content source/flat/native readers and actual navigation scaling diagnostics.
 Use the measured failures and explicit missing tests to choose the next useful work; the public development cases are not withheld evidence.
 
+The [independent intake audit](../../lab/nollm-lab/repository_memory/enterprise_math/intake_audit_20261121/REPORT.md) records a real new R284CO understanding saved to the live field and reused by two fresh readers. It also rechecks navigation and adds a thin native link readback for the paired backend/gateway candidate in [em-research-mcp #112](https://github.com/awdawmip/em-research-mcp/pull/112). Candidate maintenance tests and the current live v23 are recorded separately.
+
 ## Governing and inherited sources
 
 - Highest principle: [NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md](../architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)
@@ -109,4 +111,5 @@ memory-slot tools remain the OpenClaw integration direction. Packaging, automati
 capture/Formation migration, current-version compatibility, Windows Provider Live,
 public ClawHub release and measured memory quality remain independently unclosed.
 The four cold branches and existing archive tags are preserved, not reactivated.
+
 

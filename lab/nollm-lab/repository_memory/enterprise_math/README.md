@@ -101,6 +101,7 @@ Core 的活动写入层为 0；不同语义粒度的判断可以同处这一层�
 - `save_statement(field, note_id, body, sources, at, revise)` 接收 Host 已经选定的固定来源引用，例如 `提交:路径#L起行-L末行`。`sources` 的顺序就是后续回源顺序；新增使用 `at=(q,r)`，原位更正使用 `revise=当前版本ID`。返回版本 ID、物理坐标和修订目标。
 - `describe(field, note_id)` 返回正文、来源、`current` 和适用的 `revises`。`current` 指该工作场的当前绑定，不判断来源库是否有更新。
 - `walk` 与 `literal_matches` 复用同一场；词法查询单列辅助路径，Surface 导航仍由 Host 逐页选择一个最终物理入口。
+- `stitch(field, link_id, from_id, to_id)` 与 `unstitch(field, link_id)` 操作 Host 明确选择的有向物理格连接。`links(field, link_id=None)` 只读当前原生 `BridgeSpec.to_mapping()` 记录，可按原 `link_id` 查看连接是否存在及实际 from/to anchors；已存在场中没有匹配项时返回空列表。写入回执未知时先据此核对原 ID 与预期端点，避免盲目重写。召回的 `via` 仅列核名，不标识具体连接。
 - `excerpt(repo, reference)` 保留本地 Git 回源；已有服务也可用自己的精确来源读取接口展开同样的引用。原 CLI 的 `save --repo --rev --cite` 继续把 Git 引用解析后调用 `save_statement`。
 
 服务无需为了保存理解另建一份 Git 工作树；出处由现有来源读取链提供。所有访问同一场的操作由同一个实际访问点串行处理，沿本实验单写者方式使用。新建空场可显式打开并关闭一次 `CoreRuntime(field)`；也可在初次部署时复制已有场，后续启动直接打开原目录。`walk`、`show` 和 `find` 对已经存在的场不改写持久状态。

@@ -1,0 +1,554 @@
+{
+  "fixture": "/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/native/behavior-field",
+  "checks": [
+    {
+      "name": "cache deletion preserves current physical page and canonical bytes",
+      "passed": true,
+      "renders": [
+        {
+          "kind": "physical",
+          "order": 0,
+          "call_count": 3
+        }
+      ],
+      "render_count": 1,
+      "elapsed_ms": 8.378
+    },
+    {
+      "name": "old physical cursor returns current revision and preserves historical version",
+      "passed": true,
+      "page": {
+        "kind": "physical",
+        "order": 0,
+        "page_size": 1,
+        "pages_left": 21,
+        "surface_calls": 3,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "physical-entry:facc7fe4ecf73359769a",
+            "physical_cell": [
+              0,
+              0,
+              0
+            ],
+            "membership_weight_q16": 65536,
+            "native_atoms": 1,
+            "previews": [
+              "Revised A"
+            ],
+            "truncated": false
+          }
+        ]
+      },
+      "recall": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 3,
+        "kernels": [
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Revised A\nCondition a=2"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      }
+    },
+    {
+      "name": "occupancy change reopens current page and rejects displaced menu ID",
+      "passed": true,
+      "page": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 1,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": true,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:7fabd21b38f993172285",
+            "window": [
+              0,
+              -20,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "New earlier occupied cell"
+            ],
+            "truncated": false
+          }
+        ]
+      },
+      "old_choice_error": "decision selected an unavailable Surface candidate"
+    },
+    {
+      "name": "directed cell stitch, peer recall, revised target, and exact withdrawal",
+      "passed": true,
+      "added": {
+        "id": "A-to-B",
+        "from": [
+          0,
+          0,
+          0
+        ],
+        "to": [
+          0,
+          30,
+          0
+        ]
+      },
+      "before": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 4,
+        "kernels": [
+          "bridge",
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Revised A\nCondition a=2"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "linked": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 4,
+        "kernels": [
+          "bridge",
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Revised A\nCondition a=2"
+          },
+          {
+            "id": "B.peer",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [
+              "bridge"
+            ],
+            "text": "Independent statement in B's physical cell"
+          },
+          {
+            "id": "B.v1",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [
+              "bridge"
+            ],
+            "text": "Remote B\nCondition b=1"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "reverse": {
+        "kind": "entry",
+        "entry": [
+          0,
+          30,
+          0
+        ],
+        "surface_calls": 6,
+        "kernels": [
+          "bridge",
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "B.peer",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [],
+            "text": "Independent statement in B's physical cell"
+          },
+          {
+            "id": "B.v1",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [],
+            "text": "Remote B\nCondition b=1"
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "revised_linked": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 4,
+        "kernels": [
+          "bridge",
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Revised A\nCondition a=2"
+          },
+          {
+            "id": "B.peer",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [
+              "bridge"
+            ],
+            "text": "Independent statement in B's physical cell"
+          },
+          {
+            "id": "B.v2",
+            "cell": [
+              0,
+              30,
+              0
+            ],
+            "via": [
+              "bridge"
+            ],
+            "text": "Revised remote B\nCondition b=2"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "removed": {
+        "removed": "A-to-B"
+      },
+      "restored": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 4,
+        "kernels": [
+          "bridge",
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Revised A\nCondition a=2"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      }
+    }
+  ],
+  "navigation": [
+    {
+      "action": "start",
+      "page": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 1,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": true,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:5202e51580cff15e5d6e",
+            "window": [
+              0,
+              -10,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "Earlier menu item"
+            ],
+            "truncated": false
+          }
+        ]
+      },
+      "renders": [
+        {
+          "kind": "surface",
+          "order": 0,
+          "call_count": 1
+        }
+      ],
+      "render_count": 1,
+      "elapsed_ms": 109.969
+    },
+    {
+      "action": "next",
+      "page": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 1,
+        "pages_left": 22,
+        "surface_calls": 2,
+        "has_more": true,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:d21d5bd531850899fb3f",
+            "window": [
+              0,
+              0,
+              0
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "Original A"
+            ],
+            "truncated": false
+          }
+        ]
+      },
+      "renders": [
+        {
+          "kind": "surface",
+          "order": 0,
+          "call_count": 2
+        }
+      ],
+      "render_count": 1,
+      "elapsed_ms": 8.409,
+      "full_replay_render_count": 2
+    },
+    {
+      "action": "open_physical",
+      "page": {
+        "kind": "physical",
+        "order": 0,
+        "page_size": 1,
+        "pages_left": 21,
+        "surface_calls": 3,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "physical-entry:facc7fe4ecf73359769a",
+            "physical_cell": [
+              0,
+              0,
+              0
+            ],
+            "membership_weight_q16": 65536,
+            "native_atoms": 1,
+            "previews": [
+              "Original A"
+            ],
+            "truncated": false
+          }
+        ]
+      },
+      "renders": [
+        {
+          "kind": "surface",
+          "order": 0,
+          "call_count": 2
+        },
+        {
+          "kind": "physical",
+          "order": 0,
+          "call_count": 3
+        }
+      ],
+      "render_count": 2,
+      "elapsed_ms": 9.816,
+      "full_replay_render_count": 3
+    },
+    {
+      "action": "select_entry",
+      "page": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 3,
+        "kernels": [
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "A.v1",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Original A\nCondition a=1"
+          },
+          {
+            "id": "neighbor",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Local neighboring evidence"
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "renders": [
+        {
+          "kind": "physical",
+          "order": 0,
+          "call_count": 3
+        }
+      ],
+      "render_count": 1,
+      "elapsed_ms": 14.435,
+      "full_replay_render_count": 3
+    }
+  ]
+}

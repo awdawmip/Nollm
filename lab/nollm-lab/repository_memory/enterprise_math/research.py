@@ -90,6 +90,14 @@ def unstitch(field, link_id):
         return {"removed": link_id}
 
 
+def links(field, link_id=None):
+    """Read current native bridges, optionally selecting one known link ID."""
+    require_field(field)
+    with CoreRuntime(field) as core:
+        return [link.to_mapping() for link in core.bridges()
+                if link_id is None or link.bridge_id == link_id]
+
+
 def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_cursor=False):
     page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls, cursor, with_cursor)
     if page["kind"] != "entry":
@@ -204,3 +212,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,0 +1,49 @@
+Independent candidate test run, 2026-11-21
+Candidate source: awdawmip/Nollm@34c16d166bf8e232fc8c1c35ff9c6d6ed1dbd766
+Unchanged native packages from ddf7dc00b2cea43dccc5d783d20aa88e21de4e0b; connector compare confirmed no intervening Core/Access changes.
+
+Command (cwd source/lab/nollm-lab/repository_memory):
+/workspace/scratch/4eeff3663e39/nollm_mcp_20261120/test-venv/bin/python -m unittest -v test_enterprise_math test_enterprise_math_api test_coverage_install
+
+Observed output:
+test_source_windows_and_current_neighborhood_across_reopens (test_enterprise_math.ResearchMemoryTest.test_source_windows_and_current_neighborhood_across_reopens) ... ok
+test_source_reader_save_revision_and_reopen_without_git_checkout (test_enterprise_math_api.ResearchApiTest.test_source_reader_save_revision_and_reopen_without_git_checkout) ... ok
+test_two_empty_entries_share_one_git_bound_statement (test_coverage_install.CoverageInstallTest.test_two_empty_entries_share_one_git_bound_statement) ... ok
+
+Ran 3 tests in 64.308s
+OK
+
+Independent script:
+python audit_native.py behavior
+python audit_native.py scale --count 128
+python audit_native.py scale --count 512
+
+Behavior: 4 assertion groups passed.
+Scale: first attempt constructed the correct fixtures but the audit harness requested a Core page size of 10000, exceeding the existing 256 limit; this was a harness failure, not a candidate failure. The harness was corrected to use native pagination, and both fixtures were reused without reconstruction:
+python audit_native.py scale --count 128 --reuse
+python audit_native.py scale --count 512 --reuse
+
+Observed completed output:
+{"mode": "scale", "count": 128, "width": null, "reached": true, "last_surface_calls": 14, "renders": 22, "error": null}
+{"mode": "scale", "count": 128, "width": 3, "reached": false, "last_surface_calls": 24, "renders": 31, "error": "Surface traversal call limit reached"}
+{"mode": "scale", "count": 512, "width": null, "reached": true, "last_surface_calls": 17, "renders": 27, "error": null}
+
+Full observation-level evidence: behavior-results.json, scale-results-128.json, scale-results-512.json.
+These are local candidate results, not online deployment verification or scientific theorem admission.
+
+Two bounded follow-ups reused the 512-cell fixture:
+python audit_native.py scale --count 512 --reuse --target-index 468
+{"mode": "scale", "count": 512, "target_index": 468, "width": null, "reached": true, "last_surface_calls": 10, "renders": 20, "error": null}
+
+The final target was selected by the largest first-membership root index across existing order-8 Surface windows, ties by coordinates; see hard-target-selection.json. No further scale expansion was run.
+python audit_native.py scale --count 512 --reuse --target-index 471
+{"mode": "scale", "count": 512, "target_index": 471, "width": null, "reached": true, "last_surface_calls": 19, "renders": 29, "error": null}
+
+For a fresh reproducible run, add --work-dir /path/to/new-audit-dir; the harness uses the candidate runtime next to its source, while fixtures and output go to the chosen new directory.
+
+Final narrow-case cost correction: the initial instrumentation discarded an already completed current-page render when the following descent raised the page-budget exception. The 31 count above is the original observation under that incomplete instrumentation; the final corrected total is 32. Only that failure case was rerun, and the successful cases were not repeated:
+from audit_native import ROOT, scale
+scale(128, ROOT/'scale-narrow-failure-renders.json', reuse=True, widths=[3])
+{"mode": "scale", "count": 128, "target_index": 0, "width": 3, "reached": false, "last_surface_calls": 24, "renders": 32, "error": "Surface traversal call limit reached"}
+failed_attempt_renders: [{"kind": "surface", "order": 1, "call_count": 24}]
+The 14/17 logical-page and 22/27 render success results are unchanged.

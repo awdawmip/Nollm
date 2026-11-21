@@ -1,0 +1,17 @@
+{
+  "base": "awdawmip/Nollm@34c16d166bf8e232fc8c1c35ff9c6d6ed1dbd766",
+  "command": "python3 -m unittest discover -s lab/nollm-lab/repository_memory -p test_enterprise_math_api.py",
+  "working_directory": "/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/architecture/nollm-candidate",
+  "result": "1 test passed",
+  "exit_code": 0,
+  "reported_elapsed_seconds": 7.053,
+  "scope": "real installed API, fresh process per call, temporary field, fixture source windows; no GitHub I/O or deployment",
+  "checks": [
+    "save and revision reopen",
+    "stitch and exact link-id read",
+    "all links and absent id",
+    "link reads leave Core bytes unchanged",
+    "unstitch and absent link read",
+    "note remains current"
+  ]
+}
