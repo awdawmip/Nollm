@@ -1,5 +1,6 @@
 """Project memory. The calling model authors text and chooses cells."""
 import argparse
+from dataclasses import asdict
 from itertools import islice
 import json
 from pathlib import Path
@@ -9,7 +10,7 @@ from nollm_access import (
     RECALL_SURFACE_BUDGET, AccessDecision, AccessRecallRequest, AccessRuntime,
     FileHandleStore, FileStatementStore, MemoryStatement,
 )
-from nollm_core import BridgeSpec, CoreRuntime, GeometryAnchor, PhysicalFieldScope, RecallBudget
+from nollm_core import BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope, RecallBudget
 
 from coverage_cli import address, coords, require_field, surface
 from repo_notes import _commit, _git
@@ -20,6 +21,7 @@ KERNELS = {
     "local": ("coverage_down", "coverage_up", "lateral"),
     "connected": ("bridge", "coverage_down", "coverage_up", "lateral"),
     "vertical": ("coverage_down", "coverage_up"),
+    "lateral": ("lateral",),
 }
 
 
@@ -69,8 +71,12 @@ def describe(field, note_id):
         current = bindings.statement_for_handle(bindings.get(note_id)) == note_id
     except KeyError:
         current = False
+    return _statement_description(statement, current)
+
+
+def _statement_description(statement, current):
     sources = [statement.source_handle]
-    result = {"id": note_id, "text": statement.content_utf8, "sources": sources,
+    result = {"id": statement.statement_id, "text": statement.content_utf8, "sources": sources,
               "current": current}
     for ref in statement.context_refs:
         if ref.startswith("revises:"):
@@ -119,29 +125,136 @@ def links(field, link_id=None):
                 if link_id is None or link.bridge_id == link_id]
 
 
-def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_cursor=False):
+def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_cursor=False, beam=16):
     page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls, cursor, with_cursor)
     if page["kind"] != "entry":
         # The first line is the Host's cue; expand the body after choosing a cell.
         for candidate in page["candidates"]:
             candidate["previews"] = [preview.splitlines()[0] for preview in candidate["previews"]]
         return page
-    entry = address(*page["entry"])
+    return {**page, **_locality(field, address(*page["entry"]), steps, limit, via, beam)}
+
+
+def _locality(field, entry, steps, limit, via, beam, *, placement=False):
     kernels = KERNELS[via]
+    budget = RecallBudget(steps, beam, steps, 1, int("bridge" in kernels), limit)
     with CoreRuntime(field) as core, AccessRuntime(
         core, FileStatementStore(field), FileHandleStore(field)
     ) as access:
         recall = access.recall(AccessRecallRequest(
             "project-memory", (entry,), allowed_kernels=kernels,
-            budget=RecallBudget(steps, 16, steps, 1, int("bridge" in kernels), limit),
+            budget=budget,
         ))
-    items = []
-    for hit in recall.items:
-        if hit.fallback_error:
-            raise RuntimeError(hit.fallback_error)
-        items.append({"id": hit.statement_id, "cell": coords(hit.handle.geometry_address),
-                      "via": hit.path, "text": hit.evidence_utf8})
-    return {**page, "kernels": kernels, "items": items, "budget_exhausted": recall.budget_exhausted}
+        items = []
+        for hit in recall.items:
+            if hit.fallback_error:
+                raise RuntimeError(hit.fallback_error)
+            item = {"id": hit.statement_id, "cell": coords(hit.handle.geometry_address),
+                    "via": hit.path, "text": hit.evidence_utf8}
+            if placement:
+                item.update(_statement_description(access.statement_store.get(hit.statement_id), True))
+            items.append(item)
+        result = {"kernels": kernels, "items": items, "budget": asdict(budget),
+                  "budget_exhausted": recall.budget_exhausted}
+        if placement:
+            # Core permits distinct atoms in an occupied cell. Nearby vacant
+            # cells come from its geometric Junction solver, without semantics.
+            cells = {entry, *(hit.handle.geometry_address for hit in recall.items
+                              if SCOPE.contains(hit.handle.geometry_address))}
+            cells.update(candidate.cell for candidate in core.junction_candidates(JunctionRequest(SCOPE, (entry,))))
+            result["cells"] = [
+                {"id": f"cell:{cell.layer}:{cell.q}:{cell.r}", "cell": coords(cell),
+                 "native_atoms": len(core.atoms_at(cell))}
+                for cell in sorted(cells, key=lambda cell: cell.stable_key())
+            ]
+    return result
+
+
+def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limit=None,
+              via=None, beam=None, cursor=None):
+    """Observe one field for either a query or an incoming proposition.
+
+    The disposable cursor retains the shown page or the chosen physical entry.
+    Reopening a locality may change its budget, while keeping that same entry.
+    """
+    field = Path(field)
+    state = dict(cursor) if cursor is not None else {"field": str(field.resolve())}
+    if state["field"] != str(field.resolve()):
+        raise ValueError("encounter cursor belongs to another field")
+    for name, value, default in (("steps", steps, 1), ("limit", limit, 5),
+                                  ("via", via, "local"), ("beam", beam, 16)):
+        state[name] = value if value is not None else state.get(name, default)
+    if "entry" in state:
+        if choices:
+            raise ValueError("encounter already has one physical entry; restart to choose another")
+    elif state.get("seed"):
+        # An empty Surface offers the Core origin as a physical entry. The Host
+        # still chooses it before seeing facts and placement targets.
+        with CoreRuntime(field) as core:
+            candidate = core.junction_candidates(JunctionRequest(SCOPE, (), candidate_limit=1))[0]
+        if not choices:
+            return {"kind": "physical", "surface_calls": state["surface_calls"],
+                    "candidates": [{"id": candidate.candidate_id, "physical_cell": coords(candidate.cell),
+                                    "native_atoms": 0, "previews": [], "truncated": False}],
+                    "cursor": state}
+        if list(choices) != [candidate.candidate_id]:
+            raise ValueError("choose the shown empty-field physical entry")
+        state.pop("seed")
+        state["entry"] = coords(candidate.cell)
+    else:
+        # Opening a new workspace uses Core's ordinary empty-state persistence.
+        if cursor is None:
+            with CoreRuntime(field):
+                pass
+        page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls,
+                       state.get("surface"), True)
+        state["surface_calls"] = page["surface_calls"]
+        if page["kind"] != "entry":
+            state["surface"] = page.pop("cursor")
+            if not page["candidates"] and page.get("start", {}).get("root_cells") == 0:
+                state.pop("surface")
+                state["seed"] = True
+                return encounter(field, cursor=state)
+            # Keep Access's stored-statement excerpts, beyond the title used by
+            # walk. Full bodies arrive in the locality; Surface's truncated flag
+            # reports omitted statements, not its character-limited excerpts.
+            return {**page, "cursor": state}
+        state.pop("surface", None)
+        state["entry"] = page["entry"]
+    locality = _locality(field, address(*state["entry"]), state["steps"], state["limit"],
+                         state["via"], state["beam"], placement=True)
+    return {"kind": "locality", "entry": state["entry"], "surface_calls": state["surface_calls"],
+            **locality, "cursor": state}
+
+
+def decide(field, cursor, action, target=None, *, note_id=None, body=None, sources=None):
+    """Apply the Host's terminal choice in its observed, current locality."""
+    result = {"kind": "result", "effect": action, "entry": cursor.get("entry")}
+    if action == "defer":
+        return result
+    if "entry" not in cursor:
+        raise ValueError("choose one physical entry before a terminal decision")
+    if action == "none":
+        return result
+    locality = encounter(field, cursor=cursor)
+    if action in {"recall", "reuse", "revision"}:
+        found = next((item for item in locality["items"] if item["id"] == target), None)
+        if found is None:
+            raise ValueError("choose a current fact shown in this locality")
+        if action == "recall":
+            return {**result, "item": found}
+        at, revise, reuse = None, target if action == "revision" else None, target if action == "reuse" else None
+    elif action == "new":
+        cell = next((item for item in locality["cells"] if item["id"] == target), None)
+        if cell is None:
+            raise ValueError("choose a placement cell shown in this locality")
+        at, revise, reuse = cell["cell"][1:], None, None
+    else:
+        raise ValueError(f"unknown encounter decision: {action}")
+    if not note_id or not body or not sources:
+        raise ValueError("a new expression needs an ID, body, and source references")
+    saved = save_statement(field, note_id, body, sources, at, revise, reuse)
+    return {**result, **saved}
 
 
 def literal_matches(field, term):
@@ -177,8 +290,30 @@ def main(argv=None, *, default_field=None):
     inspect_links = commands.add_parser("links", help="read native directed links, optionally by ID")
     inspect_links.add_argument("link_id", nargs="?")
     browse.add_argument("--steps", type=int, default=1, help="kernel steps from the selected physical entry (default: 1)")
+    browse.add_argument("--beam", type=int, default=16, help="maximum propagated cells per step (default: 16)")
     browse.add_argument("--limit", type=int, default=5, help="maximum returned statements after traversal (default: 5)")
     browse.add_argument("--via", choices=KERNELS, default="local")
+    meet = commands.add_parser("encounter", help="share Surface, one locality and a Host decision for queries or propositions")
+    meet.add_argument("choices", nargs="*", help="shown candidate IDs or next; omit to reopen the current page")
+    meet.add_argument("--cursor-file", type=Path, required=True, help="disposable state for this encounter")
+    meet.add_argument("--restart", action="store_true", help="start a new Surface traversal with this cursor file")
+    meet.add_argument("--order", type=int, help="initial aggregation order; default: Access budget")
+    meet.add_argument("--page-size", type=int, help="initial menu width; default: adaptive Surface")
+    meet.add_argument("--steps", type=int, help="propagation steps; default: 1, or the current encounter budget")
+    meet.add_argument("--beam", type=int, help="propagated cells per step; default: 16, or the current encounter budget")
+    meet.add_argument("--limit", type=int, help="returned facts; default: 5, or the current encounter budget")
+    meet.add_argument("--via", choices=KERNELS, help="propagation kernels; default: local, or the current encounter choice")
+    decision = meet.add_mutually_exclusive_group()
+    decision.add_argument("--recall", metavar="FACT_ID", help="return one observed current fact")
+    decision.add_argument("--reuse", metavar="FACT_ID", help="support one observed current fact")
+    decision.add_argument("--revise", metavar="FACT_ID", help="supersede one observed current fact in place")
+    decision.add_argument("--new", metavar="CELL_ID", help="place a distinct proposition at an observed available cell")
+    decision.add_argument("--none", action="store_true", help="finish with no relevant fact")
+    decision.add_argument("--defer", action="store_true", help="finish without deciding")
+    meet.add_argument("--id", help="immutable statement version ID for new, reuse or revise")
+    meet.add_argument("--repo", type=Path, help="source Git checkout for new, reuse or revise")
+    meet.add_argument("--rev", default="HEAD", help="source revision for new citations")
+    meet.add_argument("--cite", action="append", help="PATH#Lfirst-Llast (repeatable); statement body comes from stdin")
     search = commands.add_parser("find", help="case-insensitive literal in current IDs or bodies (auxiliary)")
     search.add_argument("term")
     search.add_argument("--limit", type=int, default=5)
@@ -220,12 +355,39 @@ def main(argv=None, *, default_field=None):
         path = args.cursor_file
         cursor = json.loads(path.read_text()) if path and args.choices else None
         result = walk(args.field, args.choices, args.order, args.page_size,
-                      args.steps, args.limit, args.via, cursor, path is not None)
+                      args.steps, args.limit, args.via, cursor, path is not None, args.beam)
         if path:
             if result["kind"] == "entry":
                 path.unlink(missing_ok=True)
             else:
                 path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
+    elif args.op == "encounter":
+        path = args.cursor_file
+        cursor = json.loads(path.read_text()) if path.exists() and not args.restart else None
+        selected = next(((action, target) for action, target in (
+            ("recall", args.recall), ("reuse", args.reuse), ("revision", args.revise),
+            ("new", args.new), ("none", args.none), ("defer", args.defer),
+        ) if target), None)
+        if selected is not None and (cursor is None or args.choices or args.restart):
+            parser.error("observe a locality with --cursor-file before choosing its outcome")
+        if selected is not None and any(value is not None for value in
+                                        (args.order, args.page_size, args.steps, args.beam, args.limit, args.via)):
+            parser.error("reopen the encounter with its new budget before choosing an outcome")
+        if selected is not None and selected[0] in {"new", "reuse", "revision"}:
+            if not args.id or args.repo is None or not args.cite:
+                parser.error("new, reuse and revise need --id, --repo and --cite, with the body on stdin")
+            sources = [f"{_commit(args.repo, args.rev)}:{citation}" for citation in args.cite]
+            body = sys.stdin.read().strip()
+        else:
+            sources, body = None, None
+        if selected is None:
+            result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
+                               steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor)
+            path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
+        else:
+            result = decide(args.field, cursor, *selected,
+                            note_id=args.id, body=body, sources=sources)
+            path.unlink()
     elif args.op == "stitch":
         result = stitch(args.field, args.link_id, args.from_id, args.to_id)
     elif args.op == "unstitch":

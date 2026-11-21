@@ -82,7 +82,7 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
     step = 0
     truncated_by_budget = False
     while frontier and step <= request.budget.max_steps:
-        merged: dict[GeometryAddress, tuple[int, int]] = {}
+        merged: dict[GeometryAddress, tuple[int, int, tuple[str, ...]]] = {}
         for cell, score, bridge_steps, path in frontier:
             previous_cell = best.get(cell)
             if previous_cell is not None and (score < previous_cell[0] or (score == previous_cell[0] and path >= previous_cell[1])):
@@ -92,10 +92,6 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
                 current = found.get(handle)
                 if current is None or score > current.score_q16 or (score == current.score_q16 and path < current.path):
                     found[handle] = CoreRecallItem(handle, atom, score, path)
-            if step == request.budget.max_steps:
-                if _targets(runtime, cell, request, bridge_steps):
-                    truncated_by_budget = True
-                continue
             for target, weight, next_bridge_steps, kernel in _targets(runtime, cell, request, bridge_steps):
                 if min(abs(target.layer - layer) for layer in entry_layers) > request.budget.max_layer_delta:
                     continue
@@ -105,14 +101,21 @@ def resolve_recall(runtime: object, request: CoreRecallRequest) -> CoreRecallRes
                 if previous is None or target_score > previous[0] or (target_score == previous[0] and target_path < previous[2]):
                     merged[target] = (target_score, next_bridge_steps, target_path)
         runtime._emit_trace(CoreTraceEvent("core.recall.frontier", {"step": step, "cell_count": len(frontier)}, "internal"))
-        frontier = [
+        candidates = [
             (cell, score, bridge_steps, path)
-            for cell, (score, bridge_steps, path) in sorted(merged.items(), key=lambda item: (-item[1][0], item[1][2], item[0].stable_key()))[: request.budget.beam]
+            for cell, (score, bridge_steps, path) in sorted(merged.items(), key=lambda item: (-item[1][0], item[1][2], item[0].stable_key()))
             if cell not in best or score > best[cell][0] or (score == best[cell][0] and path < best[cell][1])
         ]
+        if step == request.budget.max_steps:
+            truncated_by_budget = truncated_by_budget or bool(candidates)
+            break
+        # Cyclic and convergent paths must not spend slots on discarded revisits.
+        if len(candidates) > request.budget.beam:
+            truncated_by_budget = True
+        frontier = candidates[: request.budget.beam]
         step += 1
     items = tuple(sorted(found.values(), key=lambda item: (-item.score_q16, item.handle.geometry_address.stable_key(), item.handle.local_atom_id))[: request.budget.max_results])
-    exhausted = truncated_by_budget or bool(frontier)
+    exhausted = truncated_by_budget or len(found) > request.budget.max_results
     result = CoreRecallResult(request.request_id, items, exhausted)
     runtime._emit_trace(CoreTraceEvent("core.recall.end", {"request_id": request.request_id, "result_count": len(items), "budget_exhausted": exhausted}, "stable"))
     return result

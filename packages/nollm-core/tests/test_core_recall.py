@@ -56,3 +56,105 @@ def test_recall_budget_empty_cell_and_no_identity_entry(tmp_path) -> None:
     assert exhausted.budget_exhausted
     assert not hasattr(runtime, "resolve_entry_by_shard")
     assert not hasattr(runtime, "get_by_global_id")
+
+
+def test_lateral_revisits_do_not_spend_beam(tmp_path) -> None:
+    class Trace:
+        def __init__(self):
+            self.frontier_sizes = []
+
+        def emit(self, event):
+            if event.name == "core.recall.frontier":
+                self.frontier_sizes.append(event.fields["cell_count"])
+
+    trace = Trace()
+    runtime = CoreRuntime(tmp_path, trace_sink=trace)
+    entry = GeometryAddress("default_dream_v1", "default", 0, 0, 0)
+    second_ring = entry.lateral(2)
+    for index, cell in enumerate(second_ring):
+        runtime.put(MemoryAtom(f"ring2-{index}", "second ring"), cell)
+
+    result = runtime.recall(request(entry, ("lateral",), beam=12, max_layer_delta=0))
+
+    # The six first-ring cells converge on twelve new cells and seven revisits.
+    # All twelve new cells fit without spending extra steps or beam slots.
+    assert {item.handle.geometry_address for item in result.items} == set(second_ring)
+    assert all(item.path == ("lateral", "lateral") for item in result.items)
+    assert trace.frontier_sizes == [1, 6, 12]
+
+
+def test_recall_keeps_improving_revisit(tmp_path) -> None:
+    runtime = CoreRuntime(tmp_path)
+    entry, intermediate, target = (address(0, q, 0) for q in (0, 10, 20))
+    runtime.put(MemoryAtom("target", "target"), target)
+    for name, source, destination, weight in (
+        ("direct", entry, target, 1 << 14),
+        ("first", entry, intermediate, 1 << 16),
+        ("second", intermediate, target, 1 << 15),
+    ):
+        runtime.bridge_add(BridgeSpec(
+            name, GeometryAnchor("from", (source,)), GeometryAnchor("to", (destination,)),
+            weight, "normal", max_steps=2, max_fanout=1,
+        ))
+
+    result = runtime.recall(request(entry, ("bridge",), beam=2))
+
+    assert [(item.atom.atom_id, item.score_q16, item.path) for item in result.items] == [
+        ("target", 1 << 15, ("bridge", "bridge")),
+    ]
+    assert not result.budget_exhausted
+
+
+def test_beam_clipping_reports_exhaustion_even_when_selected_branch_ends(tmp_path) -> None:
+    runtime = CoreRuntime(tmp_path)
+    entry = address(0, 0, 0)
+    leaves = (address(0, 10, 0), address(0, 20, 0))
+    for index, cell in enumerate(leaves):
+        runtime.put(MemoryAtom(f"leaf-{index}", "leaf"), cell)
+    runtime.bridge_add(BridgeSpec(
+        "fork", GeometryAnchor("from", (entry,)), GeometryAnchor("to", leaves),
+        1 << 15, "normal", max_steps=1, max_fanout=2,
+    ))
+
+    clipped = runtime.recall(request(entry, ("bridge",), beam=1, max_bridge_steps=1))
+    complete = runtime.recall(request(entry, ("bridge",), beam=2, max_bridge_steps=1))
+
+    assert [item.atom.atom_id for item in clipped.items] == ["leaf-0"]
+    assert clipped.budget_exhausted
+    assert {item.atom.atom_id for item in complete.items} == {"leaf-0", "leaf-1"}
+    assert not complete.budget_exhausted
+
+
+def test_terminal_revisits_and_out_of_layer_targets_do_not_report_exhaustion(tmp_path) -> None:
+    runtime = CoreRuntime(tmp_path)
+    entry, neighbor = address(0, 0, 0), address(0, 10, 0)
+    runtime.put(MemoryAtom("neighbor", "neighbor"), neighbor)
+    for name, source, target in (("out", entry, neighbor), ("back", neighbor, entry)):
+        runtime.bridge_add(BridgeSpec(
+            name, GeometryAnchor("from", (source,)), GeometryAnchor("to", (target,)),
+            1 << 15, "normal", max_steps=2, max_fanout=1,
+        ))
+
+    kernels = ("bridge", "coverage_up")
+    clipped = runtime.recall(request(entry, kernels, max_steps=0, max_layer_delta=0))
+    complete = runtime.recall(request(entry, kernels, max_steps=1, max_layer_delta=0))
+
+    assert clipped.items == ()
+    assert clipped.budget_exhausted
+    assert [item.atom.atom_id for item in complete.items] == ["neighbor"]
+    assert not complete.budget_exhausted
+
+
+def test_result_clipping_reports_exhaustion_without_propagation(tmp_path) -> None:
+    runtime = CoreRuntime(tmp_path)
+    entry = address(0, 0, 0)
+    for index in range(3):
+        runtime.put(MemoryAtom(f"atom-{index}", "occupied entry"), entry)
+
+    clipped = runtime.recall(request(entry, (), max_steps=0, max_results=2))
+    complete = runtime.recall(request(entry, (), max_steps=0, max_results=3))
+
+    assert [item.atom.atom_id for item in clipped.items] == ["atom-0", "atom-1"]
+    assert clipped.budget_exhausted
+    assert len(complete.items) == 3
+    assert not complete.budget_exhausted

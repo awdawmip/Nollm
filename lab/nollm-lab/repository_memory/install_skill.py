@@ -38,6 +38,8 @@ def install(destination):
     files = {source / "SKILL.md": Path("SKILL.md"),
              source / "scripts/memory.py": Path("scripts/memory.py"),
              REPO / "LICENSE": Path("LICENSE")}
+    for path in (source / "references").rglob("*.md"):
+        files[path] = path.relative_to(source)
     runtime = Path("scripts/runtime")
     for name in ("field_demo.py", "repo_notes.py", "task_recall.py", "facts.py", "extra_languages.py", "records.py",
                  "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json",

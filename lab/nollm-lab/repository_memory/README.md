@@ -1,124 +1,145 @@
-# Nollm 仓库记忆实验 / Repository Memory
+# Nollm 仓库与项目记忆 / Repository Memory
 
-进取数论 TASK 可以直接打开随分支保存的研究场，按问题选择物理入口、回到 EM 原文，并把新判断留给后续会话。[科研适配器与加载命令](enterprise_math/README.md) · [冷会话实际试用](enterprise_math/TRIAL.md)
+普通项目记忆从 **Surface → Host 选择 → 一个物理入口 → 局部事实或可写位置** 开始。
+同一个 `encounter` 支持查询、补充表达、原位修订和新判断。真实 LLM 阅读语义、选择入口
+和位置；Core 执行占用、Coverage、邻接和桥，Access 返回对应表达与固定来源。
 
-从 Nollm 自身的源码理解上下层覆盖，可直接打开 [正式 AOCI 工程索引](self_study/aoci/README.md) 或运行 [旋转蜂巢覆盖与单入口实验](self_study/README.md)。
+Nollm 自身的持续工作场和开发记录见 [自举入口](self_bootstrap/README.md)。
+进取数论已有研究场见 [EM 入口](enterprise_math/README.md) 与
+[冷会话使用记录](enterprise_math/TRIAL.md)。AOCI 是
+[工程理解和回源辅助](self_study/aoci/README.md)，其编码与显式引用另见下文。
 
-这条实验分支让下一个读代码的人或模型可以接着使用已经核过的工程判断。例如，在同一个记忆位置附加第二条说明后，正常召回仍读哪一条？示例用两条带源码证据的说明回答这个问题。仓库里保存的是说明和 Git 证据；原生几何记忆演示在临时工作区内运行。
+## 安装和开始
 
-## 在编码助手中开始
-
-在 Nollm 仓库根目录安装到 Codex 的个人技能目录，然后在要接手的 Git 仓库里打开新会话。需要 Python 3.11+ 和 Git。
+需要 Python 3.11+ 和 Git。在 Nollm 仓库根目录执行：
 
 ```sh
 python3 lab/nollm-lab/repository_memory/install_skill.py --host codex
 ```
 
-```text
-$nollm-repository-memory 我第一次接手这个仓库。先看入口、实现和测试，再告诉我已核实哪些职责、还缺哪些证据。
+安装器将运行时代码、使用说明和辅助参考放入新目录。也可用
+`--host claude|copilot|opencode`，或 `--dest /path/to/new/nollm-repository-memory`
+指定新目录；安装品可独立移动。更多宿主位置见 [HOSTS.md](HOSTS.md)。
+
+从实际安装位置运行，明确选择持续使用的项目场和源码仓库：
+
+```sh
+cli='/path/to/nollm-repository-memory/scripts/memory.py'
+field='/path/to/project-field'
+repo='/path/to/source-repository'
+session='/tmp/nollm-encounter.json'
+python3 "$cli" project --field "$field" encounter --cursor-file "$session"
 ```
 
-刚开始的仓库可以用 `brief` 获取跟踪文件数和建议阅读的路径。已有记录时，它也会显示新鲜判断及待复核项。工具从目标工作树根目录定位 `.nollm/repository-notes.json`。团队可以指定另一份清单，也可以只对某个模块做简报。
+阅读本页预览，以当前任务为依据选择本页候选，再继续观察：
 
-- [Codex、Claude Code、Copilot CLI 和 OpenCode 的安装目录、调用方法与验证](HOSTS.md)
-- [AOCI-CODE 的适用范围、工作流程与 Nollm 的对应操作](AOCI_COMPARISON.md)
-- [提取机器标记、查询架构关系和从原生场读回记录](skills/nollm-repository-memory/SKILL.md#提取机器标记并检验架构关系)
-- [机器事实表的字段、解析范围与证据含义](FACTS.md)
+```sh
+python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file "$session"
+```
 
-## 保存项目判断与补充证据
+`surface` 页面展示聚合观察，`physical` 页面展示最终物理候选。选择一个物理入口后，
+`locality` 页面返回 `entry`、当前事实 `items`、可写位置 `cells` 与实际预算。
+页面预览可能截短正文；局部页面返回完整判断与条件。
+新场先提供原点种子；Host 选择该物理候选后才能在本次局部中形成第一条记忆。
+重复执行而不传新选择可重开当前页；`--restart` 开始新的观察。
 
-安装后的 `scripts/memory.py project --field FIELD` 使用显式项目场。`save` 从
-标准输入读取 Host 编写的正文，每个表达使用自己的版本 ID；`--repo`、`--rev`
-和可重复的 `--cite PATH#Lfirst-Llast` 固定其 Git 来源。
+在 Nollm 源码检出中，也可直接运行同一个 CLI：
 
-| 保存选择 | 效果 |
+```sh
+python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
+  project --field lab/nollm-lab/repository_memory/self_bootstrap/field \
+  encounter --cursor-file /tmp/nollm-self-encounter.json
+```
+
+场保留已有语义布局和来源；会话文件只保存可丢弃的导航状态。
+运行时代码升级后继续用 `--field` 打开原场，不从来源清单自动重建坐标。
+
+## 同一次相遇的读取与写入
+
+在 `locality` 页面选择当前事实 ID 或可用位置 ID：
+
+| Host 的语义决定 | 终结选项 | 持久结果 |
+| --- | --- | --- |
+| 查询得到所需事实 | `--recall FACT_ID` | 返回该事实与来源 |
+| 新表达支持同一当前判断 | `--reuse FACT_ID --id NEW_ID` | 保存独立补充表达，复用原占用 |
+| 同一事实需要更正 | `--revise FACT_ID --id NEW_ID` | 原位更新当前版本，保留旧正文和来源 |
+| 新内容是独立判断 | `--new CELL_ID --id NEW_ID` | 在 Host 选定的局部位置放置 |
+| 本次查询没有相关事实 | `--none` | 返回明确空结果 |
+| 尚不确定 | `--defer` | 结束本次相遇，暂缓决定 |
+
+查询示例：
+
+```sh
+python3 "$cli" project --field "$field" encounter --cursor-file "$session" --recall "$fact_id"
+```
+
+写入示例；将位置、版本 ID、路径和行号换成实际读过的内容，正文从 stdin 传入：
+
+```sh
+python3 "$cli" project --field "$field" encounter --cursor-file "$session" \
+  --new "$cell_id" --id reading.v1 --repo "$repo" --rev HEAD \
+  --cite 'src/reader.py#L10-L20' --cite 'tests/test_reader.py#L25-L40' < judgment.txt
+```
+
+将 `--new "$cell_id"` 换成 `--reuse "$fact_id"` 或 `--revise "$fact_id"` 保存补充或修订。
+每条表达写清可独立理解的判断、条件和影响，关系表达引用双方证据。终结后会话文件删除。
+
+`--steps`、`--beam`、`--limit` 分别控制传播步数、每步候选数和结果数；
+`--via local|connected|vertical|lateral` 控制本次可用的几何核。
+需要改变预算时，先重开同一个局部并观察结果，再选择终结动作。
+预算耗尽或空结果不会隐式改走词项搜索。需要源码辅助时可以直接使用，并按实际机制
+记录取得的证据与仍然存在的原生发现缺口。
+
+## 回源、版本和持续维护
+
+```sh
+python3 "$cli" project --field "$field" show "$statement_id"
+python3 "$cli" project --field "$field" source --id "$statement_id" --number 1 --repo "$repo"
+python3 "$cli" project --field "$field" links
+```
+
+`show` 展开准确的表达版本和引用；`source` 返回固定 Git 提交的原文行。
+`current` 表示场内当前绑定，引用中的提交说明理解基于哪个源码版本。
+支持表达有自己的 ID、正文和固定来源，显示 `current: false`；
+修订后前一版本与支持表达仍可精确读取。
+
+按代码差分与场内引用核查受影响的理解，Host 决定保留、补充或修订。
+`stitch LINK_ID FROM_ID TO_ID`、`unstitch LINK_ID` 维护有依据的定向格级连接。
+同格其他表达也可能被桥召回，因此正文修订后按实际含义判断连接是否继续有用。
+
+`walk` 保留为只读 Surface 导航与单入口展开；
+`save --at Q R|--reuse ID|--revise ID` 保留为 Host 已明确选择时的直接写入接口。
+普通形成和召回优先使用共同的 `encounter`。完整用法见
+[仓库记忆 skill](skills/nollm-repository-memory/SKILL.md)。
+
+## 源码辅助、对照基线与 AOCI
+
+源码盘点、符号与图检索、旧清单、明确给定坐标的 Coverage 实验、AOCI 编解码仍然可用，
+使用显式命名空间：
+
+| 调用 | 实际机制 |
 | --- | --- |
-| `--at Q R` | 在 Host 选择的物理格放置新判断 |
-| `--reuse CURRENT_ID` | 保存支持同一当前判断的另一份表达与来源，复用已有占用 |
-| `--revise CURRENT_ID` | 在原位置把新版设为当前判断 |
+| `aux brief/inventory/capture/review/source/view/status` | Git 证据清单与源码核查 |
+| `aux facts/records/route/check-marks` | 机器事实、声明关系与源码候选导航 |
+| `aux coverage` | Host 明确给定位置的几何实验 |
+| `aux aoci`、`aux aoci-field` | AOCI 槽位编码和显式引用的物理表示 |
+| `baseline recall` | 固定词项评分入口与共享来源启发式布局 |
+| `baseline field` | 来源/图路由入口与启发式布局，再执行 Core 邻域读取 |
 
-三种选择互斥。Host 明确决定新表达支持哪一个当前判断；正文相似度不参与决定。
-例如，已保存 `reading.v1` 后，可以补充另一个来源：
+旧的未限定命令会明确提示对应的新调用，不再充当普通记忆入口。
+`project/em find TERM` 是另一个显式字面工具。工程搜索、字面扫描、对照基线与
+原生 Surface 发现按完整路径分别评价。
 
-```sh
-python3 /path/to/skill/scripts/memory.py project --field /path/to/field \
-  save reading.support --reuse reading.v1 --repo /path/to/repo --rev HEAD \
-  --cite src/reader.py#L10-L20 < supporting-expression.txt
-```
+[辅助命令与迁移示例](skills/nollm-repository-memory/references/auxiliary.md)
+保留原清单格式、机器语料、Coverage 和 AOCI 的操作说明。
+历史清单及实验数据继续保留；迁入项目场时由 Host 阅读判断和原文后选择位置。
+AOCI 的对象、字典和 R 引用来自输入代码卷，其往返成功验证的是表示保真。
 
-`show reading.support` 显示补充正文、固定来源、`reuses` 和 `current: false`；
-`source --id reading.support --repo /path/to/repo` 读取其原文。
-原判断保持当前正文、位置、占用和连接，Surface 与召回继续呈现原判断。
-后续 `save reading.v2 --revise reading.v1 ...` 将新版设为当前判断，旧判断和
-补充表达仍可按各自 ID 查看及回源。`current` 仅表示该版本是否正在呈现。
+## 历史量化结果与复现
 
-## 先试读
+以下保留早期清单/来源读取实验的原范围和计量。它们用于比较已编写理解与来源材料，
+不会作为当前原生发现路径的质量结论。
 
-在本分支的仓库根目录运行。源码盘点与阅读只依赖 Git 和 Python 标准库；原生记忆演示直接导入仓库自带的 Core 与 Access。
-
-```sh
-D=lab/nollm-lab/repository_memory
-M="$D/examples/current-notes.json"
-python3 "$D/repo_notes.py" brief --repo . --manifest "$M" --scope packages/nollm-access --limit 3
-python3 "$D/repo_notes.py" view --repo . --manifest "$M"
-python3 "$D/repo_notes.py" source --repo . --manifest "$M" --key binding.current
-python3 "$D/repo_notes.py" inventory --repo . --scope packages/nollm-access --manifest "$M"
-```
-
-`view` 只显示全部已声明证据仍匹配的说明。`source` 取回所选说明的原始 Git blob 字节；`--evidence-index 1` 选第一份辅助证据。`inventory` 列出范围内 Git 跟踪的普通文件：哪些是主证据、哪些只用来佐证、哪些尚无人记录。`review` 列出需要重读的说明；其中一个外部依赖变化，也会影响这条说明。来源受版本控制，工作树里尚未提交的编辑不参与比较。
-
-## 用公开契约定位证据
-
-如果任务已经给出 `CoreRuntime.export_state_bytes`，先直接查符号。Core 提供该方法，Snapshot 通过端口调用它，测试断言快照与导出字节相等。以下查询可以分别找到实现、使用方、断言和公开方法清单。
-
-```sh
-git grep -n -F 'export_state_bytes' HEAD -- packages/nollm-core/src packages/nollm-snapshot \
-  docs/architecture/module-ownership/CORE_PUBLIC_API_ALLOWLIST.json
-```
-
-记录“快照依赖哪项接口”时，可用 Snapshot 的 `ports.py` 作主来源，把 `service.py` 和 `tests/test_core_snapshot.py` 加入辅助证据。若判断涉及 Core 对外开放的方法名，还需引用允许列表及 `test_core_public_api_allowlist.py`。模块归属可在现有 `MODULE_OWNERSHIP_MANIFEST.csv` 按文件路径核对。这样契约、调用方或相关测试一旦变化，依赖它们的旧判断就会进入复核队列。[Snapshot 端口](../../../packages/nollm-snapshot/src/nollm_snapshot/ports.py) · [快照测试](../../../packages/nollm-snapshot/tests/test_core_snapshot.py) · [公开方法回归](../../../packages/nollm-core/tests/test_core_public_api_allowlist.py) · [模块归属清单](../../../docs/architecture/module-ownership/MODULE_OWNERSHIP_MANIFEST.csv)
-
-## 为自己的仓库写第一条记忆
-
-1. 用 `inventory --repo /path/to/repo --scope src` 盘点指定范围。首次无需 manifest；`--scope .` 明确表示整库。
-2. 作者或宿主模型读取固定提交中的源码及相关证据，写下完整判断。优先记录“修改这里时还要考虑什么”“为什么这个分支要保留”。路径和标签本身不能回答这些问题。
-3. 将下面的 JSON 存成草案，将占位值替换为实际提交、路径与判断。`reviewed_commit` 使用 `git -C /path/to/repo rev-parse HEAD` 的完整输出；`also` 可省略。
-
-```json
-{
-  "reviewed_commit": "<full commit the author actually read>",
-  "notes": [{
-    "key": "order.commit-visibility",
-    "text": "<one independently understandable conclusion supported by these sources>",
-    "source": "src/order.py",
-    "also": ["tests/test_order.py"]
-  }]
-}
-```
-
-```sh
-python3 "$D/repo_notes.py" capture --repo /path/to/repo --draft draft.json --manifest notes.json
-python3 "$D/repo_notes.py" status  --repo /path/to/repo --manifest notes.json
-```
-
-一次 `capture` 只更新所给的键，其余说明保留各自核阅时的版本。草案与目标提交不符、或一个批次里有无效来源时，不改已有清单。证据字节改变、移除或换成其他类型后，先重读影响到的说明，再提交新版草案。`--rev <commit>` 可以重放历史视图。清单由一名写者维护，可以和所描述的项目一起提交；仓库规则的效力仍由原始规则文件决定。
-
-## 原生 Nollm 实验
-
-```sh
-PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
-  python3 "$D/field_demo.py" --repo . --manifest "$M" \
-  --place binding.current 0 0 --place recall.evidence 1 0 \
-  --place snapshot.scope 8 0 --entry 0 0
-```
-
-宿主把“当前绑定”和“召回时核对当前正文”放在相邻位置，把快照职责放得远一些。程序只把新鲜说明转换为原生 `MemoryStatement`，通过 Access 写入，释放运行时，再从磁盘重开。一个物理入口、一步侧向传播，能取回入口和邻格的正文与引用，远处的快照说明不在结果中。这里坐标由宿主显式给出，文件名、内容关键词和说明键均不决定位置。临时场在演示结束后销毁。
-
-## 将 AOCI 标记放在几何坐标中
-
-已安装 skill 的 `geometry encode` 命令将代码卷转换成带校验的二进制坐标记录，`geometry query` 按公共字典解释相对位置并取回槽值。全局字典、对象身份和字段正文分别承担含义与内容。恢复出的规范化代码卷可供其他工具继续阅读。[编码、结构查询与恢复示例](skills/nollm-repository-memory/SKILL.md#aoci-代码卷的几何标记)
-
-## 量化结果与复现
 
 ```sh
 python3 "$D/evaluate_reads.py" --repo .
@@ -130,30 +151,16 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 
 另一次独立试读中，答题者先根据五条说明的简写选定要读的文件，之后才开放所选源码；六题的答复与事先写好的判分要点相符。它只凭说明答了一道题，其余五道回源。这个小样本用于检查说明是否能引导核查；它没有比较模型优劣或自动选择几何入口的表现。`evaluate_reads.py --questions-only` 可导出不含答案的题目供新实验使用。
 
-## 设计对照及后续实验
+## 设计与后续比较
 
-[AOCI-CODE](https://github.com/aoci-spec/aoci-code) 将模型编写的源码说明保存在 Git 中，用版本变化驱动维护，主要入口会读取项目全景。[作者论文](https://arxiv.org/abs/2605.02421)提供了这种做法的研究背景。本分支采用 Nollm 自己的说明格式、证据处理和原生记忆接口。可选的 `geometry` 命令独立读写 AOCI 代码卷的规范字段，可直接处理本地卷。上游当前版本列明 [FSL-1.1-MIT](https://github.com/aoci-spec/aoci-code/blob/5be709e62d93861f56257e7ee7066f5d64d576c3/LICENSE)。
+[AOCI-CODE](https://github.com/aoci-spec/aoci-code) 将模型编写的源码说明保存在 Git 中，
+用版本变化驱动维护；[作者论文](https://arxiv.org/abs/2605.02421)提供研究背景。
+本分支使用 Nollm 的证据、语句、绑定和原生几何接口。旧路线的说明与报告按形成时的
+实现保存，新工作从上面的原生入口继续。
 
-真实改动任务的分组、验收测试、证据命中和输入计量见下方三种阅读方式的对照报告。
-
-## 安装和使用完整 skill
-
-在仓库根目录执行以下命令。安装器将运行所需的 Python 文件放入新目录，安装品可以独立移动到另一台有 Git 和 Python 3.11+ 的机器。
-
-```sh
-D=lab/nollm-lab/repository_memory
-SKILL="$HOME/.agents/skills/nollm-repository-memory"
-python3 "$D/install_skill.py" --dest "$SKILL"
-python3 "$SKILL/scripts/memory.py" recall --repo . \
-  --manifest "$D/examples/current-notes.json" --format view \
-  --query 'Which statement stays current when another is attached to an occupied handle?'
-```
-
-`--format view` 返回适合阅读的短视图。需要入口、匹配词、遍历路径或完整 Git 对象 ID 时使用默认 JSON。仓库没有清单时，从 `inventory` 开始；对路径或符号已很明确的修改也可以直接搜索。
-
-默认情况下，首次命中将新鲜说明写入仓库 Git 目录下的原生场。下一次查询只要核验出相同的一组说明和证据，就能重开并复用。用 `--no-cache` 可单次使用临时场。历史缓存可能包含已过期的正文；需要释放空间时，等查询结束后清理 Git 目录内的 `nollm-repository-memory/fields-v1/`，下次命中会重建。
-
-- [Skill 使用说明与跨会话交接](skills/nollm-repository-memory/SKILL.md)
-- [架构、实施步骤与验收标准](ARCHITECTURE_AND_PLAN.md)
 - [项目缩影与原生几何架构研究](PROJECT_MINIATURE_DESIGN.md)
+- [自身开发、理解维护与已观察失败](self_bootstrap/README.md)
+- [历史清单/词项路线的架构与实施记录](ARCHITECTURE_AND_PLAN.md)
 - [三种阅读方式的改动对照与复现](comparison/README.md)
+- [机器事实的字段和解析范围](FACTS.md)
+- [AOCI-CODE 的工程工作流对照](AOCI_COMPARISON.md)

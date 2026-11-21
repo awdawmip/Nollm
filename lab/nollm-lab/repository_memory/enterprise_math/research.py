@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from project_memory import (
-    KERNELS, SCOPE, describe, excerpt, links, literal_matches, save, save_statement,
+    KERNELS, SCOPE, decide, describe, encounter, excerpt, links, literal_matches, save, save_statement,
     stitch, unstitch, walk,
 )
 from project_memory import main as project_main

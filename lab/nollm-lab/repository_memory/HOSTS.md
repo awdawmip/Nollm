@@ -1,6 +1,6 @@
 # 在编程助手中使用仓库记忆
 
-从 Nollm 仓库根目录运行下面的命令。安装器会把 `SKILL.md`、命令入口、原生运行时和许可证复制到宿主能发现的目录，并打印安装位置。使用 skill 的机器需要 Python 3.11+、Git 和目标提交的本地 Git 对象。复制完成后，仓库记忆命令可离线工作。模型会话的联网、工具执行和目录访问由宿主控制。
+从 Nollm 仓库根目录运行下面的命令。安装器会把 `SKILL.md`、按需参考说明、命令入口、原生运行时和许可证复制到宿主能发现的目录，并打印安装位置。使用 skill 的机器需要 Python 3.11+、Git 和目标提交的本地 Git 对象。复制完成后，仓库记忆命令可离线工作。模型会话的联网、工具执行和目录访问由宿主控制。
 
 ## 选择宿主和范围
 
@@ -33,14 +33,16 @@ python3 "$I" --host claude --scope repo --repo /path/to/project
 $nollm-repository-memory 接手这个仓库，概括各模块的职责，并核查与当前改动有关的证据。
 ```
 
-也可描述具体行为问题，例如“给绑定附加第二条语句后，正常召回会返回哪一条？” 宿主可依据技能描述选择是否调用。请在技能指向的目录运行其 `scripts/memory.py`，将目标 Git 仓库作为 `--repo`。首次使用的仓库可以从盘点和采集开始。
+也可描述具体行为问题，例如“给绑定附加第二条语句后，正常召回会返回哪一条？” 宿主可依据技能描述选择是否调用。从已安装 skill 的 `scripts/memory.py` 使用 `project --field FIELD encounter --cursor-file SESSION`，观察 Surface，选择一个物理入口，再比较局部判断和可用位置。首次使用空场时选择显示的起始位置。模型据实际源码形成判断，再从同一局部决定保存、支持或修订；需要固定 Git 回源或保存引用时显式给出 `--repo`。
+
+工作场放在安装目录外，升级运行时代码后继续打开原场。`project … walk` 保留原生只读浏览；`show/source` 用于精确版本和原文；`find` 是显式字面辅助。普通任务不再从外部清单评分或来源路由选入口。盘点、旧清单维护、源码图路由和 AOCI 转换使用明确的 `aux` 命令，词法/来源布局比较使用 `baseline`，详见安装包中的 `references/auxiliary.md`。
 
 若需单独检查安装，在一次新的安装中保存输出路径，然后从任意目录验证。
 
 ```sh
 skill=$(python3 "$I" --host opencode --scope repo --repo /path/to/project)
 python3 "$skill/scripts/memory.py" --help
-python3 "$skill/scripts/memory.py" brief --repo /path/to/project --scope .
+python3 "$skill/scripts/memory.py" project --field /path/to/project-memory encounter --cursor-file /path/to/session.json
 ```
 
 ## 原生目录发现与交接实测
@@ -54,7 +56,7 @@ python3 "$skill/scripts/memory.py" brief --repo /path/to/project --scope .
 | GitHub Copilot CLI 1.0.114 | `copilot skill list --json` | 启用项的目录匹配，来源分别为 `personal-copilot`、`project` |
 | OpenCode 1.19.6 | `opencode debug skill` | 两个范围的 `.agents/skills` 均返回对应的绝对路径 |
 
-这些结果覆盖宿主的技能发现和注册。模型如何自动选择技能、云托管产品如何下发技能需要在相应会话中验证。本地交接回归使用两个独立安装：通过 Codex 目录中的 CLI 写入判断，再通过 Claude Code 目录中的 CLI 使用仓库默认清单召回；辅助证据改动提交后，Claude Code 目录的 CLI 会对这个键返回复核项。
+这些历史结果覆盖宿主的技能发现和注册。模型如何自动选择技能、云托管产品如何下发技能需要在相应会话中验证。早期本地交接回归使用两个独立安装：通过 Codex 目录中的 CLI 写入清单判断，再通过 Claude Code 目录中的 CLI 进行清单召回；辅助证据改动提交后返回复核项。这是清单/词法基线的历史结果，相关工具现在分别位于 `aux` 与 `baseline`。当前原生工作流由项目场、Surface 和局部操作连接，使用安装后的对应回归检验。
 
 已装对应 CLI 时，可从 Nollm 仓库根目录运行 `python3 lab/nollm-lab/repository_memory/comparison/check_skill_discovery.py codex`，将 `codex` 换为需要验证的宿主。安装和交接回归运行 `python3 -m unittest discover -s lab/nollm-lab/repository_memory -p test_skill_install.py`。
 

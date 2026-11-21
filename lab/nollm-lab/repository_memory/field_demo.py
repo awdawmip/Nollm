@@ -46,8 +46,10 @@ def replay_field(assessment: dict, placements: list[tuple[str, int, int]],
         return read_field(root, assessment["commit"], entry, limit)
 
 
-def write_field(root: Path, assessment: dict, placements: list[tuple[str, int, int]]) -> None:
-    """Publish checked statements and host-selected placements into a fresh workspace."""
+def write_field(root: Path, assessment: dict, placements: list[tuple[str, int, int]], *,
+                decided_by: str = "host",
+                reason_text: str = "Host chose a new placement in this empty repository field.") -> None:
+    """Publish checked statements and supplied placements with their actual decision source."""
     by_key = {note["key"]: note for note in assessment["notes"]}
     chosen = []
     for key, q, r in placements:
@@ -67,7 +69,7 @@ def write_field(root: Path, assessment: dict, placements: list[tuple[str, int, i
         )
         chosen.append((statement, _cell(q, r)))
     if not chosen:
-        raise ValueError("supply at least one host-selected placement")
+        raise ValueError("supply at least one placement")
 
     with CoreRuntime(root) as core, AccessRuntime(
         core, FileStatementStore(root), FileHandleStore(root)
@@ -75,9 +77,8 @@ def write_field(root: Path, assessment: dict, placements: list[tuple[str, int, i
         for statement, address in chosen:
             writer.put_statement(statement)
             writer.apply(AccessDecision(
-                "host-new:" + statement.statement_id, statement.statement_id,
-                "new", target_cell=address, decided_by="host",
-                reason_text="Host chose a new placement in this empty repository field.",
+                decided_by + "-new:" + statement.statement_id, statement.statement_id,
+                "new", target_cell=address, decided_by=decided_by, reason_text=reason_text,
             ))
 
 
