@@ -28,7 +28,23 @@ migration. Canceled operations remain canceled. Actual access denials and platfo
 restrictions remain binding; this scope does not authorize bypassing them or
 resuming canceled calls.
 
-## Current exploratory development: Enterprise Math memory
+## Current development: Nollm self-bootstrapping
+
+The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)
+is the current task for using Nollm's own structure and evidence-backed relationships to develop Nollm.
+Use its [Codex handoff](tasks/NOLLM_SELF_BOOTSTRAP_CODEX_PROMPT_20261121.md) and continue the existing
+PR #7 branch, `experiment/enterprise-math-memory-20261120`; this task branch is the current execution
+entry over the repository-memory base. The plan was grounded at `c68557881b72cc9eee832181d68717c9dad72ff8`.
+
+Reuse the [project-miniature design](../../lab/nollm-lab/repository_memory/PROJECT_MINIATURE_DESIGN.md)
+and prior self-study as evidence. Form current cross-file understanding, use it in new model sessions
+for actual code changes, maintain the affected memory, and test subsequent development on the updated
+understanding. This is an internal theoretical experiment: remove redundant defensive code on the
+actual path; keep direct persistence, source, revision and geometric behavior. Do not add hash,
+attestation, authentication or audit frameworks. The plan and prompt are a development handoff;
+self-bootstrap implementation and outcome measurements remain to be performed.
+
+## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)
 defines the implementation basis for extending repository memory into a usable internal research component.
@@ -42,13 +58,13 @@ Start a new TASK session with `memory.py em walk`. A cold reader derived a prefi
 and another reader used it on a different CRT baseline. The [development trials](../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)
 include the direct-source and same-content lexical comparisons and the cost of forming and revising the field.
 
-The current follow-up is the [research-value test and development task](tasks/NOLLM_RESEARCH_VALUE_TESTS_20261121.md),
-with its [Codex prompt](tasks/NOLLM_RESEARCH_VALUE_CODEX_PROMPT_20261121.md).
+The preceding [research-value test and development task](tasks/NOLLM_RESEARCH_VALUE_TESTS_20261121.md)
+and its [Codex prompt](tasks/NOLLM_RESEARCH_VALUE_CODEX_PROMPT_20261121.md) preserve the earlier evaluation task.
 The [2026-11-21 evidence](../../lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/REPORT.md)
 contains same-content source/flat/native readers and actual navigation scaling diagnostics.
 Use the measured failures and explicit missing tests to choose the next useful work; the public development cases are not withheld evidence.
 
-The [independent intake audit](../../lab/nollm-lab/repository_memory/enterprise_math/intake_audit_20261121/REPORT.md) records a real new R284CO understanding saved to the live field and reused by two fresh readers. It also rechecks navigation and adds a thin native link readback for the paired backend/gateway candidate in [em-research-mcp #112](https://github.com/awdawmip/em-research-mcp/pull/112). Candidate maintenance tests and the current live v23 are recorded separately.
+The [independent intake audit](../../lab/nollm-lab/repository_memory/enterprise_math/intake_audit_20261121/REPORT.md) records a real new R284CO understanding saved to the live field and reused by two fresh readers. It also rechecks navigation and adds a thin native link readback for the paired backend/gateway candidate in [em-research-mcp #112](https://github.com/awdawmip/em-research-mcp/pull/112). Candidate maintenance tests and the live v23 observed during that audit are recorded separately.
 
 ## Governing and inherited sources
 
@@ -111,5 +127,6 @@ memory-slot tools remain the OpenClaw integration direction. Packaging, automati
 capture/Formation migration, current-version compatibility, Windows Provider Live,
 public ClawHub release and measured memory quality remain independently unclosed.
 The four cold branches and existing archive tags are preserved, not reactivated.
+
 
 
