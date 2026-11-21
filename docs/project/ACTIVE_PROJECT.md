@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, 2026-11-18.
+Repository memory feedback cycle, updated 2026-11-21.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -42,18 +42,44 @@ for actual code changes, maintain the affected memory, and test subsequent devel
 understanding. This is an internal theoretical experiment: remove redundant defensive code on the
 actual path; keep direct persistence, source, revision and geometric behavior. Do not add hash,
 attestation, authentication or audit frameworks. The executed [self-bootstrap cycle](../../lab/nollm-lab/repository_memory/self_bootstrap/README.md)
-now contains a reusable project entry, a maintained native field, two real development steps,
-and Source/Flat/Native comparison evidence. C1 is `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`;
+contains a reusable project entry, a maintained native field, and Source/Flat/Native
+comparison evidence. C1 is `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`;
 C2 is `5ceb6f36029e3ff690d53bbc1301bc77933d7227`. A fresh developer used M0 to simplify the
 actual persistence path; another used M1 to implement supporting expressions and accurate
-current-version behavior. The accepted field is maintained from those fixed code changes.
+current-version behavior. Their original successes, misses and failed collection remain
+in the historical record.
 
-The current measured frontier is native discovery under a bounded propagation budget:
-one reader missed a nearby needed binding judgment and used source assistance, while a
-fresh retry selected that judgment from Surface and developed the correct patch. Keep both
-results and the original failed collection. This single task does not establish a Native
-advantage or a specific upper/lower-Coverage benefit. Use the observed entry/budget case for
-subsequent geometric work; retain exact source windows and current/history distinctions.
+The [C3 architecture correction](../../lab/nollm-lab/repository_memory/self_bootstrap/ARCHITECTURE_CORRECTION_20261121.md)
+is fixed at `a1c0f5a74434fd5e3a5429b794366a3d2739aadf` on the same PR branch.
+Ordinary project memory now starts with `project --field FIELD encounter --cursor-file SESSION`
+(`em encounter` for the research field). Queries and propositions share Surface,
+one Host-selected physical entry and a bounded locality before recall, reuse, revision,
+new placement, none or defer. Source/AOCI tools use explicit `aux` commands; lexical and
+source/graph-routed comparison workflows use `baseline`. The Core correction removes
+discarded revisits before beam selection and reports beam/result truncation.
+
+On unchanged M2 at entry L0(0,1), two steps and limit twenty, lateral beam 16 improved
+from eight to nine returned judgments and vertical beam 16 from three to four. Mixed
+beam 16 still returned four: the needed binding cell ranked 38 among eligible candidates.
+A fresh Host independently used the installed encounter, expanded one entry's budget,
+checked fixed sources, and saved/read back new understanding in its own field copy.
+The report distinguishes that use from the controlled propagation comparison and records
+its explicit auxiliary support-ID lookup and two corrected source-window errors.
+
+The accepted M3 contains fourteen current judgments, twenty-nine readable versions,
+fourteen occupied L0 cells and the original directed bridge. Four affected judgments
+were revised in place through the installed encounter against fixed C3 source. All
+twenty-five predecessor expressions, ten unaffected bindings, positions and the bridge
+were preserved; fourteen new source windows were read back. The C3 report and its
+compact evidence record retain the actual maintenance and reader outcomes.
+
+The remaining useful work is bounded discovery on the still-missed mixed-beam case,
+continued use of the maintained understanding on subsequent development, and the existing
+Surface preview detail: a 256-character excerpt can end mid-sentence while `truncated`
+reports omitted statements rather than clipped characters. The fresh Host did not install
+a second runtime, and this correction is not a Source/Flat/Native superiority experiment.
+Retain exact source versions, actual auxiliary use and current/history distinctions in
+the next measured task; do not tune the field to a preselected answer.
 
 ## Enterprise Math memory: reusable implementation and evidence
 
@@ -65,7 +91,8 @@ Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120
 for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
 
 PR #7 now ships the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md).
-Start a new TASK session with `memory.py em walk`. A cold reader derived a prefix-set rule, saved it,
+Start a new TASK session with `memory.py em encounter --cursor-file SESSION`; `em walk`
+remains available for read-only navigation. A cold reader derived a prefix-set rule, saved it,
 and another reader used it on a different CRT baseline. The [development trials](../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)
 include the direct-source and same-content lexical comparisons and the cost of forming and revising the field.
 

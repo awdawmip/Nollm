@@ -1,9 +1,17 @@
 # Nollm develops from its own memory
 
+Current continuation: [C3/M3 architecture correction, 2026-11-21](ARCHITECTURE_CORRECTION_20261121.md).
+C3 is `a1c0f5a74434fd5e3a5429b794366a3d2739aadf`: native-default encounters,
+explicit auxiliary/baseline routes, and corrected bounded recall. The accepted M3
+has fourteen current judgments and twenty-nine readable versions; four affected
+judgments were revised in place from that fixed source. The report links the
+[compact run evidence](architecture_correction_evidence.json).
+The earlier C1/C2 evidence below is retained.
+
 This is the executable continuation of [PR #7](https://github.com/awdawmip/Nollm/pull/7)
 and the [self-bootstrap plan](../../../../docs/project/tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md).
 The development chain has produced real code changes and maintained native memory:
-`C0 → M0 → C1 → M1 → C2 → M2`.
+`C0 → M0 → C1 → M1 → C2 → M2 → C3 → M3`.
 
 ## Open the accepted field
 
@@ -11,12 +19,18 @@ From a Nollm checkout containing the cited commits:
 
 ```sh
 python lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
-  project --field lab/nollm-lab/repository_memory/self_bootstrap/field walk
+  project --field lab/nollm-lab/repository_memory/self_bootstrap/field \
+  encounter --cursor-file /tmp/nollm-project-encounter.json
 ```
 
 Choose candidate IDs actually shown on each page, then one final physical entry.
-`--cursor-file /path/to/walk.json` resumes a walk; omit choices when starting a new
-cursor. `--steps`, `--limit`, and `--via local|vertical|connected` control expansion.
+Pass each choice to `encounter` with the same cursor file. With no new choice,
+it reopens the current page or locality; `--restart` starts a new traversal.
+`--steps`, `--beam`, `--limit`, and `--via local|lateral|vertical|connected` control expansion.
+Inspect the locality and select `--recall ID`, `--reuse ID`, `--revise ID`,
+`--new CELL_ID`, `--none` or `--defer`; terminal outcomes remove the cursor file.
+The report contains writing examples and the explicit migration of older commands.
+`walk` remains a read-only single-entry navigation tool.
 The Host chooses semantics and placement; Core executes deterministic geometry.
 
 Use the same prefix with `show ID` for an exact expression and with
@@ -34,7 +48,9 @@ wrapper uses the same implementation with its existing default research field.
 | C1 | `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`: shared project entry, installation support, and simpler Core/Access persistence. |
 | M1 | Eight in-place revisions from C1, six judgments retained; fourteen current judgments and twenty-two readable versions. Frozen before the C2 comparison. |
 | C2 | `5ceb6f36029e3ff690d53bbc1301bc77933d7227`: project reuse/current-version behavior developed by another fresh model session and integrated after review. |
-| M2 | Two in-place revisions, twelve retained current judgments, and one independently sourced supporting expression: fourteen current judgments, twenty-five readable versions, fourteen occupied cells and the same directed bridge. This directory contains the accepted working seed. |
+| M2 | Two in-place revisions, twelve retained current judgments, and one independently sourced supporting expression: fourteen current judgments, twenty-five readable versions, fourteen occupied cells and the same directed bridge. Frozen input to the C3 comparison; preserved at `260faeadb796d8057c9ddbfc5c2a5cc51f06037f`. |
+| C3 | `a1c0f5a74434fd5e3a5429b794366a3d2739aadf`: a shared native encounter, explicit auxiliary/baseline entrypoints, and revisit-aware beam selection with accurate clipping status. |
+| M3 | Four in-place revisions from fixed C3 source: fourteen current judgments, twenty-nine readable versions, fourteen L0 cells/atoms and one bridge. All twenty-five predecessor expression files and ten unaffected bindings were preserved. This directory contains the accepted working seed. |
 
 `current` means the current field binding. The source commit says which code an
 expression describes; neither fact implies that all later source changes have
@@ -67,6 +83,15 @@ same handle, and adding it left the Core bytes unchanged. Six distinct new C2
 source windows were expanded. M2 checks retained every predecessor body/source,
 all twelve unaffected current versions, the fourteen positions, and the bridge.
 A fresh project CLI process reopened the resulting Surface.
+
+M3 maintenance revised `nollm.recall.v1 → v2`, `nollm.adapter.v3 → v4`,
+`nollm.navigation.v1 → v2`, and `nollm.installation.v2 → v3` through four
+installed-CLI encounters. Fourteen new fixed source windows were read back;
+an independent process checked the counts, predecessor files, unaffected bindings,
+unchanged positions/bridge and removed terminal cursors. The
+[C3 report](ARCHITECTURE_CORRECTION_20261121.md) retains the detailed results.
+The fresh C3 Host's `nollm.runtime-field-continuity.v1` stays in that Host's
+independent fifteen-fact copy, separate from this accepted field.
 
 ## C1: real development from M0
 
@@ -198,7 +223,7 @@ and reusing cached imports for unchanged unavailable sparse-checkout files. The
 scoped affected-Lab public-contract check passed. No full historical geometry or
 repository-governance matrix was rerun for this unchanged geometric algorithm.
 
-## What the geometry result does and does not establish
+## C2 geometry findings, retained as historical evidence
 
 Both development rounds used the real Surface and one final physical entry.
 Their observed useful retrieved paths were lateral; this exercise does not yet
@@ -213,10 +238,13 @@ The needed judgment was present and physically reachable but absent at the earli
 propagation budget. This isolates an actual navigation/budget issue; it does not
 prove why that beam allocation occurred, or justify a universal larger default.
 
-The next geometric development problem is to make the existing bounded expansion
-useful on this observed relationship without changing Coverage meaning or tuning
-the field to a known answer. Current task results do not establish Native quality,
-token-cost, or latency superiority over Source or Flat.
+At C2 closeout, the next geometric development problem was to make the existing
+bounded expansion useful on this observed relationship without changing Coverage
+meaning or tuning the field to a known answer. The [C3 follow-up](ARCHITECTURE_CORRECTION_20261121.md)
+compares old and corrected propagation on frozen M2: mixed beam 16 still returns
+four, while lateral and vertical beam 16 each gain one returned judgment.
+The C2 task and C3 correction do not establish Native quality, token-cost, or
+latency superiority over Source or Flat.
 
 ## Observed cost and evidence scope
 

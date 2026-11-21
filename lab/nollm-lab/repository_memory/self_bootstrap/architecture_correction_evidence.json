@@ -1,0 +1,2690 @@
+{
+  "scope": "Observed C3 architecture correction and M3 self-maintenance; no general retrieval-superiority claim. Commands use location placeholders; public source windows are pinned. Private governance reads and unrelated scaffolding are omitted.",
+  "code_pin": "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+  "baseline_pin": "260faeadb796d8057c9ddbfc5c2a5cc51f06037f",
+  "installed_candidate_matches_code_paths": [
+    "lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py",
+    "lab/nollm-lab/repository_memory/project_memory.py",
+    "packages/nollm-core/src/nollm_core/recall.py"
+  ],
+  "reader_skill_descriptor_to_final_C3_diff": "--- reader-installed-SKILL.md\n+++ C3-SKILL.md\n@@ -33,6 +33,7 @@\n \n 聚合页 `kind: surface` 用于观察；`kind: physical` 显示最终物理候选。\n 选择一个物理入口后得到 `kind: locality`、`entry`、完整 `items` 及可放置的 `cells`。\n+页面预览可能只是已保存正文的截段；在局部页面阅读完整判断与条件。\n 根据其中的正文、来源和可用位置作语义决定。运行脚本的助手就是 Host；程序不会\n 按任务词、文件名、来源重合或固定分数替你选择。\n \n@@ -75,6 +76,7 @@\n `--via local` 使用上下 Coverage 和侧向邻接，`connected` 还使用已有定向桥，\n `vertical` 只用上下 Coverage，`lateral` 只用侧向邻接。\n 按当前问题显式调整，并检查返回的预算状态；在同一局部修改参数会从原入口重新展开。\n+先观察调整后的局部，再在另一次调用中选择终结动作。\n 物理层与聚合观察阶是不同参数；跨层传播或距离本身不证明语义关系。\n \n 已有 `project/em walk` 保留为只读的逐页观察及单入口召回工具。\n",
+  "fixed_m2_geometry": {
+    "baseline_sha": "260faeadb796d8057c9ddbfc5c2a5cc51f06037f",
+    "candidate_sha": "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+    "field_version": "M2, unchanged between runs",
+    "field_path": "lab/nollm-lab/repository_memory/self_bootstrap/field",
+    "baseline": {
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "scope": "controlled geometry, not model quality",
+      "observations": [
+        {
+          "mode": "mixed",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "lateral",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "vertical",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8761
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8454
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "mixed",
+          "budget": {
+            "max_steps": 2,
+            "beam": 64,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.sources.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "vertical",
+          "budget": {
+            "max_steps": 2,
+            "beam": 64,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8761
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8454
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 3584
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            }
+          ],
+          "budget_exhausted": true
+        }
+      ]
+    },
+    "candidate": {
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "scope": "controlled geometry, not model quality",
+      "observations": [
+        {
+          "mode": "mixed",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "lateral",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.sources.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "vertical",
+          "budget": {
+            "max_steps": 2,
+            "beam": 16,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8761
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8454
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 3584
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "mixed",
+          "budget": {
+            "max_steps": 2,
+            "beam": 64,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10923
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "lateral"
+              ],
+              "score_q16": 10922
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            },
+            {
+              "id": "nollm.sources.v1",
+              "via": [
+                "lateral",
+                "lateral"
+              ],
+              "score_q16": 1820
+            }
+          ],
+          "budget_exhausted": true
+        },
+        {
+          "mode": "vertical",
+          "budget": {
+            "max_steps": 2,
+            "beam": 64,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "items": [
+            {
+              "id": "nollm.statement-store.v2",
+              "via": [],
+              "score_q16": 65536
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8761
+            },
+            {
+              "id": "nollm.recall.v1",
+              "via": [
+                "coverage_down",
+                "coverage_up"
+              ],
+              "score_q16": 8454
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 3584
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            },
+            {
+              "id": "nollm.binding.v3",
+              "via": [
+                "coverage_up",
+                "coverage_down"
+              ],
+              "score_q16": 199
+            }
+          ],
+          "budget_exhausted": true
+        }
+      ]
+    },
+    "mixed_beam16_second_frontier": {
+      "step": 1,
+      "expanded_cells": 14,
+      "merged_candidates": 68,
+      "eligible_candidates": 57,
+      "nonimproving_in_first_beam": 5,
+      "binding_candidate": {
+        "rank": 49,
+        "cell": [
+          0,
+          1,
+          -1
+        ],
+        "score_q16": 1820,
+        "via": [
+          "lateral",
+          "lateral"
+        ],
+        "eligible": true,
+        "atoms": [
+          "nollm.binding.v1"
+        ],
+        "eligible_rank": 38
+      }
+    }
+  },
+  "fresh_host": {
+    "source_pin": "260faeadb796d8057c9ddbfc5c2a5cc51f06037f",
+    "entry": [
+      0,
+      0,
+      0
+    ],
+    "surface_calls": 4,
+    "locality_runs": [
+      {
+        "steps": 1,
+        "beam": 16,
+        "limit": 5,
+        "returned": 5,
+        "budget_exhausted": true
+      },
+      {
+        "steps": 2,
+        "beam": 32,
+        "limit": 16,
+        "returned": 9,
+        "budget_exhausted": true
+      },
+      {
+        "steps": 4,
+        "beam": 64,
+        "limit": 20,
+        "returned": 11,
+        "budget_exhausted": true
+      }
+    ],
+    "effect": "new",
+    "statement_id": "nollm.runtime-field-continuity.v1",
+    "cell": [
+      0,
+      1,
+      1
+    ],
+    "verified_new_process_show_source": true,
+    "original_support_preserved": "nollm.binding.installed-support.v1",
+    "original_bridge_preserved": "installation-reopens-state",
+    "atom_count_before_after": [
+      14,
+      15
+    ],
+    "binding_count_before_after": [
+      14,
+      15
+    ],
+    "failed_attempts": [
+      {
+        "source": "statement_store.py#L1-L140",
+        "actual_lines": 110,
+        "resolved": true
+      },
+      {
+        "source": "service.py#L1-L35",
+        "actual_lines": 27,
+        "resolved": true
+      }
+    ],
+    "tests": "NOT_RUN; reviewed committed installation replacement test and exercised installed CLI on supplied field",
+    "auxiliary_access": "Supporting-expression ID was obtained by explicit access/bindings.json inspection, then exact show/source; this is auxiliary access, not native discovery.",
+    "runtime_code_pin": "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+    "scope": "Fresh Host used the installed candidate and a writable M2 copy. Three changed native runtime files match C3; the final skill descriptor adds two clarifying sentences. Source review was pinned to 260faead; this was not a second runtime installation or a comparative model-quality trial.",
+    "commands": [
+      {
+        "source_log_row": 6,
+        "at": "2026-11-21T10:53:14.696406+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "--cursor-file",
+          "<CURSOR>"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 1,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:5fcabede1c905301b336",
+              "window": [
+                0,
+                -3,
+                0
+              ]
+            },
+            {
+              "id": "surface:96dd08e264d7c7869e96",
+              "window": [
+                0,
+                -3,
+                1
+              ]
+            },
+            {
+              "id": "surface:758144b0eeec999aeea5",
+              "window": [
+                0,
+                -2,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 7,
+        "at": "2026-11-21T10:53:21.525839+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "next",
+          "--cursor-file",
+          "<CURSOR>"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 2,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:b45ba7caf7a09f40ff71",
+              "window": [
+                0,
+                -2,
+                1
+              ]
+            },
+            {
+              "id": "surface:b2ccb7558dfaabe9d45e",
+              "window": [
+                0,
+                -1,
+                0
+              ]
+            },
+            {
+              "id": "surface:0d922fccef5bab7f8a0f",
+              "window": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 8,
+        "at": "2026-11-21T10:53:25.366141+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "next",
+          "--cursor-file",
+          "<CURSOR>"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 3,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:274929f378804ba60db3",
+              "window": [
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "id": "surface:86de1a78f840bb32718f",
+              "window": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "id": "surface:2258901620b5179a0d1a",
+              "window": [
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 9,
+        "at": "2026-11-21T10:53:29.991183+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "surface:86de1a78f840bb32718f",
+          "--cursor-file",
+          "<CURSOR>"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 4,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "physical-entry:726795d840263c6918be",
+              "physical_cell": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 10,
+        "at": "2026-11-21T10:53:34.210836+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "physical-entry:726795d840263c6918be",
+          "--cursor-file",
+          "<CURSOR>"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            0,
+            0
+          ],
+          "surface_calls": 4,
+          "budget": {
+            "max_steps": 1,
+            "beam": 16,
+            "max_layer_delta": 1,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 5
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.core-read.v2",
+              "cell": [
+                0,
+                0,
+                0
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "cell": [
+                0,
+                -1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.recall.v1",
+              "cell": [
+                0,
+                -1,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "cell": [
+                0,
+                0,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.statement-store.v2",
+              "cell": [
+                0,
+                0,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 11,
+        "at": "2026-11-21T10:53:42.307990+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "--cursor-file",
+          "<CURSOR>",
+          "--steps",
+          "2",
+          "--beam",
+          "32",
+          "--limit",
+          "16"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            0,
+            0
+          ],
+          "surface_calls": 4,
+          "budget": {
+            "max_steps": 2,
+            "beam": 32,
+            "max_layer_delta": 2,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 16
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.core-read.v2",
+              "cell": [
+                0,
+                0,
+                0
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "cell": [
+                0,
+                -1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.recall.v1",
+              "cell": [
+                0,
+                -1,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "cell": [
+                0,
+                0,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.statement-store.v2",
+              "cell": [
+                0,
+                0,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.binding.v3",
+              "cell": [
+                0,
+                1,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "cell": [
+                0,
+                1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.surface.v1",
+              "cell": [
+                0,
+                -2,
+                0
+              ],
+              "via": [
+                "lateral",
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "cell": [
+                0,
+                -2,
+                1
+              ],
+              "via": [
+                "lateral",
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 12,
+        "at": "2026-11-21T10:54:03.995312+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "source",
+          "--id",
+          "nollm.binding.v3",
+          "--number",
+          "1",
+          "--repo",
+          "<REPO>"
+        ],
+        "exit_code": 0,
+        "source_header": "5ceb6f36029e3ff690d53bbc1301bc77933d7227:lab/nollm-lab/repository_memory/project_memory.py#L26-L82"
+      },
+      {
+        "source_log_row": 14,
+        "at": "2026-11-21T10:54:14.419969+00:00",
+        "operation": "pinned source windows",
+        "exit_code": 1,
+        "error": "ValueError: line window outside source: 260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-access/src/nollm_access/statement_store.py#L1-L140 (110 lines)"
+      },
+      {
+        "source_log_row": 15,
+        "at": "2026-11-21T10:54:20.814792+00:00",
+        "operation": "pinned source windows",
+        "exit_code": 1,
+        "error": "ValueError: line window outside source: 260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-snapshot/src/nollm_snapshot/service.py#L1-L35 (27 lines)"
+      },
+      {
+        "source_log_row": 20,
+        "at": "2026-11-21T10:55:38.409602+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "--cursor-file",
+          "<CURSOR>",
+          "--steps",
+          "4",
+          "--beam",
+          "64",
+          "--limit",
+          "20"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            0,
+            0
+          ],
+          "surface_calls": 4,
+          "budget": {
+            "max_steps": 4,
+            "beam": 64,
+            "max_layer_delta": 4,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 20
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.core-read.v2",
+              "cell": [
+                0,
+                0,
+                0
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "cell": [
+                0,
+                -1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.recall.v1",
+              "cell": [
+                0,
+                -1,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.kernel-registry.v2",
+              "cell": [
+                0,
+                0,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.statement-store.v2",
+              "cell": [
+                0,
+                0,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.binding.v3",
+              "cell": [
+                0,
+                1,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.core-commit.v2",
+              "cell": [
+                0,
+                1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "cell": [
+                0,
+                -2,
+                1
+              ],
+              "via": [
+                "coverage_up",
+                "lateral",
+                "coverage_down"
+              ]
+            },
+            {
+              "id": "nollm.sources.v1",
+              "cell": [
+                0,
+                2,
+                -1
+              ],
+              "via": [
+                "coverage_up",
+                "lateral",
+                "coverage_down"
+              ]
+            },
+            {
+              "id": "nollm.surface.v1",
+              "cell": [
+                0,
+                -2,
+                0
+              ],
+              "via": [
+                "lateral",
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.architecture.v1",
+              "cell": [
+                0,
+                -3,
+                1
+              ],
+              "via": [
+                "coverage_up",
+                "lateral",
+                "lateral",
+                "coverage_down"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "source_log_row": 22,
+        "at": "2026-11-21T10:56:15.858072+00:00",
+        "command": [
+          "python",
+          "<CLI>",
+          "project",
+          "--field",
+          "<READER_FIELD>",
+          "encounter",
+          "--cursor-file",
+          "<CURSOR>",
+          "--new",
+          "cell:0:1:1",
+          "--id",
+          "nollm.runtime-field-continuity.v1",
+          "--repo",
+          "<REPO>",
+          "--rev",
+          "260faeadb796d8057c9ddbfc5c2a5cc51f06037f",
+          "--cite",
+          "packages/nollm-core/src/nollm_core/state.py#L93-L117",
+          "--cite",
+          "packages/nollm-core/src/nollm_core/state.py#L442-L465",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/handle_store.py#L43-L84",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/statement_store.py#L20-L65",
+          "--cite",
+          "packages/nollm-snapshot/src/nollm_snapshot/service.py#L7-L24",
+          "--cite",
+          "lab/nollm-lab/repository_memory/test_project_memory.py#L98-L117"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "result",
+          "effect": "new",
+          "entry": [
+            0,
+            0,
+            0
+          ],
+          "id": "nollm.runtime-field-continuity.v1",
+          "cell": [
+            0,
+            1,
+            1
+          ],
+          "revises": null
+        }
+      },
+      {
+        "source_log_row": 23,
+        "at": "2026-11-21T10:56:44.592722+00:00",
+        "operation": "independent process show/source and state readback",
+        "exit_code": 0,
+        "new_statement": {
+          "id": "nollm.runtime-field-continuity.v1",
+          "text": "运行时替换应保留完整工作场，Core 快照只覆盖几何状态\n在提交 260faeadb796d8057c9ddbfc5c2a5cc51f06037f 的文件布局中，Core 的 canonical document 保存 schema、geometry_registry、cells 与 bridges；Access 另在 access/bindings.json 保存 current/support 绑定，在 access/statements/（兼容 access/evidence/）保存各表达正文与固定来源。SnapshotService 只调用传入 port 的 export/import；以 CoreRuntime 为 port 时，快照不包含这两类 Access 文件。因此运行时升级可继续显式打开原 field；搬移场时应保留整套工作场与能读取其固定提交的源码仓库。仅有 Core 快照不足以恢复支持表达、历史版本及其来源。这个跨层维护判断由分层存储实现与独立安装继续打开同一场的行为测试共同支持；新运行时代码的 schema/geometry_registry 兼容性、当前/支持/历史区分及精确回源仍需按实际新版本核对。",
+          "sources": [
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-core/src/nollm_core/state.py#L93-L117",
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-core/src/nollm_core/state.py#L442-L465",
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-access/src/nollm_access/handle_store.py#L43-L84",
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-access/src/nollm_access/statement_store.py#L20-L65",
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:packages/nollm-snapshot/src/nollm_snapshot/service.py#L7-L24",
+            "260faeadb796d8057c9ddbfc5c2a5cc51f06037f:lab/nollm-lab/repository_memory/test_project_memory.py#L98-L117"
+          ],
+          "current": true
+        },
+        "checks": {
+          "historical_current": false,
+          "binding_v3_current": true,
+          "existing_support_current": false,
+          "existing_support_reuses": "nollm.binding.v3",
+          "new_current": true,
+          "bindings": 15,
+          "core_atoms": 15,
+          "existing_supports": [
+            [
+              "nollm.binding.installed-support.v1"
+            ]
+          ],
+          "bridge_ids": [
+            "installation-reopens-state"
+          ],
+          "terminal_cursor_removed": true
+        }
+      }
+    ],
+    "new_body": "运行时替换应保留完整工作场，Core 快照只覆盖几何状态\n在提交 260faeadb796d8057c9ddbfc5c2a5cc51f06037f 的文件布局中，Core 的 canonical document 保存 schema、geometry_registry、cells 与 bridges；Access 另在 access/bindings.json 保存 current/support 绑定，在 access/statements/（兼容 access/evidence/）保存各表达正文与固定来源。SnapshotService 只调用传入 port 的 export/import；以 CoreRuntime 为 port 时，快照不包含这两类 Access 文件。因此运行时升级可继续显式打开原 field；搬移场时应保留整套工作场与能读取其固定提交的源码仓库。仅有 Core 快照不足以恢复支持表达、历史版本及其来源。这个跨层维护判断由分层存储实现与独立安装继续打开同一场的行为测试共同支持；新运行时代码的 schema/geometry_registry 兼容性、当前/支持/历史区分及精确回源仍需按实际新版本核对。"
+  },
+  "m3_maintenance": {
+    "source_pin": "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+    "current_facts": 14,
+    "statement_versions": 29,
+    "physical_cells": 14,
+    "core_atoms": 14,
+    "native_bridges": 1,
+    "revisions": {
+      "nollm.recall.v1": "nollm.recall.v2",
+      "nollm.navigation.v1": "nollm.navigation.v2",
+      "nollm.adapter.v3": "nollm.adapter.v4",
+      "nollm.installation.v2": "nollm.installation.v3"
+    },
+    "all_old_statement_files_preserved": 25,
+    "unchanged_bindings_preserved": 10,
+    "geometry_positions_unchanged": true,
+    "bridges_unchanged": true,
+    "new_source_windows_read": 14,
+    "terminal_cursors_remaining": 0,
+    "events": [
+      {
+        "at": "2026-11-21T11:02:48.461145+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/recall.cursor.json"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 1,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:5fcabede1c905301b336",
+              "window": [
+                0,
+                -3,
+                0
+              ]
+            },
+            {
+              "id": "surface:96dd08e264d7c7869e96",
+              "window": [
+                0,
+                -3,
+                1
+              ]
+            },
+            {
+              "id": "surface:758144b0eeec999aeea5",
+              "window": [
+                0,
+                -2,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:02:57.416379+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/recall.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 2,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:b45ba7caf7a09f40ff71",
+              "window": [
+                0,
+                -2,
+                1
+              ]
+            },
+            {
+              "id": "surface:b2ccb7558dfaabe9d45e",
+              "window": [
+                0,
+                -1,
+                0
+              ]
+            },
+            {
+              "id": "surface:0d922fccef5bab7f8a0f",
+              "window": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:03:27.258702+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/recall.cursor.json",
+          "surface:0d922fccef5bab7f8a0f"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 3,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "physical-entry:5df444d73698507eb6f7",
+              "physical_cell": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:03:34.967733+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/recall.cursor.json",
+          "physical-entry:5df444d73698507eb6f7"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            -1,
+            1
+          ],
+          "surface_calls": 3,
+          "budget": {
+            "max_steps": 1,
+            "beam": 16,
+            "max_layer_delta": 1,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 5
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.recall.v1",
+              "cell": [
+                0,
+                -1,
+                1
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.navigation.v1",
+              "cell": [
+                0,
+                -2,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "cell": [
+                0,
+                -1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.core-read.v2",
+              "cell": [
+                0,
+                0,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.statement-store.v2",
+              "cell": [
+                0,
+                0,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:04:25.290430+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/recall.cursor.json",
+          "--revise",
+          "nollm.recall.v1",
+          "--id",
+          "nollm.recall.v2",
+          "--repo",
+          "<REPO>",
+          "--rev",
+          "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+          "--cite",
+          "packages/nollm-core/src/nollm_core/recall.py#L74-L141",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/recall.py#L16-L34",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/runtime.py#L224-L248"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "result",
+          "entry": [
+            0,
+            -1,
+            1
+          ],
+          "effect": "revision",
+          "id": "nollm.recall.v2",
+          "cell": [
+            0,
+            -1,
+            1
+          ],
+          "revises": "nollm.recall.v1"
+        }
+      },
+      {
+        "at": "2026-11-21T11:04:26.010920+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/navigation.cursor.json"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 1,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:5fcabede1c905301b336",
+              "window": [
+                0,
+                -3,
+                0
+              ]
+            },
+            {
+              "id": "surface:96dd08e264d7c7869e96",
+              "window": [
+                0,
+                -3,
+                1
+              ]
+            },
+            {
+              "id": "surface:758144b0eeec999aeea5",
+              "window": [
+                0,
+                -2,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:04:37.551265+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/navigation.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 2,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:b45ba7caf7a09f40ff71",
+              "window": [
+                0,
+                -2,
+                1
+              ]
+            },
+            {
+              "id": "surface:b2ccb7558dfaabe9d45e",
+              "window": [
+                0,
+                -1,
+                0
+              ]
+            },
+            {
+              "id": "surface:0d922fccef5bab7f8a0f",
+              "window": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:04:45.974013+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/navigation.cursor.json",
+          "surface:b45ba7caf7a09f40ff71"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 3,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "physical-entry:9fce614630ab62da1f95",
+              "physical_cell": [
+                0,
+                -2,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:00.077924+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/navigation.cursor.json",
+          "physical-entry:9fce614630ab62da1f95"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            -2,
+            1
+          ],
+          "surface_calls": 3,
+          "budget": {
+            "max_steps": 1,
+            "beam": 16,
+            "max_layer_delta": 1,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 5
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.navigation.v1",
+              "cell": [
+                0,
+                -2,
+                1
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.architecture.v1",
+              "cell": [
+                0,
+                -3,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.surface.v1",
+              "cell": [
+                0,
+                -2,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.stitch.v2",
+              "cell": [
+                0,
+                -1,
+                0
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.recall.v2",
+              "cell": [
+                0,
+                -1,
+                1
+              ],
+              "via": [
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:00.764374+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/navigation.cursor.json",
+          "--revise",
+          "nollm.navigation.v1",
+          "--id",
+          "nollm.navigation.v2",
+          "--repo",
+          "<REPO>",
+          "--rev",
+          "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+          "--cite",
+          "lab/nollm-lab/repository_memory/project_memory.py#L127-L260",
+          "--cite",
+          "lab/nollm-lab/repository_memory/project_memory.py#L350-L385",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/surface_navigation.py#L567-L620"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "result",
+          "entry": [
+            0,
+            -2,
+            1
+          ],
+          "effect": "revision",
+          "id": "nollm.navigation.v2",
+          "cell": [
+            0,
+            -2,
+            1
+          ],
+          "revises": "nollm.navigation.v1"
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:01.477376+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 1,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:5fcabede1c905301b336",
+              "window": [
+                0,
+                -3,
+                0
+              ]
+            },
+            {
+              "id": "surface:96dd08e264d7c7869e96",
+              "window": [
+                0,
+                -3,
+                1
+              ]
+            },
+            {
+              "id": "surface:758144b0eeec999aeea5",
+              "window": [
+                0,
+                -2,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:11.278704+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 2,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:b45ba7caf7a09f40ff71",
+              "window": [
+                0,
+                -2,
+                1
+              ]
+            },
+            {
+              "id": "surface:b2ccb7558dfaabe9d45e",
+              "window": [
+                0,
+                -1,
+                0
+              ]
+            },
+            {
+              "id": "surface:0d922fccef5bab7f8a0f",
+              "window": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:12.118768+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 3,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:274929f378804ba60db3",
+              "window": [
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "id": "surface:86de1a78f840bb32718f",
+              "window": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "id": "surface:2258901620b5179a0d1a",
+              "window": [
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:21.073554+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 4,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:eb8250ac05596f60d170",
+              "window": [
+                0,
+                1,
+                -1
+              ]
+            },
+            {
+              "id": "surface:2cc32fd1eba2904184d0",
+              "window": [
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "id": "surface:bccc06b1be2199c88e11",
+              "window": [
+                0,
+                2,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:21.771518+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 5,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "surface:04c7d9e0b76448bfc926",
+              "window": [
+                0,
+                3,
+                -1
+              ]
+            },
+            {
+              "id": "surface:f30943f1ce92bf0b569f",
+              "window": [
+                0,
+                4,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:27.050134+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "surface:04c7d9e0b76448bfc926"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 6,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "physical-entry:5b2fcafb82db9845af94",
+              "physical_cell": [
+                0,
+                3,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:31.721372+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "physical-entry:5b2fcafb82db9845af94"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            3,
+            -1
+          ],
+          "surface_calls": 6,
+          "budget": {
+            "max_steps": 1,
+            "beam": 16,
+            "max_layer_delta": 1,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 5
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.adapter.v3",
+              "cell": [
+                0,
+                3,
+                -1
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.sources.v1",
+              "cell": [
+                0,
+                2,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            },
+            {
+              "id": "nollm.installation.v2",
+              "cell": [
+                0,
+                4,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:57.011008+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/adapter.cursor.json",
+          "--revise",
+          "nollm.adapter.v3",
+          "--id",
+          "nollm.adapter.v4",
+          "--repo",
+          "<REPO>",
+          "--rev",
+          "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+          "--cite",
+          "lab/nollm-lab/repository_memory/project_memory.py#L28-L64",
+          "--cite",
+          "lab/nollm-lab/repository_memory/project_memory.py#L139-L260",
+          "--cite",
+          "lab/nollm-lab/repository_memory/enterprise_math/research.py#L1-L19",
+          "--cite",
+          "packages/nollm-access/src/nollm_access/runtime.py#L157-L203"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "result",
+          "entry": [
+            0,
+            3,
+            -1
+          ],
+          "effect": "revision",
+          "id": "nollm.adapter.v4",
+          "cell": [
+            0,
+            3,
+            -1
+          ],
+          "revises": "nollm.adapter.v3"
+        }
+      },
+      {
+        "at": "2026-11-21T11:05:57.705481+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 1,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:5fcabede1c905301b336",
+              "window": [
+                0,
+                -3,
+                0
+              ]
+            },
+            {
+              "id": "surface:96dd08e264d7c7869e96",
+              "window": [
+                0,
+                -3,
+                1
+              ]
+            },
+            {
+              "id": "surface:758144b0eeec999aeea5",
+              "window": [
+                0,
+                -2,
+                0
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:06:21.464020+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 2,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:b45ba7caf7a09f40ff71",
+              "window": [
+                0,
+                -2,
+                1
+              ]
+            },
+            {
+              "id": "surface:b2ccb7558dfaabe9d45e",
+              "window": [
+                0,
+                -1,
+                0
+              ]
+            },
+            {
+              "id": "surface:0d922fccef5bab7f8a0f",
+              "window": [
+                0,
+                -1,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:06:22.213151+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 3,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:274929f378804ba60db3",
+              "window": [
+                0,
+                0,
+                -1
+              ]
+            },
+            {
+              "id": "surface:86de1a78f840bb32718f",
+              "window": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "id": "surface:2258901620b5179a0d1a",
+              "window": [
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:06:22.879260+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 4,
+          "has_more": true,
+          "candidates": [
+            {
+              "id": "surface:eb8250ac05596f60d170",
+              "window": [
+                0,
+                1,
+                -1
+              ]
+            },
+            {
+              "id": "surface:2cc32fd1eba2904184d0",
+              "window": [
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "id": "surface:bccc06b1be2199c88e11",
+              "window": [
+                0,
+                2,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:06:23.557610+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "next"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 5,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "surface:04c7d9e0b76448bfc926",
+              "window": [
+                0,
+                3,
+                -1
+              ]
+            },
+            {
+              "id": "surface:f30943f1ce92bf0b569f",
+              "window": [
+                0,
+                4,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:06:41.994003+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "surface:f30943f1ce92bf0b569f"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 6,
+          "has_more": false,
+          "candidates": [
+            {
+              "id": "physical-entry:babdc658d6b526124b47",
+              "physical_cell": [
+                0,
+                4,
+                -1
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:07:00.452462+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "physical-entry:babdc658d6b526124b47"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "locality",
+          "entry": [
+            0,
+            4,
+            -1
+          ],
+          "surface_calls": 6,
+          "budget": {
+            "max_steps": 1,
+            "beam": 16,
+            "max_layer_delta": 1,
+            "max_lateral_ring": 1,
+            "max_bridge_steps": 0,
+            "max_results": 5
+          },
+          "budget_exhausted": true,
+          "items": [
+            {
+              "id": "nollm.installation.v2",
+              "cell": [
+                0,
+                4,
+                -1
+              ],
+              "via": []
+            },
+            {
+              "id": "nollm.adapter.v4",
+              "cell": [
+                0,
+                3,
+                -1
+              ],
+              "via": [
+                "lateral"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-21T11:07:01.188338+00:00",
+        "command": [
+          "python3",
+          "<CLI>",
+          "project",
+          "--field",
+          "<REPO>/lab/nollm-lab/repository_memory/self_bootstrap/field",
+          "encounter",
+          "--cursor-file",
+          "<MAINTENANCE>/installation.cursor.json",
+          "--revise",
+          "nollm.installation.v2",
+          "--id",
+          "nollm.installation.v3",
+          "--repo",
+          "<REPO>",
+          "--rev",
+          "a1c0f5a74434fd5e3a5429b794366a3d2739aadf",
+          "--cite",
+          "lab/nollm-lab/repository_memory/install_skill.py#L33-L64",
+          "--cite",
+          "lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py#L8-L83",
+          "--cite",
+          "lab/nollm-lab/repository_memory/test_skill_install.py#L12-L92",
+          "--cite",
+          "lab/nollm-lab/repository_memory/test_project_memory.py#L98-L138"
+        ],
+        "exit_code": 0,
+        "result": {
+          "kind": "result",
+          "entry": [
+            0,
+            4,
+            -1
+          ],
+          "effect": "revision",
+          "id": "nollm.installation.v3",
+          "cell": [
+            0,
+            4,
+            -1
+          ],
+          "revises": "nollm.installation.v2"
+        }
+      }
+    ]
+  }
+}
