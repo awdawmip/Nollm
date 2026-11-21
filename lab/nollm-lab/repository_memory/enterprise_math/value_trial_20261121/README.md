@@ -2,6 +2,8 @@
 
 Start with [REPORT.md](REPORT.md). This directory is a public development diagnostic, not a held-out benchmark or formal mathematics acceptance.
 
+The subsequent [navigation, cross-line and revision trial](followup/README.md) includes the resumable runtime and the field actually used by the new readers.
+
 ## Contents
 
 - [CASES.md](CASES.md): the identical A/B/C questions given to three fresh-history readers.

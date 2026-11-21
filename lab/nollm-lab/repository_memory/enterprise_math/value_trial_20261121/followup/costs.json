@@ -1,0 +1,72 @@
+{
+  "S": {
+    "ok": 20,
+    "failed": 2,
+    "result_bytes": 58073,
+    "error_bytes": 48,
+    "source_bytes": 52301,
+    "source_calls": 13,
+    "action_bytes": 1421,
+    "operation_ms": 321.94,
+    "entry_count": 0,
+    "answer_bytes": 8626,
+    "first_to_last_s": 111.4,
+    "first_to_answer_s": 269.13
+  },
+  "F": {
+    "ok": 19,
+    "failed": 0,
+    "result_bytes": 23137,
+    "error_bytes": 0,
+    "source_bytes": 18180,
+    "source_calls": 10,
+    "action_bytes": 676,
+    "operation_ms": 37.02,
+    "entry_count": 0,
+    "answer_bytes": 5427,
+    "first_to_last_s": 62.99,
+    "first_to_answer_s": 220.33
+  },
+  "N": {
+    "ok": 32,
+    "failed": 6,
+    "result_bytes": 39172,
+    "error_bytes": 1564,
+    "source_bytes": 18937,
+    "source_calls": 12,
+    "action_bytes": 1392,
+    "operation_ms": 4308.76,
+    "entry_count": 2,
+    "answer_bytes": 6188,
+    "first_to_last_s": 149.26,
+    "first_to_answer_s": 254.7
+  },
+  "P": {
+    "ok": 35,
+    "failed": 4,
+    "result_bytes": 46566,
+    "error_bytes": 1166,
+    "source_bytes": 25781,
+    "source_calls": 14,
+    "action_bytes": 1548,
+    "operation_ms": 3992.52,
+    "entry_count": 3,
+    "answer_bytes": 6297,
+    "first_to_last_s": 107.98,
+    "first_to_answer_s": 237.29
+  },
+  "L": {
+    "ok": 32,
+    "failed": 5,
+    "result_bytes": 39943,
+    "error_bytes": 1540,
+    "source_bytes": 21313,
+    "source_calls": 14,
+    "action_bytes": 1447,
+    "operation_ms": 4111.72,
+    "entry_count": 2,
+    "answer_bytes": 6004,
+    "first_to_last_s": 164.32,
+    "first_to_answer_s": 331.0
+  }
+}

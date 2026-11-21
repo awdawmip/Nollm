@@ -1,0 +1,156 @@
+{
+  "copy_ms": 1.8051940060104243,
+  "placement_menu": {
+    "kind": "surface",
+    "order": 0,
+    "page_size": 8,
+    "pages_left": 23,
+    "surface_calls": 1,
+    "has_more": false,
+    "preview_basis": "stored_statement",
+    "candidates": [
+      {
+        "id": "surface:91d1ecad8c97d91dc7b5",
+        "window": [
+          0,
+          -5,
+          2
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "素操作未来树｜固定基线时的残余位数只数实际达到的 F_L"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:126799df358a0d475af6",
+        "window": [
+          0,
+          -5,
+          3
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "prime-fiber 永久满容量阈值 66 与缺态窗口"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:30012b76e93107e7e4b0",
+        "window": [
+          0,
+          -1,
+          0
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "固定总质量 M 的最坏 CRT 纤维可取到 ⌊M/2⌋+1"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:f0fbb5e3a19e521a1edb",
+        "window": [
+          0,
+          0,
+          0
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "六格 CRT 的半开前缀 C_x(h) 与联合载荷恢复"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:4529c8a1a47ac0f249ef",
+        "window": [
+          0,
+          0,
+          1
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "CRT 补码｜已给 marginals 与 carry 时，计数可行 t 的整区间"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:c54736e6804285d07d86",
+        "window": [
+          0,
+          5,
+          -1
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "X6 固定二次探测最优数 K(m)｜10 月 28 日增补解出偶模"
+        ],
+        "truncated": false
+      },
+      {
+        "id": "surface:bf66ee92554c8d3aba17",
+        "window": [
+          0,
+          5,
+          0
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "模 4 的 64 类如何实测｜六次固定标量探测及五次碰撞"
+        ],
+        "truncated": false
+      }
+    ],
+    "start": {
+      "policy": "explicit-order",
+      "order": 0,
+      "root_cells": 7,
+      "root_pages": 1,
+      "root_plus_descent": 2,
+      "soft_root_pages": 4,
+      "active_order": 0,
+      "active_overflow": false
+    }
+  },
+  "CRT.X6.offsets.v1": {
+    "saved": {
+      "id": "CRT.X6.offsets.v1",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "revises": null
+    },
+    "native_ms": 8.618888998171315,
+    "flat_ms": 0.201885006390512,
+    "body_bytes": 631,
+    "source_bytes": 339
+  },
+  "CRT.X6.offsets.v2": {
+    "saved": {
+      "id": "CRT.X6.offsets.v2",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "revises": "CRT.X6.offsets.v1"
+    },
+    "native_ms": 8.233888001996092,
+    "flat_ms": 0.15567400259897113,
+    "body_bytes": 918,
+    "source_bytes": 339
+  },
+  "bytes": {
+    "F": 9671,
+    "N": 18599
+  }
+}

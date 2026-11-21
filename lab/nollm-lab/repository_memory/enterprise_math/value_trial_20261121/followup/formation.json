@@ -1,0 +1,254 @@
+{
+  "flat_ms": 0.7059849958750419,
+  "flat_bytes": 7147,
+  "sources": [
+    "docs/research_library/202610_month/native_brc.md",
+    "docs/research_library/202610_month/number_theory.md",
+    "docs/research_library/202610_month/supplement_number_theory.md",
+    "research_notes/balanced_resume_20261028/native/QUADRATIC_EVEN_PROBES.md",
+    "research_notes/balanced_resume_20261028/nt/crt_repair_bits.md",
+    "research_notes/balanced_resume_20261028/nt/prime_capacity_threshold.md",
+    "research_notes/balanced_resume_20261028/review/CRT_REPAIR_REVIEW.md",
+    "research_notes/balanced_resume_20261028/review/NATIVE_REVIEW.md",
+    "research_notes/balanced_resume_20261028/review/NT_REVIEW.md",
+    "research_notes/divisor_extrema/20261011_r1_prefix27_two_layer_brc_capacity.md"
+  ],
+  "writes": [
+    {
+      "arm": "N",
+      "id": "CRT.mass",
+      "cell": [
+        0,
+        -1,
+        0
+      ],
+      "revises": null,
+      "ms": 9.18855099735083,
+      "argument_bytes": 677
+    },
+    {
+      "arm": "N",
+      "id": "CRT.repair",
+      "cell": [
+        0,
+        0,
+        1
+      ],
+      "revises": null,
+      "ms": 6.9973429999663495,
+      "argument_bytes": 991
+    },
+    {
+      "arm": "N",
+      "id": "NT-DIV-RESIDUAL-CAPACITY",
+      "cell": [
+        0,
+        -5,
+        2
+      ],
+      "revises": null,
+      "ms": 6.999707002250943,
+      "argument_bytes": 849
+    },
+    {
+      "arm": "N",
+      "id": "NT-SUP-CRT-CARRY",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "revises": null,
+      "ms": 7.054680005239788,
+      "argument_bytes": 797
+    },
+    {
+      "arm": "N",
+      "id": "X6-QUADRATIC-MODULAR.oct",
+      "cell": [
+        0,
+        5,
+        -1
+      ],
+      "revises": null,
+      "ms": 7.071565996739082,
+      "argument_bytes": 504
+    },
+    {
+      "arm": "N",
+      "id": "X6-QUADRATIC-MODULAR.v2",
+      "cell": [
+        0,
+        5,
+        -1
+      ],
+      "revises": "X6-QUADRATIC-MODULAR.oct",
+      "ms": 7.322493998799473,
+      "argument_bytes": 971
+    },
+    {
+      "arm": "N",
+      "id": "X6.parity-probes",
+      "cell": [
+        0,
+        5,
+        0
+      ],
+      "revises": null,
+      "ms": 7.837501994799823,
+      "argument_bytes": 831
+    },
+    {
+      "arm": "N",
+      "id": "prime.threshold",
+      "cell": [
+        0,
+        -5,
+        3
+      ],
+      "revises": null,
+      "ms": 7.182592999015469,
+      "argument_bytes": 932
+    },
+    {
+      "arm": "P",
+      "id": "CRT.mass",
+      "cell": [
+        0,
+        5,
+        -1
+      ],
+      "revises": null,
+      "ms": 7.22792099986691,
+      "argument_bytes": 677
+    },
+    {
+      "arm": "P",
+      "id": "CRT.repair",
+      "cell": [
+        0,
+        0,
+        1
+      ],
+      "revises": null,
+      "ms": 6.620915002713446,
+      "argument_bytes": 991
+    },
+    {
+      "arm": "P",
+      "id": "NT-DIV-RESIDUAL-CAPACITY",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "revises": null,
+      "ms": 6.7369199969107285,
+      "argument_bytes": 848
+    },
+    {
+      "arm": "P",
+      "id": "NT-SUP-CRT-CARRY",
+      "cell": [
+        0,
+        -5,
+        2
+      ],
+      "revises": null,
+      "ms": 6.959245998586994,
+      "argument_bytes": 798
+    },
+    {
+      "arm": "P",
+      "id": "X6-QUADRATIC-MODULAR.oct",
+      "cell": [
+        0,
+        5,
+        0
+      ],
+      "revises": null,
+      "ms": 7.128561002900824,
+      "argument_bytes": 503
+    },
+    {
+      "arm": "P",
+      "id": "X6-QUADRATIC-MODULAR.v2",
+      "cell": [
+        0,
+        5,
+        0
+      ],
+      "revises": "X6-QUADRATIC-MODULAR.oct",
+      "ms": 7.361693002167158,
+      "argument_bytes": 971
+    },
+    {
+      "arm": "P",
+      "id": "X6.parity-probes",
+      "cell": [
+        0,
+        -5,
+        3
+      ],
+      "revises": null,
+      "ms": 7.325017999392003,
+      "argument_bytes": 832
+    },
+    {
+      "arm": "P",
+      "id": "prime.threshold",
+      "cell": [
+        0,
+        -1,
+        0
+      ],
+      "revises": null,
+      "ms": 8.07151500339387,
+      "argument_bytes": 932
+    }
+  ],
+  "L": {
+    "link": {
+      "id": "observer-lead",
+      "from": [
+        0,
+        0,
+        1
+      ],
+      "to": [
+        0,
+        5,
+        -1
+      ]
+    },
+    "copy_ms": 1.8439939958625473,
+    "stitch_ms": 6.137515003501903
+  },
+  "U": {
+    "link": {
+      "id": "observer-lead",
+      "from": [
+        0,
+        0,
+        1
+      ],
+      "to": [
+        0,
+        5,
+        -1
+      ]
+    },
+    "copy_ms": 1.697232000879012,
+    "stitch_ms": 6.073628996091429,
+    "undo": {
+      "removed": "observer-lead"
+    },
+    "undo_ms": 5.882860998099204
+  },
+  "field_bytes": {
+    "N": 14785,
+    "P": 14785,
+    "L": 15153,
+    "U": 14785
+  }
+}

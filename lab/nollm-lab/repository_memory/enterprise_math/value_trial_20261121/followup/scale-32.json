@@ -1,0 +1,810 @@
+{
+  "size": 32,
+  "build_ms": 342.3,
+  "trials": [
+    {
+      "index": 0,
+      "order": null,
+      "width": 3,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:3f8be418f69d6a3da521",
+        "next",
+        "surface:567001f5c7cc53a975d9",
+        "next",
+        "surface:2ce705b350a212961918",
+        "next",
+        "surface:e0c75841484604ee38f3",
+        "next",
+        "surface:269573b93a94b64bbaec",
+        "next",
+        "surface:5593c4f0dec544ae4428",
+        "next",
+        "surface:857c7be58132a66509cf",
+        "next",
+        "surface:f0cb3df8271bb3ca43bc",
+        "next",
+        "surface:cc595e6c2e1701f746dd",
+        "physical-entry:2b9a4f907ead46e3c4dc"
+      ],
+      "calls": 24,
+      "renders": 33,
+      "input_bytes": 63441,
+      "output_bytes": 84584,
+      "cursor_in_bytes": 60556,
+      "cursor_out_bytes": 60556,
+      "host_output_bytes": 23798,
+      "elapsed_ms": 368.6,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 8,
+        "root_cells": 36,
+        "root_pages": 12,
+        "root_plus_descent": 21,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 23,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    },
+    {
+      "index": 16,
+      "order": null,
+      "width": 3,
+      "incremental": true,
+      "choices": [
+        "next",
+        "surface:645a4ab8b304ba5da2f6",
+        "surface:4418febb852578da9e9d",
+        "surface:cfbceabba5628bd990fa",
+        "next",
+        "surface:fa815dd7daf6765c4586",
+        "next",
+        "surface:bf1435fb91654524d68c",
+        "next",
+        "surface:12a6195d402360ea0264",
+        "surface:6cfca2e73d6c0ca20aae",
+        "surface:b9937c48c55d8081890b",
+        "next",
+        "surface:247547e937b0e3ef48ad",
+        "physical-entry:a0dfc7682899500c41f2"
+      ],
+      "calls": 16,
+      "renders": 25,
+      "input_bytes": 38791,
+      "output_bytes": 50061,
+      "cursor_in_bytes": 36786,
+      "cursor_out_bytes": 36786,
+      "host_output_bytes": 13125,
+      "elapsed_ms": 243.6,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 8,
+        "root_cells": 36,
+        "root_pages": 12,
+        "root_plus_descent": 21,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 15,
+      "entry": [
+        0,
+        2,
+        -2
+      ],
+      "items": [
+        "synthetic-0016",
+        "synthetic-0014",
+        "synthetic-0005",
+        "synthetic-0031",
+        "synthetic-0017"
+      ]
+    },
+    {
+      "index": 31,
+      "order": null,
+      "width": 3,
+      "incremental": true,
+      "choices": [
+        "surface:55d5806227b76210a93b",
+        "surface:c91a1d81f1b4108a23e1",
+        "surface:42adc9bf73692ff474a3",
+        "surface:45b1b9a913afa75cdc41",
+        "surface:175d4cc20dbe02aeffa2",
+        "surface:f2080f72664977b21668",
+        "surface:5a7e5f629c8dde0f5705",
+        "surface:38d5a877185c3d399553",
+        "surface:0ad95e89d83dd58b3507",
+        "physical-entry:959f55a5e3416de4cc8b"
+      ],
+      "calls": 11,
+      "renders": 20,
+      "input_bytes": 19545,
+      "output_bytes": 24126,
+      "cursor_in_bytes": 18090,
+      "cursor_out_bytes": 18090,
+      "host_output_bytes": 5936,
+      "elapsed_ms": 184.2,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 8,
+        "root_cells": 36,
+        "root_pages": 12,
+        "root_plus_descent": 21,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 10,
+      "entry": [
+        0,
+        2,
+        -3
+      ],
+      "items": [
+        "synthetic-0031",
+        "synthetic-0029",
+        "synthetic-0014",
+        "synthetic-0016"
+      ]
+    },
+    {
+      "index": 0,
+      "order": null,
+      "width": null,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:88946cb54334e2178ec3",
+        "physical-entry:68c34525409f202eaa59"
+      ],
+      "calls": 9,
+      "renders": 10,
+      "input_bytes": 8628,
+      "output_bytes": 14400,
+      "cursor_in_bytes": 7558,
+      "cursor_out_bytes": 7558,
+      "host_output_bytes": 6762,
+      "elapsed_ms": 102.8,
+      "reached": true,
+      "start": {
+        "policy": "overflow-plan",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 11,
+        "root_plus_descent": 12,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 8,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    },
+    {
+      "index": 16,
+      "order": null,
+      "width": null,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:dc10c038937bdb6a10b3",
+        "physical-entry:49cfc4cfc80e124507a7"
+      ],
+      "calls": 12,
+      "renders": 13,
+      "input_bytes": 11869,
+      "output_bytes": 19383,
+      "cursor_in_bytes": 10460,
+      "cursor_out_bytes": 10460,
+      "host_output_bytes": 8813,
+      "elapsed_ms": 125.3,
+      "reached": true,
+      "start": {
+        "policy": "overflow-plan",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 11,
+        "root_plus_descent": 12,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 11,
+      "entry": [
+        0,
+        2,
+        -2
+      ],
+      "items": [
+        "synthetic-0016",
+        "synthetic-0014",
+        "synthetic-0005",
+        "synthetic-0031",
+        "synthetic-0017"
+      ]
+    },
+    {
+      "index": 31,
+      "order": null,
+      "width": null,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:60d3ae3a5de350a090af",
+        "physical-entry:7ac8cfc336272014d693"
+      ],
+      "calls": 12,
+      "renders": 13,
+      "input_bytes": 11869,
+      "output_bytes": 19112,
+      "cursor_in_bytes": 10460,
+      "cursor_out_bytes": 10460,
+      "host_output_bytes": 8542,
+      "elapsed_ms": 126.8,
+      "reached": true,
+      "start": {
+        "policy": "overflow-plan",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 11,
+        "root_plus_descent": 12,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 11,
+      "entry": [
+        0,
+        2,
+        -3
+      ],
+      "items": [
+        "synthetic-0031",
+        "synthetic-0029",
+        "synthetic-0014",
+        "synthetic-0016"
+      ]
+    },
+    {
+      "index": 0,
+      "order": null,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "surface:46d1ab0962696a2fec71",
+        "physical-entry:a558328eefcbe0c5e3ce"
+      ],
+      "calls": 5,
+      "renders": 6,
+      "input_bytes": 4290,
+      "output_bytes": 10452,
+      "cursor_in_bytes": 3687,
+      "cursor_out_bytes": 3687,
+      "host_output_bytes": 6725,
+      "elapsed_ms": 51.8,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 4,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    },
+    {
+      "index": 16,
+      "order": null,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "surface:c766ddf2e7fdca4976f1",
+        "physical-entry:c2ce3e28bbec4fa0883c"
+      ],
+      "calls": 6,
+      "renders": 7,
+      "input_bytes": 5131,
+      "output_bytes": 12778,
+      "cursor_in_bytes": 4418,
+      "cursor_out_bytes": 4418,
+      "host_output_bytes": 8310,
+      "elapsed_ms": 65.8,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 5,
+      "entry": [
+        0,
+        2,
+        -2
+      ],
+      "items": [
+        "synthetic-0016",
+        "synthetic-0014",
+        "synthetic-0005",
+        "synthetic-0031",
+        "synthetic-0017"
+      ]
+    },
+    {
+      "index": 31,
+      "order": null,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "surface:2584bcc669148f2cfe6f",
+        "physical-entry:454fe7b79777ca54840a"
+      ],
+      "calls": 6,
+      "renders": 7,
+      "input_bytes": 5131,
+      "output_bytes": 12507,
+      "cursor_in_bytes": 4418,
+      "cursor_out_bytes": 4418,
+      "host_output_bytes": 8039,
+      "elapsed_ms": 71.4,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 5,
+      "entry": [
+        0,
+        2,
+        -3
+      ],
+      "items": [
+        "synthetic-0031",
+        "synthetic-0029",
+        "synthetic-0014",
+        "synthetic-0016"
+      ]
+    },
+    {
+      "index": 0,
+      "order": 0,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "surface:46d1ab0962696a2fec71",
+        "physical-entry:a558328eefcbe0c5e3ce"
+      ],
+      "calls": 5,
+      "renders": 6,
+      "input_bytes": 4275,
+      "output_bytes": 10460,
+      "cursor_in_bytes": 3687,
+      "cursor_out_bytes": 3687,
+      "host_output_bytes": 6733,
+      "elapsed_ms": 48.9,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 4,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    },
+    {
+      "index": 16,
+      "order": 0,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "surface:c766ddf2e7fdca4976f1",
+        "physical-entry:c2ce3e28bbec4fa0883c"
+      ],
+      "calls": 6,
+      "renders": 7,
+      "input_bytes": 5113,
+      "output_bytes": 12786,
+      "cursor_in_bytes": 4418,
+      "cursor_out_bytes": 4418,
+      "host_output_bytes": 8318,
+      "elapsed_ms": 61.8,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 5,
+      "entry": [
+        0,
+        2,
+        -2
+      ],
+      "items": [
+        "synthetic-0016",
+        "synthetic-0014",
+        "synthetic-0005",
+        "synthetic-0031",
+        "synthetic-0017"
+      ]
+    },
+    {
+      "index": 31,
+      "order": 0,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "surface:2584bcc669148f2cfe6f",
+        "physical-entry:454fe7b79777ca54840a"
+      ],
+      "calls": 6,
+      "renders": 7,
+      "input_bytes": 5113,
+      "output_bytes": 12515,
+      "cursor_in_bytes": 4418,
+      "cursor_out_bytes": 4418,
+      "host_output_bytes": 8047,
+      "elapsed_ms": 59.8,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 0,
+        "root_cells": 32,
+        "root_pages": 4,
+        "root_plus_descent": 5,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 5,
+      "entry": [
+        0,
+        2,
+        -3
+      ],
+      "items": [
+        "synthetic-0031",
+        "synthetic-0029",
+        "synthetic-0014",
+        "synthetic-0016"
+      ]
+    },
+    {
+      "index": 0,
+      "order": 4,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "surface:2bd31e29f9486c59fac5",
+        "surface:ce29caf71d685876ccd7",
+        "surface:1d509c88ebaf7bd13b8d",
+        "surface:8dca912a46b2e4dc9999",
+        "surface:5c6e30ec472507197eb9",
+        "physical-entry:8b13681b8bb34c2f3a29"
+      ],
+      "calls": 9,
+      "renders": 14,
+      "input_bytes": 11675,
+      "output_bytes": 28126,
+      "cursor_in_bytes": 10563,
+      "cursor_out_bytes": 10563,
+      "host_output_bytes": 17483,
+      "elapsed_ms": 145.4,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 4,
+        "root_cells": 34,
+        "root_pages": 5,
+        "root_plus_descent": 10,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 8,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    },
+    {
+      "index": 16,
+      "order": 4,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "surface:67c38d98624333604cef",
+        "surface:57651e75f9089957d4f9",
+        "surface:cb5c5d70d35e6530c892",
+        "surface:30a94a8b23a7cffbc17a",
+        "surface:55473edc7a439964956d",
+        "physical-entry:6bc76b507541b6dfdf1a"
+      ],
+      "calls": 8,
+      "renders": 13,
+      "input_bytes": 10609,
+      "output_bytes": 21355,
+      "cursor_in_bytes": 9604,
+      "cursor_out_bytes": 9604,
+      "host_output_bytes": 11681,
+      "elapsed_ms": 117.1,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 4,
+        "root_cells": 34,
+        "root_pages": 5,
+        "root_plus_descent": 10,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 7,
+      "entry": [
+        0,
+        2,
+        -2
+      ],
+      "items": [
+        "synthetic-0016",
+        "synthetic-0014",
+        "synthetic-0005",
+        "synthetic-0031",
+        "synthetic-0017"
+      ]
+    },
+    {
+      "index": 31,
+      "order": 4,
+      "width": 8,
+      "incremental": true,
+      "choices": [
+        "next",
+        "next",
+        "surface:2bd31e29f9486c59fac5",
+        "surface:ce29caf71d685876ccd7",
+        "surface:48bde0c62f10809d6f01",
+        "surface:87a5dc57d0ae94055855",
+        "surface:c39f0a8c41d51691455e",
+        "physical-entry:5625dfa97dcf64f72897"
+      ],
+      "calls": 9,
+      "renders": 14,
+      "input_bytes": 11681,
+      "output_bytes": 26442,
+      "cursor_in_bytes": 10569,
+      "cursor_out_bytes": 10569,
+      "host_output_bytes": 15793,
+      "elapsed_ms": 150.6,
+      "reached": true,
+      "start": {
+        "policy": "explicit-order",
+        "order": 4,
+        "root_cells": 34,
+        "root_pages": 5,
+        "root_plus_descent": 10,
+        "soft_root_pages": 4,
+        "active_order": 0,
+        "active_overflow": false
+      },
+      "used_width": 8,
+      "pages": 8,
+      "entry": [
+        0,
+        2,
+        -3
+      ],
+      "items": [
+        "synthetic-0031",
+        "synthetic-0029",
+        "synthetic-0014",
+        "synthetic-0016"
+      ]
+    },
+    {
+      "index": 0,
+      "order": null,
+      "width": 3,
+      "incremental": false,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:3f8be418f69d6a3da521",
+        "next",
+        "surface:567001f5c7cc53a975d9",
+        "next",
+        "surface:2ce705b350a212961918",
+        "next",
+        "surface:e0c75841484604ee38f3",
+        "next",
+        "surface:269573b93a94b64bbaec",
+        "next",
+        "surface:5593c4f0dec544ae4428",
+        "next",
+        "surface:857c7be58132a66509cf",
+        "next",
+        "surface:f0cb3df8271bb3ca43bc",
+        "next",
+        "surface:cc595e6c2e1701f746dd",
+        "physical-entry:2b9a4f907ead46e3c4dc"
+      ],
+      "calls": 24,
+      "renders": 299,
+      "input_bytes": 5900,
+      "output_bytes": 23798,
+      "cursor_in_bytes": 0,
+      "cursor_out_bytes": 0,
+      "host_output_bytes": 23798,
+      "elapsed_ms": 3440.3,
+      "reached": true,
+      "start": {
+        "policy": "native",
+        "order": 8,
+        "root_cells": 36,
+        "root_pages": 12,
+        "root_plus_descent": 21,
+        "soft_root_pages": 4,
+        "active_order": 8,
+        "active_overflow": true
+      },
+      "used_width": 3,
+      "pages": 23,
+      "entry": [
+        0,
+        0,
+        0
+      ],
+      "items": [
+        "synthetic-0000",
+        "synthetic-0001",
+        "synthetic-0002",
+        "synthetic-0003",
+        "synthetic-0004"
+      ]
+    }
+  ],
+  "oracle_ms": 47.4
+}
