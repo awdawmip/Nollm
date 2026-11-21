@@ -41,8 +41,19 @@ and prior self-study as evidence. Form current cross-file understanding, use it 
 for actual code changes, maintain the affected memory, and test subsequent development on the updated
 understanding. This is an internal theoretical experiment: remove redundant defensive code on the
 actual path; keep direct persistence, source, revision and geometric behavior. Do not add hash,
-attestation, authentication or audit frameworks. The plan and prompt are a development handoff;
-self-bootstrap implementation and outcome measurements remain to be performed.
+attestation, authentication or audit frameworks. The executed [self-bootstrap cycle](../../lab/nollm-lab/repository_memory/self_bootstrap/README.md)
+now contains a reusable project entry, a maintained native field, two real development steps,
+and Source/Flat/Native comparison evidence. C1 is `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`;
+C2 is `5ceb6f36029e3ff690d53bbc1301bc77933d7227`. A fresh developer used M0 to simplify the
+actual persistence path; another used M1 to implement supporting expressions and accurate
+current-version behavior. The accepted field is maintained from those fixed code changes.
+
+The current measured frontier is native discovery under a bounded propagation budget:
+one reader missed a nearby needed binding judgment and used source assistance, while a
+fresh retry selected that judgment from Surface and developed the correct patch. Keep both
+results and the original failed collection. This single task does not establish a Native
+advantage or a specific upper/lower-Coverage benefit. Use the observed entry/budget case for
+subsequent geometric work; retain exact source windows and current/history distinctions.
 
 ## Enterprise Math memory: reusable implementation and evidence
 
