@@ -1,4 +1,4 @@
-"""Automatic task routing over a real repository and reopened native field."""
+"""Explicit lexical/source-layout baseline over a real Git repository."""
 from concurrent.futures import ThreadPoolExecutor
 import errno
 import json
@@ -43,6 +43,7 @@ class TaskRecallTest(unittest.TestCase):
 
     def test_native_neighbors_order_bound_and_citations(self):
         result = recall_task(self.repo, self.notes, "Registry")
+        self.assertEqual(result["mode"], "lexical_source_layout_baseline")
         self.assertEqual(result["entry_key"], "reader@v1")
         self.assertEqual(result["matched_terms"], ["registry"])
         self.assertEqual([n["key"] for n in result["matches"]], ["reader@v1", "validator"])

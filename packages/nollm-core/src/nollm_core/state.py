@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from functools import lru_cache
+import json
 from pathlib import Path
 from threading import RLock
 
@@ -100,7 +101,7 @@ class CoreRuntime:
         self._operation_lease_depth = 0
         self._kernel_registry = KernelRegistry()
         self._owner_key = claim(self._state_path, self)
-        self._store = _FileCoreStateStore(self._workspace, self._validate_state_bytes)
+        self._store = _FileCoreStateStore(self._workspace)
         try:
             if self._store.exists():
                 self._cells, self._bridges = self._decode_state_bytes(self._store.read_bytes())
@@ -326,7 +327,7 @@ class CoreRuntime:
     def import_state_bytes(self, payload: bytes) -> None:
         with self._operation():
             cells, bridges = self._decode_state_bytes(payload)
-            self._store.write_bytes(payload)
+            self._store.write_document(self._document(cells, bridges))
             self._cells = cells
             self._bridges = bridges
             self._cell_store = _CellStore(self._cells)
@@ -493,23 +494,7 @@ class CoreRuntime:
             bridges[bridge.bridge_id] = bridge
         return cells, bridges
 
-    @staticmethod
-    def _decode_document(payload: bytes) -> dict[str, object]:
-        import json
-
-        if type(payload) is not bytes:
-            raise TypeError("Core state payload must be bytes")
-        value = json.loads(payload.decode("utf-8"))
-        if canonical_state_bytes(value) != payload:
-            raise ValueError("snapshot bytes must be canonical Core state")
-        return value
-
     def _decode_state_bytes(self, payload: bytes) -> tuple[dict[GeometryAddress, dict[str, MemoryAtom]], dict[str, BridgeSpec]]:
-        document = self._decode_document(payload)
-        cells, bridges = self._decode(document)
-        if canonical_state_bytes(self._document(cells, bridges)) != payload:
-            raise ValueError("Core state semantic order is not canonical")
-        return cells, bridges
-
-    def _validate_state_bytes(self, payload: bytes) -> None:
-        self._decode_state_bytes(payload)
+        # File/import boundaries decode once; writes use the accepted state.
+        # JSON presentation and input record order do not change that state.
+        return self._decode(json.loads(payload))

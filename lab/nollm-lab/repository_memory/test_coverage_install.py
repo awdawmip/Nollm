@@ -20,7 +20,7 @@ class CoverageInstallTest(unittest.TestCase):
                                         cwd=root, capture_output=True)
                 if ok:
                     self.assertEqual(result.returncode, 0, result.stderr)
-                    return json.loads(result.stdout) if args[0] == "coverage" else result.stdout
+                    return json.loads(result.stdout) if args[1] == "coverage" else result.stdout
                 self.assertNotEqual(result.returncode, 0, result.stdout)
 
             def git(*args):
@@ -42,16 +42,16 @@ class CoverageInstallTest(unittest.TestCase):
                  "source": "reader.py", "also": ["contract.py"]},
                 {"key": "reader", "text": "Reader imports VERSION.",
                  "source": "reader.py"}]}))
-            run("capture", "--draft", draft)
+            run("aux", "capture", "--draft", draft)
             field = root / "field"
-            common = ("coverage", "recall", "--field", field)
+            common = ("aux", "coverage", "recall", "--field", field)
             place = ("--place", "shared", "-7", "8", "--place", "reader", "-8", "9")
-            result = run("coverage", "build", "--field", field, *place)
+            result = run("aux", "coverage", "build", "--field", field, *place)
             self.assertEqual(result["placed"], 2)
-            run("coverage", "build", "--field", field, *place, ok=False)
+            run("aux", "coverage", "build", "--field", field, *place, ok=False)
             for q, r, expected in ((-7, 5, 45056), (-8, 6, 683)):
                 entry = ("--entry", -1, q, r, "--direction", "down")
-                expansion, = run("coverage", "footprint", *entry)["expansions"]
+                expansion, = run("aux", "coverage", "footprint", *entry)["expansions"]
                 self.assertEqual(sum(t["hits"] for t in expansion["targets"]), 96)
                 self.assertEqual(sum(t["weight_q16"] for t in expansion["targets"]), 65536)
                 target, = (t for t in expansion["targets"] if t["cell"] == [0, -7, 8])
@@ -62,7 +62,7 @@ class CoverageInstallTest(unittest.TestCase):
                                  (expected, ["coverage_down"], [0, -7, 8]))
                 self.assertEqual((shared["status"], shared["source"]), ("current", f"{rev}:reader.py"))
                 self.assertEqual(len(shared["context_refs"]), 2)
-            back, = run("coverage", "footprint", "--entry", 0, -7, 8, "--direction", "up")["expansions"]
+            back, = run("aux", "coverage", "footprint", "--entry", 0, -7, 8, "--direction", "up")["expansions"]
             self.assertEqual([(t["cell"], t["weight_q16"]) for t in back["targets"]],
                              [([-1, -8, 6], 1365), ([-1, -7, 5], 64171)])
             self.assertEqual(run(*common, *entry, "--layer-delta", 0)["items"], [])
@@ -75,7 +75,7 @@ class CoverageInstallTest(unittest.TestCase):
             # ID can open a window; the physical choice is a separate operation.
             state_file = field / "core" / "current_state.json"
             state_before = state_file.read_bytes()
-            surface = ("coverage", "surface", "--field", field, "--page-size", 1, "--order", 1)
+            surface = ("aux", "coverage", "surface", "--field", field, "--page-size", 1, "--order", 1)
             first = run(*surface)
             self.assertEqual((first["kind"], first["order"], first["has_more"]), ("surface", 1, True))
             back = first["candidates"][0]["id"]
@@ -95,6 +95,9 @@ class CoverageInstallTest(unittest.TestCase):
             entry_result = run(*surface, *choices, "--choose", selected["id"])
             self.assertEqual(entry_result["entry"], selected["physical_cell"])
             self.assertEqual(entry_result["surface_calls"], 4)
+            self.assertEqual(run(*surface, "--max-calls", 4, *choices)["pages_left"], 0)
+            self.assertEqual(run(*surface, "--max-calls", 4, *choices, "--choose", selected["id"]),
+                             entry_result)
             self.assertEqual(state_file.read_bytes(), state_before)
             run(*surface, "--max-calls", 1, "--choose", "next", ok=False)
 
@@ -108,7 +111,7 @@ class CoverageInstallTest(unittest.TestCase):
             historical = run(*common, *entry, "--rev", rev)["items"]
             self.assertTrue(all(i["status"] == "current" and i["text"] for i in historical))
             rejected = root / "stale-field"
-            run("coverage", "build", "--field", rejected, *place, ok=False)
+            run("aux", "coverage", "build", "--field", rejected, *place, ok=False)
             self.assertFalse(rejected.exists())
 
 

@@ -1,4 +1,4 @@
-"""Place typed records in native Nollm, then read a single physical neighborhood per task."""
+"""Source/graph-routed baseline with heuristic layout and geometric neighborhood readback."""
 import argparse
 from collections import Counter, defaultdict
 from hashlib import sha256
@@ -110,13 +110,14 @@ def build(repo, rev, records, facts, field, policy):
     with TemporaryDirectory(dir=field.parent) as tmp:
         stage = Path(tmp)/"field"
         stage.mkdir()
-        write_field(stage, dict(commit=commit, notes=notes), [(k,*c) for k,c in sorted(layout.items())])
+        write_field(stage, dict(commit=commit, notes=notes), [(k,*c) for k,c in sorted(layout.items())],
+                    decided_by="fixture", reason_text=f"Baseline {policy} heuristic selected this cell.")
         # The route index maps a file to a physical entry. Access holds the full payload.
         route = {n["key"]: {"kind":n["kind"], "paths":[r["path"] for r in n["evidence"]],
                             "digest":sha256(encoded(n).encode()).hexdigest()} for n in rows}
         (stage/"route.json").write_text(encoded(dict(commit=commit, policy=policy, records=route))+"\n", encoding="utf-8")
         stage.rename(field)
-    return dict(commit=commit, records=len(notes), policy=policy)
+    return dict(mode="source_routed_"+policy+"_baseline", commit=commit, records=len(notes), policy=policy)
 
 
 def pick(records, seeds):
@@ -175,7 +176,7 @@ def query(repo, rev, field, batch, include_records=False):
                             kernel_paths=trails,paths=selected[:5],status="ok" if keys else "no_match"))
         if include_records:
             results[-1]["records"] = payloads
-    return dict(mode="native_"+route["policy"],commit=commit,results=results)
+    return dict(mode="source_routed_"+route["policy"]+"_baseline",commit=commit,results=results)
 
 
 def main(argv=None):

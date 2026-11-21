@@ -1,0 +1,111 @@
+{
+  "experiment": "public development diagnostic; three cases A/B/C in sequence per reader",
+  "source_revision": "f16294a5a7ffa435a32b70214d881fd4450eb494",
+  "nollm_revision": "ddf7dc00b2cea43dccc5d783d20aa88e21de4e0b",
+  "model": "Same inherited parent model; no override. Exact API model revision and usage not exposed.",
+  "source_files": 15,
+  "source_utf8_bytes": 429868,
+  "current_notes": 11,
+  "historical_notes": 1,
+  "cases_mtime_utc": "2026-11-21T01:09:46.227144+00:00",
+  "gold_mtime_utc": "2026-11-21T01:09:47.011112+00:00",
+  "complete_model_tokens": null,
+  "billing": null,
+  "arms": {
+    "S": {
+      "successful_read_operations": 9,
+      "failed_read_attempts": 0,
+      "total_read_attempts": 9,
+      "successful_stdout_utf8_bytes": 61498,
+      "successful_operation_seconds": 0.02314576400021906,
+      "first_read": "2026-11-21T01:13:40.584641+00:00",
+      "last_read": "2026-11-21T01:14:39.879789+00:00",
+      "first_to_last_read_span_seconds": 59.295148,
+      "operations": {
+        "catalogue": 1,
+        "read": 7,
+        "find": 1
+      },
+      "answer_utf8_bytes": 17838,
+      "per_case": {
+        "A": {
+          "successful_operations": 4,
+          "stdout_utf8_bytes": 36252
+        },
+        "B": {
+          "successful_operations": 1,
+          "stdout_utf8_bytes": 7897
+        },
+        "C": {
+          "successful_operations": 4,
+          "stdout_utf8_bytes": 17349
+        }
+      },
+      "unmetered_overhead": "Question/instructions, help and non-content log metadata, failed attempts, model reasoning/output and transport are outside successful read outputs.",
+      "unmetered_repeated_log_output": "Reader printed its own full reads.jsonl; output was truncated, exact delivered bytes unknown. Not counted in primary read total. No new evidence was read."
+    },
+    "F": {
+      "successful_read_operations": 21,
+      "failed_read_attempts": 2,
+      "total_read_attempts": 23,
+      "successful_stdout_utf8_bytes": 48903,
+      "successful_operation_seconds": 0.023824548000447976,
+      "first_read": "2026-11-21T01:11:09.394103+00:00",
+      "last_read": "2026-11-21T01:12:10.814617+00:00",
+      "first_to_last_read_span_seconds": 61.420514,
+      "operations": {
+        "catalogue": 1,
+        "show": 9,
+        "source": 10,
+        "find": 1
+      },
+      "answer_utf8_bytes": 16579,
+      "per_case": {
+        "A": {
+          "successful_operations": 9,
+          "stdout_utf8_bytes": 29944
+        },
+        "B": {
+          "successful_operations": 7,
+          "stdout_utf8_bytes": 15837
+        },
+        "C": {
+          "successful_operations": 5,
+          "stdout_utf8_bytes": 3122
+        }
+      },
+      "unmetered_overhead": "Question/instructions, help and non-content log metadata, failed attempts, model reasoning/output and transport are outside successful read outputs."
+    },
+    "N": {
+      "successful_read_operations": 24,
+      "failed_read_attempts": 1,
+      "total_read_attempts": 25,
+      "successful_stdout_utf8_bytes": 54768,
+      "successful_operation_seconds": 0.2921970869983852,
+      "first_read": "2026-11-21T01:10:56.512347+00:00",
+      "last_read": "2026-11-21T01:12:40.733675+00:00",
+      "first_to_last_read_span_seconds": 104.221328,
+      "operations": {
+        "walk": 6,
+        "show": 6,
+        "source": 12
+      },
+      "answer_utf8_bytes": 18398,
+      "per_case": {
+        "A": {
+          "successful_operations": 12,
+          "stdout_utf8_bytes": 28536
+        },
+        "B": {
+          "successful_operations": 6,
+          "stdout_utf8_bytes": 18399
+        },
+        "C": {
+          "successful_operations": 6,
+          "stdout_utf8_bytes": 7833
+        }
+      },
+      "unmetered_overhead": "Question/instructions, help and non-content log metadata, failed attempts, model reasoning/output and transport are outside successful read outputs."
+    }
+  }
+}

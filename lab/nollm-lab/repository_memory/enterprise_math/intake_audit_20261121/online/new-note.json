@@ -1,0 +1,13 @@
+{
+  "note_id": "PORT.spectral-witness.R284CO.20261121T031021.v1",
+  "at": [
+    2,
+    1
+  ],
+  "body": "R284CO｜冻结 Port 覆盖谱：63 个必要见证与距离表扰动\n\nSource 状态：AUTHOR_PROVED / EXACT_FINITE_CERTIFIED / NOT_REVIEWED（2026-11-21，固定来源见 sources）。本条记录已有成果的 Host 理解。\n\n对象是 R284CL–CN 的冻结辅助 34-bit Port 观测器：P=17,179,869,143，D=(1120832,6,13,1651128)，Z=(0,390139,394465,1497639)，selector=(0,1,2,4,5,6)。X 为冻结 4×4 两值矩阵按原次序产生的 65,536 个不同 Port 余数。64 个有标签圆周闭弧 A_j 按来源构造；δ_j(x) 为点到弧距离；d_k(x) 是保留重数的第 k 小距离。对非空 Y⊆X，U_k(Y)=max_{x∈Y}d_k(x)。\n\n原表对每个 x 都有 d_1(x)=0。每个 k=2,…,64 都有唯一赢家 w_k，63 个赢家两两不同。W={w_2,…,w_64} 是保持原表全部64级最大值的唯一包含极小、唯一最小基数子集，大小63；准确条件为全部 U_k(Y)=U_k(X) 当且仅当 W⊆Y。Δ_k=U_k(X)−max_{x≠w_k}d_k(x)，min Δ_k=64，恰在 k=15,16 达到。k=54 的赢家余数为6,683,583,072，原零基枚举索引33760，最大值7,642,302,204，次高值7,642,302,126，Δ_54=78。\n\n对同一有标签人口和同样64列，若新距离表逐项误差≤ε，排序后各秩误差也≤ε。2ε<64（整数误差ε≤31）保证 k=2,…,64 的赢家标签仍唯一且不同，各最大值变化≤ε。完整64级见证集结论还使用原表第1秩处处为0这一条件；改变数表后需按新观察核对。\n\n具体赢家索引和完整数值向量查 sources[2] 所指证书；重构人口、圆弧和枚举次序查 sources[3] 的 checker。见证集压缩覆盖该冻结静态谱观察；寻找 W 的原检查器仍扫描全域。距离表稳定、矩阵纠错、完整 X6/BRC 状态及未来操作保持属于各自的证明对象。",
+  "sources": [
+    "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_SPECTRAL_WITNESS_RIGIDITY_20261121.md#L3-L54",
+    "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_spectral_witness_certificate.json#L102-L167",
+    "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_spectral_witness_checker.py#L8-L51"
+  ]
+}

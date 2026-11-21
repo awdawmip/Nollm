@@ -38,11 +38,16 @@ def install(destination):
     files = {source / "SKILL.md": Path("SKILL.md"),
              source / "scripts/memory.py": Path("scripts/memory.py"),
              REPO / "LICENSE": Path("LICENSE")}
+    for path in (source / "references").rglob("*.md"):
+        files[path] = path.relative_to(source)
     runtime = Path("scripts/runtime")
     for name in ("field_demo.py", "repo_notes.py", "task_recall.py", "facts.py", "extra_languages.py", "records.py",
                  "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json",
-                 "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py", "coverage_cli.py"):
+                 "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py", "coverage_cli.py", "project_memory.py"):
         files[LAB / name] = runtime / name
+    em = LAB / "enterprise_math"
+    for path in (em / "research.py", *(em / "field").rglob("*.json")):
+        files[path] = runtime / path.relative_to(LAB)
     for package in ("nollm-core", "nollm-access"):
         src = REPO / "packages" / package / "src"
         for path in (src / package.replace("-", "_")).rglob("*.py"):

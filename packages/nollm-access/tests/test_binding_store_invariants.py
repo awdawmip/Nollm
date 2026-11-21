@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from nollm_access import AccessDecision, AccessRuntime, FileBindingStore, FileEvidenceStore, MemoryStatement
@@ -48,3 +50,49 @@ def test_confirmed_revision_retires_current_aliases_but_preserves_statements(tmp
         store.get("alias")
     assert evidence.get("current").content_utf8 == "version one"
     assert evidence.get("alias").content_utf8 == "version one"
+
+
+def test_binding_file_presentation_and_order_do_not_change_current_or_support(tmp_path) -> None:
+    store = FileBindingStore(tmp_path)
+    first = AtomHandle(CELL, "first")
+    second = AtomHandle(GeometryAddress("default_dream_v1", "default", 0, 1, 0), "second")
+    store.put("current-a", first)
+    store.put("support-a", first)
+    store.put("current-b", second)
+    canonical = store.state_bytes()
+    document = json.loads(canonical)
+    document["bindings"].reverse()
+    presentation = json.dumps(document, indent=2).encode("utf-8")
+    store.path.write_bytes(presentation)
+
+    reopened = FileBindingStore(tmp_path)
+    binding = reopened.binding_for_handle(first)
+    assert binding.current_statement_id == "current-a"
+    assert binding.supporting_statement_ids == ("support-a",)
+    assert reopened.get("support-a") == first
+    assert reopened.state_bytes() == canonical
+    assert reopened.path.read_bytes() == presentation
+    reopened.import_state(presentation)
+    assert reopened.path.read_bytes() == canonical
+
+
+@pytest.mark.parametrize("duplicate", ["handle", "current", "support"])
+def test_invalid_import_keeps_previous_bindings(tmp_path, duplicate) -> None:
+    store = FileBindingStore(tmp_path)
+    first = AtomHandle(CELL, "first")
+    second = AtomHandle(GeometryAddress("default_dream_v1", "default", 0, 1, 0), "second")
+    store.put("current-a", first)
+    store.put("support-a", first)
+    store.put("current-b", second)
+    canonical = store.state_bytes()
+    document = json.loads(canonical)
+    target = document["bindings"][1]
+    if duplicate == "handle":
+        target["handle"] = document["bindings"][0]["handle"]
+    elif duplicate == "current":
+        target["current_statement_id"] = "current-a"
+    else:
+        target["supporting_statement_ids"] = ["support-a"]
+    with pytest.raises(ValueError, match="duplicate binding identity"):
+        store.import_state(json.dumps(document, indent=2).encode("utf-8"))
+    assert store.state_bytes() == store.path.read_bytes() == canonical

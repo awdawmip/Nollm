@@ -56,13 +56,10 @@ class FileHandleStore:
         return self._path
 
     def state_bytes(self) -> bytes:
-        payload = self._read_bytes()
-        self._decode(payload)
-        return payload
+        return self._encode(self._load())
 
     def import_state(self, payload: bytes) -> None:
-        self._decode(payload)
-        self._write_bytes(payload)
+        self._write(self._decode(payload))
 
     def put(self, statement_id: str, handle: AtomHandle) -> None:
         bindings = list(self._load())
@@ -129,13 +126,11 @@ class FileHandleStore:
         return self.binding_for_handle(handle).current_statement_id
 
     def _load(self) -> tuple[HandleBinding, ...]:
-        return self._decode(self._read_bytes())
-
-    def _read_bytes(self) -> bytes:
         try:
-            return self.path.read_bytes()
+            payload = self.path.read_bytes()
         except FileNotFoundError:
-            return self._encode(())
+            return ()
+        return self._decode(payload)
 
     @staticmethod
     def _require_unbound_statement(bindings: list[HandleBinding], statement_id: str) -> None:
@@ -164,16 +159,12 @@ class FileHandleStore:
         value = json.loads(payload.decode("utf-8"))
         if type(value) is not dict or frozenset(value) != frozenset({"schema_version", "bindings"}) or value["schema_version"] != SCHEMA_VERSION or type(value["bindings"]) is not list:
             raise ValueError("invalid HandleStore state")
-        if _canonical(value) != payload:
-            raise ValueError("HandleStore bytes must be canonical")
         bindings = []
         statements: set[str] = set()
         handles: set[AtomHandle] = set()
         for item in value["bindings"]:
-            if type(item) is not dict or frozenset(item) != frozenset({"handle", "current_statement_id", "supporting_statement_ids"}) or type(item["current_statement_id"]) is not str or type(item["supporting_statement_ids"]) is not list:
+            if type(item) is not dict or frozenset(item) != frozenset({"handle", "current_statement_id", "supporting_statement_ids"}) or type(item["supporting_statement_ids"]) is not list:
                 raise ValueError("invalid HandleBinding")
-            if any(type(statement) is not str for statement in item["supporting_statement_ids"]):
-                raise TypeError("supporting statement ids must be strings")
             binding = HandleBinding(AtomHandle.from_mapping(item["handle"]), item["current_statement_id"], tuple(item["supporting_statement_ids"]))
             ids = {binding.current_statement_id, *binding.supporting_statement_ids}
             if binding.handle in handles or statements.intersection(ids):
@@ -181,9 +172,6 @@ class FileHandleStore:
             handles.add(binding.handle)
             statements.update(ids)
             bindings.append(binding)
-        canonical = FileHandleStore._encode(tuple(bindings))
-        if canonical != payload:
-            raise ValueError("HandleBinding order is not canonical")
         return tuple(bindings)
 
     def _write_bytes(self, payload: bytes) -> None:

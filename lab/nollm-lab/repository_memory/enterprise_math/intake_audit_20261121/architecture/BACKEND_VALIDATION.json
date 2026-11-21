@@ -1,0 +1,21 @@
+{
+  "observed_at": "2026-11-21T03:18:47.949346+00:00",
+  "command": [
+    "/workspace/scratch/4eeff3663e39/nollm_mcp_20261120/test-venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_research_memory.py",
+    "tests/test_service.py::test_initialize_and_inventory"
+  ],
+  "working_directory": "/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/architecture/backend-candidate",
+  "Nollm_base": "awdawmip/Nollm@34c16d166bf8e232fc8c1c35ff9c6d6ed1dbd766",
+  "Nollm_candidate_change": "thin enterprise_math.research.links helper",
+  "runtime_path": "/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/architecture/runtime-candidate/scripts/runtime",
+  "backend_base": "awdawmip/em-research-mcp@282e4a06b4b08ccca8bf65d54b957bc43e52980f",
+  "exit_code": 0,
+  "source_network": "declared existing local GitHub fixture",
+  "context_route": "Source bundle/projection I/O replaced only for optional route test",
+  "scope": "local candidate, no remote write or deployment",
+  "observed_result": "13 passed, 2 warnings in 6.77s"
+}

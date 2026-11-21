@@ -287,12 +287,16 @@ The canonical project pointer is [`docs/project/ACTIVE_PROJECT.md`](docs/project
 
 Codex, Claude Code, Copilot CLI and OpenCode can load the portable
 [repository memory skill](lab/nollm-lab/repository_memory/HOSTS.md). Start with a
-scoped brief when taking over a repository, or recall a specific engineering
-judgment during a local change. Each saved judgment cites reviewed Git blobs.
-Its host selects a physical entry, then Access returns the bounded neighborhood
-with evidence. Repeated queries can reuse the published native field. The
+native `project --field FIELD encounter --cursor-file SESSION`: observe Surface,
+choose one physical entry, and inspect local judgments and available cells before
+recalling, supporting, revising or placing a statement. Each saved judgment cites
+fixed sources. `walk` remains a read-only native navigation entry. Keep the working
+field outside the installed runtime so later sessions can continue using it.
+Explicit `aux` commands provide source assistance and AOCI conversion; `baseline`
+commands retain lexical/source-routed comparisons. They do not select an entry
+for the native workflow. The
 [quickstart](lab/nollm-lab/repository_memory/README.md) includes installation
-and use in another Git repository. See the [change trials](lab/nollm-lab/repository_memory/comparison/README.md)
+and use in another Git repository. See the historical [change trials](lab/nollm-lab/repository_memory/comparison/README.md)
 and [timing comparison](lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md).
 
 ## Validation

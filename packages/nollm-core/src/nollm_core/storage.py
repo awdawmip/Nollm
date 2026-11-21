@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Callable
 from uuid import uuid4
 
 
@@ -17,18 +16,15 @@ def canonical_state_bytes(document: dict[str, object]) -> bytes:
 class _FileCoreStateStore:
     """Private canonical current-state persistence owned by CoreRuntime."""
 
-    def __init__(self, workspace: Path, validator: Callable[[bytes], None]) -> None:
+    def __init__(self, workspace: Path) -> None:
         self.workspace = Path(workspace).resolve()
         self.path = self.workspace / "core" / "current_state.json"
-        self._validator = validator
 
     def exists(self) -> bool:
         return self.path.is_file()
 
     def read_bytes(self) -> bytes:
-        payload = self.path.read_bytes()
-        self._validator(payload)
-        return payload
+        return self.path.read_bytes()
 
     def write_document(self, document: dict[str, object]) -> bytes:
         payload = canonical_state_bytes(document)
@@ -36,7 +32,6 @@ class _FileCoreStateStore:
         return payload
 
     def write_bytes(self, payload: bytes) -> None:
-        self._validator(payload)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.parent / f".{self.path.name}.{uuid4().hex}.tmp"
         try:

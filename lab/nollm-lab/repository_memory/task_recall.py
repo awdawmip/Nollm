@@ -1,4 +1,4 @@
-"""Select one physical entry for a repository task and recall its neighborhood."""
+"""Lexical/source-layout baseline: score a note, then read its geometric neighborhood."""
 from __future__ import annotations
 
 import argparse
@@ -105,7 +105,8 @@ _CACHE_VERSION = "fields-v1"
 
 def _build_field(root: Path, assessment: dict, notes: list[dict]) -> None:
     layout = _layout(notes)
-    write_field(root, assessment, [(key, q, r) for key, (q, r) in layout.items()])
+    write_field(root, assessment, [(key, q, r) for key, (q, r) in layout.items()],
+                decided_by="fixture", reason_text="Baseline shared-source heuristic selected this cell.")
 
 
 def _cached_field(repo: Path, assessment: dict, notes: list[dict]) -> Path:
@@ -151,7 +152,7 @@ def _recall_native(repo: Path, assessment: dict, notes: list[dict], statement_id
 
 def recall_task(repo: Path, manifest: dict, query: str, rev: str = "HEAD",
                 limit: int = 3, *, cache: bool = True) -> dict:
-    """Return current native statements and Git citations from one selected entry."""
+    """Run the lexical entry and shared-source layout comparison baseline."""
     if type(limit) is not int or not 1 <= limit <= 7:
         raise ValueError("limit must be an integer between 1 and 7")
     if not isinstance(query, str) or not query.strip():
@@ -159,7 +160,8 @@ def recall_task(repo: Path, manifest: dict, query: str, rev: str = "HEAD",
     assessment = inspect_notes(repo, manifest, rev)
     current = [n for n in assessment["notes"] if n["status"] == "current"]
     key, terms = _entry(current, query)
-    result = {"status": "no_match", "commit": assessment["commit"], "entry_key": key,
+    result = {"mode": "lexical_source_layout_baseline", "status": "no_match",
+              "commit": assessment["commit"], "entry_key": key,
               "entry": None, "matched_terms": terms, "matches": []}
     if key is None:
         return result
@@ -193,11 +195,11 @@ def main(argv=None):
     parser.add_argument("--manifest", type=Path, help="default: .nollm/repository-notes.json at the Git root")
     parser.add_argument("--query", required=True)
     parser.add_argument("--rev", default="HEAD")
-    parser.add_argument("--limit", type=int, default=3, help="maximum native results, 1 to 7")
+    parser.add_argument("--limit", type=int, default=3, help="maximum baseline results, 1 to 7")
     parser.add_argument("--no-cache", action="store_true",
-                        help="build in a temporary directory instead of reusing the native Git-local field")
+                        help="build a temporary heuristic field instead of reusing the Git-local baseline field")
     parser.add_argument("--format", choices=("json", "view"), default="json",
-                        help="full native evidence or compact notes in the same format as view")
+                        help="full baseline result and evidence or compact notes in the same format as view")
     args = parser.parse_args(argv)
     try:
         manifest = read_manifest(args.repo, args.manifest)

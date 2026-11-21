@@ -1,0 +1,30 @@
+{
+  "F": {
+    "ok": 12,
+    "failed": 0,
+    "result_bytes": 15395,
+    "error_bytes": 0,
+    "source_bytes": 8985,
+    "source_calls": 6,
+    "action_bytes": 353,
+    "operation_ms": 22.03,
+    "entry_count": 0,
+    "answer_bytes": 6150,
+    "first_to_last_s": 58.98,
+    "first_to_answer_s": 178.56
+  },
+  "N": {
+    "ok": 10,
+    "failed": 0,
+    "result_bytes": 15223,
+    "error_bytes": 0,
+    "source_bytes": 6775,
+    "source_calls": 4,
+    "action_bytes": 298,
+    "operation_ms": 1366.62,
+    "entry_count": 1,
+    "answer_bytes": 5166,
+    "first_to_last_s": 23.19,
+    "first_to_answer_s": 190.12
+  }
+}
