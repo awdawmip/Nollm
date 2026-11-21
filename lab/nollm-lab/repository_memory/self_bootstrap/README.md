@@ -31,7 +31,7 @@ The `em` wrapper retains its existing supplied field and uses the same code.
 
 ## Seed M0
 
-The initial accepted field contains fourteen independent cross-file judgments,
+The initial M0 field contains fourteen independent cross-file judgments,
 fourteen L0 occupied cells, and one directed Stitch. The formation model read
 the actual source and chose positions by meaning. Forty-seven distinct fixed
 source windows were expanded through the existing source reader.
@@ -104,8 +104,35 @@ entry's changed paths and tests, not the Core patch. The session otherwise start
 without the formation conversation. This development exercise is not a strictly
 isolated blind comparison.
 
-C1-to-M1 maintenance and the next independent developer comparison follow this
-checkpoint. The original M0 remains available at this commit.
+## Maintained M1 and C2 checkpoint
+
+C1 is fixed at `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`. The field shipped at this
+checkpoint is M1: eight in-place revisions from C1, six retained judgments,
+fourteen current judgments, and twenty-two readable versions. All old texts and
+sources, physical positions and the directed bridge were retained. Thirty-seven
+new fixed C1 source windows were expanded. The original M0 remains in C1 history.
+
+A second fresh Native developer used M1 and completed the [C2 task](C2_TASK.md):
+project `save --reuse CURRENT_ID`, supporting expressions with their own fixed
+sources, exact current-version display, and later revision with historical
+readback. It chose physical entry `L0(1,-1)` from Surface, received five judgments,
+and expanded the binding judgment's fixed Access/adapter sources. The accepted
+implementation also rejects a supporting ID used as a current revision/reuse
+target. Core/Access geometry and storage formats are unchanged.
+
+The clean Native submission passed four installed/API behavior tests, nineteen
+related Access regressions and the independent end-to-end behavior check. The
+integrator added an assertion for the observed supporting-ID revision error;
+both project tests passed. Source and Flat submissions plus an initial Native
+run are retained in the development evidence. Subsequent review found the
+supporting-ID target error in Flat and initial Native. A malformed shell command
+in initial Native generated out-of-scope material; a separate clean Native
+session was run, preserving the original attempt and its costs. No Native
+quality or total-cost advantage is established by this one-task comparison.
+
+M2 maintenance will cite this C2 code commit and use the new supporting-expression
+operation in the actual self-bootstrap field. This checkpoint preserves M1 as
+used by the second development comparison.
 
 Raw tool transcripts, measured outputs and intermediate field copies are kept
 outside the source tree. This directory retains the accepted usable field,

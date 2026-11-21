@@ -23,38 +23,60 @@ KERNELS = {
 }
 
 
-def save(field, repo, rev, note_id, body, citations, at, revise):
+def save(field, repo, rev, note_id, body, citations, at, revise, reuse=None):
     commit = _commit(repo, rev)
-    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations], at, revise)
+    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations], at, revise, reuse)
 
 
-def save_statement(field, note_id, body, sources, at, revise):
+def save_statement(field, note_id, body, sources, at, revise, reuse=None):
     """Save Host-authored understanding with already selected, pinned source references."""
+    if sum(choice is not None for choice in (at, revise, reuse)) != 1:
+        raise ValueError("choose exactly one of at, revise, or reuse")
     primary, *others = sources
     with CoreRuntime(field) as core, AccessRuntime(
         core, FileStatementStore(field), FileHandleStore(field)
     ) as access:
-        if revise is None:
+        if at is not None:
             decision = AccessDecision(note_id, note_id, "new", target_cell=address(0, *at),
                                       reason_text="Host selected this cell for a distinct proposition.")
         else:
-            decision = AccessDecision(note_id, note_id, "revision_current",
-                                      existing_handle=access.saved_handle(revise),
-                                      reason_text=f"Host supersedes {revise} in the same proposition slot.")
-            others.append(f"revises:{revise}")
+            current_id = revise if revise is not None else reuse
+            existing_handle = access.saved_handle(current_id)
+            if access.handle_store.statement_for_handle(existing_handle) != current_id:
+                raise ValueError("revise and reuse require the current statement ID")
+            if revise is not None:
+                action = "revision_current"
+                reason = f"Host supersedes {revise} in the same proposition slot."
+                others.append(f"revises:{revise}")
+            else:
+                action = "reuse"
+                reason = f"Host confirms this expression supports the current judgment {reuse}."
+                others.append(f"reuses:{reuse}")
+            decision = AccessDecision(note_id, note_id, action, existing_handle=existing_handle,
+                                      reason_text=reason)
         access.put_statement(MemoryStatement(note_id, body, primary, tuple(others)))
         handle = access.apply(decision)
-    return {"id": note_id, "cell": coords(handle.geometry_address), "revises": revise}
+    result = {"id": note_id, "cell": coords(handle.geometry_address), "revises": revise}
+    if reuse is not None:
+        result["reuses"] = reuse
+    return result
 
 
 def describe(field, note_id):
     statement = FileStatementStore(field).get(note_id)
+    bindings = FileHandleStore(field)
+    try:
+        current = bindings.statement_for_handle(bindings.get(note_id)) == note_id
+    except KeyError:
+        current = False
     sources = [statement.source_handle]
     result = {"id": note_id, "text": statement.content_utf8, "sources": sources,
-              "current": FileHandleStore(field).exists(note_id)}
+              "current": current}
     for ref in statement.context_refs:
         if ref.startswith("revises:"):
             result["revises"] = ref.removeprefix("revises:")
+        elif ref.startswith("reuses:"):
+            result["reuses"] = ref.removeprefix("reuses:")
         else:
             sources.append(ref)
     return result
@@ -172,6 +194,7 @@ def main(argv=None, *, default_field=None):
     placement = write.add_mutually_exclusive_group(required=True)
     placement.add_argument("--at", type=int, nargs=2, metavar=("Q", "R"), help="host-selected physical layer-zero cell")
     placement.add_argument("--revise", help="ID of the current version to supersede in place")
+    placement.add_argument("--reuse", help="ID of the current judgment supported by this new expression")
     write.add_argument("--cite", action="append", required=True, help="PATH#Lfirst-Llast (repeatable)")
     for command in (source, write):
         command.add_argument("--repo", type=Path, required=True, help="the source Git checkout paired with this field")
@@ -180,7 +203,7 @@ def main(argv=None, *, default_field=None):
     args = parser.parse_args(argv)
     if args.op == "save":
         result = save(args.field, args.repo, args.rev, args.id, sys.stdin.read().strip(),
-                      args.cite, args.at, args.revise)
+                      args.cite, args.at, args.revise, args.reuse)
     elif args.op == "show":
         result = describe(args.field, args.id)
     elif args.op == "source":

@@ -21,7 +21,9 @@ description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交�
 `project --field PATH show ID` 展开表达与固定来源；
 `project --field PATH source --id ID --repo /path/to/source-repo` 回到对应提交原文。
 用 `save --repo /path/to/source-repo --cite PATH#Lfirst-Llast` 配合 `--at Q R`
-保存 Host 新判断，或配合 `--revise ID` 原位修订，正文经 stdin 传入。
+保存 Host 新判断，配合 `--revise CURRENT_ID` 原位修订，或用
+`--reuse CURRENT_ID` 保存支持同一当前判断的另一份表达和固定来源，正文经 stdin 传入。
+支持表达保留自己的 ID，`current=false`；它复用原占用，后续仍可精确查看与回源。
 `links [ID]` 查看当前格级连接，`stitch ID FROM TO` 建立定向连接，
 `unstitch ID` 撤销。项目场和源码仓库分别指定；更新或另装 skill 后继续打开原工作场。
 

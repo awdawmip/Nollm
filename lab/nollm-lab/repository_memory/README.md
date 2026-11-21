@@ -25,6 +25,33 @@ $nollm-repository-memory 我第一次接手这个仓库。先看入口、实现�
 - [提取机器标记、查询架构关系和从原生场读回记录](skills/nollm-repository-memory/SKILL.md#提取机器标记并检验架构关系)
 - [机器事实表的字段、解析范围与证据含义](FACTS.md)
 
+## 保存项目判断与补充证据
+
+安装后的 `scripts/memory.py project --field FIELD` 使用显式项目场。`save` 从
+标准输入读取 Host 编写的正文，每个表达使用自己的版本 ID；`--repo`、`--rev`
+和可重复的 `--cite PATH#Lfirst-Llast` 固定其 Git 来源。
+
+| 保存选择 | 效果 |
+| --- | --- |
+| `--at Q R` | 在 Host 选择的物理格放置新判断 |
+| `--reuse CURRENT_ID` | 保存支持同一当前判断的另一份表达与来源，复用已有占用 |
+| `--revise CURRENT_ID` | 在原位置把新版设为当前判断 |
+
+三种选择互斥。Host 明确决定新表达支持哪一个当前判断；正文相似度不参与决定。
+例如，已保存 `reading.v1` 后，可以补充另一个来源：
+
+```sh
+python3 /path/to/skill/scripts/memory.py project --field /path/to/field \
+  save reading.support --reuse reading.v1 --repo /path/to/repo --rev HEAD \
+  --cite src/reader.py#L10-L20 < supporting-expression.txt
+```
+
+`show reading.support` 显示补充正文、固定来源、`reuses` 和 `current: false`；
+`source --id reading.support --repo /path/to/repo` 读取其原文。
+原判断保持当前正文、位置、占用和连接，Surface 与召回继续呈现原判断。
+后续 `save reading.v2 --revise reading.v1 ...` 将新版设为当前判断，旧判断和
+补充表达仍可按各自 ID 查看及回源。`current` 仅表示该版本是否正在呈现。
+
 ## 先试读
 
 在本分支的仓库根目录运行。源码盘点与阅读只依赖 Git 和 Python 标准库；原生记忆演示直接导入仓库自带的 Core 与 Access。

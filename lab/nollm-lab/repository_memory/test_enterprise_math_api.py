@@ -46,6 +46,14 @@ class ResearchApiTest(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 call("save_statement", "bound.v1", "Different content", [original], (1, 0), None)
             self.assertEqual(call("describe", "bound.v1")["text"], old_body)
+            support_body = "Independent expression\nAnother source confirms the original odd-modulus bound."
+            support = call("save_statement", "bound.support", support_body, [review], None, None, "bound.v1")
+            self.assertEqual(support["cell"], first["cell"])
+            supporting = call("describe", "bound.support")
+            self.assertFalse(supporting["current"])
+            self.assertEqual(supporting["sources"], [review])
+            self.assertEqual(supporting["text"], support_body)
+            self.assertTrue(call("describe", "bound.v1")["current"])
             second = call("save_statement", "bound.v2", new_body, [updated, review], None, "bound.v1")
             self.assertEqual(second, {"id": "bound.v2", "cell": [0, 0, 0], "revises": "bound.v1"})
             with self.assertRaises(subprocess.CalledProcessError):
@@ -55,6 +63,7 @@ class ResearchApiTest(unittest.TestCase):
             self.assertEqual(previous["text"], old_body)
             self.assertEqual(previous["sources"], [original])
             self.assertFalse(previous["current"])
+            self.assertEqual(call("describe", "bound.support"), supporting)
 
             current = call("describe", "bound.v2")
             self.assertEqual(current["text"], new_body)
