@@ -95,6 +95,9 @@ class CoverageInstallTest(unittest.TestCase):
             entry_result = run(*surface, *choices, "--choose", selected["id"])
             self.assertEqual(entry_result["entry"], selected["physical_cell"])
             self.assertEqual(entry_result["surface_calls"], 4)
+            self.assertEqual(run(*surface, "--max-calls", 4, *choices)["pages_left"], 0)
+            self.assertEqual(run(*surface, "--max-calls", 4, *choices, "--choose", selected["id"]),
+                             entry_result)
             self.assertEqual(state_file.read_bytes(), state_before)
             run(*surface, "--max-calls", 1, "--choose", "next", ok=False)
 

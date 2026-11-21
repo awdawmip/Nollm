@@ -9,7 +9,7 @@ from nollm_access import (
     RECALL_SURFACE_BUDGET, AccessDecision, AccessRecallRequest, AccessRuntime,
     FileHandleStore, FileStatementStore, MemoryStatement,
 )
-from nollm_core import CoreRuntime, PhysicalFieldScope, RecallBudget
+from nollm_core import BridgeSpec, CoreRuntime, GeometryAnchor, PhysicalFieldScope, RecallBudget
 
 from coverage_cli import address, coords, require_field, surface
 from repo_notes import _commit, _git
@@ -19,6 +19,7 @@ SAVED_FIELD = Path(__file__).resolve().parent / "field"
 SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
 KERNELS = {
     "local": ("coverage_down", "coverage_up", "lateral"),
+    "connected": ("bridge", "coverage_down", "coverage_up", "lateral"),
     "vertical": ("coverage_down", "coverage_up"),
 }
 
@@ -70,8 +71,27 @@ def excerpt(repo, reference):
     return "\n".join([reference, *(f"{n}\t{lines[n-1]}" for n in range(first, last + 1))])
 
 
-def walk(field, choices, order, page_size, steps, limit, via):
-    page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls)
+def stitch(field, link_id, from_id, to_id):
+    with CoreRuntime(field) as core, AccessRuntime(core, FileStatementStore(field), FileHandleStore(field)) as access:
+        origin = access.saved_handle(from_id).geometry_address
+        target = access.saved_handle(to_id).geometry_address
+        link = BridgeSpec(link_id, GeometryAnchor("from", (origin,)), GeometryAnchor("to", (target,)),
+                          1 << 15, "normal", 1, 1)
+        access.apply(AccessDecision(link_id, from_id, "stitch", bridge_spec=link,
+                                    reason_text=f"Host connects the cells of {from_id} and {to_id}."))
+        return {"id": link_id, "from": coords(origin), "to": coords(target)}
+
+
+def unstitch(field, link_id):
+    with CoreRuntime(field) as core, AccessRuntime(core, FileStatementStore(field), FileHandleStore(field)) as access:
+        link = {b.bridge_id: b for b in core.bridges()}[link_id]
+        access.apply(AccessDecision(link_id, link_id, "unstitch", bridge_spec=link,
+                                    reason_text=f"Host withdraws {link_id}."))
+        return {"removed": link_id}
+
+
+def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_cursor=False):
+    page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls, cursor, with_cursor)
     if page["kind"] != "entry":
         # The first line is the Host's cue; expand the body after choosing a cell.
         for candidate in page["candidates"]:
@@ -84,7 +104,7 @@ def walk(field, choices, order, page_size, steps, limit, via):
     ) as access:
         recall = access.recall(AccessRecallRequest(
             "em-research", (entry,), allowed_kernels=kernels,
-            budget=RecallBudget(steps, 16, steps, 1, 0, limit),
+            budget=RecallBudget(steps, 16, steps, 1, int("bridge" in kernels), limit),
         ))
     items = []
     for hit in recall.items:
@@ -116,7 +136,14 @@ def main():
     browse = commands.add_parser("walk", help="observe a Surface page; selecting a physical candidate recalls its neighborhood")
     browse.add_argument("choices", nargs="*", help="successive candidate ids shown on pages, or next")
     browse.add_argument("--order", type=int, help="initial aggregation order; default: Access budget")
-    browse.add_argument("--page-size", type=int, default=3, help="1 to 8 candidates per Surface page (default: 3)")
+    browse.add_argument("--page-size", type=int, help="pin the menu width (1 to 8); default starts at 3 and plans on overflow")
+    browse.add_argument("--cursor-file", type=Path, help="keep the last page here; omit choices to start a new walk")
+    connect = commands.add_parser("stitch", help="add a directed native link between the current cells of two notes")
+    connect.add_argument("link_id")
+    connect.add_argument("from_id")
+    connect.add_argument("to_id")
+    disconnect = commands.add_parser("unstitch", help="remove one directed native link by ID")
+    disconnect.add_argument("link_id")
     browse.add_argument("--steps", type=int, default=1, help="kernel steps from the selected physical entry (default: 1)")
     browse.add_argument("--limit", type=int, default=5, help="maximum returned statements after traversal (default: 5)")
     browse.add_argument("--via", choices=KERNELS, default="local")
@@ -157,8 +184,19 @@ def main():
         print(excerpt(args.repo, reference))
         return
     elif args.op == "walk":
+        path = args.cursor_file
+        cursor = json.loads(path.read_text()) if path and args.choices else None
         result = walk(args.field, args.choices, args.order, args.page_size,
-                      args.steps, args.limit, args.via)
+                      args.steps, args.limit, args.via, cursor, path is not None)
+        if path:
+            if result["kind"] == "entry":
+                path.unlink(missing_ok=True)
+            else:
+                path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
+    elif args.op == "stitch":
+        result = stitch(args.field, args.link_id, args.from_id, args.to_id)
+    elif args.op == "unstitch":
+        result = unstitch(args.field, args.link_id)
     else:
         result = list(islice(literal_matches(args.field, args.term), args.limit))
     print(json.dumps(result, ensure_ascii=False, indent=2))

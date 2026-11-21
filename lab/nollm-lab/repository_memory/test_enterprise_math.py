@@ -63,6 +63,32 @@ class ResearchMemoryTest(unittest.TestCase):
             self.assertEqual({item["id"]: item["text"] for item in hits["items"]},
                              {"lemma.2": "New claim\n新条件", "proof": "Neighbor"})
 
+            # A fresh CLI process resumes each page; candidate IDs and recall
+            # match replay, including after the first page of a scan.
+            run([*field, "save", "far", "--at", "8", "-3", *cite], "Remote evidence")
+            bookmark = root / "walk.json"
+            browse = [*walk, "--cursor-file", str(bookmark)]
+            json.loads(run(browse))
+            continued = json.loads(run([*browse, "next"]))
+            self.assertEqual(continued, json.loads(run([*walk, "next"])))
+            selected = continued["candidates"][0]["id"]
+            physical = json.loads(run([*browse, selected]))
+            expected = json.loads(run([*walk, "next", selected]))
+            self.assertEqual(physical, expected)
+            leaf = physical["candidates"][0]["id"]
+            self.assertEqual(json.loads(run([*browse, leaf])), json.loads(run([*walk, "next", selected, leaf])))
+            self.assertFalse(bookmark.exists())
+
+            connected = [*walk, "--via", "connected", window["id"], entry["id"]]
+            before = json.loads(run(connected))
+            run([*field, "stitch", "lead", "lemma.2", "far"])
+            linked = json.loads(run(connected))
+            self.assertEqual(linked["entry"], before["entry"])
+            self.assertEqual(next(i["via"] for i in linked["items"] if i["id"] == "far"), ["bridge"])
+            self.assertEqual(json.loads(run([*walk, window["id"], entry["id"]])), hits)
+            run([*field, "unstitch", "lead"])
+            self.assertEqual(json.loads(run(connected)), before)
+
 
 if __name__ == "__main__":
     unittest.main()

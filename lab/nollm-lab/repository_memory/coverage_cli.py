@@ -7,9 +7,9 @@ from tempfile import TemporaryDirectory
 
 from nollm_access import (
     RECALL_SURFACE_BUDGET, AccessRecallRequest, AccessRuntime, AccessSurfaceNavigator,
-    FileHandleStore, FileStatementStore, PhysicalEntryPage, SurfaceTraversalState,
+    FileHandleStore, FileStatementStore, PhysicalEntryPage, SurfaceTraversalState, select_active_surface,
 )
-from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope, RecallBudget, expand_physical_coverage
+from nollm_core import CoreRuntime, GeometryAddress, PhysicalFieldScope, RecallBudget, SurfaceAggregateAddress, expand_physical_coverage
 
 from field_demo import write_field
 from repo_notes import _commit, _compare, _object_id, _path, inspect_notes, read_manifest
@@ -76,16 +76,89 @@ def require_field(field):
         raise ValueError(f"native Core state missing at {field}")
 
 
-def surface(field, scope, order, choices, page_size, max_calls):
-    """Replay explicit page-local host choices, stopping at the first unseen page."""
-    require_field(field)
-    navigator = AccessSurfaceNavigator(field)
-    budget = replace(RECALL_SURFACE_BUDGET, page_size=page_size, max_calls=max_calls)
+def _start_surface(navigator, field, scope, order, budget, adaptive):
+    # Keep narrow menus when the ordinary Access selection fits. Only plan a
+    # different start when every allowed order overflowed at the narrow width.
     operation = "repository-coverage-surface"
+    policy = "native" if order is None else "explicit-order"
+    if adaptive:
+        with CoreRuntime(field) as core:
+            infos = core.surface_orders(scope, 0)
+            if select_active_surface(infos, budget).overflow:
+                infos = core.surface_orders(scope, budget.hard_max_order)
+        selection = select_active_surface(infos, budget)
+        if selection.overflow:
+            permitted = infos if order is None else (infos[order],)
+            for width in range(budget.page_size, RECALL_SURFACE_BUDGET.page_size + 1):
+                # Root scan plus one page per descent and one physical menu.
+                # Child pagination may cost extra; the estimate is not a bound.
+                estimated, best_order = min(
+                    ((info.occupied_cell_count + width - 1) // width + info.order + 1, info.order)
+                    for info in permitted)
+                if estimated <= budget.max_calls:
+                    break
+            if order is None:
+                order = best_order
+            budget = replace(budget, page_size=width)
+            policy = "overflow-plan"
+        elif order is None:
+            order = selection.info.order
     if order is None:
         page = navigator.begin(operation, scope, budget)
     else:
         page = navigator.page(SurfaceTraversalState(operation, scope, budget, order))
+    info = page.selection.info
+    if info.order != page.state.order:
+        with CoreRuntime(field) as core:
+            info = core.surface_orders(scope, page.state.order)[-1]
+    root_pages = (info.occupied_cell_count + budget.page_size - 1) // budget.page_size
+    return page, {"policy": policy, "order": info.order, "root_cells": info.occupied_cell_count,
+                  "root_pages": root_pages, "root_plus_descent": root_pages + info.order + 1,
+                  "soft_root_pages": budget.max_pages, "active_order": page.selection.info.order,
+                  "active_overflow": page.selection.overflow}
+
+
+def _cursor(page):
+    # IDs are formed from the count before rendering. This is enough to
+    # reopen precisely the shown page, even in a different Host process.
+    cursor = {"state": AccessSurfaceNavigator.state_to_mapping(
+        replace(page.state, call_count=page.state.call_count - 1))}
+    if page.next_after is not None:
+        cursor["next_after"] = page.next_after.to_mapping()
+    if isinstance(page, PhysicalEntryPage):
+        cursor["physical"] = [page.source_surface_candidate_id, page.source_surface_address.to_mapping(),
+                              page.after.to_mapping() if page.after else None]
+    return cursor
+
+
+def _resume_surface(navigator, cursor, choices):
+    state = navigator.state_from_mapping(cursor["state"])
+    # A sequential scan can advance directly from the native continuation.
+    advance = choices and choices[0] == "next" and "next_after" in cursor
+    if advance:
+        state = replace(state, call_count=state.call_count + 1)
+        choices = choices[1:]
+    if "physical" in cursor:
+        candidate, address, after = cursor["physical"]
+        page = navigator.reopen_physical_entries_from_mapping(
+            state, candidate, address, cursor["next_after"] if advance else after)
+    else:
+        if advance:
+            state = replace(state, after=SurfaceAggregateAddress.from_mapping(cursor["next_after"]))
+        page = navigator.page(state)
+    return page, choices
+
+
+def surface(field, scope, order, choices, page_size, max_calls, cursor=None, with_cursor=False):
+    """Follow explicit Host choices, from the root or the last observed page."""
+    require_field(field)
+    navigator = AccessSurfaceNavigator(field)
+    start = None
+    if cursor is None:
+        budget = replace(RECALL_SURFACE_BUDGET, page_size=3 if page_size is None else page_size, max_calls=max_calls)
+        page, start = _start_surface(navigator, field, scope, order, budget, page_size is None)
+    else:
+        page, choices = _resume_surface(navigator, cursor, choices)
     for index, choice in enumerate(choices):
         physical = isinstance(page, PhysicalEntryPage)
         if choice == "next":
@@ -114,9 +187,17 @@ def surface(field, scope, order, choices, page_size, max_calls):
             candidates.append({"id": cell.candidate_id, "window": [cell.order, cell.address.q, cell.address.r],
                                "source_cells": cell.physical_source_cell_count, "native_atoms": cell.native_atom_count,
                                "previews": [s.content_utf8 for s in cell.statements], "truncated": cell.truncated})
-    return {"kind": "physical" if physical else "surface", "order": page.state.order,
-            "surface_calls": page.state.call_count, "has_more": page.has_more,
-            "preview_basis": "stored_statement", "candidates": candidates}
+    result = {
+        "kind": "physical" if physical else "surface", "order": page.state.order,
+        "page_size": page.state.budget.page_size, "pages_left": page.state.budget.max_calls - page.state.call_count,
+        "surface_calls": page.state.call_count, "has_more": page.has_more,
+        "preview_basis": "stored_statement", "candidates": candidates,
+    }
+    if start is not None and page.state.call_count == 1:
+        result["start"] = start
+    if with_cursor or cursor is not None:
+        result["cursor"] = _cursor(page)
+    return result
 
 
 def recall(repo, rev, field, entry, direction, budget):

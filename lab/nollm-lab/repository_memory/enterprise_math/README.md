@@ -30,6 +30,30 @@ em walk "$window" "$physical"
 
 上例从零阶窗口出发。若选择 `--order 1`，先选一阶窗口，再选零阶窗口，最后选其物理候选。每次保持同一 `--order`、`--page-size`。最终结果有一个 `entry=[layer,q,r]`，以及各命中的版本 ID、完整判断、坐标、实际核路径 `via`。空路径表示入口自身。默认一步、最多五条；可调 `--steps`、`--limit`。默认允许同层邻接及上下层 Coverage；`--via vertical --steps 2` 单独观察跨层往返。加深后仍遗漏所需材料时，按来源引用展开或返回 Surface 另选入口。解释数学联系时应核对两端对象、前提与证据。
 
+长路径可把当页保存在 Host 的临时文件里。无选择的调用开始新走读，以后只传本页的一个选择。文件包含可重开的 Access 状态，选择最终物理入口后清除。同一组显式参数和选择在历史重放与续页下得到相同候选和召回。需要分叉时可在选择前复制当页文件。
+
+```sh
+page=$(mktemp)
+em walk --cursor-file "$page"
+em walk --cursor-file "$page" next       # 当前页有 has_more 时
+em walk --cursor-file "$page" "$window"
+em walk --cursor-file "$page" "$physical"
+```
+
+首屏的 `start` 给出实际起始阶、根格数、预计根页数、软目标和 Access 活动面是否溢出；`pages_left` 是 24 页硬预算的余量。零余量时仍可选择已经展示的物理候选。默认先试页宽 3。全阶都超出窄菜单软目标时，在 3 至 8 中取首个预计可容纳「扫完根菜单 + 每次下钻一页 + 物理菜单」的宽度，选该宽度估计页数最少的阶，同值取浅阶。如果各宽度都不够则使用宽 8 下的最低估计。子菜单也可能翻页，预算不能保证覆盖所有目标。`--order` 固定起始阶，`--page-size 3` 复现过去的显式窄页策略；选择 ID 与生成它的页关联。
+
+在独立可写场，Host 可以把两条当前理解所在的格子单向连接，再按实际证据撤销。在既有场的副本中可以这样试用：
+
+```sh
+em --field "$field" stitch crt-probe-lead CRT.repair X6-QUADRATIC-MODULAR.v2
+em --field "$field" walk --cursor-file "$page" --via connected
+# 从菜单选择入口；在最后物理选择时也传 --via connected
+em --field "$field" walk --cursor-file "$page" --via connected "$physical"
+em --field "$field" unstitch crt-probe-lead
+```
+
+`connected` 在通常的局部核之外允许一次定向 bridge 跳转。连接附着于物理格，命中可能包含该格的其他理解。普通 `local` 只考虑原有邻域。研究者需在两端原文上检验可迁移的操作与前提。
+
 **已知标识、式子或出处。** `find` 是对当前判断的 ID 和正文做不分大小写的连续字面匹配。它独立于原生导航。引用按 `show` 返回的顺序从 1 编号。
 
 ```sh

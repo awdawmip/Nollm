@@ -18,7 +18,7 @@ description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交�
 对于进取数论 TASK，使用本 skill 自带的研究场。从实际安装位置设置
 `cli=/path/to/nollm-repository-memory/scripts/memory.py`，运行
 `python3 "$cli" em walk`，按当前问题选择预览，依次追加本页显示的候选 ID；
-最终选中一个物理入口会返回邻域中的完整判断。已知公式或标识时可用
+长路径可用 `em walk --cursor-file PATH` 起步，随后传同一文件和本页的一项选择。首屏显示 overflow 与根页估计，每页显示剩余页数。最终选中一个物理入口会返回邻域中的完整判断。已知公式或标识时可用
 `em find '字面片段'`。用 `em show ID` 查看版本和引用，`em source --id ID --number 1 --repo /path/to/enterprise-math`
 展开固定 Git 原文行。形成新理解时，用 `em save --help` 查看写入命令；
 正文走 stdin，Host 选择新坐标或指明被更正的版本。已有场位于
