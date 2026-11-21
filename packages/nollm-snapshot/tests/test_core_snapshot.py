@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from nollm_core import AtomHandle, CoreRuntime, GeometryAddress, MemoryAtom
@@ -41,3 +43,19 @@ def test_failed_restore_preserves_current_state(tmp_path) -> None:
     assert runtime.export_state_bytes() == before
     runtime.close()
     assert CoreRuntime(tmp_path).get(handle).payload_utf8 == "before"
+
+
+def test_restore_normalizes_json_but_verify_still_compares_snapshot_bytes(tmp_path) -> None:
+    service = SnapshotService()
+    with CoreRuntime(tmp_path / "source") as source:
+        handle = source.put(MemoryAtom("a", "原文"), cell(-3, 2))
+        canonical = service.create(source)
+    presentation = json.dumps(json.loads(canonical), ensure_ascii=False, indent=2).encode("utf-8")
+    with CoreRuntime(tmp_path / "target") as target:
+        service.restore(target, presentation)
+        assert target.get(handle).payload_utf8 == "原文"
+        assert service.verify(target, canonical)
+        assert not service.verify(target, presentation)
+        assert target.state_path.read_bytes() == canonical
+    with CoreRuntime(tmp_path / "target") as reopened:
+        assert service.verify(reopened, canonical)

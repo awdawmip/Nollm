@@ -6,6 +6,7 @@ import sys
 
 
 TOOLS = {
+    "project": "project_memory.py",
     "em": "enterprise_math/research.py",
     "recall": "task_recall.py",
     "facts": "facts.py",

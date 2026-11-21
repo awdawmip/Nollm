@@ -1,6 +1,6 @@
 ---
 name: nollm-repository-memory
-description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交接有证据的判断。进取数论 TASK 可用 em 入口导航、展开和修订已有研究记忆。Use for repository onboarding, change-impact analysis, Git-grounded handoffs and Enterprise Math research memory."
+description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交接有证据的判断。用 project 导航和维护显式指定的项目原生场；进取数论 TASK 可用 em 入口打开已有研究记忆。Use for repository onboarding, native project memory, change-impact analysis, Git-grounded handoffs and Enterprise Math research memory."
 ---
 
 # Nollm 仓库记忆
@@ -14,6 +14,16 @@ description: "在本地 Git 仓库中梳理职责、追踪跨文件影响或交�
 - “合并后复核上次的结论，把仍然成立的判断交给下一个会话。”
 
 ## 从目标仓库启动
+
+项目原生记忆使用 `python3 "$cli" project --field /path/to/project-field walk`。
+把 `cli` 设为本 skill 的 `scripts/memory.py`；显式指定持续使用的工作场。
+根据当前页的预览选择候选 ID，选中一个最终物理入口后读取邻域判断。
+`project --field PATH show ID` 展开表达与固定来源；
+`project --field PATH source --id ID --repo /path/to/source-repo` 回到对应提交原文。
+用 `save --repo /path/to/source-repo --cite PATH#Lfirst-Llast` 配合 `--at Q R`
+保存 Host 新判断，或配合 `--revise ID` 原位修订，正文经 stdin 传入。
+`links [ID]` 查看当前格级连接，`stitch ID FROM TO` 建立定向连接，
+`unstitch ID` 撤销。项目场和源码仓库分别指定；更新或另装 skill 后继续打开原工作场。
 
 对于进取数论 TASK，使用本 skill 自带的研究场。从实际安装位置设置
 `cli=/path/to/nollm-repository-memory/scripts/memory.py`，运行

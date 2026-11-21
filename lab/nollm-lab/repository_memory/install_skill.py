@@ -41,7 +41,7 @@ def install(destination):
     runtime = Path("scripts/runtime")
     for name in ("field_demo.py", "repo_notes.py", "task_recall.py", "facts.py", "extra_languages.py", "records.py",
                  "router.py", "query-lexicon.tsv", "machine_field.py", "check_marks.py", "language_profiles.json",
-                 "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py", "coverage_cli.py"):
+                 "aoci_rows.py", "geocode.py", "geometry_cli.py", "native_geo.py", "coverage_cli.py", "project_memory.py"):
         files[LAB / name] = runtime / name
     em = LAB / "enterprise_math"
     for path in (em / "research.py", *(em / "field").rglob("*.json")):

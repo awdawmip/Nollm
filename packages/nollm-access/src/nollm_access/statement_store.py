@@ -35,19 +35,17 @@ class FileStatementStore:
         return self._root
 
     def put(self, statement: MemoryStatement) -> None:
-        if type(statement) is not MemoryStatement:
-            raise TypeError("statement must be MemoryStatement")
         with self._lock:
             path = self._path(statement.statement_id)
-            payload = _canonical({"schema_version": "nollm_access_statement_v1", "statement": statement.to_mapping()})
             if path.exists():
-                if path.read_bytes() != payload:
+                if self.get(statement.statement_id) != statement:
                     raise FileExistsError("statement already exists with different content")
                 return
             if self._legacy_path(statement.statement_id).is_file():
                 legacy = self.get(statement.statement_id)
                 if legacy != statement:
                     raise FileExistsError("legacy statement exists with different content")
+            payload = _canonical({"schema_version": "nollm_access_statement_v1", "statement": statement.to_mapping()})
             _atomic_write(path, payload)
 
     def get(self, statement_id: str) -> MemoryStatement:
@@ -62,23 +60,20 @@ class FileStatementStore:
         if type(value) is not dict or set(value) != {"schema_version", "statement"} or value["schema_version"] != schema:
             raise ValueError("unsupported or noncanonical Statement schema")
         statement = MemoryStatement.from_mapping(value["statement"])
-        if _canonical(value) != payload or statement.statement_id != statement_id:
-            raise ValueError("Statement bytes or identity are noncanonical")
+        if statement.statement_id != statement_id:
+            raise ValueError("Statement identity does not match its file")
         return statement
 
     def exists(self, statement_id: str) -> bool:
         return self._path(statement_id).is_file() or self._legacy_path(statement_id).is_file()
 
     def discard_new(self, statement: MemoryStatement) -> bool:
-        """Remove only the exact canonical file created for a failed placement."""
-        if type(statement) is not MemoryStatement:
-            raise TypeError("statement must be MemoryStatement")
+        """Remove the same statement created for a failed placement."""
         with self._lock:
             path = self._path(statement.statement_id)
             if not path.is_file():
                 return False
-            payload = _canonical({"schema_version": "nollm_access_statement_v1", "statement": statement.to_mapping()})
-            if path.read_bytes() != payload:
+            if self.get(statement.statement_id) != statement:
                 raise FileExistsError("statement already exists with different content")
             path.unlink()
             return True
