@@ -158,6 +158,19 @@ offsets without silently changing v1. The continuation records 90 passing
 functional tests and complete old/new local timings; it adds no object bridges
 and makes no new semantic recall or exact-area claim.
 
+The [rational computation architecture](../architecture/NOLLM_RATIONAL_COMPUTATION_ARCHITECTURE_20261122.md)
+continues this work with an independent exact rational Lab map and coverage
+contract. Axial coordinates express rotations, compact radial twists, inverses
+and reanchoring using rational arithmetic. Identical ordered outer twists cancel
+exactly between layers; the relative affine map compiles to integer coefficients
+with one denominator. Distinct twists use the exact Fraction reference path.
+Coverage keeps all 96 sample assignments and exact hit-count shares; Q16 and
+1–100 scores are terminal projections. This family does not exactly reproduce
+the default irrational ideal angle/scale or the Core's prior Q40 quantization.
+Its focused tests and opt-in same-contract benchmark cover integer/reference
+equivalence and the concrete cost of changing twist centers. Continuous overlap
+error bounds and automatic movement or forced exploration are not claimed.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)

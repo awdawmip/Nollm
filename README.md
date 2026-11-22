@@ -53,6 +53,13 @@ geometry reuse and an explicit relative-coordinate Lab interface. It records
 90 passing tests and complete version-to-version timings, including cases
 with little benefit; the fixed Core geometry contract is unchanged.
 
+The [rational computation architecture](docs/architecture/NOLLM_RATIONAL_COMPUTATION_ARCHITECTURE_20261122.md)
+adds explicit exact rational axial maps, invertible compact twists and a
+common-denominator integer affine kernel. Its independent Lab contract keeps
+96-point coverage shares and advisory pressure exact until final display.
+The guide distinguishes sampled coverage from continuous area and records the
+cost of nonlinear denominator growth; it does not replace the default Core profile.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

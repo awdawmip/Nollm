@@ -1,0 +1,2270 @@
+{
+  "generated_at_utc": "2026-11-22T12:05:07.393666+00:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "repeats": 5,
+  "map_contract_id": "lab_exact_rational_axial_map_v1",
+  "coverage_contract_id": "lab_exact_rational_axial_quadrature_v1",
+  "comparison": "new rational reference versus exact integer-compiled auto; not old Core",
+  "warmup": "one full reference and auto call; immutable stencil cache populated",
+  "timing_excludes": "map parsing, equality assertion, JSON encoding, disk output",
+  "cases": [
+    {
+      "name": "affine_64",
+      "source_cells": 64,
+      "points_per_cell": 96,
+      "timed_scope": "coverage batch including per-cell compilation and output mappings",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -4,
+          -4
+        ],
+        [
+          -4,
+          -3
+        ],
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -4,
+          2
+        ],
+        [
+          -4,
+          3
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -3,
+          -3
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -3,
+          3
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -2,
+          -3
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -2,
+          3
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          1,
+          -3
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          2,
+          -3
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "execution": "compiled_integer_affine",
+      "coefficient_max_bits": 24,
+      "denominator_bits": 23,
+      "common_twists_cancelled": 0,
+      "reference_ms": [
+        171.54707,
+        156.155473,
+        158.380715,
+        156.757532,
+        153.25028
+      ],
+      "auto_ms": [
+        16.166025,
+        14.828139,
+        14.549171,
+        15.400814,
+        14.516928
+      ],
+      "reference_median_ms": 156.757532,
+      "auto_median_ms": 14.828139,
+      "reference_over_auto": 10.571625475051185,
+      "complete_results_equal": true
+    },
+    {
+      "name": "common_160_bit_anchor_plus_one_64",
+      "source_cells": 64,
+      "points_per_cell": 96,
+      "timed_scope": "coverage batch including per-cell compilation and output mappings",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542977",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -4,
+          -4
+        ],
+        [
+          -4,
+          -3
+        ],
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -4,
+          2
+        ],
+        [
+          -4,
+          3
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -3,
+          -3
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -3,
+          3
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -2,
+          -3
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -2,
+          3
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          1,
+          -3
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          2,
+          -3
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "execution": "compiled_integer_affine",
+      "coefficient_max_bits": 15,
+      "denominator_bits": 15,
+      "common_twists_cancelled": 0,
+      "reference_ms": [
+        157.129122,
+        153.475467,
+        158.897756,
+        158.117755,
+        152.530361
+      ],
+      "auto_ms": [
+        15.029074,
+        13.60438,
+        14.365034,
+        13.903347,
+        13.289143
+      ],
+      "reference_median_ms": 157.129122,
+      "auto_median_ms": 13.903347,
+      "reference_over_auto": 11.301532069939705,
+      "complete_results_equal": true
+    },
+    {
+      "name": "common_two_world_twists_8",
+      "source_cells": 8,
+      "points_per_cell": 96,
+      "timed_scope": "coverage batch including per-cell compilation and output mappings",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "source_coordinates": [
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "execution": "compiled_integer_affine",
+      "coefficient_max_bits": 24,
+      "denominator_bits": 23,
+      "common_twists_cancelled": 2,
+      "reference_ms": [
+        300.774852,
+        305.557393,
+        299.906126,
+        306.410994,
+        305.215007
+      ],
+      "auto_ms": [
+        1.613803,
+        1.857906,
+        2.083453,
+        2.5967,
+        1.919933
+      ],
+      "reference_median_ms": 305.215007,
+      "auto_median_ms": 1.919933,
+      "reference_over_auto": 158.97169692900744,
+      "complete_results_equal": true
+    },
+    {
+      "name": "distinct_world_twist_fallback_16",
+      "source_cells": 16,
+      "points_per_cell": 96,
+      "timed_scope": "coverage batch including per-cell compilation and output mappings",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ]
+      ],
+      "execution": "exact_fraction_fallback",
+      "reference_ms": [
+        107.994479,
+        105.669856,
+        109.460848,
+        113.005629,
+        109.915263
+      ],
+      "auto_ms": [
+        106.01903,
+        109.950353,
+        115.561429,
+        108.490827,
+        107.071856
+      ],
+      "reference_median_ms": 109.460848,
+      "auto_median_ms": 108.490827,
+      "reference_over_auto": 1.008941041623731,
+      "complete_results_equal": true
+    },
+    {
+      "name": "candidate_pressure_comparison_32",
+      "lower_cells": 32,
+      "upper_cells": 32,
+      "points_per_cell_per_candidate": 96,
+      "timed_scope": "both complete pressure reports and union-region comparison",
+      "before_lower_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "after_lower_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "14",
+              "denominator": "33"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "upper_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "lower_units": [
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -4,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -3,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -2,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -1,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 0,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 2,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 3,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -4,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -3,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 2,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 3,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": -4,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": -3,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": -2,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": -1,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": 0,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": 1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": 2,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 0,
+            "r": 3,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": -4,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": -3,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": 2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": 1,
+            "r": 3,
+            "phase": null
+          },
+          "units": 2
+        }
+      ],
+      "upper_units": [
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -4,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -3,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -2,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 0,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 1,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 3,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -4,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -3,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 2,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 3,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": -4,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": -3,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": -2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": -1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": 0,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": 1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": 2,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 0,
+            "r": 3,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": -4,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": -3,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": 2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": 1,
+            "r": 3,
+            "phase": null
+          },
+          "units": 2
+        }
+      ],
+      "execution": "one integer compilation per candidate per request",
+      "reference_ms": [
+        159.456619,
+        162.381536,
+        162.335701,
+        170.240401,
+        165.63096
+      ],
+      "auto_ms": [
+        16.926794,
+        18.573475,
+        15.580975,
+        14.596979,
+        19.147338
+      ],
+      "reference_median_ms": 162.381536,
+      "auto_median_ms": 16.926794,
+      "reference_over_auto": 9.593165486624342,
+      "complete_results_equal": true
+    }
+  ],
+  "bit_growth": {
+    "same_center": {
+      "initial_point": [
+        "1/4",
+        "1/5"
+      ],
+      "strength": "1/5",
+      "radius_squared": "1",
+      "rows": [
+        {
+          "step": 1,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 42,
+          "forward_ms": 0.053207,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 2,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 81,
+          "forward_ms": 0.038753,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 3,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 121,
+          "forward_ms": 0.043596,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 4,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 160,
+          "forward_ms": 0.044702,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 5,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 199,
+          "forward_ms": 0.045034,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 6,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 239,
+          "forward_ms": 0.048205,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 7,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 278,
+          "forward_ms": 0.074108,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 8,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 317,
+          "forward_ms": 0.053387,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 9,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 357,
+          "forward_ms": 0.084329,
+          "single_step_inverse_exact": true
+        }
+      ]
+    },
+    "alternating_centers": {
+      "initial_point": [
+        "1/4",
+        "1/5"
+      ],
+      "strength": "1/5",
+      "radius_squared": "1",
+      "rows": [
+        {
+          "step": 1,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 42,
+          "forward_ms": 0.033838,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 2,
+          "center": [
+            "1/5",
+            "0"
+          ],
+          "max_integer_bits": 241,
+          "forward_ms": 0.058682,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 3,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 1223,
+          "forward_ms": 0.136823,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 4,
+          "center": [
+            "1/5",
+            "0"
+          ],
+          "max_integer_bits": 6134,
+          "forward_ms": 0.990761,
+          "single_step_inverse_exact": true
+        },
+        {
+          "step": 5,
+          "center": [
+            "0",
+            "0"
+          ],
+          "max_integer_bits": 30692,
+          "forward_ms": 16.067289,
+          "single_step_inverse_exact": true
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "local single-process timings, not a production service benchmark",
+    "exact sample assignment does not prove continuous overlap error bounds",
+    "bit-growth examples are fixed probes, not universal complexity bounds"
+  ]
+}
