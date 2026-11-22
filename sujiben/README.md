@@ -1,0 +1,39 @@
+# 速记本
+
+速记本是主开发分支中持续使用的 Nollm 开发工作场。LLM 在这里保存读过证据后形成的概念、实现行为和成立条件，并在后续开发中继续支持、修订或补充这些理解。活跃内容位于 `sujiben/field`；已停用的代码和旧实验另行归档。
+
+概念与代码理解共用这个原生场。一条判断可以连接多份源码，也可以说明某个实现尚未满足的概念边界。物理关系来自实际占用、邻接、多目标 Coverage 和 Host 提出的 Stitch；语义判断由 LLM 作出。目录和文件名只负责存放材料，本文也不提供概念到物理入口的路由表。项目依据见[第一性原理](../docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md)。
+
+## 打开并继续使用
+
+在仓库根目录运行：
+
+```bash
+python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
+  project --field sujiben/field encounter \
+  --cursor-file /tmp/nollm-sujiben.json
+```
+
+阅读返回的已保存正文预览。在同一命令的 `encounter` 后加入本次实际显示的候选 ID；需要下一页时加入 `next`。按显示结果逐步选择，直到选定一个物理格并进入 `locality`。局部结果包含完整当前正文、固定来源、实际传播路径和可供决定的物理格。预览的 `text_truncated` 表示正文被截短，`truncated` 表示该候选还有表达未展示。`project` 与 `em` 命令都需要显式指定 `--field`。
+
+在这个现场判断下一步：已有理解足够时 `--recall`；同一命题的新支持用 `--reuse`；原判断需要改变时用 `--revise`；不同命题用 `--new`，可以选择已显示的空格或已占用格。写入需要新的表达 ID、LLM 写的正文和实际读过的固定源码窗口。`--none` 与 `--defer` 可以结束观察。完整工作约定见[原生使用说明](../lab/nollm-lab/repository_memory/skills/nollm-repository-memory/SKILL.md)；在上述命令末尾使用 `--help` 查看具体参数。
+
+若当前范围不足，先不作终态决定，用同一个游标重新打开并显式调整 `--steps`、`--beam`、`--limit` 或 `--via`。`--via connected` 才允许经过原生桥。预算不足表示本轮观察的边界；几何可达也不保证在本轮预算内返回。游标是临时导航状态，成功结束后删除，不属于速记本的持久知识。
+
+## 正文、绑定和固定源码
+
+`show` 打开一个确定版本的完整表达；`source` 按它保存的提交和行号回到原文。将下面的 `STATEMENT_ID` 替换为刚观察到的版本 ID：
+
+```bash
+python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
+  project --field sujiben/field show STATEMENT_ID
+
+python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
+  project --field sujiben/field source --id STATEMENT_ID --number 1 --repo .
+```
+
+一条表达可以引用多个窗口，`--number` 逐一展开。`current` 只说明当前绑定；它不表示该理解已经对最新源码复核。支持表达有自己的正文和来源，历史版本也继续可读。源码变更后，先回到受影响的局部理解和真实源码，再决定维持、支持、原位修订或新增；不要仅因为仓库 HEAD 改变就重写全部理解。
+
+速记本的 `field`、执行命令的运行时、保存固定提交的源码仓库分别承担不同职责。更换运行时可以继续打开原场。搬迁速记本时保留整个 `field`，同时保留可以读取来源提交的 Git 仓库；Core 快照本身不包含 Access 的绑定和全部版本正文。这一边界的实现依据是 [Core 状态](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-core/src/nollm_core/state.py#L442-L465)、[Access 绑定](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/handle_store.py#L43-L84)、[表达存储](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/statement_store.py#L20-L65)和 [Snapshot 委托](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-snapshot/src/nollm_snapshot/service.py#L7-L24)。
+
+[形成记录](FORMATION_20261122.md)说明速记本的继承起点与补充理解；[使用与 C4 维护记录](MAINTENANCE_20261122.md)说明两轮实际消费、独立安装与换源码仓库的结果，以及受影响版本的原位修订。这些记录解释具体形成和维护依据，日常使用仍从原生场开始。

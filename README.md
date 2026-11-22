@@ -32,6 +32,12 @@ current project direction, amendments and status. Continue into those sources
 for the task at hand; current implementation and experimental results do not by
 themselves redefine the project.
 
+Nollm's current development memory is [速记本](sujiben/README.md), the native field
+at `sujiben/field`. It keeps concepts, code behavior and their fixed evidence in
+the development branch, and is maintained through the same native encounters
+used to develop Nollm. Completed, unused experiment code has a separate legacy
+archive; active memory and reusable runtime code remain here.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.
@@ -296,8 +302,18 @@ Explicit `aux` commands provide source assistance and AOCI conversion; `baseline
 commands retain lexical/source-routed comparisons. They do not select an entry
 for the native workflow. The
 [quickstart](lab/nollm-lab/repository_memory/README.md) includes installation
-and use in another Git repository. See the historical [change trials](lab/nollm-lab/repository_memory/comparison/README.md)
-and [timing comparison](lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md).
+and use in another Git repository. Nollm's own ongoing work uses the
+[速记本](sujiben/README.md); the [C1–C3 record](lab/nollm-lab/repository_memory/self_bootstrap/README.md)
+retains the earlier development results and limitations.
+
+The legacy archive `archive/legacy-code-20261122` is pinned at
+`beaafabfe8dec4ba1c154ecd324954fa81417489`. It preserves the old fixed-source
+[change trials](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison/README.md)
+and [timing comparison](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md),
+the old AOCI volume and its evaluation scripts. Current research fields,
+[reusable checks](lab/nollm-lab/repository_memory/comparison/README.md), native
+geometry probes, baseline tools and migration/Oracle assets remain in the
+development tree.
 
 ## Validation
 

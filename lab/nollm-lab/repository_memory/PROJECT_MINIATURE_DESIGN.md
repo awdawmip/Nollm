@@ -2,6 +2,14 @@
 
 2026 年 11 月 19 日
 
+本报告保留当时的架构分析、实验范围和实施建议。2026 年 11 月 22 日起，当前开发
+理解统一从[速记本](../../../sujiben/README.md)继续，执行入口见
+[ACTIVE_PROJECT](../../../docs/project/ACTIVE_PROJECT.md)；C1–C3 的实际进展和未解问题见
+[自举记录](self_bootstrap/README.md)。已停用的 AOCI 卷、旧建场器和固定题目实验存于
+`archive/legacy-code-20261122` 的固定
+[beaafab 快照](https://github.com/awdawmip/Nollm/tree/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/self_study)。
+仍在用的[原生几何探针](self_study/README.md)留在开发树；下文的旧结果和来源版本保留原义。
+
 ## 研究结论
 
 Nollm 最值得落地的产品形态是：**一份可持续维护的项目缩影，加上让宿主模型使用它的 skill，底层直接复用原生 Core 与 Access。** 缩影的基本内容是有源码依据、可以独立理解的工程判断；几何位置、局部占用、上下覆盖和有限连接共同承载这些判断之间的关系。模型通过有限的观察页面进入一个局部，再回到准确原文继续推理或修改项目。

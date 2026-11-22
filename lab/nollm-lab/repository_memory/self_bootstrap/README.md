@@ -1,26 +1,46 @@
 # Nollm develops from its own memory
 
-Current continuation: [C3/M3 architecture correction, 2026-11-21](ARCHITECTURE_CORRECTION_20261121.md).
+Current development uses [速记本](../../../../sujiben/README.md), the native field
+at `sujiben/field` in the development branch. Concepts and code understanding
+continue there through actual encounters and source-backed maintenance.
+This directory retains the development reports and reusable diagnostics.
+
+The current code correction is
+[C4](https://github.com/awdawmip/Nollm/commit/5d27118b1011f7e8817d18c0a052e4f40719170f),
+`5d27118b1011f7e8817d18c0a052e4f40719170f`: preview text clipping is explicit,
+the EM wrapper requires `--field`, and installation carries runtime code without
+copying a working research field. The [速记本 maintenance record](../../../../sujiben/MAINTENANCE_20261122.md)
+tracks the affected judgments and their readback against fixed C4 source.
+
+Previous accepted stage: [C3/M3 architecture correction, 2026-11-21](ARCHITECTURE_CORRECTION_20261121.md).
 C3 is `a1c0f5a74434fd5e3a5429b794366a3d2739aadf`: native-default encounters,
 explicit auxiliary/baseline routes, and corrected bounded recall. The accepted M3
 has fourteen current judgments and twenty-nine readable versions; four affected
 judgments were revised in place from that fixed source. The report links the
 [compact run evidence](architecture_correction_evidence.json).
 The earlier C1/C2 evidence below is retained.
+The [former M3 workspace](https://github.com/awdawmip/Nollm/tree/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/self_bootstrap/field)
+is preserved at `beaafabfe8dec4ba1c154ecd324954fa81417489`, the fixed anchor of
+`archive/legacy-code-20261122`. Historical field paths in the original reports
+describe those runs; use the 速记本 for current development.
+The old location was consolidated only after all twenty-nine expression files,
+fourteen addresses/handles, the bridge and geometry registry were verified in the
+速记本. Its knowledge stays active; the separate legacy-code cleanup covers unused
+experiment implementations and inputs.
 
 This is the executable continuation of [PR #7](https://github.com/awdawmip/Nollm/pull/7)
 and the [self-bootstrap plan](../../../../docs/project/tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md).
 The development chain has produced real code changes and maintained native memory:
-`C0 → M0 → C1 → M1 → C2 → M2 → C3 → M3`.
+`C0 → M0 → C1 → M1 → C2 → M2 → C3 → M3 → C4 → 速记本`.
 
-## Open the accepted field
+## Open the current 速记本
 
 From a Nollm checkout containing the cited commits:
 
 ```sh
 python lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
-  project --field lab/nollm-lab/repository_memory/self_bootstrap/field \
-  encounter --cursor-file /tmp/nollm-project-encounter.json
+  project --field sujiben/field \
+  encounter --cursor-file /tmp/nollm-sujiben.json
 ```
 
 Choose candidate IDs actually shown on each page, then one final physical entry.
@@ -37,7 +57,8 @@ Use the same prefix with `show ID` for an exact expression and with
 `source --id ID --number N --repo /path/to/Nollm` for its fixed Git source.
 `find TERM` is a separate literal helper. Keep a working field outside an installed
 runtime directory and pass it explicitly after replacing the runtime. The `em`
-wrapper uses the same implementation with its existing default research field.
+wrapper uses the same implementation and also requires an explicit `--field`.
+Its retained research example is `lab/nollm-lab/repository_memory/enterprise_math/field`.
 
 ## Code and memory versions
 
@@ -50,7 +71,9 @@ wrapper uses the same implementation with its existing default research field.
 | C2 | `5ceb6f36029e3ff690d53bbc1301bc77933d7227`: project reuse/current-version behavior developed by another fresh model session and integrated after review. |
 | M2 | Two in-place revisions, twelve retained current judgments, and one independently sourced supporting expression: fourteen current judgments, twenty-five readable versions, fourteen occupied cells and the same directed bridge. Frozen input to the C3 comparison; preserved at `260faeadb796d8057c9ddbfc5c2a5cc51f06037f`. |
 | C3 | `a1c0f5a74434fd5e3a5429b794366a3d2739aadf`: a shared native encounter, explicit auxiliary/baseline entrypoints, and revisit-aware beam selection with accurate clipping status. |
-| M3 | Four in-place revisions from fixed C3 source: fourteen current judgments, twenty-nine readable versions, fourteen L0 cells/atoms and one bridge. All twenty-five predecessor expression files and ten unaffected bindings were preserved. This directory contains the accepted working seed. |
+| M3 | Four in-place revisions from fixed C3 source: fourteen current judgments, twenty-nine readable versions, fourteen L0 cells/atoms and one bridge. All twenty-five predecessor expression files and ten unaffected bindings were preserved. This is the predecessor of the current 速记本; its frozen workspace is linked above. |
+| C4 | `5d27118b1011f7e8817d18c0a052e4f40719170f`: explicit preview text clipping and caller-selected fields for installation and the EM wrapper. |
+| 速记本 | The current field at `sujiben/field`, retaining all M3 expressions and native relationships while adding and maintaining development understanding. The maintenance record above identifies the actual source versions reviewed. |
 
 `current` means the current field binding. The source commit says which code an
 expression describes; neither fact implies that all later source changes have

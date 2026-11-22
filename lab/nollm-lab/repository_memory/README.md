@@ -4,10 +4,12 @@
 同一个 `encounter` 支持查询、补充表达、原位修订和新判断。真实 LLM 阅读语义、选择入口
 和位置；Core 执行占用、Coverage、邻接和桥，Access 返回对应表达与固定来源。
 
-Nollm 自身的持续工作场和开发记录见 [自举入口](self_bootstrap/README.md)。
+Nollm 自身的持续开发工作场名为[速记本](../../../sujiben/README.md)，位于
+`sujiben/field`，与当前代码一起保留在开发分支。概念、实现行为与成立条件由 LLM
+沿原生场持续组织；先前 C1–C3 的开发和维护记录见[自举入口](self_bootstrap/README.md)。
 进取数论已有研究场见 [EM 入口](enterprise_math/README.md) 与
-[冷会话使用记录](enterprise_math/TRIAL.md)。AOCI 是
-[工程理解和回源辅助](self_study/aoci/README.md)，其编码与显式引用另见下文。
+[冷会话使用记录](enterprise_math/TRIAL.md)。AOCI 的[工程理解和回源分工](AOCI_COMPARISON.md)、
+编码与显式引用另见下文。
 
 ## 安装和开始
 
@@ -17,7 +19,8 @@ Nollm 自身的持续工作场和开发记录见 [自举入口](self_bootstrap/R
 python3 lab/nollm-lab/repository_memory/install_skill.py --host codex
 ```
 
-安装器将运行时代码、使用说明和辅助参考放入新目录。也可用
+安装器将运行时代码、使用说明和辅助参考放入新目录，工作场由调用方显式选择。
+速记本和 EM 研究场均独立于安装目录。也可用
 `--host claude|copilot|opencode`，或 `--dest /path/to/new/nollm-repository-memory`
 指定新目录；安装品可独立移动。更多宿主位置见 [HOSTS.md](HOSTS.md)。
 
@@ -39,7 +42,8 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 
 `surface` 页面展示聚合观察，`physical` 页面展示最终物理候选。选择一个物理入口后，
 `locality` 页面返回 `entry`、当前事实 `items`、可写位置 `cells` 与实际预算。
-页面预览可能截短正文；局部页面返回完整判断与条件。
+`text_truncated` 表示展示的正文被裁剪，`truncated` 表示还有表达未展示；
+局部页面返回完整判断与条件。`walk` 进一步只显示标题时也会标记正文裁剪。
 新场先提供原点种子；Host 选择该物理候选后才能在本次局部中形成第一条记忆。
 重复执行而不传新选择可重开当前页；`--restart` 开始新的观察。
 
@@ -47,8 +51,8 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 
 ```sh
 python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
-  project --field lab/nollm-lab/repository_memory/self_bootstrap/field \
-  encounter --cursor-file /tmp/nollm-self-encounter.json
+  project --field sujiben/field \
+  encounter --cursor-file /tmp/nollm-sujiben.json
 ```
 
 场保留已有语义布局和来源；会话文件只保存可丢弃的导航状态。
@@ -132,24 +136,28 @@ python3 "$cli" project --field "$field" links
 
 [辅助命令与迁移示例](skills/nollm-repository-memory/references/auxiliary.md)
 保留原清单格式、机器语料、Coverage 和 AOCI 的操作说明。
-历史清单及实验数据继续保留；迁入项目场时由 Host 阅读判断和原文后选择位置。
+已停用的历史清单及配套实验在下述归档中保留；迁入项目场时由 Host 阅读判断和原文后选择位置。
 AOCI 的对象、字典和 R 引用来自输入代码卷，其往返成功验证的是表示保真。
 
-## 历史量化结果与复现
+## 当前开发与旧实验归档
 
-以下保留早期清单/来源读取实验的原范围和计量。它们用于比较已编写理解与来源材料，
-不会作为当前原生发现路径的质量结论。
+速记本、当前 EM 场、原生运行时、skill、现行测试与 `baseline`/`aux` 工具继续在开发分支维护。
+归档范围只包括已经停用的固定源码清单、三组改动实验、旧 AOCI 卷及对应建场/六题评估。
+`self_study` 中独立的[几何探针](self_study/README.md)和
+`comparison` 中仍在用的[宿主发现与 Access 计时工具](comparison/README.md)保留。
 
+旧资产由 `archive/legacy-code-20261122` 保存，锚点为
+`beaafabfe8dec4ba1c154ecd324954fa81417489`。复现历史实验时使用该固定版本的
+[旧说明与评估器](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/README.md#历史量化结果与复现)，
+其中的源码版本、题目、命令和计量仍按当时范围解释。
+
+这些结果比较的是固定材料与任务，仍包含原始失败和限制；它们不构成当前原生发现质量的结论。
+当前回归可从仓库根执行：
 
 ```sh
-python3 "$D/evaluate_reads.py" --repo .
 PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
-  python3 -m unittest discover -v -s "$D"
+  python3 -m unittest discover -v -s lab/nollm-lab/repository_memory
 ```
-
-早期字节实验固定使用 `examples/nollm-notes.json` 和 Nollm 提交 `314eb47490adcad22e37d6e05d2da3983e78956d` 的 5 个真实文件。这 5 个 Git blob 共 **31,271 B**；默认阅读视图 **1,866 B**；含完整证据的 JSON **3,511 B**。`evaluate_reads.py` 用六个工程问题比较整文件读取量。每题重新读取全部源码共 187,626 B；预先给出每题的正确证据文件时，六题回源共 65,702 B。若同一会话完整保留前文，六题的来源并集覆盖全部五个文件，此时先读视图再读完整证据共 33,137 B。这是输入字节计算，不包含模型 token、工具负担、时延或语义准确率。
-
-另一次独立试读中，答题者先根据五条说明的简写选定要读的文件，之后才开放所选源码；六题的答复与事先写好的判分要点相符。它只凭说明答了一道题，其余五道回源。这个小样本用于检查说明是否能引导核查；它没有比较模型优劣或自动选择几何入口的表现。`evaluate_reads.py --questions-only` 可导出不含答案的题目供新实验使用。
 
 ## 设计与后续比较
 
@@ -159,8 +167,9 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 实现保存，新工作从上面的原生入口继续。
 
 - [项目缩影与原生几何架构研究](PROJECT_MINIATURE_DESIGN.md)
+- [速记本：当前概念与代码理解](../../../sujiben/README.md)
 - [自身开发、理解维护与已观察失败](self_bootstrap/README.md)
 - [历史清单/词项路线的架构与实施记录](ARCHITECTURE_AND_PLAN.md)
-- [三种阅读方式的改动对照与复现](comparison/README.md)
+- [三种阅读方式的历史改动对照与复现](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison/README.md)
 - [机器事实的字段和解析范围](FACTS.md)
 - [AOCI-CODE 的工程工作流对照](AOCI_COMPARISON.md)

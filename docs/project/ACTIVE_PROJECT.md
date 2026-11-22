@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, updated 2026-11-21.
+Repository memory feedback cycle, updated 2026-11-22.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -36,14 +36,22 @@ Use its [Codex handoff](tasks/NOLLM_SELF_BOOTSTRAP_CODEX_PROMPT_20261121.md) and
 PR #7 branch, `experiment/enterprise-math-memory-20261120`; this task branch is the current execution
 entry over the repository-memory base. The plan was grounded at `c68557881b72cc9eee832181d68717c9dad72ff8`.
 
+The active development memory is [速记本](../../sujiben/README.md), at
+`sujiben/field` in this development branch. Concepts, implementation behavior,
+conditions and their fixed evidence are maintained together through
+`project --field sujiben/field encounter --cursor-file SESSION`. The Host forms
+and places understanding; physical occupancy, Coverage, adjacency and deliberate
+Stitch carry its native relationships. Continue developing from this field and
+update affected judgments against actual source changes.
+
 Reuse the [project-miniature design](../../lab/nollm-lab/repository_memory/PROJECT_MINIATURE_DESIGN.md)
 and prior self-study as evidence. Form current cross-file understanding, use it in new model sessions
 for actual code changes, maintain the affected memory, and test subsequent development on the updated
 understanding. This is an internal theoretical experiment: remove redundant defensive code on the
 actual path; keep direct persistence, source, revision and geometric behavior. Do not add hash,
 attestation, authentication or audit frameworks. The executed [self-bootstrap cycle](../../lab/nollm-lab/repository_memory/self_bootstrap/README.md)
-contains a reusable project entry, a maintained native field, and Source/Flat/Native
-comparison evidence. C1 is `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`;
+contains the reusable project entry, the predecessor field history, and Source/Flat/Native
+comparison evidence. Its continuing working field is now the 速记本. C1 is `e0e0dd80039d129b7a0321e1e640ffa0c987f9eb`;
 C2 is `5ceb6f36029e3ff690d53bbc1301bc77933d7227`. A fresh developer used M0 to simplify the
 actual persistence path; another used M1 to implement supporting expressions and accurate
 current-version behavior. Their original successes, misses and failed collection remain
@@ -52,7 +60,7 @@ in the historical record.
 The [C3 architecture correction](../../lab/nollm-lab/repository_memory/self_bootstrap/ARCHITECTURE_CORRECTION_20261121.md)
 is fixed at `a1c0f5a74434fd5e3a5429b794366a3d2739aadf` on the same PR branch.
 Ordinary project memory now starts with `project --field FIELD encounter --cursor-file SESSION`
-(`em encounter` for the research field). Queries and propositions share Surface,
+(`em --field FIELD encounter` for a selected research field). Queries and propositions share Surface,
 one Host-selected physical entry and a bounded locality before recall, reuse, revision,
 new placement, none or defer. Source/AOCI tools use explicit `aux` commands; lexical and
 source/graph-routed comparison workflows use `baseline`. The Core correction removes
@@ -73,13 +81,44 @@ twenty-five predecessor expressions, ten unaffected bindings, positions and the 
 were preserved; fourteen new source windows were read back. The C3 report and its
 compact evidence record retain the actual maintenance and reader outcomes.
 
-The remaining useful work is bounded discovery on the still-missed mixed-beam case,
-continued use of the maintained understanding on subsequent development, and the existing
-Surface preview detail: a 256-character excerpt can end mid-sentence while `truncated`
-reports omitted statements rather than clipped characters. The fresh Host did not install
-a second runtime, and this correction is not a Source/Flat/Native superiority experiment.
+The remaining useful work is bounded discovery on the still-missed mixed-beam case
+and continued use of the maintained understanding on subsequent development.
+The C3 reader also exposed a Surface preview detail: a 256-character excerpt could
+end mid-sentence while `truncated` only reported omitted statements.
+[C4](https://github.com/awdawmip/Nollm/commit/5d27118b1011f7e8817d18c0a052e4f40719170f),
+fixed at `5d27118b1011f7e8817d18c0a052e4f40719170f`, adds `text_truncated` for clipped
+text and retains the original omission flag; full expression bodies remain
+available in the selected locality. C4 also requires an explicit field for the
+EM wrapper and stops bundling a working research field with the installed runtime.
+The [速记本 maintenance record](../../sujiben/MAINTENANCE_20261122.md) records the
+affected understanding and subsequent readback against that fixed source.
+The fresh C3 Host did not install a second runtime, and that correction is not a
+Source/Flat/Native superiority experiment.
 Retain exact source versions, actual auxiliary use and current/history distinctions in
 the next measured task; do not tune the field to a preselected answer.
+
+### Active work and legacy archive
+
+The [2026-11-22 notebook and cleanup record](NOLLM_SUJIBEN_CLEANUP_20261122.md)
+records the exact archive scope, preserved working memory, C4 correction and local validation.
+
+The development branch retains the 速记本, current EM research field, reusable
+engine/CLI/skill, native geometry probes, current tests and explicit baseline/aux
+tools. The legacy archive `archive/legacy-code-20261122` points to fixed commit
+`beaafabfe8dec4ba1c154ecd324954fa81417489`. The
+[old reading examples and trials](https://github.com/awdawmip/Nollm/tree/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison)
+and [fixed AOCI self-study](https://github.com/awdawmip/Nollm/tree/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/self_study)
+preserve unused implementations, input volumes and frozen results there.
+The [former M3 field](https://github.com/awdawmip/Nollm/tree/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/self_bootstrap/field)
+remains recoverable at that fixed source. Its 31 files were consolidated into
+`sujiben/field` after verifying all 29 old expression files, 14 addresses/handles,
+the directed bridge and geometry registry were inherited. This working-field
+transition keeps the knowledge active and is separate from archiving the 37 old
+experiment assets; one of those assets is an old README body replaced in place
+with the current tool entry.
+C1–C3 reports, current EM evidence, retained probes, migration dependencies and
+Oracle assets keep their existing roles and gates. Archive placement follows
+current use and dependencies, not whether an LLM authored the content.
 
 ## Enterprise Math memory: reusable implementation and evidence
 
@@ -90,9 +129,12 @@ with no defensive code or redundant validation/hash machinery in this experiment
 Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
 for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
 
-PR #7 now ships the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md).
-Start a new TASK session with `memory.py em encounter --cursor-file SESSION`; `em walk`
-remains available for read-only navigation. A cold reader derived a prefix-set rule, saved it,
+PR #7 retains the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md).
+The installer supplies runtime code; callers choose a field explicitly. From the
+repository root, start a new TASK session with
+`memory.py em --field lab/nollm-lab/repository_memory/enterprise_math/field encounter --cursor-file SESSION`;
+`em --field FIELD walk` remains available for read-only navigation.
+A cold reader derived a prefix-set rule, saved it,
 and another reader used it on a different CRT baseline. The [development trials](../../lab/nollm-lab/repository_memory/enterprise_math/TRIAL.md)
 include the direct-source and same-content lexical comparisons and the cost of forming and revising the field.
 

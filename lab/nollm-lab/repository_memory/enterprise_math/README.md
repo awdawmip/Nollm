@@ -1,6 +1,8 @@
 # 用外部记忆继续进取数论研究
 
-这是给真实模型使用的 TASK／知情综合研究入口。当前记忆涉及六格 CRT 前缀、X6 二次探测、有限生成模的枚举条件和素操作未来树。可以直接问「给定读头需要保留哪些联合信息？」「什么条件下能借用另一条线的编码或枚举证明？」。由拿到任务的模型操作下面的 CLI、选择证据和作答。[已保存的原生场](field/) · [实际使用与成本](TRIAL.md)
+这是给真实模型使用的 TASK／知情综合研究入口。当前记忆涉及六格 CRT 前缀、X6 二次探测、有限生成模的枚举条件和素操作未来树。可以直接问「给定读头需要保留哪些联合信息？」「什么条件下能借用另一条线的编码或枚举证明？」。由拿到任务的模型操作下面的 CLI、选择证据和作答。[已保存场的原生状态](field/core/current_state.json) · [实际使用与成本](TRIAL.md)
+
+从 [C4](https://github.com/awdawmip/Nollm/commit/5d27118b1011f7e8817d18c0a052e4f40719170f) 起，所有 `em` 调用都必须显式传入 `--field`。现用 EM 场仍在本目录的 `field/`；安装器只携带运行时代码，调用安装版时也要指向这份场或它的独立工作副本。历史试验记录保留当时实际命令，当前调用以下述入口为准。
 
 ## 在一个新会话打开
 
@@ -9,9 +11,10 @@
 ```sh
 D=lab/nollm-lab/repository_memory
 cli="$D/skills/nollm-repository-memory/scripts/memory.py"
+field="$D/enterprise_math/field"
 em() { python3 "$cli" em "$@"; }
 EM=../enterprise-math
-em walk
+em --field "$field" encounter --cursor-file /tmp/nollm-em-encounter.json
 ```
 
 如果本机还没有 EM 工作副本，可执行以下两行。已有副本只需让 `EM` 指向它。部分克隆会在首次需要时获取相应的 Git 对象。
@@ -21,11 +24,13 @@ git clone --filter=blob:none --no-checkout https://github.com/awdawmip/enterpris
 git -C "$EM" fetch origin f16294a5a7ffa435a32b70214d881fd4450eb494
 ```
 
-**开放问题。** 阅读 `walk` 返回的本页语句首行，根据问题选择窗口。把显示的候选 ID 依次追加到同一命令。需要翻页时追加 `next`。下例中的变量取自实际页；回退时去掉最后一个选择。
+普通查询和新判断都从 `encounter` 观察当前页，再以同一个游标传入实际展示的候选 ID，直到选择一个物理入口。局部页面返回完整判断、固定来源与可用位置；随后可以召回、支持、修订或新增。完整操作见[共同原生入口](../README.md)。
+
+**只读走读。** `em --field "$field" walk` 仍可作只读导航。阅读 `walk` 返回的本页语句首行，根据问题选择窗口。把显示的候选 ID 依次追加到同一命令。需要翻页时追加 `next`。下例中的变量取自实际页；回退时去掉最后一个选择。
 
 ```sh
-em walk "$window"
-em walk "$window" "$physical"
+em --field "$field" walk "$window"
+em --field "$field" walk "$window" "$physical"
 ```
 
 上例从零阶窗口出发。若选择 `--order 1`，先选一阶窗口，再选零阶窗口，最后选其物理候选。每次保持同一 `--order`、`--page-size`。菜单中的 `surface:…` 和 `physical-entry:…` 供 `walk` 选择；`show` 和 `source --id` 接受召回条目的语句版本 ID。最终结果有一个 `entry=[layer,q,r]`，以及各命中的版本 ID、完整判断、坐标、实际核路径 `via`。空路径表示入口自身。默认一步、最多五条；可调 `--steps`、`--limit`。默认允许同层邻接及上下层 Coverage；`--via vertical --steps 2` 单独观察跨层往返。加深后仍遗漏所需材料时，按来源引用展开或返回 Surface 另选入口。解释数学联系时应核对两端对象、前提与证据。
@@ -34,10 +39,10 @@ em walk "$window" "$physical"
 
 ```sh
 page=$(mktemp)
-em walk --cursor-file "$page"
-em walk --cursor-file "$page" next       # 当前页有 has_more 时
-em walk --cursor-file "$page" "$window"
-em walk --cursor-file "$page" "$physical"
+em --field "$field" walk --cursor-file "$page"
+em --field "$field" walk --cursor-file "$page" next       # 当前页有 has_more 时
+em --field "$field" walk --cursor-file "$page" "$window"
+em --field "$field" walk --cursor-file "$page" "$physical"
 ```
 
 首屏的 `start` 给出实际起始阶、根格数、预计根页数、软目标和 Access 活动面是否溢出；`pages_left` 是 24 页硬预算的余量。零余量时仍可选择已经展示的物理候选。默认先试页宽 3。全阶都超出窄菜单软目标时，在 3 至 8 中取首个预计可容纳「扫完根菜单 + 每次下钻一页 + 物理菜单」的宽度，选该宽度估计页数最少的阶，同值取浅阶。如果各宽度都不够则使用宽 8 下的最低估计。子菜单也可能翻页，预算不能保证覆盖所有目标。`--order` 固定起始阶，`--page-size 3` 复现过去的显式窄页策略；选择 ID 与生成它的页关联。
@@ -57,17 +62,17 @@ em --field "$field" unstitch crt-probe-lead
 **已知标识、式子或出处。** `find` 是对当前判断的 ID 和正文做不分大小写的连续字面匹配。它独立于原生导航。引用按 `show` 返回的顺序从 1 编号。
 
 ```sh
-em find 'K(m)'
-em show X6-QUADRATIC-MODULAR.v2
-em source --id X6-QUADRATIC-MODULAR.v2 --number 1 --repo "$EM"
-em show X6-QUADRATIC-MODULAR.oct
+em --field "$field" find 'K(m)'
+em --field "$field" show X6-QUADRATIC-MODULAR.v2
+em --field "$field" source --id X6-QUADRATIC-MODULAR.v2 --number 1 --repo "$EM"
+em --field "$field" show X6-QUADRATIC-MODULAR.oct
 ```
 
 旧版会显示 `current: false`，仍可展开当时的来源。新版的 `revises` 指回旧版。每个引用指向核阅时的 EM 提交、真实路径及闭区间行号。`source` 读取该 Git blob，只把引用的原文行送给模型；改变工作树 HEAD 不会改变旧引用。
 
 ## 形成与局部更正
 
-模型先读问题所需的成果卡、原稿或复核，在第一行写可导航的提要，随后用自然语言和公式写下判断、作用域及未满足的前提。直接处理一段新材料可用 `em source --repo "$EM" --at '路径#L起行-L末行' --rev 提交`。判断适用性、选择物理位置与判断是否需要更正由 Host 完成。相同内容可继续使用原判断。有限计算、模型推论和未决路线均可按各自证据写入。
+模型先读问题所需的成果卡、原稿或复核，在第一行写可导航的提要，随后用自然语言和公式写下判断、作用域及未满足的前提。直接处理一段新材料可用 `em --field "$field" source --repo "$EM" --at '路径#L起行-L末行' --rev 提交`。判断适用性、选择物理位置与判断是否需要更正由 Host 完成。相同内容可继续使用原判断。有限计算、模型推论和未决路线均可按各自证据写入。
 
 下面用一个**新的工作场**重放从历史成果卡到后续论文的局部更正。研究者只需提供正常研究材料，调用方模型负责写语句和引用。
 
@@ -90,7 +95,7 @@ NOTE
 em --field "$field" show x6.opt.updated
 ```
 
-**实际持久位置。** 默认场在本目录的 `field/`。`core/current_state.json` 保存物理占用，`access/bindings.json` 记录当前绑定，`access/statements/` 保存语句版本与来源。复制整个目录并传 `em --field /path/to/copy ...` 就能续写本次已有理解；要在团队中交接，把修改后的同一场提交到工作分支。skill 安装器也把这份记忆带到 `scripts/runtime/enterprise_math/field/`。安装副本与工作树各自持久。实验按单写者使用。
+**实际持久位置。** 本目录的 `field/` 是保留的现用研究场，CLI 没有隐式默认场。`core/current_state.json` 保存物理占用，`access/bindings.json` 记录当前绑定，`access/statements/` 保存语句版本与来源。复制整个目录并传 `em --field /path/to/copy ...` 就能续写已有理解；要在团队中交接，把修改后的同一场提交到工作分支。安装器不复制研究场，也不在 `scripts/runtime/` 内创建工作副本。运行时更新后继续显式打开同一场。实验按单写者使用。
 
 Core 的活动写入层为 0；不同语义粒度的判断可以同处这一层。聚合阶数控制 Surface 的观察尺度。覆盖、邻接和预览帮助模型找到判断；定理证明和接纳状态沿 EM 原文。这个适配器只保存 Host 理解与 Git 窗口，不定期抓取或重排全库。FREE A 接入时需沿 EM 当时的来源规则选择可用视图。
 

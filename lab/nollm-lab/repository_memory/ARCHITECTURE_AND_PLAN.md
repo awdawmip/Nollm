@@ -50,8 +50,8 @@
 - Lab 集成回归 10 项通过，含安装后移位、外部仓库和重开原生场。所有生产包测试 253 项通过。原六题的字节基线复算一致。
 - `reference/python/tests` 运行结果为 162 项通过、1 项跳过、2 项失败。失败项分别检查文档中的架构短语和根 README 的资产策略引用，在干净的首版提交 `736e19c` 上重跑，两项均以相同原因失败。
 - 更新了 Lab 资产所属模块和验收入口。归属清单的生成、校验和 active tree asset 检查通过。全仓模块边界扫描读到 `integrations/openclaw/nollm-memory-provider/src/memory-tools.js` 的第 3032 个字节时发生 UTF-8 解码错误。该文件与首版 Git blob `61955bba45601f8929b30cb427b632ec4a70d4d6` 相同。当时仓库级边界扫描因此阻塞。
-- [改动对照的逐题判分、回源覆盖和复测](comparison/README.md)
+- [改动对照的逐题判分、回源覆盖和复测](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison/README.md)
 
 ## 主线反馈
 
-Access 现在按一次 Core 遍历返回的一批 handle 读取绑定，在原顺序逐条核验正文。公开接口与持久化格式兼容。先前的 UTF-8 阻塞已通过合入维护分支的 OpenClaw 修复解决，两项文档检查已恢复。实验分支和主线从同一验收提交继续演进。后续优化可按同一基准分别检查首次使用、跨进程重复查询、原始证据变化和历史重放。[性能对照与复现](comparison/FIELD_PERFORMANCE.md)
+Access 现在按一次 Core 遍历返回的一批 handle 读取绑定，在原顺序逐条核验正文。公开接口与持久化格式兼容。先前的 UTF-8 阻塞已通过合入维护分支的 OpenClaw 修复解决，两项文档检查已恢复。实验分支和主线从同一验收提交继续演进。后续优化可按同一基准分别检查首次使用、跨进程重复查询、原始证据变化和历史重放。[性能对照与复现](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/lab/nollm-lab/repository_memory/comparison/FIELD_PERFORMANCE.md)
