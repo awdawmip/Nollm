@@ -32,7 +32,7 @@ class GeometryInstallationTest(unittest.TestCase):
             executable = install_skill.install(root / "skill") / "scripts/memory.py"
 
             def run(*args, ok=True):
-                proc = subprocess.run([sys.executable, "-I", str(executable), "geometry", *map(str, args)],
+                proc = subprocess.run([sys.executable, "-I", str(executable), "aux", "aoci", *map(str, args)],
                                       cwd=root, capture_output=True)
                 if ok:
                     self.assertEqual(proc.returncode, 0, proc.stderr)
@@ -63,7 +63,7 @@ class GeometryInstallationTest(unittest.TestCase):
             field = root / "native"
             def native(*args):
                 return json.loads(subprocess.check_output(
-                    [sys.executable, "-I", str(executable), "geometry-native", *map(str, args)], cwd=root))
+                    [sys.executable, "-I", str(executable), "aux", "aoci-field", *map(str, args)], cwd=root))
             written = native("write", "--geometry", geometry, "--meta", meta, "--field", field)
             self.assertEqual(written["directed_bridges"], 1)
             probe = native("probe", "--id", "code:worker.py", "--meta", meta, "--field", field)
@@ -71,7 +71,7 @@ class GeometryInstallationTest(unittest.TestCase):
             self.assertEqual(probe["reference"]["path"], ["bridge"])
             self.assertEqual(probe["ports"]["A"]["value"], "submit")
             native_rows = root / "native-rows.json"
-            subprocess.run([sys.executable, "-I", str(executable), "geometry-native", "read",
+            subprocess.run([sys.executable, "-I", str(executable), "aux", "aoci-field", "read",
                             "--meta", str(meta), "--field", str(field), "--out", str(native_rows)], check=True)
             self.assertEqual(json.loads(native_rows.read_bytes()), sorted(rows, key=lambda r:r["id"]))
             run("decode", *source, "--out", volume)

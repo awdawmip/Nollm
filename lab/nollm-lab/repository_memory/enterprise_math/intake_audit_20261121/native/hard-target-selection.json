@@ -1,0 +1,11 @@
+{
+  "target": [
+    -13,
+    2
+  ],
+  "target_index": 471,
+  "earliest_root_index": 76,
+  "root_pages_before_target": 9,
+  "root_cells": 133,
+  "rule": "Choose physical cell whose earliest source-membership occurrence is latest in order-8 root enumeration, breaking ties by coordinates."
+}

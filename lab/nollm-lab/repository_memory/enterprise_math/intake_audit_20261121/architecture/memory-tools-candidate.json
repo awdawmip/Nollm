@@ -1,0 +1,386 @@
+[
+  {
+    "name": "em_memory_walk",
+    "description": "Navigate the TASK/informed research memory. Start without choices; send the full accumulated choices to select one physical entry. When has_more is true, append the literal 'next' to choices to see the next page. Omit page_size for planning; explicit page_size is 1..8. The initial page reports root cost and overflow; pages_left is the remaining page budget. Use connected to include a directed geometric link. budget_exhausted reports truncated recall traversal, not a failed lookup. The Host chooses; memory does not grant scientific acceptance or a FREE A source view.",
+    "inputSchema": {
+      "properties": {
+        "choices": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Choices"
+        },
+        "order": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order"
+        },
+        "page_size": {
+          "anyOf": [
+            {
+              "maximum": 8,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Size"
+        },
+        "steps": {
+          "default": 1,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "limit": {
+          "default": 5,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "via": {
+          "default": "local",
+          "enum": [
+            "local",
+            "vertical",
+            "connected"
+          ],
+          "title": "Via",
+          "type": "string"
+        }
+      },
+      "title": "em_memory_walkArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_walkDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_show",
+    "description": "Read a saved understanding version and exact sources. current means the current binding in this working-memory field, not the latest scientific source or acceptance; source freshness is not checked. Use the known note_id to reconcile an uncertain save before any further write.",
+    "inputSchema": {
+      "properties": {
+        "note_id": {
+          "title": "Note Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "note_id"
+      ],
+      "title": "em_memory_showArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_showDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_source",
+    "description": "Read an exact EM source window: choose a saved note_id and one-based number, or COMMIT:PATH#Lfirst-Llast for formation. Uses the fixed scientific revision, independent of current main.",
+    "inputSchema": {
+      "properties": {
+        "note_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note Id"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "number": {
+          "default": 1,
+          "title": "Number",
+          "type": "integer"
+        }
+      },
+      "title": "em_memory_sourceArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_sourceDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_save",
+    "description": "Persist Host-authored working understanding, preserving source authorship, scientific status and conditions in body. Use a new immutable note_id, fixed COMMIT:PATH#Lfirst-Llast sources and either at=[q,r] or revise=current_note_id. This saves memory directly; Source publication and formal Result/Review keep their own status.",
+    "inputSchema": {
+      "properties": {
+        "note_id": {
+          "title": "Note Id",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        },
+        "revise": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revise"
+        }
+      },
+      "required": [
+        "note_id",
+        "body",
+        "sources"
+      ],
+      "title": "em_memory_saveArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_saveDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_stitch",
+    "description": "Create a Host-selected directed geometric link between the current cells of two saved notes. Connected recall can include other notes in the target cell. The link expresses a recall relation, not a scientific implication; source-condition changes require Host reassessment. If the outcome is unknown, inspect em_memory_links with this link_id before another write.",
+    "inputSchema": {
+      "properties": {
+        "link_id": {
+          "title": "Link Id",
+          "type": "string"
+        },
+        "from_id": {
+          "title": "From Id",
+          "type": "string"
+        },
+        "to_id": {
+          "title": "To Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "link_id",
+        "from_id",
+        "to_id"
+      ],
+      "title": "em_memory_stitchArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_stitchDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_unstitch",
+    "description": "Remove one directed geometric link by its saved link_id. This changes memory recall; saved notes, scientific sources and formal acceptance keep their own status. If the outcome is unknown, inspect em_memory_links with this link_id before another write.",
+    "inputSchema": {
+      "properties": {
+        "link_id": {
+          "title": "Link Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "link_id"
+      ],
+      "title": "em_memory_unstitchArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "additionalProperties": true,
+      "title": "em_memory_unstitchDictOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_links",
+    "description": "Read current native BridgeSpec records, optionally by the original link_id. An empty list means no current matching link. Reconcile an uncertain stitch/unstitch by this ID and the intended from/to anchors before another write; recall paths identify kernels, not individual links.",
+    "inputSchema": {
+      "properties": {
+        "link_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Link Id"
+        }
+      },
+      "title": "em_memory_linksArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Result",
+          "type": "array"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "em_memory_linksOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  },
+  {
+    "name": "em_memory_find",
+    "description": "Auxiliary literal lookup in current memory IDs/bodies. Does not select a native geometry entry. Use em_memory_walk for Host-directed native navigation.",
+    "inputSchema": {
+      "properties": {
+        "term": {
+          "title": "Term",
+          "type": "string"
+        },
+        "limit": {
+          "default": 5,
+          "title": "Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "term"
+      ],
+      "title": "em_memory_findArguments",
+      "type": "object"
+    },
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Result",
+          "type": "array"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "em_memory_findOutput",
+      "type": "object"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    }
+  }
+]

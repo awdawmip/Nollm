@@ -1,0 +1,278 @@
+{
+  "count": 512,
+  "oracle": "Known physical cell (0,0,0), chosen via exact source memberships of shown Surface windows; no semantic success claim",
+  "runs": [
+    {
+      "width": null,
+      "observations": [
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 1,
+          "pages_left": 23,
+          "render_count": 1,
+          "start": {
+            "policy": "overflow-plan",
+            "order": 8,
+            "root_cells": 133,
+            "root_pages": 17,
+            "root_plus_descent": 26,
+            "soft_root_pages": 4,
+            "active_order": 8,
+            "active_overflow": true
+          },
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 2,
+          "pages_left": 22,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 3,
+          "pages_left": 21,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 4,
+          "pages_left": 20,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 5,
+          "pages_left": 19,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 6,
+          "pages_left": 18,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 7,
+          "pages_left": 17,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 8,
+          "page_size": 8,
+          "surface_calls": 8,
+          "pages_left": 16,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 8
+        },
+        {
+          "kind": "surface",
+          "order": 7,
+          "page_size": 8,
+          "surface_calls": 9,
+          "pages_left": 15,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 6,
+          "page_size": 8,
+          "surface_calls": 10,
+          "pages_left": 14,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 5,
+          "page_size": 8,
+          "surface_calls": 11,
+          "pages_left": 13,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 4,
+          "page_size": 8,
+          "surface_calls": 12,
+          "pages_left": 12,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 3,
+          "page_size": 8,
+          "surface_calls": 13,
+          "pages_left": 11,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 2,
+          "page_size": 8,
+          "surface_calls": 14,
+          "pages_left": 10,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 1,
+          "page_size": 8,
+          "surface_calls": 15,
+          "pages_left": 9,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "surface",
+          "order": 0,
+          "page_size": 8,
+          "surface_calls": 16,
+          "pages_left": 8,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 7
+        },
+        {
+          "kind": "physical",
+          "order": 0,
+          "page_size": 8,
+          "surface_calls": 17,
+          "pages_left": 7,
+          "render_count": 2,
+          "start": null,
+          "candidate_count": 1
+        },
+        {
+          "kind": "entry",
+          "order": null,
+          "page_size": null,
+          "surface_calls": 17,
+          "pages_left": null,
+          "render_count": 1,
+          "start": null,
+          "candidate_count": 0
+        }
+      ],
+      "render_count": 27,
+      "reached": true,
+      "recall": {
+        "kind": "entry",
+        "entry": [
+          0,
+          0,
+          0
+        ],
+        "surface_calls": 17,
+        "kernels": [
+          "coverage_down",
+          "coverage_up",
+          "lateral"
+        ],
+        "items": [
+          {
+            "id": "fixture-0000",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "Independent synthetic statement 0\nCell (0, 0); diagnostic only."
+          },
+          {
+            "id": "fixture-0001",
+            "cell": [
+              0,
+              -1,
+              0
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Independent synthetic statement 1\nCell (-1, 0); diagnostic only."
+          },
+          {
+            "id": "fixture-0002",
+            "cell": [
+              0,
+              -1,
+              1
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Independent synthetic statement 2\nCell (-1, 1); diagnostic only."
+          },
+          {
+            "id": "fixture-0003",
+            "cell": [
+              0,
+              0,
+              -1
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Independent synthetic statement 3\nCell (0, -1); diagnostic only."
+          },
+          {
+            "id": "fixture-0004",
+            "cell": [
+              0,
+              0,
+              1
+            ],
+            "via": [
+              "lateral"
+            ],
+            "text": "Independent synthetic statement 4\nCell (0, 1); diagnostic only."
+          }
+        ],
+        "budget_exhausted": true
+      },
+      "last_surface_calls": 17
+    }
+  ]
+}

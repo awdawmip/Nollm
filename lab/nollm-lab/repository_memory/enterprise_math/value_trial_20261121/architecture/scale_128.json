@@ -1,0 +1,644 @@
+{
+  "purpose": "synthetic geometry reachability and engineering cost; no semantic-quality claim",
+  "runtime": "/workspace/scratch/4eeff3663e39/nollm_mcp_20261120/runtime/scripts/runtime",
+  "nollm_revision": "ddf7dc00b2cea43dccc5d783d20aa88e21de4e0b",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "size": 128,
+  "source": "Synthetic notes generated only inside a temporary local field",
+  "navigation": "Current adapter, default order, page size 3, steps 1, limit 5, via local",
+  "selector": "Geometry-membership oracle over generated placements; not an LLM or semantic router",
+  "measurement": "Wall-clock milliseconds; repeated in-process calls may benefit from disposable kernel caches; CLI probes use a fresh process each time",
+  "build": {
+    "total_ms": 2721.397935000823,
+    "write_median_ms": 13.985489499646064,
+    "last_16_write_median_ms": 20.605948999673274,
+    "canonical_core_bytes": 52335,
+    "all_file_bytes": 128912,
+    "all_file_count": 130
+  },
+  "reopen": {
+    "samples_ms": [
+      12.521107999418746,
+      8.695813999111124,
+      10.734825000326964,
+      18.27270400008274,
+      12.95278599991434
+    ],
+    "median_ms": 12.521107999418746,
+    "occupied_cells": 128
+  },
+  "fresh_process_root_walk": [
+    {
+      "ms": 548.6411789997874,
+      "stdout_bytes": 1416,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 3
+    },
+    {
+      "ms": 524.9726839992945,
+      "stdout_bytes": 1416,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 3
+    },
+    {
+      "ms": 583.7798510001448,
+      "stdout_bytes": 1416,
+      "order": 8,
+      "candidate_count": 3,
+      "has_more": true,
+      "truncated_candidates": 3
+    }
+  ],
+  "oracle_build_ms": 176.31733899997926,
+  "surface_occupied_counts_order_0_to_8": [
+    128,
+    111,
+    100,
+    89,
+    78,
+    67,
+    60,
+    58,
+    56
+  ],
+  "navigation_trials": [
+    {
+      "target_id": "synthetic-0000",
+      "target_cell": [
+        0,
+        0,
+        0
+      ],
+      "reached_and_recalled": false,
+      "failure": "RuntimeError: Surface traversal call limit reached",
+      "api_calls": 24,
+      "replayed_surface_calls": 300,
+      "total_ms": 21862.165215997265,
+      "output_bytes": 25640,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:82eb06b65d5eb7580b78",
+        "next",
+        "surface:0ac564bd9b9a3662d21a",
+        "next",
+        "surface:c23dc43d86a25a83fc35",
+        "next",
+        "surface:6463173d84ab82aad97a",
+        "next",
+        "surface:ddb80b81200a35fb68d7",
+        "next",
+        "surface:f15e10a8a3474cea099f",
+        "next",
+        "surface:074227b4b790d1492601",
+        "next",
+        "surface:13a8b499896957942c0b"
+      ],
+      "calls": [
+        {
+          "ms": 59.08942499991099,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 88.54091199918912,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 127.10056400010217,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 3
+        },
+        {
+          "ms": 192.51655399966694,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 4
+        },
+        {
+          "ms": 260.04409699999087,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 5
+        },
+        {
+          "ms": 271.06427699982305,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 6
+        },
+        {
+          "ms": 330.5712080000376,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 7
+        },
+        {
+          "ms": 356.3364179999553,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 8
+        },
+        {
+          "ms": 365.90669299948786,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 9
+        },
+        {
+          "ms": 390.46988199970656,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 10
+        },
+        {
+          "ms": 440.9122690003642,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 11
+        },
+        {
+          "ms": 623.533334000058,
+          "output_bytes": 1072,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 12
+        },
+        {
+          "ms": 1781.5413230000559,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 13
+        },
+        {
+          "ms": 1388.9429480004765,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 14
+        },
+        {
+          "ms": 801.2157220000518,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 15
+        },
+        {
+          "ms": 894.1733480005496,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 16
+        },
+        {
+          "ms": 1275.3230990001612,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 17
+        },
+        {
+          "ms": 931.8625029991381,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 18
+        },
+        {
+          "ms": 957.3590849995526,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 19
+        },
+        {
+          "ms": 974.0006920001179,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 20
+        },
+        {
+          "ms": 3506.576258999303,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 21
+        },
+        {
+          "ms": 2093.0911799996466,
+          "output_bytes": 1066,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 22
+        },
+        {
+          "ms": 2461.2569549999535,
+          "output_bytes": 1062,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 23
+        },
+        {
+          "ms": 1290.7364689999667,
+          "output_bytes": 1060,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 24
+        }
+      ]
+    },
+    {
+      "target_id": "synthetic-0064",
+      "target_cell": [
+        0,
+        -5,
+        3
+      ],
+      "reached_and_recalled": true,
+      "failure": null,
+      "api_calls": 23,
+      "replayed_surface_calls": 275,
+      "total_ms": 10012.88208400274,
+      "output_bytes": 21918,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:57a7973c6b8b7d0fa850",
+        "next",
+        "surface:cbf976fe24a56de1678a",
+        "next",
+        "surface:be647dd96eb7e1aab8bd",
+        "next",
+        "surface:5c6abcfebdbcf0868287",
+        "next",
+        "surface:9f15ed0b679fb6b1d979",
+        "surface:51e3303c37cb66b10b1b",
+        "surface:1c504548e38b43fda741",
+        "next",
+        "surface:912d57eb132288f18d5b",
+        "next",
+        "surface:9a9224a9293e7a297333",
+        "physical-entry:61cc92583d8d64e3b77b"
+      ],
+      "calls": [
+        {
+          "ms": 49.91244499979075,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 83.66523499989853,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 131.1354770004982,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 3
+        },
+        {
+          "ms": 157.34245499970712,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 4
+        },
+        {
+          "ms": 208.768035000503,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 5
+        },
+        {
+          "ms": 219.54023400030565,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 6
+        },
+        {
+          "ms": 306.5822090002257,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 7
+        },
+        {
+          "ms": 309.2641840003125,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 8
+        },
+        {
+          "ms": 368.22779799967975,
+          "output_bytes": 756,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 9
+        },
+        {
+          "ms": 383.5328440000012,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 10
+        },
+        {
+          "ms": 400.5964660000245,
+          "output_bytes": 755,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 11
+        },
+        {
+          "ms": 455.75829799963685,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 12
+        },
+        {
+          "ms": 495.43735800034483,
+          "output_bytes": 755,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 13
+        },
+        {
+          "ms": 500.30379200052266,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 14
+        },
+        {
+          "ms": 556.3510030006,
+          "output_bytes": 755,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 15
+        },
+        {
+          "ms": 587.1691660004217,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 16
+        },
+        {
+          "ms": 589.2415970001821,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 17
+        },
+        {
+          "ms": 644.9342990008518,
+          "output_bytes": 945,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 18
+        },
+        {
+          "ms": 681.6418959997463,
+          "output_bytes": 750,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 19
+        },
+        {
+          "ms": 678.3305549997749,
+          "output_bytes": 705,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 20
+        },
+        {
+          "ms": 727.2946880002564,
+          "output_bytes": 705,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 21
+        },
+        {
+          "ms": 744.1818110000895,
+          "output_bytes": 346,
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 22
+        },
+        {
+          "ms": 733.6702389993661,
+          "output_bytes": 1548,
+          "kind": "entry",
+          "order": null,
+          "surface_calls": 22
+        }
+      ]
+    },
+    {
+      "target_id": "synthetic-0127",
+      "target_cell": [
+        0,
+        -7,
+        0
+      ],
+      "reached_and_recalled": true,
+      "failure": null,
+      "api_calls": 18,
+      "replayed_surface_calls": 170,
+      "total_ms": 6337.888503000613,
+      "output_bytes": 16648,
+      "choices": [
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "next",
+        "surface:f92c452d8fa9493d5d05",
+        "next",
+        "surface:683132f929ba94f097ba",
+        "surface:302699cdd1571f598d4c",
+        "surface:be7c0f3d4c88b8e201be",
+        "surface:03134822629dd2e18641",
+        "surface:e14b430f57b48e884eda",
+        "surface:6c20a98244d48eee77de",
+        "surface:d0a25b5921c2b1f5da84",
+        "surface:b34522dfdd9a0f959cd3",
+        "physical-entry:2e3c6c052d1e11e30b11"
+      ],
+      "calls": [
+        {
+          "ms": 61.70526099958806,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 1
+        },
+        {
+          "ms": 92.46683699984715,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 2
+        },
+        {
+          "ms": 115.66913000024215,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 3
+        },
+        {
+          "ms": 151.0053029996925,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 4
+        },
+        {
+          "ms": 209.10245300001407,
+          "output_bytes": 1071,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 5
+        },
+        {
+          "ms": 220.54096200008644,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 6
+        },
+        {
+          "ms": 305.3210260004562,
+          "output_bytes": 1074,
+          "kind": "surface",
+          "order": 8,
+          "surface_calls": 7
+        },
+        {
+          "ms": 317.3326989999623,
+          "output_bytes": 1069,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 8
+        },
+        {
+          "ms": 345.2262939999855,
+          "output_bytes": 439,
+          "kind": "surface",
+          "order": 7,
+          "surface_calls": 9
+        },
+        {
+          "ms": 381.55843399999867,
+          "output_bytes": 1065,
+          "kind": "surface",
+          "order": 6,
+          "surface_calls": 10
+        },
+        {
+          "ms": 408.30300000015995,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 5,
+          "surface_calls": 11
+        },
+        {
+          "ms": 463.3416800006671,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 4,
+          "surface_calls": 12
+        },
+        {
+          "ms": 482.6677440005369,
+          "output_bytes": 1068,
+          "kind": "surface",
+          "order": 3,
+          "surface_calls": 13
+        },
+        {
+          "ms": 503.90866799989453,
+          "output_bytes": 1067,
+          "kind": "surface",
+          "order": 2,
+          "surface_calls": 14
+        },
+        {
+          "ms": 538.6330279998219,
+          "output_bytes": 949,
+          "kind": "surface",
+          "order": 1,
+          "surface_calls": 15
+        },
+        {
+          "ms": 562.5107360001493,
+          "output_bytes": 318,
+          "kind": "surface",
+          "order": 0,
+          "surface_calls": 16
+        },
+        {
+          "ms": 565.7377309998992,
+          "output_bytes": 346,
+          "kind": "physical",
+          "order": 0,
+          "surface_calls": 17
+        },
+        {
+          "ms": 612.8575169996111,
+          "output_bytes": 705,
+          "kind": "entry",
+          "order": null,
+          "surface_calls": 17
+        }
+      ]
+    }
+  ],
+  "temporary_field_deleted_on_exit": true
+}

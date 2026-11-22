@@ -1,0 +1,117 @@
+{
+  "reader": "L",
+  "choices": [
+    "next",
+    "surface:f5c2a1719f0b1aa8a5bd",
+    "physical-entry:0addbf770000bdcba8cd"
+  ],
+  "before_equals_revoked_full_recall": true,
+  "runs": {
+    "N-connected": {
+      "ms": 26.32,
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "items": [
+        [
+          "CRT.repair",
+          []
+        ],
+        [
+          "NT-SUP-CRT-CARRY",
+          [
+            "lateral"
+          ]
+        ]
+      ]
+    },
+    "P-connected": {
+      "ms": 20.11,
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "items": [
+        [
+          "CRT.repair",
+          []
+        ],
+        [
+          "NT-DIV-RESIDUAL-CAPACITY",
+          [
+            "lateral"
+          ]
+        ]
+      ]
+    },
+    "L-connected": {
+      "ms": 23.6,
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "items": [
+        [
+          "CRT.repair",
+          []
+        ],
+        [
+          "X6-QUADRATIC-MODULAR.v2",
+          [
+            "bridge"
+          ]
+        ],
+        [
+          "NT-SUP-CRT-CARRY",
+          [
+            "lateral"
+          ]
+        ]
+      ]
+    },
+    "L-local": {
+      "ms": 20.62,
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "items": [
+        [
+          "CRT.repair",
+          []
+        ],
+        [
+          "NT-SUP-CRT-CARRY",
+          [
+            "lateral"
+          ]
+        ]
+      ]
+    },
+    "U-connected": {
+      "ms": 19.7,
+      "entry": [
+        0,
+        0,
+        1
+      ],
+      "items": [
+        [
+          "CRT.repair",
+          []
+        ],
+        [
+          "NT-SUP-CRT-CARRY",
+          [
+            "lateral"
+          ]
+        ]
+      ]
+    }
+  }
+}

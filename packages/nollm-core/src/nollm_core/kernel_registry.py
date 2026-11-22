@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from functools import lru_cache
 from hashlib import sha256
 import json
 from types import MappingProxyType
@@ -13,22 +15,40 @@ from .physical_coverage import expand_physical_coverage
 KERNEL_REGISTRY_VERSION = "nollm_geometry_kernels_v5"
 
 
+@lru_cache(maxsize=1)
+def _compiled_registry() -> tuple[Mapping[tuple[str, str, int], CoverageTemplate], str, str]:
+    """Load packaged templates and derive their persisted identity once."""
+    document = json.loads(COMPILED_TEMPLATES_JSON)
+    templates = (template_from_mapping(value) for value in document["templates"])
+    active = {
+        (template.profile_id, template.direction, template.from_layer_mod): template
+        for template in templates
+        if not (template.profile_id == "default_dream_v1" and template.direction in ("coverage_up", "coverage_down"))
+    }
+    profile_digest = profile_registry_digest()
+    identity_document = {
+        "profile_digest": profile_digest,
+        "fanout_limit": DEFAULT_FANOUT_LIMIT,
+        "relation_semantics": {
+            "dynamic": ["default_dream_v1:coverage_up", "default_dream_v1:coverage_down"],
+            "registry": ["legacy:coverage_up", "legacy:coverage_down", "lateral"],
+            "persistent": ["bridge_spec"],
+        },
+        "templates": [active[key].to_mapping() for key in sorted(active)],
+    }
+    identity = sha256(json.dumps(identity_document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return MappingProxyType(active), profile_digest, identity
+
+
 class KernelRegistry:
     def __init__(self, fanout_limit: int = DEFAULT_FANOUT_LIMIT) -> None:
         if fanout_limit != DEFAULT_FANOUT_LIMIT:
             raise ValueError("Core runtime uses the canonical compiled fanout limit")
         object.__setattr__(self, "fanout_limit", fanout_limit)
-        if sha256(COMPILED_TEMPLATES_JSON).hexdigest() != COMPILED_TEMPLATES_SHA256:
-            raise ValueError("compiled geometry template artifact digest mismatch")
-        document = json.loads(COMPILED_TEMPLATES_JSON.decode("utf-8"))
-        if document.get("schema_version") != "nollm_compiled_geometry_templates_v2":
-            raise ValueError("unsupported compiled geometry template artifact")
-        templates = tuple(template_from_mapping(value) for value in document["templates"])
-        active_templates = tuple(
-            template for template in templates
-            if not (template.profile_id == "default_dream_v1" and template.direction in ("coverage_up", "coverage_down"))
-        )
-        object.__setattr__(self, "_templates", MappingProxyType({(template.profile_id, template.direction, template.from_layer_mod): template for template in active_templates}))
+        templates, profile_digest, identity = _compiled_registry()
+        object.__setattr__(self, "_templates", templates)
+        object.__setattr__(self, "_profile_digest", profile_digest)
+        object.__setattr__(self, "_identity", identity)
         object.__setattr__(self, "compiled_artifact_sha256", COMPILED_TEMPLATES_SHA256)
         object.__setattr__(self, "_sealed", True)
 
@@ -60,9 +80,8 @@ class KernelRegistry:
 
     @property
     def identity(self) -> str:
-        document = {"profile_digest": profile_registry_digest(), "fanout_limit": self.fanout_limit, "relation_semantics": {"dynamic": ["default_dream_v1:coverage_up", "default_dream_v1:coverage_down"], "registry": ["legacy:coverage_up", "legacy:coverage_down", "lateral"], "persistent": ["bridge_spec"]}, "templates": [template.to_mapping() for template in self.templates()]}
-        return sha256(json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+        return self._identity
 
     @property
     def state_identity(self) -> dict[str, str]:
-        return {"profile_registry_version": PROFILE_REGISTRY_VERSION, "profile_registry_id": profile_registry_digest(), "kernel_registry_version": KERNEL_REGISTRY_VERSION, "kernel_registry_id": self.identity, "relation_semantics": "dynamic:default_coverage_up,default_coverage_down;registry:legacy_coverage_up,legacy_coverage_down,lateral;state:bridge_spec"}
+        return {"profile_registry_version": PROFILE_REGISTRY_VERSION, "profile_registry_id": self._profile_digest, "kernel_registry_version": KERNEL_REGISTRY_VERSION, "kernel_registry_id": self.identity, "relation_semantics": "dynamic:default_coverage_up,default_coverage_down;registry:legacy_coverage_up,legacy_coverage_down,lateral;state:bridge_spec"}

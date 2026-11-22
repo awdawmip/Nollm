@@ -1,0 +1,201 @@
+{
+  "task": "R284CO local +17 table application, literal lookup independent reader",
+  "generated_at_utc": "2026-11-21T03:17:13.787Z",
+  "measurement_definition": "For online calls, count UTF-8 bytes of JSON.stringify(returned structuredContent) exactly once and retain that structure; do not duplicate MCP text. For local question read, count JSON.stringify(exec_command result) once. Counts describe observable output bytes, not tokens or money. Tool discovery is local ALL_TOOLS filtering; file writes are not material reads.",
+  "counts": {
+    "online_material_calls": 4,
+    "online_material_failures": 0,
+    "online_output_utf8_bytes": 9806,
+    "local_question_material_calls": 1,
+    "local_question_output_utf8_bytes": 1768,
+    "all_material_calls": 5,
+    "all_material_failures": 0,
+    "all_material_output_utf8_bytes": 11574,
+    "online_tool_breakdown": {
+      "em_memory_find": 1,
+      "em_memory_show": 1,
+      "em_memory_source": 2
+    },
+    "tool_registry_local_filters": 1
+  },
+  "tool_discovery": {
+    "method": "ALL_TOOLS.filter name /em_memory_/",
+    "local_filter_count": 1,
+    "used_tools": [
+      "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_find",
+      "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_show",
+      "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_source"
+    ]
+  },
+  "calls": [
+    {
+      "kind": "local_question",
+      "tool": "exec_command",
+      "params": {
+        "cmd": "cat /workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/new-finding/QUESTION.md",
+        "max_output_tokens": 10000
+      },
+      "started_at_utc": "2026-11-21T03:15:33.126Z",
+      "ended_at_utc": "2026-11-21T03:15:33.620Z",
+      "structuredContent": null,
+      "result": {
+        "chunk_id": "e4e6e0",
+        "wall_time_seconds": 0.000029133,
+        "exit_code": 0,
+        "original_token_count": 410,
+        "output": "# 读者任务：一个局部数表改变后的 Port 谱见证\n\n请把此题作为对既有 R284CO 结果的应用。使用已经保存的理解与必要的固定 Source，不重新穷举，不创建研究者或 CLAIM，也不把回答标为原创研究结果。\n\n固定使用 R284CO 在 commit 07fd94dcdc3765375d880d20fd22d122b2123037 的 Port 人口 X、64个有标签距离 δ_j(x)、保留重数的秩 d_k(x)，以及其原来63点见证集 W。\n\n令 x⋆ 为 X 的**原始零基枚举索引0**对应的点。请先按需要核对它是否属于 W。现在只做以下数表改变：\n\n- x=x⋆ 时，对每个标签 j=0,…,63，令 δ'_j(x)=δ_j(x)+17；\n- x≠x⋆ 时，令 δ'_j(x)=δ_j(x)。\n\n令 d'_k 是新表每一行按保留重数排序后的第 k 小值，U'_k(Y)=max_{x∈Y}d'_k(x)。这里对象是同一标签人口上的修改数表，不预设它能由另一组共同圆弧实现。\n\n请给出可复核的应用结论：\n\n1. k=2,…,64 的获胜点标签是否改变？这些级的最大值是只得到一个误差上界，还是能确定其具体变化？\n2. 第1级发生什么变化？原 W 是否仍保持新表的全部64级最大值？\n3. 保持新表全部64级最大值的唯一最小见证集是什么，大小是多少？说明任何更小集合为何不够。\n4. k=54 的获胜点、原枚举索引和新最大值分别是多少？\n5. 准确保留本结果的观测范围和科学状态；不要从本题推出矩阵纠错半径、完整原生X6状态稳定性或独立评审完成。\n\n请引用你实际用到的固定 Source，并指出哪些步骤只是既有定理与此处 +17 条件的直接应用。\n\n"
+      },
+      "failed": false,
+      "sequence": 1,
+      "output_measure": "UTF-8 bytes of JSON.stringify(result), once",
+      "output_utf8_bytes": 1768,
+      "elapsed_ms": 494
+    },
+    {
+      "kind": "online_material",
+      "tool": "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_find",
+      "params": {
+        "term": "R284CO",
+        "limit": 10
+      },
+      "started_at_utc": "2026-11-21T03:15:40.731Z",
+      "ended_at_utc": "2026-11-21T03:15:41.978Z",
+      "structuredContent": {
+        "result": [
+          {
+            "id": "PORT.spectral-witness.R284CO.20261121T031021.v1",
+            "preview": "R284CO｜冻结 Port 覆盖谱：63 个必要见证与距离表扰动"
+          }
+        ]
+      },
+      "isError": false,
+      "error": null,
+      "failed": false,
+      "sequence": 2,
+      "output_measure": "UTF-8 bytes of JSON.stringify(structuredContent), once, without duplicate MCP content text",
+      "output_utf8_bytes": 151,
+      "elapsed_ms": 1247
+    },
+    {
+      "kind": "online_material",
+      "tool": "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_show",
+      "params": {
+        "note_id": "PORT.spectral-witness.R284CO.20261121T031021.v1"
+      },
+      "started_at_utc": "2026-11-21T03:15:45.831Z",
+      "ended_at_utc": "2026-11-21T03:15:47.037Z",
+      "structuredContent": {
+        "id": "PORT.spectral-witness.R284CO.20261121T031021.v1",
+        "text": "R284CO｜冻结 Port 覆盖谱：63 个必要见证与距离表扰动\n\nSource 状态：AUTHOR_PROVED / EXACT_FINITE_CERTIFIED / NOT_REVIEWED（2026-11-21，固定来源见 sources）。本条记录已有成果的 Host 理解。\n\n对象是 R284CL–CN 的冻结辅助 34-bit Port 观测器：P=17,179,869,143，D=(1120832,6,13,1651128)，Z=(0,390139,394465,1497639)，selector=(0,1,2,4,5,6)。X 为冻结 4×4 两值矩阵按原次序产生的 65,536 个不同 Port 余数。64 个有标签圆周闭弧 A_j 按来源构造；δ_j(x) 为点到弧距离；d_k(x) 是保留重数的第 k 小距离。对非空 Y⊆X，U_k(Y)=max_{x∈Y}d_k(x)。\n\n原表对每个 x 都有 d_1(x)=0。每个 k=2,…,64 都有唯一赢家 w_k，63 个赢家两两不同。W={w_2,…,w_64} 是保持原表全部64级最大值的唯一包含极小、唯一最小基数子集，大小63；准确条件为全部 U_k(Y)=U_k(X) 当且仅当 W⊆Y。Δ_k=U_k(X)−max_{x≠w_k}d_k(x)，min Δ_k=64，恰在 k=15,16 达到。k=54 的赢家余数为6,683,583,072，原零基枚举索引33760，最大值7,642,302,204，次高值7,642,302,126，Δ_54=78。\n\n对同一有标签人口和同样64列，若新距离表逐项误差≤ε，排序后各秩误差也≤ε。2ε<64（整数误差ε≤31）保证 k=2,…,64 的赢家标签仍唯一且不同，各最大值变化≤ε。完整64级见证集结论还使用原表第1秩处处为0这一条件；改变数表后需按新观察核对。\n\n具体赢家索引和完整数值向量查 sources[2] 所指证书；重构人口、圆弧和枚举次序查 sources[3] 的 checker。见证集压缩覆盖该冻结静态谱观察；寻找 W 的原检查器仍扫描全域。距离表稳定、矩阵纠错、完整 X6/BRC 状态及未来操作保持属于各自的证明对象。",
+        "sources": [
+          "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_SPECTRAL_WITNESS_RIGIDITY_20261121.md#L3-L54",
+          "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_spectral_witness_certificate.json#L102-L167",
+          "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_spectral_witness_checker.py#L8-L51"
+        ],
+        "current": true
+      },
+      "isError": false,
+      "error": null,
+      "failed": false,
+      "sequence": 3,
+      "output_measure": "UTF-8 bytes of JSON.stringify(structuredContent), once, without duplicate MCP content text",
+      "output_utf8_bytes": 2256,
+      "elapsed_ms": 1206
+    },
+    {
+      "kind": "online_material",
+      "tool": "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_source",
+      "params": {
+        "note_id": "PORT.spectral-witness.R284CO.20261121T031021.v1",
+        "number": 1
+      },
+      "started_at_utc": "2026-11-21T03:15:57.854Z",
+      "ended_at_utc": "2026-11-21T03:15:59.055Z",
+      "structuredContent": {
+        "reference": "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_SPECTRAL_WITNESS_RIGIDITY_20261121.md#L3-L54",
+        "source_commit": "07fd94dcdc3765375d880d20fd22d122b2123037",
+        "path": "research_notes/portable_direct/R284CO_SPECTRAL_WITNESS_RIGIDITY_20261121.md",
+        "start_line": 3,
+        "end_line": 54,
+        "text": "3\t2026-11-21. Status: **AUTHOR_PROVED / EXACT_FINITE_CERTIFIED / NOT_REVIEWED**. Independent mathematical review has not occurred.\n4\t\n5\t## Exact scope and frozen sources\n6\t\n7\tThis result is confined to the auxiliary 34-bit Port observer of R284CL–R284CN. It does not change the native X6 space, the BRC typed state, P000, or any shared task claim.\n8\t\n9\t- Circle modulus \\(P=17\\,179\\,869\\,143\\).\n10\t- Coefficients \\(D=(1120832,6,13,1651128)\\), \\(Z=(0,390139,394465,1497639)\\).\n11\t- Frozen selector \\((0,1,2,4,5,6)\\).\n12\t- Finite population \\(X\\) consists of all 65,536 **distinct** Port residues generated from the frozen 4×4 two-valued matrices, in R284CL iteration order.\n13\t- SHA-256 of the ordered eight-byte big-endian residues: `b6ce76b2c08b9ec6b79ec83173befd2589928ca7c636643c3eaecd40405f4ff4`.\n14\t- The 64 labeled circular closed arcs are \\(A_j=[a_j,a_j+w_j]\\pmod P\\), reconstructed from the two monotone matrix extrema at each fixed six-coordinate selector.\n15\t- Define \\(\\delta_j(x)=\\operatorname{dist}_{circle}(x,A_j)\\); let \\(d_k(x)\\) denote the \\(k\\)-th smallest of the 64 distances, **with multiplicity**. For nonempty \\(Y\\subseteq X\\), put \\(U_k(Y)=\\max_{x\\in Y}d_k(x)\\), for \\(1\\leq k\\leq64\\).\n16\t\n17\t## Theorem: unique minimal universal spectrum witness set\n18\t\n19\tIn the fixed finite population \\(X\\):\n20\t\n21\t1. \\(U_1(X)=0\\), and in fact \\(d_1(x)=0\\) for every \\(x\\in X\\).\n22\t2. For every \\(k=2,\\dots,64\\), exactly **one** point \\(w_k\\in X\\) maximizes \\(d_k(x)\\).\n23\t3. Those 63 maximizing residues \\(w_2,\\dots,w_{64}\\) are **pairwise distinct**.\n24\t4. Writing \\(W=\\{w_2,\\dots,w_{64}\\}\\), a nonempty subset \\(Y\\subseteq X\\) reproduces **all 64** original optimal radii if and only if \\(W\\subseteq Y\\):\n25\t   \\[\n26\t   \\bigl(U_k(Y)=U_k(X)\\ \\forall k=1,\\ldots,64\\bigr)\\iff W\\subseteq Y.\n27\t   \\]\n28\t   Therefore \\(W\\) is the **unique inclusion-minimal** and **unique minimum-cardinality** subset preserving the entire 64-level spectrum, and its exact size is **63**.\n29\t5. For each \\(k\\ge2\\), removal of its essential point decreases that level by a strictly positive integer\n30\t   \\[\n31\t   \\Delta_k=U_k(X)-\\max_{x\\in X\\setminus\\{w_k\\}}d_k(x).\n32\t   \\]\n33\t   The exact minimum over all 63 levels is \\(\\min\\Delta_k=\\boxed{64}\\), reached precisely at levels \\(k=15,16\\). At \\(k=54\\), \\(w_{54}=6\\,683\\,583\\,072\\), its original enumeration index (zero-based) is 33760, \\(U_{54}=7\\,642\\,302\\,204\\), the runner-up is \\(7\\,642\\,302\\,126\\), and \\(\\Delta_{54}=78\\).\n34\t\n35\t### Proof\n36\t\n37\tFor items (1)–(3) and (5), enumerate the exact frozen 65,536-element domain. For each residue, evaluate all 64 integer circular distances and sort them (retaining repeated zeros). For each of 64 ranks, keep the maximum, the number of achievers, the achieving original matrix index, and the strictly next-largest value. The accompanying self-contained checker uses integer arithmetic only. It verifies the original frozen SHA-256, all 65,536 residues are distinct, the maximal-achiever counts are 65,536 for rank 1 and exactly 1 for each rank 2–64, and the 63 nontrivial achiever indices are distinct. The full vector of 64 maxima also agrees term-for-term with the separate R284CN integer-event-sweep certificate.\n38\t\n39\tDefine \\(W\\) as in (4). Each \\(w_k\\) witnesses \\(U_k(X)\\), so if \\(W\\subseteq Y\\), every \\(U_k(Y)\\) with \\(k\\ge2\\) equals the corresponding full-population maximum; rank 1 is identically zero. Conversely, if some \\(w_k\\notin Y\\), uniqueness of the maximizer implies \\(U_k(Y)<U_k(X)\\). Therefore preserving every level forces inclusion of all 63 distinct \\(w_k\\), which establishes uniqueness and minimality. The exhaustive second-best values provide the exact strict margins. \\(\\square\\)\n40\t\n41\t### Perturbation corollary (separate from Port error correction)\n42\t\n43\tSuppose a second **labeled** 64-distance array \\(d'_j(x)\\), defined on the same labeled finite population and ranks, satisfies\n44\t\\[\n45\t\\sup_{x\\in X,\\ 0\\le j<64}|d'_j(x)-\\delta_j(x)|\\le\\varepsilon.\n46\t\\]\n47\tSorting is 1-Lipschitz in the sup norm, hence each \\(d'_k(x)\\) changes by at most \\(\\varepsilon\\). Since every original winner exceeds every competitor by at least 64, if \\(2\\varepsilon<64\\) all 63 labels \\(w_k\\) remain the unique winners and distinct; their corresponding maxima shift by at most \\(\\varepsilon\\). For integer discrepancies it suffices that \\(\\varepsilon\\le31\\). This is **winner-label stability under a uniform change to the distance table**, not a claim of 31-unit unique matrix decoding or of full X6 stability.\n48\t\n49\t## Exact evidence and computational scope\n50\t\n51\t- `R284CO_spectral_witness_checker.py`: stand-alone standard-library Python checker implementing the frozen determinant readout, SHA test, complete 4,194,304 distance evaluations and 63-site core recomputation.\n52\t- `R284CO_spectral_witness_certificate.json`: all 64 maxima; every k≥2 winning matrix index, residue and runner-up gap; the complete 63-site certificate; smallest margin and examples.\n53\t- Direct exact re-enumeration also reproduces R284CN's entire 64-value spectrum. This is full finite verification under the frozen model. It is not independent peer review.\n54\t- Compressing a *witness certificate* from 65,536 sites to 63 does not by itself provide a faster algorithm for finding these sites: this checker still searches the full frozen population."
+      },
+      "isError": false,
+      "error": null,
+      "failed": false,
+      "sequence": 4,
+      "output_measure": "UTF-8 bytes of JSON.stringify(structuredContent), once, without duplicate MCP content text",
+      "output_utf8_bytes": 5943,
+      "elapsed_ms": 1201
+    },
+    {
+      "kind": "online_material",
+      "tool": "mcp__codex_apps__enterprise_math_mcp_gateway_em_memory_source",
+      "params": {
+        "note_id": "PORT.spectral-witness.R284CO.20261121T031021.v1",
+        "number": 2
+      },
+      "started_at_utc": "2026-11-21T03:15:57.855Z",
+      "ended_at_utc": "2026-11-21T03:15:59.172Z",
+      "structuredContent": {
+        "reference": "07fd94dcdc3765375d880d20fd22d122b2123037:research_notes/portable_direct/R284CO_spectral_witness_certificate.json#L102-L167",
+        "source_commit": "07fd94dcdc3765375d880d20fd22d122b2123037",
+        "path": "research_notes/portable_direct/R284CO_spectral_witness_certificate.json",
+        "start_line": 102,
+        "end_line": 167,
+        "text": "102\t  \"k1_ties\": 65536,\n103\t  \"winner_index_k2_to_k64\": [\n104\t    51531,\n105\t    26945,\n106\t    30792,\n107\t    43351,\n108\t    63839,\n109\t    39842,\n110\t    50145,\n111\t    26675,\n112\t    47407,\n113\t    2092,\n114\t    38968,\n115\t    63534,\n116\t    15665,\n117\t    58961,\n118\t    1616,\n119\t    60141,\n120\t    58567,\n121\t    59743,\n122\t    30138,\n123\t    1359,\n124\t    33856,\n125\t    58715,\n126\t    62546,\n127\t    65471,\n128\t    13376,\n129\t    13402,\n130\t    5669,\n131\t    10023,\n132\t    63563,\n133\t    2378,\n134\t    10331,\n135\t    5724,\n136\t    54623,\n137\t    19662,\n138\t    31942,\n139\t    58559,\n140\t    13908,\n141\t    54220,\n142\t    33082,\n143\t    1765,\n144\t    16416,\n145\t    58411,\n146\t    19520,\n147\t    7156,\n148\t    8704,\n149\t    37055,\n150\t    19950,\n151\t    23797,\n152\t    57517,\n153\t    15601,\n154\t    64754,\n155\t    31652,\n156\t    33760,\n157\t    61971,\n158\t    33280,\n159\t    17157,\n160\t    49667,\n161\t    65311,\n162\t    64447,\n163\t    52719,\n164\t    56227,\n165\t    27308,\n166\t    19081\n167\t  ],"
+      },
+      "isError": false,
+      "error": null,
+      "failed": false,
+      "sequence": 5,
+      "output_measure": "UTF-8 bytes of JSON.stringify(structuredContent), once, without duplicate MCP content text",
+      "output_utf8_bytes": 1456,
+      "elapsed_ms": 1317
+    }
+  ],
+  "artifact_verification": {
+    "calls": 2,
+    "failed_attempts": 1,
+    "final_status": "passed for saved JSON validity, all online source byte counts, and answer math text",
+    "resolution": "The initial check reserialized every result through Python. The local question result contains wall_time_seconds: JavaScript JSON.stringify writes 0.000029133, while Python json.dumps writes 2.9133e-05. This changes that wrapper by one byte, so Python reserialization was not a valid reproduction of the chosen JavaScript byte metric. The logged 1768-byte JavaScript count remains unchanged; all four online structuredContent payloads independently match. No scientific read failed.",
+    "attempts": [
+      {
+        "kind": "local_output_verification",
+        "tool": "exec_command",
+        "params": {
+          "cmd": "python - <<'PY'\nfrom pathlib import Path\nimport json\nbase = Path('/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/readers')\nanswer = (base / 'LITERAL_ANSWER.md').read_text(encoding='utf-8')\ntrace = json.loads((base / 'LITERAL_CALLS.json').read_text(encoding='utf-8'))\nfor call in trace['calls']:\n    payload = call['structuredContent'] if call['structuredContent'] is not None else call.get('result', {'error': call.get('error')})\n    measured = len(json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))\n    assert measured == call['output_utf8_bytes']\nassert '\\\\text{对全部 }' in answer\nassert '\\t' not in answer\nassert len(trace['calls']) == 5\nassert trace['counts']['online_material_calls'] == 4\nprint(json.dumps({'answer_bytes':len(answer.encode('utf-8')),'calls_json_valid':True,'output_byte_counts_verified':True,'scientific_material_calls':4,'failures':0}, ensure_ascii=False))\nPY",
+          "max_output_tokens": 1000
+        },
+        "started_at_utc": null,
+        "ended_at_utc": null,
+        "timestamp_note": "This non-material artifact verification was not instrumented for UTC timestamps; missing times are retained explicitly.",
+        "result": {
+          "chunk_id": "ab111c",
+          "wall_time_seconds": 0.023019093,
+          "exit_code": 1,
+          "original_token_count": 22,
+          "output": "Traceback (most recent call last):\n  File \"<stdin>\", line 9, in <module>\nAssertionError\n"
+        },
+        "failed": true
+      },
+      {
+        "kind": "local_output_verification",
+        "tool": "exec_command",
+        "params": {
+          "cmd": "python - <<'PY'\nfrom pathlib import Path\nimport json\nbase = Path('/workspace/scratch/4eeff3663e39/nollm_intake_audit_20261121/readers')\nanswer = (base / 'LITERAL_ANSWER.md').read_text(encoding='utf-8')\ntrace = json.loads((base / 'LITERAL_CALLS.json').read_text(encoding='utf-8'))\nchecks=[]\nfor call in trace['calls']:\n    payload = call['structuredContent'] if call['structuredContent'] is not None else call.get('result', {'error': call.get('error')})\n    measured = len(json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))\n    checks.append({'sequence':call['sequence'],'kind':call['kind'],'logged_js_bytes':call['output_utf8_bytes'],'python_reserialized_bytes':measured,'match':measured==call['output_utf8_bytes']})\nassert all(x['match'] for x in checks if x['kind']=='online_material')\nassert '\\\\text{对全部 }' in answer\nassert '\\t' not in answer\nprint(json.dumps({'byte_checks':checks,'answer_bytes':len(answer.encode('utf-8')),'calls_json_valid':True,'online_source_bytes_verified':True,'answer_math_text_verified':True,'local_question_wall_time_seconds':trace['calls'][0]['result']['wall_time_seconds']}, ensure_ascii=False))\nPY",
+          "max_output_tokens": 2000
+        },
+        "started_at_utc": "2026-11-21T03:18:47.472Z",
+        "ended_at_utc": "2026-11-21T03:18:48.034Z",
+        "result": {
+          "chunk_id": "d614c3",
+          "wall_time_seconds": 0.027902398,
+          "exit_code": 0,
+          "original_token_count": 195,
+          "output": "{\"byte_checks\": [{\"sequence\": 1, \"kind\": \"local_question\", \"logged_js_bytes\": 1768, \"python_reserialized_bytes\": 1767, \"match\": false}, {\"sequence\": 2, \"kind\": \"online_material\", \"logged_js_bytes\": 151, \"python_reserialized_bytes\": 151, \"match\": true}, {\"sequence\": 3, \"kind\": \"online_material\", \"logged_js_bytes\": 2256, \"python_reserialized_bytes\": 2256, \"match\": true}, {\"sequence\": 4, \"kind\": \"online_material\", \"logged_js_bytes\": 5943, \"python_reserialized_bytes\": 5943, \"match\": true}, {\"sequence\": 5, \"kind\": \"online_material\", \"logged_js_bytes\": 1456, \"python_reserialized_bytes\": 1456, \"match\": true}], \"answer_bytes\": 6746, \"calls_json_valid\": true, \"online_source_bytes_verified\": true, \"answer_math_text_verified\": true, \"local_question_wall_time_seconds\": 2.9133e-05}\n"
+        },
+        "failed": false
+      }
+    ]
+  }
+}
