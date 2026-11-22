@@ -1,5 +1,10 @@
 # 进取数论外部研究记忆：Nollm 内部探索开发
 
+**范围更新（2026-11-22）：** 后续共享开发以 `main` 为基线，实际当前进度和下一步以
+[ACTIVE_PROJECT](../ACTIVE_PROJECT.md)与[速记本](../../../sujiben/README.md)为准。
+下文保留 PR #7 最初的计划与验收范围；实验分支、当时的“当前”状态和旧命令按原阶段理解。
+已有成果与试用记录继续保留，当前 CLI 用法见[研究入口](../../../lab/nollm-lab/repository_memory/enterprise_math/README.md)。
+
 日期：2026-11-20（UTC+08:00）。状态：**PR #7 已实现 TASK 探索原型，并完成真实会话续接与对照试用**。
 
 主执行仓库：`awdawmip/Nollm`。基于 `experiment/repository-memory` 继续开发；本任务分支为 `experiment/enterprise-math-memory-20261120`。进取数论是首个真实使用项目。

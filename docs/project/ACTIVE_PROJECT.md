@@ -133,7 +133,9 @@ defines the implementation basis for extending repository memory into a usable i
 The user expanded the earlier understanding study into exploratory implementation and actual LLM use,
 with no defensive code or redundant validation/hash machinery in this experiment.
 Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
-for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
+for the original task scope and functional acceptance. Its experiment branch and PR base
+describe that historical execution; continue from the current main tip and maintained 速记本.
+Existing understanding and evaluation material is reference.
 
 The main tree retains the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md)
 developed through PR #7.

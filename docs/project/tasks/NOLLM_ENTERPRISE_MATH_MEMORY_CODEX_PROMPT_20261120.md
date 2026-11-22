@@ -1,5 +1,10 @@
 # Codex 执行提示词
 
+**范围更新（2026-11-22）：** 后续共享开发以 `main` 为基线，实际当前进度和下一步以
+[ACTIVE_PROJECT](../ACTIVE_PROJECT.md)与[速记本](../../../sujiben/README.md)为准。
+下文保留 PR #7 最初的执行提示与验收起点；其中的实验分支、PR base 和命令按原阶段理解。
+已完成事项沿当前记录接续，日常原生入口使用显式 `--field` 的 `encounter`。
+
 将以下内容直接交给已连接 `awdawmip/Nollm` 的 Codex。主任务分支：`experiment/enterprise-math-memory-20261120`，PR base：`experiment/repository-memory`。
 
 ```text
