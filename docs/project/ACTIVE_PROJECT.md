@@ -148,6 +148,16 @@ and does not replace the fixed production coverage kernel. Advisory pressure
 does not compel descent, and the earlier microbenchmarks are not product
 performance evidence.
 
+The [EM residual-algorithm continuation](NOLLM_EM_RESIDUAL_ALGORITHM_IMPROVEMENT_20261122.md)
+adapts exact residual partition, labeled events, fixed-predicate reuse and
+whole-group exclusion from verified Enterprise Math sources. The fixed Core
+kernel uses exact labeled projection masks with original boundary fallback;
+Lab translation and candidate-pressure comparison reduce repeated work.
+An explicit float64 relative-coordinate v2 handles representable common-anchor
+offsets without silently changing v1. The continuation records 90 passing
+functional tests and complete old/new local timings; it adds no object bridges
+and makes no new semantic recall or exact-area claim.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)

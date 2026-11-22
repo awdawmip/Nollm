@@ -419,12 +419,18 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         support_deformation_assets = {
             "motion.py": ("active library", "ACTIVE_LIBRARY"),
             "deformation.py": ("active library", "ACTIVE_LIBRARY"),
+            "relative_geometry.py": ("active library", "ACTIVE_LIBRARY"),
             "pressure_evaluation.py": ("active library", "ACTIVE_LIBRARY"),
             "deformation_cli.py": ("active tool", "ACTIVE_TOOL"),
             "run_support_deformation_tests.py": ("active tool", "ACTIVE_TOOL"),
             "tests/test_motion.py": ("active test", "ACTIVE_TEST"),
+            "tests/test_motion_residual_events.py": ("active test", "ACTIVE_TEST"),
             "tests/test_deformation.py": ("active test", "ACTIVE_TEST"),
+            "tests/test_relative_geometry.py": ("active test", "ACTIVE_TEST"),
             "tests/test_pressure_evaluation.py": ("active test", "ACTIVE_TEST"),
+            "tests/test_pressure_reuse.py": ("active test", "ACTIVE_TEST"),
+            "results/em_residual_benchmark_20261122.json": ("benchmark evidence", "ACTIVE_FIXTURE"),
+            "results/em_residual_discarded_trials_20261122.json": ("development timing evidence", "ACTIVE_FIXTURE"),
         }
         relative = p.removeprefix("lab/nollm-lab/geometry/")
         if relative in support_deformation_assets:

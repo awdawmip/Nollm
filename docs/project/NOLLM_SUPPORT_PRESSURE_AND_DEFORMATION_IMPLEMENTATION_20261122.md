@@ -2,6 +2,11 @@
 
 Date: 2026-11-22.
 
+Continuation: [EM residual-algorithm improvements](NOLLM_EM_RESIDUAL_ALGORITHM_IMPROVEMENT_20261122.md)
+record the subsequent exact coverage/motion/pressure optimizations, explicit
+relative-coordinate Lab v2, 90-test suite and complete old/new measurements.
+The 63-test results below remain the evidence for this earlier implementation.
+
 This implementation follows the [design review](../architecture/NOLLM_SUPPORT_PRESSURE_AND_GEOMETRIC_DEFORMATION_REVIEW_20261122.md).
 It provides a runnable native support-pressure/multilayer-write path and separate
 Lab motion/deformation experiments. The native Core still uses its admitted

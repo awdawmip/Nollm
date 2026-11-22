@@ -47,6 +47,12 @@ tests from the repository root with:
 python3 lab/nollm-lab/geometry/run_support_deformation_tests.py
 ```
 
+The [EM residual-algorithm continuation](docs/project/NOLLM_EM_RESIDUAL_ALGORITHM_IMPROVEMENT_20261122.md)
+adds exact labeled coverage masks, incremental motion events, request-local
+geometry reuse and an explicit relative-coordinate Lab interface. It records
+90 passing tests and complete version-to-version timings, including cases
+with little benefit; the fixed Core geometry contract is unchanged.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

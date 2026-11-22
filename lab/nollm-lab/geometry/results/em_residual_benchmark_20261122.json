@@ -1,0 +1,526 @@
+{
+  "baseline_ref": "58ad03a5457a6a8c57768368f4d9a3448c7827cd",
+  "at_utc": "2026-11-22T11:30:13.670601+00:00",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "repeats": 7,
+  "baseline_sources": {
+    "approximate_coverage.py": "packages/nollm-core/src/nollm_core/approximate_coverage.py",
+    "motion.py": "lab/nollm-lab/geometry/motion.py",
+    "deformation.py": "lab/nollm-lab/geometry/deformation.py",
+    "pressure_evaluation.py": "lab/nollm-lab/geometry/pressure_evaluation.py"
+  },
+  "input_seeds": {
+    "coverage": 20261122,
+    "motion": 852026
+  },
+  "scope": "fixed sampled-coverage equivalence and local execution cost; not semantic recall or exact-area accuracy",
+  "cases": {
+    "coverage_up_cold_unique": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        333.754759,
+        361.711447,
+        338.92058,
+        338.793572,
+        351.972836,
+        353.633716,
+        334.54579
+      ],
+      "after_ms": [
+        88.062937,
+        98.486728,
+        98.460807,
+        98.02467,
+        89.712221,
+        101.670467,
+        103.631357
+      ],
+      "before_median_ms": 338.92058,
+      "after_median_ms": 98.460807,
+      "before_over_after": 3.4421877123148095
+    },
+    "coverage_up_cross_layer_phase_reuse": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        87.49167,
+        89.102366,
+        90.374867,
+        90.26527,
+        97.072676,
+        95.775038,
+        83.862859
+      ],
+      "after_ms": [
+        69.379465,
+        64.660354,
+        68.043185,
+        56.789051,
+        70.928689,
+        56.921158,
+        68.893391
+      ],
+      "before_median_ms": 90.26527,
+      "after_median_ms": 68.043185,
+      "before_over_after": 1.3265879602784616
+    },
+    "coverage_up_warm_exact": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        4.360686,
+        3.951139,
+        3.93189,
+        4.203892,
+        3.402186,
+        4.725965,
+        4.131066
+      ],
+      "after_ms": [
+        3.69353,
+        4.215187,
+        4.279667,
+        4.221236,
+        3.971919,
+        4.000818,
+        3.770201
+      ],
+      "before_median_ms": 4.131066,
+      "after_median_ms": 4.000818,
+      "before_over_after": 1.0325553424324725
+    },
+    "coverage_down_cold_unique": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        353.201733,
+        369.732259,
+        348.841888,
+        379.776427,
+        344.873301,
+        345.293578,
+        396.203393
+      ],
+      "after_ms": [
+        126.492137,
+        111.325451,
+        126.891504,
+        104.23128,
+        111.163613,
+        109.380086,
+        106.352204
+      ],
+      "before_median_ms": 353.201733,
+      "after_median_ms": 111.163613,
+      "before_over_after": 3.177314261996864
+    },
+    "coverage_down_cross_layer_phase_reuse": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        98.270402,
+        97.807796,
+        110.370092,
+        104.58692,
+        95.945766,
+        93.519953,
+        96.29668
+      ],
+      "after_ms": [
+        76.863279,
+        66.83816,
+        67.171369,
+        63.977923,
+        68.942797,
+        76.796184,
+        78.18645
+      ],
+      "before_median_ms": 97.807796,
+      "after_median_ms": 68.942797,
+      "before_over_after": 1.4186804170419718
+    },
+    "coverage_down_warm_exact": {
+      "requests": 2000,
+      "outputs_equal": true,
+      "includes": "complete coverage expansion and member materialization; cold cases include derived-cache initialization",
+      "before_ms": [
+        5.389173,
+        4.257141,
+        4.066362,
+        4.06426,
+        4.015054,
+        4.173562,
+        4.083403
+      ],
+      "after_ms": [
+        4.079676,
+        4.077443,
+        4.173459,
+        3.853392,
+        3.844143,
+        4.073551,
+        4.052736
+      ],
+      "before_median_ms": 4.083403,
+      "after_median_ms": 4.073551,
+      "before_over_after": 1.0024185286989165
+    },
+    "native_write_pressure_cold": {
+      "requests": 256,
+      "outputs_equal": true,
+      "includes": "complete advisory pressure with deterministic current-unit callbacks; no disk I/O",
+      "before_ms": [
+        291.73787,
+        289.077493,
+        298.416783,
+        307.5108,
+        297.518558,
+        296.154484,
+        290.128253
+      ],
+      "after_ms": [
+        84.296137,
+        96.370319,
+        83.457153,
+        95.590251,
+        99.949318,
+        89.360812,
+        98.325985
+      ],
+      "before_median_ms": 296.154484,
+      "after_median_ms": 95.590251,
+      "before_over_after": 3.0981661927009694
+    },
+    "motion_coverage_up_safe": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 0,
+      "after_round_calls": 0,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        2.374501,
+        2.157968,
+        1.97439,
+        2.206871,
+        2.079523,
+        2.205151,
+        1.875034
+      ],
+      "after_ms": [
+        1.827726,
+        1.620293,
+        1.783232,
+        1.479917,
+        1.831569,
+        1.515533,
+        1.866416
+      ],
+      "before_median_ms": 2.157968,
+      "after_median_ms": 1.783232,
+      "before_over_after": 1.2101442773570685
+    },
+    "motion_coverage_up_small_crossings": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 152,
+      "after_round_calls": 152,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        33.512225,
+        32.929136,
+        31.795079,
+        35.791604,
+        33.879561,
+        32.687864,
+        32.949037
+      ],
+      "after_ms": [
+        6.978511,
+        6.513747,
+        6.436667,
+        5.945169,
+        6.637794,
+        6.893341,
+        6.329389
+      ],
+      "before_median_ms": 32.949037,
+      "after_median_ms": 6.513747,
+      "before_over_after": 5.058384521228717
+    },
+    "motion_coverage_up_large_jumps": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 24576,
+      "after_round_calls": 24576,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        95.515048,
+        83.908193,
+        81.880801,
+        83.117996,
+        89.382062,
+        96.308881,
+        101.473829
+      ],
+      "after_ms": [
+        64.955889,
+        64.856281,
+        60.357781,
+        62.370673,
+        64.267367,
+        60.415256,
+        59.005858
+      ],
+      "before_median_ms": 89.382062,
+      "after_median_ms": 62.370673,
+      "before_over_after": 1.4330783636084865
+    },
+    "motion_coverage_down_safe": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 0,
+      "after_round_calls": 0,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        2.325316,
+        1.995408,
+        2.003307,
+        2.275849,
+        2.04868,
+        1.8995,
+        1.922697
+      ],
+      "after_ms": [
+        1.834424,
+        1.919425,
+        1.578765,
+        1.547983,
+        1.604055,
+        1.552598,
+        1.987813
+      ],
+      "before_median_ms": 2.003307,
+      "after_median_ms": 1.604055,
+      "before_over_after": 1.2489016897799639
+    },
+    "motion_coverage_down_small_crossings": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 159,
+      "after_round_calls": 159,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        38.555204,
+        34.740883,
+        33.100735,
+        33.204053,
+        32.322052,
+        32.65199,
+        33.906442
+      ],
+      "after_ms": [
+        7.139685,
+        7.512935,
+        7.643818,
+        7.138556,
+        7.748776,
+        7.005519,
+        7.695998
+      ],
+      "before_median_ms": 33.204053,
+      "after_median_ms": 7.512935,
+      "before_over_after": 4.419584756157215
+    },
+    "motion_coverage_down_large_jumps": {
+      "steps": 256,
+      "outputs_equal": true,
+      "before_round_calls": 24576,
+      "after_round_calls": 24576,
+      "includes": "initial footprint construction, all updates, centers and Q16 result materialization",
+      "before_ms": [
+        85.014817,
+        85.768246,
+        84.444853,
+        88.312577,
+        87.701547,
+        87.892526,
+        84.372426
+      ],
+      "after_ms": [
+        61.864858,
+        60.945276,
+        63.004594,
+        85.119879,
+        62.694264,
+        63.463833,
+        63.346663
+      ],
+      "before_median_ms": 85.768246,
+      "after_median_ms": 63.004594,
+      "before_over_after": 1.361301463191716
+    },
+    "lab_pressure_unchanged": {
+      "sources": 128,
+      "outputs_equal": true,
+      "candidate_work": {
+        "mode": "auto",
+        "reuse_enabled": true,
+        "coverage_evaluations": 128,
+        "round_calls": 12288,
+        "source_sample_maps": 12288,
+        "target_sample_maps": 12288,
+        "same_map_reuses": 128,
+        "outside_twist_reuses": 0,
+        "source_sample_reuses": 0,
+        "bounds_checks": 0,
+        "peak_cached_source_samples": 96
+      },
+      "includes": "fresh request, geometry, all allocations, pressure and complete JSON-ready report",
+      "before_ms": [
+        89.583969,
+        81.990383,
+        81.619286,
+        80.604298,
+        103.483817,
+        82.376382,
+        83.577385
+      ],
+      "after_ms": [
+        59.59817,
+        51.253089,
+        46.577091,
+        46.096248,
+        46.732972,
+        45.49773,
+        46.713633
+      ],
+      "before_median_ms": 82.376382,
+      "after_median_ms": 46.713633,
+      "before_over_after": 1.7634334285239601
+    },
+    "lab_pressure_local_target_twist": {
+      "sources": 128,
+      "outputs_equal": true,
+      "candidate_work": {
+        "mode": "auto",
+        "reuse_enabled": true,
+        "coverage_evaluations": 145,
+        "round_calls": 13920,
+        "source_sample_maps": 12288,
+        "target_sample_maps": 13920,
+        "same_map_reuses": 0,
+        "outside_twist_reuses": 111,
+        "source_sample_reuses": 1632,
+        "bounds_checks": 128,
+        "peak_cached_source_samples": 96
+      },
+      "includes": "fresh request, geometry, all allocations, pressure and complete JSON-ready report",
+      "before_ms": [
+        89.555583,
+        96.527367,
+        86.966876,
+        87.677238,
+        85.468383,
+        105.222821,
+        89.513021
+      ],
+      "after_ms": [
+        51.996299,
+        51.950186,
+        51.757523,
+        52.796605,
+        52.627306,
+        53.032908,
+        52.987268
+      ],
+      "before_median_ms": 89.513021,
+      "after_median_ms": 52.627306,
+      "before_over_after": 1.7008854870891548
+    },
+    "lab_pressure_global_target_twist": {
+      "sources": 128,
+      "outputs_equal": true,
+      "candidate_work": {
+        "mode": "auto",
+        "reuse_enabled": true,
+        "coverage_evaluations": 256,
+        "round_calls": 24576,
+        "source_sample_maps": 12288,
+        "target_sample_maps": 24576,
+        "same_map_reuses": 0,
+        "outside_twist_reuses": 0,
+        "source_sample_reuses": 12288,
+        "bounds_checks": 128,
+        "peak_cached_source_samples": 96
+      },
+      "includes": "fresh request, geometry, all allocations, pressure and complete JSON-ready report",
+      "before_ms": [
+        98.2122,
+        98.826138,
+        96.023473,
+        98.804784,
+        114.305877,
+        99.596694,
+        102.896906
+      ],
+      "after_ms": [
+        96.218444,
+        94.153117,
+        97.536791,
+        95.712874,
+        92.716557,
+        92.576662,
+        99.849545
+      ],
+      "before_median_ms": 98.826138,
+      "after_median_ms": 95.712874,
+      "before_over_after": 1.0325271185566949
+    },
+    "lab_pressure_source_frame_change": {
+      "sources": 128,
+      "outputs_equal": true,
+      "candidate_work": {
+        "mode": "auto",
+        "reuse_enabled": false,
+        "coverage_evaluations": 256,
+        "round_calls": 24576,
+        "source_sample_maps": 24576,
+        "target_sample_maps": 24576,
+        "same_map_reuses": 0,
+        "outside_twist_reuses": 0,
+        "source_sample_reuses": 0,
+        "bounds_checks": 0,
+        "peak_cached_source_samples": 0
+      },
+      "includes": "fresh request, geometry, all allocations, pressure and complete JSON-ready report",
+      "before_ms": [
+        87.437826,
+        105.759995,
+        85.657421,
+        82.94468,
+        84.559319,
+        87.45618,
+        88.785585
+      ],
+      "after_ms": [
+        85.560673,
+        86.22247,
+        103.694068,
+        84.302949,
+        85.347054,
+        83.594642,
+        87.814347
+      ],
+      "before_median_ms": 87.437826,
+      "after_median_ms": 85.560673,
+      "before_over_after": 1.0219394370588928
+    }
+  }
+}

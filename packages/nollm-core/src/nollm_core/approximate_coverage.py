@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bisect import bisect_left, bisect_right
 from functools import lru_cache
 
 from .coverage_contract import (
@@ -58,6 +59,7 @@ def clear_approximate_coverage_cache() -> None:
     """Discard all derived kernel state; the next call reconstructs it."""
     _expand_cached.cache_clear()
     _phase_footprint.cache_clear()
+    _projected_sample_masks.cache_clear()
     _compiled_sample_offsets_q40.cache_clear()
     _sample_offsets_q40.cache_clear()
 
@@ -132,7 +134,7 @@ def _expand_cached(source: GeometryAddress, direction: str) -> PhysicalCoverageE
 
 # Implementation identity only: the v1 geometric/approximation contract and
 # persisted registry identity stay unchanged because every output is identical.
-_PHASE_KERNEL_IMPLEMENTATION = "parity_preserving_q40_phase_kernel_v1"
+_PHASE_KERNEL_IMPLEMENTATION = "parity_preserving_q40_residual_mask_kernel_v2"
 
 
 @lru_cache(maxsize=2)
@@ -146,6 +148,27 @@ def _compiled_sample_offsets_q40(direction: str) -> tuple[tuple[int, int], ...]:
         )
         for x, y in _sample_offsets_q40()
     )
+
+
+@lru_cache(maxsize=2)
+def _projected_sample_masks(direction: str):
+    """Sort the fixed residual projections once, retaining each sample's bit.
+
+    A strict nearest-cell hex has |2q+r|, |q+2r|, |r-q| < S. Prefix
+    masks answer an interval in each projection with two integer bisections.
+    Intersecting the three masks retains their joint sample identities;
+    separate projection histograms would not determine hex membership.
+    """
+    offsets = _compiled_sample_offsets_q40(direction)
+    projections = []
+    for a, b in ((2, 1), (1, 2), (-1, 1)):
+        ordered = sorted((a * q + b * r, i) for i, (q, r) in enumerate(offsets))
+        prefix = [0]
+        for _value, i in ordered:
+            prefix.append(prefix[-1] | (1 << i))
+        projections.append((tuple(value for value, _i in ordered), tuple(prefix)))
+    qs, rs = zip(*offsets)
+    return tuple(projections), (min(qs), max(qs), min(rs), max(rs))
 
 
 @lru_cache(maxsize=8192)
@@ -165,8 +188,42 @@ def _phase_footprint(
     Thus this factorization is exact for the existing fixed-point quadrature;
     it is not a claim about exact real-area overlap or eight repeated states.
     """
+    projected, (q_min, q_max, r_min, r_max) = _projected_sample_masks(direction)
+    scale = _Q40_ONE
+    # Every point of a closed nearest-cell hex has |q|,|r| <= 2S/3.
+    # These enclosing integer ranges therefore include every possible target,
+    # including ties. Each current stencil's interval width is < 3, so the
+    # candidate grid has at most nine cells at every phase.
+    q_first = -(-(3 * (phase_q + q_min) - 2 * scale) // (3 * scale))
+    q_last = (3 * (phase_q + q_max) + 2 * scale) // (3 * scale)
+    r_first = -(-(3 * (phase_r + r_min) - 2 * scale) // (3 * scale))
+    r_last = (3 * (phase_r + r_max) + 2 * scale) // (3 * scale)
+    phase_projections = (2 * phase_q + phase_r, phase_q + 2 * phase_r, phase_r - phase_q)
+    all_samples = (1 << SAMPLE_COUNT) - 1
+    covered = 0
     counts: dict[tuple[int, int], int] = {}
-    for q_offset, r_offset in _compiled_sample_offsets_q40(direction):
+    for q in range(q_first, q_last + 1):
+        for r in range(r_first, r_last + 1):
+            target_projections = (2 * q + r, q + 2 * r, r - q)
+            bits = all_samples
+            for target, phase, (values, prefix) in zip(target_projections, phase_projections, projected):
+                center = scale * target - phase
+                # Strict interiors have a unique owner. Boundary samples stay
+                # out of every interior and retain the original rounder's
+                # half-even and cube-error tie decisions below.
+                bits &= (prefix[bisect_left(values, center + scale)]
+                         ^ prefix[bisect_right(values, center - scale)])
+                if not bits:
+                    break
+            if bits:
+                counts[q, r] = bits.bit_count()
+                covered |= bits
+    remaining = all_samples ^ covered
+    offsets = _compiled_sample_offsets_q40(direction)
+    while remaining:
+        bit = remaining & -remaining
+        remaining ^= bit
+        q_offset, r_offset = offsets[bit.bit_length() - 1]
         target = _nearest_axial_q40(phase_q + q_offset, phase_r + r_offset)
         counts[target] = counts.get(target, 0) + 1
     return tuple((q, r, count) for (q, r), count in sorted(counts.items()))

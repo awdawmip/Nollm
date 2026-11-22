@@ -1,0 +1,884 @@
+{
+  "status": "discarded development trials; not final-version performance evidence",
+  "motion": {
+    "implementation": "eager projection-event construction before lazy construction and direct position-only copies",
+    "method": "3 repeats; construction and 256-step trajectories; each step materializes sample_targets and counts_q16; old_auto/new_auto/old_full",
+    "raw": {
+      "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+      "repeats": 3,
+      "construction": {
+        "old": {
+          "median_us": 353.0287025,
+          "all_us": [
+            353.0287025,
+            372.01682750000003,
+            339.10029249999997
+          ]
+        },
+        "new": {
+          "median_us": 506.69910749999997,
+          "all_us": [
+            497.32506,
+            506.69910749999997,
+            555.3032175000001
+          ]
+        }
+      },
+      "cases": [
+        {
+          "case": "safe/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 3.944359,
+            "new_auto": 4.710973,
+            "old_full": 82.394963
+          },
+          "old_auto_over_new": 0.837270559606264,
+          "old_full_over_new": 17.490009600989012,
+          "all_ms": {
+            "old_auto": [
+              3.944359,
+              3.635203,
+              4.28189
+            ],
+            "new_auto": [
+              4.872595,
+              4.319657,
+              4.710973
+            ],
+            "old_full": [
+              82.394963,
+              81.669951,
+              84.271665
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "small_monotone/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 5.704042,
+            "new_auto": 4.447004,
+            "old_full": 83.186114
+          },
+          "old_auto_over_new": 1.2826707599093683,
+          "old_full_over_new": 18.706102805394377,
+          "all_ms": {
+            "old_auto": [
+              5.650911,
+              6.294139,
+              5.704042
+            ],
+            "new_auto": [
+              4.403778,
+              4.999487,
+              4.447004
+            ],
+            "old_full": [
+              84.948278,
+              83.186114,
+              82.346535
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 249,
+                "crossings": 7
+              },
+              "round_calls": 7
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 249,
+                "crossings": 7
+              },
+              "round_calls": 7
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "crossing_monotone/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 17.267638,
+            "new_auto": 5.957915,
+            "old_full": 85.298675
+          },
+          "old_auto_over_new": 2.898268605711898,
+          "old_full_over_new": 14.3168667226706,
+          "all_ms": {
+            "old_auto": [
+              18.4209,
+              17.267638,
+              17.088903
+            ],
+            "new_auto": [
+              5.795744,
+              5.959159,
+              5.957915
+            ],
+            "old_full": [
+              85.824272,
+              83.167454,
+              85.298675
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 209,
+                "crossings": 47
+              },
+              "round_calls": 50
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 209,
+                "crossings": 47
+              },
+              "round_calls": 50
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "small_random/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 32.96169,
+            "new_auto": 9.152137,
+            "old_full": 87.542019
+          },
+          "old_auto_over_new": 3.601529347735944,
+          "old_full_over_new": 9.565199799784466,
+          "all_ms": {
+            "old_auto": [
+              36.098142,
+              32.96169,
+              32.423901
+            ],
+            "new_auto": [
+              10.328963,
+              8.260548,
+              9.152137
+            ],
+            "old_full": [
+              89.730069,
+              87.542019,
+              81.387784
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 155,
+                "crossings": 101
+              },
+              "round_calls": 124
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 155,
+                "crossings": 101
+              },
+              "round_calls": 124
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "large_random/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 91.841384,
+            "new_auto": 82.775243,
+            "old_full": 89.0877
+          },
+          "old_auto_over_new": 1.1095272048914433,
+          "old_full_over_new": 1.0762602049987338,
+          "all_ms": {
+            "old_auto": [
+              92.508964,
+              91.841384,
+              85.979897
+            ],
+            "new_auto": [
+              79.387757,
+              82.775243,
+              84.771399
+            ],
+            "old_full": [
+              88.140181,
+              89.0877,
+              89.105424
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "full": 255,
+                "crossings": 1
+              },
+              "round_calls": 24481
+            },
+            "new_auto": {
+              "modes": {
+                "full": 255,
+                "crossings": 1
+              },
+              "round_calls": 24481
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "even_anchors/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 3.714629,
+            "new_auto": 4.38587,
+            "old_full": 84.389819
+          },
+          "old_auto_over_new": 0.8469537400789353,
+          "old_full_over_new": 19.24129511362626,
+          "all_ms": {
+            "old_auto": [
+              3.709399,
+              3.714629,
+              3.729815
+            ],
+            "new_auto": [
+              4.004037,
+              5.583851,
+              4.38587
+            ],
+            "old_full": [
+              83.457629,
+              84.389819,
+              85.589031
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "ties/coverage_up",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 71.982914,
+            "new_auto": 13.38721,
+            "old_full": 83.899182
+          },
+          "old_auto_over_new": 5.376991471710685,
+          "old_full_over_new": 6.267114805848268,
+          "all_ms": {
+            "old_auto": [
+              73.10415,
+              71.982914,
+              70.81397
+            ],
+            "new_auto": [
+              12.653419,
+              13.38721,
+              13.561083
+            ],
+            "old_full": [
+              86.005589,
+              83.899182,
+              81.768116
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "crossings": 256
+              },
+              "round_calls": 256
+            },
+            "new_auto": {
+              "modes": {
+                "crossings": 256
+              },
+              "round_calls": 256
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "safe/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 4.486266,
+            "new_auto": 4.979381,
+            "old_full": 86.732987
+          },
+          "old_auto_over_new": 0.900968614371947,
+          "old_full_over_new": 17.41842751137139,
+          "all_ms": {
+            "old_auto": [
+              4.816251,
+              4.054121,
+              4.486266
+            ],
+            "new_auto": [
+              5.19419,
+              4.979381,
+              4.284268
+            ],
+            "old_full": [
+              86.970298,
+              83.681227,
+              86.732987
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "small_monotone/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 6.574002,
+            "new_auto": 5.436082,
+            "old_full": 85.740047
+          },
+          "old_auto_over_new": 1.209327232370667,
+          "old_full_over_new": 15.772397656988987,
+          "all_ms": {
+            "old_auto": [
+              6.574002,
+              6.019826,
+              6.610519
+            ],
+            "new_auto": [
+              5.4423,
+              5.436082,
+              4.8305
+            ],
+            "old_full": [
+              85.740047,
+              87.966094,
+              85.28276
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 248,
+                "crossings": 8
+              },
+              "round_calls": 8
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 248,
+                "crossings": 8
+              },
+              "round_calls": 8
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "crossing_monotone/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 17.522997,
+            "new_auto": 6.897785,
+            "old_full": 88.146721
+          },
+          "old_auto_over_new": 2.5403802814961614,
+          "old_full_over_new": 12.778989342230876,
+          "all_ms": {
+            "old_auto": [
+              18.150134,
+              17.522997,
+              17.145731
+            ],
+            "new_auto": [
+              6.588223,
+              7.538342,
+              6.897785
+            ],
+            "old_full": [
+              88.146721,
+              86.168139,
+              89.119298
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 207,
+                "crossings": 49
+              },
+              "round_calls": 51
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 207,
+                "crossings": 49
+              },
+              "round_calls": 51
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "small_random/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 53.951295,
+            "new_auto": 15.230707,
+            "old_full": 103.235389
+          },
+          "old_auto_over_new": 3.542271215643502,
+          "old_full_over_new": 6.778108790353593,
+          "all_ms": {
+            "old_auto": [
+              73.281332,
+              51.522198,
+              53.951295
+            ],
+            "new_auto": [
+              15.230707,
+              14.172517,
+              15.682962
+            ],
+            "old_full": [
+              103.798606,
+              95.09888,
+              103.235389
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 93,
+                "crossings": 163
+              },
+              "round_calls": 223
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 93,
+                "crossings": 163
+              },
+              "round_calls": 223
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "large_random/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 96.702748,
+            "new_auto": 89.665678,
+            "old_full": 101.173165
+          },
+          "old_auto_over_new": 1.0784811999079513,
+          "old_full_over_new": 1.1283377012997102,
+          "all_ms": {
+            "old_auto": [
+              98.514185,
+              96.702748,
+              96.543002
+            ],
+            "new_auto": [
+              94.75917,
+              89.665678,
+              89.088725
+            ],
+            "old_full": [
+              101.173165,
+              103.271657,
+              97.960801
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "full": 255,
+                "crossings": 1
+              },
+              "round_calls": 24481
+            },
+            "new_auto": {
+              "modes": {
+                "full": 255,
+                "crossings": 1
+              },
+              "round_calls": 24481
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "even_anchors/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 4.489975,
+            "new_auto": 5.275087,
+            "old_full": 102.643259
+          },
+          "old_auto_over_new": 0.8511660565977396,
+          "old_full_over_new": 19.458116804519054,
+          "all_ms": {
+            "old_auto": [
+              5.059364,
+              4.489975,
+              4.160428
+            ],
+            "new_auto": [
+              5.275087,
+              5.475417,
+              4.753795
+            ],
+            "old_full": [
+              112.618236,
+              94.262567,
+              102.643259
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "new_auto": {
+              "modes": {
+                "reuse": 256
+              },
+              "round_calls": 0
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        },
+        {
+          "case": "ties/coverage_down",
+          "steps": 256,
+          "median_ms": {
+            "old_auto": 77.490996,
+            "new_auto": 13.432674,
+            "old_full": 92.828747
+          },
+          "old_auto_over_new": 5.768843642003073,
+          "old_full_over_new": 6.91066774939971,
+          "all_ms": {
+            "old_auto": [
+              74.226895,
+              96.169237,
+              77.490996
+            ],
+            "new_auto": [
+              14.191945,
+              12.619042,
+              13.432674
+            ],
+            "old_full": [
+              97.70536,
+              92.828747,
+              90.988491
+            ]
+          },
+          "checks": {
+            "old_auto": {
+              "modes": {
+                "crossings": 256
+              },
+              "round_calls": 256
+            },
+            "new_auto": {
+              "modes": {
+                "crossings": 256
+              },
+              "round_calls": 256
+            },
+            "old_full": {
+              "modes": {
+                "full": 256
+              },
+              "round_calls": 24576
+            }
+          }
+        }
+      ]
+    }
+  },
+  "pressure": {
+    "implementation": "initial request-local reuse before per-source cache lifetime and direct full fallback for unrelated source-frame changes",
+    "method": "7 fresh requests; new full versus new auto, not frozen published baseline; different local-twist fixture from final unified benchmark",
+    "raw": {
+      "cases": [
+        {
+          "case": "same_maps",
+          "lower_sources": 128,
+          "fresh_request_repeats": 7,
+          "auto_median_ms": 59.087703,
+          "full_median_ms": 98.139411,
+          "full_over_auto": 1.6609109174543475,
+          "auto_work": {
+            "mode": "auto",
+            "coverage_evaluations": 128,
+            "round_calls": 12288,
+            "source_sample_maps": 12288,
+            "target_sample_maps": 12288,
+            "same_map_reuses": 128,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "full_work": {
+            "mode": "full",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "semantic_reports_equal": true
+        },
+        {
+          "case": "local_target_twist",
+          "lower_sources": 128,
+          "fresh_request_repeats": 7,
+          "auto_median_ms": 61.761689,
+          "full_median_ms": 111.819573,
+          "full_over_auto": 1.8105005677548747,
+          "auto_work": {
+            "mode": "auto",
+            "coverage_evaluations": 131,
+            "round_calls": 12576,
+            "source_sample_maps": 12288,
+            "target_sample_maps": 12576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 125,
+            "source_sample_reuses": 288,
+            "bounds_checks": 128
+          },
+          "full_work": {
+            "mode": "full",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "semantic_reports_equal": true
+        },
+        {
+          "case": "global_target_twist",
+          "lower_sources": 128,
+          "fresh_request_repeats": 7,
+          "auto_median_ms": 220.022608,
+          "full_median_ms": 225.129192,
+          "full_over_auto": 1.0232093603762755,
+          "auto_work": {
+            "mode": "auto",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 12288,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 12288,
+            "bounds_checks": 128
+          },
+          "full_work": {
+            "mode": "full",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "semantic_reports_equal": true
+        },
+        {
+          "case": "target_frame_change",
+          "lower_sources": 128,
+          "fresh_request_repeats": 7,
+          "auto_median_ms": 88.042707,
+          "full_median_ms": 96.298539,
+          "full_over_auto": 1.0937707651356063,
+          "auto_work": {
+            "mode": "auto",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 12288,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 12288,
+            "bounds_checks": 0
+          },
+          "full_work": {
+            "mode": "full",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "semantic_reports_equal": true
+        },
+        {
+          "case": "source_frame_change",
+          "lower_sources": 128,
+          "fresh_request_repeats": 7,
+          "auto_median_ms": 104.42938,
+          "full_median_ms": 97.375032,
+          "full_over_auto": 0.9324486270051588,
+          "auto_work": {
+            "mode": "auto",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "full_work": {
+            "mode": "full",
+            "coverage_evaluations": 256,
+            "round_calls": 24576,
+            "source_sample_maps": 24576,
+            "target_sample_maps": 24576,
+            "same_map_reuses": 0,
+            "outside_twist_reuses": 0,
+            "source_sample_reuses": 0,
+            "bounds_checks": 0
+          },
+          "semantic_reports_equal": true
+        }
+      ],
+      "scope": "Python local same process, seven fresh-request repeats, median, includes allocation and pressure readout; excludes JSON serialization"
+    }
+  },
+  "reproduction_limit": "Discarded intermediate implementations are not retained as runnable versions. The final benchmark script compares the published baseline with the final implementation."
+}

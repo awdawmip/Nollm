@@ -19,12 +19,16 @@ sys.path[:0] = [
 
 TEST_FILES = (
     "packages/nollm-core/tests/test_incoming_coverage.py",
+    "packages/nollm-core/tests/test_residual_mask_coverage.py",
     "packages/nollm-access/tests/test_support_pressure.py",
     "packages/nollm-access/tests/test_experimental_multilayer_write.py",
     "lab/nollm-lab/repository_memory/test_project_pressure.py",
     "lab/nollm-lab/geometry/tests/test_motion.py",
+    "lab/nollm-lab/geometry/tests/test_motion_residual_events.py",
     "lab/nollm-lab/geometry/tests/test_deformation.py",
+    "lab/nollm-lab/geometry/tests/test_relative_geometry.py",
     "lab/nollm-lab/geometry/tests/test_pressure_evaluation.py",
+    "lab/nollm-lab/geometry/tests/test_pressure_reuse.py",
     "lab/nollm-lab/repository_memory/test_project_encounter.py",
     "lab/nollm-lab/repository_memory/test_project_memory.py",
 )

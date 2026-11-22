@@ -9,6 +9,7 @@ implicitly: map parameters have ordinary JSON representations for the caller.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, replace
 from math import cos, isfinite, pi, sin, sqrt
 
@@ -198,15 +199,30 @@ class SampledCoverage:
                              "weight_q16": member.weight_q16} for member in self.members]}
 
 
+def source_world_samples(source: GeometryAddress, source_map: LayerMap) -> Iterator[Point]:
+    """Yield the original 96 source samples in their original arithmetic order.
+
+    Material counts do not enter this map. A caller comparing candidates may
+    retain these points while the source cell and source map stay unchanged.
+    """
+    center = ROOT3 * (source.q + source.r / 2), 1.5 * source.r
+    for dx, dy in coverage_sample_offsets_q40():
+        local = center[0] + dx / Q40_ONE, center[1] + dy / Q40_ONE
+        yield source_map.forward(local)
+
+
 def sampled_coverage(source: GeometryAddress, target_layer: int,
                      source_map: LayerMap | None = None,
-                     target_map: LayerMap | None = None) -> SampledCoverage:
+                     target_map: LayerMap | None = None, *,
+                     world_samples: Iterable[Point] | None = None) -> SampledCoverage:
     """Map equal-area source samples through target.inverse(source.forward(x)).
 
     The target hex has standard axial coordinates. Mapping those coordinates
     to Q40 uses half-even Python round before the original Core cube rounder.
     Shared geometric boundaries are transformed by the same map, so layers
     remain tilings. Curved-cell real-area errors are not certified here.
+    ``world_samples`` may supply the retained output of source_world_samples
+    for this same source/map, avoiding repeated source-map evaluations.
     """
     if source.profile_id != "default_dream_v1":
         raise ValueError("experimental maps use the default dream hex chart")
@@ -214,11 +230,11 @@ def sampled_coverage(source: GeometryAddress, target_layer: int,
         raise ValueError("target must be an admitted adjacent physical layer")
     source_map = source_map or LayerMap.for_layer(source.layer)
     target_map = target_map or LayerMap.for_layer(target_layer)
-    center = ROOT3 * (source.q + source.r / 2), 1.5 * source.r
+    if world_samples is None:
+        world_samples = source_world_samples(source, source_map)
     targets = []
-    for dx, dy in coverage_sample_offsets_q40():
-        local = center[0] + dx / Q40_ONE, center[1] + dy / Q40_ONE
-        x, y = target_map.inverse(source_map.forward(local))
+    for world_point in world_samples:
+        x, y = target_map.inverse(world_point)
         if not isfinite(x) or not isfinite(y):
             raise ValueError("deformation produced non-finite sample coordinates")
         q, r = x / ROOT3 - y / 3, 2 * y / 3
