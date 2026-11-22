@@ -126,6 +126,23 @@ C1–C3 reports, current EM evidence, retained probes, migration dependencies an
 Oracle assets keep their existing roles and gates. Archive placement follows
 current use and dependencies, not whether an LLM authored the content.
 
+## Current design research: support pressure and geometric deformation
+
+The user's 2026-11-22 direction adds advisory 1–100 write/exploration pressure
+from insufficient adjacent finer-layer material, and expands geometric research
+to relocation, twisting and anchor changes. New relationships should arise from
+native coverage; graph/vector-style object bridges are not the mechanism for
+this research. Existing stored bridges are unchanged by the review.
+
+The [support-pressure and deformation review](../architecture/NOLLM_SUPPORT_PRESSURE_AND_GEOMETRIC_DEFORMATION_REVIEW_20261122.md)
+records the candidate deficit score, a complete at-most-nine-cell incoming-up
+candidate bound for the current kernel, motion-boundary reuse, a tractable
+area-preserving twist, actual local probes and implementation gaps. These are
+reviewed proposals; current L0 semantic writing and fixed production geometry
+have not been replaced. Continue actual implementation from the current source
+and these explicit boundaries, without treating advisory pressure as compulsory
+descent or the finite microbenchmarks as product performance evidence.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)
