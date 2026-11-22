@@ -9024,7 +9024,6 @@
     "forbidden_feature_evidence": [],
     "imported_by": [],
     "imports": [
-      "pathlib",
       "project_memory"
     ],
     "lifecycle_status": "ACTIVE",
@@ -13798,6 +13797,7 @@
     "imports": [
       "install_skill",
       "json",
+      "nollm_access",
       "nollm_core",
       "pathlib",
       "project_memory",
@@ -14334,6 +14334,7 @@
       "lab/nollm-lab/repository_memory/self_study/test_vertical_atlas.py",
       "lab/nollm-lab/repository_memory/self_study/vertical_atlas.py",
       "lab/nollm-lab/repository_memory/test_native_geo.py",
+      "lab/nollm-lab/repository_memory/test_project_encounter.py",
       "lab/nollm-lab/statement_formation/corpus_support.py",
       "lab/nollm-lab/statement_formation/evaluate_fixture_decisions.py",
       "lab/nollm-lab/statement_formation/validate_corpus.py",
@@ -32402,7 +32403,6 @@
     "imported_by": [],
     "imports": [
       "__future__",
-      "hashlib",
       "pathlib",
       "re",
       "subprocess",

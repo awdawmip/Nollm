@@ -137,10 +137,11 @@ class ProjectMemoryTest(unittest.TestCase):
             self.assertEqual(missing_repo.returncode, 2)
             self.assertIn("--repo", missing_repo.stderr)
 
-            # The EM adapter retains its supplied default field and exposes the same link CLI.
-            em = [sys.executable, "-I", str(cli), "em"]
+            # The EM alias opens the same explicit working field with the same CLI.
+            em = [sys.executable, "-I", str(cli), "em", "--field", str(field)]
             self.assertTrue(json.loads(execute([*em, "walk"]).stdout)["candidates"])
-            self.assertIsInstance(json.loads(execute([*em, "links"]).stdout), list)
+            self.assertEqual(json.loads(execute([*em, "show", "reading.v2"]).stdout), current)
+            self.assertEqual(json.loads(execute([*em, "links"]).stdout), [])
 
     def test_save_choices_are_mutually_exclusive(self):
         with TemporaryDirectory() as tmp:

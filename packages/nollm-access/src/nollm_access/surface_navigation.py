@@ -31,12 +31,14 @@ class SurfaceStatementPreview:
     statement_id: str
     content_utf8: str
     handle: AtomHandle
+    text_truncated: bool = False
 
     def to_mapping(self) -> dict[str, object]:
         return {
             "statement_id": self.statement_id,
             "content_utf8": self.content_utf8,
             "handle": self.handle.to_mapping(),
+            "text_truncated": self.text_truncated,
         }
 
 
@@ -616,6 +618,7 @@ class AccessSurfaceNavigator:
                 statement.statement_id,
                 statement.content_utf8[:MAX_STATEMENT_CHARS],
                 handle,
+                len(statement.content_utf8) > MAX_STATEMENT_CHARS,
             ))
         return tuple(previews)
 

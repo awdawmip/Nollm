@@ -12,7 +12,7 @@
 ## 命令范围与迁移
 
 这些工具用于源文件导航、数据准备、结构检查与对照实验。普通原生记忆使用
-`project --field FIELD encounter` 或 `em encounter`。旧的未限定命令返回新调用提示。
+`project --field FIELD encounter` 或 `em --field FIELD encounter`。旧的未限定命令返回新调用提示。
 
 | 旧命令 | 显式调用 | 机制 |
 | --- | --- | --- |

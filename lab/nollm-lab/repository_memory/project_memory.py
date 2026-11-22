@@ -130,7 +130,9 @@ def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_
     if page["kind"] != "entry":
         # The first line is the Host's cue; expand the body after choosing a cell.
         for candidate in page["candidates"]:
-            candidate["previews"] = [preview.splitlines()[0] for preview in candidate["previews"]]
+            titles = [preview.splitlines()[0] for preview in candidate["previews"]]
+            candidate["text_truncated"] = candidate["text_truncated"] or titles != candidate["previews"]
+            candidate["previews"] = titles
         return page
     return {**page, **_locality(field, address(*page["entry"]), steps, limit, via, beam)}
 
@@ -195,7 +197,8 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         if not choices:
             return {"kind": "physical", "surface_calls": state["surface_calls"],
                     "candidates": [{"id": candidate.candidate_id, "physical_cell": coords(candidate.cell),
-                                    "native_atoms": 0, "previews": [], "truncated": False}],
+                                    "native_atoms": 0, "previews": [], "truncated": False,
+                                    "text_truncated": False}],
                     "cursor": state}
         if list(choices) != [candidate.candidate_id]:
             raise ValueError("choose the shown empty-field physical entry")
@@ -215,9 +218,9 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
                 state.pop("surface")
                 state["seed"] = True
                 return encounter(field, cursor=state)
-            # Keep Access's stored-statement excerpts, beyond the title used by
-            # walk. Full bodies arrive in the locality; Surface's truncated flag
-            # reports omitted statements, not its character-limited excerpts.
+            # Keep Access's stored-statement excerpts. Full bodies arrive in the
+            # locality; text_truncated reports clipped text, while truncated
+            # reports omitted statements.
             return {**page, "cursor": state}
         state.pop("surface", None)
         state["entry"] = page["entry"]

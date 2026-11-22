@@ -344,6 +344,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
     p = path.replace("\\", "/")
     name = PurePosixPath(p).name
     active_governance = active_governance or set()
+    if p.startswith("sujiben/"):
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", "active development memory",
+            "Host-authored native field and pinned source references", "development",
+            "Sujiben is the working project memory maintained on the active development line.",
+            evidence="2026-11-22 explicit user scope: keep the current notebook; archive unused old code.",
+            review_status="CODE_REVIEWED", reviewed_at="2026-11-22",
+        ), "ACTIVE_LIBRARY", "lab:repository-memory")
     if p.startswith("packages/") and "/tests/" in p:
         package = p.split("/", 2)[1].removeprefix("nollm-")
         return lab_asset(Classification(

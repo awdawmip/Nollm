@@ -181,12 +181,14 @@ def surface(field, scope, order, choices, page_size, max_calls, cursor=None, wit
             candidates.append({"id": cell.candidate_id, "physical_cell": coords(cell.address),
                                "membership_weight_q16": cell.membership_weight_q16,
                                "native_atoms": cell.native_atom_count,
-                               "previews": [preview.content_utf8] if preview else [], "truncated": cell.truncated})
+                               "previews": [preview.content_utf8] if preview else [], "truncated": cell.truncated,
+                               "text_truncated": preview.text_truncated if preview else False})
     else:
         for cell in page.cells:
             candidates.append({"id": cell.candidate_id, "window": [cell.order, cell.address.q, cell.address.r],
                                "source_cells": cell.physical_source_cell_count, "native_atoms": cell.native_atom_count,
-                               "previews": [s.content_utf8 for s in cell.statements], "truncated": cell.truncated})
+                               "previews": [s.content_utf8 for s in cell.statements], "truncated": cell.truncated,
+                               "text_truncated": any(s.text_truncated for s in cell.statements)})
     result = {
         "kind": "physical" if physical else "surface", "order": page.state.order,
         "page_size": page.state.budget.page_size, "pages_left": page.state.budget.max_calls - page.state.call_count,

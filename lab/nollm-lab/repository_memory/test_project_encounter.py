@@ -7,8 +7,9 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from install_skill import install
+from nollm_access import AccessSurfaceNavigator, RECALL_SURFACE_BUDGET
 from nollm_core import CoreRuntime
-from project_memory import decide, describe, encounter, save_statement
+from project_memory import SCOPE, decide, describe, encounter, save_statement, walk
 
 
 SOURCE = "0123456789abcdef0123456789abcdef01234567:module.py#L1-L3"
@@ -27,7 +28,54 @@ class ProjectEncounterTest(unittest.TestCase):
         self.assertEqual(page["kind"], "physical")
         candidate, = page["candidates"]
         self.assertEqual(candidate["physical_cell"], [0, 0, 0])
+        self.assertFalse(candidate["text_truncated"])
         return encounter(self.field, [candidate["id"]], cursor=page["cursor"])
+
+    def test_preview_text_clipping_preserves_full_locality_and_omission_flag(self):
+        for length in (255, 256, 257):
+            with self.subTest(length=length):
+                field = self.root / str(length)
+                body = "文" * length
+                save_statement(field, "note", body, [SOURCE], (0, 0), None)
+                page = encounter(field)
+                candidate, = page["candidates"]
+                self.assertEqual(candidate["previews"], [body[:256]])
+                self.assertFalse(candidate["truncated"])
+                self.assertEqual(candidate["text_truncated"], length > 256)
+                physical = encounter(field, [candidate["id"]], cursor=page["cursor"])
+                candidate, = physical["candidates"]
+                self.assertFalse(candidate["truncated"])
+                self.assertEqual(candidate["text_truncated"], length > 256)
+                locality = encounter(field, [candidate["id"]], cursor=physical["cursor"])
+                self.assertEqual(locality["items"][0]["text"], body)
+
+                # Access's structured projection retains per-statement detail.
+                navigator = AccessSurfaceNavigator(field)
+                surface = navigator.begin("preview", SCOPE, RECALL_SURFACE_BUDGET)
+                preview = surface.to_mapping()["surface_cells"][0]["statements"][0]
+                self.assertEqual(preview["text_truncated"], length > 256)
+                physical = navigator.open_physical_entries(surface, surface.cells[0].candidate_id)
+                preview = physical.to_mapping()["physical_entry_candidates"][0]["current_statement_preview"]
+                self.assertEqual(preview["text_truncated"], length > 256)
+
+    def test_omitted_statements_and_walk_titles_report_their_own_truncation(self):
+        for index in range(4):
+            save_statement(self.field, f"note-{index}", f"Title {index}\nBody", [SOURCE], (0, 0), None)
+        page = encounter(self.field)
+        candidate, = page["candidates"]
+        self.assertEqual(len(candidate["previews"]), 3)
+        self.assertTrue(candidate["truncated"])
+        self.assertFalse(candidate["text_truncated"])
+        physical = encounter(self.field, [candidate["id"]], cursor=page["cursor"])
+        candidate, = physical["candidates"]
+        self.assertEqual(len(candidate["previews"]), 1)
+        self.assertTrue(candidate["truncated"])
+        self.assertFalse(candidate["text_truncated"])
+
+        titles = walk(self.field, (), None, None, 1, 5, "local")
+        candidate, = titles["candidates"]
+        self.assertTrue(candidate["text_truncated"])
+        self.assertTrue(all("\n" not in preview for preview in candidate["previews"]))
 
     def test_empty_field_new_same_cell_support_revision_and_current_recall(self):
         locality = self.empty_locality()

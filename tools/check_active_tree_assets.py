@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import re
 import subprocess
 import sys
@@ -69,12 +68,8 @@ def local_markdown_link_errors(paths: list[str]) -> list[str]:
 def validate(paths: list[str]) -> list[str]:
     errors: list[str] = []
     agents = ROOT / "AGENTS.md"
-    if not agents.is_file() or agents.stat().st_size != 0:
-        errors.append("AGENTS.md must exist and contain exactly zero bytes")
-    elif hashlib.sha256(agents.read_bytes()).hexdigest() != (
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    ):
-        errors.append("AGENTS.md SHA-256 is not the empty-file digest")
+    if not agents.is_file() or not agents.read_text(encoding="utf-8").strip():
+        errors.append("AGENTS.md must provide the current project entry instructions")
 
     for relative in paths:
         lower = relative.lower()

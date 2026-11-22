@@ -7,7 +7,7 @@ description: "用 Nollm 原生场理解和维护本地 Git 项目记忆。适用
 
 使用正在加载的本 skill 的 `scripts/memory.py`。需要 Python 3.11+ 和 Git。
 普通项目记忆统一走 `project --field FIELD encounter`；进取数论的已有研究场走
-`em encounter`。Host 负责理解、选择入口和判断新内容的关系，Core 执行几何与持久化，
+`em --field FIELD encounter`。Host 负责理解、选择入口和判断新内容的关系，Core 执行几何与持久化，
 Access 返回正文及固定来源。
 
 ## 打开持续使用的场
@@ -33,7 +33,8 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 
 聚合页 `kind: surface` 用于观察；`kind: physical` 显示最终物理候选。
 选择一个物理入口后得到 `kind: locality`、`entry`、完整 `items` 及可放置的 `cells`。
-页面预览可能只是已保存正文的截段；在局部页面阅读完整判断与条件。
+候选的 `text_truncated: true` 表示显示的正文被截短；`truncated: true` 表示
+还有未显示的表达，两者分别报告。在局部页面阅读完整判断与条件。
 根据其中的正文、来源和可用位置作语义决定。运行脚本的助手就是 Host；程序不会
 按任务词、文件名、来源重合或固定分数替你选择。
 
@@ -107,14 +108,16 @@ python3 "$cli" project --field "$field" source --id "$statement_id" --number 1 -
 ## 进取数论已有研究场
 
 ```sh
-python3 "$cli" em encounter --cursor-file "$session"
-python3 "$cli" em show "$statement_id"
-python3 "$cli" em source --id "$statement_id" --repo /path/to/enterprise-math
+python3 "$cli" em --field "$field" encounter --cursor-file "$session"
+python3 "$cli" em --field "$field" show "$statement_id"
+python3 "$cli" em --field "$field" source --id "$statement_id" --repo /path/to/enterprise-math
 ```
 
-`em` 复用同一原生接口，默认场是安装目录的
-`scripts/runtime/enterprise_math/field/`，仓库版位于 `enterprise_math/field/`。
-用 `em --field PATH` 打开独立持续场。新的运行时代码不能覆盖既有工作场。
+`em` 复用同一原生接口，与 `project` 一样要求显式 `--field PATH`。
+安装器只复制运行时代码；场由项目持续维护，升级 skill 后继续打开同一路径。
+Nollm 的活跃开发记忆是仓库根目录的 `sujiben/field/`（速记本）；现用进取数论
+研究场继续保留在 `lab/nollm-lab/repository_memory/enterprise_math/field/`。
+源码仓库通过 `--repo` 单独指定，运行时安装目录不承担工作场的默认位置。
 研究任务的身份与项目规则继续从其当前 Source 入口读取。
 
 ## 显式辅助与历史基线

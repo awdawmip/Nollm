@@ -20,8 +20,11 @@ class ResearchMemoryTest(unittest.TestCase):
                 return subprocess.run(command, cwd=root, input=body, capture_output=True,
                                       encoding="utf-8", check=True).stdout
 
-            # The installation ships an authored field, independently of this test repository.
-            self.assertTrue(json.loads(run([*base, "walk"]))["candidates"])
+            # A new runtime does not copy a project field or choose one implicitly.
+            self.assertFalse((cli.parent / "runtime/enterprise_math/field").exists())
+            missing = subprocess.run([*base, "walk"], cwd=root, capture_output=True, text=True)
+            self.assertEqual(missing.returncode, 2)
+            self.assertIn("--field", missing.stderr)
             field = [*base, "--field", str(root / "new field")]
             git = ["git", "-c", "user.name=Test", "-c", "user.email=test@example.org"]
 
