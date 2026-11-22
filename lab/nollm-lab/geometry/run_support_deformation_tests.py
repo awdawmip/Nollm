@@ -30,6 +30,7 @@ TEST_FILES = (
     "lab/nollm-lab/geometry/tests/test_rational_geometry.py",
     "lab/nollm-lab/geometry/tests/test_rational_affine_kernel.py",
     "lab/nollm-lab/geometry/tests/test_rational_coverage.py",
+    "lab/nollm-lab/geometry/tests/test_precision_budget.py",
     "lab/nollm-lab/geometry/tests/test_pressure_evaluation.py",
     "lab/nollm-lab/geometry/tests/test_pressure_reuse.py",
     "lab/nollm-lab/repository_memory/test_project_encounter.py",

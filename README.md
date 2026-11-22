@@ -60,6 +60,11 @@ common-denominator integer affine kernel. Its independent Lab contract keeps
 The guide distinguishes sampled coverage from continuous area and records the
 cost of nonlinear denominator growth; it does not replace the default Core profile.
 
+The [coverage precision budget](docs/architecture/NOLLM_COVERAGE_PRECISION_BUDGET_20261122.md)
+adds reproducible precision scans and exact boundary-error certificates. It
+distinguishes unchanged coverage targets from unchanged hit shares and gives
+a local-residual precision strategy with explicit treatment of boundary cases.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

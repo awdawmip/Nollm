@@ -1,0 +1,5344 @@
+{
+  "schema": "nollm_rational_precision_probe_v1",
+  "source_commit": "0e7ddd99bc5a07948ad74b4856899581a6657bc1",
+  "generated_at_utc": "2026-11-22T14:30:49.054441+00:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "operation": "exact map first, then half-even final target q/r quantization",
+  "precision_scan": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64
+  ],
+  "groups": [
+    {
+      "name": "affine_64",
+      "cases": 64,
+      "samples": 6144,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -4,
+          -4
+        ],
+        [
+          -4,
+          -3
+        ],
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -4,
+          2
+        ],
+        [
+          -4,
+          3
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -3,
+          -3
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -3,
+          3
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -2,
+          -3
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -2,
+          3
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          1,
+          -3
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          2,
+          -3
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 44,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 1031,
+          "max_target_hit_error": 10,
+          "max_target_share_error": "5/48"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 55,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 2395,
+          "max_target_hit_error": 63,
+          "max_target_share_error": "21/32"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 23,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 747,
+          "max_target_hit_error": 16,
+          "max_target_share_error": "1/6"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 12,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 482,
+          "max_target_hit_error": 6,
+          "max_target_share_error": "1/16"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 4,
+          "histogram_changed_cases": 60,
+          "sample_label_changes": 216,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 3,
+          "histogram_changed_cases": 58,
+          "sample_label_changes": 115,
+          "max_target_hit_error": 3,
+          "max_target_share_error": "1/32"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 2,
+          "histogram_changed_cases": 41,
+          "sample_label_changes": 61,
+          "max_target_hit_error": 3,
+          "max_target_share_error": "1/32"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 22,
+          "sample_label_changes": 29,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 11,
+          "sample_label_changes": 11,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 64,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 5,
+          "sample_label_changes": 5,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 2,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 3,
+          "sample_label_changes": 3,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 6,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 8,
+        "histogram_changed_cases": 13,
+        "sample_label_changes": 13
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 18,
+      "whole_group_strict_certificate_bits": 18
+    },
+    {
+      "name": "common_anchor_2_pow_160_64",
+      "cases": 64,
+      "samples": 6144,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542977",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -4,
+          -4
+        ],
+        [
+          -4,
+          -3
+        ],
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -4,
+          2
+        ],
+        [
+          -4,
+          3
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -3,
+          -3
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -3,
+          3
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -2,
+          -3
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -2,
+          3
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          1,
+          -3
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          2,
+          -3
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          3,
+          -3
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 40,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 1031,
+          "max_target_hit_error": 10,
+          "max_target_share_error": "5/48"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 57,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 2375,
+          "max_target_hit_error": 57,
+          "max_target_share_error": "19/32"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 19,
+          "histogram_changed_cases": 64,
+          "sample_label_changes": 737,
+          "max_target_hit_error": 14,
+          "max_target_share_error": "7/48"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 14,
+          "histogram_changed_cases": 63,
+          "sample_label_changes": 496,
+          "max_target_hit_error": 6,
+          "max_target_share_error": "1/16"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 7,
+          "histogram_changed_cases": 62,
+          "sample_label_changes": 226,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 3,
+          "histogram_changed_cases": 51,
+          "sample_label_changes": 119,
+          "max_target_hit_error": 3,
+          "max_target_share_error": "1/32"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 2,
+          "histogram_changed_cases": 30,
+          "sample_label_changes": 45,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 24,
+          "sample_label_changes": 26,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 12,
+          "sample_label_changes": 13,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 71,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 3,
+          "sample_label_changes": 3,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 2,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 2,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 8,
+        "histogram_changed_cases": 13,
+        "sample_label_changes": 13
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 13,
+      "whole_group_strict_certificate_bits": 13
+    },
+    {
+      "name": "distinct_twists_16",
+      "cases": 16,
+      "samples": 1536,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "source_coordinates": [
+        [
+          -1,
+          -4
+        ],
+        [
+          -1,
+          -3
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          0,
+          -3
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 11,
+          "histogram_changed_cases": 16,
+          "sample_label_changes": 248,
+          "max_target_hit_error": 10,
+          "max_target_share_error": "5/48"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 16,
+          "histogram_changed_cases": 16,
+          "sample_label_changes": 591,
+          "max_target_hit_error": 49,
+          "max_target_share_error": "49/96"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 7,
+          "histogram_changed_cases": 16,
+          "sample_label_changes": 191,
+          "max_target_hit_error": 12,
+          "max_target_share_error": "1/8"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 2,
+          "histogram_changed_cases": 15,
+          "sample_label_changes": 125,
+          "max_target_hit_error": 6,
+          "max_target_share_error": "1/16"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 14,
+          "sample_label_changes": 65,
+          "max_target_hit_error": 3,
+          "max_target_share_error": "1/32"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 2,
+          "histogram_changed_cases": 15,
+          "sample_label_changes": 39,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 11,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 6,
+          "sample_label_changes": 9,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 6,
+          "sample_label_changes": 7,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48",
+          "uncertified_samples": 23,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 6,
+        "histogram_changed_cases": 11,
+        "sample_label_changes": 11
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 14,
+      "whole_group_strict_certificate_bits": 14
+    },
+    {
+      "name": "two_center_chain_7",
+      "cases": 7,
+      "samples": 672,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 98,
+          "max_target_hit_error": 11,
+          "max_target_share_error": "11/96"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 7,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 274,
+          "max_target_hit_error": 34,
+          "max_target_share_error": "17/48"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 86,
+          "max_target_hit_error": 9,
+          "max_target_share_error": "3/32"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 2,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 56,
+          "max_target_hit_error": 8,
+          "max_target_share_error": "1/12"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 7,
+          "sample_label_changes": 26,
+          "max_target_hit_error": 3,
+          "max_target_share_error": "1/32"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 6,
+          "sample_label_changes": 13,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 4,
+          "sample_label_changes": 5,
+          "max_target_hit_error": 2,
+          "max_target_share_error": "1/48"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 2,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 2,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 9,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 4,
+        "histogram_changed_cases": 9,
+        "sample_label_changes": 9
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 9,
+      "whole_group_strict_certificate_bits": 9
+    },
+    {
+      "name": "one_hit_edge_delta_2_pow_minus_20",
+      "cases": 1,
+      "samples": 96,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "65"
+              },
+              {
+                "numerator": "-7",
+                "denominator": "130"
+              }
+            ],
+            [
+              {
+                "numerator": "7",
+                "denominator": "130"
+              },
+              {
+                "numerator": "3",
+                "denominator": "26"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "92143811",
+              "denominator": "204472320"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "390"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 4,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 2,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0",
+          "uncertified_samples": 0,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 20,
+        "histogram_changed_cases": 20,
+        "sample_label_changes": 20
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 20,
+      "whole_group_strict_certificate_bits": 20
+    },
+    {
+      "name": "one_hit_edge_delta_2_pow_minus_40",
+      "cases": 1,
+      "samples": 96,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "65"
+              },
+              {
+                "numerator": "-7",
+                "denominator": "130"
+              }
+            ],
+            [
+              {
+                "numerator": "7",
+                "denominator": "130"
+              },
+              {
+                "numerator": "3",
+                "denominator": "26"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "96619584291011",
+              "denominator": "214404767416320"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "390"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 4,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 2,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 40,
+        "histogram_changed_cases": 40,
+        "sample_label_changes": 40
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 40,
+      "whole_group_strict_certificate_bits": 40
+    },
+    {
+      "name": "one_hit_edge_delta_2_pow_minus_60",
+      "cases": 1,
+      "samples": 96,
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "65"
+              },
+              {
+                "numerator": "-7",
+                "denominator": "130"
+              }
+            ],
+            [
+              {
+                "numerator": "7",
+                "denominator": "130"
+              },
+              {
+                "numerator": "3",
+                "denominator": "26"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "101312977217326678211",
+              "denominator": "224819693398335160320"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "390"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "source_coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "rows": [
+        {
+          "fractional_bits": 0,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 4,
+          "max_target_hit_error": 4,
+          "max_target_share_error": "1/24"
+        },
+        {
+          "fractional_bits": 1,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 2,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 3,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 4,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 5,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 6,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 7,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 2,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 8,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 2,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 9,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 10,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 11,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 12,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 13,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 14,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 15,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 16,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 17,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 18,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 19,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 20,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96",
+          "uncertified_samples": 1,
+          "wrong_certificates": 0
+        },
+        {
+          "fractional_bits": 21,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 22,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 23,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 24,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 25,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 26,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 27,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 28,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 29,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 30,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 31,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 32,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 33,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 34,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 35,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 36,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 37,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 38,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 39,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 40,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 41,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 42,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 43,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 44,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 45,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 46,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 47,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 48,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 49,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 50,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 51,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 52,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 53,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 54,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 55,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 56,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 57,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 58,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 59,
+          "target_set_changed_cases": 1,
+          "histogram_changed_cases": 1,
+          "sample_label_changes": 1,
+          "max_target_hit_error": 1,
+          "max_target_share_error": "1/96"
+        },
+        {
+          "fractional_bits": 60,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 61,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 62,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 63,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        },
+        {
+          "fractional_bits": 64,
+          "target_set_changed_cases": 0,
+          "histogram_changed_cases": 0,
+          "sample_label_changes": 0,
+          "max_target_hit_error": 0,
+          "max_target_share_error": "0"
+        }
+      ],
+      "observed_stable_suffix_through_64": {
+        "target_set_changed_cases": 60,
+        "histogram_changed_cases": 60,
+        "sample_label_changes": 60
+      },
+      "strict_boundary_samples": 0,
+      "max_interior_certificate_bits": 60,
+      "whole_group_strict_certificate_bits": 60
+    }
+  ],
+  "non_monotone_example": {
+    "point": [
+      "1/3",
+      "3/10"
+    ],
+    "reference": [
+      0,
+      0
+    ],
+    "certificate_bits": 6,
+    "labels": [
+      {
+        "bits": 0,
+        "label": [
+          0,
+          0
+        ]
+      },
+      {
+        "bits": 1,
+        "label": [
+          1,
+          0
+        ]
+      },
+      {
+        "bits": 2,
+        "label": [
+          0,
+          0
+        ]
+      },
+      {
+        "bits": 3,
+        "label": [
+          1,
+          0
+        ]
+      },
+      {
+        "bits": 4,
+        "label": [
+          0,
+          0
+        ]
+      },
+      {
+        "bits": 5,
+        "label": [
+          1,
+          0
+        ]
+      },
+      {
+        "bits": 6,
+        "label": [
+          0,
+          0
+        ]
+      },
+      {
+        "bits": 7,
+        "label": [
+          0,
+          0
+        ]
+      },
+      {
+        "bits": 8,
+        "label": [
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "finite explicit input maps; original Core and continuous area are different contracts",
+    "final-coordinate certificates require valid total error bounds if used with low-precision map arithmetic",
+    "no end-to-end speedup measured; exact nonlinear map evaluation still occurs"
+  ]
+}

@@ -171,6 +171,19 @@ Its focused tests and opt-in same-contract benchmark cover integer/reference
 equivalence and the concrete cost of changing twist centers. Continuous overlap
 error bounds and automatic movement or forced exploration are not claimed.
 
+The [coverage precision budget](../architecture/NOLLM_COVERAGE_PRECISION_BUDGET_20261122.md)
+measures final-coordinate quantization separately from map arithmetic. Its finite
+Core scan preserves target sets from 10 fractional bits and all sampled labels
+from 14; a 15-bit strict margin certificate covers that inventory. A separate
+integer-congruence construction supplies admitted writable-source witnesses for
+every p=0..39. Together with p=40 identity, this proves 40 is the minimum globally
+safe fixed fractional precision for the current Core's final-coordinate rounding
+model without fallback. Rational Lab probes motivate a 16-bit local-residual
+starting point with certified error boxes and exact handling of unresolved
+boundaries. Explicit rational one-hit examples need 20, 40 or 60 bits; arbitrary
+rational transformations have no universal finite fixed precision. The diagnostic
+module and probes preserve the existing default geometry and exact parameters.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)
