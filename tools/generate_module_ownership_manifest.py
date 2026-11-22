@@ -416,6 +416,26 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             review_status="CODE_REVIEWED", reviewed_at="2026-11-18",
         ), asset, "lab:repository-memory")
     if p.startswith("lab/nollm-lab/geometry/"):
+        support_deformation_assets = {
+            "motion.py": ("active library", "ACTIVE_LIBRARY"),
+            "deformation.py": ("active library", "ACTIVE_LIBRARY"),
+            "pressure_evaluation.py": ("active library", "ACTIVE_LIBRARY"),
+            "deformation_cli.py": ("active tool", "ACTIVE_TOOL"),
+            "run_support_deformation_tests.py": ("active tool", "ACTIVE_TOOL"),
+            "tests/test_motion.py": ("active test", "ACTIVE_TEST"),
+            "tests/test_deformation.py": ("active test", "ACTIVE_TEST"),
+            "tests/test_pressure_evaluation.py": ("active test", "ACTIVE_TEST"),
+        }
+        relative = p.removeprefix("lab/nollm-lab/geometry/")
+        if relative in support_deformation_assets:
+            role, asset_class = support_deformation_assets[relative]
+            return lab_asset(Classification(
+                "LAB", "ACTIVE", "KEEP", "HIGH", role,
+                "explicit experimental geometry values and temporary test fields", "development",
+                "Support-pressure and deformation experiments use public Core/Access contracts.",
+                evidence="2026-11-22 implementation request and public-interface review.",
+                review_status="DEPENDENCY_REVIEWED", reviewed_at="2026-11-22",
+            ), asset_class, "lab:support-deformation")
         active_tools = {
             "generate_compiled_templates.py": "lab:compiled-templates",
             "run_broad_residue_coverage_calibration.py": "lab:broad-residue-calibration",

@@ -126,7 +126,7 @@ C1–C3 reports, current EM evidence, retained probes, migration dependencies an
 Oracle assets keep their existing roles and gates. Archive placement follows
 current use and dependencies, not whether an LLM authored the content.
 
-## Current design research: support pressure and geometric deformation
+## Current implementation: support pressure and geometric deformation
 
 The user's 2026-11-22 direction adds advisory 1–100 write/exploration pressure
 from insufficient adjacent finer-layer material, and expands geometric research
@@ -137,11 +137,16 @@ this research. Existing stored bridges are unchanged by the review.
 The [support-pressure and deformation review](../architecture/NOLLM_SUPPORT_PRESSURE_AND_GEOMETRIC_DEFORMATION_REVIEW_20261122.md)
 records the candidate deficit score, a complete at-most-nine-cell incoming-up
 candidate bound for the current kernel, motion-boundary reuse, a tractable
-area-preserving twist, actual local probes and implementation gaps. These are
-reviewed proposals; current L0 semantic writing and fixed production geometry
-have not been replaced. Continue actual implementation from the current source
-and these explicit boundaries, without treating advisory pressure as compulsory
-descent or the finite microbenchmarks as product performance evidence.
+area-preserving twist, actual local probes and the original implementation gaps.
+The [implementation and test guide](NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
+records the runnable continuation: complete incoming-up candidates, exact advisory
+pressure, explicitly selected multilayer writes, native encounter pressure
+readouts, Q40 incremental motion, invertible Lab maps and before/after coverage
+pressure evaluation. The default semantic write policy remains L0. Multilayer
+writing is explicit; the float64 deformation contract remains a Lab experiment
+and does not replace the fixed production coverage kernel. Advisory pressure
+does not compel descent, and the earlier microbenchmarks are not product
+performance evidence.
 
 ## Enterprise Math memory: reusable implementation and evidence
 

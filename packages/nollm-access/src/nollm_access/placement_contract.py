@@ -6,7 +6,7 @@ import json
 
 from nollm_core import AtomHandle, BridgeSpec, GeometryAddress
 
-from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY
+from .write_policy import ACTIVE_SEMANTIC_WRITE_POLICY_ID, semantic_write_policy
 
 
 ACTIONS = frozenset({"reuse", "new", "move", "revision_current", "revision_keep_history", "stitch", "unstitch", "defer", "forget"})
@@ -163,6 +163,7 @@ class AccessDecision:
     bridge_spec: BridgeSpec | None = None
     reason_text: str = ""
     decided_by: str = "host"
+    write_policy_id: str = ACTIVE_SEMANTIC_WRITE_POLICY_ID
 
     def __post_init__(self) -> None:
         if any(type(value) is not str or not value for value in (self.decision_id,self.statement_id,self.action,self.reason_text,self.decided_by)):
@@ -197,7 +198,8 @@ class AccessDecision:
         }[self.action]
         if not all(allowed):
             raise ValueError("AccessDecision contains conflicting or unrelated fields")
+        policy = semantic_write_policy(self.write_policy_id)
         if self.target_cell is not None:
-            ACTIVE_SEMANTIC_WRITE_POLICY.validate(self.target_cell)
+            policy.validate(self.target_cell)
         if self.action == "revision_current" and self.existing_handle is not None:
-            ACTIVE_SEMANTIC_WRITE_POLICY.validate(self.existing_handle.geometry_address)
+            policy.validate(self.existing_handle.geometry_address)

@@ -106,9 +106,13 @@ from .surface_navigation import (
 from .write_policy import (
     ACTIVE_SEMANTIC_WRITE_POLICY,
     ACTIVE_SEMANTIC_WRITE_POLICY_ID,
+    EXPERIMENTAL_MULTILAYER_WRITE_POLICY,
+    EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID,
     ActiveSemanticWritePolicy,
     ActiveSemanticWritePolicyError,
+    semantic_write_policy,
 )
+from .support_pressure import WritePressure, pressure_score, write_pressure
 
 __all__ = [
     "ACTIONS",
@@ -117,6 +121,12 @@ __all__ = [
     "REVISION_CONFIRMATION_SCHEMA_VERSION",
     "ACTIVE_SEMANTIC_WRITE_POLICY",
     "ACTIVE_SEMANTIC_WRITE_POLICY_ID",
+    "EXPERIMENTAL_MULTILAYER_WRITE_POLICY",
+    "EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID",
+    "semantic_write_policy",
+    "WritePressure",
+    "pressure_score",
+    "write_pressure",
     "AccessDecision",
     "AccessMemoryLoop",
     "AccessRecallItem",

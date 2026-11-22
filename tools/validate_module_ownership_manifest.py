@@ -43,6 +43,7 @@ GATED_ASSET_CLASSES = {
 }
 VALIDATION_GATES = {
     "lab:repository-memory",
+    "lab:support-deformation",
     "package:core", "package:snapshot", "package:trace", "package:access",
     "governance:m0", "governance:architecture", "compatibility:grf",
     "lab:compiled-templates", "lab:geometry-parity", "lab:broad-residue-calibration", "lab:safe-writable-field", "lab:dense-locality-surface", "lab:dense-single-entry-recall", "lab:natural-multi-entry-observation", "lab:core-capability",
@@ -56,6 +57,7 @@ VALIDATION_GATES = {
 }
 GATE_TARGETS = {
     "lab:repository-memory": "lab/nollm-lab/repository_memory",
+    "lab:support-deformation": "lab/nollm-lab/geometry/run_support_deformation_tests.py",
     "package:core": "packages/nollm-core/tests",
     "package:snapshot": "packages/nollm-snapshot/tests",
     "package:trace": "packages/nollm-trace/tests",

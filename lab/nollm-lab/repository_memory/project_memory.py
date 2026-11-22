@@ -7,10 +7,14 @@ from pathlib import Path
 import sys
 
 from nollm_access import (
+    ACTIVE_SEMANTIC_WRITE_POLICY_ID, EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID,
     RECALL_SURFACE_BUDGET, AccessDecision, AccessRecallRequest, AccessRuntime,
-    FileHandleStore, FileStatementStore, MemoryStatement,
+    FileHandleStore, FileStatementStore, MemoryStatement, semantic_write_policy, write_pressure,
 )
-from nollm_core import BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope, RecallBudget
+from nollm_core import (
+    BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope,
+    RecallBudget, expand_physical_coverage, incoming_coverage,
+)
 
 from coverage_cli import address, coords, require_field, surface
 from repo_notes import _commit, _git
@@ -25,12 +29,15 @@ KERNELS = {
 }
 
 
-def save(field, repo, rev, note_id, body, citations, at, revise, reuse=None):
+def save(field, repo, rev, note_id, body, citations, at, revise, reuse=None, *,
+         layer=0, write_policy_id=ACTIVE_SEMANTIC_WRITE_POLICY_ID):
     commit = _commit(repo, rev)
-    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations], at, revise, reuse)
+    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations],
+                          at, revise, reuse, layer=layer, write_policy_id=write_policy_id)
 
 
-def save_statement(field, note_id, body, sources, at, revise, reuse=None):
+def save_statement(field, note_id, body, sources, at, revise, reuse=None, *,
+                   layer=0, write_policy_id=ACTIVE_SEMANTIC_WRITE_POLICY_ID):
     """Save Host-authored understanding with already selected, pinned source references."""
     if sum(choice is not None for choice in (at, revise, reuse)) != 1:
         raise ValueError("choose exactly one of at, revise, or reuse")
@@ -39,8 +46,9 @@ def save_statement(field, note_id, body, sources, at, revise, reuse=None):
         core, FileStatementStore(field), FileHandleStore(field)
     ) as access:
         if at is not None:
-            decision = AccessDecision(note_id, note_id, "new", target_cell=address(0, *at),
-                                      reason_text="Host selected this cell for a distinct proposition.")
+            decision = AccessDecision(note_id, note_id, "new", target_cell=address(layer, *at),
+                                      reason_text="Host selected this cell for a distinct proposition.",
+                                      write_policy_id=write_policy_id)
         else:
             current_id = revise if revise is not None else reuse
             existing_handle = access.saved_handle(current_id)
@@ -55,7 +63,7 @@ def save_statement(field, note_id, body, sources, at, revise, reuse=None):
                 reason = f"Host confirms this expression supports the current judgment {reuse}."
                 others.append(f"reuses:{reuse}")
             decision = AccessDecision(note_id, note_id, action, existing_handle=existing_handle,
-                                      reason_text=reason)
+                                      reason_text=reason, write_policy_id=write_policy_id)
         access.put_statement(MemoryStatement(note_id, body, primary, tuple(others)))
         handle = access.apply(decision)
     result = {"id": note_id, "cell": coords(handle.geometry_address), "revises": revise}
@@ -137,7 +145,35 @@ def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_
     return {**page, **_locality(field, address(*page["entry"]), steps, limit, via, beam)}
 
 
-def _locality(field, entry, steps, limit, via, beam, *, placement=False):
+def _writing_scope(layers):
+    """Explicit local physical layers, within the existing Surface span contract."""
+    selected = tuple(sorted(set(layers)))
+    if not selected:
+        raise ValueError("choose at least one physical layer")
+    for layer in selected:
+        address(layer, 0, 0)
+    reference = 0 if 0 in selected else selected[len(selected) // 2]
+    return PhysicalFieldScope("default_dream_v1", "default", selected, reference)
+
+
+def _placement_cells(core, entry, recall_items, scope):
+    cells = {entry, *(hit.handle.geometry_address for hit in recall_items
+                      if scope.contains(hit.handle.geometry_address))}
+    cells.update(candidate.cell for candidate in core.junction_candidates(JunctionRequest(scope, (entry,))))
+    for direction, target_layer in (("coverage_up", entry.layer - 1),
+                                     ("coverage_down", entry.layer + 1)):
+        if target_layer in scope.physical_layers:
+            cells.update(member.target for member in expand_physical_coverage(entry, direction).members)
+    if entry.layer + 1 in scope.physical_layers:
+        # Up support is not the reciprocal of the parent's down sample list.
+        cells.update(member.source for member in incoming_coverage(entry).members)
+    radius = semantic_write_policy(EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID).active_writable_hex_radius
+    return sorted((cell for cell in cells if scope.contains(cell)
+                   and max(abs(cell.q), abs(cell.r), abs(cell.q + cell.r)) <= radius),
+                  key=lambda cell: cell.stable_key())
+
+
+def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=SCOPE):
     kernels = KERNELS[via]
     budget = RecallBudget(steps, beam, steps, 1, int("bridge" in kernels), limit)
     with CoreRuntime(field) as core, AccessRuntime(
@@ -159,21 +195,28 @@ def _locality(field, entry, steps, limit, via, beam, *, placement=False):
         result = {"kernels": kernels, "items": items, "budget": asdict(budget),
                   "budget_exhausted": recall.budget_exhausted}
         if placement:
-            # Core permits distinct atoms in an occupied cell. Nearby vacant
-            # cells come from its geometric Junction solver, without semantics.
-            cells = {entry, *(hit.handle.geometry_address for hit in recall.items
-                              if SCOPE.contains(hit.handle.geometry_address))}
-            cells.update(candidate.cell for candidate in core.junction_candidates(JunctionRequest(SCOPE, (entry,))))
-            result["cells"] = [
-                {"id": f"cell:{cell.layer}:{cell.q}:{cell.r}", "cell": coords(cell),
-                 "native_atoms": len(core.atoms_at(cell))}
-                for cell in sorted(cells, key=lambda cell: cell.stable_key())
-            ]
+            # One geometry snapshot for all pressure counts; each current atom
+            # is a unit, irrespective of how many expressions bind to it.
+            with core.operation_lease():
+                cells = _placement_cells(core, entry, recall.items, scope)
+                units = {}
+
+                def units_at(cell):
+                    if cell not in units:
+                        units[cell] = tuple(handle for handle, _ in core.atoms_at(cell))
+                    return units[cell]
+
+                result["cells"] = [
+                    {"id": f"cell:{cell.layer}:{cell.q}:{cell.r}", "cell": coords(cell),
+                     "native_atoms": len(units_at(cell)),
+                     "write_pressure": write_pressure(cell, units_at).to_mapping()}
+                    for cell in cells
+                ]
     return result
 
 
 def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limit=None,
-              via=None, beam=None, cursor=None):
+              via=None, beam=None, cursor=None, layers=None):
     """Observe one field for either a query or an incoming proposition.
 
     The disposable cursor retains the shown page or the chosen physical entry.
@@ -183,6 +226,13 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
     state = dict(cursor) if cursor is not None else {"field": str(field.resolve())}
     if state["field"] != str(field.resolve()):
         raise ValueError("encounter cursor belongs to another field")
+    selected_layers = tuple(sorted(set(layers))) if layers is not None else tuple(state.get("layers", (0,)))
+    if cursor is not None and layers is not None and selected_layers != tuple(state.get("layers", (0,))):
+        raise ValueError("restart the encounter to change physical layers")
+    scope = _writing_scope(selected_layers)
+    state["layers"] = list(scope.physical_layers)
+    write_policy_id = (ACTIVE_SEMANTIC_WRITE_POLICY_ID if scope.physical_layers == (0,)
+                       else EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)
     for name, value, default in (("steps", steps, 1), ("limit", limit, 5),
                                   ("via", via, "local"), ("beam", beam, 16)):
         state[name] = value if value is not None else state.get(name, default)
@@ -193,7 +243,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         # An empty Surface offers the Core origin as a physical entry. The Host
         # still chooses it before seeing facts and placement targets.
         with CoreRuntime(field) as core:
-            candidate = core.junction_candidates(JunctionRequest(SCOPE, (), candidate_limit=1))[0]
+            candidate = core.junction_candidates(JunctionRequest(scope, (), candidate_limit=1))[0]
         if not choices:
             return {"kind": "physical", "surface_calls": state["surface_calls"],
                     "candidates": [{"id": candidate.candidate_id, "physical_cell": coords(candidate.cell),
@@ -209,7 +259,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         if cursor is None:
             with CoreRuntime(field):
                 pass
-        page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls,
+        page = surface(field, scope, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls,
                        state.get("surface"), True)
         state["surface_calls"] = page["surface_calls"]
         if page["kind"] != "entry":
@@ -225,8 +275,9 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         state.pop("surface", None)
         state["entry"] = page["entry"]
     locality = _locality(field, address(*state["entry"]), state["steps"], state["limit"],
-                         state["via"], state["beam"], placement=True)
+                         state["via"], state["beam"], placement=True, scope=scope)
     return {"kind": "locality", "entry": state["entry"], "surface_calls": state["surface_calls"],
+            "physical_layers": list(scope.physical_layers), "write_policy_id": write_policy_id,
             **locality, "cursor": state}
 
 
@@ -256,7 +307,9 @@ def decide(field, cursor, action, target=None, *, note_id=None, body=None, sourc
         raise ValueError(f"unknown encounter decision: {action}")
     if not note_id or not body or not sources:
         raise ValueError("a new expression needs an ID, body, and source references")
-    saved = save_statement(field, note_id, body, sources, at, revise, reuse)
+    saved = save_statement(field, note_id, body, sources, at, revise, reuse,
+                           layer=cell["cell"][0] if action == "new" else 0,
+                           write_policy_id=locality["write_policy_id"])
     return {**result, **saved}
 
 
@@ -306,6 +359,8 @@ def main(argv=None, *, default_field=None):
     meet.add_argument("--beam", type=int, help="propagated cells per step; default: 16, or the current encounter budget")
     meet.add_argument("--limit", type=int, help="returned facts; default: 5, or the current encounter budget")
     meet.add_argument("--via", choices=KERNELS, help="propagation kernels; default: local, or the current encounter choice")
+    meet.add_argument("--layers", type=int, nargs="+",
+                      help="explicit experimental physical writing layers (default: 0); retained in this cursor")
     decision = meet.add_mutually_exclusive_group()
     decision.add_argument("--recall", metavar="FACT_ID", help="return one observed current fact")
     decision.add_argument("--reuse", metavar="FACT_ID", help="support one observed current fact")
@@ -330,7 +385,10 @@ def main(argv=None, *, default_field=None):
     write = commands.add_parser("save", help="read a model-authored statement from stdin")
     write.add_argument("id", help="new, immutable statement version ID")
     placement = write.add_mutually_exclusive_group(required=True)
-    placement.add_argument("--at", type=int, nargs=2, metavar=("Q", "R"), help="host-selected physical layer-zero cell")
+    placement.add_argument("--at", type=int, nargs=2, metavar=("Q", "R"), help="host-selected cell in --layer")
+    write.add_argument("--layer", type=int, default=0, help="physical layer for --at (default: 0)")
+    write.add_argument("--experimental-multilayer", action="store_true",
+                       help="explicitly enable the experimental multilayer write policy")
     placement.add_argument("--revise", help="ID of the current version to supersede in place")
     placement.add_argument("--reuse", help="ID of the current judgment supported by this new expression")
     write.add_argument("--cite", action="append", required=True, help="PATH#Lfirst-Llast (repeatable)")
@@ -341,7 +399,9 @@ def main(argv=None, *, default_field=None):
     args = parser.parse_args(argv)
     if args.op == "save":
         result = save(args.field, args.repo, args.rev, args.id, sys.stdin.read().strip(),
-                      args.cite, args.at, args.revise, args.reuse)
+                      args.cite, args.at, args.revise, args.reuse, layer=args.layer,
+                      write_policy_id=(EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID
+                                       if args.experimental_multilayer else ACTIVE_SEMANTIC_WRITE_POLICY_ID))
     elif args.op == "show":
         result = describe(args.field, args.id)
     elif args.op == "source":
@@ -374,7 +434,7 @@ def main(argv=None, *, default_field=None):
         if selected is not None and (cursor is None or args.choices or args.restart):
             parser.error("observe a locality with --cursor-file before choosing its outcome")
         if selected is not None and any(value is not None for value in
-                                        (args.order, args.page_size, args.steps, args.beam, args.limit, args.via)):
+                                        (args.order, args.page_size, args.steps, args.beam, args.limit, args.via, args.layers)):
             parser.error("reopen the encounter with its new budget before choosing an outcome")
         if selected is not None and selected[0] in {"new", "reuse", "revision"}:
             if not args.id or args.repo is None or not args.cite:
@@ -385,7 +445,8 @@ def main(argv=None, *, default_field=None):
             sources, body = None, None
         if selected is None:
             result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
-                               steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor)
+                               steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor,
+                               layers=args.layers)
             path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
         else:
             result = decide(args.field, cursor, *selected,

@@ -38,6 +38,15 @@ the main development line, and is maintained through the same native encounters
 used to develop Nollm. Completed, unused experiment code has a separate legacy
 archive; active memory and reusable runtime code remain here.
 
+The current [support-pressure and deformation implementation](docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
+adds advisory 1–100 write pressure, explicitly selected multilayer writing and
+read-only geometry experiments. Run its focused functional and installed-CLI
+tests from the repository root with:
+
+```bash
+python3 lab/nollm-lab/geometry/run_support_deformation_tests.py
+```
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

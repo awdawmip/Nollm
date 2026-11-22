@@ -10,6 +10,11 @@ Inspected implementation: `awdawmip/Nollm@e31a912fa283c5bca88c5f023b25d01c85e1bf
 The small mathematical probes used that unchanged source. Production code,
 working memory and existing bridge state were not modified for this review.
 
+Implementation continuation: the [runnable code and test guide](../project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
+records the subsequent support-pressure, explicit multilayer-write and Lab
+deformation implementation. The measurements below remain evidence from the
+earlier unchanged-source review; they are not execution results for that new code.
+
 ## 1. Current user direction
 
 The user requested a support-pressure mechanism: material in the finer layer
