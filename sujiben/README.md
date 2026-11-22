@@ -43,3 +43,5 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 [残差算法维护记录](EM_RESIDUAL_MAINTENANCE_20261122.md)记录吸收进取数论研究后的覆盖、平移和压力计算优化，以及相对坐标 v2 的局部修订；它保留原有版本，说明成立条件与本次完整实测范围。
 
 [有理数化维护记录](RATIONAL_GEOMETRY_MAINTENANCE_20261122.md)记录新 Lab 有理几何合同、共同变换消去和整数计算核的原生理解；它保留既有 Core 与 float Lab 判断，并说明精确采样、末端投影和分母增长的边界。
+
+[覆盖精度维护记录](PRECISION_MAINTENANCE_20261122.md)记录固定精度的全域边界、有限扫描与局部误差证书的区别，以及 16 位起步并按边界不确定性升精度的实现依据。
