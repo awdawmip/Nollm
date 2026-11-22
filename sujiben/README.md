@@ -45,3 +45,5 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 [有理数化维护记录](RATIONAL_GEOMETRY_MAINTENANCE_20261122.md)记录新 Lab 有理几何合同、共同变换消去和整数计算核的原生理解；它保留既有 Core 与 float Lab 判断，并说明精确采样、末端投影和分母增长的边界。
 
 [覆盖精度维护记录](PRECISION_MAINTENANCE_20261122.md)记录固定精度的全域边界、有限扫描与局部误差证书的区别，以及 16 位起步并按边界不确定性升精度的实现依据。
+
+[自适应有理几何维护记录](ADAPTIVE_RATIONAL_MAINTENANCE_20261122.md)记录实际逐步整数区间执行、边界未决点精确回退，以及精度预算和有理几何两条判断的原位修订与原生读回。
