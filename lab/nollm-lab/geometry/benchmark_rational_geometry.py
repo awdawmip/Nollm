@@ -117,7 +117,7 @@ def main(argv=None):
     anchor = 2**160
     large_source = RationalLayerMap(replace(source_frame, origin=(anchor + 1, -anchor)))
     large_target = RationalLayerMap(replace(target_frame, origin=(anchor, -anchor)))
-    cases.append(coverage_case("common_160_bit_anchor_plus_one_64", large_source,
+    cases.append(coverage_case("common_anchor_2_pow_160_plus_one_64", large_source,
                                large_target, coordinates, args.repeats))
     twists = (RationalRadialTwist((0, 0), 25, "1/5"),
               RationalRadialTwist(("1/5", 0), 25, "-1/7"))
