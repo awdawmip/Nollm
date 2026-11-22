@@ -37,3 +37,5 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 速记本的 `field`、执行命令的运行时、保存固定提交的源码仓库分别承担不同职责。更换运行时可以继续打开原场。搬迁速记本时保留整个 `field`，同时保留可以读取来源提交的 Git 仓库；Core 快照本身不包含 Access 的绑定和全部版本正文。这一边界的实现依据是 [Core 状态](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-core/src/nollm_core/state.py#L442-L465)、[Access 绑定](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/handle_store.py#L43-L84)、[表达存储](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/statement_store.py#L20-L65)和 [Snapshot 委托](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-snapshot/src/nollm_snapshot/service.py#L7-L24)。
 
 [形成记录](FORMATION_20261122.md)说明速记本的继承起点与补充理解；[使用与 C4 维护记录](MAINTENANCE_20261122.md)说明两轮实际消费、独立安装与换源码仓库的结果，以及受影响版本的原位修订。这些记录解释具体形成和维护依据，日常使用仍从原生场开始。
+
+[支撑压力与几何维护记录](SUPPORT_GEOMETRY_MAINTENANCE_20261122.md)记录显式多层写入、建议压力和 Lab 变形实现之后的局部理解更新及回读；固定源码与实际测试范围见[实现说明](../docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)。
