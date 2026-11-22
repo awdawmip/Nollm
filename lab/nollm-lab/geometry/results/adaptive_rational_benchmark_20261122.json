@@ -1,0 +1,5623 @@
+{
+  "generated_at_utc": "2026-11-22T15:55:34.000781+00:00",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "repeats": 5,
+  "coverage_contract_id": "lab_exact_rational_axial_quadrature_v1",
+  "comparison": "existing exact rational auto versus adaptive integer interval execution",
+  "warmup": "one complete auto and adaptive call per full-operation case",
+  "timing_excludes": "map parsing, equality assertions, JSON encoding, statistics collection and disk writes",
+  "cases": [
+    {
+      "name": "affine_32",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        12.241796,
+        8.301848,
+        10.178776,
+        7.151456,
+        9.363958
+      ],
+      "adaptive_ms": [
+        10.078153,
+        9.076462,
+        8.084416,
+        8.984131,
+        7.528204
+      ],
+      "auto_median_ms": 9.363958,
+      "adaptive_median_ms": 8.984131,
+      "auto_over_adaptive": 1.0422775447063273,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 3072,
+        "exact_fallback": 0,
+        "affine_exact": 3072,
+        "attempted_by_bits": {},
+        "certified_by_bits": {},
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 1,
+            "r": -7,
+            "hits": 13
+          },
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 42
+          },
+          {
+            "q": 2,
+            "r": -7,
+            "hits": 35
+          },
+          {
+            "q": 2,
+            "r": -6,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -6,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": -5,
+            "hits": 47
+          },
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 29
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 18
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -4,
+            "hits": 42
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 3
+          },
+          {
+            "q": 0,
+            "r": -5,
+            "hits": 19
+          },
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 32
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -3,
+            "hits": 31
+          },
+          {
+            "q": -2,
+            "r": -2,
+            "hits": 10
+          },
+          {
+            "q": -1,
+            "r": -4,
+            "hits": 8
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 47
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 5
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": -6,
+            "hits": 45
+          },
+          {
+            "q": 2,
+            "r": -5,
+            "hits": 15
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 36
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 29
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 26
+          },
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 21
+          },
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 48
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -2,
+            "hits": 15
+          },
+          {
+            "q": -2,
+            "r": -1,
+            "hits": 6
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 9
+          },
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 66
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 17
+          },
+          {
+            "q": 2,
+            "r": -5,
+            "hits": 53
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 25
+          },
+          {
+            "q": 3,
+            "r": -5,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 14
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 37
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 40
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 9
+          },
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 21
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 61
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -1,
+            "hits": 2
+          },
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 7
+          },
+          {
+            "q": -1,
+            "r": -1,
+            "hits": 80
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 6
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 6
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 49
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 27
+          },
+          {
+            "q": 3,
+            "r": -4,
+            "hits": 14
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 3
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 45
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 17
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 61
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 17
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -1,
+            "hits": 3
+          },
+          {
+            "q": -1,
+            "r": 0,
+            "hits": 67
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 11
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 39
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 27
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 30
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 22
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 41
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 2
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 7
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 50
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 29
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 10
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 48
+          },
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 22
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 24
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 24
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 23
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 2
+          },
+          {
+            "q": 3,
+            "r": -2,
+            "hits": 47
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 9
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 30
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 49
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 8
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 41
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 22
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 29
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 27
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 40
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 11
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 16
+          },
+          {
+            "q": 3,
+            "r": -1,
+            "hits": 66
+          },
+          {
+            "q": 3,
+            "r": 0,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 2
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 18
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 60
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 16
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 17
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 45
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 3,
+            "hits": 14
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 27
+          },
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 49
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 6
+          },
+          {
+            "q": 3,
+            "r": 0,
+            "hits": 79
+          },
+          {
+            "q": 3,
+            "r": 1,
+            "hits": 9
+          },
+          {
+            "q": 4,
+            "r": 0,
+            "hits": 2
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 7
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 59
+          },
+          {
+            "q": 2,
+            "r": 2,
+            "hits": 21
+          },
+          {
+            "q": 3,
+            "r": 1,
+            "hits": 9
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 5
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 40
+          },
+          {
+            "q": 1,
+            "r": 3,
+            "hits": 38
+          },
+          {
+            "q": 2,
+            "r": 2,
+            "hits": 13
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 4,
+            "hits": 1
+          },
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 23
+          },
+          {
+            "q": 0,
+            "r": 4,
+            "hits": 56
+          },
+          {
+            "q": 1,
+            "r": 3,
+            "hits": 16
+          }
+        ]
+      ]
+    },
+    {
+      "name": "distinct_world_twists_16",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "coordinates": [
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        398.672631,
+        483.116875,
+        382.618705,
+        393.496347,
+        400.513426
+      ],
+      "adaptive_ms": [
+        57.647054,
+        56.11866,
+        57.699244,
+        68.348156,
+        56.566526
+      ],
+      "auto_median_ms": 398.672631,
+      "adaptive_median_ms": 57.647054,
+      "auto_over_adaptive": 6.915750300093393,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 1536,
+          "32": 8
+        },
+        "certified_by_bits": {
+          "16": 1528,
+          "32": 8
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 1
+          },
+          {
+            "q": 2,
+            "r": -5,
+            "hits": 53
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 34
+          },
+          {
+            "q": 3,
+            "r": -5,
+            "hits": 8
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 8
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 2
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 53
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 32
+          },
+          {
+            "q": 3,
+            "r": -4,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 40
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 12
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 38
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 1
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 44
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 14
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 37
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 1
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 3
+          },
+          {
+            "q": 3,
+            "r": -4,
+            "hits": 47
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 45
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 10
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 47
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 8
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 19
+          },
+          {
+            "q": 3,
+            "r": -2,
+            "hits": 12
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 23
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 41
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 29
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -1,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 8
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 63
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 14
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 9
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 12
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 5
+          },
+          {
+            "q": 3,
+            "r": -2,
+            "hits": 63
+          },
+          {
+            "q": 3,
+            "r": -1,
+            "hits": 15
+          },
+          {
+            "q": 4,
+            "r": -3,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 3
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 27
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 59
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 7
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 3
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 45
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 30
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 18
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 0,
+            "hits": 58
+          },
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 6
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 17
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 2
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 60
+          },
+          {
+            "q": 3,
+            "r": -1,
+            "hits": 33
+          },
+          {
+            "q": 3,
+            "r": 0,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 24
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 39
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 30
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 34
+          },
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 3
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 22
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 37
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": 1,
+            "hits": 11
+          },
+          {
+            "q": -2,
+            "r": 2,
+            "hits": 31
+          },
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 44
+          },
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 10
+          }
+        ]
+      ]
+    },
+    {
+      "name": "common_anchor_distinct_twists_7",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542977",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "1461501637330902918203684832716283019655932542976",
+                "denominator": "1"
+              },
+              {
+                "numerator": "-1461501637330902918203684832716283019655932542976",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            },
+            {
+              "numerator": "-1461501637330902918203684832716283019655932542976",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "7307508186654514591018424163581415098279662714881",
+                "denominator": "5"
+              },
+              {
+                "numerator": "-1461501637330902918203684832716283019655932542976",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "coordinates": [
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        165.334768,
+        148.816286,
+        145.655415,
+        139.783103,
+        145.757254
+      ],
+      "adaptive_ms": [
+        25.803384,
+        29.068485,
+        25.69931,
+        21.327556,
+        21.940226
+      ],
+      "auto_median_ms": 145.757254,
+      "adaptive_median_ms": 25.69931,
+      "auto_over_adaptive": 5.671640756113685,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 672,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 672,
+          "32": 3
+        },
+        "certified_by_bits": {
+          "16": 669,
+          "32": 3
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 26
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 30
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 39
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 0,
+            "hits": 37
+          },
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 4
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 40
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 10
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 35
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 20
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 21
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 16
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 59
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": 1,
+            "hits": 9
+          },
+          {
+            "q": -2,
+            "r": 2,
+            "hits": 19
+          },
+          {
+            "q": -1,
+            "r": 0,
+            "hits": 2
+          },
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 60
+          },
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 12
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 33
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 37
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 12
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 2
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 56
+          },
+          {
+            "q": -1,
+            "r": 3,
+            "hits": 6
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 32
+          }
+        ]
+      ]
+    },
+    {
+      "name": "alternating_centers_2_one_cell",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "10"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "10"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "4"
+            },
+            {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        13.665517,
+        24.201117,
+        30.886707,
+        16.013563,
+        13.110968
+      ],
+      "adaptive_ms": [
+        3.232909,
+        3.201408,
+        3.778873,
+        3.362446,
+        3.50934
+      ],
+      "auto_median_ms": 16.013563,
+      "adaptive_median_ms": 3.362446,
+      "auto_over_adaptive": 4.762474401075884,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 96,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 96
+        },
+        "certified_by_bits": {
+          "16": 96
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 96
+          }
+        ]
+      ]
+    },
+    {
+      "name": "alternating_centers_3_one_cell",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "10"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "10"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "4"
+            },
+            {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        41.483627,
+        44.626909,
+        42.535499,
+        43.004575,
+        47.231157
+      ],
+      "adaptive_ms": [
+        3.758856,
+        3.984271,
+        4.348903,
+        4.248143,
+        3.954034
+      ],
+      "auto_median_ms": 43.004575,
+      "adaptive_median_ms": 3.984271,
+      "auto_over_adaptive": 10.793586831819422,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 96,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 96
+        },
+        "certified_by_bits": {
+          "16": 96
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 96
+          }
+        ]
+      ]
+    },
+    {
+      "name": "alternating_centers_5_one_cell",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "10"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "10"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "4"
+            },
+            {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        4866.654997,
+        3463.986436,
+        3435.654299,
+        3553.578766,
+        3540.622275
+      ],
+      "adaptive_ms": [
+        5.810602,
+        5.338522,
+        7.688405,
+        6.152519,
+        5.93462
+      ],
+      "auto_median_ms": 3540.622275,
+      "adaptive_median_ms": 5.93462,
+      "auto_over_adaptive": 596.6047152134425,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 96,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 96
+        },
+        "certified_by_bits": {
+          "16": 96
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 96
+          }
+        ]
+      ]
+    },
+    {
+      "name": "alternating_centers_5_multiple_targets",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "10"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "10"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "4"
+            },
+            {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "1",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "1",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "1",
+                "denominator": "1"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-7",
+              "denominator": "10"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "36"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        3259.043369,
+        3925.375065,
+        4042.233896,
+        3995.757552,
+        3734.431893
+      ],
+      "adaptive_ms": [
+        6.591131,
+        6.948702,
+        7.519667,
+        7.494708,
+        7.115142
+      ],
+      "auto_median_ms": 3925.375065,
+      "adaptive_median_ms": 7.115142,
+      "auto_over_adaptive": 551.6931447046314,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 96,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 96,
+          "32": 16
+        },
+        "certified_by_bits": {
+          "16": 80,
+          "32": 16
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 52
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 44
+          }
+        ]
+      ]
+    },
+    {
+      "name": "common_outer_suffix_one_cell",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "-1",
+                "denominator": "7"
+              },
+              {
+                "numerator": "1",
+                "denominator": "11"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "9"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          },
+          {
+            "center": [
+              {
+                "numerator": "-1",
+                "denominator": "7"
+              },
+              {
+                "numerator": "1",
+                "denominator": "11"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "9"
+            }
+          }
+        ]
+      },
+      "coordinates": [
+        [
+          0,
+          0
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        46.486814,
+        67.495215,
+        48.847888,
+        46.853779,
+        53.881531
+      ],
+      "adaptive_ms": [
+        4.501098,
+        5.133948,
+        3.640075,
+        3.16096,
+        4.99436
+      ],
+      "auto_median_ms": 48.847888,
+      "adaptive_median_ms": 4.501098,
+      "auto_over_adaptive": 10.852438227294762,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 96,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 96
+        },
+        "certified_by_bits": {
+          "16": 96
+        },
+        "cancelled_common_twists": 1
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 3
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 45
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 30
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 18
+          }
+        ]
+      ]
+    },
+    {
+      "name": "outside_twist_support_32",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          96,
+          -102
+        ],
+        [
+          96,
+          -101
+        ],
+        [
+          96,
+          -100
+        ],
+        [
+          96,
+          -99
+        ],
+        [
+          97,
+          -102
+        ],
+        [
+          97,
+          -101
+        ],
+        [
+          97,
+          -100
+        ],
+        [
+          97,
+          -99
+        ],
+        [
+          98,
+          -102
+        ],
+        [
+          98,
+          -101
+        ],
+        [
+          98,
+          -100
+        ],
+        [
+          98,
+          -99
+        ],
+        [
+          99,
+          -102
+        ],
+        [
+          99,
+          -101
+        ],
+        [
+          99,
+          -100
+        ],
+        [
+          99,
+          -99
+        ],
+        [
+          100,
+          -102
+        ],
+        [
+          100,
+          -101
+        ],
+        [
+          100,
+          -100
+        ],
+        [
+          100,
+          -99
+        ],
+        [
+          101,
+          -102
+        ],
+        [
+          101,
+          -101
+        ],
+        [
+          101,
+          -100
+        ],
+        [
+          101,
+          -99
+        ],
+        [
+          102,
+          -102
+        ],
+        [
+          102,
+          -101
+        ],
+        [
+          102,
+          -100
+        ],
+        [
+          102,
+          -99
+        ],
+        [
+          103,
+          -102
+        ],
+        [
+          103,
+          -101
+        ],
+        [
+          103,
+          -100
+        ],
+        [
+          103,
+          -99
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        124.434544,
+        104.913017,
+        163.798836,
+        219.056895,
+        235.632823
+      ],
+      "adaptive_ms": [
+        39.510706,
+        31.151194,
+        73.325101,
+        74.958207,
+        78.510064
+      ],
+      "auto_median_ms": 163.798836,
+      "adaptive_median_ms": 73.325101,
+      "auto_over_adaptive": 2.233871263266313,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 3072,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 3072
+        },
+        "certified_by_bits": {
+          "16": 3072
+        },
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 117,
+            "r": -28,
+            "hits": 6
+          },
+          {
+            "q": 118,
+            "r": -29,
+            "hits": 76
+          },
+          {
+            "q": 118,
+            "r": -28,
+            "hits": 10
+          },
+          {
+            "q": 119,
+            "r": -29,
+            "hits": 4
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -27,
+            "hits": 7
+          },
+          {
+            "q": 117,
+            "r": -28,
+            "hits": 54
+          },
+          {
+            "q": 117,
+            "r": -27,
+            "hits": 26
+          },
+          {
+            "q": 118,
+            "r": -28,
+            "hits": 9
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -26,
+            "hits": 4
+          },
+          {
+            "q": 116,
+            "r": -27,
+            "hits": 38
+          },
+          {
+            "q": 116,
+            "r": -26,
+            "hits": 40
+          },
+          {
+            "q": 117,
+            "r": -27,
+            "hits": 14
+          }
+        ],
+        [
+          {
+            "q": 114,
+            "r": -25,
+            "hits": 2
+          },
+          {
+            "q": 115,
+            "r": -26,
+            "hits": 20
+          },
+          {
+            "q": 115,
+            "r": -25,
+            "hits": 59
+          },
+          {
+            "q": 116,
+            "r": -26,
+            "hits": 15
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -28,
+            "hits": 64
+          },
+          {
+            "q": 118,
+            "r": -27,
+            "hits": 12
+          },
+          {
+            "q": 119,
+            "r": -29,
+            "hits": 2
+          },
+          {
+            "q": 119,
+            "r": -28,
+            "hits": 18
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -26,
+            "hits": 1
+          },
+          {
+            "q": 117,
+            "r": -27,
+            "hits": 47
+          },
+          {
+            "q": 117,
+            "r": -26,
+            "hits": 24
+          },
+          {
+            "q": 118,
+            "r": -27,
+            "hits": 24
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -26,
+            "hits": 27
+          },
+          {
+            "q": 116,
+            "r": -25,
+            "hits": 38
+          },
+          {
+            "q": 117,
+            "r": -26,
+            "hits": 30
+          },
+          {
+            "q": 117,
+            "r": -25,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -25,
+            "hits": 11
+          },
+          {
+            "q": 115,
+            "r": -24,
+            "hits": 48
+          },
+          {
+            "q": 116,
+            "r": -25,
+            "hits": 29
+          },
+          {
+            "q": 116,
+            "r": -24,
+            "hits": 8
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -27,
+            "hits": 46
+          },
+          {
+            "q": 118,
+            "r": -26,
+            "hits": 10
+          },
+          {
+            "q": 119,
+            "r": -28,
+            "hits": 7
+          },
+          {
+            "q": 119,
+            "r": -27,
+            "hits": 33
+          }
+        ],
+        [
+          {
+            "q": 117,
+            "r": -26,
+            "hits": 30
+          },
+          {
+            "q": 117,
+            "r": -25,
+            "hits": 22
+          },
+          {
+            "q": 118,
+            "r": -27,
+            "hits": 2
+          },
+          {
+            "q": 118,
+            "r": -26,
+            "hits": 42
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -25,
+            "hits": 15
+          },
+          {
+            "q": 116,
+            "r": -24,
+            "hits": 31
+          },
+          {
+            "q": 117,
+            "r": -25,
+            "hits": 45
+          },
+          {
+            "q": 117,
+            "r": -24,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -24,
+            "hits": 4
+          },
+          {
+            "q": 115,
+            "r": -23,
+            "hits": 36
+          },
+          {
+            "q": 116,
+            "r": -24,
+            "hits": 41
+          },
+          {
+            "q": 116,
+            "r": -23,
+            "hits": 15
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -26,
+            "hits": 28
+          },
+          {
+            "q": 118,
+            "r": -25,
+            "hits": 7
+          },
+          {
+            "q": 119,
+            "r": -27,
+            "hits": 9
+          },
+          {
+            "q": 119,
+            "r": -26,
+            "hits": 52
+          }
+        ],
+        [
+          {
+            "q": 117,
+            "r": -25,
+            "hits": 15
+          },
+          {
+            "q": 117,
+            "r": -24,
+            "hits": 16
+          },
+          {
+            "q": 118,
+            "r": -26,
+            "hits": 3
+          },
+          {
+            "q": 118,
+            "r": -25,
+            "hits": 62
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -24,
+            "hits": 4
+          },
+          {
+            "q": 116,
+            "r": -23,
+            "hits": 20
+          },
+          {
+            "q": 117,
+            "r": -24,
+            "hits": 60
+          },
+          {
+            "q": 117,
+            "r": -23,
+            "hits": 12
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -22,
+            "hits": 20
+          },
+          {
+            "q": 116,
+            "r": -23,
+            "hits": 48
+          },
+          {
+            "q": 116,
+            "r": -22,
+            "hits": 27
+          },
+          {
+            "q": 117,
+            "r": -23,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -25,
+            "hits": 15
+          },
+          {
+            "q": 118,
+            "r": -24,
+            "hits": 1
+          },
+          {
+            "q": 119,
+            "r": -26,
+            "hits": 11
+          },
+          {
+            "q": 119,
+            "r": -25,
+            "hits": 69
+          }
+        ],
+        [
+          {
+            "q": 117,
+            "r": -24,
+            "hits": 5
+          },
+          {
+            "q": 117,
+            "r": -23,
+            "hits": 6
+          },
+          {
+            "q": 118,
+            "r": -24,
+            "hits": 80
+          },
+          {
+            "q": 118,
+            "r": -23,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -22,
+            "hits": 8
+          },
+          {
+            "q": 117,
+            "r": -23,
+            "hits": 64
+          },
+          {
+            "q": 117,
+            "r": -22,
+            "hits": 17
+          },
+          {
+            "q": 118,
+            "r": -23,
+            "hits": 7
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -21,
+            "hits": 7
+          },
+          {
+            "q": 116,
+            "r": -22,
+            "hits": 45
+          },
+          {
+            "q": 116,
+            "r": -21,
+            "hits": 33
+          },
+          {
+            "q": 117,
+            "r": -22,
+            "hits": 11
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -24,
+            "hits": 1
+          },
+          {
+            "q": 119,
+            "r": -25,
+            "hits": 8
+          },
+          {
+            "q": 119,
+            "r": -24,
+            "hits": 76
+          },
+          {
+            "q": 120,
+            "r": -25,
+            "hits": 8
+          },
+          {
+            "q": 120,
+            "r": -24,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -23,
+            "hits": 72
+          },
+          {
+            "q": 118,
+            "r": -22,
+            "hits": 7
+          },
+          {
+            "q": 119,
+            "r": -24,
+            "hits": 5
+          },
+          {
+            "q": 119,
+            "r": -23,
+            "hits": 12
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -21,
+            "hits": 1
+          },
+          {
+            "q": 117,
+            "r": -22,
+            "hits": 55
+          },
+          {
+            "q": 117,
+            "r": -21,
+            "hits": 18
+          },
+          {
+            "q": 118,
+            "r": -22,
+            "hits": 22
+          }
+        ],
+        [
+          {
+            "q": 115,
+            "r": -20,
+            "hits": 1
+          },
+          {
+            "q": 116,
+            "r": -21,
+            "hits": 37
+          },
+          {
+            "q": 116,
+            "r": -20,
+            "hits": 32
+          },
+          {
+            "q": 117,
+            "r": -21,
+            "hits": 26
+          }
+        ],
+        [
+          {
+            "q": 119,
+            "r": -24,
+            "hits": 2
+          },
+          {
+            "q": 119,
+            "r": -23,
+            "hits": 63
+          },
+          {
+            "q": 120,
+            "r": -24,
+            "hits": 19
+          },
+          {
+            "q": 120,
+            "r": -23,
+            "hits": 12
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -22,
+            "hits": 54
+          },
+          {
+            "q": 118,
+            "r": -21,
+            "hits": 7
+          },
+          {
+            "q": 119,
+            "r": -23,
+            "hits": 9
+          },
+          {
+            "q": 119,
+            "r": -22,
+            "hits": 26
+          }
+        ],
+        [
+          {
+            "q": 117,
+            "r": -21,
+            "hits": 39
+          },
+          {
+            "q": 117,
+            "r": -20,
+            "hits": 17
+          },
+          {
+            "q": 118,
+            "r": -22,
+            "hits": 4
+          },
+          {
+            "q": 118,
+            "r": -21,
+            "hits": 36
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -20,
+            "hits": 22
+          },
+          {
+            "q": 116,
+            "r": -19,
+            "hits": 28
+          },
+          {
+            "q": 117,
+            "r": -20,
+            "hits": 45
+          },
+          {
+            "q": 117,
+            "r": -19,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 119,
+            "r": -22,
+            "hits": 43
+          },
+          {
+            "q": 119,
+            "r": -21,
+            "hits": 1
+          },
+          {
+            "q": 120,
+            "r": -23,
+            "hits": 25
+          },
+          {
+            "q": 120,
+            "r": -22,
+            "hits": 27
+          }
+        ],
+        [
+          {
+            "q": 118,
+            "r": -21,
+            "hits": 36
+          },
+          {
+            "q": 118,
+            "r": -20,
+            "hits": 4
+          },
+          {
+            "q": 119,
+            "r": -22,
+            "hits": 14
+          },
+          {
+            "q": 119,
+            "r": -21,
+            "hits": 42
+          }
+        ],
+        [
+          {
+            "q": 117,
+            "r": -20,
+            "hits": 22
+          },
+          {
+            "q": 117,
+            "r": -19,
+            "hits": 14
+          },
+          {
+            "q": 118,
+            "r": -21,
+            "hits": 5
+          },
+          {
+            "q": 118,
+            "r": -20,
+            "hits": 55
+          }
+        ],
+        [
+          {
+            "q": 116,
+            "r": -19,
+            "hits": 10
+          },
+          {
+            "q": 116,
+            "r": -18,
+            "hits": 20
+          },
+          {
+            "q": 117,
+            "r": -19,
+            "hits": 61
+          },
+          {
+            "q": 117,
+            "r": -18,
+            "hits": 5
+          }
+        ]
+      ]
+    },
+    {
+      "name": "nonlinear_candidate_pressure_8",
+      "timed_scope": "both complete pressure reports and old/new union comparison",
+      "upper_units": [
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": -1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 0,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -2,
+            "r": 1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 0,
+            "q": -1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 2
+        }
+      ],
+      "lower_units": [
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -2,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": -1,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 0,
+            "phase": null
+          },
+          "units": 3
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -2,
+            "r": 1,
+            "phase": null
+          },
+          "units": 4
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -2,
+            "phase": null
+          },
+          "units": 5
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": -1,
+            "phase": null
+          },
+          "units": 1
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 0,
+            "phase": null
+          },
+          "units": 2
+        },
+        {
+          "cell": {
+            "profile_id": "default_dream_v1",
+            "chart_id": "default",
+            "layer": 1,
+            "q": -1,
+            "r": 1,
+            "phase": null
+          },
+          "units": 3
+        }
+      ],
+      "before_lower_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "after_lower_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "18",
+              "denominator": "77"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "0",
+                "denominator": "1"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "upper_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "1",
+                "denominator": "5"
+              },
+              {
+                "numerator": "0",
+                "denominator": "1"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "25",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "7"
+            }
+          }
+        ]
+      },
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        395.17939,
+        391.770475,
+        409.516115,
+        400.004257,
+        379.012669
+      ],
+      "adaptive_ms": [
+        62.254013,
+        65.769571,
+        48.409302,
+        49.889346,
+        46.10189
+      ],
+      "auto_median_ms": 395.17939,
+      "adaptive_median_ms": 49.889346,
+      "auto_over_adaptive": 7.921117867530274,
+      "complete_results_equal": true
+    }
+  ],
+  "precision_sweep_case": "distinct_world_twists_16",
+  "precision_sweep_scope": "complete coverage objects, without to_mapping projection",
+  "precision_sweep": [
+    {
+      "initial_bits": 4,
+      "adaptive_ms": [
+        144.100766,
+        114.748805,
+        135.700168,
+        145.33755,
+        125.706611
+      ],
+      "median_ms": 135.700168,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "4": 1536,
+          "8": 1535,
+          "16": 1126,
+          "32": 8
+        },
+        "certified_by_bits": {
+          "4": 1,
+          "8": 409,
+          "16": 1118,
+          "32": 8
+        },
+        "cancelled_common_twists": 0
+      }
+    },
+    {
+      "initial_bits": 8,
+      "adaptive_ms": [
+        76.365229,
+        76.498282,
+        96.928146,
+        84.677462,
+        78.309533
+      ],
+      "median_ms": 78.309533,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "8": 1536,
+          "16": 1126,
+          "32": 8
+        },
+        "certified_by_bits": {
+          "8": 410,
+          "16": 1118,
+          "32": 8
+        },
+        "cancelled_common_twists": 0
+      }
+    },
+    {
+      "initial_bits": 12,
+      "adaptive_ms": [
+        49.222573,
+        66.582943,
+        46.843302,
+        64.917993,
+        65.076064
+      ],
+      "median_ms": 64.917993,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "12": 1536,
+          "24": 97
+        },
+        "certified_by_bits": {
+          "12": 1439,
+          "24": 97
+        },
+        "cancelled_common_twists": 0
+      }
+    },
+    {
+      "initial_bits": 16,
+      "adaptive_ms": [
+        64.101429,
+        93.556561,
+        64.654,
+        48.253203,
+        68.017543
+      ],
+      "median_ms": 64.654,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "16": 1536,
+          "32": 8
+        },
+        "certified_by_bits": {
+          "16": 1528,
+          "32": 8
+        },
+        "cancelled_common_twists": 0
+      }
+    },
+    {
+      "initial_bits": 24,
+      "adaptive_ms": [
+        52.202969,
+        48.240014,
+        57.528496,
+        55.367485,
+        47.368109
+      ],
+      "median_ms": 52.202969,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "24": 1536
+        },
+        "certified_by_bits": {
+          "24": 1536
+        },
+        "cancelled_common_twists": 0
+      }
+    },
+    {
+      "initial_bits": 32,
+      "adaptive_ms": [
+        65.928181,
+        77.740557,
+        62.35172,
+        74.318604,
+        78.730168
+      ],
+      "median_ms": 74.318604,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 1536,
+        "exact_fallback": 0,
+        "affine_exact": 0,
+        "attempted_by_bits": {
+          "32": 1536
+        },
+        "certified_by_bits": {
+          "32": 1536
+        },
+        "cancelled_common_twists": 0
+      }
+    }
+  ],
+  "limitations": [
+    "local single-process timings",
+    "sampled coverage contract, not continuous area",
+    "exact fallback may still require large rational intermediates",
+    "initial-bit sweep describes these inputs and implementation only"
+  ],
+  "development_observation": {
+    "phase": "before affine compilation shortcut",
+    "change": "Avoid common-anchor reconstruction and duplicate source/target affine compilation when the existing exact pair compiler succeeds. Nonlinear arithmetic unchanged.",
+    "case": {
+      "name": "affine_32",
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "10",
+                "denominator": "13"
+              },
+              {
+                "numerator": "-35",
+                "denominator": "52"
+              }
+            ],
+            [
+              {
+                "numerator": "35",
+                "denominator": "52"
+              },
+              {
+                "numerator": "75",
+                "denominator": "52"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "1",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-2",
+              "denominator": "13"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "0",
+              "denominator": "1"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "4",
+                "denominator": "3"
+              },
+              {
+                "numerator": "1",
+                "denominator": "2"
+              }
+            ],
+            [
+              {
+                "numerator": "-1",
+                "denominator": "2"
+              },
+              {
+                "numerator": "5",
+                "denominator": "6"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-1",
+              "denominator": "5"
+            },
+            {
+              "numerator": "2",
+              "denominator": "7"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "1",
+              "denominator": "13"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "17"
+            }
+          ]
+        },
+        "twists": []
+      },
+      "coordinates": [
+        [
+          -4,
+          -2
+        ],
+        [
+          -4,
+          -1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          -4,
+          1
+        ],
+        [
+          -3,
+          -2
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -3,
+          0
+        ],
+        [
+          -3,
+          1
+        ],
+        [
+          -2,
+          -2
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ],
+        [
+          -1,
+          -2
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          -2
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          -2
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          3,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "timed_scope": "complete per-cell coverage including compilation and output mappings",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "auto_ms": [
+        14.927717,
+        10.203522,
+        11.664091,
+        13.84393,
+        11.761472
+      ],
+      "adaptive_ms": [
+        18.401001,
+        15.559869,
+        13.091319,
+        17.749042,
+        15.803185
+      ],
+      "auto_median_ms": 11.761472,
+      "adaptive_median_ms": 15.803185,
+      "auto_over_adaptive": 0.7442469350324001,
+      "complete_results_equal": true,
+      "execution": {
+        "sample_count": 3072,
+        "exact_fallback": 0,
+        "affine_exact": 3072,
+        "attempted_by_bits": {},
+        "certified_by_bits": {},
+        "cancelled_common_twists": 0
+      },
+      "target_hit_counts": [
+        [
+          {
+            "q": 1,
+            "r": -7,
+            "hits": 13
+          },
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 42
+          },
+          {
+            "q": 2,
+            "r": -7,
+            "hits": 35
+          },
+          {
+            "q": 2,
+            "r": -6,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -6,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": -5,
+            "hits": 47
+          },
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 29
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 18
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -4,
+            "hits": 42
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 3
+          },
+          {
+            "q": 0,
+            "r": -5,
+            "hits": 19
+          },
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 32
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -3,
+            "hits": 31
+          },
+          {
+            "q": -2,
+            "r": -2,
+            "hits": 10
+          },
+          {
+            "q": -1,
+            "r": -4,
+            "hits": 8
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 47
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -6,
+            "hits": 5
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": -6,
+            "hits": 45
+          },
+          {
+            "q": 2,
+            "r": -5,
+            "hits": 15
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": -5,
+            "hits": 36
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 29
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 26
+          },
+          {
+            "q": 0,
+            "r": -4,
+            "hits": 21
+          },
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 48
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -2,
+            "hits": 15
+          },
+          {
+            "q": -2,
+            "r": -1,
+            "hits": 6
+          },
+          {
+            "q": -1,
+            "r": -3,
+            "hits": 9
+          },
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 66
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 17
+          },
+          {
+            "q": 2,
+            "r": -5,
+            "hits": 53
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 25
+          },
+          {
+            "q": 3,
+            "r": -5,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 14
+          },
+          {
+            "q": 1,
+            "r": -4,
+            "hits": 37
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 40
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 9
+          },
+          {
+            "q": 0,
+            "r": -3,
+            "hits": 21
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 61
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 5
+          }
+        ],
+        [
+          {
+            "q": -2,
+            "r": -1,
+            "hits": 2
+          },
+          {
+            "q": -1,
+            "r": -2,
+            "hits": 7
+          },
+          {
+            "q": -1,
+            "r": -1,
+            "hits": 80
+          },
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 6
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 1
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 6
+          },
+          {
+            "q": 2,
+            "r": -4,
+            "hits": 49
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 27
+          },
+          {
+            "q": 3,
+            "r": -4,
+            "hits": 14
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 3
+          },
+          {
+            "q": 1,
+            "r": -3,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 45
+          },
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 17
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -2,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 61
+          },
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 17
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": -1,
+            "hits": 3
+          },
+          {
+            "q": -1,
+            "r": 0,
+            "hits": 67
+          },
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 15
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 11
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -3,
+            "hits": 39
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 27
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 30
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -2,
+            "hits": 22
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 41
+          },
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 2
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": -1,
+            "hits": 7
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 50
+          },
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 29
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 10
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 1,
+            "hits": 48
+          },
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 22
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 24
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -2,
+            "hits": 24
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 23
+          },
+          {
+            "q": 3,
+            "r": -3,
+            "hits": 2
+          },
+          {
+            "q": 3,
+            "r": -2,
+            "hits": 47
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": -1,
+            "hits": 9
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 30
+          },
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 49
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 8
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 0,
+            "hits": 2
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 31
+          },
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 41
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 22
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 2,
+            "hits": 29
+          },
+          {
+            "q": 0,
+            "r": 1,
+            "hits": 27
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 40
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": -1,
+            "hits": 11
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 16
+          },
+          {
+            "q": 3,
+            "r": -1,
+            "hits": 66
+          },
+          {
+            "q": 3,
+            "r": 0,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": 0,
+            "hits": 2
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 18
+          },
+          {
+            "q": 2,
+            "r": 0,
+            "hits": 60
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 16
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 17
+          },
+          {
+            "q": 1,
+            "r": 1,
+            "hits": 45
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 31
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 3
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 3,
+            "hits": 14
+          },
+          {
+            "q": 0,
+            "r": 2,
+            "hits": 27
+          },
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 49
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 6
+          }
+        ],
+        [
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 6
+          },
+          {
+            "q": 3,
+            "r": 0,
+            "hits": 79
+          },
+          {
+            "q": 3,
+            "r": 1,
+            "hits": 9
+          },
+          {
+            "q": 4,
+            "r": 0,
+            "hits": 2
+          }
+        ],
+        [
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 7
+          },
+          {
+            "q": 2,
+            "r": 1,
+            "hits": 59
+          },
+          {
+            "q": 2,
+            "r": 2,
+            "hits": 21
+          },
+          {
+            "q": 3,
+            "r": 1,
+            "hits": 9
+          }
+        ],
+        [
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 5
+          },
+          {
+            "q": 1,
+            "r": 2,
+            "hits": 40
+          },
+          {
+            "q": 1,
+            "r": 3,
+            "hits": 38
+          },
+          {
+            "q": 2,
+            "r": 2,
+            "hits": 13
+          }
+        ],
+        [
+          {
+            "q": -1,
+            "r": 4,
+            "hits": 1
+          },
+          {
+            "q": 0,
+            "r": 3,
+            "hits": 23
+          },
+          {
+            "q": 0,
+            "r": 4,
+            "hits": 56
+          },
+          {
+            "q": 1,
+            "r": 3,
+            "hits": 16
+          }
+        ]
+      ]
+    }
+  }
+}

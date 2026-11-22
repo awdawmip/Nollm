@@ -184,6 +184,16 @@ boundaries. Explicit rational one-hit examples need 20, 40 or 60 bits; arbitrary
 rational transformations have no universal finite fixed precision. The diagnostic
 module and probes preserve the existing default geometry and exact parameters.
 
+The [adaptive rational executor](../architecture/NOLLM_ADAPTIVE_RATIONAL_EXECUTION_20261122.md)
+now performs the nonlinear map chain with outward-rounded integer intervals.
+Opt-in `mode="adaptive"` preserves the existing rational 96-label contract and
+pressure reports. It cancels equal ordered outer suffixes, keeps pure affine
+work on the established integer kernel, and refines only unresolved samples
+from configurable initial bits before exact fallback. The default starts at
+16 fractional bits; 0 is also a correct starting point with fallback, and the
+actual cost depends on the input. Independent scalar rational and direct-distance
+checks accompany full-operation timings. Core's default profile is unchanged.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)

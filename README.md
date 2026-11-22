@@ -65,6 +65,12 @@ adds reproducible precision scans and exact boundary-error certificates. It
 distinguishes unchanged coverage targets from unchanged hit shares and gives
 a local-residual precision strategy with explicit treatment of boundary cases.
 
+The [adaptive rational executor](docs/architecture/NOLLM_ADAPTIVE_RATIONAL_EXECUTION_20261122.md)
+implements that strategy with integer outward intervals through the nonlinear
+map chain. Opt-in `mode="adaptive"` preserves every sampled label, exact share
+and pressure result, refining only unresolved samples before exact fallback.
+Its benchmark includes distinct-center twists and complete pressure comparisons.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

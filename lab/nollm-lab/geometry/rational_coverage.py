@@ -16,6 +16,7 @@ from functools import lru_cache
 
 from nollm_core import GeometryAddress, normalize_q16_weights
 
+from .adaptive_rational_kernel import compile_adaptive_pair
 from .rational_affine_kernel import compile_affine_pair
 from .rational_geometry import Q, RationalLayerMap, rational_to_mapping
 
@@ -103,7 +104,7 @@ class RationalCoverage:
 def sampled_rational_coverage(
     source: GeometryAddress, target_layer: int,
     source_map: RationalLayerMap, target_map: RationalLayerMap,
-    *, mode: str = "auto",
+    *, mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
 ) -> RationalCoverage:
     """Classify all 96 exact mapped centroids under two explicit layer maps.
 
@@ -113,18 +114,25 @@ def sampled_rational_coverage(
     ``auto`` compiles the relative affine map when no distinct twists remain;
     ``reference`` evaluates every rational map operation. Both have exactly
     the same input/output contract. Other twist pairs use the reference path.
+    ``adaptive`` evaluates distinct twists with outward-rounded integer
+    intervals, increasing precision only for unresolved samples and finally
+    evaluating their exact rational labels if needed. Its bit settings control
+    work, not the accuracy of the returned sample labels or shares.
     """
     if source.profile_id != "default_dream_v1":
         raise ValueError("rational quadrature requires the default axial address chart")
     if abs(target_layer - source.layer) != 1 or not -64 <= target_layer <= 64:
         raise ValueError("target must be an admitted adjacent physical layer")
-    kernel = _select_kernel(source_map, target_map, mode)
+    kernel = _select_kernel(source_map, target_map, mode, initial_bits, max_bits)
     return _sampled(source, target_layer, source_map, target_map, kernel)
 
 
-def _select_kernel(source_map, target_map, mode):
+def _select_kernel(source_map, target_map, mode, initial_bits=16, max_bits=128):
+    if mode == "adaptive":
+        return compile_adaptive_pair(source_map, target_map,
+                                     initial_bits=initial_bits, max_bits=max_bits)
     if mode not in {"auto", "reference"}:
-        raise ValueError("mode must be auto or reference")
+        raise ValueError("mode must be auto, reference or adaptive")
     return compile_affine_pair(source_map, target_map) if mode == "auto" else None
 
 
@@ -179,10 +187,11 @@ def _check_inputs(upper: Units, lower: Units, upper_layer: int,
 
 
 def _allocate(lower: Units, upper_layer: int,
-              upper_map: RationalLayerMap, lower_map: RationalLayerMap, mode: str) -> Allocations:
+              upper_map: RationalLayerMap, lower_map: RationalLayerMap, mode: str,
+              initial_bits: int = 16, max_bits: int = 128) -> Allocations:
     result = {}
     # One compilation per map pair/request; it is independent of inventory.
-    kernel = _select_kernel(lower_map, upper_map, mode)
+    kernel = _select_kernel(lower_map, upper_map, mode, initial_bits, max_bits)
     for source in sorted(lower, key=GeometryAddress.stable_key):
         if lower[source]:
             coverage = _sampled(source, upper_layer, lower_map, upper_map, kernel)
@@ -243,7 +252,7 @@ def evaluate_rational_pressure(
     upper_map: RationalLayerMap, lower_map: RationalLayerMap,
     inventory_complete: bool = False,
     evaluation_cells: Iterable[GeometryAddress] = (), kappa=1,
-    mode: str = "auto",
+    mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
 ) -> dict:
     """Evaluate explicit current counts, keeping exact sampled support fractions.
 
@@ -254,7 +263,8 @@ def evaluate_rational_pressure(
     """
     extra = tuple(evaluation_cells)
     kappa = _check_inputs(upper_units, lower_units, upper_layer, extra, kappa)
-    allocation = _allocate(lower_units, upper_layer, upper_map, lower_map, mode)
+    allocation = _allocate(lower_units, upper_layer, upper_map, lower_map, mode,
+                           initial_bits, max_bits)
     return _readout(upper_units, lower_units, upper_layer, upper_map, lower_map,
                     allocation, _region(upper_units, extra, allocation), inventory_complete, kappa)[0]
 
@@ -266,20 +276,24 @@ def compare_rational_pressure(
     after_lower_map: RationalLayerMap | None = None,
     inventory_complete: bool = False,
     evaluation_cells: Iterable[GeometryAddress] = (), kappa=1,
-    mode: str = "auto",
+    mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
 ) -> dict:
     """Compare maps using the same material and the union of both full footprints.
 
     Every request computes geometry and current material. ``auto`` uses the
     exact integer affine kernel when applicable; ``reference`` evaluates all
-    rational map operations. There is no persistent relation cache or move.
+    rational map operations. ``adaptive`` keeps the same exact output through
+    interval filtering and per-sample precision escalation/fallback. There is
+    no persistent relation cache or move.
     """
     extra = tuple(evaluation_cells)
     kappa = _check_inputs(upper_units, lower_units, upper_layer, extra, kappa)
     after_upper_map = before_upper_map if after_upper_map is None else after_upper_map
     after_lower_map = before_lower_map if after_lower_map is None else after_lower_map
-    old = _allocate(lower_units, upper_layer, before_upper_map, before_lower_map, mode)
-    new = _allocate(lower_units, upper_layer, after_upper_map, after_lower_map, mode)
+    old = _allocate(lower_units, upper_layer, before_upper_map, before_lower_map, mode,
+                    initial_bits, max_bits)
+    new = _allocate(lower_units, upper_layer, after_upper_map, after_lower_map, mode,
+                    initial_bits, max_bits)
     region = _region(upper_units, extra, old, new)
     before, old_deficit = _readout(upper_units, lower_units, upper_layer, before_upper_map,
                                    before_lower_map, old, region, inventory_complete, kappa)
