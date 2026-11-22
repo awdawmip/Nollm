@@ -4,8 +4,11 @@ Date: 2026-11-22
 
 速记本是持续开发 Nollm 的活跃工作场，保留在正常开发代码中。
 本轮归档已经停用的旧实验实现，并把原自举工作场完整归并到 `sujiben/field`。
-当前交付沿用 [PR #7](https://github.com/awdawmip/Nollm/pull/7) 的
-`experiment/enterprise-math-memory-20261120` 分支；这份记录不声称 PR 已合并到 `main`。
+本记录初次发布于 `ae301fa`，当时 [PR #7](https://github.com/awdawmip/Nollm/pull/7)
+仍以 `experiment/repository-memory` 为 base，工作位于
+`experiment/enterprise-math-memory-20261120`。随后主线整合沿用同一 PR，目标改为 `main`；
+实际合并状态和合并提交以该 PR 的记录为准。后续开发入口见 [ACTIVE_PROJECT.md](ACTIVE_PROJECT.md)，
+从当前 main 和速记本继续，不按历史起点重复已经完成的步骤。
 
 ## 活跃的速记本
 
@@ -90,3 +93,37 @@ PYTHONPATH=packages/nollm-core/src:packages/nollm-access/src \
 
 本轮没有改变 Coverage 公式、几何权重、默认 beam 或物理布局，也没有证明召回质量优于
 Source/Flat。C3 已记录的 mixed / beam 16 漏召回仍是后续问题。
+
+## 主线整合复核
+
+集成起点为 main `bafc6de4e8213d50a5ec64754c7bc87983f853ac` 与上述整理提交
+`ae301fa3e1d05d1a00c7174e4b1bee1fbde82b72`。GitHub compare 确认前者是后者的祖先，
+ahead 20、behind 0；没有主线并行变更需要解决。沿用 PR #7 改以 main 为目标，
+采用保留提交历史的合并，使速记本引用的 C0–C4 固定来源继续可从主线历史读取。
+此处记录整合方式，实际完成状态由 PR 的合并记录确定。
+
+main 与自举起点 `d25083d` 的包代码相同。包内差分是 7 个生产文件和 7 个测试文件；
+只读审查核对了 Core/Access 持久状态、公开调用签名、规范导出、current/support
+绑定、失败回滚、Recall 预算状态和预览字段。没有发现本轮新增的合并阻断项。
+复用已记录的 C1–C4 对应回归，不把重叠测试累加或重新跑无关矩阵。
+
+当前入口统一从 main 与速记本继续；原计划书及提示词明确限定为历史起点。
+16 条当前理解没有依赖“必须在实验分支开发”的前提，因而保留 35 个表达版本，
+不为统一源码提交号新增版本或重排场。
+
+整合审查还修正了两个具体资产检查问题：显式保留现行研究报告和复现使用的 12 条
+EM 轨迹，并让 Markdown 链接可以指向含有 tracked 文件的目录。新轨迹没有目录级豁免，
+断链及只有 untracked 文件的目录继续报错。3 项标准库回归通过；更新索引后的资产检查
+为 `tracked=1086 violations=0`。路径规则覆盖全部 tracked 条目，Markdown 正文实际
+覆盖当前已物化的 24/227 份；203 份未物化正文未扫描，不据此声称完整检出的全部链接验收。
+
+### 独立的既有 Provider 后续问题
+
+`integrations/` 在 main 与本轮候选之间完全相同。固定源码中，活动 JavaScript 的
+[select_fact / memory_get](https://github.com/awdawmip/Nollm/blob/ae301fa3e1d05d1a00c7174e4b1bee1fbde82b72/integrations/openclaw/nollm-memory-provider/src/memory-tools.js)
+请求 `read_field_encounter_statements`，但同版
+[Python bridge](https://github.com/awdawmip/Nollm/blob/ae301fa3e1d05d1a00c7174e4b1bee1fbde82b72/integrations/openclaw/formation-loop/python/nollm_openclaw_formation/bridge.py)
+没有对应动作分派；相关 JS 用例采用合成响应。
+这是一项已有的开发路径接口缺口，尚未验证实际部署或独立打包运行时。
+后续需要一条真实工作场 → Python bridge → 当前 JS factory 的离线读取验证，
+检查当前 ID、正文与来源，并区分投影错误与正常空结果。本轮合并没有将其修复或部署。

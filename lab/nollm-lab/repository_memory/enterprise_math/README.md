@@ -6,7 +6,7 @@
 
 ## 在一个新会话打开
 
-在这个 PR 的 Nollm 工作树根目录运行。Python 3.11+ 可直接加载仓库内的 Core 和 Access。查看记忆无需 EM 全库或重建场。回源需要 Git 能读取 EM 的固定提交，本次是 `f16294a5a7ffa435a32b70214d881fd4450eb494`。
+在 Nollm 工作树根目录运行。Python 3.11+ 可直接加载仓库内的 Core 和 Access。查看记忆无需 EM 全库或重建场。回源需要 Git 能读取 EM 的固定提交，本次是 `f16294a5a7ffa435a32b70214d881fd4450eb494`。
 
 ```sh
 D=lab/nollm-lab/repository_memory

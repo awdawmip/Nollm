@@ -33,8 +33,8 @@ for the task at hand; current implementation and experimental results do not by
 themselves redefine the project.
 
 Nollm's current development memory is [速记本](sujiben/README.md), the native field
-at `sujiben/field`. It keeps concepts, code behavior and their fixed evidence in
-the development branch, and is maintained through the same native encounters
+at `sujiben/field`. It keeps concepts, code behavior and their fixed evidence on
+the main development line, and is maintained through the same native encounters
 used to develop Nollm. Completed, unused experiment code has a separate legacy
 archive; active memory and reusable runtime code remain here.
 

@@ -7,15 +7,18 @@ kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee14465
 That task and branch reconciliation are completed. Its working branch was
 archived; do not recreate it or restart V3.13/PR #1 from a historical taskbook.
 
-The repository memory experiment may feed measured improvements into main.
+The shared development baseline is `main`, with the active 速记本 at `sujiben/field`.
+Repository-memory experiments feed measured improvements into this baseline.
 Core selects results by physical geometry. Access resolves the resulting handles
 to their canonical evidence. The Lab skill may reuse these native files across
 sessions and must recheck Git evidence at the requested revision.
 
-Develop changes on `experiment/repository-memory`, compare baseline and candidate
-on the same inputs, and bring validated changes into main. Synchronize the
-experiment from the accepted main tip before its next trial. Preserve unsuccessful
-trials so later improvements can be compared against the original result.
+Start subsequent development from the current main tip and the maintained 速记本.
+Use a task branch when isolation is useful, compare baseline and candidate on the
+same inputs when evaluating behavior, and bring validated changes back into main.
+The earlier `experiment/repository-memory` branch is a historical experiment base,
+not a required route for new work. Preserve unsuccessful trials so later improvements
+can be compared against the original result.
 
 Existing migration work also continues, including unfinished WIP. The user authorizes publication of all Nollm code
 to `awdawmip/Nollm`, excluding secrets and personal data. Verify each batch by
@@ -30,14 +33,17 @@ resuming canceled calls.
 
 ## Current development: Nollm self-bootstrapping
 
+Continue using Nollm's own structure and evidence-backed relationships to develop Nollm.
 The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)
-is the current task for using Nollm's own structure and evidence-backed relationships to develop Nollm.
-Use its [Codex handoff](tasks/NOLLM_SELF_BOOTSTRAP_CODEX_PROMPT_20261121.md) and continue the existing
-PR #7 branch, `experiment/enterprise-math-memory-20261120`; this task branch is the current execution
-entry over the repository-memory base. The plan was grounded at `c68557881b72cc9eee832181d68717c9dad72ff8`.
+and its [Codex handoff](tasks/NOLLM_SELF_BOOTSTRAP_CODEX_PROMPT_20261121.md) preserve the original
+task scope and acceptance basis, grounded at `c68557881b72cc9eee832181d68717c9dad72ff8`.
+[PR #7](https://github.com/awdawmip/Nollm/pull/7) records the work first developed on
+`experiment/enterprise-math-memory-20261120` and its integration into main.
+Use this current entry and the 速记本 for continuation; do not restart completed stages
+or return to an old experiment branch solely because it appears in the original plan.
 
 The active development memory is [速记本](../../sujiben/README.md), at
-`sujiben/field` in this development branch. Concepts, implementation behavior,
+`sujiben/field` on the shared main development line. Concepts, implementation behavior,
 conditions and their fixed evidence are maintained together through
 `project --field sujiben/field encounter --cursor-file SESSION`. The Host forms
 and places understanding; physical occupancy, Coverage, adjacency and deliberate
@@ -102,7 +108,7 @@ the next measured task; do not tune the field to a preselected answer.
 The [2026-11-22 notebook and cleanup record](NOLLM_SUJIBEN_CLEANUP_20261122.md)
 records the exact archive scope, preserved working memory, C4 correction and local validation.
 
-The development branch retains the 速记本, current EM research field, reusable
+The main development tree retains the 速记本, current EM research field, reusable
 engine/CLI/skill, native geometry probes, current tests and explicit baseline/aux
 tools. The legacy archive `archive/legacy-code-20261122` points to fixed commit
 `beaafabfe8dec4ba1c154ecd324954fa81417489`. The
@@ -129,7 +135,8 @@ with no defensive code or redundant validation/hash machinery in this experiment
 Use its [Codex handoff](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_CODEX_PROMPT_20261120.md)
 for the task branch and functional acceptance. Existing understanding and evaluation material is reference.
 
-PR #7 retains the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md).
+The main tree retains the [research CLI and populated native field](../../lab/nollm-lab/repository_memory/enterprise_math/README.md)
+developed through PR #7.
 The installer supplies runtime code; callers choose a field explicitly. From the
 repository root, start a new TASK session with
 `memory.py em --field lab/nollm-lab/repository_memory/enterprise_math/field encounter --cursor-file SESSION`;

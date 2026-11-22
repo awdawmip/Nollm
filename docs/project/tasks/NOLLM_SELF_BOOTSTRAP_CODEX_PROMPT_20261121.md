@@ -1,5 +1,10 @@
 # Nollm 自举开发：Codex 执行提示词
 
+**范围更新（2026-11-22）：** 后续共享开发以 `main` 为基线，实际当前进度和下一步以
+[ACTIVE_PROJECT](../ACTIVE_PROJECT.md)与[速记本](../../../sujiben/README.md)为准。
+下文保留 PR #7 最初的执行提示与验收起点；旧分支指令和待做事项按当时阶段理解。
+已完成事项不要从头执行，继续开发时沿当前入口接续；历史来源与测试结果保持原样。
+
 在 `awdawmip/Nollm` 继续现有 PR #7 的自举开发。入口分支为 `experiment/enterprise-math-memory-20261120`，计划核对的代码基线为 `c68557881b72cc9eee832181d68717c9dad72ff8`。开始时根据实际分支和已有改动接续；如 PR 已合并，沿其实际落地版本继续。
 
 先从仓库 `AGENTS.md` 和 `docs/project/ACTIVE_PROJECT.md` 进入当前任务，执行完整计划：

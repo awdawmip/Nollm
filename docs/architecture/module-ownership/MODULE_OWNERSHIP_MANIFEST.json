@@ -31668,6 +31668,36 @@
     "validation_gate": "repository:manifest"
   },
   {
+    "asset_class": "ACTIVE_TEST",
+    "classification_evidence": "Current asset-checker regression command: python -m unittest discover -s tools -p test_active_tree_assets.py.",
+    "confidence": "HIGH",
+    "current_namespace": "tools",
+    "file_type": "py",
+    "forbidden_feature_evidence": [],
+    "imported_by": [],
+    "imports": [
+      "check_active_tree_assets",
+      "pathlib",
+      "tempfile",
+      "unittest",
+      "unittest.mock"
+    ],
+    "lifecycle_status": "ACTIVE",
+    "migration_action": "KEEP",
+    "migration_status": "NOT_APPLICABLE",
+    "owned_state": "temporary tracked-tree fixtures",
+    "owner": "LAB",
+    "path": "tools/test_active_tree_assets.py",
+    "public_api": "development",
+    "reason": "Regression coverage for retained research evidence and tracked Markdown directory links.",
+    "review_status": "CODE_REVIEWED",
+    "reviewed_at": "2026-11-22",
+    "runtime_role": "active repository test",
+    "secondary_owner": "",
+    "target_path": "",
+    "validation_gate": "repository:manifest"
+  },
+  {
     "asset_class": "ACTIVE_REPOSITORY_TOOL",
     "classification_evidence": "Explicit current final-gate repository command.",
     "confidence": "HIGH",

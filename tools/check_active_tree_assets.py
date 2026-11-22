@@ -16,6 +16,21 @@ JSONL_ALLOWLIST = {
     "experiments/grf/datasets/scattered_facts.jsonl",
     "lab/nollm-lab/statement_formation/datasets/statement_formation_v1.jsonl",
 }
+# Exact traces retained by the current EM reports and their replay commands.
+RETAINED_RESEARCH_EVIDENCE = {
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/F/reads.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/N/reads.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/S/reads.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/clean/reads/L.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/clean/reads/N.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/continuation/reads/F.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/continuation/reads/N.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/reads/F.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/reads/L.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/reads/N.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/reads/P.jsonl",
+    "lab/nollm-lab/repository_memory/enterprise_math/value_trial_20261121/followup/reads/S.jsonl",
+}
 RUNS_ALLOWLIST = {
     "lab/nollm-lab/dream_agent/runs/run-live-round.ps1",
 }
@@ -37,6 +52,7 @@ def tracked_files() -> list[str]:
 
 def local_markdown_link_errors(paths: list[str]) -> list[str]:
     tracked = set(paths)
+    tracked_directories = {parent.as_posix() for path in paths for parent in Path(path).parents}
     errors: list[str] = []
     for relative in paths:
         source = ROOT / relative
@@ -60,7 +76,7 @@ def local_markdown_link_errors(paths: list[str]) -> list[str]:
                 linked = resolved.relative_to(ROOT).as_posix()
             except ValueError:
                 continue
-            if linked not in tracked:
+            if linked not in tracked and linked not in tracked_directories:
                 errors.append(f"{relative}: broken tracked Markdown link {target}")
     return errors
 
@@ -86,14 +102,15 @@ def validate(paths: list[str]) -> list[str]:
             errors.append(f"{relative}: generated run directory is forbidden")
         if "DELIVERY_RECEIPT" in Path(relative).name.upper():
             errors.append(f"{relative}: delivery receipt is forbidden in the active tree")
-        if lower.endswith(".jsonl") and relative not in JSONL_ALLOWLIST:
+        if (lower.endswith(".jsonl") and relative not in JSONL_ALLOWLIST
+                and relative not in RETAINED_RESEARCH_EVIDENCE):
             size = (ROOT / relative).stat().st_size
             if size > MAX_TRACKED_JSONL_BYTES:
                 errors.append(
                     f"{relative}: generated JSONL exceeds {MAX_TRACKED_JSONL_BYTES} bytes"
                 )
             else:
-                errors.append(f"{relative}: JSONL is not an allowlisted active fixture")
+                errors.append(f"{relative}: JSONL is not an allowlisted fixture or retained research evidence")
 
     errors.extend(local_markdown_link_errors(paths))
     return sorted(set(errors))

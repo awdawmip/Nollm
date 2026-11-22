@@ -490,6 +490,14 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active architecture test", "development-only state", "development", "Executed by the current architecture governance gate.", evidence="Explicit current final-gate test path.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_TEST", "governance:architecture")
     if p.startswith("reference/python/tests/grf/"):
         return lab_asset(Classification("LAB", "MIGRATION_ASSET", "KEEP", "HIGH", "legacy compatibility regression", "development-only state", "development", "Executed only by the explicit GRF compatibility regression gate.", evidence="Explicit current compatibility suite reference/python/tests/grf.", review_status="DEPENDENCY_REVIEWED", reviewed_at=REVIEWED_AT), "LEGACY_REGRESSION", "compatibility:grf")
+    if p == "tools/test_active_tree_assets.py":
+        return lab_asset(Classification(
+            "LAB", "ACTIVE", "KEEP", "HIGH", "active repository test",
+            "temporary tracked-tree fixtures", "development",
+            "Regression coverage for retained research evidence and tracked Markdown directory links.",
+            evidence="Current asset-checker regression command: python -m unittest discover -s tools -p test_active_tree_assets.py.",
+            review_status="CODE_REVIEWED", reviewed_at="2026-11-22",
+        ), "ACTIVE_TEST", "repository:manifest")
     if p.startswith("tools/") and name in {"generate_module_ownership_manifest.py", "validate_module_ownership_manifest.py", "check_module_boundaries.py", "check_active_tree_assets.py", "verify_v311r61_single_active_pipeline.py"}:
         gate = "repository:boundary" if name == "check_module_boundaries.py" else "lab:single-active-content-neutral-pipeline" if name == "verify_v311r61_single_active_pipeline.py" else "repository:manifest"
         return lab_asset(Classification("LAB", "ACTIVE", "KEEP", "HIGH", "active repository tool", "governance state", "development", "Current machine-governance entrypoint.", evidence="Explicit current final-gate repository command.", review_status="CODE_REVIEWED", reviewed_at=REVIEWED_AT), "ACTIVE_REPOSITORY_TOOL", gate)

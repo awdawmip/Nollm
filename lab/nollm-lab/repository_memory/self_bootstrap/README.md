@@ -1,5 +1,11 @@
 # Nollm develops from its own memory
 
+For subsequent shared development, use `main` as the baseline and consult
+[ACTIVE_PROJECT](../../../../docs/project/ACTIVE_PROJECT.md) and
+[速记本](../../../../sujiben/README.md) for the actual current work. This record
+preserves PR #7's original development and acceptance starting point; do not
+restart stages already completed in the recorded continuation.
+
 Current development uses [速记本](../../../../sujiben/README.md), the native field
 at `sujiben/field` in the development branch. Concepts and code understanding
 continue there through actual encounters and source-backed maintenance.
@@ -300,4 +306,6 @@ Raw prompts, tool transcripts, first submissions, failed runs, field snapshots,
 source expansions, independent checks, and maintenance observations are retained
 in the separately delivered evidence artifact. Git retains the working code,
 accepted native field, common task, reproduction diagnostic, and this continuation
-record. No main merge or online service deployment is claimed by this PR branch.
+record. At the historical checkpoint described by that PR record, no main merge
+or online service deployment was claimed. That statement records the observation
+cutoff and does not describe later integration status.
