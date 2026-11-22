@@ -39,3 +39,5 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 [形成记录](FORMATION_20261122.md)说明速记本的继承起点与补充理解；[使用与 C4 维护记录](MAINTENANCE_20261122.md)说明两轮实际消费、独立安装与换源码仓库的结果，以及受影响版本的原位修订。这些记录解释具体形成和维护依据，日常使用仍从原生场开始。
 
 [支撑压力与几何维护记录](SUPPORT_GEOMETRY_MAINTENANCE_20261122.md)记录显式多层写入、建议压力和 Lab 变形实现之后的局部理解更新及回读；固定源码与实际测试范围见[实现说明](../docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)。
+
+[残差算法维护记录](EM_RESIDUAL_MAINTENANCE_20261122.md)记录吸收进取数论研究后的覆盖、平移和压力计算优化，以及相对坐标 v2 的局部修订；它保留原有版本，说明成立条件与本次完整实测范围。
