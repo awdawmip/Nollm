@@ -1,0 +1,385 @@
+{
+  "source_code_baseline": "55871fc6b6b0e21c4a4c7e2297ae67dadbab1d15",
+  "purpose": "Host-authored illustrative placement using an existing detailed judgment",
+  "original_id": "nollm.pressure.v1",
+  "original_sources": [
+    "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+    "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+    "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+    "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+  ],
+  "surface_scope": [
+    -1
+  ],
+  "notes": [
+    {
+      "id": "surface.coverage",
+      "cell": [
+        -1,
+        0,
+        0
+      ],
+      "text": "覆盖决定材料的支撑范围。",
+      "characters": 12,
+      "utf8_bytes": 36
+    },
+    {
+      "id": "surface.pressure",
+      "cell": [
+        -1,
+        1,
+        0
+      ],
+      "text": "支撑不足提高写入压力。",
+      "characters": 11,
+      "utf8_bytes": 33
+    },
+    {
+      "id": "surface.advisory",
+      "cell": [
+        -1,
+        0,
+        1
+      ],
+      "text": "高压力仍允许同层写入。",
+      "characters": 11,
+      "utf8_bytes": 33
+    },
+    {
+      "id": "nollm.pressure.v1",
+      "cell": [
+        0,
+        1,
+        0
+      ],
+      "text": "下层当前材料通过覆盖分摊支撑，上层压力仅供写入参考\n候选格的 D 是这次拟新增之后的当前物理单位数；S 是相邻更细层当前 atom 按原始 coverage_up Q16 份额分摊到该格的支撑。实现把 1+99·max(D-S,0)/(D+κ) 按半数向上取整为 1–100，默认 κ=1；write_weight=101-pressure。新增独立 atom 才增加材料，重复读取、支持表达和原位修订不增加计数；同一来源对全部上层目标的份额保留原归一化，不按当前看见的目标重新分配。候选新写入按 additions=1，观察或复用修订可按 0。已知需求而支撑未读全时只报压力上估计，需求未知则无分数。高压力仍允许 Host 显式同层写入；真正落在有效下层覆盖里的新增材料才可能缓解该格压力，整数显示可能有平台。这个分数不证明命题为真，也不强迫下降或自动生成下层内容。",
+      "characters": 384,
+      "utf8_bytes": 931
+    }
+  ],
+  "surface_characters": 34,
+  "surface_utf8_bytes": 102,
+  "detail_characters": 384,
+  "detail_utf8_bytes": 931,
+  "first_surface_statement_reads": [
+    {
+      "id": "surface.coverage",
+      "characters": 12,
+      "utf8_bytes": 36
+    },
+    {
+      "id": "surface.advisory",
+      "characters": 11,
+      "utf8_bytes": 33
+    },
+    {
+      "id": "surface.pressure",
+      "characters": 11,
+      "utf8_bytes": 33
+    }
+  ],
+  "first_surface_core_state_reads": [
+    2380,
+    2380
+  ],
+  "first_page": {
+    "kind": "surface",
+    "order": 0,
+    "page_size": 8,
+    "pages_left": 23,
+    "surface_calls": 1,
+    "has_more": false,
+    "preview_basis": "stored_statement",
+    "candidates": [
+      {
+        "id": "surface:e30698c9c8723b8ffef9",
+        "window": [
+          0,
+          0,
+          0
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "覆盖决定材料的支撑范围。"
+        ],
+        "truncated": false,
+        "text_truncated": false
+      },
+      {
+        "id": "surface:ae4717cb2dcac4af9b3c",
+        "window": [
+          0,
+          0,
+          1
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "高压力仍允许同层写入。"
+        ],
+        "truncated": false,
+        "text_truncated": false
+      },
+      {
+        "id": "surface:5282fb02ac587aaeeff5",
+        "window": [
+          0,
+          1,
+          0
+        ],
+        "source_cells": 1,
+        "native_atoms": 1,
+        "previews": [
+          "支撑不足提高写入压力。"
+        ],
+        "truncated": false,
+        "text_truncated": false
+      }
+    ],
+    "start": {
+      "policy": "explicit-order",
+      "order": 0,
+      "root_cells": 3,
+      "root_pages": 1,
+      "root_plus_descent": 2,
+      "soft_root_pages": 4,
+      "active_order": 0,
+      "active_overflow": false
+    }
+  },
+  "upper_to_shared_lower": [
+    {
+      "upper": [
+        -1,
+        0,
+        0
+      ],
+      "lower": [
+        0,
+        1,
+        0
+      ],
+      "down_hits": 4,
+      "down_weight_q16": 2730
+    },
+    {
+      "upper": [
+        -1,
+        1,
+        0
+      ],
+      "lower": [
+        0,
+        1,
+        0
+      ],
+      "down_hits": 41,
+      "down_weight_q16": 27989
+    },
+    {
+      "upper": [
+        -1,
+        0,
+        1
+      ],
+      "lower": [
+        0,
+        1,
+        0
+      ],
+      "down_hits": 22,
+      "down_weight_q16": 15019
+    }
+  ],
+  "shared_lower_to_upper": [
+    {
+      "upper": [
+        -1,
+        0,
+        0
+      ],
+      "up_hits": 7,
+      "up_weight_q16": 4779
+    },
+    {
+      "upper": [
+        -1,
+        0,
+        1
+      ],
+      "up_hits": 29,
+      "up_weight_q16": 19797
+    },
+    {
+      "upper": [
+        -1,
+        1,
+        0
+      ],
+      "up_hits": 56,
+      "up_weight_q16": 38229
+    },
+    {
+      "upper": [
+        -1,
+        1,
+        1
+      ],
+      "up_hits": 4,
+      "up_weight_q16": 2731
+    }
+  ],
+  "walks": [
+    {
+      "entry": [
+        -1,
+        0,
+        0
+      ],
+      "items": [
+        {
+          "id": "surface.coverage",
+          "cell": [
+            -1,
+            0,
+            0
+          ],
+          "via": [],
+          "text": "覆盖决定材料的支撑范围。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        },
+        {
+          "id": "nollm.pressure.v1",
+          "cell": [
+            0,
+            1,
+            0
+          ],
+          "via": [
+            "coverage_down"
+          ],
+          "text": "下层当前材料通过覆盖分摊支撑，上层压力仅供写入参考\n候选格的 D 是这次拟新增之后的当前物理单位数；S 是相邻更细层当前 atom 按原始 coverage_up Q16 份额分摊到该格的支撑。实现把 1+99·max(D-S,0)/(D+κ) 按半数向上取整为 1–100，默认 κ=1；write_weight=101-pressure。新增独立 atom 才增加材料，重复读取、支持表达和原位修订不增加计数；同一来源对全部上层目标的份额保留原归一化，不按当前看见的目标重新分配。候选新写入按 additions=1，观察或复用修订可按 0。已知需求而支撑未读全时只报压力上估计，需求未知则无分数。高压力仍允许 Host 显式同层写入；真正落在有效下层覆盖里的新增材料才可能缓解该格压力，整数显示可能有平台。这个分数不证明命题为真，也不强迫下降或自动生成下层内容。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        }
+      ],
+      "budget_exhausted": true
+    },
+    {
+      "entry": [
+        -1,
+        1,
+        0
+      ],
+      "items": [
+        {
+          "id": "surface.pressure",
+          "cell": [
+            -1,
+            1,
+            0
+          ],
+          "via": [],
+          "text": "支撑不足提高写入压力。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        },
+        {
+          "id": "nollm.pressure.v1",
+          "cell": [
+            0,
+            1,
+            0
+          ],
+          "via": [
+            "coverage_down"
+          ],
+          "text": "下层当前材料通过覆盖分摊支撑，上层压力仅供写入参考\n候选格的 D 是这次拟新增之后的当前物理单位数；S 是相邻更细层当前 atom 按原始 coverage_up Q16 份额分摊到该格的支撑。实现把 1+99·max(D-S,0)/(D+κ) 按半数向上取整为 1–100，默认 κ=1；write_weight=101-pressure。新增独立 atom 才增加材料，重复读取、支持表达和原位修订不增加计数；同一来源对全部上层目标的份额保留原归一化，不按当前看见的目标重新分配。候选新写入按 additions=1，观察或复用修订可按 0。已知需求而支撑未读全时只报压力上估计，需求未知则无分数。高压力仍允许 Host 显式同层写入；真正落在有效下层覆盖里的新增材料才可能缓解该格压力，整数显示可能有平台。这个分数不证明命题为真，也不强迫下降或自动生成下层内容。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        }
+      ],
+      "budget_exhausted": true
+    },
+    {
+      "entry": [
+        -1,
+        0,
+        1
+      ],
+      "items": [
+        {
+          "id": "surface.advisory",
+          "cell": [
+            -1,
+            0,
+            1
+          ],
+          "via": [],
+          "text": "高压力仍允许同层写入。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        },
+        {
+          "id": "nollm.pressure.v1",
+          "cell": [
+            0,
+            1,
+            0
+          ],
+          "via": [
+            "coverage_down"
+          ],
+          "text": "下层当前材料通过覆盖分摊支撑，上层压力仅供写入参考\n候选格的 D 是这次拟新增之后的当前物理单位数；S 是相邻更细层当前 atom 按原始 coverage_up Q16 份额分摊到该格的支撑。实现把 1+99·max(D-S,0)/(D+κ) 按半数向上取整为 1–100，默认 κ=1；write_weight=101-pressure。新增独立 atom 才增加材料，重复读取、支持表达和原位修订不增加计数；同一来源对全部上层目标的份额保留原归一化，不按当前看见的目标重新分配。候选新写入按 additions=1，观察或复用修订可按 0。已知需求而支撑未读全时只报压力上估计，需求未知则无分数。高压力仍允许 Host 显式同层写入；真正落在有效下层覆盖里的新增材料才可能缓解该格压力，整数显示可能有平台。这个分数不证明命题为真，也不强迫下降或自动生成下层内容。",
+          "sources": [
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-access/src/nollm_access/support_pressure.py#L59-L135",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:packages/nollm-core/src/nollm_core/incoming_coverage.py#L92-L112",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:lab/nollm-lab/repository_memory/project_memory.py#L198-L214",
+            "6819d9644e82d0cbb8508ff45eae7e640a7684fc:docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md#L46-L79"
+          ],
+          "current": true
+        }
+      ],
+      "budget_exhausted": true
+    }
+  ],
+  "occupied_cells": 4,
+  "bridges": [],
+  "scope_of_evidence": [
+    "Three complete short upper expressions are actually stored and read as Surface text",
+    "One lower current body is shared by three actual one-hop downward coverage paths",
+    "CoreRuntime still loads whole state, including the lower body; observed reads are recorded",
+    "Physical layer -1 and aggregation order 0 are distinct parameters",
+    "Current encounter shares Surface scope and placement scope; this probe does not fix that API",
+    "Host-authored example is reachability evidence, not independent semantic retrieval evaluation",
+    "Up/down shares differ; no reciprocity assumption or parent/child object table is used",
+    "Surface byte limits, autonomous Formation and bounded physical I/O remain design work"
+  ]
+}

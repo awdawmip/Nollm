@@ -1,0 +1,320 @@
+{
+  "source_commit": "55871fc6b6b0e21c4a4c7e2297ae67dadbab1d15",
+  "observation": "Current bindings before Surface formation correction; Unicode code points and UTF-8 body bytes",
+  "all_statement_versions": 47,
+  "current_statements": 23,
+  "occupied_cells": 21,
+  "layers": {
+    "0": 23
+  },
+  "current_characters": 10724,
+  "current_utf8_bytes": 24577,
+  "min_characters": 240,
+  "median_characters": 384,
+  "max_characters": 1037,
+  "current_longer_than_preview256": 21,
+  "current_first_lines_total_characters": 596,
+  "all_version_utf8_bytes": 44548,
+  "bridges": 2,
+  "rows": [
+    {
+      "id": "nollm.pressure.v1",
+      "cell": [
+        0,
+        -4,
+        0
+      ],
+      "characters": 384,
+      "utf8_bytes": 931,
+      "first_line_characters": 25,
+      "body_after_first_line_characters": 359,
+      "title": "下层当前材料通过覆盖分摊支撑，上层压力仅供写入参考"
+    },
+    {
+      "id": "nollm.capacity.v1",
+      "cell": [
+        0,
+        -3,
+        -4
+      ],
+      "characters": 1037,
+      "utf8_bytes": 2434,
+      "first_line_characters": 32,
+      "body_after_first_line_characters": 1005,
+      "title": "海量材料的首要扩容项是局部存储与早分页，8位小数不限制地址容量。"
+    },
+    {
+      "id": "nollm.quantized-structure.v2",
+      "cell": [
+        0,
+        -3,
+        -3
+      ],
+      "characters": 957,
+      "utf8_bytes": 2441,
+      "first_line_characters": 34,
+      "body_after_first_line_characters": 923,
+      "title": "相邻层方案采纳局部8位与96点；先固定格单位，容量保持完整整数寻址。"
+    },
+    {
+      "id": "nollm.precision-budget.v2",
+      "cell": [
+        0,
+        -3,
+        -2
+      ],
+      "characters": 937,
+      "utf8_bytes": 2289,
+      "first_line_characters": 36,
+      "body_after_first_line_characters": 901,
+      "title": "覆盖精度由样本标签认证决定：16 位是可调起点，未决点升精度并精确回退。"
+    },
+    {
+      "id": "nollm.deformation.v2",
+      "cell": [
+        0,
+        -3,
+        -1
+      ],
+      "characters": 550,
+      "utf8_bytes": 1268,
+      "first_line_characters": 22,
+      "body_after_first_line_characters": 528,
+      "title": "移位与扭转按覆盖评价，换锚要保留相对数值信息"
+    },
+    {
+      "id": "nollm.geometry.v2",
+      "cell": [
+        0,
+        -3,
+        0
+      ],
+      "characters": 411,
+      "utf8_bytes": 838,
+      "first_line_characters": 16,
+      "body_after_first_line_characters": 395,
+      "title": "固定覆盖几何现已接通显式多层写入"
+    },
+    {
+      "id": "nollm.architecture.v2",
+      "cell": [
+        0,
+        -3,
+        1
+      ],
+      "characters": 372,
+      "utf8_bytes": 870,
+      "first_line_characters": 20,
+      "body_after_first_line_characters": 352,
+      "title": "概念与代码理解共用有来源的表达和几何现场"
+    },
+    {
+      "id": "nollm.rational-geometry.v2",
+      "cell": [
+        0,
+        -2,
+        -2
+      ],
+      "characters": 794,
+      "utf8_bytes": 2008,
+      "first_line_characters": 32,
+      "body_after_first_line_characters": 762,
+      "title": "有理几何保留精确合同，非线性执行可用有认证的整数区间避免大分母。"
+    },
+    {
+      "id": "nollm.residual-geometry.v1",
+      "cell": [
+        0,
+        -2,
+        -1
+      ],
+      "characters": 459,
+      "utf8_bytes": 1253,
+      "first_line_characters": 26,
+      "body_after_first_line_characters": 433,
+      "title": "几何加速须保留采样身份，把可证不变部分与完整残差分开"
+    },
+    {
+      "id": "nollm.surface.v1",
+      "cell": [
+        0,
+        -2,
+        0
+      ],
+      "characters": 240,
+      "utf8_bytes": 530,
+      "first_line_characters": 26,
+      "body_after_first_line_characters": 214,
+      "title": "Surface 聚合阶是观察尺度，最终入口仍是物理格"
+    },
+    {
+      "id": "nollm.navigation.v3",
+      "cell": [
+        0,
+        -2,
+        1
+      ],
+      "characters": 490,
+      "utf8_bytes": 1056,
+      "first_line_characters": 34,
+      "body_after_first_line_characters": 456,
+      "title": "encounter 区分正文截断与省略表达，并从一个入口取得完整局部"
+    },
+    {
+      "id": "nollm.stitch.v2",
+      "cell": [
+        0,
+        -1,
+        0
+      ],
+      "characters": 252,
+      "utf8_bytes": 516,
+      "first_line_characters": 30,
+      "body_after_first_line_characters": 222,
+      "title": "Stitch 保持有向格联系，CLI 已能按连接 ID 读回"
+    },
+    {
+      "id": "nollm.recall.v2",
+      "cell": [
+        0,
+        -1,
+        1
+      ],
+      "characters": 361,
+      "utf8_bytes": 823,
+      "first_line_characters": 21,
+      "body_after_first_line_characters": 340,
+      "title": "有界召回先排除无改善回访，再分配 beam"
+    },
+    {
+      "id": "nollm.kernel-registry.v2",
+      "cell": [
+        0,
+        0,
+        -1
+      ],
+      "characters": 312,
+      "utf8_bytes": 608,
+      "first_line_characters": 17,
+      "body_after_first_line_characters": 295,
+      "title": "模板解析与持久几何身份在进程内复用"
+    },
+    {
+      "id": "nollm.core-read.v2",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "characters": 299,
+      "utf8_bytes": 625,
+      "first_line_characters": 27,
+      "body_after_first_line_characters": 272,
+      "title": "C1 重开 Core 状态只解码一次，状态含义保持独立"
+    },
+    {
+      "id": "nollm.notebook-restoration.v1",
+      "cell": [
+        0,
+        0,
+        0
+      ],
+      "characters": 408,
+      "utf8_bytes": 808,
+      "first_line_characters": 23,
+      "body_after_first_line_characters": 385,
+      "title": "完整速记本包含几何状态之外的当前绑定与表达正文"
+    },
+    {
+      "id": "nollm.statement-store.v2",
+      "cell": [
+        0,
+        0,
+        1
+      ],
+      "characters": 276,
+      "utf8_bytes": 578,
+      "first_line_characters": 29,
+      "body_after_first_line_characters": 247,
+      "title": "表达按 ID 和内容保持版本，读取允许同义 JSON 排版"
+    },
+    {
+      "id": "nollm.binding.v3",
+      "cell": [
+        0,
+        1,
+        -1
+      ],
+      "characters": 389,
+      "utf8_bytes": 775,
+      "first_line_characters": 21,
+      "body_after_first_line_characters": 368,
+      "title": "当前、支持与历史表达已经在项目入口准确区分"
+    },
+    {
+      "id": "nollm.core-commit.v2",
+      "cell": [
+        0,
+        1,
+        0
+      ],
+      "characters": 353,
+      "utf8_bytes": 667,
+      "first_line_characters": 29,
+      "body_after_first_line_characters": 324,
+      "title": "Core 提交与导入输出规范状态，Access 仍协调绑定"
+    },
+    {
+      "id": "nollm.sources.v1",
+      "cell": [
+        0,
+        2,
+        -1
+      ],
+      "characters": 298,
+      "utf8_bytes": 622,
+      "first_line_characters": 26,
+      "body_after_first_line_characters": 272,
+      "title": "固定源码引用与场内 current 分别说明哪种版本"
+    },
+    {
+      "id": "nollm.adapter.v5",
+      "cell": [
+        0,
+        3,
+        -1
+      ],
+      "characters": 448,
+      "utf8_bytes": 940,
+      "first_line_characters": 22,
+      "body_after_first_line_characters": 426,
+      "title": "共享项目入口在显式工作场内完成观察和读写决定"
+    },
+    {
+      "id": "nollm.installation.v4",
+      "cell": [
+        0,
+        4,
+        -1
+      ],
+      "characters": 362,
+      "utf8_bytes": 836,
+      "first_line_characters": 30,
+      "body_after_first_line_characters": 332,
+      "title": "安装运行时与工作场分开，project 和 em 都显式选场"
+    },
+    {
+      "id": "nollm.notebook-boundaries.v1",
+      "cell": [
+        0,
+        4,
+        -1
+      ],
+      "characters": 335,
+      "utf8_bytes": 861,
+      "first_line_characters": 18,
+      "body_after_first_line_characters": 317,
+      "title": "速记本、运行时和源码仓库承担不同职责"
+    }
+  ]
+}

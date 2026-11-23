@@ -38,6 +38,13 @@ the main development line, and is maintained through the same native encounters
 used to develop Nollm. Completed, unused experiment code has a separate legacy
 archive; active memory and reusable runtime code remain here.
 
+The [stored Surface formation direction](docs/project/NOLLM_STORED_SURFACE_FORMATION_20261123.md)
+addresses the user's 2026-11-23 correction: the first Surface should read compact
+judgments actually stored in upper physical cells, with details unfolding through
+adjacent honeycomb coverage. A runnable native probe shares one detailed judgment
+across three short upper expressions. Write-time content budgets and separating
+the entry surface from the writable layer range are the next implementation work.
+
 The current [support-pressure and deformation implementation](docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
 adds advisory 1–100 write pressure, explicitly selected multilayer writing and
 read-only geometry experiments. Run its focused functional and installed-CLI
@@ -80,8 +87,9 @@ share changes and pressure decisions across fractional precisions.
 
 The [adjacent-layer precision and capacity plan](docs/project/NOLLM_ADJACENT_P8_CAPACITY_PLAN_20261123.md)
 adopts the user-selected 8 local fractional bits with 96 samples. It identifies
-world-unit normalization and geometry-addressed local persistence as the next
-implementation work, with a reproducible unit-change probe and a source audit.
+world-unit normalization and geometry-addressed local persistence work, with a
+reproducible unit-change probe and a source audit. The later stored-Surface
+direction makes semantic formation the first capacity priority.
 The plan keeps full integer addresses and separates capacity from fractional precision.
 
 ## Why Nollm exists

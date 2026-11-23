@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, updated 2026-11-22.
+Repository memory feedback cycle, updated 2026-11-23.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -32,6 +32,18 @@ restrictions remain binding; this scope does not authorize bypassing them or
 resuming canceled calls.
 
 ## Current development: Nollm self-bootstrapping
+
+The user's 2026-11-23 correction makes [stored Surface formation](NOLLM_STORED_SURFACE_FORMATION_20261123.md)
+the current organization priority: compact, independently meaningful judgments
+belong in actual upper physical cells; conditions and details unfold through
+adjacent, overlapping honeycomb coverage. The first Surface reads that bounded
+stored content. Query-time excerpts of all detailed L0 statements do not fulfill
+this formation goal. The reviewed field at `55871fc6` still has all 23 current
+judgments at L0. A native probe now demonstrates three short upper expressions
+sharing one lower body; full field re-formation and content-budget enforcement
+remain implementation work. Separate the entry Surface scope from the local
+writable scope, then make physical I/O follow the resulting structure. Retain
+raw Evidence, historical versions, non-tree coverage and Host semantic decisions.
 
 Continue using Nollm's own structure and evidence-backed relationships to develop Nollm.
 The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)
@@ -210,7 +222,9 @@ and identifies current whole-state Core/binding I/O and late paging as capacity
 bottlenecks. A fixed adjacent-pair probe demonstrates world-unit dependence and
 restoration after normalization. This is an implementation plan: the current
 quantized default is still 12, and the normalized executor and local paged storage
-remain the next work. Existing exact-mode and production geometry contracts retain
+remain open work. The later stored-Surface direction makes write-time semantic
+organization the first capacity priority, with local persistence serving that
+organization. Existing exact-mode and production geometry contracts retain
 their respective scopes.
 
 ## Enterprise Math memory: reusable implementation and evidence
