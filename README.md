@@ -78,6 +78,12 @@ missing and added sampled edges; 8 bits is the measured higher-error speed optio
 Frozen main and holdout inventories compare execution cost, structural changes,
 share changes and pressure decisions across fractional precisions.
 
+The [adjacent-layer precision and capacity plan](docs/project/NOLLM_ADJACENT_P8_CAPACITY_PLAN_20261123.md)
+adopts the user-selected 8 local fractional bits with 96 samples. It identifies
+world-unit normalization and geometry-addressed local persistence as the next
+implementation work, with a reproducible unit-change probe and a source audit.
+The plan keeps full integer addresses and separates capacity from fractional precision.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

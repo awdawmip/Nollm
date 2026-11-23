@@ -203,6 +203,16 @@ Main and independent holdout inventories compare missing and added relations,
 share mass, positive-demand pressure, candidate ordering and full coverage cost.
 The reference geometry remains an offline comparison basis for this experiment.
 
+The user subsequently selected 8 fractional bits for adjacent-layer working
+structure. The [adjacent p8 and capacity plan](NOLLM_ADJACENT_P8_CAPACITY_PLAN_20261123.md)
+retains 96 samples and full integer addresses, defines p8 in local cell units,
+and identifies current whole-state Core/binding I/O and late paging as capacity
+bottlenecks. A fixed adjacent-pair probe demonstrates world-unit dependence and
+restoration after normalization. This is an implementation plan: the current
+quantized default is still 12, and the normalized executor and local paged storage
+remain the next work. Existing exact-mode and production geometry contracts retain
+their respective scopes.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)

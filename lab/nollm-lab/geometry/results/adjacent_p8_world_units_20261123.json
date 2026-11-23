@@ -1,0 +1,849 @@
+{
+  "schema": "nollm_adjacent_p8_world_unit_probe_v1",
+  "source_baseline": "d6a3d4c39aec4df56133a4c70bc081752d5ba5a4",
+  "frozen_inventory_seed": 20261123,
+  "case": "d2_medium_up",
+  "direction": "source layer 1 to target layer 0",
+  "source_twists": 1,
+  "target_twists": 1,
+  "source_cells": 8,
+  "sample_count_per_source": 96,
+  "coordinates": [
+    [
+      2,
+      -2
+    ],
+    [
+      0,
+      -2
+    ],
+    [
+      0,
+      1
+    ],
+    [
+      -1,
+      1
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      2,
+      0
+    ],
+    [
+      -1,
+      0
+    ]
+  ],
+  "source_map": {
+    "contract_id": "lab_exact_rational_axial_map_v1",
+    "frame": {
+      "matrix": [
+        [
+          {
+            "numerator": "135",
+            "denominator": "104"
+          },
+          {
+            "numerator": "63",
+            "denominator": "104"
+          }
+        ],
+        [
+          {
+            "numerator": "-63",
+            "denominator": "104"
+          },
+          {
+            "numerator": "9",
+            "denominator": "13"
+          }
+        ]
+      ],
+      "origin": [
+        {
+          "numerator": "6",
+          "denominator": "17"
+        },
+        {
+          "numerator": "-3",
+          "denominator": "19"
+        }
+      ],
+      "local_anchor": [
+        {
+          "numerator": "3",
+          "denominator": "13"
+        },
+        {
+          "numerator": "0",
+          "denominator": "1"
+        }
+      ]
+    },
+    "twists": [
+      {
+        "center": [
+          {
+            "numerator": "3",
+            "denominator": "11"
+          },
+          {
+            "numerator": "-6",
+            "denominator": "13"
+          }
+        ],
+        "radius_squared": {
+          "numerator": "63",
+          "denominator": "8"
+        },
+        "strength": {
+          "numerator": "7",
+          "denominator": "40"
+        }
+      }
+    ]
+  },
+  "target_map": {
+    "contract_id": "lab_exact_rational_axial_map_v1",
+    "frame": {
+      "matrix": [
+        [
+          {
+            "numerator": "385",
+            "denominator": "398"
+          },
+          {
+            "numerator": "-196",
+            "denominator": "597"
+          }
+        ],
+        [
+          {
+            "numerator": "196",
+            "denominator": "597"
+          },
+          {
+            "numerator": "1547",
+            "denominator": "1194"
+          }
+        ]
+      ],
+      "origin": [
+        {
+          "numerator": "-7",
+          "denominator": "19"
+        },
+        {
+          "numerator": "-4",
+          "denominator": "17"
+        }
+      ],
+      "local_anchor": [
+        {
+          "numerator": "3",
+          "denominator": "11"
+        },
+        {
+          "numerator": "-1",
+          "denominator": "13"
+        }
+      ]
+    },
+    "twists": [
+      {
+        "center": [
+          {
+            "numerator": "4",
+            "denominator": "11"
+          },
+          {
+            "numerator": "-1",
+            "denominator": "13"
+          }
+        ],
+        "radius_squared": {
+          "numerator": "9",
+          "denominator": "1"
+        },
+        "strength": {
+          "numerator": "-1",
+          "denominator": "5"
+        }
+      }
+    ]
+  },
+  "normalization_rule": "affine matrix and origin multiply by lambda; local anchors unchanged; twist centers multiply by lambda; radius_squared multiplies by lambda^2; strengths unchanged",
+  "normalization_back_rule": "multiply scaled world maps by 1/lambda before compiling p8",
+  "baseline_p8_vs_exact": {
+    "sample_label_changes": 9,
+    "false_negative_edges": 0,
+    "false_positive_edges": 0,
+    "union_edges": 32,
+    "structural_error": "0",
+    "tv": "3/256",
+    "sources_with_changed_target_set": 0
+  },
+  "reference_hit_histograms": [
+    [
+      [
+        1,
+        -2,
+        8
+      ],
+      [
+        2,
+        -3,
+        25
+      ],
+      [
+        2,
+        -2,
+        60
+      ],
+      [
+        2,
+        -1,
+        2
+      ],
+      [
+        3,
+        -2,
+        1
+      ]
+    ],
+    [
+      [
+        -1,
+        -1,
+        47
+      ],
+      [
+        -1,
+        0,
+        2
+      ],
+      [
+        0,
+        -2,
+        9
+      ],
+      [
+        0,
+        -1,
+        35
+      ],
+      [
+        1,
+        -2,
+        3
+      ]
+    ],
+    [
+      [
+        0,
+        1,
+        36
+      ],
+      [
+        1,
+        0,
+        17
+      ],
+      [
+        1,
+        1,
+        43
+      ]
+    ],
+    [
+      [
+        -1,
+        1,
+        11
+      ],
+      [
+        0,
+        0,
+        28
+      ],
+      [
+        0,
+        1,
+        57
+      ]
+    ],
+    [
+      [
+        1,
+        1,
+        21
+      ],
+      [
+        1,
+        2,
+        3
+      ],
+      [
+        2,
+        1,
+        72
+      ]
+    ],
+    [
+      [
+        1,
+        0,
+        42
+      ],
+      [
+        1,
+        1,
+        5
+      ],
+      [
+        2,
+        -1,
+        4
+      ],
+      [
+        2,
+        0,
+        45
+      ]
+    ],
+    [
+      [
+        2,
+        0,
+        21
+      ],
+      [
+        3,
+        -2,
+        10
+      ],
+      [
+        3,
+        -1,
+        62
+      ],
+      [
+        4,
+        -2,
+        3
+      ]
+    ],
+    [
+      [
+        -1,
+        0,
+        19
+      ],
+      [
+        -1,
+        1,
+        15
+      ],
+      [
+        0,
+        -1,
+        16
+      ],
+      [
+        0,
+        0,
+        44
+      ],
+      [
+        1,
+        -1,
+        2
+      ]
+    ]
+  ],
+  "results": [
+    {
+      "common_world_scale": "1",
+      "exact_matches_frozen_reference": true,
+      "adaptive_matches_frozen_reference": true,
+      "p8_vs_exact": {
+        "sample_label_changes": 9,
+        "false_negative_edges": 0,
+        "false_positive_edges": 0,
+        "union_edges": 32,
+        "structural_error": "0",
+        "tv": "3/256",
+        "sources_with_changed_target_set": 0
+      },
+      "p8_vs_original_world_units": {
+        "sample_label_changes": 0,
+        "false_negative_edges": 0,
+        "false_positive_edges": 0,
+        "union_edges": 32,
+        "structural_error": "0",
+        "tv": "0",
+        "sources_with_changed_target_set": 0
+      },
+      "normalized_maps_exactly_original": true,
+      "normalized_p8_labels_identical": true,
+      "p8_hit_histograms": [
+        [
+          [
+            1,
+            -2,
+            7
+          ],
+          [
+            2,
+            -3,
+            27
+          ],
+          [
+            2,
+            -2,
+            59
+          ],
+          [
+            2,
+            -1,
+            2
+          ],
+          [
+            3,
+            -2,
+            1
+          ]
+        ],
+        [
+          [
+            -1,
+            -1,
+            48
+          ],
+          [
+            -1,
+            0,
+            2
+          ],
+          [
+            0,
+            -2,
+            9
+          ],
+          [
+            0,
+            -1,
+            34
+          ],
+          [
+            1,
+            -2,
+            3
+          ]
+        ],
+        [
+          [
+            0,
+            1,
+            36
+          ],
+          [
+            1,
+            0,
+            17
+          ],
+          [
+            1,
+            1,
+            43
+          ]
+        ],
+        [
+          [
+            -1,
+            1,
+            10
+          ],
+          [
+            0,
+            0,
+            29
+          ],
+          [
+            0,
+            1,
+            57
+          ]
+        ],
+        [
+          [
+            1,
+            1,
+            19
+          ],
+          [
+            1,
+            2,
+            5
+          ],
+          [
+            2,
+            1,
+            72
+          ]
+        ],
+        [
+          [
+            1,
+            0,
+            42
+          ],
+          [
+            1,
+            1,
+            5
+          ],
+          [
+            2,
+            -1,
+            4
+          ],
+          [
+            2,
+            0,
+            45
+          ]
+        ],
+        [
+          [
+            2,
+            0,
+            19
+          ],
+          [
+            3,
+            -2,
+            9
+          ],
+          [
+            3,
+            -1,
+            64
+          ],
+          [
+            4,
+            -2,
+            4
+          ]
+        ],
+        [
+          [
+            -1,
+            0,
+            19
+          ],
+          [
+            -1,
+            1,
+            15
+          ],
+          [
+            0,
+            -1,
+            16
+          ],
+          [
+            0,
+            0,
+            44
+          ],
+          [
+            1,
+            -1,
+            2
+          ]
+        ]
+      ]
+    },
+    {
+      "common_world_scale": "1/256",
+      "exact_matches_frozen_reference": true,
+      "adaptive_matches_frozen_reference": true,
+      "p8_vs_exact": {
+        "sample_label_changes": 645,
+        "false_negative_edges": 19,
+        "false_positive_edges": 16,
+        "union_edges": 48,
+        "structural_error": "35/48",
+        "tv": "191/256",
+        "sources_with_changed_target_set": 8
+      },
+      "p8_vs_original_world_units": {
+        "sample_label_changes": 647,
+        "false_negative_edges": 19,
+        "false_positive_edges": 16,
+        "union_edges": 48,
+        "structural_error": "35/48",
+        "tv": "577/768",
+        "sources_with_changed_target_set": 8
+      },
+      "normalized_maps_exactly_original": true,
+      "normalized_p8_labels_identical": true,
+      "p8_hit_histograms": [
+        [
+          [
+            3,
+            -2,
+            61
+          ],
+          [
+            4,
+            -3,
+            35
+          ]
+        ],
+        [
+          [
+            2,
+            -2,
+            76
+          ],
+          [
+            3,
+            -5,
+            12
+          ],
+          [
+            3,
+            -3,
+            8
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            73
+          ],
+          [
+            0,
+            1,
+            3
+          ],
+          [
+            1,
+            0,
+            11
+          ],
+          [
+            1,
+            1,
+            6
+          ],
+          [
+            2,
+            1,
+            3
+          ]
+        ],
+        [
+          [
+            -1,
+            0,
+            22
+          ],
+          [
+            -1,
+            1,
+            26
+          ],
+          [
+            0,
+            -1,
+            6
+          ],
+          [
+            0,
+            0,
+            42
+          ]
+        ],
+        [
+          [
+            -1,
+            3,
+            32
+          ],
+          [
+            0,
+            0,
+            6
+          ],
+          [
+            0,
+            1,
+            27
+          ],
+          [
+            1,
+            1,
+            31
+          ]
+        ],
+        [
+          [
+            1,
+            0,
+            25
+          ],
+          [
+            2,
+            0,
+            36
+          ],
+          [
+            2,
+            1,
+            35
+          ]
+        ],
+        [
+          [
+            2,
+            0,
+            71
+          ],
+          [
+            2,
+            1,
+            9
+          ],
+          [
+            2,
+            2,
+            7
+          ],
+          [
+            3,
+            -1,
+            7
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        [
+          [
+            0,
+            -1,
+            67
+          ],
+          [
+            0,
+            0,
+            9
+          ],
+          [
+            1,
+            -2,
+            20
+          ]
+        ]
+      ]
+    },
+    {
+      "common_world_scale": "1/65536",
+      "exact_matches_frozen_reference": true,
+      "adaptive_matches_frozen_reference": true,
+      "p8_vs_exact": {
+        "sample_label_changes": 696,
+        "false_negative_edges": 30,
+        "false_positive_edges": 6,
+        "union_edges": 38,
+        "structural_error": "18/19",
+        "tv": "29/32",
+        "sources_with_changed_target_set": 8
+      },
+      "p8_vs_original_world_units": {
+        "sample_label_changes": 695,
+        "false_negative_edges": 30,
+        "false_positive_edges": 6,
+        "union_edges": 38,
+        "structural_error": "18/19",
+        "tv": "695/768",
+        "sources_with_changed_target_set": 8
+      },
+      "normalized_maps_exactly_original": true,
+      "normalized_p8_labels_identical": true,
+      "p8_hit_histograms": [
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ],
+        [
+          [
+            0,
+            0,
+            96
+          ]
+        ]
+      ]
+    }
+  ],
+  "scope": "one frozen adjacent pair, 8 cells, 768 labels; demonstrates world-unit dependence, not a general error-rate bound or production normalization implementation"
+}
