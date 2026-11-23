@@ -194,6 +194,15 @@ from configurable initial bits before exact fallback. The default starts at
 actual cost depends on the input. Independent scalar rational and direct-distance
 checks accompany full-operation timings. Core's default profile is unchanged.
 
+The user's 2026-11-23 direction also accepts finite-resolution structure changes.
+The [quantized structure experiment](../architecture/NOLLM_QUANTIZED_STRUCTURE_TRADEOFF_20261123.md)
+implements opt-in `mode="quantized"` with a 12-fractional-bit default, a one-pass fixed fractional-precision
+nonlinear kernel that retains its sampled labels directly. Its explicit contract
+reports the selected precision and uses those hit shares for support and pressure.
+Main and independent holdout inventories compare missing and added relations,
+share mass, positive-demand pressure, candidate ordering and full coverage cost.
+The reference geometry remains an offline comparison basis for this experiment.
+
 ## Enterprise Math memory: reusable implementation and evidence
 
 The [Enterprise Math memory experiment](tasks/NOLLM_ENTERPRISE_MATH_MEMORY_EXPERIMENT_20261120.md)

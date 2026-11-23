@@ -71,6 +71,13 @@ map chain. Opt-in `mode="adaptive"` preserves every sampled label, exact share
 and pressure result, refining only unresolved samples before exact fallback.
 Its benchmark includes distinct-center twists and complete pressure comparisons.
 
+The [quantized structure experiment](docs/architecture/NOLLM_QUANTIZED_STRUCTURE_TRADEOFF_20261123.md)
+accepts a single fixed-precision nonlinear pass as a distinct Lab relation rule.
+Opt-in `mode="quantized"` defaults to 12 fractional bits and retains the resulting
+missing and added sampled edges; 8 bits is the measured higher-error speed option.
+Frozen main and holdout inventories compare execution cost, structural changes,
+share changes and pressure decisions across fractional precisions.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.
