@@ -1,0 +1,101 @@
+{
+  "scope": "native current-field knowledge maintenance after frozen test bundle publication; runtime and frozen branch unchanged",
+  "frozen_test_commit": "c4b6b922b993732e008e8d1b95951b47bec823df",
+  "save_result": {
+    "kind": "result",
+    "effect": "revision",
+    "entry": [
+      -2,
+      0,
+      -3
+    ],
+    "focus": [
+      -1,
+      -1,
+      -3
+    ],
+    "focus_path": [
+      [
+        -2,
+        0,
+        -3
+      ],
+      [
+        -1,
+        -1,
+        -3
+      ]
+    ],
+    "id": "nollm.formed.-1.precision-contracts.v2",
+    "cell": [
+      -1,
+      -1,
+      -3
+    ],
+    "revises": "nollm.formed.-1.precision-contracts.v1"
+  },
+  "readback": {
+    "id": "nollm.formed.-1.precision-contracts.v2",
+    "cell": [
+      -1,
+      -1,
+      -3
+    ],
+    "via": [],
+    "text": "当前 Core 用 Q40/96。Lab adaptive 从16位起保标签；quantized 默认12位、可显式8位，仍依赖世界单位和表示锚。用户选定相邻层局部8位/96点，规范单位与物理锚执行器待实现。",
+    "sources": [
+      "c4b6b922b993732e008e8d1b95951b47bec823df:docs/project/NOLLM_TEST_BASELINE_20261123.md#L13-L50"
+    ],
+    "current": true,
+    "revises": "nollm.formed.-1.precision-contracts.v1",
+    "entry_path": [
+      "coverage_down"
+    ],
+    "source_count": 2,
+    "sources_truncated": true
+  },
+  "body_utf8_bytes": 222,
+  "old_version_readable": true,
+  "old_version_current": false,
+  "original_statement_files": 69,
+  "changed_original_statement_files": [],
+  "statement_files_after": 70,
+  "entry": [
+    -2,
+    0,
+    -3
+  ],
+  "focus_path": [
+    [
+      -2,
+      0,
+      -3
+    ],
+    [
+      -1,
+      -1,
+      -3
+    ]
+  ],
+  "all_original_detail_paths_unchanged": true,
+  "updated_layer_stats": {
+    "-2": {
+      "cells": 8,
+      "statements": 8,
+      "utf8_bytes": 398
+    },
+    "-1": {
+      "cells": 12,
+      "statements": 12,
+      "utf8_bytes": 2095
+    },
+    "0": {
+      "cells": 21,
+      "statements": 23,
+      "utf8_bytes": 22242
+    }
+  },
+  "details_returned": 23,
+  "details_with_multiple_upper_entries": 19,
+  "bridges": 2
+}

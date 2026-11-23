@@ -43,6 +43,11 @@ revision and move behavior. The existing Lab quantized p12 default and explicit
 p8 option retain world-unit and representation-anchor dependencies; user-selected
 adjacent local-p8/96 normalization is still an implementation continuation.
 Use this fixed input for comparison; current main remains the development line.
+The [native precision-state maintenance](../../sujiben/TEST_BASELINE_MAINTENANCE_20261123.md)
+revises the encountered middle `precision-contracts` judgment to v2, explicitly
+retaining the local-p8 implementation gap and the old Lab unit/reanchor issue.
+The original 69 Statement files and all checked detail paths remain; the frozen
+test branch keeps its original field while main carries this clarification.
 
 ## Current development: Nollm self-bootstrapping
 

@@ -72,4 +72,6 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 
 [Surface 存放方式维护记录](STORED_SURFACE_FORMATION_MAINTENANCE_20261123.md)记录用户要求表层本身保存短缩影的纠正、实际原生分层试验，以及容量判断缩短为33字符的原位修订。[分层形成与实际使用记录](STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)记录本场现已应用的8/12/23条分层正文、写入容量、同入口下降、真实读者反馈和原版本保留。底层按已知层/格读取的持久化，以及共享下层变化后的上层维护，仍是后续实现工作。
 
-[向下巡查与重新组织记录](TOP_DOWN_MAINTENANCE_20261123.md)保存本轮计算/写入代价比较、后继 Host 改概括与移动候选的复制场结果，以及活跃中层 `entry-traversal.v2` 的同入口原位修订。维护可主要沿表层向下展开，按需反查保留为局部加速；分类可以调整，重组时应回读新旧相关路径。当前中层正文为2,026字节，完整版本文件69份，表层仍398字节。
+[向下巡查与重新组织记录](TOP_DOWN_MAINTENANCE_20261123.md)保存该轮计算/写入代价比较、后继 Host 改概括与移动候选的复制场结果，以及活跃中层 `entry-traversal.v2` 的同入口原位修订。维护可主要沿表层向下展开，按需反查保留为局部加速；分类可以调整，重组时应回读新旧相关路径。该轮中层正文为2,026字节，完整版本文件69份，表层398字节。
+
+[固定测试版与精度维护记录](TEST_BASELINE_MAINTENANCE_20261123.md)保存 `nollm-test-20261123.1` 的固定提交，以及中层 `precision-contracts.v2` 的原位修订。当前理解明确区分Core Q40/96、旧Lab量化p12/显式p8和待实现的局部p8/96；原69份版本保留，当前70份，中层2,095字节，表层仍398字节。固定测试分支保持原始场，main继续维护。
