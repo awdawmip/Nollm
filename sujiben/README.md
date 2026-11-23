@@ -51,3 +51,5 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 [量化结构维护记录](QUANTIZED_STRUCTURE_MAINTENANCE_20261123.md)记录接受有限精度缺项的独立判断、12 位默认与 8 位速度档的实测取舍，以及新增表达的原生放置与同入口回读。
 
 [相邻层 8 位与容量维护记录](ADJACENT_P8_CAPACITY_MAINTENANCE_20261123.md)记录用户选定局部 8 位与 96 点、共同尺度探针和局部读写扩容方案，以及量化结构的原位修订、容量判断的新增与同入口回读。
+
+[Surface 存放方式维护记录](STORED_SURFACE_FORMATION_MAINTENANCE_20261123.md)记录用户要求表层本身保存短缩影的纠正、实际原生分层试验，以及容量判断缩短为33字符的原位修订。全场分层形成、入口与写入范围分离是当前后续工作。
