@@ -1,0 +1,256 @@
+{
+  "source_main": "5dd3c43c",
+  "field_counts": {
+    "atoms": 43,
+    "occupied_cells": 41,
+    "layers": {
+      "-2": 8,
+      "-1": 12,
+      "0": 21
+    }
+  },
+  "shape": {
+    "full_geometric_visited": 97,
+    "occupied_only_visited": 41,
+    "full_geometric_expanded_sources": 35,
+    "occupied_only_expanded_sources": 20,
+    "occupied_reachability_equal": true,
+    "inverse_down_matches_all_21_current_lower_cells": true
+  },
+  "cache_definition": "cold clears native expansion/phase/stencil/Surface and both inverse-bound caches; warm repeats identical work in same process; every sample reopens files; OS disk/page cache is not flushed",
+  "timing_definition": "instrumented first cold/warm counts plus seven uninstrumented timing samples; wall time includes complete Core reopen and selected Evidence reads",
+  "semantic_scope": "no LLM correction is timed; targeted modes prepare changed bodies, affected occupied summaries, and those summaries direct occupied down-neighborhood; empty intermediate paths retained by full/inverse modes",
+  "source_commit": "5dd3c43c77127a60655d63360eb0a3c2a9d0babc",
+  "scope": "Original one-off internal cache instrumentation retained as observations; public-only reproduction has separate counts and timings",
+  "scenarios": {
+    "single_binding_cell": {
+      "sweep_all_content": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 4.349061,
+          "warm_algorithm_cache": 2.92517
+        }
+      },
+      "sweep_full_targeted": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 3.400718,
+          "warm_algorithm_cache": 2.034053
+        }
+      },
+      "sweep_occupied_targeted": {
+        "calls": {
+          "coverage_down": 20
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 2.976146,
+          "warm_algorithm_cache": 2.017127
+        }
+      },
+      "inverse_targeted": {
+        "calls": {
+          "coverage_down": 10
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 2.299824,
+          "warm_algorithm_cache": 1.731766
+        }
+      }
+    },
+    "three_adjacent_lower_cells": {
+      "sweep_all_content": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 4.277373,
+          "warm_algorithm_cache": 2.943677
+        }
+      },
+      "sweep_full_targeted": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 3.378985,
+          "warm_algorithm_cache": 2.081575
+        }
+      },
+      "sweep_occupied_targeted": {
+        "calls": {
+          "coverage_down": 20
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 2.981545,
+          "warm_algorithm_cache": 2.019421
+        }
+      },
+      "inverse_targeted": {
+        "calls": {
+          "coverage_down": 15
+        },
+        "body_read_calls": 18,
+        "body_bytes": 7308,
+        "median_ms": {
+          "cold_algorithm_cache": 2.52192,
+          "warm_algorithm_cache": 1.78018
+        }
+      }
+    },
+    "all_21_lower_cells": {
+      "sweep_all_content": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 4.324755,
+          "warm_algorithm_cache": 3.022567
+        }
+      },
+      "sweep_full_targeted": {
+        "calls": {
+          "coverage_down": 35
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 4.407319,
+          "warm_algorithm_cache": 3.037749
+        }
+      },
+      "sweep_occupied_targeted": {
+        "calls": {
+          "coverage_down": 20
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 4.002497,
+          "warm_algorithm_cache": 3.008735
+        }
+      },
+      "inverse_targeted": {
+        "calls": {
+          "coverage_down": 44
+        },
+        "body_read_calls": 43,
+        "body_bytes": 24557,
+        "median_ms": {
+          "cold_algorithm_cache": 5.136391,
+          "warm_algorithm_cache": 3.529863
+        }
+      }
+    }
+  },
+  "current_paths": {
+    "surface": {
+      "calls": {},
+      "inverse_up_calls": 0,
+      "body_read_calls": 8,
+      "body_bytes": 398,
+      "file_read_calls": {
+        "access/encounter.json": 1,
+        "whole_core_state": 1,
+        "whole_bindings": 1,
+        "statement_files": 8
+      },
+      "file_read_bytes": {
+        "access/encounter.json": 193,
+        "whole_core_state": 35405,
+        "whole_bindings": 10854,
+        "statement_files": 11560
+      },
+      "median_ms": {
+        "cold_algorithm_cache": 1.636022,
+        "warm_algorithm_cache": 1.468829
+      }
+    },
+    "direct_read_only_recall": {
+      "calls": {
+        "coverage_down": 6
+      },
+      "inverse_up_calls": 0,
+      "body_read_calls": 4,
+      "body_bytes": 587,
+      "file_read_calls": {
+        "whole_core_state": 1,
+        "access/content_budget.json": 1,
+        "whole_bindings": 1,
+        "statement_files": 4
+      },
+      "file_read_bytes": {
+        "whole_core_state": 35405,
+        "access/content_budget.json": 438,
+        "whole_bindings": 10854,
+        "statement_files": 6246
+      },
+      "median_ms": {
+        "cold_algorithm_cache": 1.778066,
+        "warm_algorithm_cache": 1.296268
+      }
+    },
+    "current_unified_encounter_locality": {
+      "calls": {
+        "coverage_down": 8,
+        "coverage_up": 108
+      },
+      "inverse_up_calls": 15,
+      "body_read_calls": 8,
+      "body_bytes": 1174,
+      "file_read_calls": {
+        "whole_core_state": 1,
+        "access/content_budget.json": 1,
+        "whole_bindings": 1,
+        "statement_files": 8
+      },
+      "file_read_bytes": {
+        "whole_core_state": 35405,
+        "access/content_budget.json": 438,
+        "whole_bindings": 10854,
+        "statement_files": 12492
+      },
+      "median_ms": {
+        "cold_algorithm_cache": 5.782547,
+        "warm_algorithm_cache": 4.031842
+      }
+    },
+    "one_pressure_candidate": {
+      "calls": {
+        "coverage_up": 9
+      },
+      "inverse_up_calls": 1,
+      "body_read_calls": 0,
+      "body_bytes": 0,
+      "file_read_calls": {
+        "whole_core_state": 1
+      },
+      "file_read_bytes": {
+        "whole_core_state": 35405
+      },
+      "median_ms": {
+        "cold_algorithm_cache": 1.051909,
+        "warm_algorithm_cache": 0.554218
+      }
+    }
+  }
+}

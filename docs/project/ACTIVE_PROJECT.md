@@ -48,8 +48,16 @@ expressions and all twenty-three existing detailed judgments. Its
 records actual native descent, reader feedback and all 48 original versions retained.
 Surface reads batch the page's
 bindings and mature encounters avoid duplicate Core initialization. Local
-physical persistence and geometric inverse-down maintenance remain useful next
-work. Retain raw Evidence, history, non-tree coverage and Host semantic decisions.
+physical persistence remains useful next work. The follow-up
+[top-down maintenance and reorganization study](NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md)
+supports forward maintenance and separate physical inventory without requiring a
+persistent reverse-coverage table. Sparse changes may benefit from optional
+on-demand inverse-down lookup. Rewriting upper judgments preserves existing
+geometry; moving a fact requires comparing actual old/new reading paths, since
+zero global orphans can conceal a lost useful entry. Preserve raw Evidence,
+history, non-tree coverage and Host semantic decisions. The study includes
+copy-only experiments; it does not claim that automatic maintenance scheduling
+or a multi-action Access reorganization transaction is already implemented.
 
 Continue using Nollm's own structure and evidence-backed relationships to develop Nollm.
 The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)

@@ -49,6 +49,13 @@ eight complete stored upper expressions and twelve condition expressions; its
 [formation and preservation record](sujiben/STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)
 documents actual native descent and reader feedback. Physical page storage remains further work.
 
+The [top-down maintenance and reorganization study](docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md)
+compares forward inspection with optional on-demand inverse lookup, measures read
+and write costs, and verifies how a later Host can revise an upper interpretation
+or move an unchanged fact. Its copy-only experiment preserves all evidence while
+exposing an old entry lost by a globally reachable move; zero orphans alone is
+therefore insufficient to assess a changed organization.
+
 The current [support-pressure and deformation implementation](docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
 adds advisory 1–100 write pressure, explicitly selected multilayer writing and
 read-only geometry experiments. Run its focused functional and installed-CLI

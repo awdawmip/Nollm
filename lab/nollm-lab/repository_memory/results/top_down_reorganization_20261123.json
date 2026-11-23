@@ -1,0 +1,316 @@
+{
+  "scope": "One-off replay of two recorded Host choices; no blind test, model-family comparison or runtime automation",
+  "input_field": "/workspace/scratch/59faa762c350/Nollm/sujiben/field",
+  "original_file_count": 72,
+  "summary_revision": {
+    "old_id": "nollm.formed.-2.encounter.v1",
+    "old_body": "相遇共用读写，来源固定到提交。",
+    "new_id": "reorganization.maintenance-consequences.v1",
+    "new_body": "追加支持保正文，修订保历史；原文可回溯。",
+    "new_body_utf8_bytes": 60,
+    "save_result": {
+      "kind": "result",
+      "effect": "revision",
+      "entry": [
+        -2,
+        1,
+        1
+      ],
+      "focus": [
+        -2,
+        1,
+        1
+      ],
+      "focus_path": [
+        [
+          -2,
+          1,
+          1
+        ]
+      ],
+      "id": "reorganization.maintenance-consequences.v1",
+      "cell": [
+        -2,
+        1,
+        1
+      ],
+      "revises": "nollm.formed.-2.encounter.v1"
+    },
+    "all_original_detail_paths_unchanged": true,
+    "old_version_still_exactly_readable": true,
+    "old_version_current_after_revision": false
+  },
+  "move_candidate": {
+    "statement_id": "nollm.binding.v3",
+    "from_cell": [
+      0,
+      1,
+      -1
+    ],
+    "to_cell": [
+      0,
+      3,
+      -1
+    ],
+    "old_root_entries": [
+      [
+        -2,
+        0,
+        0
+      ],
+      [
+        -2,
+        1,
+        1
+      ]
+    ],
+    "new_root_entries": [
+      [
+        -2,
+        1,
+        1
+      ],
+      [
+        -2,
+        2,
+        1
+      ]
+    ],
+    "lost_root_entries": [
+      [
+        -2,
+        0,
+        0
+      ]
+    ],
+    "gained_root_entries": [
+      [
+        -2,
+        2,
+        1
+      ]
+    ],
+    "body_and_source_description_unchanged": true,
+    "bridges_unchanged": true,
+    "orphan_current_ids_after_move": [],
+    "old_paths": [
+      [
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          -1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          -1,
+          1,
+          -1
+        ],
+        [
+          0,
+          1,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          -1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          -1
+        ]
+      ]
+    ],
+    "new_paths": [
+      [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          3,
+          0
+        ],
+        [
+          0,
+          3,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          2,
+          1
+        ],
+        [
+          0,
+          3,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          -1
+        ]
+      ],
+      [
+        [
+          -2,
+          2,
+          1
+        ],
+        [
+          -1,
+          3,
+          0
+        ],
+        [
+          0,
+          3,
+          -1
+        ]
+      ]
+    ]
+  },
+  "preservation": {
+    "baseline": {
+      "original_evidence_files": 68,
+      "changed_or_missing_original_evidence": []
+    },
+    "summary_only": {
+      "original_evidence_files": 68,
+      "changed_or_missing_original_evidence": []
+    },
+    "moved_candidate": {
+      "original_evidence_files": 68,
+      "changed_or_missing_original_evidence": []
+    }
+  },
+  "original_active_field_changes_at_end": {
+    "missing": [],
+    "added": [],
+    "changed": []
+  },
+  "baseline_copy_changes_at_end": {
+    "missing": [],
+    "added": [],
+    "changed": []
+  },
+  "measurement_note": "Minified JSON excludes cursor; these bytes are not pretty-printed CLI output or disk I/O. Sweep call counts exclude the separate observation/mutation replay.",
+  "sweep_metrics": {
+    "baseline_sweep": {
+      "current_count": 43,
+      "detail_count": 23,
+      "reachable_detail_count": 23,
+      "native_api_calls": 56,
+      "locality_api_calls": 47,
+      "visible_minified_json_utf8_bytes_total": 349022,
+      "visible_minified_json_utf8_bytes_max": 14826,
+      "returned_body_utf8_bytes_with_repeats": 102770,
+      "unique_observed_body_utf8_bytes": 24557,
+      "orphan_current_ids_under_this_scope": []
+    },
+    "summary_only_sweep": {
+      "current_count": 43,
+      "detail_count": 23,
+      "reachable_detail_count": 23,
+      "native_api_calls": 56,
+      "locality_api_calls": 47,
+      "visible_minified_json_utf8_bytes_total": 349111,
+      "visible_minified_json_utf8_bytes_max": 14826,
+      "returned_body_utf8_bytes_with_repeats": 102785,
+      "unique_observed_body_utf8_bytes": 24572,
+      "orphan_current_ids_under_this_scope": []
+    },
+    "moved_candidate_sweep": {
+      "current_count": 43,
+      "detail_count": 23,
+      "reachable_detail_count": 23,
+      "native_api_calls": 56,
+      "locality_api_calls": 47,
+      "visible_minified_json_utf8_bytes_total": 349116,
+      "visible_minified_json_utf8_bytes_max": 14826,
+      "returned_body_utf8_bytes_with_repeats": 102785,
+      "unique_observed_body_utf8_bytes": 24572,
+      "orphan_current_ids_under_this_scope": []
+    }
+  },
+  "original_witness_reproduced": true,
+  "source_commit": "5dd3c43c77127a60655d63360eb0a3c2a9d0babc",
+  "writable_not_downward_witness": {
+    "upper": [
+      -2,
+      0,
+      -2
+    ],
+    "lower": [
+      -1,
+      -2,
+      -2
+    ],
+    "up_weight_q16": 683,
+    "upper_down_contains_lower": false
+  }
+}
