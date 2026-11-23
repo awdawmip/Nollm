@@ -1,0 +1,175 @@
+{
+  "baseline_id": "nollm-test-20261123.1",
+  "purpose": "Fixed internal functional test snapshot of the current engine, stored field and read/write rules",
+  "source_commit": "f37667bf232360d0c26d37de0639285084230ddc",
+  "runtime_code_changed": false,
+  "package_versions": {
+    "nollm-core": "0.1.0",
+    "nollm-access": "0.1.0",
+    "identity_note": "Use source_commit; package versions alone do not identify this engine"
+  },
+  "core": {
+    "profile_id": "default_dream_v1",
+    "profile_registry_schema": "nollm_geometry_profiles_v6",
+    "implementation_id": "parity_preserving_q40_residual_mask_kernel_v2",
+    "method_id": "equal_area_hex_microtriangle_q40_m4_v1",
+    "coverage_contract_id": "nollm_bounded_approximate_hex_coverage_v1",
+    "approximation_policy_id": "nollm_broad_residue_min_hit_1_v1",
+    "fractional_bits": 40,
+    "sample_count": 96,
+    "sample_subdivision": 4,
+    "min_hit_count": 1,
+    "weight_fractional_bits": 16,
+    "weight_sum": 65536,
+    "rotation_step_turns": "1/16",
+    "scale_base": "positive root of x^4-2",
+    "phase_period": 8,
+    "physical_layer_range": [
+      -64,
+      64
+    ],
+    "coverage_layer_delta": 1,
+    "storage_hex_radius": 2147483647,
+    "active_writable_hex_radius": 1073741823,
+    "writable_field_down_steps_guarantee": 2,
+    "coordinate_contract_id": "nollm_hex_radius_2p31_default_chart_null_phase_v1",
+    "writable_field_contract_id": "nollm_hex_storage_2p31_writable_2p30_depth2_v1",
+    "rounding": "signed half-even; existing absolute cube-repair tie order; even-anchor phase restoration",
+    "core_state_schema": "nollm_core_state_v1",
+    "binding_schema": "nollm_access_bindings_v2",
+    "statement_schema": "nollm_access_statement_v1",
+    "kernel_registry_schema": "nollm_geometry_kernels_v5",
+    "chart_id": "default",
+    "phase": null
+  },
+  "lab": {
+    "relation_to_live_core": "Opt-in research executors; not used by the frozen field Core/Access recall or placement geometry",
+    "exact": {
+      "modes": [
+        "auto",
+        "reference"
+      ],
+      "contract_id": "lab_exact_rational_axial_quadrature_v1",
+      "sample_count": 96
+    },
+    "adaptive": {
+      "mode": "adaptive",
+      "contract_id": "lab_exact_rational_axial_quadrature_v1",
+      "initial_bits": 16,
+      "max_bits": 128,
+      "unresolved_samples": "refine then exact fallback",
+      "sample_count": 96
+    },
+    "quantized": {
+      "mode": "quantized",
+      "contract_id": "lab_quantized_rational_axial_quadrature_v1",
+      "default_fractional_bits": 12,
+      "explicit_reviewed_fractional_bits": 8,
+      "sample_count": 96,
+      "rounding_contract": "existing per-operation fixed-precision nonlinear recurrence; affine-only path retains exact integer kernel",
+      "unit_status": "current world-intermediate unit; general local-unit and canonical-anchor normalization not implemented",
+      "retains_changed_sample_labels": true
+    },
+    "user_selected_next_configuration": {
+      "status": "SELECTED_NOT_IMPLEMENTED",
+      "coverage_layer_delta": 1,
+      "fractional_bits": 8,
+      "unit": "local cell length",
+      "sample_count": 96,
+      "integer_addresses": "full precision",
+      "canonical_anchor": "physical source cell or fixed geometric block, independent of representation reanchor",
+      "reference": "docs/project/NOLLM_ADJACENT_P8_CAPACITY_PLAN_20261123.md"
+    }
+  },
+  "field": {
+    "source_commit": "f37667bf232360d0c26d37de0639285084230ddc",
+    "path": "sujiben/field",
+    "current_statement_counts_by_layer": {
+      "-2": 8,
+      "-1": 12,
+      "0": 23
+    },
+    "body_utf8_bytes_by_layer": {
+      "-2": 398,
+      "-1": 2026,
+      "0": 22242
+    },
+    "occupied_cells": 41,
+    "current_statements": 43,
+    "version_files": 69,
+    "existing_bridges": 2
+  },
+  "encounter": {
+    "surface_layers": [
+      -2
+    ],
+    "layers": [
+      -2,
+      -1,
+      0
+    ],
+    "order": 0,
+    "page_size": 8,
+    "via": "downward",
+    "steps": 1,
+    "beam": 16,
+    "limit": 20,
+    "compact": true
+  },
+  "content_budget": {
+    "schema_version": "nollm_access_content_budget_v1",
+    "profile_id": "default_dream_v1",
+    "chart_id": "default",
+    "layers": {
+      "-2": {
+        "max_cell_atoms": 2,
+        "max_cell_utf8_bytes": 128,
+        "max_layer_cells": 16,
+        "max_layer_utf8_bytes": 2048
+      },
+      "-1": {
+        "max_cell_atoms": 2,
+        "max_cell_utf8_bytes": 512
+      },
+      "0": {
+        "max_cell_atoms": 2,
+        "max_cell_utf8_bytes": 8192
+      }
+    }
+  },
+  "read_write_rules": {
+    "semantic_decision_owner": "real LLM / Host",
+    "relation_source": "native overlapping geometry",
+    "entry": "one Host-selected physical entry per encounter",
+    "focus": "actual displayed adjacent coverage_down target; ascend uses actual focus_path",
+    "default_bridge_traversal": false,
+    "writes": "NEW/REUSE/revision_current/MOVE keep existing Core/Access semantics; evidence and history remain readable",
+    "placement_readback": "a displayed writable candidate does not by itself prove downward reachability; verify the intended reading path",
+    "reorganization": "read back new and relevant old routes; zero global orphans alone is insufficient",
+    "maintenance": "follow observed paths and top-down inspection; optional on-demand inverse-down; no required persistent parent index",
+    "first_surface": "complete short statements stored in upper physical cells; details unfold below"
+  },
+  "not_implemented": [
+    "general local-unit p8 executor",
+    "p8 migration into live Core",
+    "automatic resumable forward maintenance scheduler",
+    "on-demand candidate pressure UI",
+    "local paged Core/binding persistence",
+    "multi-action Access reorganization transaction"
+  ],
+  "precision_reproduction_inputs": {
+    "world_units_probe": "lab/nollm-lab/geometry/probe_adjacent_p8_world_units.py",
+    "unit_fixture_result": "lab/nollm-lab/geometry/results/adjacent_p8_world_units_20261123.json",
+    "fixed_benchmark_inventory": "lab/nollm-lab/geometry/results/quantized_structure_benchmark_20261123.json",
+    "main_seed": 20261123,
+    "holdout_seed": 20261124,
+    "twist_depth_meaning": "number of twist segments within one adjacent layer pair, not physical layers crossed",
+    "reanchor_probe": "lab/nollm-lab/geometry/probe_quantized_reanchor.py"
+  },
+  "tests": {
+    "result": "lab/nollm-lab/repository_memory/results/frozen_baseline_20261123.json",
+    "scope": "focused functional regression and actual frozen-field replay; no new semantic superiority or large-capacity claim"
+  },
+  "future_comparison": "Keep this source commit, field and parameter set fixed; identify candidate revision and changed configuration explicitly in each comparison",
+  "encounter_write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1"
+}

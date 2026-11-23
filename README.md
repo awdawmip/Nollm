@@ -103,6 +103,13 @@ reproducible unit-change probe and a source audit. The later stored-Surface
 direction makes semantic formation the first capacity priority.
 The plan keeps full integer addresses and separates capacity from fractional precision.
 
+The [fixed functional test baseline](docs/project/NOLLM_TEST_BASELINE_20261123.md)
+records `nollm-test-20261123.1`: the current Q40/96 residual-mask engine, stored
+Surface/read-write configuration, 178 newly run tests and actual field replay.
+It also restores the selected adjacent local-p8/96 design and records the old
+Lab quantized unit/reanchor witnesses. That pending executor is distinct from
+the active Core and from the existing world-unit quantized p12 default.
+
 ## Why Nollm exists
 
 Long-context systems eventually face the same pressure: keep more text in the prompt, summarize harder, or build another retrieval stack around the model.

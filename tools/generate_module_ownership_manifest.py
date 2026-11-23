@@ -433,6 +433,7 @@ def classify(path: str, imports: list[str], active_governance: set[str] | None =
             "benchmark_adaptive_rational.py": ("active tool", "ACTIVE_TOOL"),
             "benchmark_quantized_rational.py": ("active tool", "ACTIVE_TOOL"),
             "probe_adjacent_p8_world_units.py": ("active tool", "ACTIVE_TOOL"),
+            "probe_quantized_reanchor.py": ("active tool", "ACTIVE_TOOL"),
             "probe_core_precision.py": ("active tool", "ACTIVE_TOOL"),
             "probe_core_precision_boundary.py": ("active tool", "ACTIVE_TOOL"),
             "probe_rational_precision.py": ("active tool", "ACTIVE_TOOL"),

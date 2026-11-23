@@ -31,6 +31,19 @@ migration. Canceled operations remain canceled. Actual access denials and platfo
 restrictions remain binding; this scope does not authorize bypassing them or
 resuming canceled calls.
 
+## Fixed functional test snapshot
+
+The [2026-11-23 fixed test baseline](NOLLM_TEST_BASELINE_20261123.md) and its
+[configuration snapshot](NOLLM_TEST_BASELINE_20261123.json) identify
+`nollm-test-20261123.1`, with runtime code and original field fixed at
+`f37667bf232360d0c26d37de0639285084230ddc`. The actual implementation is
+`parity_preserving_q40_residual_mask_kernel_v2`, with the existing Q40/96 public
+contract. This run passed 178 focused tests and replayed actual stored-Surface,
+revision and move behavior. The existing Lab quantized p12 default and explicit
+p8 option retain world-unit and representation-anchor dependencies; user-selected
+adjacent local-p8/96 normalization is still an implementation continuation.
+Use this fixed input for comparison; current main remains the development line.
+
 ## Current development: Nollm self-bootstrapping
 
 The user's 2026-11-23 correction makes [stored Surface formation](NOLLM_STORED_SURFACE_FORMATION_20261123.md)

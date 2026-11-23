@@ -1,0 +1,3520 @@
+{
+  "baseline_id": "nollm-test-20261123.1",
+  "source_commit": "f37667bf232360d0c26d37de0639285084230ddc",
+  "run_date": "2026-11-23",
+  "timezone": "Asia/Hong_Kong",
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41"
+  },
+  "source_verification": {
+    "scope": "present files under Core, Access, geometry, repository_memory and sujiben/field compared once to pinned Git blobs",
+    "matched_files": 306,
+    "mismatched_files": [],
+    "partial_source_snapshot": true
+  },
+  "focused_tests": [
+    {
+      "slice": "support_deformation",
+      "runner_or_files": [
+        "lab/nollm-lab/geometry/run_support_deformation_tests.py"
+      ],
+      "tests": 154,
+      "seconds": 14.522,
+      "success": true
+    },
+    {
+      "slice": "stored_surface",
+      "runner_or_files": [
+        "packages/nollm-access/tests/test_content_budget.py",
+        "packages/nollm-access/tests/test_surface_page_content_reads.py",
+        "lab/nollm-lab/repository_memory/test_stored_surface_encounter.py"
+      ],
+      "tests": 24,
+      "seconds": 1.253,
+      "success": true
+    }
+  ],
+  "total_distinct_tests": 178,
+  "test_logs_scope": "Logs were retained in the execution workspace; this record preserves the actual runners, inputs, counts and outcomes.",
+  "stored_surface": {
+    "surface_complete": true,
+    "surface_body_utf8_bytes": 398,
+    "surface_visible_json_utf8_bytes": 1939,
+    "surface_statement_reads": [
+      {
+        "id": "nollm.formed.-2.roles.v1",
+        "utf8_bytes": 45
+      },
+      {
+        "id": "nollm.formed.-2.precision.v1",
+        "utf8_bytes": 54
+      },
+      {
+        "id": "nollm.formed.-2.residual.v1",
+        "utf8_bytes": 48
+      },
+      {
+        "id": "nollm.formed.-2.navigation.v1",
+        "utf8_bytes": 46
+      },
+      {
+        "id": "nollm.formed.-2.restoration.v1",
+        "utf8_bytes": 57
+      },
+      {
+        "id": "nollm.formed.-2.formation.v1",
+        "utf8_bytes": 49
+      },
+      {
+        "id": "nollm.formed.-2.encounter.v1",
+        "utf8_bytes": 45
+      },
+      {
+        "id": "nollm.formed.-2.runtime.v1",
+        "utf8_bytes": 54
+      }
+    ],
+    "first_surface_core_binding_reads": [
+      {
+        "path": "core/current_state.json",
+        "bytes": 35514
+      },
+      {
+        "path": "access/bindings.json",
+        "bytes": 10854
+      }
+    ],
+    "layer_stats": {
+      "-2": {
+        "cells": 8,
+        "statements": 8,
+        "utf8_bytes": 398
+      },
+      "-1": {
+        "cells": 12,
+        "statements": 12,
+        "utf8_bytes": 2026
+      },
+      "0": {
+        "cells": 21,
+        "statements": 23,
+        "utf8_bytes": 22242
+      }
+    },
+    "detail_statements": 23,
+    "details_returned": 23,
+    "missing_details": [],
+    "details_with_multiple_upper_entries": 19,
+    "paths": {
+      "nollm.stitch.v2": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            0,
+            -1
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            -1
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            0
+          ]
+        ]
+      ],
+      "nollm.navigation.v3": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            0
+          ],
+          [
+            0,
+            -2,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            1
+          ]
+        ]
+      ],
+      "nollm.recall.v2": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            -1,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -1,
+            1
+          ]
+        ]
+      ],
+      "nollm.surface.v1": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            0
+          ],
+          [
+            0,
+            -2,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            -1,
+            0
+          ],
+          [
+            0,
+            -2,
+            0
+          ]
+        ]
+      ],
+      "nollm.architecture.v2": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            0
+          ],
+          [
+            0,
+            -3,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            1
+          ]
+        ]
+      ],
+      "nollm.geometry.v2": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -3,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -3,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            0
+          ]
+        ]
+      ],
+      "nollm.pressure.v1": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -4,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -4,
+            0
+          ]
+        ]
+      ],
+      "nollm.deformation.v2": [
+        [
+          [
+            -2,
+            -1,
+            -1
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -2,
+            -1
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -1
+          ]
+        ]
+      ],
+      "nollm.residual-geometry.v1": [
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -2,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -2,
+            -1
+          ]
+        ]
+      ],
+      "nollm.rational-geometry.v2": [
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -2,
+            -2
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -2,
+            -2
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            -2
+          ],
+          [
+            -1,
+            -1,
+            -2
+          ],
+          [
+            0,
+            -2,
+            -2
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -2,
+            -2
+          ]
+        ]
+      ],
+      "nollm.precision-budget.v2": [
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -2
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -2
+          ]
+        ]
+      ],
+      "nollm.quantized-structure.v2": [
+        [
+          [
+            -2,
+            0,
+            -3
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -3
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -3
+          ],
+          [
+            0,
+            -3,
+            -3
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -4
+          ],
+          [
+            0,
+            -3,
+            -3
+          ]
+        ]
+      ],
+      "nollm.kernel-registry.v2": [
+        [
+          [
+            -2,
+            0,
+            -1
+          ],
+          [
+            -1,
+            0,
+            -1
+          ],
+          [
+            0,
+            0,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            -1
+          ],
+          [
+            0,
+            0,
+            -1
+          ]
+        ]
+      ],
+      "nollm.core-commit.v2": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            1
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ]
+      ],
+      "nollm.sources.v1": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            2,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ],
+          [
+            0,
+            2,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            2,
+            -1
+          ]
+        ]
+      ],
+      "nollm.binding.v3": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ]
+      ],
+      "nollm.statement-store.v2": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ]
+      ],
+      "nollm.core-read.v2": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ]
+      ],
+      "nollm.notebook-restoration.v1": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ]
+      ],
+      "nollm.capacity.v2": [
+        [
+          [
+            -2,
+            1,
+            -4
+          ],
+          [
+            -1,
+            -1,
+            -4
+          ],
+          [
+            0,
+            -3,
+            -4
+          ]
+        ]
+      ],
+      "nollm.installation.v4": [
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            4,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            2,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            4,
+            -1
+          ]
+        ]
+      ],
+      "nollm.notebook-boundaries.v1": [
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            4,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            2,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            4,
+            -1
+          ]
+        ]
+      ],
+      "nollm.adapter.v5": [
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            2,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ]
+      ]
+    },
+    "roots": [
+      {
+        "entry": [
+          -2,
+          -1,
+          -1
+        ],
+        "text": [
+          "LLM提炼语义，蜂巢承载覆盖关系。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          0,
+          -3
+        ],
+        "text": [
+          "精确保持标签；量化模式允许关系变化。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          0,
+          -2
+        ],
+        "text": [
+          "残差复用保留样本，变形改变覆盖。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          0,
+          -1
+        ],
+        "text": [
+          "同一入口逐层展开，桥由Host明示。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          0,
+          0
+        ],
+        "text": [
+          "正文、绑定、几何一起恢复；版本可回溯。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          1,
+          -4
+        ],
+        "text": [
+          "表层存短判断，容量与局部8位分开。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "text": [
+          "相遇共用读写，来源固定到提交。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      },
+      {
+        "entry": [
+          -2,
+          2,
+          1
+        ],
+        "text": [
+          "运行时可替换，工作场与源码各自保留。"
+        ],
+        "first_local_layers": [
+          -2,
+          -1
+        ]
+      }
+    ],
+    "existing_bridges": 2,
+    "locality_visible_json_max_bytes": 14826,
+    "down_not_reverse_up_witness": {
+      "upper": [
+        -1,
+        -11,
+        9
+      ],
+      "lower": [
+        0,
+        -9,
+        13
+      ],
+      "down_hits": 1,
+      "up_contains_upper": false
+    },
+    "scope": "Native path and content evidence; semantic decisions and physical page I/O require separate evaluation"
+  },
+  "reorganization_replay": {
+    "scope": "One-off replay of two recorded Host choices; no blind test, model-family comparison or runtime automation",
+    "input_field": "sujiben/field at source_commit",
+    "original_file_count": 73,
+    "summary_revision": {
+      "old_id": "nollm.formed.-2.encounter.v1",
+      "old_body": "相遇共用读写，来源固定到提交。",
+      "new_id": "reorganization.maintenance-consequences.v1",
+      "new_body": "追加支持保正文，修订保历史；原文可回溯。",
+      "new_body_utf8_bytes": 60,
+      "save_result": {
+        "kind": "result",
+        "effect": "revision",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "focus": [
+          -2,
+          1,
+          1
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ]
+        ],
+        "id": "reorganization.maintenance-consequences.v1",
+        "cell": [
+          -2,
+          1,
+          1
+        ],
+        "revises": "nollm.formed.-2.encounter.v1"
+      },
+      "all_original_detail_paths_unchanged": true,
+      "old_version_still_exactly_readable": true,
+      "old_version_current_after_revision": false
+    },
+    "move_candidate": {
+      "statement_id": "nollm.binding.v3",
+      "from_cell": [
+        0,
+        1,
+        -1
+      ],
+      "to_cell": [
+        0,
+        3,
+        -1
+      ],
+      "old_root_entries": [
+        [
+          -2,
+          0,
+          0
+        ],
+        [
+          -2,
+          1,
+          1
+        ]
+      ],
+      "new_root_entries": [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -2,
+          2,
+          1
+        ]
+      ],
+      "lost_root_entries": [
+        [
+          -2,
+          0,
+          0
+        ]
+      ],
+      "gained_root_entries": [
+        [
+          -2,
+          2,
+          1
+        ]
+      ],
+      "body_and_source_description_unchanged": true,
+      "bridges_unchanged": true,
+      "orphan_current_ids_after_move": [],
+      "old_paths": [
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            -1
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            -1
+          ]
+        ]
+      ],
+      "new_paths": [
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            1
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ],
+        [
+          [
+            -2,
+            2,
+            1
+          ],
+          [
+            -1,
+            3,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ]
+      ]
+    },
+    "preservation": {
+      "baseline": {
+        "original_evidence_files": 69,
+        "changed_or_missing_original_evidence": []
+      },
+      "summary_only": {
+        "original_evidence_files": 69,
+        "changed_or_missing_original_evidence": []
+      },
+      "moved_candidate": {
+        "original_evidence_files": 69,
+        "changed_or_missing_original_evidence": []
+      }
+    },
+    "original_active_field_changes_at_end": {
+      "missing": [],
+      "added": [],
+      "changed": []
+    },
+    "baseline_copy_changes_at_end": {
+      "missing": [],
+      "added": [],
+      "changed": []
+    },
+    "measurement_note": "Minified JSON excludes cursor; these bytes are not pretty-printed CLI output or disk I/O. Sweep call counts exclude the separate observation/mutation replay.",
+    "sweep_metrics": {
+      "baseline_sweep": {
+        "current_count": 43,
+        "detail_count": 23,
+        "reachable_detail_count": 23,
+        "native_api_calls": 56,
+        "locality_api_calls": 47,
+        "visible_minified_json_utf8_bytes_total": 350012,
+        "visible_minified_json_utf8_bytes_max": 14826,
+        "returned_body_utf8_bytes_with_repeats": 103424,
+        "unique_observed_body_utf8_bytes": 24666,
+        "orphan_current_ids_under_this_scope": []
+      },
+      "summary_only_sweep": {
+        "current_count": 43,
+        "detail_count": 23,
+        "reachable_detail_count": 23,
+        "native_api_calls": 56,
+        "locality_api_calls": 47,
+        "visible_minified_json_utf8_bytes_total": 350101,
+        "visible_minified_json_utf8_bytes_max": 14826,
+        "returned_body_utf8_bytes_with_repeats": 103439,
+        "unique_observed_body_utf8_bytes": 24681,
+        "orphan_current_ids_under_this_scope": []
+      },
+      "moved_candidate_sweep": {
+        "current_count": 43,
+        "detail_count": 23,
+        "reachable_detail_count": 23,
+        "native_api_calls": 56,
+        "locality_api_calls": 47,
+        "visible_minified_json_utf8_bytes_total": 350106,
+        "visible_minified_json_utf8_bytes_max": 14826,
+        "returned_body_utf8_bytes_with_repeats": 103439,
+        "unique_observed_body_utf8_bytes": 24681,
+        "orphan_current_ids_under_this_scope": []
+      }
+    },
+    "original_witness_reproduced": true
+  },
+  "precision_review": {
+    "world_unit_replay": {
+      "schema": "nollm_adjacent_p8_world_unit_probe_v1",
+      "source_baseline": "d6a3d4c39aec4df56133a4c70bc081752d5ba5a4",
+      "frozen_inventory_seed": 20261123,
+      "case": "d2_medium_up",
+      "direction": "source layer 1 to target layer 0",
+      "source_twists": 1,
+      "target_twists": 1,
+      "source_cells": 8,
+      "sample_count_per_source": 96,
+      "coordinates": [
+        [
+          2,
+          -2
+        ],
+        [
+          0,
+          -2
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          -1,
+          0
+        ]
+      ],
+      "source_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "135",
+                "denominator": "104"
+              },
+              {
+                "numerator": "63",
+                "denominator": "104"
+              }
+            ],
+            [
+              {
+                "numerator": "-63",
+                "denominator": "104"
+              },
+              {
+                "numerator": "9",
+                "denominator": "13"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "6",
+              "denominator": "17"
+            },
+            {
+              "numerator": "-3",
+              "denominator": "19"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "3",
+              "denominator": "13"
+            },
+            {
+              "numerator": "0",
+              "denominator": "1"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "3",
+                "denominator": "11"
+              },
+              {
+                "numerator": "-6",
+                "denominator": "13"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "63",
+              "denominator": "8"
+            },
+            "strength": {
+              "numerator": "7",
+              "denominator": "40"
+            }
+          }
+        ]
+      },
+      "target_map": {
+        "contract_id": "lab_exact_rational_axial_map_v1",
+        "frame": {
+          "matrix": [
+            [
+              {
+                "numerator": "385",
+                "denominator": "398"
+              },
+              {
+                "numerator": "-196",
+                "denominator": "597"
+              }
+            ],
+            [
+              {
+                "numerator": "196",
+                "denominator": "597"
+              },
+              {
+                "numerator": "1547",
+                "denominator": "1194"
+              }
+            ]
+          ],
+          "origin": [
+            {
+              "numerator": "-7",
+              "denominator": "19"
+            },
+            {
+              "numerator": "-4",
+              "denominator": "17"
+            }
+          ],
+          "local_anchor": [
+            {
+              "numerator": "3",
+              "denominator": "11"
+            },
+            {
+              "numerator": "-1",
+              "denominator": "13"
+            }
+          ]
+        },
+        "twists": [
+          {
+            "center": [
+              {
+                "numerator": "4",
+                "denominator": "11"
+              },
+              {
+                "numerator": "-1",
+                "denominator": "13"
+              }
+            ],
+            "radius_squared": {
+              "numerator": "9",
+              "denominator": "1"
+            },
+            "strength": {
+              "numerator": "-1",
+              "denominator": "5"
+            }
+          }
+        ]
+      },
+      "normalization_rule": "affine matrix and origin multiply by lambda; local anchors unchanged; twist centers multiply by lambda; radius_squared multiplies by lambda^2; strengths unchanged",
+      "normalization_back_rule": "multiply scaled world maps by 1/lambda before compiling p8",
+      "baseline_p8_vs_exact": {
+        "sample_label_changes": 9,
+        "false_negative_edges": 0,
+        "false_positive_edges": 0,
+        "union_edges": 32,
+        "structural_error": "0",
+        "tv": "3/256",
+        "sources_with_changed_target_set": 0
+      },
+      "reference_hit_histograms": [
+        [
+          [
+            1,
+            -2,
+            8
+          ],
+          [
+            2,
+            -3,
+            25
+          ],
+          [
+            2,
+            -2,
+            60
+          ],
+          [
+            2,
+            -1,
+            2
+          ],
+          [
+            3,
+            -2,
+            1
+          ]
+        ],
+        [
+          [
+            -1,
+            -1,
+            47
+          ],
+          [
+            -1,
+            0,
+            2
+          ],
+          [
+            0,
+            -2,
+            9
+          ],
+          [
+            0,
+            -1,
+            35
+          ],
+          [
+            1,
+            -2,
+            3
+          ]
+        ],
+        [
+          [
+            0,
+            1,
+            36
+          ],
+          [
+            1,
+            0,
+            17
+          ],
+          [
+            1,
+            1,
+            43
+          ]
+        ],
+        [
+          [
+            -1,
+            1,
+            11
+          ],
+          [
+            0,
+            0,
+            28
+          ],
+          [
+            0,
+            1,
+            57
+          ]
+        ],
+        [
+          [
+            1,
+            1,
+            21
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            2,
+            1,
+            72
+          ]
+        ],
+        [
+          [
+            1,
+            0,
+            42
+          ],
+          [
+            1,
+            1,
+            5
+          ],
+          [
+            2,
+            -1,
+            4
+          ],
+          [
+            2,
+            0,
+            45
+          ]
+        ],
+        [
+          [
+            2,
+            0,
+            21
+          ],
+          [
+            3,
+            -2,
+            10
+          ],
+          [
+            3,
+            -1,
+            62
+          ],
+          [
+            4,
+            -2,
+            3
+          ]
+        ],
+        [
+          [
+            -1,
+            0,
+            19
+          ],
+          [
+            -1,
+            1,
+            15
+          ],
+          [
+            0,
+            -1,
+            16
+          ],
+          [
+            0,
+            0,
+            44
+          ],
+          [
+            1,
+            -1,
+            2
+          ]
+        ]
+      ],
+      "results": [
+        {
+          "common_world_scale": "1",
+          "exact_matches_frozen_reference": true,
+          "adaptive_matches_frozen_reference": true,
+          "p8_vs_exact": {
+            "sample_label_changes": 9,
+            "false_negative_edges": 0,
+            "false_positive_edges": 0,
+            "union_edges": 32,
+            "structural_error": "0",
+            "tv": "3/256",
+            "sources_with_changed_target_set": 0
+          },
+          "p8_vs_original_world_units": {
+            "sample_label_changes": 0,
+            "false_negative_edges": 0,
+            "false_positive_edges": 0,
+            "union_edges": 32,
+            "structural_error": "0",
+            "tv": "0",
+            "sources_with_changed_target_set": 0
+          },
+          "normalized_maps_exactly_original": true,
+          "normalized_p8_labels_identical": true,
+          "p8_hit_histograms": [
+            [
+              [
+                1,
+                -2,
+                7
+              ],
+              [
+                2,
+                -3,
+                27
+              ],
+              [
+                2,
+                -2,
+                59
+              ],
+              [
+                2,
+                -1,
+                2
+              ],
+              [
+                3,
+                -2,
+                1
+              ]
+            ],
+            [
+              [
+                -1,
+                -1,
+                48
+              ],
+              [
+                -1,
+                0,
+                2
+              ],
+              [
+                0,
+                -2,
+                9
+              ],
+              [
+                0,
+                -1,
+                34
+              ],
+              [
+                1,
+                -2,
+                3
+              ]
+            ],
+            [
+              [
+                0,
+                1,
+                36
+              ],
+              [
+                1,
+                0,
+                17
+              ],
+              [
+                1,
+                1,
+                43
+              ]
+            ],
+            [
+              [
+                -1,
+                1,
+                10
+              ],
+              [
+                0,
+                0,
+                29
+              ],
+              [
+                0,
+                1,
+                57
+              ]
+            ],
+            [
+              [
+                1,
+                1,
+                19
+              ],
+              [
+                1,
+                2,
+                5
+              ],
+              [
+                2,
+                1,
+                72
+              ]
+            ],
+            [
+              [
+                1,
+                0,
+                42
+              ],
+              [
+                1,
+                1,
+                5
+              ],
+              [
+                2,
+                -1,
+                4
+              ],
+              [
+                2,
+                0,
+                45
+              ]
+            ],
+            [
+              [
+                2,
+                0,
+                19
+              ],
+              [
+                3,
+                -2,
+                9
+              ],
+              [
+                3,
+                -1,
+                64
+              ],
+              [
+                4,
+                -2,
+                4
+              ]
+            ],
+            [
+              [
+                -1,
+                0,
+                19
+              ],
+              [
+                -1,
+                1,
+                15
+              ],
+              [
+                0,
+                -1,
+                16
+              ],
+              [
+                0,
+                0,
+                44
+              ],
+              [
+                1,
+                -1,
+                2
+              ]
+            ]
+          ]
+        },
+        {
+          "common_world_scale": "1/256",
+          "exact_matches_frozen_reference": true,
+          "adaptive_matches_frozen_reference": true,
+          "p8_vs_exact": {
+            "sample_label_changes": 645,
+            "false_negative_edges": 19,
+            "false_positive_edges": 16,
+            "union_edges": 48,
+            "structural_error": "35/48",
+            "tv": "191/256",
+            "sources_with_changed_target_set": 8
+          },
+          "p8_vs_original_world_units": {
+            "sample_label_changes": 647,
+            "false_negative_edges": 19,
+            "false_positive_edges": 16,
+            "union_edges": 48,
+            "structural_error": "35/48",
+            "tv": "577/768",
+            "sources_with_changed_target_set": 8
+          },
+          "normalized_maps_exactly_original": true,
+          "normalized_p8_labels_identical": true,
+          "p8_hit_histograms": [
+            [
+              [
+                3,
+                -2,
+                61
+              ],
+              [
+                4,
+                -3,
+                35
+              ]
+            ],
+            [
+              [
+                2,
+                -2,
+                76
+              ],
+              [
+                3,
+                -5,
+                12
+              ],
+              [
+                3,
+                -3,
+                8
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                73
+              ],
+              [
+                0,
+                1,
+                3
+              ],
+              [
+                1,
+                0,
+                11
+              ],
+              [
+                1,
+                1,
+                6
+              ],
+              [
+                2,
+                1,
+                3
+              ]
+            ],
+            [
+              [
+                -1,
+                0,
+                22
+              ],
+              [
+                -1,
+                1,
+                26
+              ],
+              [
+                0,
+                -1,
+                6
+              ],
+              [
+                0,
+                0,
+                42
+              ]
+            ],
+            [
+              [
+                -1,
+                3,
+                32
+              ],
+              [
+                0,
+                0,
+                6
+              ],
+              [
+                0,
+                1,
+                27
+              ],
+              [
+                1,
+                1,
+                31
+              ]
+            ],
+            [
+              [
+                1,
+                0,
+                25
+              ],
+              [
+                2,
+                0,
+                36
+              ],
+              [
+                2,
+                1,
+                35
+              ]
+            ],
+            [
+              [
+                2,
+                0,
+                71
+              ],
+              [
+                2,
+                1,
+                9
+              ],
+              [
+                2,
+                2,
+                7
+              ],
+              [
+                3,
+                -1,
+                7
+              ],
+              [
+                3,
+                1,
+                2
+              ]
+            ],
+            [
+              [
+                0,
+                -1,
+                67
+              ],
+              [
+                0,
+                0,
+                9
+              ],
+              [
+                1,
+                -2,
+                20
+              ]
+            ]
+          ]
+        },
+        {
+          "common_world_scale": "1/65536",
+          "exact_matches_frozen_reference": true,
+          "adaptive_matches_frozen_reference": true,
+          "p8_vs_exact": {
+            "sample_label_changes": 696,
+            "false_negative_edges": 30,
+            "false_positive_edges": 6,
+            "union_edges": 38,
+            "structural_error": "18/19",
+            "tv": "29/32",
+            "sources_with_changed_target_set": 8
+          },
+          "p8_vs_original_world_units": {
+            "sample_label_changes": 695,
+            "false_negative_edges": 30,
+            "false_positive_edges": 6,
+            "union_edges": 38,
+            "structural_error": "18/19",
+            "tv": "695/768",
+            "sources_with_changed_target_set": 8
+          },
+          "normalized_maps_exactly_original": true,
+          "normalized_p8_labels_identical": true,
+          "p8_hit_histograms": [
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                96
+              ]
+            ]
+          ]
+        }
+      ],
+      "scope": "one frozen adjacent pair, 8 cells, 768 labels; demonstrates world-unit dependence, not a general error-rate bound or production normalization implementation"
+    },
+    "reanchor_witnesses": {
+      "schema": "nollm_quantized_reanchor_audit_v1",
+      "source_baseline": "f37667bf232360d0c26d37de0639285084230ddc",
+      "scope": "existing world-unit quantized Lab kernel; frozen main inventory; representation-only target reanchor",
+      "cases": [
+        {
+          "case": "d1_compact_weak_up",
+          "bits": 8,
+          "target_reanchor": [
+            "1/3",
+            "1/7"
+          ],
+          "changed_labels": 1,
+          "total_labels": 768,
+          "changes": [
+            {
+              "source": [
+                0,
+                -1
+              ],
+              "sample_index": 89,
+              "before": [
+                2,
+                -1
+              ],
+              "after": [
+                1,
+                -1
+              ],
+              "exact_target": [
+                2,
+                -1
+              ],
+              "exact_coordinates_before": [
+                "11116815029/7099937936",
+                "-21960258343/19524829324"
+              ],
+              "exact_coordinates_after": [
+                "11116815029/7099937936",
+                "-21960258343/19524829324"
+              ]
+            }
+          ],
+          "source_map": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "21",
+                    "denominator": "31"
+                  },
+                  {
+                    "numerator": "-77",
+                    "denominator": "248"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "77",
+                    "denominator": "248"
+                  },
+                  {
+                    "numerator": "245",
+                    "denominator": "248"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "7",
+                  "denominator": "17"
+                },
+                {
+                  "numerator": "-3",
+                  "denominator": "19"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "-2",
+                  "denominator": "13"
+                },
+                {
+                  "numerator": "3",
+                  "denominator": "11"
+                }
+              ]
+            },
+            "twists": [
+              {
+                "center": [
+                  {
+                    "numerator": "-5",
+                    "denominator": "11"
+                  },
+                  {
+                    "numerator": "-7",
+                    "denominator": "13"
+                  }
+                ],
+                "radius_squared": {
+                  "numerator": "7",
+                  "denominator": "4"
+                },
+                "strength": {
+                  "numerator": "7",
+                  "denominator": "160"
+                }
+              }
+            ]
+          },
+          "target_before": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "1225",
+                    "denominator": "974"
+                  },
+                  {
+                    "numerator": "308",
+                    "denominator": "1461"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-308",
+                    "denominator": "1461"
+                  },
+                  {
+                    "numerator": "3059",
+                    "denominator": "2922"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "-6",
+                  "denominator": "19"
+                },
+                {
+                  "numerator": "4",
+                  "denominator": "17"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "0",
+                  "denominator": "1"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "13"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_after": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "1225",
+                    "denominator": "974"
+                  },
+                  {
+                    "numerator": "308",
+                    "denominator": "1461"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-308",
+                    "denominator": "1461"
+                  },
+                  {
+                    "numerator": "3059",
+                    "denominator": "2922"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "24329",
+                  "denominator": "240578"
+                },
+                {
+                  "numerator": "297409",
+                  "denominator": "1937286"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "1",
+                  "denominator": "3"
+                },
+                {
+                  "numerator": "1",
+                  "denominator": "7"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_affine_forward_equal_at_control_points": true,
+          "twists_unchanged": true,
+          "exact_inverse_equal_for_changed_samples": true
+        },
+        {
+          "case": "d1_medium_up",
+          "bits": 12,
+          "target_reanchor": [
+            "1/3",
+            "1/7"
+          ],
+          "changed_labels": 1,
+          "total_labels": 768,
+          "changes": [
+            {
+              "source": [
+                1,
+                1
+              ],
+              "sample_index": 33,
+              "before": [
+                1,
+                0
+              ],
+              "after": [
+                1,
+                1
+              ],
+              "exact_target": [
+                1,
+                0
+              ],
+              "exact_coordinates_before": [
+                "1150638205354212973646073139204463848675908747332739070087580121/983011059703963465547319765449454233340898776942595077580115152",
+                "203639994439010173545048422836299939968156478515722647869752599/491505529851981732773659882724727116670449388471297538790057576"
+              ],
+              "exact_coordinates_after": [
+                "1150638205354212973646073139204463848675908747332739070087580121/983011059703963465547319765449454233340898776942595077580115152",
+                "203639994439010173545048422836299939968156478515722647869752599/491505529851981732773659882724727116670449388471297538790057576"
+              ]
+            }
+          ],
+          "source_map": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "135",
+                    "denominator": "104"
+                  },
+                  {
+                    "numerator": "63",
+                    "denominator": "104"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-63",
+                    "denominator": "104"
+                  },
+                  {
+                    "numerator": "9",
+                    "denominator": "13"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "1",
+                  "denominator": "17"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "19"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "0",
+                  "denominator": "1"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "11"
+                }
+              ]
+            },
+            "twists": [
+              {
+                "center": [
+                  {
+                    "numerator": "-3",
+                    "denominator": "11"
+                  },
+                  {
+                    "numerator": "-7",
+                    "denominator": "13"
+                  }
+                ],
+                "radius_squared": {
+                  "numerator": "63",
+                  "denominator": "8"
+                },
+                "strength": {
+                  "numerator": "7",
+                  "denominator": "40"
+                }
+              }
+            ]
+          },
+          "target_before": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "385",
+                    "denominator": "398"
+                  },
+                  {
+                    "numerator": "-196",
+                    "denominator": "597"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "196",
+                    "denominator": "597"
+                  },
+                  {
+                    "numerator": "1547",
+                    "denominator": "1194"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "2",
+                  "denominator": "19"
+                },
+                {
+                  "numerator": "-7",
+                  "denominator": "17"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "-3",
+                  "denominator": "11"
+                },
+                {
+                  "numerator": "3",
+                  "denominator": "13"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_after": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "385",
+                    "denominator": "398"
+                  },
+                  {
+                    "numerator": "-196",
+                    "denominator": "597"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "196",
+                    "denominator": "597"
+                  },
+                  {
+                    "numerator": "1547",
+                    "denominator": "1194"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "106228",
+                  "denominator": "147459"
+                },
+                {
+                  "numerator": "-109415",
+                  "denominator": "334917"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "1",
+                  "denominator": "3"
+                },
+                {
+                  "numerator": "1",
+                  "denominator": "7"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_affine_forward_equal_at_control_points": true,
+          "twists_unchanged": true,
+          "exact_inverse_equal_for_changed_samples": true
+        }
+      ]
+    },
+    "extra_quantized_rerun": {
+      "tests": 9,
+      "success": true,
+      "already_included_in_154": true
+    },
+    "reanchor_replay": {
+      "schema": "nollm_quantized_reanchor_audit_v1",
+      "reviewed_baseline": "f37667bf232360d0c26d37de0639285084230ddc",
+      "scope": "old Lab quantized v1 world-unit rule; current Core Q40 unaffected",
+      "frozen_inventory": "lab/nollm-lab/geometry/results/quantized_structure_benchmark_20261123.json",
+      "cases": [
+        {
+          "case": "d1_compact_weak_up",
+          "bits": 8,
+          "target_reanchor": [
+            "1/3",
+            "1/7"
+          ],
+          "changed_labels": 1,
+          "total_labels": 768,
+          "changes": [
+            {
+              "source": [
+                0,
+                -1
+              ],
+              "sample_index": 89,
+              "before": [
+                2,
+                -1
+              ],
+              "after": [
+                1,
+                -1
+              ],
+              "exact_target": [
+                2,
+                -1
+              ],
+              "exact_coordinates_before": [
+                "11116815029/7099937936",
+                "-21960258343/19524829324"
+              ],
+              "exact_coordinates_after": [
+                "11116815029/7099937936",
+                "-21960258343/19524829324"
+              ],
+              "exact_inverse_equal": true
+            }
+          ],
+          "source_map": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "21",
+                    "denominator": "31"
+                  },
+                  {
+                    "numerator": "-77",
+                    "denominator": "248"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "77",
+                    "denominator": "248"
+                  },
+                  {
+                    "numerator": "245",
+                    "denominator": "248"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "7",
+                  "denominator": "17"
+                },
+                {
+                  "numerator": "-3",
+                  "denominator": "19"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "-2",
+                  "denominator": "13"
+                },
+                {
+                  "numerator": "3",
+                  "denominator": "11"
+                }
+              ]
+            },
+            "twists": [
+              {
+                "center": [
+                  {
+                    "numerator": "-5",
+                    "denominator": "11"
+                  },
+                  {
+                    "numerator": "-7",
+                    "denominator": "13"
+                  }
+                ],
+                "radius_squared": {
+                  "numerator": "7",
+                  "denominator": "4"
+                },
+                "strength": {
+                  "numerator": "7",
+                  "denominator": "160"
+                }
+              }
+            ]
+          },
+          "target_before": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "1225",
+                    "denominator": "974"
+                  },
+                  {
+                    "numerator": "308",
+                    "denominator": "1461"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-308",
+                    "denominator": "1461"
+                  },
+                  {
+                    "numerator": "3059",
+                    "denominator": "2922"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "-6",
+                  "denominator": "19"
+                },
+                {
+                  "numerator": "4",
+                  "denominator": "17"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "0",
+                  "denominator": "1"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "13"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_after": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "1225",
+                    "denominator": "974"
+                  },
+                  {
+                    "numerator": "308",
+                    "denominator": "1461"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-308",
+                    "denominator": "1461"
+                  },
+                  {
+                    "numerator": "3059",
+                    "denominator": "2922"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "24329",
+                  "denominator": "240578"
+                },
+                {
+                  "numerator": "297409",
+                  "denominator": "1937286"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "1",
+                  "denominator": "3"
+                },
+                {
+                  "numerator": "1",
+                  "denominator": "7"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_affine_forward_equal_at_control_points": true,
+          "twists_unchanged": true,
+          "expected_witness_reproduced": true
+        },
+        {
+          "case": "d1_medium_up",
+          "bits": 12,
+          "target_reanchor": [
+            "1/3",
+            "1/7"
+          ],
+          "changed_labels": 1,
+          "total_labels": 768,
+          "changes": [
+            {
+              "source": [
+                1,
+                1
+              ],
+              "sample_index": 33,
+              "before": [
+                1,
+                0
+              ],
+              "after": [
+                1,
+                1
+              ],
+              "exact_target": [
+                1,
+                0
+              ],
+              "exact_coordinates_before": [
+                "1150638205354212973646073139204463848675908747332739070087580121/983011059703963465547319765449454233340898776942595077580115152",
+                "203639994439010173545048422836299939968156478515722647869752599/491505529851981732773659882724727116670449388471297538790057576"
+              ],
+              "exact_coordinates_after": [
+                "1150638205354212973646073139204463848675908747332739070087580121/983011059703963465547319765449454233340898776942595077580115152",
+                "203639994439010173545048422836299939968156478515722647869752599/491505529851981732773659882724727116670449388471297538790057576"
+              ],
+              "exact_inverse_equal": true
+            }
+          ],
+          "source_map": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "135",
+                    "denominator": "104"
+                  },
+                  {
+                    "numerator": "63",
+                    "denominator": "104"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "-63",
+                    "denominator": "104"
+                  },
+                  {
+                    "numerator": "9",
+                    "denominator": "13"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "1",
+                  "denominator": "17"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "19"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "0",
+                  "denominator": "1"
+                },
+                {
+                  "numerator": "2",
+                  "denominator": "11"
+                }
+              ]
+            },
+            "twists": [
+              {
+                "center": [
+                  {
+                    "numerator": "-3",
+                    "denominator": "11"
+                  },
+                  {
+                    "numerator": "-7",
+                    "denominator": "13"
+                  }
+                ],
+                "radius_squared": {
+                  "numerator": "63",
+                  "denominator": "8"
+                },
+                "strength": {
+                  "numerator": "7",
+                  "denominator": "40"
+                }
+              }
+            ]
+          },
+          "target_before": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "385",
+                    "denominator": "398"
+                  },
+                  {
+                    "numerator": "-196",
+                    "denominator": "597"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "196",
+                    "denominator": "597"
+                  },
+                  {
+                    "numerator": "1547",
+                    "denominator": "1194"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "2",
+                  "denominator": "19"
+                },
+                {
+                  "numerator": "-7",
+                  "denominator": "17"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "-3",
+                  "denominator": "11"
+                },
+                {
+                  "numerator": "3",
+                  "denominator": "13"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_after": {
+            "contract_id": "lab_exact_rational_axial_map_v1",
+            "frame": {
+              "matrix": [
+                [
+                  {
+                    "numerator": "385",
+                    "denominator": "398"
+                  },
+                  {
+                    "numerator": "-196",
+                    "denominator": "597"
+                  }
+                ],
+                [
+                  {
+                    "numerator": "196",
+                    "denominator": "597"
+                  },
+                  {
+                    "numerator": "1547",
+                    "denominator": "1194"
+                  }
+                ]
+              ],
+              "origin": [
+                {
+                  "numerator": "106228",
+                  "denominator": "147459"
+                },
+                {
+                  "numerator": "-109415",
+                  "denominator": "334917"
+                }
+              ],
+              "local_anchor": [
+                {
+                  "numerator": "1",
+                  "denominator": "3"
+                },
+                {
+                  "numerator": "1",
+                  "denominator": "7"
+                }
+              ]
+            },
+            "twists": []
+          },
+          "target_affine_forward_equal_at_control_points": true,
+          "twists_unchanged": true,
+          "expected_witness_reproduced": true
+        }
+      ]
+    },
+    "reanchor_replay_script": "lab/nollm-lab/geometry/probe_quantized_reanchor.py"
+  },
+  "runtime_code_changed": false,
+  "test_probes_changed_original_field": false,
+  "not_run": [
+    "full repository CI/pytest",
+    "Windows/OpenClaw Provider Live",
+    "new five-repeat quantized performance benchmark",
+    "large-capacity throughput",
+    "new cross-model blind trial"
+  ],
+  "limitations": "Finite functional and field regression at the pinned source, with known Lab unit/reanchor and placement-route limitations retained explicitly.",
+  "placement_readback_witness": {
+    "source_ref": "f37667bf232360d0c26d37de0639285084230ddc",
+    "scope": "isolated temporary field; no active field mutation",
+    "entry": [
+      -2,
+      0,
+      -2
+    ],
+    "target": "cell:-1:-2:-2",
+    "shown_writable": true,
+    "shown_downward_target": false,
+    "write_result": {
+      "kind": "result",
+      "effect": "new",
+      "entry": [
+        -2,
+        0,
+        -2
+      ],
+      "focus": [
+        -2,
+        0,
+        -2
+      ],
+      "focus_path": [
+        [
+          -2,
+          0,
+          -2
+        ]
+      ],
+      "id": "audit.lower",
+      "cell": [
+        -1,
+        -2,
+        -2
+      ],
+      "revises": null
+    },
+    "root_readback_ids": [
+      "audit.root"
+    ],
+    "budget_exhausted": false
+  },
+  "runtime_source": "repository packages and repository-memory CLI, without an installed scripts/runtime bundle"
+}
