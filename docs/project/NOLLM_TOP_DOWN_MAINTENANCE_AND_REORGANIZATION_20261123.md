@@ -168,3 +168,7 @@ python3 -B lab/nollm-lab/repository_memory/probe_top_down_reorganization.py \
 - [原位概括修订与移动候选](../../lab/nollm-lab/repository_memory/results/top_down_reorganization_20261123.json)
 
 正文、返回 JSON、文件字节以及 LLM 语义工作分别计量；实验的有限输入与原始失败保留。此次运行时功能未变，复现与受影响公共依赖检查构成本轮验证范围；上一轮46项回归是其原提交的既有结果，本轮没有将其重报为新执行。
+
+## 9. 已用于活跃速记本
+
+本研究发布后，Host 从真实 Surface 选择单一入口并下降，原位修订中层 `entry-traversal.v1` 为 `v2`，把向下巡查、分类可改与移动后的路径核对提炼为276字节的完整判断。原68份版本文件和全部详细位置保留，表层仍398字节。具体原生操作及同入口回读见[维护记录](../../sujiben/TOP_DOWN_MAINTENANCE_20261123.md)。本节的知识维护不改变前文固定基线的实验数据，也不表示自动维护器已实现。

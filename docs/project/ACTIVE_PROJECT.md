@@ -58,6 +58,9 @@ zero global orphans can conceal a lost useful entry. Preserve raw Evidence,
 history, non-tree coverage and Host semantic decisions. The study includes
 copy-only experiments; it does not claim that automatic maintenance scheduling
 or a multi-action Access reorganization transaction is already implemented.
+The [native maintenance record](../../sujiben/TOP_DOWN_MAINTENANCE_20261123.md)
+updates the encountered middle judgment to `entry-traversal.v2` in place, with
+the original 68 Statement files and all detailed placements retained.
 
 Continue using Nollm's own structure and evidence-backed relationships to develop Nollm.
 The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)

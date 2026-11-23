@@ -1,0 +1,134 @@
+{
+  "saved": {
+    "kind": "result",
+    "effect": "revision",
+    "entry": [
+      -2,
+      0,
+      0
+    ],
+    "focus": [
+      -1,
+      -1,
+      0
+    ],
+    "focus_path": [
+      [
+        -2,
+        0,
+        0
+      ],
+      [
+        -1,
+        -1,
+        0
+      ]
+    ],
+    "id": "nollm.formed.-1.entry-traversal.v2",
+    "cell": [
+      -1,
+      -1,
+      0
+    ],
+    "revises": "nollm.formed.-1.entry-traversal.v1"
+  },
+  "new_body": "一次相遇保持单一入口和已走路径。分类可改写，证据与旧版本保留；共享上层可由表层向下巡查，无须逐次写入同步反查。移动后回读新旧相关入口，全局无孤儿仍可能失去旧读法；实际返回仍受预算限制。",
+  "new_body_utf8_bytes": 276,
+  "same_entry_readback": {
+    "entry": [
+      -2,
+      0,
+      0
+    ],
+    "focus": [
+      -1,
+      -1,
+      0
+    ],
+    "item": {
+      "id": "nollm.formed.-1.entry-traversal.v2",
+      "cell": [
+        -1,
+        -1,
+        0
+      ],
+      "via": [],
+      "text": "一次相遇保持单一入口和已走路径。分类可改写，证据与旧版本保留；共享上层可由表层向下巡查，无须逐次写入同步反查。移动后回读新旧相关入口，全局无孤儿仍可能失去旧读法；实际返回仍受预算限制。",
+      "sources": [
+        "df39b56a48eb999a2675620517e8b7b4e5966617:docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md#L5-L20"
+      ],
+      "current": true,
+      "revises": "nollm.formed.-1.entry-traversal.v1",
+      "entry_path": [
+        "coverage_down"
+      ],
+      "source_count": 3,
+      "sources_truncated": true
+    }
+  },
+  "old_version_current": false,
+  "old_body_utf8_bytes": 167,
+  "preservation": {
+    "original_statement_files_identical": 68,
+    "current_statement_files": 69,
+    "original_detail_atoms_and_bindings_identical": 23,
+    "occupied_cells_identical": 41,
+    "bridges_identical": 2,
+    "original_checked_detail_paths_identical": true
+  },
+  "readback": {
+    "surface_complete": true,
+    "surface_body_utf8_bytes": 398,
+    "surface_visible_json_utf8_bytes": 1939,
+    "first_surface_core_binding_reads": [
+      {
+        "path": "core/current_state.json",
+        "bytes": 35514
+      },
+      {
+        "path": "access/bindings.json",
+        "bytes": 10854
+      }
+    ],
+    "layer_stats": {
+      "-2": {
+        "cells": 8,
+        "statements": 8,
+        "utf8_bytes": 398
+      },
+      "-1": {
+        "cells": 12,
+        "statements": 12,
+        "utf8_bytes": 2026
+      },
+      "0": {
+        "cells": 21,
+        "statements": 23,
+        "utf8_bytes": 22242
+      }
+    },
+    "detail_statements": 23,
+    "details_returned": 23,
+    "missing_details": [],
+    "details_with_multiple_upper_entries": 19,
+    "existing_bridges": 2,
+    "locality_visible_json_max_bytes": 14826,
+    "down_not_reverse_up_witness": {
+      "upper": [
+        -1,
+        -11,
+        9
+      ],
+      "lower": [
+        0,
+        -9,
+        13
+      ],
+      "down_hits": 1,
+      "up_contains_upper": false
+    },
+    "scope": "Native path and content evidence; semantic decisions and physical page I/O require separate evaluation"
+  },
+  "research_commit": "df39b56a48eb999a2675620517e8b7b4e5966617",
+  "validation_scope": "Native in-place revision, same-entry readback, preserved original files/detail placements, and formed-path recheck; no runtime code change or rerun of the earlier test suite"
+}
