@@ -13,7 +13,7 @@ from nollm_access import (
 )
 from nollm_core import (
     BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope,
-    RecallBudget, expand_physical_coverage, incoming_coverage,
+    RecallBudget, UnsupportedPhysicalCoverage, expand_physical_coverage, incoming_coverage,
 )
 
 from coverage_cli import address, coords, require_field, surface
@@ -25,6 +25,7 @@ KERNELS = {
     "local": ("coverage_down", "coverage_up", "lateral"),
     "connected": ("bridge", "coverage_down", "coverage_up", "lateral"),
     "vertical": ("coverage_down", "coverage_up"),
+    "downward": ("coverage_down",),
     "lateral": ("lateral",),
 }
 
@@ -159,7 +160,8 @@ def _writing_scope(layers):
 def _placement_cells(core, entry, recall_items, scope):
     cells = {entry, *(hit.handle.geometry_address for hit in recall_items
                       if scope.contains(hit.handle.geometry_address))}
-    cells.update(candidate.cell for candidate in core.junction_candidates(JunctionRequest(scope, (entry,))))
+    if scope.contains(entry):
+        cells.update(candidate.cell for candidate in core.junction_candidates(JunctionRequest(scope, (entry,))))
     for direction, target_layer in (("coverage_up", entry.layer - 1),
                                      ("coverage_down", entry.layer + 1)):
         if target_layer in scope.physical_layers:
@@ -212,30 +214,94 @@ def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=S
                      "write_pressure": write_pressure(cell, units_at).to_mapping()}
                     for cell in cells
                 ]
+                # The next physical layer is shown by geometry and occupancy.
+                # Its bodies are read only by the selected propagation budget
+                # or after a Host descent, never to generate this candidate list.
+                try:
+                    downward = expand_physical_coverage(entry, "coverage_down").members
+                except UnsupportedPhysicalCoverage as error:
+                    downward = ()
+                    result["descent_error"] = str(error)
+                result["descent_candidates"] = [
+                    {"id": f"cell:{member.target.layer}:{member.target.q}:{member.target.r}",
+                     "cell": coords(member.target), "native_atoms": len(units_at(member.target)),
+                     "weight_q16": member.weight_q16}
+                    for member in downward
+                ]
     return result
 
 
+def _encounter_defaults(field):
+    """Field-local physical scopes and ordinary observation defaults."""
+    path = field / "access/encounter.json"
+    if not path.exists():
+        return {}
+    defaults = json.loads(path.read_text(encoding="utf-8"))
+    allowed = {"surface_layers", "layers", "order", "page_size", "steps", "limit", "via", "beam", "compact"}
+    if not isinstance(defaults, dict) or set(defaults) - allowed:
+        raise ValueError("encounter.json must contain only physical scopes and encounter defaults")
+    if "via" in defaults and defaults["via"] not in KERNELS:
+        raise ValueError("encounter.json has an unknown propagation choice")
+    return defaults
+
+
+def _compact_locality(locality):
+    """Project a newly read locality without changing text or selectable IDs."""
+    for item in locality["items"]:
+        sources = item["sources"]
+        item["source_count"] = len(sources)
+        item["sources_truncated"] = len(sources) > 1
+        item["sources"] = sources[:1]
+    pressure_fields = ("pressure", "write_weight", "advisory", "score_kind",
+                       "support_complete", "demand_complete")
+    for cell in locality["cells"]:
+        pressure = cell["write_pressure"]
+        projected = {name: pressure[name] for name in pressure_fields}
+        for name in ("unknown_cells", "geometry_error"):
+            if pressure[name]:
+                projected[name] = pressure[name]
+        cell["write_pressure"] = projected
+
+
 def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limit=None,
-              via=None, beam=None, cursor=None, layers=None):
+              via=None, beam=None, cursor=None, layers=None, surface_layers=None,
+              descend=None, ascend=False, compact=None):
     """Observe one field for either a query or an incoming proposition.
 
     The disposable cursor retains the shown page or the chosen physical entry.
     Reopening a locality may change its budget, while keeping that same entry.
+    Surface layers select the entrance. Writable layers constrain mutations.
+    A focus descends one actual Coverage edge within that same rooted encounter.
     """
     field = Path(field)
     state = dict(cursor) if cursor is not None else {"field": str(field.resolve())}
     if state["field"] != str(field.resolve()):
         raise ValueError("encounter cursor belongs to another field")
-    selected_layers = tuple(sorted(set(layers))) if layers is not None else tuple(state.get("layers", (0,)))
+    defaults = _encounter_defaults(field) if cursor is None else {}
+    selected_layers = tuple(sorted(set(layers))) if layers is not None else tuple(state.get("layers", defaults.get("layers", (0,))))
     if cursor is not None and layers is not None and selected_layers != tuple(state.get("layers", (0,))):
         raise ValueError("restart the encounter to change physical layers")
     scope = _writing_scope(selected_layers)
+    selected_surface = (surface_layers if surface_layers is not None else
+                        state.get("surface_layers", defaults.get("surface_layers", selected_layers)))
+    surface_scope = _writing_scope(selected_surface)
+    if cursor is not None and surface_layers is not None and surface_scope.physical_layers != tuple(state.get("surface_layers", state.get("layers", (0,)))):
+        raise ValueError("restart the encounter to change Surface layers")
     state["layers"] = list(scope.physical_layers)
+    state["surface_layers"] = list(surface_scope.physical_layers)
     write_policy_id = (ACTIVE_SEMANTIC_WRITE_POLICY_ID if scope.physical_layers == (0,)
                        else EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)
     for name, value, default in (("steps", steps, 1), ("limit", limit, 5),
-                                  ("via", via, "local"), ("beam", beam, 16)):
-        state[name] = value if value is not None else state.get(name, default)
+                                  ("via", via, "local"), ("beam", beam, 16),
+                                  ("compact", compact, False)):
+        state[name] = value if value is not None else state.get(name, defaults.get(name, default))
+    if state["via"] not in KERNELS:
+        raise ValueError("unknown propagation choice")
+    if not isinstance(state["compact"], bool):
+        raise ValueError("compact must be a boolean")
+    if descend is not None or ascend:
+        if "entry" not in state or choices or (descend is not None and ascend):
+            raise ValueError("choose one observed locality before descending or returning")
     if "entry" in state:
         if choices:
             raise ValueError("encounter already has one physical entry; restart to choose another")
@@ -243,23 +309,26 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         # An empty Surface offers the Core origin as a physical entry. The Host
         # still chooses it before seeing facts and placement targets.
         with CoreRuntime(field) as core:
-            candidate = core.junction_candidates(JunctionRequest(scope, (), candidate_limit=1))[0]
+            candidate = core.junction_candidates(JunctionRequest(surface_scope, (), candidate_limit=1))[0]
         if not choices:
             return {"kind": "physical", "surface_calls": state["surface_calls"],
                     "candidates": [{"id": candidate.candidate_id, "physical_cell": coords(candidate.cell),
                                     "native_atoms": 0, "previews": [], "truncated": False,
                                     "text_truncated": False}],
-                    "cursor": state}
+                    "surface_layers": list(surface_scope.physical_layers),
+                    "physical_layers": list(scope.physical_layers),
+                    "compact": state["compact"], "cursor": state}
         if list(choices) != [candidate.candidate_id]:
             raise ValueError("choose the shown empty-field physical entry")
         state.pop("seed")
         state["entry"] = coords(candidate.cell)
     else:
         # Opening a new workspace uses Core's ordinary empty-state persistence.
-        if cursor is None:
+        if cursor is None and not (field / "core/current_state.json").exists():
             with CoreRuntime(field):
                 pass
-        page = surface(field, scope, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls,
+        page = surface(field, surface_scope, order if order is not None else defaults.get("order"), choices,
+                       page_size if page_size is not None else defaults.get("page_size"), RECALL_SURFACE_BUDGET.max_calls,
                        state.get("surface"), True)
         state["surface_calls"] = page["surface_calls"]
         if page["kind"] != "entry":
@@ -271,19 +340,48 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
             # Keep Access's stored-statement excerpts. Full bodies arrive in the
             # locality; text_truncated reports clipped text, while truncated
             # reports omitted statements.
-            return {**page, "cursor": state}
+            return {**page, "surface_layers": list(surface_scope.physical_layers),
+                    "physical_layers": list(scope.physical_layers),
+                    "compact": state["compact"], "cursor": state}
         state.pop("surface", None)
         state["entry"] = page["entry"]
-    locality = _locality(field, address(*state["entry"]), state["steps"], state["limit"],
+    focus = state.get("focus", state["entry"])
+    focus_path = state.get("focus_path", [state["entry"]])
+    if descend is not None:
+        selected = next((item for item in state.get("descent_candidates", ()) if item["id"] == descend), None)
+        if selected is None:
+            raise ValueError("choose a descent candidate shown in this locality")
+        target = address(*selected["cell"])
+        if target not in {member.target for member in expand_physical_coverage(address(*focus), "coverage_down").members}:
+            raise ValueError("descent must follow one adjacent coverage_down edge")
+        focus = coords(target)
+        focus_path = [*focus_path, focus]
+    elif ascend:
+        if len(focus_path) == 1:
+            raise ValueError("already at the original physical entry")
+        focus_path = focus_path[:-1]
+        focus = focus_path[-1]
+    state["focus"], state["focus_path"] = focus, focus_path
+    locality = _locality(field, address(*focus), state["steps"], state["limit"],
                          state["via"], state["beam"], placement=True, scope=scope)
+    for item in locality["items"]:
+        item["entry_path"] = ("coverage_down",) * (len(focus_path) - 1) + tuple(item["via"])
+    if state["compact"]:
+        _compact_locality(locality)
+    state["descent_candidates"] = [{"id": item["id"], "cell": item["cell"]}
+                                   for item in locality["descent_candidates"]]
     return {"kind": "locality", "entry": state["entry"], "surface_calls": state["surface_calls"],
+            "focus": focus, "focus_path": focus_path,
+            "surface_layers": list(surface_scope.physical_layers),
             "physical_layers": list(scope.physical_layers), "write_policy_id": write_policy_id,
-            **locality, "cursor": state}
+            "compact": state["compact"], **locality, "cursor": state}
 
 
 def decide(field, cursor, action, target=None, *, note_id=None, body=None, sources=None):
     """Apply the Host's terminal choice in its observed, current locality."""
-    result = {"kind": "result", "effect": action, "entry": cursor.get("entry")}
+    result = {"kind": "result", "effect": action, "entry": cursor.get("entry"),
+              "focus": cursor.get("focus", cursor.get("entry")),
+              "focus_path": cursor.get("focus_path", [cursor["entry"]] if "entry" in cursor else [])}
     if action == "defer":
         return result
     if "entry" not in cursor:
@@ -297,6 +395,8 @@ def decide(field, cursor, action, target=None, *, note_id=None, body=None, sourc
             raise ValueError("choose a current fact shown in this locality")
         if action == "recall":
             return {**result, "item": found}
+        if found["cell"][0] not in locality["physical_layers"]:
+            raise ValueError("choose a fact in the encounter's writable layers")
         at, revise, reuse = None, target if action == "revision" else None, target if action == "reuse" else None
     elif action == "new":
         cell = next((item for item in locality["cells"] if item["id"] == target), None)
@@ -361,6 +461,16 @@ def main(argv=None, *, default_field=None):
     meet.add_argument("--via", choices=KERNELS, help="propagation kernels; default: local, or the current encounter choice")
     meet.add_argument("--layers", type=int, nargs="+",
                       help="explicit experimental physical writing layers (default: 0); retained in this cursor")
+    meet.add_argument("--surface-layers", type=int, nargs="+",
+                      help="physical entry layers, independently of --layers; default: field configuration or writing layers")
+    focus = meet.add_mutually_exclusive_group()
+    focus.add_argument("--descend", metavar="CELL_ID", help="follow one shown coverage_down target within the same physical entry")
+    focus.add_argument("--ascend", action="store_true", help="return one step along this encounter's observed focus path")
+    detail = meet.add_mutually_exclusive_group()
+    detail.add_argument("--compact", dest="compact", action="store_true", default=None,
+                        help="show complete bodies, one source per fact and compact pressure fields")
+    detail.add_argument("--full-details", dest="compact", action="store_false",
+                        help="show all fixed sources and pressure calculation fields")
     decision = meet.add_mutually_exclusive_group()
     decision.add_argument("--recall", metavar="FACT_ID", help="return one observed current fact")
     decision.add_argument("--reuse", metavar="FACT_ID", help="support one observed current fact")
@@ -434,8 +544,11 @@ def main(argv=None, *, default_field=None):
         if selected is not None and (cursor is None or args.choices or args.restart):
             parser.error("observe a locality with --cursor-file before choosing its outcome")
         if selected is not None and any(value is not None for value in
-                                        (args.order, args.page_size, args.steps, args.beam, args.limit, args.via, args.layers)):
+                                        (args.order, args.page_size, args.steps, args.beam, args.limit,
+                                         args.via, args.layers, args.surface_layers, args.descend, args.compact)):
             parser.error("reopen the encounter with its new budget before choosing an outcome")
+        if selected is not None and args.ascend:
+            parser.error("observe the returned focus before choosing an outcome")
         if selected is not None and selected[0] in {"new", "reuse", "revision"}:
             if not args.id or args.repo is None or not args.cite:
                 parser.error("new, reuse and revise need --id, --repo and --cite, with the body on stdin")
@@ -446,7 +559,8 @@ def main(argv=None, *, default_field=None):
         if selected is None:
             result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
                                steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor,
-                               layers=args.layers)
+                               layers=args.layers, surface_layers=args.surface_layers,
+                               descend=args.descend, ascend=args.ascend, compact=args.compact)
             path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
         else:
             result = decide(args.field, cursor, *selected,

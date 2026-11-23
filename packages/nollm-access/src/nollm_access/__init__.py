@@ -25,6 +25,9 @@ from .formation import (
     validate_formation_decision,
 )
 from .handle_store import FileBindingStore, FileHandleStore, HandleBinding
+from .content_budget import (
+    CONTENT_BUDGET_SCHEMA_VERSION, ContentBudgetExceeded, ContentBudgetPolicy, LayerContentBudget,
+)
 from .locality import AtlasNode, AtlasPath, LOCALITY_ATLAS_SCHEMA_VERSION, LocalityAtlas, LocalityCandidateRef
 from .cartography import (
     DEFAULT_MAX_CARTOGRAPHY_DEPTH,
@@ -115,6 +118,10 @@ from .write_policy import (
 from .support_pressure import WritePressure, pressure_score, write_pressure
 
 __all__ = [
+    "CONTENT_BUDGET_SCHEMA_VERSION",
+    "ContentBudgetExceeded",
+    "ContentBudgetPolicy",
+    "LayerContentBudget",
     "ACTIONS",
     "PLACEMENT_ACTION_SEMANTICS",
     "PLACEMENT_ACTION_SEMANTICS_VERSION",

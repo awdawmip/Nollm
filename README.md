@@ -41,9 +41,11 @@ archive; active memory and reusable runtime code remain here.
 The [stored Surface formation direction](docs/project/NOLLM_STORED_SURFACE_FORMATION_20261123.md)
 addresses the user's 2026-11-23 correction: the first Surface should read compact
 judgments actually stored in upper physical cells, with details unfolding through
-adjacent honeycomb coverage. A runnable native probe shares one detailed judgment
-across three short upper expressions. Write-time content budgets and separating
-the entry surface from the writable layer range are the next implementation work.
+adjacent honeycomb coverage. The [stored Surface implementation](docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md)
+now enforces optional write-time content budgets, separates entrance and writable
+layers, and supports adjacent physical descent within one rooted encounter.
+A three-layer candidate preserves all 23 existing detailed judgments beneath
+eight complete stored upper expressions; physical page storage remains further work.
 
 The current [support-pressure and deformation implementation](docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
 adds advisory 1–100 write pressure, explicitly selected multilayer writing and

@@ -296,9 +296,10 @@ class AccessSurfaceNavigator:
                     state.budget.page_size,
                 )
                 projections = tuple(cell.projection for cell in raw_page.cells)
+            previews = self._page_previews(core, tuple(projection.source_cells for projection in projections))
             views = tuple(
-                self._view(core, state, projection, index)
-                for index, projection in enumerate(projections)
+                self._view(state, projection, index, preview)
+                for index, (projection, preview) in enumerate(zip(projections, previews))
             )
         next_state = replace(state, call_count=state.call_count + 1)
         legal_actions = self._surface_legal_actions(next_state, views, raw_page.has_more)
@@ -451,14 +452,16 @@ class AccessSurfaceNavigator:
             projection = self._projection_at(core, state.scope, source_surface_address)
             if not projection.source_memberships:
                 raise ValueError("Order 0 Surface projection has no physical memberships")
-            all_candidates = tuple(
-                self._physical_candidate(core, state, source_surface_candidate_id, address, weight)
-                for address, weight in projection.source_memberships
+            memberships = projection.source_memberships
+            selected = memberships if after is None else tuple(
+                member for member in memberships if member[0].stable_key() > after.stable_key()
             )
-        selected = all_candidates if after is None else tuple(
-            candidate for candidate in all_candidates if candidate.address.stable_key() > after.stable_key()
-        )
-        candidates = selected[:state.budget.page_size]
+            shown = selected[:state.budget.page_size]
+            previews = self._page_previews(core, tuple((address,) for address, _weight in shown))
+            candidates = tuple(
+                self._physical_candidate(core, state, source_surface_candidate_id, address, weight, preview)
+                for (address, weight), preview in zip(shown, previews)
+            )
         has_more = len(selected) > state.budget.page_size
         next_state = replace(state, call_count=state.call_count + 1)
         legal_actions = self._physical_legal_actions(candidates, has_more)
@@ -468,7 +471,7 @@ class AccessSurfaceNavigator:
             source_surface_address,
             after,
             candidates,
-            len(all_candidates),
+            len(memberships),
             has_more,
             candidates[-1].address if has_more and candidates else None,
             legal_actions,
@@ -532,9 +535,9 @@ class AccessSurfaceNavigator:
         source_surface_candidate_id: str,
         address: GeometryAddress,
         membership_weight_q16: int,
+        previews: tuple[SurfaceStatementPreview, ...],
     ) -> PhysicalEntryCandidateView:
         handles = tuple(handle for handle, _atom in core.atoms_at(address))
-        previews = self._previews(handles)
         material = f"{state.operation_id}\0{source_surface_candidate_id}\0{address.stable_key()}"
         candidate_id = "physical-entry:" + sha256(material.encode("utf-8")).hexdigest()[:20]
         return PhysicalEntryCandidateView(
@@ -568,18 +571,11 @@ class AccessSurfaceNavigator:
 
     def _view(
         self,
-        core: CoreRuntime,
         state: SurfaceTraversalState,
         projection: SurfaceCellProjection,
         index: int,
+        previews: tuple[SurfaceStatementPreview, ...],
     ) -> SurfaceCellView:
-        entry_cells = projection.source_cells
-        handles = tuple(
-            handle
-            for address in entry_cells
-            for handle, _atom in core.atoms_at(address)
-        )
-        previews = self._previews(handles)
         shown = tuple(previews[:MAX_STATEMENTS_PER_CELL])
         remaining = max(0, len(previews) - len(shown))
         candidate_id = self._candidate_id(state, projection.address, index)
@@ -599,7 +595,29 @@ class AccessSurfaceNavigator:
             remaining,
         )
 
+    def _page_previews(
+        self, core: CoreRuntime, groups: tuple[tuple[GeometryAddress, ...], ...],
+    ) -> tuple[tuple[SurfaceStatementPreview, ...], ...]:
+        """Read current bindings and bodies once for this displayed page only."""
+        handles_by_cell = {
+            address: tuple(handle for handle, _atom in core.atoms_at(address))
+            for address in {address for cells in groups for address in cells}
+        }
+        grouped_handles = tuple(
+            tuple(sorted((handle for address in cells for handle in handles_by_cell[address]),
+                         key=lambda handle: (handle.geometry_address.stable_key(), handle.local_atom_id)))
+            for cells in groups
+        )
+        # Shared source cells may appear in several overlapping Surface cells.
+        # The map is request-local, so a later page observes current revisions.
+        unique_handles = tuple({handle for handles in grouped_handles for handle in handles})
+        previews = {item.handle: item for item in self._previews(unique_handles)}
+        return tuple(tuple(previews[handle] for handle in handles if handle in previews)
+                     for handles in grouped_handles)
+
     def _previews(self, handles: tuple[AtomHandle, ...]) -> tuple[SurfaceStatementPreview, ...]:
+        if not handles:
+            return ()
         previews = []
         handle_store = FileHandleStore(self._workspace)
         statement_store = FileStatementStore(self._workspace)

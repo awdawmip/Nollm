@@ -38,12 +38,16 @@ the current organization priority: compact, independently meaningful judgments
 belong in actual upper physical cells; conditions and details unfold through
 adjacent, overlapping honeycomb coverage. The first Surface reads that bounded
 stored content. Query-time excerpts of all detailed L0 statements do not fulfill
-this formation goal. The reviewed field at `55871fc6` still has all 23 current
-judgments at L0. A native probe now demonstrates three short upper expressions
-sharing one lower body; full field re-formation and content-budget enforcement
-remain implementation work. Separate the entry Surface scope from the local
-writable scope, then make physical I/O follow the resulting structure. Retain
-raw Evidence, historical versions, non-tree coverage and Host semantic decisions.
+this formation goal. The reviewed field at `55871fc6` had all 23 current
+judgments at L0. The [stored Surface implementation](NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md)
+now supplies persisted current-content budgets, separate entrance/writable layer
+scopes and adjacent `descend`/`ascend` within one root entry. A Host-formed
+three-layer candidate has eight short upper expressions, twelve condition
+expressions and all twenty-three existing detailed judgments, with actual
+native descent and reader feedback recorded. Surface reads batch the page's
+bindings and mature encounters avoid duplicate Core initialization. Local
+physical persistence and geometric inverse-down maintenance remain useful next
+work. Retain raw Evidence, history, non-tree coverage and Host semantic decisions.
 
 Continue using Nollm's own structure and evidence-backed relationships to develop Nollm.
 The [self-bootstrap development plan](tasks/NOLLM_SELF_BOOTSTRAP_DEVELOPMENT_PLAN_20261121.md)

@@ -8,6 +8,7 @@ from threading import RLock
 
 from nollm_core import AtomHandle, CoreRuntime, MemoryAtom
 
+from .content_budget import ContentBudgetPolicy, validate_content_change
 from .statement_store import StatementStore
 from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
@@ -19,7 +20,8 @@ from .workspace_lock import composition_lock
 class AccessRuntime:
     """Trusted local coordinator for Evidence, Handle binding, and Core."""
 
-    def __init__(self, core: CoreRuntime, evidence_store: StatementStore, handle_store: FileHandleStore) -> None:
+    def __init__(self, core: CoreRuntime, evidence_store: StatementStore, handle_store: FileHandleStore,
+                 *, content_budget: ContentBudgetPolicy | None = None) -> None:
         self._core = core
         self._evidence_store = evidence_store
         self._handle_store = handle_store
@@ -29,6 +31,7 @@ class AccessRuntime:
         if not core.is_open:
             raise RuntimeError("AccessRuntime requires an open CoreRuntime")
         self._canonical_access_root = access_root
+        self._content_budget = content_budget if content_budget is not None else ContentBudgetPolicy.load(access_root)
         self._canonical_core_state_path = core.state_path.resolve()
         self._composition_lock = composition_lock(access_root, core.state_path)
         self._lifecycle_lock = RLock()
@@ -50,6 +53,10 @@ class AccessRuntime:
     @property
     def handle_store(self) -> FileHandleStore:
         return self._handle_store
+
+    @property
+    def content_budget(self) -> ContentBudgetPolicy | None:
+        return self._content_budget
 
     @property
     def canonical_access_root(self) -> Path:
@@ -176,6 +183,8 @@ class AccessRuntime:
         if decision.action == "new":
             assert decision.target_cell is not None
             statement = self._get_statement(decision.statement_id)
+            validate_content_change(self._core, self._content_budget, decision.target_cell,
+                                    statement.content_utf8)
             return self._atomic(
                 lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
                 lambda handle: self._handle_store.put(statement.statement_id, handle),
@@ -183,6 +192,9 @@ class AccessRuntime:
         if decision.action == "move":
             assert decision.existing_handle is not None and decision.target_cell is not None
             self._get_statement(decision.statement_id)
+            validate_content_change(self._core, self._content_budget, decision.target_cell,
+                                    self._core.get(decision.existing_handle).payload_utf8,
+                                    removing=decision.existing_handle)
             return self._atomic(
                 lambda: self._core.move(decision.existing_handle, decision.target_cell),
                 lambda handle: self._handle_store.move_handle(decision.existing_handle, handle),
@@ -190,6 +202,9 @@ class AccessRuntime:
         if decision.action == "revision_current":
             assert decision.existing_handle is not None
             statement = self._get_statement(decision.statement_id)
+            validate_content_change(self._core, self._content_budget,
+                                    decision.existing_handle.geometry_address,
+                                    statement.content_utf8, removing=decision.existing_handle)
             return self._atomic(
                 lambda: self._core.replace(decision.existing_handle, statement.content_utf8),
                 lambda handle: self._handle_store.revise_current(decision.existing_handle, statement.statement_id, handle),
@@ -197,6 +212,8 @@ class AccessRuntime:
         if decision.action == "revision_keep_history":
             assert decision.target_cell is not None
             statement = self._get_statement(decision.statement_id)
+            validate_content_change(self._core, self._content_budget, decision.target_cell,
+                                    statement.content_utf8)
             return self._atomic(
                 lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
                 lambda handle: self._handle_store.put(statement.statement_id, handle),
