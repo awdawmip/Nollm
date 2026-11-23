@@ -41,10 +41,12 @@ stored content. Query-time excerpts of all detailed L0 statements do not fulfill
 this formation goal. The reviewed field at `55871fc6` had all 23 current
 judgments at L0. The [stored Surface implementation](NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md)
 now supplies persisted current-content budgets, separate entrance/writable layer
-scopes and adjacent `descend`/`ascend` within one root entry. A Host-formed
-three-layer candidate has eight short upper expressions, twelve condition
-expressions and all twenty-three existing detailed judgments, with actual
-native descent and reader feedback recorded. Surface reads batch the page's
+scopes and adjacent `descend`/`ascend` within one root entry. The active
+`sujiben/field` now has eight short upper expressions, twelve condition
+expressions and all twenty-three existing detailed judgments. Its
+[formation and preservation record](../../sujiben/STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)
+records actual native descent, reader feedback and all 48 original versions retained.
+Surface reads batch the page's
 bindings and mature encounters avoid duplicate Core initialization. Local
 physical persistence and geometric inverse-down maintenance remain useful next
 work. Retain raw Evidence, history, non-tree coverage and Host semantic decisions.

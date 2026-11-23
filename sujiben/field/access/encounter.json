@@ -1,0 +1,17 @@
+{
+  "surface_layers": [
+    -2
+  ],
+  "layers": [
+    -2,
+    -1,
+    0
+  ],
+  "order": 0,
+  "page_size": 8,
+  "via": "downward",
+  "steps": 1,
+  "beam": 16,
+  "limit": 20,
+  "compact": true
+}

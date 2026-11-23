@@ -44,8 +44,10 @@ judgments actually stored in upper physical cells, with details unfolding throug
 adjacent honeycomb coverage. The [stored Surface implementation](docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md)
 now enforces optional write-time content budgets, separates entrance and writable
 layers, and supports adjacent physical descent within one rooted encounter.
-A three-layer candidate preserves all 23 existing detailed judgments beneath
-eight complete stored upper expressions; physical page storage remains further work.
+The active `sujiben/field` now preserves all 23 existing detailed judgments beneath
+eight complete stored upper expressions and twelve condition expressions; its
+[formation and preservation record](sujiben/STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)
+documents actual native descent and reader feedback. Physical page storage remains further work.
 
 The current [support-pressure and deformation implementation](docs/project/NOLLM_SUPPORT_PRESSURE_AND_DEFORMATION_IMPLEMENTATION_20261122.md)
 adds advisory 1–100 write pressure, explicitly selected multilayer writing and

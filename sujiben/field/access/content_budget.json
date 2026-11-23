@@ -1,0 +1,21 @@
+{
+  "schema_version": "nollm_access_content_budget_v1",
+  "profile_id": "default_dream_v1",
+  "chart_id": "default",
+  "layers": {
+    "-2": {
+      "max_cell_atoms": 2,
+      "max_cell_utf8_bytes": 128,
+      "max_layer_cells": 16,
+      "max_layer_utf8_bytes": 2048
+    },
+    "-1": {
+      "max_cell_atoms": 2,
+      "max_cell_utf8_bytes": 512
+    },
+    "0": {
+      "max_cell_atoms": 2,
+      "max_cell_utf8_bytes": 8192
+    }
+  }
+}
