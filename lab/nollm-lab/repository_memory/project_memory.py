@@ -80,7 +80,10 @@ def describe(field, note_id):
         current = bindings.statement_for_handle(bindings.get(note_id)) == note_id
     except KeyError:
         current = False
-    return _statement_description(statement, current)
+    result = _statement_description(statement, current)
+    if not current:
+        result["continuation"] = _revision_continuation(field, statement)
+    return result
 
 
 def _statement_description(statement, current):
@@ -95,6 +98,45 @@ def _statement_description(statement, current):
         else:
             sources.append(ref)
     return result
+
+
+def _revision_continuation(field, statement):
+    """Locate the current native revision slot without replacing old evidence."""
+    store = FileStatementStore(field)
+    cache = {statement.statement_id: statement}
+
+    def chain(note_id, stop_at=None):
+        seen = set()
+        while note_id not in seen:
+            seen.add(note_id)
+            if note_id == stop_at:
+                return seen, False
+            try:
+                if note_id not in cache:
+                    cache[note_id] = store.get(note_id)
+                parents = {ref.removeprefix("revises:") for ref in cache[note_id].context_refs
+                           if ref.startswith("revises:")}
+            except (FileNotFoundError, TypeError, ValueError, UnicodeError):
+                return seen, True
+            if not parents:
+                return seen, False
+            if len(parents) != 1 or "" in parents:
+                return seen, True
+            note_id = next(iter(parents))
+        return seen, True
+
+    ancestors, incomplete = chain(statement.statement_id)
+    candidates = []
+    for binding in FileHandleStore(field).bindings_for_atom_ids(tuple(ancestors)):
+        lineage, unresolved = chain(binding.current_statement_id, statement.statement_id)
+        if statement.statement_id in lineage and not unresolved:
+            candidates.append({"id": binding.current_statement_id,
+                               "cell": coords(binding.handle.geometry_address)})
+        else:
+            incomplete = incomplete or unresolved
+    status = ("incomplete" if incomplete else "ambiguous" if len(candidates) > 1
+              else "unique" if candidates else "not_found")
+    return {"scope": "native_revision_slot", "status": status, "candidates": candidates}
 
 
 def excerpt(repo, reference):

@@ -110,6 +110,13 @@ class FileHandleStore:
         by_handle = {binding.handle: binding for binding in self._load()}
         return tuple(by_handle[handle] for handle in handles if handle in by_handle)
 
+    def bindings_for_atom_ids(self, atom_ids: tuple[str, ...]) -> tuple[HandleBinding, ...]:
+        """Read physical candidates; a local atom ID is not globally unique."""
+        if type(atom_ids) is not tuple or any(type(value) is not str or not value for value in atom_ids):
+            raise TypeError("atom_ids must be a non-empty-string tuple")
+        wanted = set(atom_ids)
+        return tuple(binding for binding in self._load() if binding.handle.local_atom_id in wanted)
+
     def remove_handle(self, handle: AtomHandle) -> None:
         bindings = list(self._load())
         del bindings[self._index_for_handle(bindings, handle)]
