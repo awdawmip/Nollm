@@ -1,0 +1,80 @@
+{
+  "schema": "nollm_local_p8_notebook_maintenance_v1",
+  "date": "2026-11-24",
+  "source_commit": "4dcc953f7f9631f715f1cfe9761abf1f5ad00365",
+  "entry": [
+    -2,
+    0,
+    -3
+  ],
+  "focus_path": [
+    [
+      -2,
+      0,
+      -3
+    ],
+    [
+      -1,
+      -1,
+      -3
+    ]
+  ],
+  "current_ids_reopened": [
+    "nollm.formed.-1.precision-contracts.v3",
+    "nollm.precision-budget.v2",
+    "nollm.rational-geometry.v2",
+    "nollm.deformation.v2",
+    "nollm.quantized-structure.v3"
+  ],
+  "revisions": [
+    [
+      "nollm.formed.-1.precision-contracts.v2",
+      "nollm.formed.-1.precision-contracts.v3"
+    ],
+    [
+      "nollm.quantized-structure.v2",
+      "nollm.quantized-structure.v3"
+    ]
+  ],
+  "preserved_statement_files": 79,
+  "statement_files_after": 81,
+  "handles_preserved": 43,
+  "occupied_cells_preserved": 41,
+  "bridges_preserved": 2,
+  "untouched_bindings": 41,
+  "layers": {
+    "-2": {
+      "atoms": 8,
+      "utf8_bytes": 401
+    },
+    "-1": {
+      "atoms": 12,
+      "utf8_bytes": 2278
+    },
+    "0": {
+      "atoms": 23,
+      "utf8_bytes": 22318
+    }
+  },
+  "old_versions_readable_with_unique_current_continuations": true,
+  "independent_reader": {
+    "scope": "single-entry native successor-host usability observation",
+    "entry_selected_from_surface_text": "精确保持标签；量化模式允许关系变化。",
+    "encounter_calls": 5,
+    "path": [[-2, 0, -3], [-1, -1, -3], [0, -3, -3]],
+    "terminal_action": "recall",
+    "terminal_statement_id": "nollm.quantized-structure.v3",
+    "questions_answered": ["implementation status", "local unit", "current Core", "accepted numerical changes"],
+    "budget_exhausted": false,
+    "source_windows_expanded_with_show": 2,
+    "source_commit": "4dcc953f7f9631f715f1cfe9761abf1f5ad00365",
+    "source_path": "docs/project/NOLLM_LOCAL_P8_EXECUTOR_20261124.md",
+    "source_lines_read": [1, 126],
+    "source_blob_sha": "f9a8ef85855535d68e9fcfd29c74027a9ecf5747",
+    "source_read_transport": "GitHub connector",
+    "target_ids_or_addresses_given_before_observation": false,
+    "project_term_search_or_full_field_scan": false,
+    "field_modified": false,
+    "implementation_tests_rerun_by_reader": false
+  }
+}

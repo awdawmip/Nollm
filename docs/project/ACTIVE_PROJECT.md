@@ -44,6 +44,10 @@ p8 option retain world-unit and representation-anchor dependencies; user-selecte
 adjacent local-p8/96 normalization was its implementation continuation. The
 [2026-11-24 local executor](NOLLM_LOCAL_P8_EXECUTOR_20261124.md) completes that
 explicit Lab path while retaining the frozen input and Core Q40/96 baseline.
+Its [native maintenance](../../sujiben/LOCAL_P8_MAINTENANCE_20261124.md) revises the
+encountered middle precision and detailed quantization judgments to v3. The
+current field retains all 79 predecessor Statements and now has 81 versions;
+its 43 handles, 41 occupied cells and two bridges remain in place.
 Use this fixed input for comparison; current main remains the development line.
 The [native precision-state maintenance](../../sujiben/TEST_BASELINE_MAINTENANCE_20261123.md)
 revises the encountered middle `precision-contracts` judgment to v2, explicitly
