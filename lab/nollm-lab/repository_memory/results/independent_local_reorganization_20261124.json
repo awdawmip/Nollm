@@ -1,0 +1,2296 @@
+{
+  "trial": "independent installed native Host session",
+  "scope": "same-series independent session; no cross-vendor blind comparison",
+  "source_revision": "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01",
+  "source_checkout_has_git_metadata": false,
+  "field": "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+  "installed_skill": "/workspace/scratch/59faa762c350/continue-installed-skill",
+  "commands": [
+    {
+      "index": 1,
+      "label": "reorganization-instructions",
+      "argv": [
+        "cat",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/references/local-reorganization.md"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Read the installed local-reorganization contract before choosing a change.",
+      "time_utc": "2026-11-24T12:08:07.210579+00:00",
+      "duration_seconds": 0.001951,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/01-reorganization-instructions.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/01-reorganization-instructions.stderr",
+      "text_result": "# 局部重组与存放\n\n## 从实际观察编写计划\n\n沿普通 `encounter` 选择一个物理入口，读取完整正文和来源。准备新增或搬移时，\n在同一会话加 `--prepare-write` 观察候选；按需下降或返回。会话保留已观察事实的\n物理 handle、候选格和实际观察路径，不保存另一份正文或长期分类索引。\n\nHost 决定哪些判断需要改变，以及新位置是否便于以后阅读。先读证据再编写计划。\n下面是格式示例，其中版本 ID、候选、路径和来源必须替换为本次真实观察与已读来源：\n\n```json\n{\n  \"schema_version\": \"nollm_local_reorganization_v1\",\n  \"changes\": [\n    {\n      \"action\": \"revise\",\n      \"target\": \"overview.v1\",\n      \"id\": \"overview.v2\",\n      \"text\": \"上层保存完整短判断，细节沿覆盖展开。\",\n      \"sources\": [\"FULL_COMMIT:docs/design.md#L10-L20\"]\n    },\n    {\n      \"action\": \"move\",\n      \"target\": \"detail.v1\",\n      \"to\": \"cell:0:1:0\"\n    }\n  ],\n  \"readback\": [\n    {\"id\": \"detail.v1\", \"path\": [[-2, 0, 0], [-1, 0, 0], [0, 1, 0]]}\n  ]\n}\n```\n\n```sh\npython3 \"$cli\" project --field \"$field\" encounter \\\n  --cursor-file \"$session\" --reorganize plan.json\n```\n\n| action | target | 其他字段 | 作用 |\n| --- | --- | --- | --- |\n| `new` | 已准备的 `cell:L:q:r` | `id,text,sources` | 放入独立判断 |\n| `revise` | 已观察的当前表达 ID | `id,text,sources` | 原位更新当前判断，保留历史 |\n| `reuse` | 已观察的当前表达 ID | `id,text,sources` | 保存支持表达，复用占用 |\n| `move` | 已观察的当前表达 ID | `to` 为已准备的格 | 改变位置，正文和支持不变 |\n| `forget` | 已观察的当前表达 ID | 无 | 退出当前占用，原表达继续可读 |\n\n动作依次解释；后续动作可引用本批新建或修订后的当前 ID。`reason` 可写实际理由。\n支持表达不会成为当前 ID。源字段直接保存固定的 `完整提交:path#Lfirst-Llast`，\n也可以使用项目允许且确实阅读过的其他来源引用；CLI 不替 Host 核实正文是否被证据支持。\n\n## 最终容量和回读\n\n预算检查本批完成后的布局，因此满格可一次新增提炼后的判断、撤下原占用，\n不必临时放宽容量。修订、移动和新增都计入最终正文；支持表达不重复计入当前正文。\n预检失败不捕获新表达。预检成功后捕获的表达即使提交随后失败，也保留为可读 Evidence。\n\n改变的当前表达自动要求一条从已观察 Surface 入口到最终位置的实际相邻\n`coverage_down` 路径。会话路径足够时直接复用，否则用 `readback` 明确提供。\n程序会检查每一条物理边，并在提交后读取终点当前表达。需要保留多个旧入口时，\n可以为同一 ID 列多条路径；入口须在本次已观察的最终 Surface 层中。\n\n这项检查覆盖改变的当前表达和显式列出的路径。它不证明全场无孤儿，也不证明\n另一个模型会在有限预算内选到这些入口。后继模型的实际阅读仍需独立试用。\n向上支撑与向下覆盖不是同一条关系，不能把有支撑当作从这个入口可读。\n\n## 一起更新表层和容量\n\n计划可带 `encounter` 部分配置以及完整 `content_budget`。后者使用现有\n`nollm_access_content_budget_v1` 格式：`profile_id`、`chart_id` 和按物理层号的\n`layers`。每层可配置 `max_cell_atoms`、`max_cell_utf8_bytes`，以及可选的\n`max_layer_cells`、`max_layer_utf8_bytes`。这些限制算 UTF-8 字节和当前占用。\n\n更粗表层需要 Host 先观察并准备其物理格，写入有意义的短判断；计划中再将\n`encounter.surface_layers` 切到该层，扩展 `encounter.layers` 并提供对应预算。\n新入口必须保有当前判断，改变的细节仍需能从最终入口向下读回。\n预算和入口配置与这批 Core／绑定变更共用局部恢复记录。\n\n普通异常恢复原布局和配置；进程中断后，下次打开 Access 先恢复未完成批次。\n失败时会话保留，可检查错误再重试。同一版本 ID 已捕获时，重试须保持其正文和来源；\n需要改变内容就用新版本 ID。成功返回 `commit_state: committed` 后会话删除。\n这是 Access 打开时的恢复保证，独立直接读取 Core 的其他进程不获得跨文件瞬时事务视图。\n\n## 显式切换物理分页\n\n```sh\npython3 \"$cli\" project --field \"$field\" storage\npython3 \"$cli\" project --field \"$field\" storage --enable-paged --partition-width 64\n```\n\n第一条只读两份存储入口，不打开运行时或触发恢复。第二条显式迁移 Core 和绑定，\n以后打开同一场自动使用分页。分页按 profile、chart、phase、物理层和坐标分区定位；\n它不增加语义索引，不改变几何、正文、handle 或来源。\n\n迁移依次处理两部分。若第二部分失败，结果为 `status: partial`、非零退出码，\n并说明成功和失败的组件；重复同一命令即可继续。不要把部分成功当作两部分都完成。\n已分页的组件再次执行不重排分区；改变宽度不是本命令的重分区功能。\n\n已知格的读取与普通新写入只涉及其物理页；同页其他正文仍计入页成本。\nSurface 读取指定入口层的占用元数据和本页表达。只知道 Statement ID 时寻找其当前\n位置仍可能盘点所有绑定；完整快照也仍读取全状态。分页不消除这些明确的全量操作。\n"
+    },
+    {
+      "index": 2,
+      "label": "first-principles",
+      "argv": [
+        "cat",
+        "/workspace/scratch/59faa762c350/Nollm/docs/architecture/NOLLM_FIRST_PRINCIPLES_AND_ANTI_DRIFT_20260711.md"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Read canonical first principles through the README project-understanding link.",
+      "time_utc": "2026-11-24T12:08:07.212591+00:00",
+      "duration_seconds": 0.001706,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/02-first-principles.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/02-first-principles.stderr",
+      "text_result": "# Nollm 第一性原理与防漂移约束\n\n**日期**：2026-07-11  \n**状态**：项目最高层目标约束  \n**用途**：供 ChatGPT、Codex 和后续交接在开始任务前读取，防止因历史任务书、局部性能目标或对话截断而偏离项目初衷。\n\n> 当本文件与旧任务书、旧交接文件、旧阶段实现发生冲突时，以本文件为准。旧实现可以删除，不因“已经完成”而保留错误方向。\n\n---\n\n## 1. Nollm 的第一性原理目标\n\nNollm 不是传统数据库、向量数据库、知识图谱或检索框架。\n\nNollm 的目标是：\n\n> **为 LLM 提供一个证据优先、文件优先、由几何结构直接承载关系的长期记忆场；LLM 负责语义理解和放置判断，Core 负责确定性验证、几何执行、持久化与回放。**\n\n最小记忆单位是：\n\n```text\n一段独立、有意义、可回到原文的表达\n```\n\n不是：\n\n```text\ntoken\n固定长度 chunk\n摘要\nembedding\n实体节点\n```\n\n**2026-11-23 用户补充：** 上层 Surface 本身可以由 LLM 提炼并保存的短判断构成，细节沿相邻的非树蜂巢覆盖展开。这样的短判断也是独立、有意义、有来源的表达，具有真实物理占用与版本；上述“不是摘要”不构成禁止上层语义提炼的规则。展示截断不能替代提炼，短判断也不替代完整 Evidence。当前组织方案见 [Surface 写入时形成研究](../project/NOLLM_STORED_SURFACE_FORMATION_20261123.md)。\n\n---\n\n## 2. 不可动摇的原则\n\n### 2.1 Evidence first\n\n```text\n原始 Evidence 是事实源。\n解释、位置、覆盖、路径和召回结果都不能替代原文。\n```\n\n必须始终成立：\n\n```text\nEvidence ≠ Interpretation\nInterpretation ≠ Placement\nPlacement ≠ Fact confirmation\nRecall path ≠ Proof\n```\n\n### 2.1.1 Canonical memory is content-neutral\n\n```text\nCanonical memory eligibility does not depend on sensitivity, expected lifetime,\ntool or assistant origin, importance, or content category.\nSource role is provenance, not an admission gate.\n```\n\nTechnical limits may create deterministic source windows, continuation, retry,\nor a re-evaluable zero-delta result. They must never silently omit a Capture or\npermanently exclude content. Safety and tenant isolation are enforced by the\nactual Host scope and workspace boundary, not by classifying canonical content.\nExport or sharing copies may apply independent policy, but those copies are\nnoncanonical and may never rewrite canonical Evidence or memory.\n\n### 2.2 File first\n\n```text\n文件是持久事实源。\n缓存、快照、索引和运行时对象都只能是可重建派生物。\n```\n\n### 2.3 Architecture is the Index\n\nNollm 的关系必须主要来自：\n\n```text\n几何地址\nCell occupancy\nCoverage kernel\n层间覆盖\n局部邻接\n可逆 Stitch\n有界传播\n```\n\n不得再建立一套外部关系索引，先找对象，再让几何做装饰。\n\n正确方向：\n\n```text\nGeometry address\n→ Cell / Partition\n→ Local relation field\n→ Sparse propagation\n→ Evidence fallback\n```\n\n错误方向：\n\n```text\nObject ID / source / entity\n→ 倒排索引 / route table / graph\n→ 找到对象\n→ 再进入 Geometry\n```\n\n### 2.4 LLM 决定语义放置\n\n以下判断必须由真实 LLM 完成：\n\n```text\n这是新内容还是重复内容；\n是相似但不同，还是同一事实；\n是否是旧内容的 revision；\n是否复用原 placement；\n是否创建新 placement；\n是否形成新簇；\n是否提出 stitch；\n是否暂缓准入。\n```\n\nPython/Core 不得用以下方式模拟语义：\n\n```text\nhash placement\n固定权重打分\n关键词规则\n伪向量相似度\n人工硬编码答案\n```\n\nCore 只负责：\n\n```text\n验证对象存在；\n验证几何地址合法；\n验证密度、边界和预算；\n执行放置；\n保存 Evidence；\n回放；\n拒绝非法输入。\n```\n\n### 2.5 OpenClaw 是语义 Host\n\n应尽快让 OpenClaw 中的真实 LLM 进入 Placement 流程。\n\n正确关系：\n\n```text\nOpenClaw / LLM\n  负责理解、比较、选择和提出 PlacementDecision\n\nNollm Core\n  负责验证、执行、存储和几何传播\n```\n\nOpenClaw 不是事实源，LLM 判断也不是事实本身；原始 Evidence 始终保留。\n\n### 2.6 Capture、Placement、Admission、Recall 分离\n\n```text\nCapture 是记住原文；\nPlacement 是选择几何位置；\nAdmission 是正式进入可回放结构；\nRecall 是从有限入口重建相关现场。\n```\n\n不得因为 Capture 成功就强制完成全部几何工作。\n\n### 2.7 Geometry 不是语义真相\n\n```text\nCoverage 不是 parent；\nCell 不是文件夹；\nStitch 不是事实合并；\nGravity 不是重要性；\n位置不是可信度；\n距离不是事实关系证明。\n```\n\n---\n\n## 3. 必须删除的错误方向\n\n当发现以下结构成为正确性主路径时，原则上删除，不做兼容性保留。\n\n### 3.1 外置关系索引\n\n包括但不限于：\n\n```text\nPlacementIndex._by_shard\n\nRelationField._entry_lookup_cache\n\nRelationField._patch_lookup_cache\n\nGlobalShardedField._unique_routes\n\nGlobalShardedField._shared_routes\n\nGlobalFieldDirectory._source_intervals\n\nsource_window → placements 倒排表\n\nisland / patch → placements 倒排表\n\nobject → related objects\n\nidentity → partition 全局关系路由\n```\n\n允许保留的仅是：\n\n```text\n对象文件的最小物理定位；\n由几何坐标直接计算的 partition；\nCell 自身的局部 occupancy；\n删除后不影响正确性的临时缓存。\n```\n\n判断标准：\n\n```text\n删除后结果不变，只是变慢：\n  可丢弃缓存\n\n删除后仍能从文件直接找到对象：\n  最小物理定位器\n\n删除后无法进入正确关系路径：\n  错误的关系索引，必须重构\n```\n\n### 3.2 Python 模拟语义 Placement\n\n以下路径必须退出主流程：\n\n```text\nsource hash → cell\n\nshard_id hash → cell\n\n固定评分公式决定 placement\n\n伪向量相似度决定复用或新建\n\n纯 Python 决定 duplicate / revision / stitch\n```\n\n它们最多可作为测试对照，不得作为产品 Placement。\n\n### 3.3 Graph / Vector / Embedding 主路径\n\n不得把 Nollm 变成：\n\n```text\n弱版知识图谱\n弱版向量数据库\nGraphRAG 包装层\nembedding + geometry 可视化\n```\n\n可以保留基线实验，但不能进入 Core 主路径。\n\n### 3.4 为错误架构做性能优化\n\n不得因为某个索引已经很快，就继续固化它。\n\n禁止以以下指标证明 Nollm 成功：\n\n```text\nindexed lookup 比 linear scan 快\n\nroute table 命中率高\n\n倒排表查询达到微秒级\n```\n\n必须测量：\n\n```text\n无外置关系索引时，\n由 LLM 选择的几何入口能否正确放置与召回。\n```\n\n### 3.5 重复安全与审计基础设施\n\n当前开发环境默认：\n\n```text\n用户、ChatGPT、Codex 均为善意主体；\nWindows-first；\n安全由外部系统负责。\n```\n\nNollm Core 不再建设：\n\n```text\n多层 SHA 链\nMerkle root\nevidence capsule\ndelivery receipt\n供应链安全框架\n攻击矩阵\n重复权限系统\n```\n\n只保留：\n\n```text\n功能测试\n数学验证\n回放一致性\n性能验证\nGit 历史\n单一 Git bundle\n```\n\n### 3.6 小任务和重复外审\n\n默认采用：\n\n```text\n大跨度任务\n+\n内部 Gate\n+\n失败直接修复\n+\n最终单一 bundle\n```\n\n不要为文档格式、小型日志、非架构问题反复拆任务。\n\n---\n\n## 4. 正确的目标架构\n\n```text\nRaw Evidence\n    ↓\nCapture\n    ↓\nLLM compares local context and existing nearby memory\n    ↓\nPlacementDecision:\n  reuse / new / revision / stitch / defer\n    ↓\nCore validates deterministic constraints\n    ↓\nGeometry address\n    ↓\nCell occupancy + Coverage / Bridge kernels\n    ↓\nSparse bounded propagation\n    ↓\nOriginal Evidence fallback\n```\n\n### 数据的关系来源\n\n```text\n局部关系：\n由同一 Cell、相邻 Cell 和 Coverage kernel 直接产生\n\n跨层关系：\n由预计算 Coverage template 产生\n\n跨簇关系：\n由 LLM 提出的、Core 验证的可逆 Stitch 产生\n\n修订关系：\n由 LLM 判断，Evidence revision 记录明确保存\n```\n\n不得由全局 object-to-object 索引预先维护。\n\n---\n\n## 5. 每次设计前必须回答的问题\n\n开始任何新任务前，逐项检查：\n\n```text\n1. 它是否保留原始 Evidence？\n\n2. 关系来自几何结构，还是另建索引？\n\n3. 删除缓存后，正确性是否保持？\n\n4. 语义判断是否交给真实 LLM？\n\n5. Python/Core 是否只做确定性验证和执行？\n\n6. 是否正在为错误架构做性能优化？\n\n7. 是否重新引入 graph/vector/embedding 主路径？\n\n8. 是否把 Host 或 Terminal 变成事实源？\n\n9. 是否增加与核心记忆无关的安全、审计或交付复杂度？\n\n10. 是否可以用更少的组件完成同一核心目标？\n```\n\n若任一答案与本文件冲突：\n\n```text\n停止扩展；\n删除错误结构；\n回到第一性原理重新设计。\n```\n\n---\n\n## 6. 当前执行顺序\n\n日期化执行顺序只记录历史阶段上下文，不再授权活动工作。当前排期只由\n`ACTIVE_PROJECT.md` 指向的任务书控制，且不得覆盖本文件的架构不变量。\n\n当前活动方向必须优先：\n\n```text\n1. 审计活动路径中的 Index / Route / Lookup / Cache；\n\n2. 删除所有承担关系和召回正确性的外置索引；\n\n3. 将 partition routing 改为几何坐标函数；\n\n4. 将 Cell occupancy 还原为几何结构本身；\n\n5. 删除 Python hash / 固定评分 Placement 主路径；\n\n6. 接入 OpenClaw 真实 LLM Placement；\n\n7. 让 LLM 判断 duplicate / similar / revision / reuse / new / stitch / defer；\n\n8. 重新测试无关系索引条件下的效率和召回质量。\n```\n\n截至 2026-07-15，活动物理 Coverage 路径还必须遵守：\n\n```text\nsource-centered / residue-centered bounded arithmetic；\nraw physical partition mass 在 Q16 前验证；\ncandidate-window、threshold、numeric 和 Q16 residual 分离；\nHost 从有限页明确选择一个 physical entry；\nPython/Core 不以 stable-key 或关键词代替最终语义选择。\n```\n\n---\n\n## 7. 项目协作与交付规则\n\n```text\n主环境：\nWindows 10/11 + PowerShell\n\n任务：\n大跨度 + 内部 Gate\n\n交付：\n单一 Git bundle\n\n版本识别：\n文件名 + Git HEAD\n\n安全：\n外部负责\n\n外审重点：\n架构方向、功能正确性、数学、性能、真实 LLM 工作流\n```\n\n---\n\n## 8. 最终一句话\n\n> **Nollm 不是用索引找到记忆后再展示几何，而是让 LLM 把证据放入几何关系场，使几何结构本身成为记忆关系和召回路径。**\n---\n\n## 9. 2026-07-14 数学真值、历史资产复用与独立 Oracle 修订\n\n本节是最高约束的组成部分。其目的不是增加外围治理，而是防止数学内核在局部实现中被简化、重写或由同源测试自证。\n\n### 9.1 先复用、后重建\n\n开始任何几何、Coverage、Surface、坐标变换或多尺度任务前，必须先审计仓库现有数学资产。\n\n至少检查：\n\n```text\nreference/python/nollm/dream_geometry/geometry/**\nreference/python/tests/fixtures/gvr1/**\nreference/python/tests/fixtures/gra1/**\nreference/python/tests/fixtures/grc1/**\nreference/python/tests/fixtures/gkd1/**\nreference/python/tests/fixtures/gpr1/**\nvalidation/gvr1/**\nvalidation/gra1/**\nvalidation/grc1/**\nvalidation/gkd1/**\nvalidation/gpr1/**\n```\n\n未经书面差距分析，不得重新实现：\n\n```text\n正六边形 world transform；\naxial/world 双向变换；\n凸多边形相交；\nCoverage candidate；\nCoverage distribution；\n残差质量；\n旋转—尺度 schedule；\n平移变化验证；\n双向 Coverage；\nphase recurrence；\n共振/非共振诊断。\n```\n\n历史代码不是因为位于 `reference/` 或旧分支就自动错误。应按以下分类：\n\n```text\nREUSE_AS_ORACLE：\n  数学逻辑正确，可直接作为独立真值或回归 Oracle。\n\nPORT_WITH_ADAPTATION：\n  数学逻辑可复用，但需改为当前类型、精度或模块边界。\n\nREFERENCE_ONLY：\n  只保留实验设计、数据窗口或失败教训，不直接进入生产。\n```\n\n### 9.2 数学真值不能由同源实现自证\n\n任何标记为：\n\n```text\nphysical\ncertified\nexact\nvalidated\n```\n\n的几何能力，至少需要两个相互独立的实现路径交叉验证。\n\n最低要求：\n\n```text\nOracle A：\n  历史纯几何 world transform + polygon overlap 实现。\n\nOracle B：\n  独立 Decimal、区间、整数固定点或有理实现。\n```\n\n禁止：\n\n```text\n编译器调用函数 F；\n测试再次调用同一个函数 F；\n二者结果一致；\n因此宣称数学真值已认证。\n```\n\nParity 只证明实现一致，不自动证明物理正确。\n\n### 9.3 Origin-only、phase-only 验证不足\n\n当旋转角和尺度比不是格自同构时，Coverage 权重通常依赖完整平移余量。\n\n因此：\n\n```text\n8 个 layer phase\n≠\n全平面 Coverage 权重表。\n```\n\n必须验证：\n\n```text\n多个正负 q/r；\n多个 layer；\n两个 Coverage 方向；\n全部旋转 phase；\n候选完整性；\n零重叠误传播；\n非零重叠遗漏；\n权重误差；\n残差质量。\n```\n\n原点只能是一个样本，不能代表全格。\n\nThe exact-support requirement in this section governs Oracle truth and method calibration. Production approximate Coverage is evaluated under section 10 by weighted missed mass, false mass, total variation, dominant-target agreement, fanout, locality, and Q16 conservation. This distinction does not authorize production polygon work and does not remove the independent Oracle.\n\n### 9.4 正确性优先于“运行时禁止多边形”的局部限制\n\n以下属于实现策略，不是第一性原理：\n\n```text\nCore 运行时绝不做 polygon；\nCore 运行时只能查静态模板；\n每个 phase 只能有一组固定权重。\n```\n\n若这些策略导致物理关系错误，应先采用可复现、确定性的真实 overlap 计算，再研究缓存和加速。\n\n允许的正确性优先路径包括：\n\n```text\n固定上下文 Decimal；\n整数固定点；\n有理数；\n区间算术；\n预编译顶点常量；\n可删除的 residue cache。\n```\n\n不得为了微秒级 lookup 固化错误 Coverage。\n\n### 9.5 数学 Gate 必须先于 Live Gate\n\n执行顺序必须是：\n\n```text\n历史资产盘点\n→ 独立 Oracle\n→ 全平移数学验证\n→ Core runtime\n→ Surface\n→ 单入口跨层 Recall\n→ OpenClaw Live。\n```\n\n数学 Gate 未通过时：\n\n```text\n不得以聊天回答正确；\n不得以 R1/R2/R3 通过；\n不得以插件启用；\n不得以 Tag；\n```\n\n替代物理几何证明。\n\n### 9.6 能力名称必须包含真实边界\n\n如果只验证：\n\n```text\n地址分离；\n单入口 Wire；\n无 Cursor；\n同层 Recall；\n```\n\n就只能以这些能力命名。\n\n不得扩大为：\n\n```text\nrotated physical field validated；\ncertified Coverage；\nfull multi-scale；\nexact geometry。\n```\n\n### 9.7 完整权威文档必须进入 Git\n\n活动架构书、路线书、任务书和 `AGENTS.md` 必须以完整正文进入仓库。\n\n禁止：\n\n```text\n只提交数千字节摘要替代完整架构书；\n聊天附件存在但 Git 中缺失；\nACTIVE_PROJECT 指向不存在的任务；\n状态先写 COMPLETED，数学报告后补。\n```\n\n> **已有正确数学资产必须成为下一实现的起点；新代码必须证明自己比历史 Oracle 更正确，而不是只证明自己能通过自己编写的测试。**\n\n---\n\n## 10. 2026-07-15 结构正确优先于面积精确修订\n\n本节纠正上一阶段把“真实几何”误解为“生产运行必须逐 Cell 高精度计算精确多边形相交”的过度收敛。\n\n### 10.1 Coverage 的第一职责是稳定关系，不是测量学真值\n\nNollm Coverage 的产品职责是：\n\n```text\n从真实旋转、尺度和坐标产生局部稀疏关系；\n保持质量近似守恒；\n控制误传播和漏传播的总权重；\n让 Surface、Recall 和未来 Stitch 获得稳定几何骨架。\n```\n\nCoverage 不要求在生产运行时逐次恢复精确相交面积。允许：\n\n```text\n低于声明阈值的小面积真实重叠被省略；\n低于声明阈值的小权重近邻被保守加入；\n权重在声明总变差界内偏离 polygon Oracle；\n候选支持因离散采样产生小幅边界抖动。\n```\n\n前提是误差有界、无长程跳跃、与语义无关、可复现且经过独立 Oracle 校准。\n\n### 10.2 硬几何与近似 Coverage 分离\n\n不可改变：\n\n```text\nΔθ = 22.5°；\nθL = L × 22.5° mod 60°；\nβ = 2^(1/4)；\nβ² = √2；\nPhysical Memory Layer 与 Aggregation Order 分离。\n```\n\n允许近似：\n\n```text\nCell overlap support；\nCoverage weight；\n阈值以下边界关系；\nSurface aggregate mass。\n```\n\n不得通过改变硬物理参数换取性能。\n\n### 10.3 精确 Oracle 与生产核分工\n\n```text\nLab Oracle：\n  polygon / Decimal / high precision；\n  用于校准、抽样验证和误差报告；\n  不进入每次聊天主路径。\n\nProduction Coverage：\n  固定点坐标变换；\n  等面积采样或经认证的 residue atlas；\n  有界 fanout；\n  固定时间；\n  可丢弃缓存。\n```\n\n### 10.4 允许的误差必须按权重而不是边数量定义\n\n不得要求：\n\n```text\n所有真实非零 overlap 均命中；\n所有零 overlap target 均绝对排除；\n生产核与精确 Oracle 支持集逐项相等。\n```\n\n必须限制：\n\n```text\nmissed_mass；\nfalse_mass；\ntotal_variation_distance；\npartition_mass_error；\nmax_fanout；\nmax_spatial_radius；\ndominant_target_agreement。\n```\n\n默认阈值由 V3.9 架构和任务书规定，并可通过新证据版本化调整。\n\n### 10.5 产品地址域按容量需求确定\n\n数学格可以无限；活动产品地址域是资源 `POLICY`，不需要为 signed-64 全闭包支付主路径复杂度。\n\n默认活动域：\n\n```text\nhex_radius = max(|q|, |r|, |q+r|) <= 2^31 - 1\n```\n\nThis bound is the storage and transport domain. The active writable field is a separate policy and is currently `hex_radius <= 2^30 - 1`, closed under two consecutive `coverage_down` steps. Active mutation must reject a larger target before any write; existing storage-only state remains readable and is never silently deleted.\n\n单层约可表达 `1 + 3R(R+1) ≈ 1.38×10^19` 个 Cell，远高于 PB 级需要。跨语言 Wire 在该域内可安全使用标准整数。\n\n> **Nollm 要求几何关系真实地来自几何，不要求每条几何边都具有测量学级精确面积；结构稳定和运算可持续高于无必要的数值完美。**\n"
+    },
+    {
+      "index": 3,
+      "label": "initial-surface",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/session.json"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Start the native encounter before choosing any source symbol, fact ID or physical coordinate.",
+      "time_utc": "2026-11-24T12:08:12.121973+00:00",
+      "duration_seconds": 0.16119,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/03-initial-surface.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/03-initial-surface.stderr",
+      "json_result": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 8,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:661c2b51739b20d82585",
+            "window": [
+              0,
+              -1,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "LLM提炼语义，蜂巢承载覆盖关系。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              -1,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:1c422cb7cc01886c46eb",
+            "window": [
+              0,
+              0,
+              -3
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "精确保持标签；量化模式允许关系变化。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -3
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:9e6aac642cb2bb793b5d",
+            "window": [
+              0,
+              0,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "残差复用保留样本，变形改变覆盖。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -2
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:40e74fce2390b945810f",
+            "window": [
+              0,
+              0,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "同一入口逐层展开，桥由Host明示。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:6e55e0f7776044e83746",
+            "window": [
+              0,
+              0,
+              0
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "正文、绑定、几何一起恢复；版本可回溯。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              0
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:3c19690dc95993affb65",
+            "window": [
+              0,
+              1,
+              -4
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "表层存短判断，容量与局部8位分开。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              -4
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:fa83fe4903712f5c658c",
+            "window": [
+              0,
+              1,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "相遇先读后写，重组需能向下读回。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:b9a9b0cb2b2adb982475",
+            "window": [
+              0,
+              2,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "运行时可替换，工作场与源码各自保留。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              2,
+              1
+            ],
+            "selects_single_physical_entry": true
+          }
+        ],
+        "start": {
+          "policy": "explicit-order",
+          "order": 0,
+          "root_cells": 8,
+          "root_pages": 1,
+          "root_plus_descent": 2,
+          "soft_root_pages": 4,
+          "active_order": 0,
+          "active_overflow": false
+        },
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "compact": true
+      }
+    },
+    {
+      "index": 4,
+      "label": "select-read-write-reorganization",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "surface:fa83fe4903712f5c658c",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/session.json"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "The preview 相遇先读后写，重组需能向下读回 directly concerns daily read/write and later reorganization; choose the physical member shown on this page, L-2(1,1).",
+      "time_utc": "2026-11-24T12:08:17.631920+00:00",
+      "duration_seconds": 0.176542,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/04-select-read-write-reorganization.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/04-select-read-write-reorganization.stderr",
+      "json_result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -2,
+          1,
+          1
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-2.encounter.v2",
+            "cell": [
+              -2,
+              1,
+              1
+            ],
+            "via": [],
+            "text": "相遇先读后写，重组需能向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L1-L75"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-2.encounter.v1",
+            "entry_path": [],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.encounter-use.v2",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.runtime-field.v1",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "运行时代码、速记本工作场、保存固定提交的源码仓库分别维护。安装器不携带工作场；替换兼容运行时后显式指定原场继续使用。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 12,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.binding-sources.v1",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "current 表示当前绑定，源码依据固定到提交。reuse 只添支持证据，不新添物理材料，当前正文与压力需求不变；revision 切换当前正文并保留历史。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 15,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:-1:1:0",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 1365
+          },
+          {
+            "id": "cell:-1:1:1",
+            "cell": [
+              -1,
+              1,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 10923
+          },
+          {
+            "id": "cell:-1:2:0",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 37547
+          },
+          {
+            "id": "cell:-1:2:1",
+            "cell": [
+              -1,
+              2,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 12971
+          },
+          {
+            "id": "cell:-1:3:0",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "index": 5,
+      "label": "descend-encounter-use",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/session.json",
+        "--descend",
+        "cell:-1:2:0"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Read the middle expression about daily encounters and reorganization, following the actual downward candidate shown at the selected root.",
+      "time_utc": "2026-11-24T12:08:29.175619+00:00",
+      "duration_seconds": 0.155697,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/05-descend-encounter-use.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/05-descend-encounter-use.stderr",
+      "json_result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -1,
+          2,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-1.encounter-use.v2",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [],
+            "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.adapter.v6",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.adapter.v5",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.sources.v1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+            "sources": [
+              "d25083d062c86a7b903d53348ddb1bdf23f24bda:lab/nollm-lab/repository_memory/enterprise_math/research.py#L27-L71"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:0:2:-1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 14336
+          },
+          {
+            "id": "cell:0:2:0",
+            "cell": [
+              0,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "weight_q16": 5461
+          },
+          {
+            "id": "cell:0:3:-2",
+            "cell": [
+              0,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "weight_q16": 8875
+          },
+          {
+            "id": "cell:0:3:-1",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 36864
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "index": 6,
+      "label": "show-adapter-full",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "show",
+        "nollm.adapter.v6"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Expand exact already-discovered expression to see every fixed source; this is direct evidence inspection, not an entry-selection substitute.",
+      "time_utc": "2026-11-24T12:08:50.887150+00:00",
+      "duration_seconds": 0.172645,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/06-show-adapter-full.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/06-show-adapter-full.stderr",
+      "json_result": {
+        "id": "nollm.adapter.v6",
+        "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/local_reorganization.py#L100-L268",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/project_memory.py#L373-L602"
+        ],
+        "current": true,
+        "revises": "nollm.adapter.v5"
+      }
+    },
+    {
+      "index": 7,
+      "label": "prepare-middle-write",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/session.json",
+        "--prepare-write"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Observe actual candidate positions before deciding whether a move or new supporting detail is useful; do not request pressure because this task is about semantic organization and path preservation.",
+      "time_utc": "2026-11-24T12:08:51.070914+00:00",
+      "duration_seconds": 0.180227,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/07-prepare-middle-write.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/07-prepare-middle-write.stderr",
+      "json_result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -1,
+          2,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": true,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-1.encounter-use.v2",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [],
+            "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.adapter.v6",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.adapter.v5",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.sources.v1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+            "sources": [
+              "d25083d062c86a7b903d53348ddb1bdf23f24bda:lab/nollm-lab/repository_memory/enterprise_math/research.py#L27-L71"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:0:2:-1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 14336
+          },
+          {
+            "id": "cell:0:2:0",
+            "cell": [
+              0,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "weight_q16": 5461
+          },
+          {
+            "id": "cell:0:3:-2",
+            "cell": [
+              0,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "weight_q16": 8875
+          },
+          {
+            "id": "cell:0:3:-1",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 36864
+          }
+        ],
+        "cells": [
+          {
+            "id": "cell:-2:1:0",
+            "cell": [
+              -2,
+              1,
+              0
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-2:1:1",
+            "cell": [
+              -2,
+              1,
+              1
+            ],
+            "native_atoms": 1,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-2:2:0",
+            "cell": [
+              -2,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:1:1",
+            "cell": [
+              -1,
+              1,
+              1
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:1:2",
+            "cell": [
+              -1,
+              1,
+              2
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:2:-2",
+            "cell": [
+              -1,
+              2,
+              -2
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:2:-1",
+            "cell": [
+              -1,
+              2,
+              -1
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:2:0",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "native_atoms": 1,
+            "readable_downward": false,
+            "at_focus": true,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:2:1",
+            "cell": [
+              -1,
+              2,
+              1
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:2:2",
+            "cell": [
+              -1,
+              2,
+              2
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:3:-2",
+            "cell": [
+              -1,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:-1:3:-1",
+            "cell": [
+              -1,
+              3,
+              -1
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:0:2:-1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "native_atoms": 1,
+            "readable_downward": true,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:0:2:0",
+            "cell": [
+              0,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "readable_downward": true,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:0:3:-2",
+            "cell": [
+              0,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "readable_downward": true,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:0:3:-1",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "native_atoms": 1,
+            "readable_downward": true,
+            "at_focus": false,
+            "content_budget_configured": true
+          },
+          {
+            "id": "cell:0:4:-2",
+            "cell": [
+              0,
+              4,
+              -2
+            ],
+            "native_atoms": 0,
+            "readable_downward": false,
+            "at_focus": false,
+            "content_budget_configured": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "label": "read-local-reorganization-evidence",
+      "argv": [
+        "bash",
+        "-c",
+        "nl -ba docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md | sed -n '1,110p'"
+      ],
+      "cwd": "/workspace/scratch/59faa762c350/Nollm",
+      "stdin_path": null,
+      "decision": "Read source windows from the parent-verified fixed source checkout at 211ed1f; it has no .git, so this is explicitly a local window read and not git show or CLI source success.",
+      "time_utc": "2026-11-24T12:08:51.076835+00:00",
+      "duration_seconds": 0.003632,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/08-read-local-reorganization-evidence.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/08-read-local-reorganization-evidence.stderr",
+      "text_result": "     1\t# Local reorganization and physical storage\n     2\t\n     3\tImplemented and locally verified, 2026-11-24. Development input:\n     4\t`ac587624411fe9c1270317cc89f816efd1ccb535` on main. The frozen\n     5\t`test/nollm-20261123-1` branch stays at `c4b6b922b993732e008e8d1b95951b47bec823df`;\n     6\tits runtime/field input remains `f37667bf232360d0c26d37de0639285084230ddc`.\n     7\t\n     8\t## Implemented behavior\n     9\t\n    10\tStored Surface made upper judgments small, but daily reading still opened\n    11\twhole-state files, and a later Host could not submit a coherent reorganization\n    12\tunder a final-layout budget. This change supplies those operations. The Host\n    13\tauthors judgments and placement; Core computes the non-tree honeycomb relations.\n    14\tNo semantic parent table or alternate router is introduced.\n    15\t\n    16\t| Layer | Change | Scope |\n    17\t| --- | --- | --- |\n    18\t| Core | Geometry-addressed pages, lazy bodies, occupancy/byte metadata, local undo | Explicit migration; existing single-file fields remain readable |\n    19\t| Access | Paged physical bindings and `reorganize` | Final-layout budget; touched cells, handles and selected configuration recover together |\n    20\t| Encounter | Read first; explicit write preparation and pressure | Singleton physical candidates require one Host selection; successful recall reuses the loaded Statement |\n    21\t| Host reorganization | `--reorganize PLAN_JSON` | New/revise/reuse/move/forget from accumulated observations; actual forward paths and terminal readback |\n    22\t| Storage command | `storage` / `storage --enable-paged` | Read-only layout inspection, or explicit idempotent component migration |\n    23\t\n    24\tThe [skill reference](../../lab/nollm-lab/repository_memory/skills/nollm-repository-memory/references/local-reorganization.md)\n    25\tdocuments plan syntax, commands and failures.\n    26\t\n    27\t## Reading and placement\n    28\t\n    29\tOrdinary `encounter` returns facts, sources and actual adjacent descent candidates.\n    30\t`--prepare-write` adds physical placement candidates; `--pressure` requests support\n    31\tpressure and implies preparation. `--read-only` stops both; `--no-pressure` stops\n    32\tpressure while retaining preparation. A write choice follows a separate observation.\n    33\t\n    34\tWritable layers are distinct from Surface layers. Local writing intersects the\n    35\tconfigured writable set with the focus and its adjacent layers. Explicit descents\n    36\tcan therefore continue deep into a field without putting every layer on the first\n    37\tpage. Candidate flags report the current focus, downward readability and whether\n    38\tits layer has a content budget. A singleton Surface candidate exposes its physical\n    39\tmember for direct Host selection; multiple members retain physical selection.\n    40\tHistorical `walk` behavior is retained.\n    41\t\n    42\tOrdinary NEW under `via=downward` requires the focus or an actual downward target.\n    43\tThe frozen witness L−2(0,−2) → L−1(−2,−2) has upward support 683/65536 but no\n    44\tdownward edge; it is rejected before Evidence capture. Other explicitly chosen\n    45\tkernels retain their previous placement capability.\n    46\t\n    47\t## Local reorganization\n    48\t\n    49\t```python\n    50\taccess.reorganize(\n    51\t    decisions,\n    52\t    statements=statements,\n    53\t    content_budget=policy,\n    54\t    configuration_files=configuration,\n    55\t)\n    56\t```\n    57\t\n    58\tAccess projects ordered explicit decisions before mutating. The Core/Access API\n    59\talso supports `revision_keep_history`; the native CLI exposes new, revise, reuse,\n    60\tmove and forget. Entrance/writable-layer configuration and content budget can\n    61\tchange in the same batch. Targets come from prepared observations, and a later\n    62\taction can reference a current ID created earlier in that batch.\n    63\t\n    64\tCapacity applies to the **final** contents. Tests execute a full-Surface NEW+FORGET\n    65\treplacement, middle revision and detail move together, then read the result again\n    66\tfrom the native entrance. Another case adds a more coarse L−3 entrance while\n    67\tswitching its budget and Surface configuration, preserving the path to L0.\n    68\t\n    69\tThe adapter validates real adjacent `coverage_down` edges for changed current\n    70\texpressions and explicit readback requests. After commit it checks these edges\n    71\tagain and consumes the terminal current expression through normal Access recall.\n    72\tAn observed ancestor prefix remains usable after further descent. An unrelated\n    73\tstale observation does not block the touched facts.\n    74\t\n    75\tThe returned guarantee is `changed_current_and_explicit_paths`. Other known old\n    76\tentrances should be included explicitly if their reading paths must remain.\n    77\tThis is not a whole-field orphan proof or evidence that another model will choose\n    78\tthese paths within a finite budget. It does not maintain reverse coverage. The\n    79\t[earlier study](NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md) records\n    80\twhy zero global orphans does not prove retention of useful old entrances.\n    81\t\n    82\t### Recovery and ownership\n    83\t\n    84\tPreflight failure leaves placement and new Evidence untouched. After preflight,\n    85\tcaptured immutable Statements survive a later commit failure. Ordinary exceptions\n    86\trestore the affected cells, bindings and settings. After process interruption,\n    87\tthe next Access open restores the local recovery record before use. Failed CLI\n    88\tplans retain their cursor; successful retry deletes it.\n    89\t\n    90\tThe existing single-Core owner and Access composition lock serialize mutations.\n    91\tIndependent direct Core readers do not obtain a cross-file instantaneous view.\n    92\tOrdinary Access mutations now use the same local savepoints; bridge actions keep\n    93\ttheir existing separate path. The explicit `apply_if_state` API still performs\n    94\tits contractual full-state comparison.\n    95\t\n    96\tFresh immutable IDs captured in the same locked operation skip binding inventory.\n    97\tSeparated capture→apply retains the duplicate-binding check; a test covers another\n    98\tAccess instance binding the ID between those calls. There is no new shared fresh-ID\n    99\tcache or statement-to-geometry routing index.\n   100\t\n   101\t## Physical storage\n   102\t\n   103\tCore and binding pages use profile, chart, phase, physical layer and coordinate\n   104\tpartition; default width is 64. All cells within a page share its file. Occupancy\n   105\tmetadata includes current bytes. Missing metadata falls back to its page body,\n   106\tso deleting a cache does not hide facts. Core logical v1 export/import and binding\n   107\tlogical v2 export remain unchanged; canonical and mixed-phase identity are tested.\n   108\t\n   109\t```sh\n   110\tpython3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \\\n"
+    },
+    {
+      "index": 9,
+      "label": "read-reorganization-implementation",
+      "argv": [
+        "bash",
+        "-c",
+        "nl -ba lab/nollm-lab/repository_memory/local_reorganization.py | sed -n '1,330p'"
+      ],
+      "cwd": "/workspace/scratch/59faa762c350/Nollm",
+      "stdin_path": null,
+      "decision": "Inspect exact implementation source already listed on the discovered adapter expression to confirm version/target and path-check semantics.",
+      "time_utc": "2026-11-24T12:09:07.656559+00:00",
+      "duration_seconds": 0.003554,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/09-read-reorganization-implementation.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/09-read-reorganization-implementation.stderr",
+      "text_result": "     1\t\"\"\"Host-authored local reform with actual forward paths and one Access batch.\n     2\t\n     3\tThe encounter observations are temporary working context, never a persistent\n     4\tsemantic router. The Host authors every expression and explicitly chooses cells.\n     5\t\"\"\"\n     6\tfrom __future__ import annotations\n     7\t\n     8\tfrom collections import defaultdict\n     9\timport json\n    10\tfrom pathlib import Path\n    11\t\n    12\tfrom nollm_access import (\n    13\t    AccessDecision, AccessRecallRequest, AccessRuntime, ContentBudgetPolicy,\n    14\t    EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID, FileHandleStore,\n    15\t    FileStatementStore, MemoryStatement, RECALL_SURFACE_BUDGET,\n    16\t)\n    17\tfrom nollm_core import AtomHandle, CoreRuntime, RecallBudget, expand_physical_coverage\n    18\t\n    19\tfrom coverage_cli import address, coords\n    20\t\n    21\t\n    22\tSCHEMA_VERSION = \"nollm_local_reorganization_v1\"\n    23\t\n    24\t\n    25\tdef _cell(value):\n    26\t    if not isinstance(value, (list, tuple)) or len(value) != 3:\n    27\t        raise ValueError(\"a physical cell is [layer, q, r]\")\n    28\t    return address(*value)\n    29\t\n    30\t\n    31\tdef _validate_path(path, target, allowed_roots):\n    32\t    if not isinstance(path, list) or not path:\n    33\t        raise ValueError(\"readback needs a nonempty physical path\")\n    34\t    cells = tuple(_cell(value) for value in path)\n    35\t    if cells[0] not in allowed_roots or cells[-1] != target:\n    36\t        raise ValueError(\"readback must start at an observed entrance and end at the final placement\")\n    37\t    for parent, child in zip(cells, cells[1:]):\n    38\t        if child not in {member.target for member in expand_physical_coverage(parent, \"coverage_down\").members}:\n    39\t            raise ValueError(\"readback path does not follow actual adjacent coverage_down\")\n    40\t    return cells\n    41\t\n    42\t\n    43\tdef _observed_route(target, observations, allowed_roots):\n    44\t    if target in allowed_roots:\n    45\t        return (target,)\n    46\t    for observation in reversed(observations):\n    47\t        prefix = observation.get(\"focus_path\", ())\n    48\t        if not prefix:\n    49\t            continue\n    50\t        cells = [_cell(value) for value in prefix]\n    51\t        candidates = []\n    52\t        if target in cells:\n    53\t            candidates.append(cells[:cells.index(target) + 1])\n    54\t        candidates.extend([*cells[:index + 1], target]\n    55\t                          for index, parent in enumerate(cells)\n    56\t                          if target.layer == parent.layer + 1)\n    57\t        for candidate in candidates:\n    58\t            try:\n    59\t                return _validate_path([coords(cell) for cell in candidate], target, allowed_roots)\n    60\t            except ValueError:\n    61\t                continue\n    62\t    raise ValueError(\"no observed forward path reaches this placement; supply an actual readback path\")\n    63\t\n    64\t\n    65\tdef _configuration(field, cursor, plan):\n    66\t    from project_memory import KERNELS, _encounter_defaults, _selected_layers, _surface_scope\n    67\t\n    68\t    files = {}\n    69\t    current = _encounter_defaults(field)\n    70\t    replacement = plan.get(\"encounter\")\n    71\t    if replacement is not None:\n    72\t        allowed = {\"surface_layers\", \"layers\", \"order\", \"page_size\", \"steps\", \"limit\", \"via\", \"beam\", \"compact\"}\n    73\t        if not isinstance(replacement, dict) or set(replacement) - allowed:\n    74\t            raise ValueError(\"encounter update contains an unknown setting\")\n    75\t        current = {**current, **replacement}\n    76\t        if \"layers\" in current:\n    77\t            _selected_layers(current[\"layers\"])\n    78\t        if \"surface_layers\" in current:\n    79\t            _surface_scope(current[\"surface_layers\"])\n    80\t        if current.get(\"via\", \"local\") not in KERNELS:\n    81\t            raise ValueError(\"unknown propagation choice\")\n    82\t        for key in (\"order\", \"steps\"):\n    83\t            if key in current and (type(current[key]) is not int or current[key] < 0):\n    84\t                raise ValueError(f\"{key} must be a nonnegative integer\")\n    85\t        for key in (\"beam\", \"limit\", \"page_size\"):\n    86\t            if key in current and (type(current[key]) is not int or current[key] < 1):\n    87\t                raise ValueError(f\"{key} must be a positive integer\")\n    88\t        if (current.get(\"order\", 0) > RECALL_SURFACE_BUDGET.hard_max_order\n    89\t                or current.get(\"page_size\", RECALL_SURFACE_BUDGET.page_size) > RECALL_SURFACE_BUDGET.page_size):\n    90\t            raise ValueError(\"encounter order and page_size must fit the existing Surface budget\")\n    91\t        if \"compact\" in current and type(current[\"compact\"]) is not bool:\n    92\t            raise ValueError(\"compact must be a boolean\")\n    93\t        files[Path(\"access/encounter.json\")] = (json.dumps(current, ensure_ascii=False, indent=2) + \"\\n\").encode()\n    94\t    layers = tuple(current.get(\"layers\", cursor[\"layers\"])) if replacement is not None else tuple(cursor[\"layers\"])\n    95\t    surface = tuple(current.get(\"surface_layers\", cursor[\"surface_layers\"])) if replacement is not None else tuple(cursor[\"surface_layers\"])\n    96\t    budget = ContentBudgetPolicy.from_mapping(plan[\"content_budget\"]) if \"content_budget\" in plan else None\n    97\t    return files, layers, surface, budget\n    98\t\n    99\t\n   100\tdef reorganize(field, cursor, plan):\n   101\t    \"\"\"Apply one explicit local plan; retain evidence and report actual readback.\n   102\t\n   103\tChanges use action new/revise/reuse/move/forget, target an observed fact or cell,\n   104\tand carry id/text/sources for a new expression. A move uses `to` for its cell.\n   105\tOptional readback entries contain id and a physical path; common observed paths\n   106\tare inferred mechanically. Configuration updates are part of the same batch.\n   107\t\"\"\"\n   108\t    field = Path(field)\n   109\t    if cursor.get(\"field\") != str(field.resolve()) or \"entry\" not in cursor:\n   110\t        raise ValueError(\"reorganization needs an encounter in this field with one selected entry\")\n   111\t    if not isinstance(plan, dict) or set(plan) - {\"schema_version\", \"changes\", \"readback\", \"content_budget\", \"encounter\"}:\n   112\t        raise ValueError(\"invalid local reorganization plan\")\n   113\t    if plan.get(\"schema_version\") != SCHEMA_VERSION or not isinstance(plan.get(\"changes\"), list) or not plan[\"changes\"]:\n   114\t        raise ValueError(\"local reorganization requires its schema version and changes\")\n   115\t    observed_items = {item[\"id\"]: item for item in cursor.get(\"observed_items\", ())}\n   116\t    observed_cells = {item[\"id\"]: item for item in cursor.get(\"observed_cells\", ())}\n   117\t    configuration_files, writable_layers, surface_layers, budget = _configuration(field, cursor, plan)\n   118\t    observations = [*observed_items.values(), *observed_cells.values()]\n   119\t    roots = {_cell(cursor[\"entry\"])}\n   120\t    roots.update(_cell(item[\"cell\"]) for item in observations if item[\"cell\"][0] in surface_layers)\n   121\t    roots = {cell for cell in roots if cell.layer in surface_layers}\n   122\t    if not roots:\n   123\t        raise ValueError(\"the proposed Surface needs an observed physical entrance\")\n   124\t\n   125\t    with CoreRuntime(field) as core, AccessRuntime(core, FileStatementStore(field), FileHandleStore(field)) as access:\n   126\t        # Serialize the complete Host operation with the existing Access owner.\n   127\t        # Public Access calls acquire their own Core lease, which is not reentrant.\n   128\t        with access.reorganization_scope():\n   129\t            current = {note_id: AtomHandle.from_mapping(item[\"handle\"])\n   130\t                       for note_id, item in observed_items.items()}\n   131\t            checked_current = set()\n   132\t\n   133\t            def require_current(note_id):\n   134\t                if note_id in checked_current or note_id not in observed_items:\n   135\t                    return\n   136\t                handle = AtomHandle.from_mapping(observed_items[note_id][\"handle\"])\n   137\t                try:\n   138\t                    binding = access.handle_store.binding_for_handle(handle)\n   139\t                    core.get(handle)\n   140\t                except KeyError as error:\n   141\t                    raise ValueError(\"an observed fact moved or was removed; reopen the locality\") from error\n   142\t                if binding.current_statement_id != note_id:\n   143\t                    raise ValueError(\"an observed fact was revised; reopen the locality\")\n   144\t                checked_current.add(note_id)\n   145\t            decisions, statements, effects = [], [], []\n   146\t            changed_ids = set()\n   147\t            cell_delta = defaultdict(int)\n   148\t            policy = budget if budget is not None else access.content_budget\n   149\t\n   150\t            def destination(cell_id):\n   151\t                observation = observed_cells.get(cell_id)\n   152\t                if observation is None or not observation.get(\"writable\"):\n   153\t                    raise ValueError(\"choose a writable cell observed with prepare-write\")\n   154\t                cell = _cell(observation[\"cell\"])\n   155\t                if cell.layer not in writable_layers:\n   156\t                    raise ValueError(\"target is outside the final writable layers\")\n   157\t                if policy is not None and policy.limits_for(cell) is None:\n   158\t                    raise ValueError(f\"configure the content budget for layer {cell.layer}\")\n   159\t                return cell\n   160\t\n   161\t            for number, change in enumerate(plan[\"changes\"]):\n   162\t                if not isinstance(change, dict) or set(change) - {\"action\", \"target\", \"to\", \"id\", \"text\", \"sources\", \"reason\"}:\n   163\t                    raise ValueError(\"invalid local change\")\n   164\t                action = change.get(\"action\")\n   165\t                if action not in {\"new\", \"revise\", \"reuse\", \"move\", \"forget\"}:\n   166\t                    raise ValueError(\"unknown local reorganization action\")\n   167\t                target = change.get(\"target\")\n   168\t                old_handle = None\n   169\t                target_cell = None\n   170\t                if action == \"new\":\n   171\t                    target_cell = destination(target)\n   172\t                else:\n   173\t                    if target not in current:\n   174\t                        raise ValueError(\"choose an observed current fact or a current result of this batch\")\n   175\t                    require_current(target)\n   176\t                    old_handle = current[target]\n   177\t                    if old_handle.geometry_address.layer not in writable_layers:\n   178\t                        raise ValueError(\"fact is outside the final writable layers\")\n   179\t                    if action == \"move\":\n   180\t                        target_cell = destination(change.get(\"to\"))\n   181\t                if action in {\"new\", \"revise\", \"reuse\"}:\n   182\t                    note_id, text, sources = change.get(\"id\"), change.get(\"text\"), change.get(\"sources\")\n   183\t                    if not isinstance(sources, list) or not sources or any(not isinstance(ref, str) or not ref for ref in sources):\n   184\t                        raise ValueError(\"new expressions need the actually read source references\")\n   185\t                    references = list(sources[1:])\n   186\t                    if action in {\"revise\", \"reuse\"}:\n   187\t                        references.append(f\"{'revises' if action == 'revise' else 'reuses'}:{target}\")\n   188\t                    statements.append(MemoryStatement(note_id, text, sources[0], tuple(references)))\n   189\t                else:\n   190\t                    note_id = target\n   191\t                if action == \"new\":\n   192\t                    handle = AtomHandle(target_cell, note_id)\n   193\t                    current[note_id] = handle\n   194\t                    checked_current.add(note_id)\n   195\t                    cell_delta[target_cell] += 1\n   196\t                    changed_ids.add(note_id)\n   197\t                elif action == \"revise\":\n   198\t                    handle = old_handle\n   199\t                    del current[target]\n   200\t                    current[note_id] = handle\n   201\t                    checked_current.add(note_id)\n   202\t                    changed_ids.discard(target)\n   203\t                    changed_ids.add(note_id)\n   204\t                elif action == \"move\":\n   205\t                    handle = AtomHandle(target_cell, old_handle.local_atom_id)\n   206\t                    current[target] = handle\n   207\t                    cell_delta[old_handle.geometry_address] -= 1\n   208\t                    cell_delta[target_cell] += 1\n   209\t                    changed_ids.add(target)\n   210\t                elif action == \"forget\":\n   211\t                    handle = old_handle\n   212\t                    del current[target]\n   213\t                    cell_delta[old_handle.geometry_address] -= 1\n   214\t                    changed_ids.discard(target)\n   215\t                else:\n   216\t                    handle = old_handle\n   217\t                    changed_ids.add(target)\n   218\t                decisions.append(AccessDecision(\n   219\t                    f\"local-reform-{number}\", note_id,\n   220\t                    \"revision_current\" if action == \"revise\" else action,\n   221\t                    existing_handle=old_handle, target_cell=target_cell,\n   222\t                    reason_text=change.get(\"reason\") or f\"Host selected {action} in the observed locality.\",\n   223\t                    write_policy_id=EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID,\n   224\t                ))\n   225\t                effects.append({\"action\": action, \"id\": note_id, \"cell\": coords(handle.geometry_address)})\n   226\t\n   227\t            checks = []\n   228\t            explicit = plan.get(\"readback\", [])\n   229\t            if not isinstance(explicit, list):\n   230\t                raise ValueError(\"readback must be a list\")\n   231\t            checked_ids = set()\n   232\t            for request in explicit:\n   233\t                if not isinstance(request, dict) or set(request) != {\"id\", \"path\"} or request[\"id\"] not in current:\n   234\t                    raise ValueError(\"readback must name a final current expression and its path\")\n   235\t                note_id = request[\"id\"]\n   236\t                require_current(note_id)\n   237\t                path = _validate_path(request[\"path\"], current[note_id].geometry_address, roots)\n   238\t                checks.append((note_id, path))\n   239\t                checked_ids.add(note_id)\n   240\t            for note_id in sorted(changed_ids - checked_ids):\n   241\t                path = _observed_route(current[note_id].geometry_address, observations, roots)\n   242\t                checks.append((note_id, path))\n   243\t            for _, path in checks:\n   244\t                if len(core.atoms_at(path[0])) + cell_delta[path[0]] <= 0:\n   245\t                    raise ValueError(\"a required Surface entrance would have no stored judgment\")\n   246\t            for layer in set(writable_layers) - set(cursor[\"layers\"]):\n   247\t                if policy is not None and policy.limits_for(address(layer, 0, 0)) is None:\n   248\t                    raise ValueError(f\"new writable layer {layer} requires its content budget\")\n   249\t\n   250\t            access.reorganize(tuple(decisions), statements=tuple(statements),\n   251\t                              content_budget=budget, configuration_files=configuration_files)\n   252\t            readback = []\n   253\t            for note_id, path in checks:\n   254\t                # Recheck the real forward edges after the accepted change, then\n   255\t                # consume the terminal physical cell through normal Access recall.\n   256\t                _validate_path([coords(cell) for cell in path], current[note_id].geometry_address, roots)\n   257\t                count = max(1, len(core.atoms_at(path[-1])))\n   258\t                result = access.recall(AccessRecallRequest(\n   259\t                    \"local-reform-readback\", (path[-1],), budget=RecallBudget(0, 1, 0, 0, 0, count)))\n   260\t                hit = next((item for item in result.items if item.statement_id == note_id), None)\n   261\t                if hit is None or hit.fallback_error:\n   262\t                    raise RuntimeError(f\"committed reorganization needs readback inspection: {note_id}\")\n   263\t                readback.append({\"id\": note_id, \"path\": [coords(cell) for cell in path],\n   264\t                                 \"text\": hit.evidence_utf8, \"current\": True})\n   265\t    return {\"kind\": \"result\", \"effect\": \"reorganize\", \"entry\": cursor[\"entry\"],\n   266\t            \"changes\": effects, \"readback\": readback, \"commit_state\": \"committed\",\n   267\t            \"readback_scope\": \"changed_current_and_explicit_paths\",\n   268\t            \"configuration_updated\": bool(configuration_files) or budget is not None}\n"
+    },
+    {
+      "index": 10,
+      "label": "read-maintenance-study",
+      "argv": [
+        "bash",
+        "-c",
+        "nl -ba docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md | sed -n '1,230p'"
+      ],
+      "cwd": "/workspace/scratch/59faa762c350/Nollm",
+      "stdin_path": null,
+      "decision": "Follow the implementation document's evidence link for why keeping an old useful entrance differs from whole-field reachability.",
+      "time_utc": "2026-11-24T12:09:07.663327+00:00",
+      "duration_seconds": 0.004334,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/10-read-maintenance-study.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/10-read-maintenance-study.stderr",
+      "text_result": "     1\t# 从上往下维护与跨模型重新组织\n     2\t\n     3\t日期：2026-11-23（UTC+08）。研究基线：`5dd3c43c77127a60655d63360eb0a3c2a9d0babc`。\n     4\t\n     5\t## 1. 本轮结论\n     6\t\n     7\t用户提出两个相连的问题：是否需要知道一个细格被哪些上格覆盖，还是由上向下逐步巡查和纠正即可；后继 LLM 的分类习惯变化时，怎样重新组织已有记忆，同时保持事实可达。\n     8\t\n     9\t建议将日常下钻、沿本次已走路径更新、从表层向下的维护巡查作为主流程。独立物理盘点处理声明范围内未遇到的当前材料。持久反向覆盖表不成为读取、写入或维护的必需条件；按需反查可以作为少量变化、明确需要定位影响范围时的局部加速。\n    10\t\n    11\t上一轮把“反演真实向下读者”直接列为后续实现，隐含了每次细层变化都要立即找全相关上层的要求。本轮将其收窄：需要即时找全影响时，应查真实阅读关系；接受逐步巡查修订时，可以从表层往下完成维护。\n    12\t\n    13\t跨模型适配先处理可读的短判断和中层条件。几何布局确实妨碍使用时，再调整物理位置。后继模型可以形成不同读法、修订旧理解或移动不变的表达；事实原文、当前判断、分类方式与几何位置分别处理。\n    14\t\n    15\t本轮完成的是代价比较、真实复制场重组与当前方案更新。自动巡查调度、按需压力界面、多动作 Access 重组事务仍需实现；本轮没有引入永久反向关系表或替换 Core 几何。\n    16\t\n    17\t## 2. 哪些操作实际需要“倒着走”\n    18\t\n    19\t| 操作 | 当前依赖 | 本轮判断 |\n    20\t|---|---|---|\n    21\t| 已存 Surface 首屏 | 上层占用、当前绑定、上层正文 | 本场 Order 0 首屏没有 Coverage 计算 |\n    22\t| 同一入口向下读取 | `coverage_down` | 无须先知道该细格的所有上层读者 |\n    23\t| `ascend` 返回 | 临时 `focus_path` | 返回本次实际走过的路径，无须反求全部覆盖者 |\n    24\t| NEW / REVISE / MOVE | 容量、现有 atom/绑定、目标格、持久化 | Access 写入本身不计算反向覆盖，也不自动改上层概括 |\n    25\t| 找出所有可能受下层变更影响的概括 | 已枚举向下关系，或按需几何反查 | 属于维护方式选择 |\n    26\t| 支撑压力 | `incoming_coverage`，即向上支撑关系的反演 | 这是现有压力计算，不等于“谁向下读到了这个事实” |\n    27\t\n    28\t当前 `incoming_coverage` 反演的是 `coverage_up`。读关系的逆向查询应反演 `coverage_down`，两者不能互代。取消全局反向维护要求，并不意味着必须删除现有压力计算或沿会话路径返回的能力。\n    29\t\n    30\t## 3. 实测：少量变化与批量变化的代价不同\n    31\t\n    32\t基线场共43条当前表达、41个占用格，表层8格，声明层范围 L−2 至 L0。完整前向几何巡查保留空中间格，访问97个不同物理格，展开35个不同源格。只沿已占用中间格展开需要20次，但这项捷径只对当前形成场恰好读全，不能作为一般完整性条件。\n    33\t\n    34\t### 3.1 同等语义材料下的定位成本\n    35\t\n    36\t下面的前向方案先枚举实际向下关系，再在本次临时结果中筛选受改动影响的上层及相邻上下文；逆向方案按需生成局部候选，再调用同一个真实 `coverage_down` 核验。两者读取相同的待复核正文，均无持久反向表。\n    37\t\n    38\t| 改动范围 | 前向展开次数 | 按需反查所需展开次数 | 前向冷缓存中位耗时 | 按需反查冷缓存中位耗时 | 两边准备的正文 |\n    39\t|---|---:|---:|---:|---:|---:|\n    40\t| 1个下层格 | 35 | 10 | 3.60 ms | 2.41 ms | 18条，7,308字节 |\n    41\t| 3个相邻下层格 | 35 | 15 | 3.85 ms | 2.61 ms | 18条，7,308字节 |\n    42\t| 全部21个下层格 | 35 | 44 | 4.46 ms | 5.50 ms | 43条，24,557字节 |\n    43\t\n    44\t这一组来自本轮公开 API 复现。算法冷缓存使用公开物理缓存清理函数，并清理本实验的临时逆向包络；操作系统页缓存未清空，每次样本都重新打开 Core 和所需正文。中位数来自5次不带计数仪表的运行，未计入 LLM 阅读与判断时间。展开次数统计公开 down 请求；逆向冷启动另有3次公开 stencil 输入读取，时间已经计入。原始一次性内部 cache 观测与这次公开调用口径分别保存，均不作为运行时依赖。\n    45\t\n    46\t对这份小场，少量更新时按需反查可以减少几何工作；一批下层几乎都变时，前向一次扫过更省。完整读取全部43条正文的前向巡查在这轮样本中约4.38–4.63 ms，读到24,557字节正文。实际维护的 LLM 阅读、理解和修改成本仍需另外计算。\n    47\t\n    48\t当前固定 Core 的逆向候选可由公开 Q40 采样输入生成一个很小的整数包络，再以向下展开逐个确认。因此“每次局部反查”本身没有本场规模的维护成本；长期保存整张反向表才会增加关系存储、变换失效和更新协调。带不同中心扭转的 Lab 变换需要另行测量，不能直接沿用本轮固定 Core 的候选范围和耗时。\n    49\t\n    50\t### 3.2 当前更直接的重复成本\n    51\t\n    52\t在相同根入口 `(-2,1,1)`，一次当前统一 encounter 返回4条正文，但还为14个可写候选计算压力。实测包含8次 down 调用、108次 up 调用、15次 incoming-up 调用；4条 Statement 各读取两次。直接以相同入口和预算调用只读 recall，则是6次 down、0次 up/反查、4次正文读取。\n    53\t\n    54\t这两者功能范围不同：统一 encounter 额外提供写入现场及压力，因此不能将全部差额当作无效工作。可改进之处是让共享读写现场的压力按实际需要展开，并复用本请求已经读取的 Statement。保留读写共用入口，不要求每次观察先给所有候选算完压力。\n    55\t\n    56\t两种路径仍整读 Core状态35,405字节和绑定10,854字节。写入还会复制、序列化并保存当前 Core 状态，以及按动作更新绑定。降低同步反向维护要求不会自动消除这些全文件成本。\n    57\t\n    58\t四份隔离复制场各执行一次 NEW、REUSE、原位修订和 MOVE，均未调用覆盖反查。NEW、修订、MOVE 都替换完整 Core 和 bindings 文件；REUSE 保存新支持正文并替换 bindings，Core文件不变。以本次 NEW 为例，224字节的新表达文件之外，还替换了35,657字节的 Core文件和11,085字节的绑定文件。这些是实际原子替换文件的长度，不是操作系统物理磁盘写入量。单次带仪表动作时间约1.74–2.41 ms，属于有限操作观察，不能作为写吞吐基准。\n    59\t\n    60\t另一项通过现有 encounter 逐入口维护的试验用了56次 API 调用，其中47个局部页面；正文去重后24,557字节，实际重复返回102,770字节，可见对象无缩进 JSON 共349,022字节（排除临时游标）。这说明巡查应复用一次打开的状态和同轮正文，同时分别检查不同上层的概括。该试验承担完整路径观察，不与上表的纯计算准备耗时直接作性能比值。\n    61\t\n    62\t### 3.3 成本模型\n    63\t\n    64\t设一次有限巡查展开 D 个不同源格，实际向下关系有 E 条，准备给 Host 的正文为 B 字节。去重前向遍历的几何工作与 D 次展开及 E 次边处理相称；以现有96点内核计，未命中缓存的采样工作与 96D 相称。按需反查的相应成本取决于本批变化向上遇到的不同候选数 K，仍需付出真正受影响上下文的 B 字节与语义复核成本。\n    65\t\n    66\t批量巡查可以把成本分摊到多次写入。逐次写入都立即全场巡查会重复支付 D 与 B。已知当前路径的局部更正可以先完成，其他共享上层在后续巡查或实际使用时重新遇到。\n    67\t\n    68\t同轮可复用正文与几何计算；不同上层概括仍须分别与共享下层核对。不能因同一份正文已经读过，就跳过另一个上层的语义检查。\n    69\t\n    70\t## 4. 自上而下维护成立的范围\n    71\t\n    72\t日常问答可按语义选择分支，找到足够材料后结束。维护巡查需要自己的范围和完成条件：在确定版本的场、声明的入口和层范围内，沿真实关系检查所有计划分支，分批时保留公平的续行位置。\n    73\t\n    74\t若巡查也依据旧概括决定“看起来不相关就跳过”，旧概括可以持续遮住其下的新内容。例如，假设未来量化默认值发生变化，旧上层还写着旧默认值，寻找新状态的读者可能一直跳过它。该例是假设，当前实现的默认值没有在本轮修改。\n    75\t\n    76\t完整性需要分别记录：\n    77\t\n    78\t1. **正常可见通路。** 每层有足够的完整短判断，读者能据此决定下一步。\n    79\t2. **声明范围内的几何可达。** 已完成该范围的真实向下展开，必要时穿过空中间格。\n    80\t3. **当前物理存量。** 用 Core 占用与当前绑定独立盘点，与完整巡查结果比较。\n    81\t\n    82\t空中间格不代表更细层没有材料。`check_layered_surface.py` 原有占用格下钻用于上一轮形成场的实际短判断通路验证；本轮的完整前向复制场试验穿过空中间格，不把未检查完或缺中间概括直接记为几何孤儿。\n    83\t\n    84\t盘点只回答“哪些当前物理占用尚未从这些入口遇到”，后续由 Host 读材料、补概括或重组局部。它不生成主题、词语或模型名到事实的查询目录。仅附属于现有占用的支持表达、已退出当前绑定的旧版本、已捕获尚未放置的材料，分别计量；`revision_keep_history` 若保留旧物理 atom 及其当前绑定，那份仍占用的材料继续纳入盘点。\n    85\t\n    86\t对于一份有限快照，如果声明入口全部展开至指定细层且没有跳过目标，每个在该范围内存在向下路径的占用都能被枚举到。任意模型在固定小预算下选对分支，则还取决于表层表达、任务和模型理解；几何枚举本身不能提供这个语义保证。\n    87\t\n    88\t## 5. 后继模型重新组织：实际复制场结果\n    89\t\n    90\t本轮没有更换模型家族；这是已有读者的设计挑战及受控复制场试验，不称为新盲测或跨厂商性能比较。\n    91\t\n    92\t### 5.1 先改短概括，原详细路径完全保留\n    93\t\n    94\t原表层“相遇共用读写，来源固定到提交。”被另一个 Host 视角改为：\n    95\t\n    96\t> 追加支持保正文，修订保历史；原文可回溯。\n    97\t\n    98\t新句60 UTF-8字节，原位保存为新版本。两种表述关注角度不同。实际回读确认23条原详细判断的全部已枚举向下路径不变，旧概括仍可精确打开且 `current=false`，68份原有 Statement 文件字节不变。\n    99\t\n   100\t这展示了后继模型可以更改入口的表达方式，保持原事实和实际几何关系。它没有单独证明新的措辞对所有读者更优。\n   101\t\n   102\t### 5.2 移动事实：全局可达仍然可能掩盖旧入口损失\n   103\t\n   104\t另一复制分支把 `nollm.binding.v3` 从 `L0(1,−1)` 移至实际观察到的 `L0(3,−1)`，使状态后果靠近操作说明。完整正文、来源与表达身份保持原样。\n   105\t\n   106\t| 表层入口 | 移动前 | 移动后 |\n   107\t|---|---:|---:|\n   108\t| 正文、绑定、几何恢复 `L−2(0,0)` | 可达 | 失去该事实 |\n   109\t| 相遇共用读写 `L−2(1,1)` | 可达 | 仍可达 |\n   110\t| 运行时、工作场与源码 `L−2(2,1)` | 不可达 | 新增可达 |\n   111\t\n   112\t移动前后仍然是23条详细判断全部可达，当前孤儿为0，该事实可达根数仍为2，原68份证据仍在。然而根集合已经改变。只比较总数、孤儿数或证据是否保存，会遗漏原入口的使用退化。\n   113\t\n   114\t因此这项 MOVE 保留为待继续处理的实验候选，没有应用到活跃场。它说明重新组织应检查具体新旧入口及相关任务，Host 再决定旧读法仍应保留、应修订还是可以退掉。不同角度可以并存，确已无用的旧分类也可以退出，不要求永久保存所有历史分类。\n   115\t\n   116\t### 5.3 事实身份与组织方式\n   117\t\n   118\t当前可以使用 NEW 增加新的有意义短判断，使用 revision_current 改同一判断并保留旧版本，使用 MOVE 保留不变表达及绑定而改变位置。REUSE 只增加支持表达，不形成第二个可见入口；同一 statement ID 也不能同时绑定多个物理 handle。\n   119\t\n   120\t多个上层读法共享下层，优先通过真实重叠覆盖实现。需要改变实际关系时，可以调整中层或位置；Stitch 是明确的格级桥，只在允许桥的传播模式中生效。当前默认 `downward` 不会因为新增一条桥就自动继续走它。桥的端点锚定格，MOVE 也不会使桥自动跟随事实。\n   121\t\n   122\t模型偏好变化不自动证明旧事实错误。改分类时保留来源；若对命题本身有异议，依据证据形成修订或不同命题，分别说明条件与理由。普通内容可以按后继模型的使用经验重组，无须每种模型复制一份完整场。\n   123\t\n   124\t## 6. 写入和重组应怎样形成可读路径\n   125\t\n   126\t写入可以复用本次从表层走下来的 `focus_path`，不必先枚举一个细格的全部上层。新事实放置后，按实际阅读方向回读，确认当前组织确实能把读者带到正文。上层含义被改变时，先处理本次已经读到的相关概括；其余共享上层交给后续巡查。\n   127\t\n   128\t有一个当前代码细节需要补齐：`_placement_cells()` 也提供向当前格输送向上支撑的候选，这些候选不一定在当前格的向下覆盖里。本轮原生见证是上层 `L−2(0,−2)` 与下层 `L−1(−2,−2)`：下格向上支撑该上格，权重683/65536，但上格向下不命中该下格。出现在可写候选中，不能直接当作本次入口已经连通。\n   129\t\n   130\t对分类适配，先形成或修订上/中层短判断，并从新的入口读回原详细表达。实际要 MOVE 时，比较这次需要保留的旧读法与新读法。若要确认声明范围内所有旧入口原有的向下可达关系未丢失，可用一次完整前向对比；相关读法和任务是否仍然可用，还需回读核对，不需要常驻反向表。若明确允许某些旧分类退休，记录这个选择并检查它还承载的其他事实。\n   131\t\n   132\t多步重组存在当前实现边界：Access 目前协调一次 Core 动作和绑定更新，对普通异常回滚；尚无跨多条 NEW/MOVE/REVISE、入口配置和多文件的统一提交。表层满额时“先增加新路、再退旧路”也可能触碰中间容量，尽管最终布局合法。后续可在现有 Access 内提供按最终占用检查的小型重组批次；普通异常回滚和跨文件崩溃原子性需分别实现。\n   133\t\n   134\t## 7. 当前优化顺序\n   135\t\n   136\t按本轮证据，优先推进：\n   137\t\n   138\t- 有范围、可续行的前向巡查，复用一次打开的状态/绑定和本轮正文；物理存量盘点单列。\n   139\t- 同一相遇中的压力按需展开，避免每次读取都重算全部候选；重复 Statement 读取在请求内复用。\n   140\t- 将已有原位修订、MOVE、退旧占用接成清楚的局部重组动作，返回实际新旧通路结果。\n   141\t- 持久化按已知层/格局部读取和写入；这项工作同时影响取数和放置。\n   142\t\n   143\t按需 inverse-down 保留为可选加速，不是这些工作的前置条件。实际是否值得采用，取决于变化稀疏程度、变换合同、已有缓存与语义复核材料量。\n   144\t\n   145\t## 8. 证据与复现\n   146\t\n   147\t当前代码依据固定于研究基线：\n   148\t\n   149\t- [共享相遇、路径与可写候选](https://github.com/awdawmip/Nollm/blob/5dd3c43c77127a60655d63360eb0a3c2a9d0babc/lab/nollm-lab/repository_memory/project_memory.py)\n   150\t- [Access 动作与单步协调](https://github.com/awdawmip/Nollm/blob/5dd3c43c77127a60655d63360eb0a3c2a9d0babc/packages/nollm-access/src/nollm_access/runtime.py)\n   151\t- [绑定与表达身份](https://github.com/awdawmip/Nollm/blob/5dd3c43c77127a60655d63360eb0a3c2a9d0babc/packages/nollm-access/src/nollm_access/handle_store.py)\n   152\t- [向上支撑关系的反演](https://github.com/awdawmip/Nollm/blob/5dd3c43c77127a60655d63360eb0a3c2a9d0babc/packages/nollm-core/src/nollm_core/incoming_coverage.py)\n   153\t- [公开 Q40 采样输入](https://github.com/awdawmip/Nollm/blob/5dd3c43c77127a60655d63360eb0a3c2a9d0babc/packages/nollm-core/src/nollm_core/sampled_geometry.py)\n   154\t\n   155\t复现脚本：\n   156\t\n   157\t```bash\n   158\tpython3 -B lab/nollm-lab/repository_memory/probe_forward_inverse_cost.py \\\n   159\t  --field /path/to/baseline-field --output /tmp/nollm-forward-inverse-cost.json\n   160\tpython3 -B lab/nollm-lab/repository_memory/probe_top_down_reorganization.py \\\n   161\t  --field /path/to/baseline-field --output /tmp/nollm-reorganization-new\n   162\t```\n   163\t\n   164\t使用本报告固定基线 `5dd3c43c` 的 `sujiben/field`；第二个输出目录应尚不存在。两项公开 API 实验均已实际完成，复制场操作没有改变活跃场。\n   165\t\n   166\t- [公开 API 计算和写入计量](../../lab/nollm-lab/repository_memory/results/forward_inverse_cost_20261123.json)\n   167\t- [原始诊断计数](../../lab/nollm-lab/repository_memory/results/forward_inverse_diagnostics_20261123.json)\n   168\t- [原位概括修订与移动候选](../../lab/nollm-lab/repository_memory/results/top_down_reorganization_20261123.json)\n   169\t\n   170\t正文、返回 JSON、文件字节以及 LLM 语义工作分别计量；实验的有限输入与原始失败保留。此次运行时功能未变，复现与受影响公共依赖检查构成本轮验证范围；上一轮46项回归是其原提交的既有结果，本轮没有将其重报为新执行。\n   171\t\n   172\t## 9. 已用于活跃速记本\n   173\t\n   174\t本研究发布后，Host 从真实 Surface 选择单一入口并下降，原位修订中层 `entry-traversal.v1` 为 `v2`，把向下巡查、分类可改与移动后的路径核对提炼为276字节的完整判断。原68份版本文件和全部详细位置保留，表层仍398字节。具体原生操作及同入口回读见[维护记录](../../sujiben/TOP_DOWN_MAINTENANCE_20261123.md)。本节的知识维护不改变前文固定基线的实验数据，也不表示自动维护器已实现。\n"
+    },
+    {
+      "index": 11,
+      "label": "show-prior-middle",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "show",
+        "nollm.formed.-1.encounter-use.v2"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Record the exact current expression before revising; compare its body and sources after local reorganization.",
+      "time_utc": "2026-11-24T12:09:56.954980+00:00",
+      "duration_seconds": 0.180553,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/11-show-prior-middle.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/11-show-prior-middle.stderr",
+      "json_result": {
+        "id": "nollm.formed.-1.encounter-use.v2",
+        "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+        ],
+        "current": true,
+        "revises": "nollm.formed.-1.encounter-use.v1"
+      }
+    },
+    {
+      "index": 12,
+      "label": "commit-local-reorganization",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/session.json",
+        "--reorganize",
+        "/workspace/scratch/59faa762c350/independent-native-use/plan.json"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Refine the observed middle judgment in place. The existing root-to-detail geometry already works, so do not introduce an unmotivated move. Explicitly require the chosen paths to the unchanged adapter and source-version facts as well as the revised judgment.",
+      "time_utc": "2026-11-24T12:09:57.127633+00:00",
+      "duration_seconds": 0.169942,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/12-commit-local-reorganization.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/12-commit-local-reorganization.stderr",
+      "json_result": {
+        "kind": "result",
+        "effect": "reorganize",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "changes": [
+          {
+            "action": "revise",
+            "id": "nollm.formed.-1.encounter-use.independent-v3",
+            "cell": [
+              -1,
+              2,
+              0
+            ]
+          }
+        ],
+        "readback": [
+          {
+            "id": "nollm.formed.-1.encounter-use.independent-v3",
+            "path": [
+              [
+                -2,
+                1,
+                1
+              ],
+              [
+                -1,
+                2,
+                0
+              ]
+            ],
+            "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+            "current": true
+          },
+          {
+            "id": "nollm.adapter.v6",
+            "path": [
+              [
+                -2,
+                1,
+                1
+              ],
+              [
+                -1,
+                2,
+                0
+              ],
+              [
+                0,
+                3,
+                -1
+              ]
+            ],
+            "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+            "current": true
+          },
+          {
+            "id": "nollm.sources.v1",
+            "path": [
+              [
+                -2,
+                1,
+                1
+              ],
+              [
+                -1,
+                2,
+                0
+              ],
+              [
+                0,
+                2,
+                -1
+              ]
+            ],
+            "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+            "current": true
+          }
+        ],
+        "commit_state": "committed",
+        "readback_scope": "changed_current_and_explicit_paths",
+        "configuration_updated": false
+      }
+    },
+    {
+      "index": 13,
+      "label": "reopen-native-surface",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/readback-session.json"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Use a new native encounter session to check actual post-write entry discovery rather than treating automatic terminal readback as sufficient.",
+      "time_utc": "2026-11-24T12:10:18.501105+00:00",
+      "duration_seconds": 0.171056,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/13-reopen-native-surface.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/13-reopen-native-surface.stderr",
+      "json_result": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 8,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:661c2b51739b20d82585",
+            "window": [
+              0,
+              -1,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "LLM提炼语义，蜂巢承载覆盖关系。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              -1,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:1c422cb7cc01886c46eb",
+            "window": [
+              0,
+              0,
+              -3
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "精确保持标签；量化模式允许关系变化。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -3
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:9e6aac642cb2bb793b5d",
+            "window": [
+              0,
+              0,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "残差复用保留样本，变形改变覆盖。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -2
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:40e74fce2390b945810f",
+            "window": [
+              0,
+              0,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "同一入口逐层展开，桥由Host明示。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:6e55e0f7776044e83746",
+            "window": [
+              0,
+              0,
+              0
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "正文、绑定、几何一起恢复；版本可回溯。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              0
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:3c19690dc95993affb65",
+            "window": [
+              0,
+              1,
+              -4
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "表层存短判断，容量与局部8位分开。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              -4
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:fa83fe4903712f5c658c",
+            "window": [
+              0,
+              1,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "相遇先读后写，重组需能向下读回。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:b9a9b0cb2b2adb982475",
+            "window": [
+              0,
+              2,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "运行时可替换，工作场与源码各自保留。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              2,
+              1
+            ],
+            "selects_single_physical_entry": true
+          }
+        ],
+        "start": {
+          "policy": "explicit-order",
+          "order": 0,
+          "root_cells": 8,
+          "root_pages": 1,
+          "root_plus_descent": 2,
+          "soft_root_pages": 4,
+          "active_order": 0,
+          "active_overflow": false
+        },
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "compact": true
+      }
+    },
+    {
+      "index": 14,
+      "label": "show-old-middle-after",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "show",
+        "nollm.formed.-1.encounter-use.v2"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Verify the previous expression remains exactly readable, retains its original sources, and is now current=false.",
+      "time_utc": "2026-11-24T12:10:18.672561+00:00",
+      "duration_seconds": 0.1676,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/14-show-old-middle-after.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/14-show-old-middle-after.stderr",
+      "json_result": {
+        "id": "nollm.formed.-1.encounter-use.v2",
+        "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+        ],
+        "current": false,
+        "revises": "nollm.formed.-1.encounter-use.v1",
+        "continuation": {
+          "scope": "native_revision_slot",
+          "status": "unique",
+          "candidates": [
+            {
+              "id": "nollm.formed.-1.encounter-use.independent-v3",
+              "cell": [
+                -1,
+                2,
+                0
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "index": 15,
+      "label": "show-new-middle-after",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "show",
+        "nollm.formed.-1.encounter-use.independent-v3"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Inspect the accepted revision identity, fixed source windows, current state and explicit revises link.",
+      "time_utc": "2026-11-24T12:10:18.857385+00:00",
+      "duration_seconds": 0.182493,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/15-show-new-middle-after.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/15-show-new-middle-after.stderr",
+      "json_result": {
+        "id": "nollm.formed.-1.encounter-use.independent-v3",
+        "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L27-L88",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md#L92-L130",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/local_reorganization.py#L227-L268"
+        ],
+        "current": true,
+        "revises": "nollm.formed.-1.encounter-use.v2"
+      }
+    },
+    {
+      "index": 16,
+      "label": "reselect-native-entry",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "surface:fa83fe4903712f5c658c",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/readback-session.json"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Select the newly displayed unchanged preview about encounter/reorganization. The physical entry is again L-2(1,1).",
+      "time_utc": "2026-11-24T12:10:30.755637+00:00",
+      "duration_seconds": 0.175221,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/16-reselect-native-entry.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/16-reselect-native-entry.stderr",
+      "json_result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -2,
+          1,
+          1
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-2.encounter.v2",
+            "cell": [
+              -2,
+              1,
+              1
+            ],
+            "via": [],
+            "text": "相遇先读后写，重组需能向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L1-L75"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-2.encounter.v1",
+            "entry_path": [],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.encounter-use.independent-v3",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L27-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v2",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.runtime-field.v1",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "运行时代码、速记本工作场、保存固定提交的源码仓库分别维护。安装器不携带工作场；替换兼容运行时后显式指定原场继续使用。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 12,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.binding-sources.v1",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "current 表示当前绑定，源码依据固定到提交。reuse 只添支持证据，不新添物理材料，当前正文与压力需求不变；revision 切换当前正文并保留历史。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 15,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:-1:1:0",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 1365
+          },
+          {
+            "id": "cell:-1:1:1",
+            "cell": [
+              -1,
+              1,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 10923
+          },
+          {
+            "id": "cell:-1:2:0",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 37547
+          },
+          {
+            "id": "cell:-1:2:1",
+            "cell": [
+              -1,
+              2,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 12971
+          },
+          {
+            "id": "cell:-1:3:0",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "index": 17,
+      "label": "rediscover-middle-and-details",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/readback-session.json",
+        "--descend",
+        "cell:-1:2:0"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "The new root page displays the revised middle judgment and actual candidate cell:-1:2:0. Descend there to check the saved interpretation together with the original adapter and fixed-source/current-version detail.",
+      "time_utc": "2026-11-24T12:10:30.949890+00:00",
+      "duration_seconds": 0.191464,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/17-rediscover-middle-and-details.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/17-rediscover-middle-and-details.stderr",
+      "json_result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -1,
+          2,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-1.encounter-use.independent-v3",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [],
+            "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L27-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v2",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.adapter.v6",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.adapter.v5",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.sources.v1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+            "sources": [
+              "d25083d062c86a7b903d53348ddb1bdf23f24bda:lab/nollm-lab/repository_memory/enterprise_math/research.py#L27-L71"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:0:2:-1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 14336
+          },
+          {
+            "id": "cell:0:2:0",
+            "cell": [
+              0,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "weight_q16": 5461
+          },
+          {
+            "id": "cell:0:3:-2",
+            "cell": [
+              0,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "weight_q16": 8875
+          },
+          {
+            "id": "cell:0:3:-1",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 36864
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "index": 18,
+      "label": "recall-revised-understanding",
+      "argv": [
+        "python3",
+        "/workspace/scratch/59faa762c350/continue-installed-skill/scripts/memory.py",
+        "project",
+        "--field",
+        "/workspace/scratch/59faa762c350/continue-independent-field-ready",
+        "encounter",
+        "--cursor-file",
+        "/workspace/scratch/59faa762c350/independent-native-use/readback-session.json",
+        "--recall",
+        "nollm.formed.-1.encounter-use.independent-v3"
+      ],
+      "cwd": null,
+      "stdin_path": null,
+      "decision": "Complete this independently reopened encounter by recalling the current revised judgment from the actual displayed locality.",
+      "time_utc": "2026-11-24T12:10:31.122499+00:00",
+      "duration_seconds": 0.169359,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/18-recall-revised-understanding.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/18-recall-revised-understanding.stderr",
+      "json_result": {
+        "kind": "result",
+        "effect": "recall",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "focus": [
+          -1,
+          2,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ]
+        ],
+        "item": {
+          "id": "nollm.formed.-1.encounter-use.independent-v3",
+          "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+          "sources": [
+            "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L27-L88"
+          ],
+          "current": true,
+          "revises": "nollm.formed.-1.encounter-use.v2",
+          "cell": [
+            -1,
+            2,
+            0
+          ],
+          "via": [],
+          "entry_path": [
+            "coverage_down"
+          ],
+          "source_count": 3,
+          "sources_truncated": true
+        }
+      }
+    },
+    {
+      "index": 19,
+      "label": "verify-inherited-history-continuation",
+      "argv": [
+        "bash",
+        "-c",
+        "nl -ba lab/nollm-lab/repository_memory/project_memory.py | sed -n '70,145p'"
+      ],
+      "cwd": "/workspace/scratch/59faa762c350/Nollm",
+      "stdin_path": null,
+      "decision": "After completing the independent trial, parent identified a known baseline window for the old-show continuation. Verify its source attribution; this follow-up does not alter original navigation or rewrite trial decisions.",
+      "time_utc": "2026-11-24T12:12:05.078515+00:00",
+      "duration_seconds": 0.004718,
+      "exit_code": 0,
+      "stdout_path": "/workspace/scratch/59faa762c350/independent-native-use/19-verify-inherited-history-continuation.stdout",
+      "stderr_path": "/workspace/scratch/59faa762c350/independent-native-use/19-verify-inherited-history-continuation.stderr",
+      "text_result": "    70\t        ))\n    71\t    result = {\"id\": note_id, \"cell\": coords(handle.geometry_address), \"revises\": revise}\n    72\t    if reuse is not None:\n    73\t        result[\"reuses\"] = reuse\n    74\t    return result\n    75\t\n    76\t\n    77\tdef describe(field, note_id):\n    78\t    statement = FileStatementStore(field).get(note_id)\n    79\t    bindings = FileHandleStore(field)\n    80\t    try:\n    81\t        current = bindings.statement_for_handle(bindings.get(note_id)) == note_id\n    82\t    except KeyError:\n    83\t        current = False\n    84\t    result = _statement_description(statement, current)\n    85\t    if not current:\n    86\t        result[\"continuation\"] = _revision_continuation(field, statement)\n    87\t    return result\n    88\t\n    89\t\n    90\tdef _statement_description(statement, current):\n    91\t    sources = [statement.source_handle]\n    92\t    result = {\"id\": statement.statement_id, \"text\": statement.content_utf8, \"sources\": sources,\n    93\t              \"current\": current}\n    94\t    for ref in statement.context_refs:\n    95\t        if ref.startswith(\"revises:\"):\n    96\t            result[\"revises\"] = ref.removeprefix(\"revises:\")\n    97\t        elif ref.startswith(\"reuses:\"):\n    98\t            result[\"reuses\"] = ref.removeprefix(\"reuses:\")\n    99\t        else:\n   100\t            sources.append(ref)\n   101\t    return result\n   102\t\n   103\t\n   104\tdef _revision_continuation(field, statement):\n   105\t    \"\"\"Locate the current native revision slot without replacing old evidence.\"\"\"\n   106\t    store = FileStatementStore(field)\n   107\t    cache = {statement.statement_id: statement}\n   108\t\n   109\t    def chain(note_id, stop_at=None):\n   110\t        seen = set()\n   111\t        while note_id not in seen:\n   112\t            seen.add(note_id)\n   113\t            if note_id == stop_at:\n   114\t                return seen, False\n   115\t            try:\n   116\t                if note_id not in cache:\n   117\t                    cache[note_id] = store.get(note_id)\n   118\t                parents = {ref.removeprefix(\"revises:\") for ref in cache[note_id].context_refs\n   119\t                           if ref.startswith(\"revises:\")}\n   120\t            except (FileNotFoundError, TypeError, ValueError, UnicodeError):\n   121\t                return seen, True\n   122\t            if not parents:\n   123\t                return seen, False\n   124\t            if len(parents) != 1 or \"\" in parents:\n   125\t                return seen, True\n   126\t            note_id = next(iter(parents))\n   127\t        return seen, True\n   128\t\n   129\t    ancestors, incomplete = chain(statement.statement_id)\n   130\t    candidates = []\n   131\t    for binding in FileHandleStore(field).bindings_for_atom_ids(tuple(ancestors)):\n   132\t        lineage, unresolved = chain(binding.current_statement_id, statement.statement_id)\n   133\t        if statement.statement_id in lineage and not unresolved:\n   134\t            candidates.append({\"id\": binding.current_statement_id,\n   135\t                               \"cell\": coords(binding.handle.geometry_address)})\n   136\t        else:\n   137\t            incomplete = incomplete or unresolved\n   138\t    status = (\"incomplete\" if incomplete else \"ambiguous\" if len(candidates) > 1\n   139\t              else \"unique\" if candidates else \"not_found\")\n   140\t    return {\"scope\": \"native_revision_slot\", \"status\": status, \"candidates\": candidates}\n   141\t\n   142\t\n   143\tdef excerpt(repo, reference):\n   144\t    blob, fragment = reference.rsplit(\"#L\", 1)\n   145\t    start, _, end = fragment.partition(\"-L\")\n"
+    }
+  ],
+  "events": [
+    {
+      "type": "preflight_before_trace_runner",
+      "actual_commands": [
+        [
+          "cat",
+          "SKILL.md"
+        ],
+        [
+          "rg",
+          "-n",
+          "-A",
+          "70",
+          "-B",
+          "4",
+          "Project understanding",
+          "README.md"
+        ],
+        [
+          "cat",
+          "docs/project/ACTIVE_PROJECT.md"
+        ],
+        [
+          "sed",
+          "-n",
+          "54,112p",
+          "docs/project/ACTIVE_PROJECT.md"
+        ]
+      ],
+      "note": "These initial reads were executed before the trace logger existed. The installed skill, README Project understanding and ACTIVE_PROJECT were read; the current-development window was read again after the combined tool output was truncated. Full stdout for these early calls remains in tool history rather than this trace."
+    },
+    {
+      "type": "host_semantic_decision",
+      "selected_root": [
+        -2,
+        1,
+        1
+      ],
+      "selection_basis": "The actually displayed stored preview explicitly mentioned encounter and downward readback for reorganization.",
+      "selected_middle": [
+        -1,
+        2,
+        0
+      ],
+      "new_expression_id": "nollm.formed.-1.encounter-use.independent-v3",
+      "action": "in-place revision through local reorganize",
+      "why_not_move": "Existing downward geometry already exposed both operation and fixed-source/current-version facts. The useful change was the middle interpretation and explicit acceptance scope; no practical geometry obstruction was observed.",
+      "plan_path": "/workspace/scratch/59faa762c350/independent-native-use/plan.json",
+      "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+      "utf8_bytes": 255,
+      "explicit_readback_scope": "changed_current_and_explicit_paths",
+      "explicit_paths": [
+        {
+          "id": "nollm.formed.-1.encounter-use.independent-v3",
+          "path": [
+            [
+              -2,
+              1,
+              1
+            ],
+            [
+              -1,
+              2,
+              0
+            ]
+          ],
+          "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+          "current": true
+        },
+        {
+          "id": "nollm.adapter.v6",
+          "path": [
+            [
+              -2,
+              1,
+              1
+            ],
+            [
+              -1,
+              2,
+              0
+            ],
+            [
+              0,
+              3,
+              -1
+            ]
+          ],
+          "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+          "current": true
+        },
+        {
+          "id": "nollm.sources.v1",
+          "path": [
+            [
+              -2,
+              1,
+              1
+            ],
+            [
+              -1,
+              2,
+              0
+            ],
+            [
+              0,
+              2,
+              -1
+            ]
+          ],
+          "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+          "current": true
+        }
+      ]
+    },
+    {
+      "type": "post_trial_source_attribution_correction",
+      "earlier_uncertainty": "The trace initially avoided attributing the observed old-show continuation to the fixed baseline without reading its implementation.",
+      "checked_source": "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/project_memory.py#L77-L140",
+      "result": "The fixed source implements describe -> _revision_continuation for noncurrent expressions and reports native_revision_slot unique/ambiguous/incomplete/not_found. The observed unique result is therefore existing baseline functionality.",
+      "trial_independence": "This source-attribution correction occurred after completed native selection, local revision and reopened readback; it did not guide the original semantic choice."
+    }
+  ],
+  "auxiliary_and_source_use": {
+    "native_entry_selection_before_source_search": true,
+    "lexical_field_searches": [],
+    "baseline_or_aux_retrievers": [],
+    "source_lookup_mode": "Exact local file windows from the parent-verified fixed checkout at 211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01; paths first came from the discovered statement and its cited documentation links.",
+    "git_show_executed": false,
+    "cli_source_executed": false,
+    "reason": "The provided local source checkout has no .git. No git history or source-command success was invented.",
+    "source_window_command_indices": [
+      8,
+      9,
+      10,
+      19
+    ],
+    "exact_id_show_command_indices": [
+      6,
+      11,
+      14,
+      15
+    ],
+    "exact_id_show_role": "Expand already discovered facts and verify historical/current expressions; not an entry-selection router.",
+    "post_trial_source_attribution_check": "Command 19 was a parent-directed known source-window check after the independent read/write/readback trial had finished; no original entrance or placement decision was changed."
+  },
+  "failures_and_misuse": {
+    "recorded_cli_failures": [],
+    "observed_misuse": [],
+    "no_synthetic_failures_injected": true,
+    "friction": [
+      {
+        "observed": "Compact locality and terminal recall return one source plus source_count and sources_truncated.",
+        "effect": "Full citation inspection requires a separate show; command 6 was used to get the adapter's complete three-source list."
+      },
+      {
+        "observed": "The local source checkout lacks .git.",
+        "effect": "Read fixed local windows explicitly; native source --repo and ordinary --rev based source resolution were not claimed as tested."
+      },
+      {
+        "observed": "prepare-write returned 17 physical candidates, including flags for upward-only and downward-readable placements.",
+        "effect": "It remained a deliberate exploratory preparation; after finding no need to move, the actual revision did not require a new position or pressure."
+      },
+      {
+        "observed": "The old show response included continuation with native_revision_slot, unique and the current candidate ID/cell.",
+        "effect": "The observed old-show continuation is implemented in the supplied fixed C1 source at project_memory.py lines 77–140. This was confirmed after the independent trial in command 19; it is existing baseline behavior, not a feature created by this reorganization. Native rediscovery still used a fresh Surface encounter."
+      }
+    ]
+  },
+  "verification": {
+    "old_body_identical": true,
+    "old_sources_identical": true,
+    "old_is_no_longer_current": true,
+    "new_is_current": true,
+    "new_revises_old": true,
+    "reorganized_in_place": true,
+    "fresh_native_readback_finds_new": true,
+    "fresh_native_readback_keeps_adapter": true,
+    "fresh_native_readback_keeps_sources": true,
+    "recall_body_equals_saved_revision": true,
+    "write_cursor_deleted": true,
+    "readback_cursor_deleted": true,
+    "all_recorded_commands_succeeded": true
+  },
+  "metrics": {
+    "recorded_commands": 19,
+    "installed_cli_calls": 13,
+    "installed_cli_failures": 0,
+    "terminal_recall_calls": 1,
+    "chosen_root_count": 1,
+    "reorganization_batches": 1,
+    "revised_current_expressions": 1,
+    "explicit_readback_paths": 3,
+    "pressure_requests": 0,
+    "lexical_field_searches": 0,
+    "budget": {
+      "max_steps": 1,
+      "beam": 16,
+      "max_layer_delta": 1,
+      "max_lateral_ring": 1,
+      "max_bridge_steps": 0,
+      "max_results": 20
+    },
+    "budget_exhaustion_observed": false,
+    "initial_native_cli_calls_to_detail_locality": 3,
+    "new_session_native_cli_calls_to_detail_locality": 3,
+    "reported_surface_calls_at_locality": 2
+  },
+  "result_scope": {
+    "completed": true,
+    "actual_scope": "One same-series independent Host session using an installed artifact and an isolated field copy; one in-place middle-expression revision through the actual local reorganization CLI, followed by a new Surface session and exact version checks.",
+    "not_claimed": [
+      "cross-vendor blind test",
+      "better results for all future Hosts",
+      "whole-field orphan proof",
+      "multiple-root preservation outside the declared paths",
+      "fresh test-suite execution",
+      "CLI Git source readback"
+    ]
+  },
+  "source_revision_scope": "The fixed revision identifies cited repository evidence. It is not an assertion that every behavior of the supplied installed artifact exists at that baseline revision.",
+  "brief_zh": {
+    "answer": "后继Host可以调整原来的读法。先沿Surface选择一个物理入口并逐层读到当前判断与原文依据；若只是表述或分类偏好变化，原位修订上/中层短判断即可保留原几何通路。需要改变实际关系才选择已观察并准备的物理格搬移。把要保存的旧入口路径明列到readback，并重新从Surface实际阅读。",
+    "daily_read": "project --field FIELD encounter --cursor-file SESSION；根据本页短判断选择候选。读完整items、sources及descent_candidates；必要时descend/ascend或显式调预算，遇到足够事实用--recall结束。缺失时如实--none或转向明确记录的来源核查。",
+    "daily_write": "复用同一相遇。判断同一当前事实的支持用reuse、更正用revise，独立判断用new，未确定用defer；新增或搬移先prepare-write，压力只在需要时请求。多项整理使用带固定已读来源的reorganize计划；最终容量和实际向下路径由程序检查，语义与位置由Host决定。",
+    "saved_understanding": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+    "result": "在L-1(2,0)原位修订一条中层理解，提交成功；明确保留了本次根入口到adapter.v6和sources.v1的两条细节路径。新会话重新从L-2(1,1)选入并下降，读回新理解与原两条详细事实，最后recall成功。",
+    "history": "旧v2正文和sources数组逐项相等，current由true变为false；新独立v3为current=true并revises旧v2。没有为了演示而搬移。 旧ID的show还实际返回native_revision_slot/unique候选指向新ID；已核对固定C1源码project_memory.py的describe与_revision_continuation，这是已有版本衔接功能。",
+    "boundaries": "这是同系列独立会话试用；没有跨供应商盲测、全场无孤儿或所有后继模型易发现性的声明。已核对的是三条明列路径及一次真实重新打开读取。",
+    "source_method": "依据实际读到的来源及文档链接，读取父任务已核对固定提交211ed1f的本地源码窗口。局部检出无.git，未运行或声称source/git show成功；未用字段字面搜索、baseline或aux检索器选入口。",
+    "actual_failures": "13次安装品CLI调用均成功，无主动制造失败；读写会话均在成功终结后删除。",
+    "usability": "首屏8条完整短判断足以选入口；紧凑页面只显示第一条来源，检查全部来源要show。prepare-write明确区分可向下读取和其他位置，但本次最后选择原位修订，因此这次位置准备只是一次可省略的探索。"
+  }
+}

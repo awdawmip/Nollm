@@ -72,7 +72,13 @@ forward-path checks. Encounter now reads first, preparing write candidates and
 pressure only when requested; singleton physical candidates need one selection.
 It passed 158 focused tests and a 16-case same-input storage-layout probe, including
 the remaining binding inventory cost for exact-ID lookup. Its explicit migration
-keeps logical geometry and evidence unchanged. The follow-up
+keeps logical geometry and evidence unchanged. The
+[active-field maintenance](../../sujiben/LOCAL_REORGANIZATION_MAINTENANCE_20261124.md)
+applies that paging and revises nine affected judgments against fixed runtime
+`211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01`. All seventy prior versions remain,
+with seventy-nine now readable; current handles, occupancy and both bridges are
+preserved. The first stored Surface remains eight judgments, now 401 UTF-8 bytes.
+The follow-up
 [top-down maintenance and reorganization study](NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md)
 supports forward maintenance and separate physical inventory without requiring a
 persistent reverse-coverage table. Sparse changes may benefit from optional

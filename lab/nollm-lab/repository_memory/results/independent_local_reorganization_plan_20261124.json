@@ -1,0 +1,74 @@
+{
+  "schema_version": "nollm_local_reorganization_v1",
+  "changes": [
+    {
+      "action": "revise",
+      "target": "nollm.formed.-1.encounter-use.v2",
+      "id": "nollm.formed.-1.encounter-use.independent-v3",
+      "text": "相遇先读，新增或搬移才准备写格。改读法可先原位修订；批次按最终容量提交，保留旧表达。回读只验证改动当前表达和明列路径；仍需保留的旧入口必须明列，有限预算能否找到另行实读。",
+      "sources": [
+        "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L27-L88",
+        "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md#L92-L130",
+        "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/local_reorganization.py#L227-L268"
+      ],
+      "reason": "本次问题关心后继Host调整分类后仍能读事实。当前几何已能读到操作与来源详细判断，未发现必须搬移的阻碍；因此原位重提炼中层，突出保留旧入口与有限预算可发现性的不同验收范围。压力细节继续由既有 adapter.v6 承载。"
+    }
+  ],
+  "readback": [
+    {
+      "id": "nollm.formed.-1.encounter-use.independent-v3",
+      "path": [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          2,
+          0
+        ]
+      ]
+    },
+    {
+      "id": "nollm.adapter.v6",
+      "path": [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          2,
+          0
+        ],
+        [
+          0,
+          3,
+          -1
+        ]
+      ]
+    },
+    {
+      "id": "nollm.sources.v1",
+      "path": [
+        [
+          -2,
+          1,
+          1
+        ],
+        [
+          -1,
+          2,
+          0
+        ],
+        [
+          0,
+          2,
+          -1
+        ]
+      ]
+    }
+  ]
+}

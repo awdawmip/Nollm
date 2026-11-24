@@ -1,0 +1,1795 @@
+{
+  "schema_version": "nollm_local_reorganization_maintenance_v1",
+  "source_commit": "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01",
+  "before": {
+    "-2": {
+      "expressions": 8,
+      "occupied_cells": 8,
+      "utf8_bytes": 398
+    },
+    "-1": {
+      "expressions": 12,
+      "occupied_cells": 12,
+      "utf8_bytes": 2095
+    },
+    "0": {
+      "expressions": 23,
+      "occupied_cells": 21,
+      "utf8_bytes": 22242
+    }
+  },
+  "after": {
+    "-2": {
+      "expressions": 8,
+      "occupied_cells": 8,
+      "utf8_bytes": 401
+    },
+    "-1": {
+      "expressions": 12,
+      "occupied_cells": 12,
+      "utf8_bytes": 2260
+    },
+    "0": {
+      "expressions": 23,
+      "occupied_cells": 21,
+      "utf8_bytes": 22132
+    }
+  },
+  "original_statement_files": 70,
+  "all_original_statement_bytes_preserved": true,
+  "final_statement_files": 79,
+  "same_physical_handles": true,
+  "same_geometry_registry": true,
+  "same_bridges": true,
+  "bridge_count": 2,
+  "unchanged_current_bindings": 34,
+  "revisions": [
+    {
+      "old": "nollm.formed.-2.encounter.v1",
+      "new": "nollm.formed.-2.encounter.v2",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": -2,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 1,
+          "r": 1
+        },
+        "local_atom_id": "nollm.formed.-2.encounter.v1"
+      }
+    },
+    {
+      "old": "nollm.formed.-1.state-restoration.v1",
+      "new": "nollm.formed.-1.state-restoration.v2",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": -1,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 0,
+          "r": 0
+        },
+        "local_atom_id": "nollm.formed.-1.state-restoration.v1"
+      }
+    },
+    {
+      "old": "nollm.formed.-1.versions-commit.v1",
+      "new": "nollm.formed.-1.versions-commit.v2",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": -1,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 0,
+          "r": 1
+        },
+        "local_atom_id": "nollm.formed.-1.versions-commit.v1"
+      }
+    },
+    {
+      "old": "nollm.formed.-1.encounter-use.v1",
+      "new": "nollm.formed.-1.encounter-use.v2",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": -1,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 2,
+          "r": 0
+        },
+        "local_atom_id": "nollm.formed.-1.encounter-use.v1"
+      }
+    },
+    {
+      "old": "nollm.core-read.v2",
+      "new": "nollm.core-read.v3",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": 0,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 0,
+          "r": 0
+        },
+        "local_atom_id": "nollm.core-read.v1"
+      }
+    },
+    {
+      "old": "nollm.notebook-restoration.v1",
+      "new": "nollm.notebook-restoration.v2",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": 0,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 0,
+          "r": 0
+        },
+        "local_atom_id": "nollm.notebook-restoration.v1"
+      }
+    },
+    {
+      "old": "nollm.binding.v3",
+      "new": "nollm.binding.v4",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": 0,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 1,
+          "r": -1
+        },
+        "local_atom_id": "nollm.binding.v1"
+      }
+    },
+    {
+      "old": "nollm.core-commit.v2",
+      "new": "nollm.core-commit.v3",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": 0,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 1,
+          "r": 0
+        },
+        "local_atom_id": "nollm.core-commit.v1"
+      }
+    },
+    {
+      "old": "nollm.adapter.v5",
+      "new": "nollm.adapter.v6",
+      "handle": {
+        "geometry_address": {
+          "chart_id": "default",
+          "layer": 0,
+          "phase": null,
+          "profile_id": "default_dream_v1",
+          "q": 3,
+          "r": -1
+        },
+        "local_atom_id": "nollm.adapter.v1"
+      }
+    }
+  ],
+  "actual_reopened_native_readback_count": 9,
+  "migration": {
+    "kind": "storage",
+    "field": "sujiben/field",
+    "status": "completed",
+    "core": {
+      "layout": "paged",
+      "partition_width": 64,
+      "migration": "migrated"
+    },
+    "bindings": {
+      "layout": "paged",
+      "partition_width": 64,
+      "migration": "migrated"
+    },
+    "logical_core_unchanged": true,
+    "logical_bindings_unchanged": true
+  },
+  "encounter_plan": {
+    "schema_version": "nollm_local_reorganization_v1",
+    "changes": [
+      {
+        "action": "revise",
+        "target": "nollm.formed.-2.encounter.v1",
+        "id": "nollm.formed.-2.encounter.v2",
+        "text": "相遇先读后写，重组需能向下读回。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L1-L75"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.formed.-1.encounter-use.v1",
+        "id": "nollm.formed.-1.encounter-use.v2",
+        "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.adapter.v5",
+        "id": "nollm.adapter.v6",
+        "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/local_reorganization.py#L100-L268",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/project_memory.py#L373-L602"
+        ]
+      }
+    ],
+    "readback": [
+      {
+        "id": "nollm.adapter.v6",
+        "path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ],
+          [
+            0,
+            3,
+            -1
+          ]
+        ]
+      }
+    ]
+  },
+  "storage_plan": {
+    "schema_version": "nollm_local_reorganization_v1",
+    "changes": [
+      {
+        "action": "revise",
+        "target": "nollm.formed.-1.state-restoration.v1",
+        "id": "nollm.formed.-1.state-restoration.v2",
+        "text": "完整速记本保留几何、当前绑定、全部表达与来源。显式分页后，已知格读写相关物理页；表层仍读入口层占用元数据，按ID找位置和完整快照仍有盘点成本。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L96-L146"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.formed.-1.versions-commit.v1",
+        "id": "nollm.formed.-1.versions-commit.v2",
+        "text": "局部批次先检最终容量，再捕获不可变表达。提交失败恢复局部布局与配置，已捕获原文保留；中断在下次Access打开时恢复，独立Core读者无跨文件瞬时事务保证。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L47-L99"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.core-read.v2",
+        "id": "nollm.core-read.v3",
+        "text": "Core重开支持单文件与显式物理分页\n旧场继续解释原single-file状态；enable-paged后入口文件保存分页标记，Core按profile、chart、phase、物理层和坐标分区惰性读取正文，默认分区宽度64。Surface只盘点其声明层的占用元数据并读取所选页表达；元数据缺失时回到正文页，不让事实凭空消失。已知格避开远处其他页正文，同页内容仍计入成本；打开时桥文件仍整份读取。geometry_registry与规范逻辑v1导出保持不变，完整export/import仍是全状态操作。精确ID查位置是Access绑定盘点，与按观察handle局部读取不同。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L101-L146",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L170-L179",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:packages/nollm-core/src/nollm_core/state.py#L103-L147"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.core-commit.v2",
+        "id": "nollm.core-commit.v3",
+        "text": "Core和Access用局部恢复记录提交已接受的变化\nCore批次仅复制触及的格；分页模式写受影响物理页、占用元数据和必要桥变化，以局部undo记录恢复中断。Access.reorganize先投影顺序决策、校验最终容量，再捕获新Statement并保存受影响的格、handle和明确配置。普通异常恢复旧布局与配置，已捕获的原表达保留；进程中断时下次Access打开先恢复。普通new/revision/move/forget/reuse共用这条路径，桥动作保留单独流程。公开reorganization_scope按既有锁顺序支持适配器规划，普通操作再取Corelease；它不提供独立Core读者的跨文件瞬时事务。显式apply_if_state仍做全状态检查。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L47-L99",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:packages/nollm-core/src/nollm_core/state.py#L260-L297",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:packages/nollm-access/src/nollm_access/runtime.py#L100-L310"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.notebook-restoration.v1",
+        "id": "nollm.notebook-restoration.v2",
+        "text": "迁移和恢复完整速记本须保留整个工作场与固定来源\nCore快照只覆盖几何、当前物理正文和桥；Access另存current/supporting绑定及不可变表达版本和来源。分页后必须保留入口标记指向的Core页、占用元数据、桥与绑定页，以及所有表达文件。storage --enable-paged依次迁移Core和绑定，失败可报告partial并重复完成，迁移保持逻辑Core和绑定相同；已分页组件拒绝不同宽度，不暗中重排。完整搬迁继续复制整个field并保留可访问的源码提交，不能用一个Core快照替代全场。字段配置与未完成局部恢复记录也随field保留。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L82-L119",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:packages/nollm-core/src/nollm_core/state.py#L434-L477"
+        ]
+      },
+      {
+        "action": "revise",
+        "target": "nollm.binding.v3",
+        "id": "nollm.binding.v4",
+        "text": "当前、支持、历史与物理定位分开处理\ncurrent只表示当前handle的表达绑定，不证明已对最新源码复核。reuse保存独立支持表达，不增加物理atom或替换当前正文；revision切换当前并保留旧正文与来源。分页绑定按已知物理handle定位，观察过的原生修订可读写局部页；只给Statement ID仍需盘点绑定，未新增语义路由。新ID在同锁捕获时可省去库存查重；分离capture/apply仍查重，避免另一Access实例抢先绑定。show旧版本保持原文和current=false，并沿显式revises及已有物理绑定报告unique、ambiguous或incomplete续行；候选不替模型决定语义继承。",
+        "sources": [
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L96-L146",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:lab/nollm-lab/repository_memory/project_memory.py#L77-L140",
+          "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:packages/nollm-access/src/nollm_access/handle_store.py#L276-L342"
+        ]
+      }
+    ],
+    "readback": [
+      {
+        "id": "nollm.core-read.v3",
+        "path": [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "nollm.core-commit.v3",
+        "path": [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ]
+      }
+    ]
+  },
+  "experiment_correction": {
+    "kind": "source_window_bounds",
+    "initial_reference": "local_reorganization.py#L102-L280",
+    "actual_lines": 268,
+    "accepted_reference": "local_reorganization.py#L100-L268",
+    "handling": "Initial working copy retained separately; verified plan replayed on a fresh original-field copy before promotion. No out-of-bounds reference is present in the promoted current revisions."
+  },
+  "active_field": "sujiben/field",
+  "fresh_native_readback": [
+    {
+      "group": "encounter",
+      "args": [],
+      "result": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 8,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:661c2b51739b20d82585",
+            "window": [
+              0,
+              -1,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "LLM提炼语义，蜂巢承载覆盖关系。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              -1,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:1c422cb7cc01886c46eb",
+            "window": [
+              0,
+              0,
+              -3
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "精确保持标签；量化模式允许关系变化。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -3
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:9e6aac642cb2bb793b5d",
+            "window": [
+              0,
+              0,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "残差复用保留样本，变形改变覆盖。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -2
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:40e74fce2390b945810f",
+            "window": [
+              0,
+              0,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "同一入口逐层展开，桥由Host明示。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:6e55e0f7776044e83746",
+            "window": [
+              0,
+              0,
+              0
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "正文、绑定、几何一起恢复；版本可回溯。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              0
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:3c19690dc95993affb65",
+            "window": [
+              0,
+              1,
+              -4
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "表层存短判断，容量与局部8位分开。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              -4
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:fa83fe4903712f5c658c",
+            "window": [
+              0,
+              1,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "相遇先读后写，重组需能向下读回。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:b9a9b0cb2b2adb982475",
+            "window": [
+              0,
+              2,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "运行时可替换，工作场与源码各自保留。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              2,
+              1
+            ],
+            "selects_single_physical_entry": true
+          }
+        ],
+        "start": {
+          "policy": "explicit-order",
+          "order": 0,
+          "root_cells": 8,
+          "root_pages": 1,
+          "root_plus_descent": 2,
+          "soft_root_pages": 4,
+          "active_order": 0,
+          "active_overflow": false
+        },
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "compact": true
+      }
+    },
+    {
+      "group": "encounter",
+      "args": [
+        "surface:fa83fe4903712f5c658c"
+      ],
+      "result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -2,
+          1,
+          1
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-2.encounter.v2",
+            "cell": [
+              -2,
+              1,
+              1
+            ],
+            "via": [],
+            "text": "相遇先读后写，重组需能向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L1-L75"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-2.encounter.v1",
+            "entry_path": [],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.encounter-use.v2",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.runtime-field.v1",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "运行时代码、速记本工作场、保存固定提交的源码仓库分别维护。安装器不携带工作场；替换兼容运行时后显式指定原场继续使用。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 12,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.binding-sources.v1",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "current 表示当前绑定，源码依据固定到提交。reuse 只添支持证据，不新添物理材料，当前正文与压力需求不变；revision 切换当前正文并保留历史。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 15,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:-1:1:0",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 1365
+          },
+          {
+            "id": "cell:-1:1:1",
+            "cell": [
+              -1,
+              1,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 10923
+          },
+          {
+            "id": "cell:-1:2:0",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 37547
+          },
+          {
+            "id": "cell:-1:2:1",
+            "cell": [
+              -1,
+              2,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 12971
+          },
+          {
+            "id": "cell:-1:3:0",
+            "cell": [
+              -1,
+              3,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "group": "encounter",
+      "args": [
+        "--descend",
+        "cell:-1:2:0"
+      ],
+      "result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          1,
+          1
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -1,
+          2,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            1,
+            1
+          ],
+          [
+            -1,
+            2,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-1.encounter-use.v2",
+            "cell": [
+              -1,
+              2,
+              0
+            ],
+            "via": [],
+            "text": "相遇默认读取，准备新位置才枚举写格，压力按需计算。后继Host可在同一现场提炼、修订和搬移；容量按整批最终布局检查，改变的当前表达与指定旧路径须能从实际入口向下读回。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.encounter-use.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.adapter.v6",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "同一物理相遇支持读取、形成与局部重组\nproject/em显式选择工作场，从Surface观察并由Host选择一个物理入口。单物理成员候选直接进入局部；默认不准备写格、不算压力，已有事实召回复用已读取的Statement。prepare-write后才观察新增或搬移位置，pressure按需请求；向下模式的普通新增要求在焦点或实际coverage_down目标。游标积累已见事实handle与观察路径，供Host提出new、revise、reuse、move、forget批次。reorganize按最终布局检查容量，已观察的受改当前表达及显式readback须有真实相邻向下路径；提交后读终点当前正文。预算、入口配置可随新粗层一起更新。预检失败零捕获；之后捕获的原表达在提交失败时保留，局部布局与配置由Access恢复，失败游标可重试。它不保证未声明旧入口仍好找，不替模型分类，也未实现自动巡查。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L22-L88"
+            ],
+            "current": true,
+            "revises": "nollm.adapter.v5",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.sources.v1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "固定源码引用与场内 current 分别说明哪种版本\n研究 save 把显式 repo/rev 解析成固定 commit，再与 PATH#Lfirst-Llast 组成来源；save_statement 也可接受 Host 已选定的固定引用。excerpt 在调用者传入的 repo 执行 git show commit:path，再截原行号。表达修订通过新 ID 和 revises 记录保留旧来源，场内 current 只说明哪份表达正在绑定，不能说明它已对新代码重新校准。源码变更后应比较真实差分与相关引用，由 Host 判断哪些理解需修订；正文没有变化的来源路径变更也不自动等于语义失效。",
+            "sources": [
+              "d25083d062c86a7b903d53348ddb1bdf23f24bda:lab/nollm-lab/repository_memory/enterprise_math/research.py#L27-L71"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:0:2:-1",
+            "cell": [
+              0,
+              2,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 14336
+          },
+          {
+            "id": "cell:0:2:0",
+            "cell": [
+              0,
+              2,
+              0
+            ],
+            "native_atoms": 0,
+            "weight_q16": 5461
+          },
+          {
+            "id": "cell:0:3:-2",
+            "cell": [
+              0,
+              3,
+              -2
+            ],
+            "native_atoms": 0,
+            "weight_q16": 8875
+          },
+          {
+            "id": "cell:0:3:-1",
+            "cell": [
+              0,
+              3,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 36864
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "group": "storage",
+      "args": [],
+      "result": {
+        "kind": "surface",
+        "order": 0,
+        "page_size": 8,
+        "pages_left": 23,
+        "surface_calls": 1,
+        "has_more": false,
+        "preview_basis": "stored_statement",
+        "candidates": [
+          {
+            "id": "surface:661c2b51739b20d82585",
+            "window": [
+              0,
+              -1,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "LLM提炼语义，蜂巢承载覆盖关系。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              -1,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:1c422cb7cc01886c46eb",
+            "window": [
+              0,
+              0,
+              -3
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "精确保持标签；量化模式允许关系变化。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -3
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:9e6aac642cb2bb793b5d",
+            "window": [
+              0,
+              0,
+              -2
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "残差复用保留样本，变形改变覆盖。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -2
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:40e74fce2390b945810f",
+            "window": [
+              0,
+              0,
+              -1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "同一入口逐层展开，桥由Host明示。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              -1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:6e55e0f7776044e83746",
+            "window": [
+              0,
+              0,
+              0
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "正文、绑定、几何一起恢复；版本可回溯。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              0,
+              0
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:3c19690dc95993affb65",
+            "window": [
+              0,
+              1,
+              -4
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "表层存短判断，容量与局部8位分开。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              -4
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:fa83fe4903712f5c658c",
+            "window": [
+              0,
+              1,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "相遇先读后写，重组需能向下读回。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              1,
+              1
+            ],
+            "selects_single_physical_entry": true
+          },
+          {
+            "id": "surface:b9a9b0cb2b2adb982475",
+            "window": [
+              0,
+              2,
+              1
+            ],
+            "source_cells": 1,
+            "native_atoms": 1,
+            "previews": [
+              "运行时可替换，工作场与源码各自保留。"
+            ],
+            "truncated": false,
+            "text_truncated": false,
+            "physical_cell": [
+              -2,
+              2,
+              1
+            ],
+            "selects_single_physical_entry": true
+          }
+        ],
+        "start": {
+          "policy": "explicit-order",
+          "order": 0,
+          "root_cells": 8,
+          "root_pages": 1,
+          "root_plus_descent": 2,
+          "soft_root_pages": 4,
+          "active_order": 0,
+          "active_overflow": false
+        },
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "compact": true
+      }
+    },
+    {
+      "group": "storage",
+      "args": [
+        "surface:6e55e0f7776044e83746"
+      ],
+      "result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          0,
+          0
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -2,
+          0,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            0,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-2.restoration.v1",
+            "cell": [
+              -2,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "正文、绑定、几何一起恢复；版本可回溯。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [],
+            "source_count": 16,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.state-restoration.v2",
+            "cell": [
+              -1,
+              0,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "完整速记本保留几何、当前绑定、全部表达与来源。显式分页后，已知格读写相关物理页；表层仍读入口层占用元数据，按ID找位置和完整快照仍有盘点成本。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L96-L146"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.state-restoration.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.entry-traversal.v2",
+            "cell": [
+              -1,
+              -1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "一次相遇保持单一入口和已走路径。分类可改写，证据与旧版本保留；共享上层可由表层向下巡查，无须逐次写入同步反查。移动后回读新旧相关入口，全局无孤儿仍可能失去旧读法；实际返回仍受预算限制。",
+            "sources": [
+              "df39b56a48eb999a2675620517e8b7b4e5966617:docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md#L5-L20"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.entry-traversal.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.kernel-bridge.v1",
+            "cell": [
+              -1,
+              0,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "固定 Core 复用几何模板身份；多目标覆盖仍按真实位置计算。Stitch 是 Host 提出的有向格连接，仅 connected 召回使用。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 12,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.formed.-1.versions-commit.v2",
+            "cell": [
+              -1,
+              0,
+              1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "局部批次先检最终容量，再捕获不可变表达。提交失败恢复局部布局与配置，已捕获原文保留；中断在下次Access打开时恢复，独立Core读者无跨文件瞬时事务保证。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L47-L99"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.versions-commit.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.formed.-1.binding-sources.v1",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "current 表示当前绑定，源码依据固定到提交。reuse 只添支持证据，不新添物理材料，当前正文与压力需求不变；revision 切换当前正文并保留历史。",
+            "sources": [
+              "dfd6e0183bcf9c4475f7db068a2ded601f724370:docs/project/NOLLM_STORED_SURFACE_IMPLEMENTATION_20261123.md#L1-L65"
+            ],
+            "current": true,
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 15,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:-1:-1:0",
+            "cell": [
+              -1,
+              -1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:-1:-1:1",
+            "cell": [
+              -1,
+              -1,
+              1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:-1:0:-1",
+            "cell": [
+              -1,
+              0,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:-1:0:0",
+            "cell": [
+              -1,
+              0,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 49152
+          },
+          {
+            "id": "cell:-1:0:1",
+            "cell": [
+              -1,
+              0,
+              1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:-1:1:-1",
+            "cell": [
+              -1,
+              1,
+              -1
+            ],
+            "native_atoms": 0,
+            "weight_q16": 2730
+          },
+          {
+            "id": "cell:-1:1:0",
+            "cell": [
+              -1,
+              1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          }
+        ],
+        "cells": []
+      }
+    },
+    {
+      "group": "storage",
+      "args": [
+        "--descend",
+        "cell:-1:0:0"
+      ],
+      "result": {
+        "kind": "locality",
+        "entry": [
+          -2,
+          0,
+          0
+        ],
+        "surface_calls": 2,
+        "focus": [
+          -1,
+          0,
+          0
+        ],
+        "focus_path": [
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ]
+        ],
+        "surface_layers": [
+          -2
+        ],
+        "physical_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "write_policy_id": "nollm_default_dream_multilayer_experiment_write_v1",
+        "compact": true,
+        "write_prepared": false,
+        "pressure_requested": false,
+        "local_writable_layers": [
+          -2,
+          -1,
+          0
+        ],
+        "kernels": [
+          "coverage_down"
+        ],
+        "items": [
+          {
+            "id": "nollm.formed.-1.state-restoration.v2",
+            "cell": [
+              -1,
+              0,
+              0
+            ],
+            "via": [],
+            "text": "完整速记本保留几何、当前绑定、全部表达与来源。显式分页后，已知格读写相关物理页；表层仍读入口层占用元数据，按ID找位置和完整快照仍有盘点成本。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L96-L146"
+            ],
+            "current": true,
+            "revises": "nollm.formed.-1.state-restoration.v1",
+            "entry_path": [
+              "coverage_down"
+            ],
+            "source_count": 1,
+            "sources_truncated": false
+          },
+          {
+            "id": "nollm.core-read.v3",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "Core重开支持单文件与显式物理分页\n旧场继续解释原single-file状态；enable-paged后入口文件保存分页标记，Core按profile、chart、phase、物理层和坐标分区惰性读取正文，默认分区宽度64。Surface只盘点其声明层的占用元数据并读取所选页表达；元数据缺失时回到正文页，不让事实凭空消失。已知格避开远处其他页正文，同页内容仍计入成本；打开时桥文件仍整份读取。geometry_registry与规范逻辑v1导出保持不变，完整export/import仍是全状态操作。精确ID查位置是Access绑定盘点，与按观察handle局部读取不同。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L101-L146"
+            ],
+            "current": true,
+            "revises": "nollm.core-read.v2",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.notebook-restoration.v2",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "迁移和恢复完整速记本须保留整个工作场与固定来源\nCore快照只覆盖几何、当前物理正文和桥；Access另存current/supporting绑定及不可变表达版本和来源。分页后必须保留入口标记指向的Core页、占用元数据、桥与绑定页，以及所有表达文件。storage --enable-paged依次迁移Core和绑定，失败可报告partial并重复完成，迁移保持逻辑Core和绑定相同；已分页组件拒绝不同宽度，不暗中重排。完整搬迁继续复制整个field并保留可访问的源码提交，不能用一个Core快照替代全场。字段配置与未完成局部恢复记录也随field保留。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L82-L119"
+            ],
+            "current": true,
+            "revises": "nollm.notebook-restoration.v1",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 2,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.stitch.v2",
+            "cell": [
+              0,
+              -1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "Stitch 保持有向格联系，CLI 已能按连接 ID 读回\nC1 的共享项目 API 仍把两个当前 Statement 的物理格作为有向 Bridge 端点，权重 32768、单步、单目标；connected recall 才允许 bridge。目标格同格其他表达可能随桥返回；原位修订不自动撤桥，语义条件由 Host 保留在正文并决定何时 unstitch。project 与 em 的 CLI 现在都分派 links，可读全体当前原生桥或按原 link ID 查询，回源和维护不必改建外置关系索引。",
+            "sources": [
+              "e0e0dd80039d129b7a0321e1e640ffa0c987f9eb:lab/nollm-lab/repository_memory/project_memory.py#L18-L23"
+            ],
+            "current": true,
+            "revises": "nollm.stitch.v1",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 6,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.recall.v2",
+            "cell": [
+              0,
+              -1,
+              1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "有界召回先排除无改善回访，再分配 beam\n活动 default_dream 的 AccessRecallRequest 仍要求一个最终物理入口。Core 按允许的 coverage_up/down、lateral、bridge 传播，沿路径乘 Q16 几何权重；在每步 beam 截断前排除不会改善已访问格的分数或同分路径的候选，有改善的重访继续保留。budget_exhausted 现在反映实际 beam 裁剪、步数终点仍有合规后继，以及最终结果数裁剪；纯回访或超出层差的后继不会单独造成假耗尽。排序仍按几何路径，不按关键词或格内是否有内容，因此可达不保证在当前预算内返回，Host 仍需根据问题显式扩大同入口预算或记录源码辅助。Access 展开命中句柄所绑定的当前正文，返回结果本身不证明 Host 已正确使用。",
+            "sources": [
+              "a1c0f5a74434fd5e3a5429b794366a3d2739aadf:packages/nollm-core/src/nollm_core/recall.py#L74-L141"
+            ],
+            "current": true,
+            "revises": "nollm.recall.v1",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.kernel-registry.v2",
+            "cell": [
+              0,
+              0,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "模板解析与持久几何身份在进程内复用\nC1 的 _compiled_registry 用单项缓存解析打包模板、构造只读模板映射并派生 profile/kernel 身份。KernelRegistry 构造复用这些结果，identity 返回已保存值；固定模板逐实例 SHA 防篡改检查已删除。compiled_artifact_sha256 字段仍沿用已打包标识，不代表每次做了验证。default_dream 上下覆盖仍走动态 physical coverage，legacy 上下覆盖和 lateral 仍走模板。既有 v5 kernel/v6 profile 的持久身份保持原值，因此读旧状态的解释不因这次计算复用改变。",
+            "sources": [
+              "e0e0dd80039d129b7a0321e1e640ffa0c987f9eb:packages/nollm-core/src/nollm_core/kernel_registry.py#L18-L53"
+            ],
+            "current": true,
+            "revises": "nollm.kernel-registry.v1",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 4,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.statement-store.v2",
+            "cell": [
+              0,
+              0,
+              1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "表达按 ID 和内容保持版本，读取允许同义 JSON 排版\nC1 的 FileStatementStore.get 直接解码和构造 MemoryStatement，检查 schema 与所请求 ID，不再重编码比较排版字节；旧 evidence 目录仍可读。put 和 discard_new 对已有文件比较解码后的同一表达，因此缩进/键顺序变化不成为内容冲突，同 ID 不同正文或来源仍会报错。ID 的 SHA 继续只是现有物理文件定位格式。新表达仍写规范 JSON 并原子替换；原位修订以新 Statement ID 保存，旧正文与旧来源仍能展开。",
+            "sources": [
+              "e0e0dd80039d129b7a0321e1e640ffa0c987f9eb:packages/nollm-access/src/nollm_access/statement_store.py#L37-L79"
+            ],
+            "current": true,
+            "revises": "nollm.statement-store.v1",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 4,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.binding.v4",
+            "cell": [
+              0,
+              1,
+              -1
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "当前、支持、历史与物理定位分开处理\ncurrent只表示当前handle的表达绑定，不证明已对最新源码复核。reuse保存独立支持表达，不增加物理atom或替换当前正文；revision切换当前并保留旧正文与来源。分页绑定按已知物理handle定位，观察过的原生修订可读写局部页；只给Statement ID仍需盘点绑定，未新增语义路由。新ID在同锁捕获时可省去库存查重；分离capture/apply仍查重，避免另一Access实例抢先绑定。show旧版本保持原文和current=false，并沿显式revises及已有物理绑定报告unique、ambiguous或incomplete续行；候选不替模型决定语义继承。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L96-L146"
+            ],
+            "current": true,
+            "revises": "nollm.binding.v3",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          },
+          {
+            "id": "nollm.core-commit.v3",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "via": [
+              "coverage_down"
+            ],
+            "text": "Core和Access用局部恢复记录提交已接受的变化\nCore批次仅复制触及的格；分页模式写受影响物理页、占用元数据和必要桥变化，以局部undo记录恢复中断。Access.reorganize先投影顺序决策、校验最终容量，再捕获新Statement并保存受影响的格、handle和明确配置。普通异常恢复旧布局与配置，已捕获的原表达保留；进程中断时下次Access打开先恢复。普通new/revision/move/forget/reuse共用这条路径，桥动作保留单独流程。公开reorganization_scope按既有锁顺序支持适配器规划，普通操作再取Corelease；它不提供独立Core读者的跨文件瞬时事务。显式apply_if_state仍做全状态检查。",
+            "sources": [
+              "211ed1f2bf734ffb7daf0e5c7704e9da1a9ded01:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L47-L99"
+            ],
+            "current": true,
+            "revises": "nollm.core-commit.v2",
+            "entry_path": [
+              "coverage_down",
+              "coverage_down"
+            ],
+            "source_count": 3,
+            "sources_truncated": true
+          }
+        ],
+        "budget": {
+          "max_steps": 1,
+          "beam": 16,
+          "max_layer_delta": 1,
+          "max_lateral_ring": 1,
+          "max_bridge_steps": 0,
+          "max_results": 20
+        },
+        "budget_exhausted": false,
+        "descent_candidates": [
+          {
+            "id": "cell:0:-1:0",
+            "cell": [
+              0,
+              -1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:0:-1:1",
+            "cell": [
+              0,
+              -1,
+              1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:0:0:-1",
+            "cell": [
+              0,
+              0,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:0:0:0",
+            "cell": [
+              0,
+              0,
+              0
+            ],
+            "native_atoms": 2,
+            "weight_q16": 49152
+          },
+          {
+            "id": "cell:0:0:1",
+            "cell": [
+              0,
+              0,
+              1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2731
+          },
+          {
+            "id": "cell:0:1:-1",
+            "cell": [
+              0,
+              1,
+              -1
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          },
+          {
+            "id": "cell:0:1:0",
+            "cell": [
+              0,
+              1,
+              0
+            ],
+            "native_atoms": 1,
+            "weight_q16": 2730
+          }
+        ],
+        "cells": []
+      }
+    }
+  ],
+  "independent_host": {
+    "field_scope": "isolated copy after the encounter-related maintenance; not merged into active field",
+    "trial": "same-series independent session; no cross-vendor blind comparison",
+    "metrics": {
+      "recorded_commands": 19,
+      "installed_cli_calls": 13,
+      "installed_cli_failures": 0,
+      "terminal_recall_calls": 1,
+      "chosen_root_count": 1,
+      "reorganization_batches": 1,
+      "revised_current_expressions": 1,
+      "explicit_readback_paths": 3,
+      "pressure_requests": 0,
+      "lexical_field_searches": 0,
+      "budget": {
+        "max_steps": 1,
+        "beam": 16,
+        "max_layer_delta": 1,
+        "max_lateral_ring": 1,
+        "max_bridge_steps": 0,
+        "max_results": 20
+      },
+      "budget_exhaustion_observed": false,
+      "initial_native_cli_calls_to_detail_locality": 3,
+      "new_session_native_cli_calls_to_detail_locality": 3,
+      "reported_surface_calls_at_locality": 2
+    },
+    "verification": {
+      "old_body_identical": true,
+      "old_sources_identical": true,
+      "old_is_no_longer_current": true,
+      "new_is_current": true,
+      "new_revises_old": true,
+      "reorganized_in_place": true,
+      "fresh_native_readback_finds_new": true,
+      "fresh_native_readback_keeps_adapter": true,
+      "fresh_native_readback_keeps_sources": true,
+      "recall_body_equals_saved_revision": true,
+      "write_cursor_deleted": true,
+      "readback_cursor_deleted": true,
+      "all_recorded_commands_succeeded": true
+    },
+    "result_scope": {
+      "completed": true,
+      "actual_scope": "One same-series independent Host session using an installed artifact and an isolated field copy; one in-place middle-expression revision through the actual local reorganization CLI, followed by a new Surface session and exact version checks.",
+      "not_claimed": [
+        "cross-vendor blind test",
+        "better results for all future Hosts",
+        "whole-field orphan proof",
+        "multiple-root preservation outside the declared paths",
+        "fresh test-suite execution",
+        "CLI Git source readback"
+      ]
+    },
+    "trace": "../lab/nollm-lab/repository_memory/results/independent_local_reorganization_20261124.json"
+  }
+}
