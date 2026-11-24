@@ -34,6 +34,8 @@ TEST_FILES = (
     "lab/nollm-lab/geometry/tests/test_adaptive_rational_coverage.py",
     "lab/nollm-lab/geometry/tests/test_adaptive_rational_oracle.py",
     "lab/nollm-lab/geometry/tests/test_quantized_rational.py",
+    "lab/nollm-lab/geometry/tests/test_local_quantized_rational_oracle.py",
+    "lab/nollm-lab/geometry/tests/test_local_quantized_rational_coverage.py",
     "lab/nollm-lab/geometry/tests/test_pressure_evaluation.py",
     "lab/nollm-lab/geometry/tests/test_pressure_reuse.py",
     "lab/nollm-lab/repository_memory/test_project_encounter.py",

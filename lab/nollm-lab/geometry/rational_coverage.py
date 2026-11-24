@@ -19,6 +19,9 @@ from functools import lru_cache
 from nollm_core import GeometryAddress, normalize_q16_weights
 
 from .adaptive_rational_kernel import compile_adaptive_pair
+from .local_quantized_rational_kernel import (
+    LOCAL_QUANTIZED_CONTRACT_ID, compile_local_quantized_pair,
+)
 from .quantized_rational_kernel import compile_quantized_pair
 from .rational_affine_kernel import compile_affine_pair
 from .rational_geometry import Q, RationalLayerMap, rational_to_mapping
@@ -31,7 +34,19 @@ Units = Mapping[GeometryAddress, int]
 Allocations = dict[tuple[GeometryAddress, GeometryAddress], Fraction]
 
 
-def _execution_metadata(fractional_bits=None):
+def _fractional_precision(mode, fractional_bits):
+    if mode not in {"quantized", "local_quantized"}:
+        return None
+    return (8 if mode == "local_quantized" else 12) if fractional_bits is None else fractional_bits
+
+
+def _execution_metadata(fractional_bits=None, local_length=None):
+    if local_length is not None:
+        return {"contract_id": LOCAL_QUANTIZED_CONTRACT_ID,
+                "share_basis": "local_quantized_sample_share", "fractional_bits": fractional_bits,
+                "local_length": rational_to_mapping(local_length),
+                "anchor_policy": "source_cell_affine_center",
+                "target_anchor_policy": "even_integer"}
     if fractional_bits is None:
         return {"contract_id": RATIONAL_COVERAGE_CONTRACT_ID,
                 "share_basis": "exact_sample_share"}
@@ -104,11 +119,12 @@ class RationalCoverage:
     sample_count: int = SAMPLE_COUNT
     contract_id: str = RATIONAL_COVERAGE_CONTRACT_ID
     fractional_bits: int | None = None
+    local_length: Fraction | None = None
 
     def to_mapping(self) -> dict:
-        result = {"contract_id": self.contract_id, "source": self.source.to_mapping(),
+        result = {**_execution_metadata(self.fractional_bits, self.local_length),
+                "contract_id": self.contract_id, "source": self.source.to_mapping(),
                 "target_layer": self.target_layer, "sample_count": self.sample_count,
-                "share_basis": _execution_metadata(self.fractional_bits)["share_basis"],
                 "members": [
                     {"target": member.target.to_mapping(), "hit_count": member.hit_count,
                      "weight": rational_to_mapping(member.weight),
@@ -122,7 +138,7 @@ def sampled_rational_coverage(
     source: GeometryAddress, target_layer: int,
     source_map: RationalLayerMap, target_map: RationalLayerMap,
     *, mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
-    fractional_bits: int = 12,
+    fractional_bits: int | None = None, local_length=None,
 ) -> RationalCoverage:
     """Classify all 96 mapped centroids under two explicit layer maps.
 
@@ -140,29 +156,45 @@ def sampled_rational_coverage(
     fractional_bits (default 12), with no certification or repair. Its outputs carry a
     separate contract ID and the chosen precision. Pure affine pairs retain
     the exact integer kernel in this mode.
+    ``local_quantized`` defaults to 8 bits in an explicitly supplied positive
+    ``local_length`` of the source layer. Each cell uses its pre-twist affine
+    center as the quantization anchor; full target addresses remain exact.
+    Common world scaling must also scale local_length. Its output records
+    this unit and a separate versioned local-quantization contract.
     """
     if source.profile_id != "default_dream_v1":
         raise ValueError("rational quadrature requires the default axial address chart")
     if abs(target_layer - source.layer) != 1 or not -64 <= target_layer <= 64:
         raise ValueError("target must be an admitted adjacent physical layer")
-    kernel = _select_kernel(source_map, target_map, mode, initial_bits, max_bits, fractional_bits)
+    fractional_bits = _fractional_precision(mode, fractional_bits)
+    kernel = _select_kernel(source_map, target_map, mode, initial_bits, max_bits,
+                            fractional_bits, local_length)
     return _sampled(source, target_layer, source_map, target_map, kernel,
-                    fractional_bits if mode == "quantized" else None)
+                    fractional_bits, kernel.local_length if mode == "local_quantized" else None)
 
 
 def _select_kernel(source_map, target_map, mode, initial_bits=16, max_bits=128,
-                   fractional_bits=12):
+                   fractional_bits=None, local_length=None):
+    fractional_bits = _fractional_precision(mode, fractional_bits)
+    if mode == "local_quantized":
+        if local_length is None:
+            raise ValueError("local_quantized requires the source layer's positive local_length")
+        return compile_local_quantized_pair(source_map, target_map,
+                                             local_length=local_length, fractional_bits=fractional_bits)
+    if local_length is not None:
+        raise ValueError("local_length applies to local_quantized mode")
     if mode == "quantized":
         return compile_quantized_pair(source_map, target_map, fractional_bits=fractional_bits)
     if mode == "adaptive":
         return compile_adaptive_pair(source_map, target_map,
                                      initial_bits=initial_bits, max_bits=max_bits)
     if mode not in {"auto", "reference"}:
-        raise ValueError("mode must be auto, reference, adaptive or quantized")
+        raise ValueError("mode must be auto, reference, adaptive, quantized or local_quantized")
     return compile_affine_pair(source_map, target_map) if mode == "auto" else None
 
 
-def _sampled(source, target_layer, source_map, target_map, kernel, fractional_bits=None):
+def _sampled(source, target_layer, source_map, target_map, kernel, fractional_bits=None,
+             local_length=None):
     if kernel is not None:
         counts = Counter(kernel.targets(source.q, source.r, rational_sample_numerators(), 36))
     else:
@@ -178,8 +210,8 @@ def _sampled(source, target_layer, source_map, target_map, kernel, fractional_bi
         count, Fraction(count, SAMPLE_COUNT), weight_q16,
     ) for ((q, r), count), weight_q16 in zip(ordered, weights_q16))
     return RationalCoverage(source, target_layer, members,
-                            contract_id=_execution_metadata(fractional_bits)["contract_id"],
-                            fractional_bits=fractional_bits)
+                            contract_id=_execution_metadata(fractional_bits, local_length)["contract_id"],
+                            fractional_bits=fractional_bits, local_length=local_length)
 
 
 def rational_pressure_score(demand, support, kappa=1) -> Fraction:
@@ -217,14 +249,16 @@ def _check_inputs(upper: Units, lower: Units, upper_layer: int,
 def _allocate(lower: Units, upper_layer: int,
               upper_map: RationalLayerMap, lower_map: RationalLayerMap, mode: str,
               initial_bits: int = 16, max_bits: int = 128,
-              fractional_bits: int = 12) -> Allocations:
+              fractional_bits: int | None = None, local_length=None) -> Allocations:
     result = {}
     # One compilation per map pair/request; it is independent of inventory.
-    kernel = _select_kernel(lower_map, upper_map, mode, initial_bits, max_bits, fractional_bits)
+    fractional_bits = _fractional_precision(mode, fractional_bits)
+    kernel = _select_kernel(lower_map, upper_map, mode, initial_bits, max_bits,
+                            fractional_bits, local_length)
     for source in sorted(lower, key=GeometryAddress.stable_key):
         if lower[source]:
             coverage = _sampled(source, upper_layer, lower_map, upper_map, kernel,
-                                fractional_bits if mode == "quantized" else None)
+                                fractional_bits, kernel.local_length if mode == "local_quantized" else None)
             result.update({(source, member.target): member.weight for member in coverage.members})
     return result
 
@@ -237,7 +271,7 @@ def _region(upper: Units, extra_cells: Iterable[GeometryAddress], *allocations):
 
 
 def _readout(upper, lower, upper_layer, upper_map, lower_map,
-             allocation, region, inventory_complete, kappa, fractional_bits=None):
+             allocation, region, inventory_complete, kappa, fractional_bits=None, local_length=None):
     support = defaultdict(Fraction)
     allocations = []
     for (source, target), weight in allocation.items():
@@ -263,7 +297,7 @@ def _readout(upper, lower, upper_layer, upper_map, lower_map,
                       "support_complete": inventory_complete,
                       "score_kind": ("demand_unknown" if demand is None else
                                      "complete_finite_inventory" if inventory_complete else "upper_estimate")})
-    return {**_execution_metadata(fractional_bits),
+    return {**_execution_metadata(fractional_bits, local_length),
             "upper_layer": upper_layer, "lower_layer": upper_layer + 1,
             "inventory_complete": inventory_complete,
             "inventory_scope": "complete_finite_inventory" if inventory_complete else "partial_inventory",
@@ -283,7 +317,7 @@ def evaluate_rational_pressure(
     inventory_complete: bool = False,
     evaluation_cells: Iterable[GeometryAddress] = (), kappa=1,
     mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
-    fractional_bits: int = 12,
+    fractional_bits: int | None = None, local_length=None,
 ) -> dict:
     """Evaluate explicit current counts, keeping exact sampled support fractions.
 
@@ -293,14 +327,16 @@ def evaluate_rational_pressure(
     must be included in the caller's counts; no semantic placement is inferred.
     In quantized mode support and pressure are exact fractions of the accepted
     quantized sample counts, which may differ from the exact-map counts.
+    In local_quantized mode local_length describes the lower/source layer.
     """
     extra = tuple(evaluation_cells)
     kappa = _check_inputs(upper_units, lower_units, upper_layer, extra, kappa)
+    fractional_bits = _fractional_precision(mode, fractional_bits)
     allocation = _allocate(lower_units, upper_layer, upper_map, lower_map, mode,
-                           initial_bits, max_bits, fractional_bits)
+                           initial_bits, max_bits, fractional_bits, local_length)
     return _readout(upper_units, lower_units, upper_layer, upper_map, lower_map,
                     allocation, _region(upper_units, extra, allocation), inventory_complete, kappa,
-                    fractional_bits if mode == "quantized" else None)[0]
+                    fractional_bits, Q(local_length) if mode == "local_quantized" else None)[0]
 
 
 def compare_rational_pressure(
@@ -311,7 +347,7 @@ def compare_rational_pressure(
     inventory_complete: bool = False,
     evaluation_cells: Iterable[GeometryAddress] = (), kappa=1,
     mode: str = "auto", initial_bits: int = 16, max_bits: int = 128,
-    fractional_bits: int = 12,
+    fractional_bits: int | None = None, local_length=None, after_local_length=None,
 ) -> dict:
     """Compare maps using the same material and the union of both full footprints.
 
@@ -321,22 +357,28 @@ def compare_rational_pressure(
     interval filtering and per-sample precision escalation/fallback. There is
     no persistent relation cache or move. ``quantized`` accepts the distinct
     fixed-precision sampled geometry without correcting changed sample labels.
+    local_quantized uses local_length for the before lower/source map and
+    after_local_length for the after map (defaulting to the same unit).
     """
     extra = tuple(evaluation_cells)
     kappa = _check_inputs(upper_units, lower_units, upper_layer, extra, kappa)
+    fractional_bits = _fractional_precision(mode, fractional_bits)
+    if after_local_length is not None and mode != "local_quantized":
+        raise ValueError("after_local_length applies to local_quantized mode")
+    after_local_length = local_length if after_local_length is None else after_local_length
     after_upper_map = before_upper_map if after_upper_map is None else after_upper_map
     after_lower_map = before_lower_map if after_lower_map is None else after_lower_map
     old = _allocate(lower_units, upper_layer, before_upper_map, before_lower_map, mode,
-                    initial_bits, max_bits, fractional_bits)
+                    initial_bits, max_bits, fractional_bits, local_length)
     new = _allocate(lower_units, upper_layer, after_upper_map, after_lower_map, mode,
-                    initial_bits, max_bits, fractional_bits)
+                    initial_bits, max_bits, fractional_bits, after_local_length)
     region = _region(upper_units, extra, old, new)
     before, old_deficit = _readout(upper_units, lower_units, upper_layer, before_upper_map,
                                    before_lower_map, old, region, inventory_complete, kappa,
-                                   fractional_bits if mode == "quantized" else None)
+                                   fractional_bits, Q(local_length) if mode == "local_quantized" else None)
     after, new_deficit = _readout(upper_units, lower_units, upper_layer, after_upper_map,
                                  after_lower_map, new, region, inventory_complete, kappa,
-                                 fractional_bits if mode == "quantized" else None)
+                                 fractional_bits, Q(after_local_length) if mode == "local_quantized" else None)
     changes = []
     for source, target in sorted(set(old) | set(new),
                                  key=lambda pair: (pair[0].stable_key(), pair[1].stable_key())):
@@ -348,10 +390,11 @@ def compare_rational_pressure(
                             "delta_support": rational_to_mapping(lower_units[source] * (new_weight - old_weight))})
     old_max, new_max = before["max_known_pressure"], after["max_known_pressure"]
     delta_deficit = rational_to_mapping(new_deficit - old_deficit)
-    return {**_execution_metadata(fractional_bits if mode == "quantized" else None),
+    return {**_execution_metadata(fractional_bits, Q(local_length) if mode == "local_quantized" else None),
             "inventory_complete": inventory_complete, "region_union": [cell.to_mapping() for cell in region],
             "before": before, "after": after, "coverage_changes": changes,
             "delta": {"observed_deficit": delta_deficit,
                       "total_deficit": delta_deficit if inventory_complete else None,
                       "max_known_pressure": None if old_max is None or new_max is None else new_max - old_max},
             "advisory": True}
+

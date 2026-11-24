@@ -41,7 +41,9 @@ The [2026-11-23 fixed test baseline](NOLLM_TEST_BASELINE_20261123.md) and its
 contract. This run passed 178 focused tests and replayed actual stored-Surface,
 revision and move behavior. The existing Lab quantized p12 default and explicit
 p8 option retain world-unit and representation-anchor dependencies; user-selected
-adjacent local-p8/96 normalization is still an implementation continuation.
+adjacent local-p8/96 normalization was its implementation continuation. The
+[2026-11-24 local executor](NOLLM_LOCAL_P8_EXECUTOR_20261124.md) completes that
+explicit Lab path while retaining the frozen input and Core Q40/96 baseline.
 Use this fixed input for comparison; current main remains the development line.
 The [native precision-state maintenance](../../sujiben/TEST_BASELINE_MAINTENANCE_20261123.md)
 revises the encountered middle `precision-contracts` judgment to v2, explicitly
@@ -267,9 +269,10 @@ structure. The [adjacent p8 and capacity plan](NOLLM_ADJACENT_P8_CAPACITY_PLAN_2
 retains 96 samples and full integer addresses, defines p8 in local cell units,
 and identifies current whole-state Core/binding I/O and late paging as capacity
 bottlenecks. A fixed adjacent-pair probe demonstrates world-unit dependence and
-restoration after normalization. This is an implementation plan: the current
-quantized default is still 12, and the normalized executor and local paged storage
-remain open work. The later stored-Surface direction makes write-time semantic
+restoration after normalization. The plan's normalized executor is now implemented
+by the [local p8 continuation](NOLLM_LOCAL_P8_EXECUTOR_20261124.md), and physical
+paging by the 2026-11-24 storage work above. The existing world-unit quantized
+default remains 12; the new explicit local mode defaults to 8. The later stored-Surface direction makes write-time semantic
 organization the first capacity priority, with local persistence serving that
 organization. Existing exact-mode and production geometry contracts retain
 their respective scopes.

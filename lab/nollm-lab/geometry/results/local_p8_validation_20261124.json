@@ -1,0 +1,38 @@
+{
+  "schema": "nollm_local_p8_validation_v1",
+  "date": "2026-11-24",
+  "source_base": "f2635058ba357537f1c41d0a1b8d32a202051911",
+  "core_contract": "Q40/96 unchanged",
+  "local_contract": "lab_local_quantized_rational_axial_quadrature_v1",
+  "tests": [
+    {
+      "command": "python3 lab/nollm-lab/geometry/run_support_deformation_tests.py",
+      "count": 178,
+      "passed": 178,
+      "seconds": 17.25,
+      "exit_code": 0
+    },
+    {
+      "command": "PYTHONPATH=lab/nollm-lab:packages/nollm-core/src:packages/nollm-access/src:lab/nollm-lab/repository_memory python3 -m unittest discover -s lab/nollm-lab/repository_memory -p test_project_storage_and_placement.py -v",
+      "count": 7,
+      "passed": 7,
+      "seconds": 2.028,
+      "exit_code": 0
+    }
+  ],
+  "distinct_tests": 185,
+  "new_local_p8_tests_included": 24,
+  "independent_fraction_coordinate_comparisons": 2304,
+  "frozen_cases": 58,
+  "representation_label_comparisons": 336384,
+  "representation_label_changes": 0,
+  "before_after_cache_source_cells": 438,
+  "before_after_cache_histogram_changes": 0,
+  "known_regression_repaired": "remove zero-strength twists before common outer-suffix cancellation",
+  "source_files": [
+    "local_quantized_rational_kernel.py",
+    "rational_coverage.py",
+    "local_p8_cli.py"
+  ],
+  "benchmark": "lab/nollm-lab/geometry/results/local_p8_frozen_comparison_20261124.json"
+}

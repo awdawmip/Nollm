@@ -108,13 +108,20 @@ world-unit normalization and geometry-addressed local persistence work, with a
 reproducible unit-change probe and a source audit. The later stored-Surface
 direction makes semantic formation the first capacity priority.
 The plan keeps full integer addresses and separates capacity from fractional precision.
+The [local p8 executor](docs/project/NOLLM_LOCAL_P8_EXECUTOR_20261124.md) now implements
+the declared source-cell unit, canonical affine-center anchor and complete integer
+address separation. Explicit `local_quantized` coverage, pressure and CLI calls default
+to p8/96. Across 58 frozen scenarios, 336,384 unit/anchor label comparisons are
+unchanged; the report retains actual weighted differences, pressure ordering changes
+and complete-operation timings. A bounded geometry-stencil cache removes repeated
+source-offset work. The current notebook still uses Core Q40/96.
 
 The [fixed functional test baseline](docs/project/NOLLM_TEST_BASELINE_20261123.md)
 records `nollm-test-20261123.1`: the current Q40/96 residual-mask engine, stored
 Surface/read-write configuration, 178 newly run tests and actual field replay.
 It also restores the selected adjacent local-p8/96 design and records the old
-Lab quantized unit/reanchor witnesses. That pending executor is distinct from
-the active Core and from the existing world-unit quantized p12 default.
+Lab quantized unit/reanchor witnesses. That snapshot predates the local executor
+above; the active Core and existing world-unit quantized p12 keep their contracts.
 
 ## Why Nollm exists
 
