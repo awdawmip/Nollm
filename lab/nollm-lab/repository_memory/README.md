@@ -41,7 +41,10 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 ```
 
 `surface` 页面展示聚合观察，`physical` 页面展示最终物理候选。选择一个物理入口后，
-`locality` 页面返回 `entry`、当前事实 `items`、可写位置 `cells` 与实际预算。
+`locality` 页面返回 `entry`、当前事实 `items` 和实际下降候选。仅有一个物理成员的
+Surface 候选直接显示 `physical_cell`，选择后进入局部，无需再选一次同一格。
+默认读取不枚举写位置或计算压力；需要放置时先执行 `--prepare-write` 观察 `cells`，
+需要支撑建议时再显式 `--pressure`。`--read-only` 停止写准备。
 `text_truncated` 表示展示的正文被裁剪，`truncated` 表示还有表达未展示；
 局部页面返回完整判断与条件。`walk` 进一步只显示标题时也会标记正文裁剪。
 新场先提供原点种子；Host 选择该物理候选后才能在本次局部中形成第一条记忆。
@@ -80,12 +83,18 @@ python3 "$cli" project --field "$field" encounter --cursor-file "$session" --rec
 写入示例；将位置、版本 ID、路径和行号换成实际读过的内容，正文从 stdin 传入：
 
 ```sh
+python3 "$cli" project --field "$field" encounter --cursor-file "$session" --prepare-write
+# 观察上条命令的 cells 后，选择实际位置。
 python3 "$cli" project --field "$field" encounter --cursor-file "$session" \
   --new "$cell_id" --id reading.v1 --repo "$repo" --rev HEAD \
   --cite 'src/reader.py#L10-L20' --cite 'tests/test_reader.py#L25-L40' < judgment.txt
 ```
 
 将 `--new "$cell_id"` 换成 `--reuse "$fact_id"` 或 `--revise "$fact_id"` 保存补充或修订。
+同一相遇中的多项重组使用 `--reorganize PLAN_JSON`，按最终布局检查容量并回读实际
+向下路径。`project --field FIELD storage --enable-paged` 显式迁移物理分页。
+计划格式、预算与表层一起更新、失败恢复和成本边界见
+[局部重组与存放](skills/nollm-repository-memory/references/local-reorganization.md)。
 每条表达写清可独立理解的判断、条件和影响，关系表达引用双方证据。终结后会话文件删除。
 
 `--steps`、`--beam`、`--limit` 分别控制传播步数、每步候选数和结果数；

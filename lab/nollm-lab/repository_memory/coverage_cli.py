@@ -149,7 +149,8 @@ def _resume_surface(navigator, cursor, choices):
     return page, choices
 
 
-def surface(field, scope, order, choices, page_size, max_calls, cursor=None, with_cursor=False):
+def surface(field, scope, order, choices, page_size, max_calls, cursor=None, with_cursor=False, *,
+            resolve_singletons=False):
     """Follow explicit Host choices, from the root or the last observed page."""
     require_field(field)
     navigator = AccessSurfaceNavigator(field)
@@ -170,6 +171,12 @@ def surface(field, scope, order, choices, page_size, max_calls, cursor=None, wit
             return {"kind": "entry", "entry": coords(entry), "surface_calls": page.state.call_count}
         elif page.state.order == 0:
             page = navigator.open_physical_entries(page, choice)
+            if (resolve_singletons and index + 1 == len(choices)
+                    and page.total_candidate_count == 1 and len(page.candidates) == 1
+                    and not page.has_more):
+                resolution = navigator.resolve_singleton_entry(page)
+                return {"kind": "entry", "entry": coords(resolution.entry_cell),
+                        "surface_calls": page.state.call_count, "resolved_singleton": True}
         else:
             page = navigator.open_surface_cell(page, choice)
 
@@ -189,6 +196,12 @@ def surface(field, scope, order, choices, page_size, max_calls, cursor=None, wit
                                "source_cells": cell.physical_source_cell_count, "native_atoms": cell.native_atom_count,
                                "previews": [s.content_utf8 for s in cell.statements], "truncated": cell.truncated,
                                "text_truncated": any(s.text_truncated for s in cell.statements)})
+            if (resolve_singletons and cell.order == 0
+                    and cell.physical_source_cell_count == 1 and cell.statements):
+                # The preview already names the sole physical source; avoid
+                # opening every candidate just to repeat its one-item menu.
+                candidates[-1]["physical_cell"] = coords(cell.statements[0].handle.geometry_address)
+                candidates[-1]["selects_single_physical_entry"] = True
     result = {
         "kind": "physical" if physical else "surface", "order": page.state.order,
         "page_size": page.state.budget.page_size, "pages_left": page.state.budget.max_calls - page.state.call_count,

@@ -47,7 +47,13 @@ layers, and supports adjacent physical descent within one rooted encounter.
 The active `sujiben/field` now preserves all 23 existing detailed judgments beneath
 eight complete stored upper expressions and twelve condition expressions; its
 [formation and preservation record](sujiben/STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)
-documents actual native descent and reader feedback. Physical page storage remains further work.
+documents actual native descent and reader feedback. The
+[local reorganization and physical-storage implementation](docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md)
+adds explicit geometry-addressed paging for Core and bindings, final-layout
+capacity checks, recoverable local batches and forward readback paths. Native
+encounter reads first and prepares placement/pressure on request. Its 158 focused
+tests and storage-layout probe record both local read/write savings and the
+remaining exact-ID binding inventory cost.
 
 The [top-down maintenance and reorganization study](docs/project/NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md)
 compares forward inspection with optional on-demand inverse lookup, measures read

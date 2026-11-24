@@ -104,7 +104,7 @@ class StoredSurfaceEncounterTest(unittest.TestCase):
 
     def test_surface_can_be_read_only_while_lower_layer_is_writable(self):
         page = encounter(self.field, surface_layers=(-2,), layers=(0,), via="downward",
-                         steps=0, order=0, page_size=8)
+                         steps=0, order=0, page_size=8, prepare_write=True)
         while page["kind"] != "locality":
             candidate, = page["candidates"]
             page = encounter(self.field, [candidate["id"]], cursor=page["cursor"])
@@ -154,7 +154,7 @@ class StoredSurfaceEncounterTest(unittest.TestCase):
         body = "A complete detailed judgment with several independent fixed sources."
         save_statement(self.field, "many-sources", body, sources, (0, 0), None, layer=-2,
                        write_policy_id=EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)
-        full = self.observe()
+        full = self.observe(pressure=True)
         compact = encounter(self.field, cursor=full["cursor"], compact=True)
         self.assertEqual([(item["id"], item["text"], item["cell"]) for item in compact["items"]],
                          [(item["id"], item["text"], item["cell"]) for item in full["items"]])
@@ -215,7 +215,8 @@ class StoredSurfaceEncounterTest(unittest.TestCase):
         field = self.root / "boundary"
         save_statement(field, "last", "Last admitted layer", [SOURCE], (0, 0), None, layer=64,
                        write_policy_id=EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)
-        page = encounter(field, layers=(64,), steps=0, via="lateral", order=0, page_size=8, compact=True)
+        page = encounter(field, layers=(64,), steps=0, via="lateral", order=0, page_size=8,
+                         compact=True, pressure=True)
         while page["kind"] != "locality":
             candidate, = page["candidates"]
             page = encounter(field, [candidate["id"]], cursor=page["cursor"])

@@ -24,7 +24,7 @@ class ProjectEncounterTest(unittest.TestCase):
         self.field = self.root / "field"
 
     def empty_locality(self):
-        page = encounter(self.field)
+        page = encounter(self.field, prepare_write=True)
         self.assertEqual(page["kind"], "physical")
         candidate, = page["candidates"]
         self.assertEqual(candidate["physical_cell"], [0, 0, 0])
@@ -42,11 +42,8 @@ class ProjectEncounterTest(unittest.TestCase):
                 self.assertEqual(candidate["previews"], [body[:256]])
                 self.assertFalse(candidate["truncated"])
                 self.assertEqual(candidate["text_truncated"], length > 256)
-                physical = encounter(field, [candidate["id"]], cursor=page["cursor"])
-                candidate, = physical["candidates"]
-                self.assertFalse(candidate["truncated"])
-                self.assertEqual(candidate["text_truncated"], length > 256)
-                locality = encounter(field, [candidate["id"]], cursor=physical["cursor"])
+                locality = encounter(field, [candidate["id"]], cursor=page["cursor"])
+                self.assertEqual(locality["kind"], "locality")
                 self.assertEqual(locality["items"][0]["text"], body)
 
                 # Access's structured projection retains per-statement detail.
@@ -66,11 +63,14 @@ class ProjectEncounterTest(unittest.TestCase):
         self.assertEqual(len(candidate["previews"]), 3)
         self.assertTrue(candidate["truncated"])
         self.assertFalse(candidate["text_truncated"])
-        physical = encounter(self.field, [candidate["id"]], cursor=page["cursor"])
-        candidate, = physical["candidates"]
-        self.assertEqual(len(candidate["previews"]), 1)
-        self.assertTrue(candidate["truncated"])
-        self.assertFalse(candidate["text_truncated"])
+        locality = encounter(self.field, [candidate["id"]], cursor=page["cursor"])
+        self.assertEqual(locality["kind"], "locality")
+        self.assertEqual(len(locality["items"]), 4)
+        navigator = AccessSurfaceNavigator(self.field)
+        root = navigator.begin("omission", SCOPE, RECALL_SURFACE_BUDGET)
+        physical = navigator.open_physical_entries(root, root.cells[0].candidate_id)
+        self.assertTrue(physical.candidates[0].truncated)
+        self.assertFalse(physical.candidates[0].current_statement_preview.text_truncated)
 
         titles = walk(self.field, (), None, None, 1, 5, "local")
         candidate, = titles["candidates"]
@@ -171,7 +171,7 @@ class ProjectEncounterTest(unittest.TestCase):
                                    *map(str, args)], body))
 
         def enter():
-            page = meet()
+            page = meet("--prepare-write")
             while page["kind"] != "locality":
                 page = meet(page["candidates"][0]["id"])
             return page

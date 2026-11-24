@@ -30,6 +30,10 @@ from .junction import (
 )
 from .ports import CoreTraceEvent, TraceSink
 from .storage import SCHEMA_VERSION, _FileCoreStateStore, canonical_state_bytes
+from .paged_storage import (
+    CELL_STATE_SCHEMA_VERSION, PAGED_SCHEMA_VERSION,
+    _CellChanges, _ChangedFiles, _PagedCells, _PagedCoreStateStore,
+)
 from .surface import (
     CoverageDescentPage,
     SurfaceOrderInfo,
@@ -76,11 +80,20 @@ class _CellStore:
         atoms = self._cells.get(address, {})
         return tuple((AtomHandle(address, local_id), atoms[local_id]) for local_id in sorted(atoms))
 
-    def occupied_cells(self) -> tuple[GeometryAddress, ...]:
-        return tuple(sorted(self._cells, key=lambda cell: cell.stable_key()))
+    def occupancy(self, scope=None, *, with_bytes=False):
+        if isinstance(self._cells, _PagedCells):
+            yield from self._cells.occupancy(scope)
+        else:
+            for cell, atoms in self._cells.items():
+                if scope is None or scope.contains(cell):
+                    size = sum(len(atom.payload_utf8.encode("utf-8")) for atom in atoms.values()) if with_bytes else 0
+                    yield cell, len(atoms), size
+
+    def occupied_cells(self, scope=None) -> tuple[GeometryAddress, ...]:
+        return tuple(sorted((cell for cell, _, _ in self.occupancy(scope)), key=lambda cell: cell.stable_key()))
 
     def placement_count(self) -> int:
-        return sum(len(atoms) for atoms in self._cells.values())
+        return sum(count for _, count, _ in self.occupancy())
 
     def occupancy_band(self, address: GeometryAddress) -> str:
         count = len(self.atoms_at(address))
@@ -103,8 +116,17 @@ class CoreRuntime:
         self._owner_key = claim(self._state_path, self)
         self._store = _FileCoreStateStore(self._workspace)
         try:
+            _ChangedFiles(self._workspace).recover()
             if self._store.exists():
-                self._cells, self._bridges = self._decode_state_bytes(self._store.read_bytes())
+                document = json.loads(self._store.read_bytes())
+                if isinstance(document, dict) and document.get("schema_version") == PAGED_SCHEMA_VERSION:
+                    self._store = _PagedCoreStateStore(self._workspace, document)
+                    if self._store.geometry_registry != self.kernel_registry.state_identity:
+                        raise ValueError("Core state geometry registry mismatch")
+                    self._cells = _PagedCells(self._store, self._decode)
+                    self._bridges = self._store.read_bridges(self._decode)
+                else:
+                    self._cells, self._bridges = self._decode(document)
             else:
                 self._cells = {}
                 self._bridges = {}
@@ -143,6 +165,27 @@ class CoreRuntime:
     def is_open(self) -> bool:
         with self._lock:
             return self._state == "OPEN"
+
+    @property
+    def storage_layout(self) -> str:
+        return "paged" if isinstance(self._store, _PagedCoreStateStore) else "single_file"
+
+    @staticmethod
+    def inspect_storage(workspace: Path) -> dict[str, object]:
+        """Read only the layout entry; do not open or recover a runtime."""
+        path = Path(workspace) / "core" / "current_state.json"
+        try:
+            document = json.loads(path.read_bytes())
+        except FileNotFoundError:
+            return {"layout": "single_file"}
+        if not isinstance(document, dict) or document.get("schema_version") not in {SCHEMA_VERSION, PAGED_SCHEMA_VERSION}:
+            raise ValueError("unknown Core storage layout")
+        if document["schema_version"] == SCHEMA_VERSION:
+            return {"layout": "single_file"}
+        width = document.get("partition_width")
+        if type(width) is not int or width <= 0:
+            raise ValueError("invalid Core partition width")
+        return {"layout": "paged", "partition_width": width}
 
     @property
     def lifecycle_state(self) -> str:
@@ -216,7 +259,7 @@ class CoreRuntime:
     def _apply_batch_locked(self, commands: tuple[CoreCommand, ...]) -> tuple[object, ...]:
         if type(commands) is not tuple or not commands:
             raise ValueError("batch must contain at least one command")
-        cells = {address: dict(atoms) for address, atoms in self._cells.items()}
+        cells = _CellChanges(self._cells)
         bridges = dict(self._bridges)
         results: list[object] = []
         events: list[CoreTraceEvent] = []
@@ -226,19 +269,31 @@ class CoreRuntime:
                 result, event = self._apply(command, cells, bridges)
                 results.append(result)
                 events.append(event)
-            self._store.write_document(self._document(cells, bridges))
+            self._persist_changes_locked(cells, bridges)
         except Exception:
             self._emit_trace(CoreTraceEvent("core.batch.rollback", {"command_count": len(commands)}, "stable"))
             raise
-        self._cells = cells
-        self._bridges = bridges
-        self._cell_store = _CellStore(self._cells)
-        self._surface_order_cache.clear()
-        clear_surface_order_cache()
         for event in events:
             self._emit_trace(event)
         self._emit_trace(CoreTraceEvent("core.batch.commit", {"command_count": len(commands)}, "stable"))
         return tuple(results)
+
+    def _persist_changes_locked(self, cells: _CellChanges, bridges) -> None:
+        try:
+            if isinstance(self._store, _PagedCoreStateStore):
+                changed_bridges = bridges if bridges != self._bridges else None
+                self._store.write_changes(self._cells, cells, changed_bridges)
+            else:
+                self._store.write_document(self._document(cells, bridges))
+                self._cells = {address: cells[address] for address in cells}
+        except BaseException:
+            if (self._workspace / "core/paged_write.pending.json").exists():
+                self._state = "FAILED"
+            raise
+        self._bridges = bridges
+        self._cell_store = _CellStore(self._cells)
+        self._surface_order_cache.clear()
+        clear_surface_order_cache()
 
     def get(self, handle: AtomHandle) -> MemoryAtom:
         with self._operation():
@@ -256,20 +311,31 @@ class CoreRuntime:
         with self._operation():
             return self._cell_store.atoms_at(address)
 
-    def occupied_cells(self) -> tuple[GeometryAddress, ...]:
+    def occupied_cells(self, *, scope: PhysicalFieldScope | None = None) -> tuple[GeometryAddress, ...]:
         with self._operation():
-            return self._cell_store.occupied_cells()
+            return self._cell_store.occupied_cells(scope)
+
+    def layer_content_totals(self, layer: int, *, profile_id: str = "default_dream_v1",
+                             chart_id: str = "default") -> tuple[int, int]:
+        """Occupied cells and current UTF-8 bytes; paged fields read metadata."""
+        scope = PhysicalFieldScope(profile_id, chart_id, (layer,), layer)
+        with self._operation():
+            count, size = 0, 0
+            for _, _, cell_size in self._cell_store.occupancy(scope, with_bytes=True):
+                count += 1
+                size += cell_size
+            return count, size
 
     def junction_candidates(self, request: JunctionRequest) -> tuple[JunctionCandidate, ...]:
         with self._operation():
-            return solve_junction_candidates(request, self._cell_store.occupied_cells())
+            return solve_junction_candidates(request, self._cell_store.occupied_cells(request.scope))
 
     def relation_group_junction_candidates(
         self,
         request: RelationGroupJunctionRequest,
     ) -> tuple[RelationGroupJunctionCandidate, ...]:
         with self._operation():
-            return solve_relation_group_junction_candidates(request, self._cell_store.occupied_cells())
+            return solve_relation_group_junction_candidates(request, self._cell_store.occupied_cells(request.scope))
 
     def bridges(self) -> tuple[BridgeSpec, ...]:
         with self._operation():
@@ -324,11 +390,81 @@ class CoreRuntime:
             self._emit_trace(CoreTraceEvent("core.state.export", {"size_bytes": len(payload)}, "stable"))
             return payload
 
+    def export_cell_state(self, addresses: tuple[GeometryAddress, ...]) -> bytes:
+        """Capture only declared cells, including empty ones, for local recovery."""
+        if not isinstance(addresses, tuple) or any(type(cell) is not GeometryAddress for cell in addresses):
+            raise TypeError("addresses must be a GeometryAddress tuple")
+        with self._operation():
+            cells = {cell: self._cells.get(cell, {}) for cell in sorted(set(addresses), key=lambda cell: cell.stable_key())}
+            document = self._document(cells, {})
+            return canonical_state_bytes({"schema_version": CELL_STATE_SCHEMA_VERSION,
+                                          "geometry_registry": document["geometry_registry"],
+                                          "cells": document["cells"]})
+
+    def import_cell_state(self, payload: bytes) -> None:
+        """Restore declared cells exactly while retaining every other cell."""
+        with self._operation():
+            value = json.loads(payload)
+            if not isinstance(value, dict) or set(value) != {"schema_version", "geometry_registry", "cells"} or value["schema_version"] != CELL_STATE_SCHEMA_VERSION or not isinstance(value["cells"], list):
+                raise ValueError("invalid Core cell snapshot")
+            declared = []
+            populated = []
+            for item in value["cells"]:
+                if not isinstance(item, dict) or set(item) != {"address", "atoms"} or not isinstance(item["atoms"], list):
+                    raise ValueError("invalid Core cell snapshot record")
+                declared.append(GeometryAddress.from_mapping(item["address"]))
+                if item["atoms"]:
+                    populated.append(item)
+            if len(set(declared)) != len(declared):
+                raise ValueError("duplicate cell in Core cell snapshot")
+            restored, _ = self._decode({"schema_version": SCHEMA_VERSION,
+                                        "geometry_registry": value["geometry_registry"],
+                                        "cells": populated, "bridges": []})
+            changes = _CellChanges(self._cells)
+            for cell in declared:
+                if cell in restored:
+                    changes[cell] = restored[cell]
+                elif cell in self._cells:
+                    del changes[cell]
+            self._persist_changes_locked(changes, self._bridges)
+
+    def enable_paged_storage(self, partition_width: int = 64) -> None:
+        """Explicitly migrate this field; logical state and geometry stay fixed."""
+        if type(partition_width) is not int or partition_width <= 0:
+            raise ValueError("partition_width must be positive")
+        with self._operation():
+            if isinstance(self._store, _PagedCoreStateStore):
+                if self._store.width != partition_width:
+                    raise ValueError("field already uses a different partition width")
+                return
+            marker = {"schema_version": PAGED_SCHEMA_VERSION,
+                      "geometry_registry": self.kernel_registry.state_identity,
+                      "partition_width": partition_width}
+            store = _PagedCoreStateStore(self._workspace, marker)
+            try:
+                store.replace_all(self._cells, self._bridges, marker=marker)
+            except BaseException:
+                if store.transaction.journal.exists():
+                    self._state = "FAILED"
+                raise
+            self._store = store
+            self._cells = _PagedCells(store, self._decode)
+            self._cell_store = _CellStore(self._cells)
+
     def import_state_bytes(self, payload: bytes) -> None:
         with self._operation():
             cells, bridges = self._decode_state_bytes(payload)
-            self._store.write_document(self._document(cells, bridges))
-            self._cells = cells
+            if isinstance(self._store, _PagedCoreStateStore):
+                try:
+                    self._store.replace_all(cells, bridges)
+                except BaseException:
+                    if self._store.transaction.journal.exists():
+                        self._state = "FAILED"
+                    raise
+                self._cells = _PagedCells(self._store, self._decode)
+            else:
+                self._store.write_document(self._document(cells, bridges))
+                self._cells = cells
             self._bridges = bridges
             self._cell_store = _CellStore(self._cells)
             self._surface_order_cache.clear()
@@ -341,8 +477,11 @@ class CoreRuntime:
     def _surface_orders_locked(self, scope: PhysicalFieldScope, max_order: int):
         if type(scope) is not PhysicalFieldScope:
             raise TypeError("scope must be PhysicalFieldScope")
+        cached = self._surface_order_cache.get(scope.identity, ())
+        if len(cached) > max_order:
+            return cached[: max_order + 1]
         occupancy_items = tuple(sorted(
-            ((address, len(atoms)) for address, atoms in self._cells.items()),
+            ((address, count) for address, count, _ in self._cell_store.occupancy(scope)),
             key=lambda item: item[0].stable_key(),
         ))
         endpoints = tuple(sorted((
@@ -351,9 +490,6 @@ class CoreRuntime:
             for anchor in (bridge.from_anchor, bridge.to_anchor)
             for cell in anchor.cells
         ), key=lambda item: item.stable_key()))
-        cached = self._surface_order_cache.get(scope.identity, ())
-        if len(cached) > max_order:
-            return cached[: max_order + 1]
         orders = _cached_surface_orders(scope, max_order, occupancy_items, endpoints)
         self._surface_order_cache[scope.identity] = orders
         return orders

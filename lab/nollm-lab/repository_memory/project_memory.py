@@ -12,7 +12,7 @@ from nollm_access import (
     FileHandleStore, FileStatementStore, MemoryStatement, semantic_write_policy, write_pressure,
 )
 from nollm_core import (
-    BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope,
+    AtomHandle, BridgeSpec, CoreRuntime, GeometryAnchor, JunctionRequest, PhysicalFieldScope,
     RecallBudget, UnsupportedPhysicalCoverage, expand_physical_coverage, incoming_coverage,
 )
 
@@ -65,8 +65,9 @@ def save_statement(field, note_id, body, sources, at, revise, reuse=None, *,
                 others.append(f"reuses:{reuse}")
             decision = AccessDecision(note_id, note_id, action, existing_handle=existing_handle,
                                       reason_text=reason, write_policy_id=write_policy_id)
-        access.put_statement(MemoryStatement(note_id, body, primary, tuple(others)))
-        handle = access.apply(decision)
+        handle, = access.reorganize((decision,), statements=(
+            MemoryStatement(note_id, body, primary, tuple(others)),
+        ))
     result = {"id": note_id, "cell": coords(handle.geometry_address), "revises": revise}
     if reuse is not None:
         result["reuses"] = reuse
@@ -176,6 +177,49 @@ def links(field, link_id=None):
                 if link_id is None or link.bridge_id == link_id]
 
 
+def _storage_components(field):
+    """Inspect physical layout without opening runtimes or replaying recovery."""
+    return {"core": CoreRuntime.inspect_storage(field),
+            "bindings": FileHandleStore.inspect_storage(field)}
+
+
+def storage(field, *, enable_paged=False, partition_width=64):
+    """Inspect storage or explicitly migrate the two independent components."""
+    field = Path(field)
+    require_field(field)
+    before = _storage_components(field)
+    result = {"kind": "storage", "field": str(field.resolve()), "status": "observed", **before}
+    if not enable_paged:
+        return result
+    if type(partition_width) is not int or partition_width <= 0:
+        raise ValueError("partition width must be a positive integer")
+    migrations = {"core": "not_attempted", "bindings": "not_attempted"}
+    stage = "open"
+    try:
+        with CoreRuntime(field) as core, AccessRuntime(
+            core, FileStatementStore(field), FileHandleStore(field)
+        ) as access:
+            with access.reorganization_scope():
+                stage = "core"
+                core.enable_paged_storage(partition_width=partition_width)
+                migrations[stage] = "already_paged" if before[stage]["layout"] == "paged" else "migrated"
+                stage = "bindings"
+                access.handle_store.enable_paged_storage(partition_width=partition_width)
+                migrations[stage] = "already_paged" if before[stage]["layout"] == "paged" else "migrated"
+    except Exception as error:
+        if stage in migrations:
+            migrations[stage] = "failed"
+        result["status"] = ("partial" if any(value in {"migrated", "already_paged"}
+                                               for value in migrations.values()) else "failed")
+        result["error"] = {"component": stage, "type": type(error).__name__, "message": str(error)}
+        result["retry"] = f"storage --enable-paged --partition-width {partition_width}"
+    else:
+        result["status"] = "completed"
+    for name, component in _storage_components(field).items():
+        result[name] = {**component, "migration": migrations[name]}
+    return result
+
+
 def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_cursor=False, beam=16):
     page = surface(field, SCOPE, order, choices, page_size, RECALL_SURFACE_BUDGET.max_calls, cursor, with_cursor)
     if page["kind"] != "entry":
@@ -188,18 +232,33 @@ def walk(field, choices, order, page_size, steps, limit, via, cursor=None, with_
     return {**page, **_locality(field, address(*page["entry"]), steps, limit, via, beam)}
 
 
-def _writing_scope(layers):
-    """Explicit local physical layers, within the existing Surface span contract."""
+def _selected_layers(layers):
     selected = tuple(sorted(set(layers)))
     if not selected:
         raise ValueError("choose at least one physical layer")
     for layer in selected:
         address(layer, 0, 0)
+    return selected
+
+
+def _surface_scope(layers):
+    selected = _selected_layers(layers)
     reference = 0 if 0 in selected else selected[len(selected) // 2]
     return PhysicalFieldScope("default_dream_v1", "default", selected, reference)
 
 
+def _writing_scope(layers, focus):
+    """Use only the configured layers adjacent to this observed physical focus."""
+    selected = tuple(layer for layer in layers if abs(layer - focus.layer) <= 1)
+    if not selected:
+        return None
+    reference = focus.layer if focus.layer in selected else selected[0]
+    return PhysicalFieldScope("default_dream_v1", "default", selected, reference)
+
+
 def _placement_cells(core, entry, recall_items, scope):
+    if scope is None:
+        return []
     cells = {entry, *(hit.handle.geometry_address for hit in recall_items
                       if scope.contains(hit.handle.geometry_address))}
     if scope.contains(entry):
@@ -217,7 +276,8 @@ def _placement_cells(core, entry, recall_items, scope):
                   key=lambda cell: cell.stable_key())
 
 
-def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=SCOPE):
+def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=SCOPE,
+              pressure=False, describe_items=False, descent=False):
     kernels = KERNELS[via]
     budget = RecallBudget(steps, beam, steps, 1, int("bridge" in kernels), limit)
     with CoreRuntime(field) as core, AccessRuntime(
@@ -233,16 +293,15 @@ def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=S
                 raise RuntimeError(hit.fallback_error)
             item = {"id": hit.statement_id, "cell": coords(hit.handle.geometry_address),
                     "via": hit.path, "text": hit.evidence_utf8}
-            if placement:
-                item.update(_statement_description(access.statement_store.get(hit.statement_id), True))
+            if describe_items:
+                statement = hit.statement or access.statement_store.get(hit.statement_id)
+                item.update(_statement_description(statement, True))
+                item["_handle"] = hit.handle.to_mapping()
             items.append(item)
         result = {"kernels": kernels, "items": items, "budget": asdict(budget),
                   "budget_exhausted": recall.budget_exhausted}
-        if placement:
-            # One geometry snapshot for all pressure counts; each current atom
-            # is a unit, irrespective of how many expressions bind to it.
+        if descent or placement:
             with core.operation_lease():
-                cells = _placement_cells(core, entry, recall.items, scope)
                 units = {}
 
                 def units_at(cell):
@@ -250,26 +309,30 @@ def _locality(field, entry, steps, limit, via, beam, *, placement=False, scope=S
                         units[cell] = tuple(handle for handle, _ in core.atoms_at(cell))
                     return units[cell]
 
-                result["cells"] = [
-                    {"id": f"cell:{cell.layer}:{cell.q}:{cell.r}", "cell": coords(cell),
-                     "native_atoms": len(units_at(cell)),
-                     "write_pressure": write_pressure(cell, units_at).to_mapping()}
-                    for cell in cells
-                ]
-                # The next physical layer is shown by geometry and occupancy.
-                # Its bodies are read only by the selected propagation budget
-                # or after a Host descent, never to generate this candidate list.
                 try:
                     downward = expand_physical_coverage(entry, "coverage_down").members
                 except UnsupportedPhysicalCoverage as error:
                     downward = ()
                     result["descent_error"] = str(error)
+                down_cells = {member.target for member in downward}
                 result["descent_candidates"] = [
                     {"id": f"cell:{member.target.layer}:{member.target.q}:{member.target.r}",
                      "cell": coords(member.target), "native_atoms": len(units_at(member.target)),
                      "weight_q16": member.weight_q16}
                     for member in downward
                 ]
+                result["cells"] = []
+                if placement:
+                    for cell in _placement_cells(core, entry, recall.items, scope):
+                        candidate = {"id": f"cell:{cell.layer}:{cell.q}:{cell.r}",
+                                     "cell": coords(cell), "native_atoms": len(units_at(cell)),
+                                     "readable_downward": cell in down_cells,
+                                     "at_focus": cell == entry,
+                                     "content_budget_configured": (access.content_budget is None or
+                                         access.content_budget.limits_for(cell) is not None)}
+                        if pressure:
+                            candidate["write_pressure"] = write_pressure(cell, units_at).to_mapping()
+                        result["cells"].append(candidate)
     return result
 
 
@@ -296,8 +359,10 @@ def _compact_locality(locality):
         item["sources"] = sources[:1]
     pressure_fields = ("pressure", "write_weight", "advisory", "score_kind",
                        "support_complete", "demand_complete")
-    for cell in locality["cells"]:
-        pressure = cell["write_pressure"]
+    for cell in locality.get("cells", ()):
+        pressure = cell.get("write_pressure")
+        if pressure is None:
+            continue
         projected = {name: pressure[name] for name in pressure_fields}
         for name in ("unknown_cells", "geometry_error"):
             if pressure[name]:
@@ -307,7 +372,7 @@ def _compact_locality(locality):
 
 def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limit=None,
               via=None, beam=None, cursor=None, layers=None, surface_layers=None,
-              descend=None, ascend=False, compact=None):
+              descend=None, ascend=False, compact=None, prepare_write=None, pressure=None):
     """Observe one field for either a query or an incoming proposition.
 
     The disposable cursor retains the shown page or the chosen physical entry.
@@ -320,18 +385,17 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
     if state["field"] != str(field.resolve()):
         raise ValueError("encounter cursor belongs to another field")
     defaults = _encounter_defaults(field) if cursor is None else {}
-    selected_layers = tuple(sorted(set(layers))) if layers is not None else tuple(state.get("layers", defaults.get("layers", (0,))))
+    selected_layers = _selected_layers(layers if layers is not None else state.get("layers", defaults.get("layers", (0,))))
     if cursor is not None and layers is not None and selected_layers != tuple(state.get("layers", (0,))):
         raise ValueError("restart the encounter to change physical layers")
-    scope = _writing_scope(selected_layers)
     selected_surface = (surface_layers if surface_layers is not None else
                         state.get("surface_layers", defaults.get("surface_layers", selected_layers)))
-    surface_scope = _writing_scope(selected_surface)
+    surface_scope = _surface_scope(selected_surface)
     if cursor is not None and surface_layers is not None and surface_scope.physical_layers != tuple(state.get("surface_layers", state.get("layers", (0,)))):
         raise ValueError("restart the encounter to change Surface layers")
-    state["layers"] = list(scope.physical_layers)
+    state["layers"] = list(selected_layers)
     state["surface_layers"] = list(surface_scope.physical_layers)
-    write_policy_id = (ACTIVE_SEMANTIC_WRITE_POLICY_ID if scope.physical_layers == (0,)
+    write_policy_id = (ACTIVE_SEMANTIC_WRITE_POLICY_ID if selected_layers == (0,)
                        else EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)
     for name, value, default in (("steps", steps, 1), ("limit", limit, 5),
                                   ("via", via, "local"), ("beam", beam, 16),
@@ -341,6 +405,16 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         raise ValueError("unknown propagation choice")
     if not isinstance(state["compact"], bool):
         raise ValueError("compact must be a boolean")
+    for name, value in (("prepare_write", prepare_write), ("pressure", pressure)):
+        if value is not None and not isinstance(value, bool):
+            raise ValueError(f"{name} must be a boolean")
+        state[name] = value if value is not None else state.get(name, False)
+    if prepare_write is False and pressure is True:
+        raise ValueError("choose read-only observation or write pressure")
+    if pressure is True:
+        state["prepare_write"] = True
+    if not state["prepare_write"]:
+        state["pressure"] = False
     if descend is not None or ascend:
         if "entry" not in state or choices or (descend is not None and ascend):
             raise ValueError("choose one observed locality before descending or returning")
@@ -358,7 +432,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
                                     "native_atoms": 0, "previews": [], "truncated": False,
                                     "text_truncated": False}],
                     "surface_layers": list(surface_scope.physical_layers),
-                    "physical_layers": list(scope.physical_layers),
+                    "physical_layers": list(selected_layers),
                     "compact": state["compact"], "cursor": state}
         if list(choices) != [candidate.candidate_id]:
             raise ValueError("choose the shown empty-field physical entry")
@@ -371,7 +445,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
                 pass
         page = surface(field, surface_scope, order if order is not None else defaults.get("order"), choices,
                        page_size if page_size is not None else defaults.get("page_size"), RECALL_SURFACE_BUDGET.max_calls,
-                       state.get("surface"), True)
+                       state.get("surface"), True, resolve_singletons=True)
         state["surface_calls"] = page["surface_calls"]
         if page["kind"] != "entry":
             state["surface"] = page.pop("cursor")
@@ -383,7 +457,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
             # locality; text_truncated reports clipped text, while truncated
             # reports omitted statements.
             return {**page, "surface_layers": list(surface_scope.physical_layers),
-                    "physical_layers": list(scope.physical_layers),
+                    "physical_layers": list(selected_layers),
                     "compact": state["compact"], "cursor": state}
         state.pop("surface", None)
         state["entry"] = page["entry"]
@@ -404,10 +478,30 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         focus_path = focus_path[:-1]
         focus = focus_path[-1]
     state["focus"], state["focus_path"] = focus, focus_path
+    scope = _writing_scope(selected_layers, address(*focus))
     locality = _locality(field, address(*focus), state["steps"], state["limit"],
-                         state["via"], state["beam"], placement=True, scope=scope)
+                         state["via"], state["beam"], placement=state["prepare_write"],
+                         pressure=state["pressure"], scope=scope, describe_items=True, descent=True)
+    observed_items = {item["id"]: item for item in state.get("observed_items", ())}
     for item in locality["items"]:
         item["entry_path"] = ("coverage_down",) * (len(focus_path) - 1) + tuple(item["via"])
+        observed_items[item["id"]] = {"id": item["id"], "cell": item["cell"],
+                                     "handle": item.pop("_handle"), "focus_path": focus_path,
+                                     "via": list(item["via"])}
+    state["observed_items"] = list(observed_items.values())
+    observed_cells = {item["id"]: item for item in state.get("observed_cells", ())}
+    for item in locality["descent_candidates"]:
+        previous = observed_cells.get(item["id"], {})
+        observed_cells[item["id"]] = {**previous, "id": item["id"], "cell": item["cell"],
+                                      "focus_path": focus_path, "readable_downward": True,
+                                      "writable": previous.get("writable", False)}
+    for item in locality["cells"]:
+        observed_cells[item["id"]] = {"id": item["id"], "cell": item["cell"],
+                                      "focus_path": focus_path, "writable": True,
+                                      "readable_downward": item["readable_downward"],
+                                      "at_focus": item["at_focus"],
+                                      "content_budget_configured": item["content_budget_configured"]}
+    state["observed_cells"] = list(observed_cells.values())
     if state["compact"]:
         _compact_locality(locality)
     state["descent_candidates"] = [{"id": item["id"], "cell": item["cell"]}
@@ -415,8 +509,43 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
     return {"kind": "locality", "entry": state["entry"], "surface_calls": state["surface_calls"],
             "focus": focus, "focus_path": focus_path,
             "surface_layers": list(surface_scope.physical_layers),
-            "physical_layers": list(scope.physical_layers), "write_policy_id": write_policy_id,
-            "compact": state["compact"], **locality, "cursor": state}
+            "physical_layers": list(selected_layers), "write_policy_id": write_policy_id,
+            "compact": state["compact"], "write_prepared": state["prepare_write"],
+            "pressure_requested": state["pressure"],
+            "local_writable_layers": list(scope.physical_layers) if scope else [],
+            **locality, "cursor": state}
+
+
+def _recall_observed(field, cursor, target):
+    observed = next((item for item in cursor.get("observed_items", ()) if item["id"] == target), None)
+    if observed is None:
+        # Older cursors and a just-written fact may not have an observation yet.
+        # Reopen only the reading path; no placement or pressure work is needed.
+        locality = encounter(field, cursor=cursor, prepare_write=False, pressure=False)
+        found = next((item for item in locality["items"] if item["id"] == target), None)
+        if found is None:
+            raise ValueError("choose a current fact shown in this locality")
+        return found
+    handle = AtomHandle.from_mapping(observed["handle"])
+    with CoreRuntime(field) as core, AccessRuntime(
+        core, FileStatementStore(field), FileHandleStore(field)
+    ) as access:
+        try:
+            binding = access.handle_store.binding_for_handle(handle)
+            atom = core.get(handle)
+        except KeyError as error:
+            raise ValueError("observed current fact moved or was removed; reopen the locality") from error
+        if binding.current_statement_id != target:
+            raise ValueError("observed current fact was revised; reopen the locality")
+        statement = access.statement_store.get(target)
+        if statement.content_utf8 != atom.payload_utf8:
+            raise RuntimeError("evidence_payload_mismatch")
+    item = {**_statement_description(statement, True), "cell": coords(handle.geometry_address),
+            "via": tuple(observed["via"]),
+            "entry_path": ("coverage_down",) * (len(observed["focus_path"]) - 1) + tuple(observed["via"])}
+    if cursor.get("compact"):
+        _compact_locality({"items": [item], "cells": []})
+    return item
 
 
 def decide(field, cursor, action, target=None, *, note_id=None, body=None, sources=None):
@@ -430,20 +559,27 @@ def decide(field, cursor, action, target=None, *, note_id=None, body=None, sourc
         raise ValueError("choose one physical entry before a terminal decision")
     if action == "none":
         return result
-    locality = encounter(field, cursor=cursor)
-    if action in {"recall", "reuse", "revision"}:
+    if action == "recall":
+        return {**result, "item": _recall_observed(field, cursor, target)}
+    if action == "new" and not cursor.get("prepare_write"):
+        raise ValueError("prepare writing before choosing a placement cell")
+    locality = encounter(field, cursor=cursor, prepare_write=action == "new", pressure=False)
+    if action in {"reuse", "revision"}:
         found = next((item for item in locality["items"] if item["id"] == target), None)
         if found is None:
             raise ValueError("choose a current fact shown in this locality")
-        if action == "recall":
-            return {**result, "item": found}
-        if found["cell"][0] not in locality["physical_layers"]:
-            raise ValueError("choose a fact in the encounter's writable layers")
+        if found["cell"][0] not in locality["local_writable_layers"]:
+            raise ValueError("choose a fact in the encounter's local writable layers")
         at, revise, reuse = None, target if action == "revision" else None, target if action == "reuse" else None
     elif action == "new":
         cell = next((item for item in locality["cells"] if item["id"] == target), None)
         if cell is None:
             raise ValueError("choose a placement cell shown in this locality")
+        if cursor.get("via", "local") == "downward" and not (cell["at_focus"] or cell["readable_downward"]):
+            raise ValueError("this placement has no downward read path from the current focus; "
+                             "use reorganization with an actual readable path")
+        if not cell["content_budget_configured"]:
+            raise ValueError(f"configure a content budget for layer {cell['cell'][0]} before writing there")
         at, revise, reuse = cell["cell"][1:], None, None
     else:
         raise ValueError(f"unknown encounter decision: {action}")
@@ -487,6 +623,11 @@ def main(argv=None, *, default_field=None):
     disconnect.add_argument("link_id")
     inspect_links = commands.add_parser("links", help="read native directed links, optionally by ID")
     inspect_links.add_argument("link_id", nargs="?")
+    inspect_storage = commands.add_parser("storage", help="inspect storage layout or explicitly migrate to physical pages")
+    inspect_storage.add_argument("--enable-paged", action="store_true",
+                                 help="migrate Core and bindings independently; retry this command after a partial failure")
+    inspect_storage.add_argument("--partition-width", type=int,
+                                 help="geometry partition width for migration (default: 64)")
     browse.add_argument("--steps", type=int, default=1, help="kernel steps from the selected physical entry (default: 1)")
     browse.add_argument("--beam", type=int, default=16, help="maximum propagated cells per step (default: 16)")
     browse.add_argument("--limit", type=int, default=5, help="maximum returned statements after traversal (default: 5)")
@@ -513,6 +654,16 @@ def main(argv=None, *, default_field=None):
                         help="show complete bodies, one source per fact and compact pressure fields")
     detail.add_argument("--full-details", dest="compact", action="store_false",
                         help="show all fixed sources and pressure calculation fields")
+    preparation = meet.add_mutually_exclusive_group()
+    preparation.add_argument("--prepare-write", dest="prepare_write", action="store_true", default=None,
+                             help="show local writable candidates without calculating pressure")
+    preparation.add_argument("--read-only", dest="prepare_write", action="store_false",
+                             help="return to reading and descent without write diagnostics")
+    pressure_option = meet.add_mutually_exclusive_group()
+    pressure_option.add_argument("--pressure", dest="pressure", action="store_true", default=None,
+                                 help="prepare writing and calculate advisory pressure")
+    pressure_option.add_argument("--no-pressure", dest="pressure", action="store_false",
+                                 help="keep local candidates but omit advisory pressure calculation")
     decision = meet.add_mutually_exclusive_group()
     decision.add_argument("--recall", metavar="FACT_ID", help="return one observed current fact")
     decision.add_argument("--reuse", metavar="FACT_ID", help="support one observed current fact")
@@ -520,6 +671,8 @@ def main(argv=None, *, default_field=None):
     decision.add_argument("--new", metavar="CELL_ID", help="place a distinct proposition at an observed available cell")
     decision.add_argument("--none", action="store_true", help="finish with no relevant fact")
     decision.add_argument("--defer", action="store_true", help="finish without deciding")
+    decision.add_argument("--reorganize", type=Path, metavar="PLAN_JSON",
+                          help="apply an explicit local reorganization plan to observed items and cells")
     meet.add_argument("--id", help="immutable statement version ID for new, reuse or revise")
     meet.add_argument("--repo", type=Path, help="source Git checkout for new, reuse or revise")
     meet.add_argument("--rev", default="HEAD", help="source revision for new citations")
@@ -582,12 +735,14 @@ def main(argv=None, *, default_field=None):
         selected = next(((action, target) for action, target in (
             ("recall", args.recall), ("reuse", args.reuse), ("revision", args.revise),
             ("new", args.new), ("none", args.none), ("defer", args.defer),
+            ("reorganize", args.reorganize),
         ) if target), None)
         if selected is not None and (cursor is None or args.choices or args.restart):
             parser.error("observe a locality with --cursor-file before choosing its outcome")
         if selected is not None and any(value is not None for value in
                                         (args.order, args.page_size, args.steps, args.beam, args.limit,
-                                         args.via, args.layers, args.surface_layers, args.descend, args.compact)):
+                                         args.via, args.layers, args.surface_layers, args.descend, args.compact,
+                                         args.prepare_write, args.pressure)):
             parser.error("reopen the encounter with its new budget before choosing an outcome")
         if selected is not None and args.ascend:
             parser.error("observe the returned focus before choosing an outcome")
@@ -602,11 +757,17 @@ def main(argv=None, *, default_field=None):
             result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
                                steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor,
                                layers=args.layers, surface_layers=args.surface_layers,
-                               descend=args.descend, ascend=args.ascend, compact=args.compact)
+                               descend=args.descend, ascend=args.ascend, compact=args.compact,
+                               prepare_write=args.prepare_write, pressure=args.pressure)
             path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
         else:
-            result = decide(args.field, cursor, *selected,
-                            note_id=args.id, body=body, sources=sources)
+            if selected[0] == "reorganize":
+                from local_reorganization import reorganize
+                plan = json.loads(selected[1].read_text(encoding="utf-8"))
+                result = reorganize(args.field, cursor, plan)
+            else:
+                result = decide(args.field, cursor, *selected,
+                                note_id=args.id, body=body, sources=sources)
             path.unlink()
     elif args.op == "stitch":
         result = stitch(args.field, args.link_id, args.from_id, args.to_id)
@@ -614,9 +775,16 @@ def main(argv=None, *, default_field=None):
         result = unstitch(args.field, args.link_id)
     elif args.op == "links":
         result = links(args.field, args.link_id)
+    elif args.op == "storage":
+        if args.partition_width is not None and not args.enable_paged:
+            parser.error("--partition-width requires --enable-paged")
+        result = storage(args.field, enable_paged=args.enable_paged,
+                         partition_width=args.partition_width if args.partition_width is not None else 64)
     else:
         result = list(islice(literal_matches(args.field, args.term), args.limit))
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    if args.op == "storage" and result["status"] in {"partial", "failed"}:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

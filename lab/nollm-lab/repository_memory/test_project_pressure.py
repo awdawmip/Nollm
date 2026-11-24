@@ -69,7 +69,7 @@ class ProjectPressureTests(unittest.TestCase):
         self.field = self.root / "field"
 
     def enter(self, *, layers=LAYERS, preferred=(0, 0, 0)):
-        options = {"steps": 1, "beam": 32, "limit": 20, "via": "vertical"}
+        options = {"steps": 1, "beam": 32, "limit": 20, "via": "vertical", "pressure": True}
         if layers is not None:
             options["layers"] = layers
         page = encounter(self.field, **options)
@@ -79,7 +79,7 @@ class ProjectPressureTests(unittest.TestCase):
         return page
 
     def test_empty_entry_shows_scored_lower_candidates_and_keeps_scope_in_cursor(self):
-        page = encounter(self.field, layers=LAYERS)
+        page = encounter(self.field, layers=LAYERS, pressure=True)
         self.assertEqual(page["kind"], "physical")
         self.assertNotIn("entry", page)
         origin, = page["candidates"]
@@ -270,7 +270,7 @@ class ProjectPressureTests(unittest.TestCase):
 
         def enter():
             page = meet("--via", "vertical", "--beam", 32, "--limit", 20,
-                        "--layers", *LAYERS)
+                        "--layers", *LAYERS, "--pressure")
             while page["kind"] != "locality":
                 page = meet(choose_page_candidate(page)["id"])
             self.assertEqual(page["write_policy_id"], EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID)

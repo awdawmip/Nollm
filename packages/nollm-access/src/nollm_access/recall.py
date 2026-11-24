@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from nollm_core import AtomHandle, CoreRecallRequest, GeometryAddress, RecallBudget
+from .statement import MemoryStatement
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,7 @@ class AccessRecallItem:
     score_q16: int
     fallback_error: str | None = None
     path: tuple[str, ...] = ()
+    statement: MemoryStatement | None = None
 
     def __post_init__(self) -> None:
         if type(self.path) is not tuple or any(type(kernel) is not str or kernel not in {"coverage_up", "coverage_down", "lateral", "bridge"} for kernel in self.path):

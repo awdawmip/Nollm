@@ -1,0 +1,115 @@
+{
+  "schema_version": "nollm_local_reorganization_validation_v1",
+  "date": "2026-11-24",
+  "base_commit": "ac587624411fe9c1270317cc89f816efd1ccb535",
+  "frozen_branch": "test/nollm-20261123-1",
+  "frozen_branch_sha": "c4b6b922b993732e008e8d1b95951b47bec823df",
+  "unique_passing_tests": 158,
+  "runs": [
+    {
+      "scope": "Core, Access, Snapshot",
+      "runner": "Python 3.12 / pytest 9.2.0",
+      "pythonpath": "packages/nollm-core/src:packages/nollm-access/src:packages/nollm-snapshot/src",
+      "command": [
+        "python3",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "packages/nollm-core/tests/test_core_commands.py",
+        "packages/nollm-core/tests/test_core_semantic_canonical_state.py",
+        "packages/nollm-core/tests/test_core_state_strict_validation.py",
+        "packages/nollm-core/tests/test_core_state_encapsulation.py",
+        "packages/nollm-core/tests/test_paged_state.py",
+        "packages/nollm-core/tests/test_core_recall.py",
+        "packages/nollm-core/tests/test_canonical_recall_contract.py",
+        "packages/nollm-access/tests/test_access_exception_atomicity.py",
+        "packages/nollm-access/tests/test_access_runtime.py",
+        "packages/nollm-access/tests/test_binding_store_invariants.py",
+        "packages/nollm-access/tests/test_paged_handle_store.py",
+        "packages/nollm-access/tests/test_revision_confirmation_contract.py",
+        "packages/nollm-access/tests/test_reuse_validates_canonical_evidence.py",
+        "packages/nollm-access/tests/test_access_recall_canonical_contract.py",
+        "packages/nollm-access/tests/test_single_entry_cross_layer_recall.py",
+        "packages/nollm-access/tests/test_workspace_coordinator_single_state_owner.py",
+        "packages/nollm-access/tests/test_reorganization.py",
+        "packages/nollm-access/tests/test_content_budget.py",
+        "packages/nollm-snapshot/tests"
+      ],
+      "passed": 101,
+      "exit_code": 0,
+      "seconds": 0.73,
+      "warnings": 3,
+      "warning_scope": "existing anyio pytest-10 deprecation and two put_original API deprecations"
+    },
+    {
+      "scope": "native encounter, installed CLI and project/EM wrappers",
+      "pythonpath": "packages/nollm-core/src:packages/nollm-access/src:lab/nollm-lab/repository_memory",
+      "command": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "test_encounter_local_cost",
+        "test_project_encounter",
+        "test_stored_surface_encounter",
+        "test_project_pressure",
+        "test_revision_continuation",
+        "test_project_storage_and_placement",
+        "test_project_memory",
+        "test_skill_install",
+        "test_local_reorganization_review",
+        "test_coverage_install",
+        "test_enterprise_math",
+        "test_enterprise_math_api",
+        "-q"
+      ],
+      "passed": 57,
+      "exit_code": 0,
+      "seconds": 29.885
+    }
+  ],
+  "focused_final_check": {
+    "reason": "replace duplicate Surface numeric validation constants with existing profile fields",
+    "command": [
+      "python3",
+      "-B",
+      "-m",
+      "unittest",
+      "test_local_reorganization_review",
+      "-q"
+    ],
+    "passed": 6,
+    "included_in_unique_total": true,
+    "exit_code": 0
+  },
+  "storage_probe": {
+    "script": "lab/nollm-lab/repository_memory/probe_local_storage_cost.py",
+    "cases": 16,
+    "logical_equivalence_checked": true,
+    "result": "local_storage_cost_20261124.json"
+  },
+  "scope_limit": "Focused relevant tests; full historical repository test suite not run. Same candidate code across storage layouts; no time or physical disk speedup claim.",
+  "ownership": {
+    "source_commit": "ac587624411fe9c1270317cc89f816efd1ccb535",
+    "rows": 1231,
+    "local_python_ast_count": 25,
+    "unchanged_missing_python_imports_reused": 649,
+    "affected_lab_contract_errors": [],
+    "core_public_symbols": 58,
+    "core_runtime_operations": 29,
+    "core_allowlist_exact": true,
+    "full_repository_validator": "NOT_RUN: partial source snapshot; complete pinned inventory and canonical imports were used for ownership generation, not full-source validation",
+    "full_repository_boundary_report": "NOT_RUN and canonical report left unchanged: current slice changes Core, Access and Lab assets; unchanged TS/JS sources are absent and their imports are not in the manifest"
+  },
+  "public_boundary_followup": {
+    "reason": "Expose public read-only storage inspection and Access reorganization scope; keep Lab within public package APIs. Reuse existing locks in their original order.",
+    "access_and_lab_passed": 37,
+    "subtests_passed": 6,
+    "seconds": 2.22,
+    "included_in_unique_total": true,
+    "exit_code": 0,
+    "storage_and_paging_passed": 26,
+    "storage_and_paging_seconds": 2.021
+  }
+}

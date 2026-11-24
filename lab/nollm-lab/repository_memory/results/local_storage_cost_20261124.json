@@ -1,0 +1,1407 @@
+{
+  "schema_version": "nollm_local_storage_cost_v1",
+  "measurement": "application_file_api_payload_bytes",
+  "fixture": [
+    {
+      "local_facts": 3,
+      "remote_facts": 0,
+      "remote_body_bytes_each": 8192,
+      "remote_body_bytes_total": 0,
+      "remote_layer": 0,
+      "surface_layer": -2,
+      "remote_distinct_partitions": 0,
+      "partition_width": 64,
+      "bridges": 0
+    },
+    {
+      "local_facts": 3,
+      "remote_facts": 256,
+      "remote_body_bytes_each": 8192,
+      "remote_body_bytes_total": 2097152,
+      "remote_layer": 0,
+      "surface_layer": -2,
+      "remote_distinct_partitions": 256,
+      "partition_width": 64,
+      "bridges": 0
+    }
+  ],
+  "logical_equivalence_checked": true,
+  "method": {
+    "intercepted": [
+      "builtins.open",
+      "io.open"
+    ],
+    "fresh_runtime_per_operation": true,
+    "includes": [
+      "Core and Access file reads",
+      "immutable Statement capture",
+      "atomic temporary writes",
+      "Access and Core undo journal writes",
+      "observed revision validation and readback"
+    ],
+    "excludes": [
+      "fixture creation",
+      "migration",
+      "copying",
+      "cursor preparation",
+      "post-measurement checks",
+      "directory and stat metadata",
+      "fsync and rename device traffic",
+      "OS cache and physical I/O"
+    ],
+    "files": "distinct successfully accessed paths; atomic temporary files count as writes",
+    "text_bytes": "decoded text re-encoded using the stream encoding; all fixture stores use UTF-8"
+  },
+  "limits": [
+    "Same current code is used for both layouts; this is a layout comparison, not a historical release comparison.",
+    "The fixed Surface and local target are on L-2; unrelated payload growth is remote L0 in different width-64 partitions.",
+    "A touched page includes all its cells; same-page unrelated data can increase reads, writes and journal bytes.",
+    "Surface still inventories occupancy metadata for its declared physical layers; more Surface cells can increase work.",
+    "Binding lookup by Statement ID inventories binding pages; observed-handle revision avoids that lookup.",
+    "Whole-layer budgets and explicit global export/inventory have their declared broader scope.",
+    "This fixture has no bridges; Core opening currently reads the complete bridges file.",
+    "No timings or physical-disk speedup claim are produced."
+  ],
+  "operations": [
+    {
+      "remote_facts": 0,
+      "layout": "legacy",
+      "operation": "surface_first_page",
+      "open_calls": 3,
+      "read_calls": 3,
+      "write_calls": 0,
+      "read_bytes": 2078,
+      "write_bytes": 0,
+      "opened_files": 3,
+      "read_files": 3,
+      "written_files": 0,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 708,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 194,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 1176,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "paged",
+      "operation": "surface_first_page",
+      "open_calls": 7,
+      "read_calls": 7,
+      "write_calls": 0,
+      "read_bytes": 1585,
+      "write_bytes": 0,
+      "opened_files": 7,
+      "read_files": 7,
+      "written_files": 0,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 277,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 120,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 194,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 189,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_page_bodies": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 265,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "legacy",
+      "operation": "new_at_known_cell",
+      "open_calls": 9,
+      "read_calls": 5,
+      "write_calls": 4,
+      "read_bytes": 3578,
+      "write_bytes": 3564,
+      "opened_files": 7,
+      "read_files": 3,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 2124,
+          "write_bytes": 928,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 195,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1161,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 1176,
+          "write_bytes": 1280,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "paged",
+      "operation": "new_at_known_cell",
+      "open_calls": 19,
+      "read_calls": 13,
+      "write_calls": 6,
+      "read_bytes": 2917,
+      "write_bytes": 3120,
+      "opened_files": 13,
+      "read_files": 7,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 831,
+          "write_bytes": 497,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 3,
+          "read_calls": 3,
+          "write_calls": 0,
+          "read_bytes": 360,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 195,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1161,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 530,
+          "write_bytes": 369,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "legacy",
+      "operation": "revision_observed",
+      "open_calls": 12,
+      "read_calls": 8,
+      "write_calls": 4,
+      "read_bytes": 5220,
+      "write_bytes": 3529,
+      "opened_files": 8,
+      "read_files": 4,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 3540,
+          "write_bytes": 708,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 226,
+          "write_bytes": 226,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 1176,
+          "write_bytes": 1188,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "paged",
+      "operation": "revision_observed",
+      "open_calls": 25,
+      "read_calls": 19,
+      "write_calls": 6,
+      "read_bytes": 4214,
+      "write_bytes": 3085,
+      "opened_files": 14,
+      "read_files": 8,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 1385,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 5,
+          "read_calls": 5,
+          "write_calls": 0,
+          "read_bytes": 600,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 226,
+          "write_bytes": 226,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 807,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "legacy",
+      "operation": "revision_by_statement_id",
+      "open_calls": 11,
+      "read_calls": 7,
+      "write_calls": 4,
+      "read_bytes": 4994,
+      "write_bytes": 3529,
+      "opened_files": 7,
+      "read_files": 3,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 3540,
+          "write_bytes": 708,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 226,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 1176,
+          "write_bytes": 1188,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 0,
+      "layout": "paged",
+      "operation": "revision_by_statement_id",
+      "open_calls": 25,
+      "read_calls": 19,
+      "write_calls": 6,
+      "read_bytes": 4260,
+      "write_bytes": 3085,
+      "opened_files": 15,
+      "read_files": 9,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 8,
+          "read_calls": 7,
+          "write_calls": 1,
+          "read_bytes": 1934,
+          "write_bytes": 277,
+          "opened_files": 4,
+          "read_files": 3,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 5,
+          "read_calls": 5,
+          "write_calls": 0,
+          "read_bytes": 600,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 226,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 530,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "legacy",
+      "operation": "surface_first_page",
+      "open_calls": 3,
+      "read_calls": 3,
+      "write_calls": 0,
+      "read_bytes": 2210564,
+      "write_bytes": 0,
+      "opened_files": 3,
+      "read_files": 3,
+      "written_files": 0,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 59447,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 194,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 2150923,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "paged",
+      "operation": "surface_first_page",
+      "open_calls": 7,
+      "read_calls": 7,
+      "write_calls": 0,
+      "read_bytes": 1585,
+      "write_bytes": 0,
+      "opened_files": 7,
+      "read_files": 7,
+      "written_files": 0,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 277,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 120,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 194,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 189,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_page_bodies": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 265,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "legacy",
+      "operation": "new_at_known_cell",
+      "open_calls": 9,
+      "read_calls": 5,
+      "write_calls": 4,
+      "read_bytes": 2329542,
+      "write_bytes": 2212050,
+      "opened_files": 7,
+      "read_files": 3,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 178341,
+          "write_bytes": 59667,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 195,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1161,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 2150923,
+          "write_bytes": 2151027,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "paged",
+      "operation": "new_at_known_cell",
+      "open_calls": 19,
+      "read_calls": 13,
+      "write_calls": 6,
+      "read_bytes": 2917,
+      "write_bytes": 3120,
+      "opened_files": 13,
+      "read_files": 7,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 831,
+          "write_bytes": 497,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 3,
+          "read_calls": 3,
+          "write_calls": 0,
+          "read_bytes": 360,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 195,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1161,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 530,
+          "write_bytes": 369,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "legacy",
+      "operation": "revision_observed",
+      "open_calls": 12,
+      "read_calls": 8,
+      "write_calls": 4,
+      "read_bytes": 2448662,
+      "write_bytes": 2212015,
+      "opened_files": 8,
+      "read_files": 4,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 297235,
+          "write_bytes": 59447,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 226,
+          "write_bytes": 226,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 2150923,
+          "write_bytes": 2150935,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "paged",
+      "operation": "revision_observed",
+      "open_calls": 25,
+      "read_calls": 19,
+      "write_calls": 6,
+      "read_bytes": 4214,
+      "write_bytes": 3085,
+      "opened_files": 14,
+      "read_files": 8,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 1385,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 5,
+          "read_calls": 5,
+          "write_calls": 0,
+          "read_bytes": 600,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 226,
+          "write_bytes": 226,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 4,
+          "read_calls": 3,
+          "write_calls": 1,
+          "read_bytes": 807,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "legacy",
+      "operation": "revision_by_statement_id",
+      "open_calls": 11,
+      "read_calls": 7,
+      "write_calls": 4,
+      "read_bytes": 2448436,
+      "write_bytes": 2212015,
+      "opened_files": 7,
+      "read_files": 3,
+      "written_files": 4,
+      "categories": {
+        "access_bindings_or_marker": {
+          "open_calls": 6,
+          "read_calls": 5,
+          "write_calls": 1,
+          "read_bytes": 297235,
+          "write_bytes": 59447,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 226,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 2,
+          "read_calls": 1,
+          "write_calls": 1,
+          "read_bytes": 2150923,
+          "write_bytes": 2150935,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    },
+    {
+      "remote_facts": 256,
+      "layout": "paged",
+      "operation": "revision_by_statement_id",
+      "open_calls": 281,
+      "read_calls": 275,
+      "write_calls": 6,
+      "read_bytes": 78103,
+      "write_bytes": 3085,
+      "opened_files": 271,
+      "read_files": 265,
+      "written_files": 6,
+      "categories": {
+        "access_binding_pages": {
+          "open_calls": 264,
+          "read_calls": 263,
+          "write_calls": 1,
+          "read_bytes": 75777,
+          "write_bytes": 277,
+          "opened_files": 260,
+          "read_files": 259,
+          "written_files": 1
+        },
+        "access_bindings_or_marker": {
+          "open_calls": 5,
+          "read_calls": 5,
+          "write_calls": 0,
+          "read_bytes": 600,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "access_immutable_statements": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 226,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "access_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 1407,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "core_bridges": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 15,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_current_state_or_marker": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 525,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        },
+        "core_occupancy_metadata": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 378,
+          "write_bytes": 189,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_page_bodies": {
+          "open_calls": 3,
+          "read_calls": 2,
+          "write_calls": 1,
+          "read_bytes": 530,
+          "write_bytes": 277,
+          "opened_files": 2,
+          "read_files": 1,
+          "written_files": 1
+        },
+        "core_recovery_journal": {
+          "open_calls": 1,
+          "read_calls": 0,
+          "write_calls": 1,
+          "read_bytes": 0,
+          "write_bytes": 709,
+          "opened_files": 1,
+          "read_files": 0,
+          "written_files": 1
+        },
+        "field_configuration": {
+          "open_calls": 1,
+          "read_calls": 1,
+          "write_calls": 0,
+          "read_bytes": 278,
+          "write_bytes": 0,
+          "opened_files": 1,
+          "read_files": 1,
+          "written_files": 0
+        }
+      }
+    }
+  ]
+}

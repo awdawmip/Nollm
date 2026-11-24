@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, updated 2026-11-23.
+Repository memory feedback cycle, updated 2026-11-24.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -65,8 +65,14 @@ expressions and all twenty-three existing detailed judgments. Its
 [formation and preservation record](../../sujiben/STORED_SURFACE_IMPLEMENTATION_MAINTENANCE_20261123.md)
 records actual native descent, reader feedback and all 48 original versions retained.
 Surface reads batch the page's
-bindings and mature encounters avoid duplicate Core initialization. Local
-physical persistence remains useful next work. The follow-up
+bindings and mature encounters avoid duplicate Core initialization. The
+[local reorganization and physical-storage implementation](NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md)
+adds explicit Core/binding paging, local recovery, final-layout batches and actual
+forward-path checks. Encounter now reads first, preparing write candidates and
+pressure only when requested; singleton physical candidates need one selection.
+It passed 158 focused tests and a 16-case same-input storage-layout probe, including
+the remaining binding inventory cost for exact-ID lookup. Its explicit migration
+keeps logical geometry and evidence unchanged. The follow-up
 [top-down maintenance and reorganization study](NOLLM_TOP_DOWN_MAINTENANCE_AND_REORGANIZATION_20261123.md)
 supports forward maintenance and separate physical inventory without requiring a
 persistent reverse-coverage table. Sparse changes may benefit from optional
@@ -74,8 +80,8 @@ on-demand inverse-down lookup. Rewriting upper judgments preserves existing
 geometry; moving a fact requires comparing actual old/new reading paths, since
 zero global orphans can conceal a lost useful entry. Preserve raw Evidence,
 history, non-tree coverage and Host semantic decisions. The study includes
-copy-only experiments; it does not claim that automatic maintenance scheduling
-or a multi-action Access reorganization transaction is already implemented.
+copy-only experiments. Multi-action Access reorganization is implemented by the
+2026-11-24 change above; automatic maintenance scheduling remains separate work.
 The [native maintenance record](../../sujiben/TOP_DOWN_MAINTENANCE_20261123.md)
 updates the encountered middle judgment to `entry-traversal.v2` in place, with
 the original 68 Statement files and all detailed placements retained.

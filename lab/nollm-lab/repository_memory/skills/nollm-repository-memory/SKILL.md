@@ -32,7 +32,9 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 ```
 
 聚合页 `kind: surface` 用于观察；`kind: physical` 显示最终物理候选。
-选择一个物理入口后得到 `kind: locality`、`entry`、完整 `items` 及可放置的 `cells`。
+若本页候选只有一个物理成员，会直接显示 `physical_cell`；Host 选择后进入局部，
+无需重复选择同一个格。选择一个物理入口后得到 `kind: locality`、`entry`、完整 `items`
+和实际 `descent_candidates`。默认只读，不枚举写位置、不计算写入压力。
 候选的 `text_truncated: true` 表示显示的正文被截短；`truncated: true` 表示
 还有未显示的表达，两者分别报告。在局部页面阅读完整判断与条件。
 根据其中的正文、来源和可用位置作语义决定。运行脚本的助手就是 Host；程序不会
@@ -54,6 +56,15 @@ python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file 
 | 语义关系或位置尚不确定 | `--defer` | 暂缓写入 |
 
 使用 `items` 的当前 ID 或 `cells` 的位置 ID；所有决定沿用同一个最终物理入口。
+需要新增或搬移时，先用同一会话执行 `--prepare-write`，观察返回的 `cells`；
+需要支撑压力时再显式加 `--pressure`。`--no-pressure` 停止压力计算，
+`--read-only` 停止写位置准备。修订、支持与召回已有事实不要求先枚举新位置。
+这些选项与终结动作分两次调用，先观察再决定。
+
+```sh
+python3 "$cli" project --field "$field" encounter --cursor-file "$session" --prepare-write
+```
+
 写入时正文经 stdin 传入，并提供实际读过的 Git 来源窗口：
 
 ```sh
@@ -76,6 +87,11 @@ python3 "$cli" project --field "$field" encounter --cursor-file "$session" \
 `--steps` 控制传播步数，`--beam` 控制每步保留的物理候选数，`--limit` 控制返回表达数。
 `--via local` 使用上下 Coverage 和侧向邻接，`connected` 还使用已有定向桥，
 `vertical` 只用上下 Coverage，`lateral` 只用侧向邻接。
+`downward` 只沿实际向下覆盖。`--descend CELL_ID` 选择本页显示的相邻下层，
+`--ascend` 沿本次路径返回，最初 `entry` 不变。入口层由 `--surface-layers` 指定，
+可写层由 `--layers` 指定；局部只准备当前焦点及相邻层。配置内容预算的场，
+新增层也要配置预算。向下模式的普通新增要求目标为当前格或实际向下可读格；
+只有向上支撑的候选不满足这条读取路径。
 按当前问题显式调整，并检查返回的预算状态；在同一局部修改参数会从原入口重新展开。
 先观察调整后的局部，再在另一次调用中选择终结动作。
 物理层与聚合观察阶是不同参数；跨层传播或距离本身不证明语义关系。
@@ -83,6 +99,16 @@ python3 "$cli" project --field "$field" encounter --cursor-file "$session" \
 已有 `project/em walk` 保留为只读的逐页观察及单入口召回工具。
 它不自动选择任务入口。`save --at Q R|--reuse ID|--revise ID` 保留为已完成
 Host 决定时的显式直接写入接口；日常形成和查询优先共用上述 encounter。
+
+## 局部重新组织和物理分页
+
+后继 Host 可以按读到的事实重新提炼上层、改写中层、搬移下层，并保留原始表达。
+使用同一相遇积累的观察编写计划，经 `--reorganize PLAN_JSON` 一次提交；
+容量按最终布局检查，改变的当前表达须有实际向下读取路径。
+若还要保留其他已知入口，明确列出要回读的路径。完整计划格式、失败后的处理与
+显式物理分页命令见 [局部重组与存放](references/local-reorganization.md)。
+表层满了时先提炼或重组；新的更粗表层、内容预算与入口配置可以一起切换。
+程序不自动决定分类、不维护语义父目录，也不保证未列出的旧入口仍然好找。
 
 ## 回源、修订与交接
 

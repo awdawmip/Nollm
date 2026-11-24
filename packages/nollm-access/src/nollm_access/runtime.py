@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from base64 import b64decode, b64encode
 from dataclasses import dataclass
 from hashlib import sha256
+import json
 from pathlib import Path
 from threading import RLock
 
-from nollm_core import AtomHandle, CoreRuntime, MemoryAtom
+from nollm_core import AtomHandle, CoreRuntime
 
-from .content_budget import ContentBudgetPolicy, validate_content_change
-from .statement_store import StatementStore
+from .content_budget import ContentBudgetPolicy, validate_content_projection
+from .statement_store import StatementStore, _atomic_write
 from .handle_store import FileHandleStore
 from .placement_contract import AccessDecision
 from .recall import AccessRecallItem, AccessRecallRequest, AccessRecallResult
+from .reorganization import project_reorganization, reorganization_handles
 from .statement import MemoryStatement
 from .workspace_lock import composition_lock
 
@@ -37,6 +40,12 @@ class AccessRuntime:
         self._lifecycle_lock = RLock()
         self._state = "OPEN"
         self._last_commit_state = "pre_commit"
+        self._reorganization_path = access_root / "access" / "reorganization.pending.json"
+        with self._composition_lock, self._core.operation_lease():
+            if self._reorganization_path.exists():
+                self._recover_reorganization()
+                if content_budget is None:
+                    self._content_budget = ContentBudgetPolicy.load(access_root)
 
     @property
     def core(self) -> CoreRuntime:
@@ -88,15 +97,25 @@ class AccessRuntime:
         self.close()
 
     @contextmanager
-    def _operation(self):
+    def reorganization_scope(self):
+        """Hold Access coordination locks across Host planning and public calls.
+
+        Individual operations acquire their own Core lease, so adapters may
+        invoke public Access and Core APIs while this scope is held.
+        """
         with self._lifecycle_lock:
             if self._state != "OPEN":
                 raise RuntimeError(f"AccessRuntime is {self._state.lower()}")
             with self._composition_lock:
                 if not self._core.is_open:
                     raise RuntimeError("AccessRuntime Core is closed")
-                with self._core.operation_lease():
-                    yield
+                yield
+
+    @contextmanager
+    def _operation(self):
+        with self.reorganization_scope():
+            with self._core.operation_lease():
+                yield
 
     def capture(self, statement: MemoryStatement) -> None:
         self.put_statement(statement)
@@ -114,6 +133,181 @@ class AccessRuntime:
     def apply(self, decision: AccessDecision) -> object | None:
         with self._operation():
             return self._apply_locked(decision)
+
+    def reorganize(
+        self,
+        decisions: tuple[AccessDecision, ...],
+        *,
+        statements: tuple[MemoryStatement, ...] = (),
+        content_budget: ContentBudgetPolicy | None = None,
+        configuration_files: dict[Path, bytes] | None = None,
+    ) -> tuple[object, ...]:
+        """Apply explicit Host changes as one final-layout operation.
+
+        Configuration paths are field-relative internal inputs; the calling Host
+        adapter validates which settings it permits. Captured Statements remain
+        readable after a later commit failure. On interruption, the next Access
+        open restores the affected cells, bindings and settings before use.
+        """
+        if not isinstance(decisions, tuple) or not isinstance(statements, tuple):
+            raise TypeError("reorganization decisions and statements must be tuples")
+        handles = reorganization_handles(decisions)
+        configuration = {}
+        for relative, payload in (configuration_files or {}).items():
+            relative = Path(relative)
+            if relative.is_absolute() or ".." in relative.parts or relative == Path("."):
+                raise ValueError("configuration path must be relative to this field")
+            if relative == Path("access/content_budget.json"):
+                raise ValueError("use content_budget for the content budget configuration")
+            if relative == Path("access/reorganization.pending.json"):
+                raise ValueError("configuration cannot replace its reorganization recovery record")
+            if not isinstance(payload, bytes):
+                raise TypeError("configuration values must be bytes")
+            configuration[relative] = payload
+        if content_budget is not None:
+            configuration[Path("access/content_budget.json")] = (
+                json.dumps(content_budget.to_mapping(), ensure_ascii=False, indent=2) + "\n"
+            ).encode("utf-8")
+        if not decisions and not configuration:
+            raise ValueError("reorganization requires a decision or configuration change")
+
+        with self._operation():
+            return self._reorganize_locked(decisions, statements, content_budget, configuration, handles)
+
+    def _reorganize_locked(
+        self, decisions, statements, content_budget, configuration, handles,
+        *, fresh_statement_ids=frozenset(),
+    ) -> tuple[object, ...]:
+        self._set_commit_state("pre_commit")
+        supplied = {}
+        fresh = set(fresh_statement_ids)
+        for statement in statements:
+            if not isinstance(statement, MemoryStatement):
+                raise TypeError("reorganization statements must be MemoryStatement values")
+            identity = statement.statement_id
+            if identity in supplied and supplied[identity] != statement:
+                raise ValueError("conflicting supplied Statement versions")
+            if self._evidence_store.exists(identity):
+                if self._get_statement(identity) != statement:
+                    raise FileExistsError("statement already exists with different content")
+            else:
+                fresh.add(identity)
+            supplied[identity] = statement
+        needed = {decision.statement_id for decision in decisions if decision.action in {
+            "new", "revision_keep_history", "revision_current", "reuse",
+        }}
+        available = dict(supplied)
+        for identity in needed - available.keys():
+            available[identity] = self._get_statement(identity)
+
+        addresses = tuple(sorted({handle.geometry_address for handle in handles},
+                                 key=lambda cell: cell.stable_key()))
+        before_cells = {
+            cell: {handle.local_atom_id: atom for handle, atom in self._core.atoms_at(cell)}
+            for cell in addresses
+        }
+        bindings = self._handle_store.bindings_for_handles(handles)
+        unavailable = set()
+        # New immutable IDs cannot already have a valid binding. Historical
+        # IDs require a physical lookup to preserve one binding per ID.
+        for identity in needed - fresh:
+            try:
+                existing = self._handle_store.get(identity)
+            except KeyError:
+                continue
+            if existing not in handles:
+                unavailable.add(identity)
+        plan = project_reorganization(decisions, available, before_cells, bindings,
+                                      frozenset(unavailable))
+        next_budget = content_budget if content_budget is not None else self._content_budget
+        validate_content_projection(self._core, next_budget, before_cells, plan.final_cells,
+                                    check_all_layers=content_budget is not None)
+
+        # Capture follows successful preflight and remains independent of
+        # later placement: rollback never deletes accepted Evidence.
+        for statement in supplied.values():
+            if hasattr(self._evidence_store, "put"):
+                self._evidence_store.put(statement)
+            else:
+                self._evidence_store.put_original(statement)
+        bindings_changed = plan.final_bindings != bindings
+        if not plan.commands and not bindings_changed and not configuration:
+            self._set_commit_state("committed")
+            return plan.results
+        before_policy = self._content_budget
+        record = {
+            "schema_version": "nollm_access_reorganization_undo_v1",
+            "core_before": self._core.export_cell_state(addresses).decode("utf-8") if plan.commands else None,
+            "bindings_before": self._handle_store.export_handle_state(handles).decode("utf-8") if bindings_changed else None,
+            "configuration_before": {},
+        }
+        for relative in configuration:
+            path = self._canonical_access_root / relative
+            record["configuration_before"][relative.as_posix()] = (
+                b64encode(path.read_bytes()).decode("ascii") if path.exists() else None
+            )
+        _atomic_write(self._reorganization_path,
+                      (json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8"))
+        try:
+            self._set_commit_state("commit_state_unknown")
+            core_results = self._core.apply_batch(plan.commands) if plan.commands else ()
+            if bindings_changed:
+                self._handle_store.replace_handles(handles, plan.final_bindings,
+                                                   fresh_statement_ids=tuple(sorted(fresh)))
+            for relative, payload in configuration.items():
+                _atomic_write(self._canonical_access_root / relative, payload)
+            self._reorganization_path.unlink()
+        except Exception as original:
+            failures = self._restore_reorganization(record)
+            if failures:
+                self._mark_failed("commit_state_unknown")
+                raise AccessConsistencyError(original, failures) from original
+            self._content_budget = before_policy
+            self._set_commit_state("rolled_back_failure")
+            raise
+        except BaseException:
+            self._mark_failed("commit_state_unknown")
+            raise
+        self._content_budget = next_budget
+        self._set_commit_state("committed")
+        return tuple(core_results[index] if index is not None else result
+                     for index, result in zip(plan.command_indexes, plan.results))
+
+    def _restore_reorganization(self, record: dict[str, object]) -> tuple["AccessRollbackFailure", ...]:
+        failures = []
+        for name, payload, restore in (
+            ("core", record["core_before"], self._core.import_cell_state),
+            ("binding", record["bindings_before"], self._handle_store.import_handle_state),
+        ):
+            if payload is not None:
+                try:
+                    restore(payload.encode("utf-8"))
+                except Exception as error:
+                    failures.append(AccessRollbackFailure.from_error(name, error))
+        for relative, payload in record["configuration_before"].items():
+            try:
+                path = self._canonical_access_root / relative
+                if payload is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    _atomic_write(path, b64decode(payload))
+            except Exception as error:
+                failures.append(AccessRollbackFailure.from_error(relative, error))
+        if not failures:
+            try:
+                self._reorganization_path.unlink(missing_ok=True)
+            except Exception as error:
+                failures.append(AccessRollbackFailure.from_error("reorganization_record", error))
+        return tuple(failures)
+
+    def _recover_reorganization(self) -> None:
+        record = json.loads(self._reorganization_path.read_text(encoding="utf-8"))
+        if record.get("schema_version") != "nollm_access_reorganization_undo_v1":
+            raise ValueError("unsupported Access reorganization recovery record")
+        failures = self._restore_reorganization(record)
+        if failures:
+            self._mark_failed("commit_state_unknown")
+            raise AccessConsistencyError(RuntimeError("interrupted Access reorganization"), failures)
 
     def apply_if_state(
         self,
@@ -144,7 +338,10 @@ class AccessRuntime:
                     self._evidence_store.put(statement)
                 else:
                     self._evidence_store.put_original(statement)
-                result = self._apply_locked(decision)
+                result = self._apply_locked(
+                    decision, fresh_statement_ids=frozenset((statement.statement_id,))
+                    if not existed_before else frozenset(),
+                )
             except Exception:
                 if not existed_before and hasattr(self._evidence_store, "discard_new"):
                     self._evidence_store.discard_new(statement)
@@ -161,63 +358,13 @@ class AccessRuntime:
                 "committed", result, not existed_before, current
             )
 
-    def _apply_locked(self, decision: AccessDecision) -> object | None:
+    def _apply_locked(self, decision: AccessDecision, *, fresh_statement_ids=frozenset()) -> object | None:
         self._set_commit_state("pre_commit")
-        if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "defer"} and not self._evidence_store.exists(decision.statement_id):
-            raise FileNotFoundError("original Evidence is missing")
-        if decision.action == "reuse":
-            assert decision.existing_handle is not None
-            self._get_statement(decision.statement_id)
-            if not self._core.contains(decision.existing_handle):
-                raise KeyError("explicit reuse handle no longer exists")
-            try:
-                existing = self._handle_store.binding_for_handle(decision.existing_handle)
-            except KeyError:
-                existing = None
-            if existing is not None and existing.current_statement_id == decision.statement_id:
-                self._set_commit_state("committed")
-                return decision.existing_handle
-            self._handle_store.put(decision.statement_id, decision.existing_handle)
-            self._set_commit_state("committed")
-            return decision.existing_handle
-        if decision.action == "new":
-            assert decision.target_cell is not None
-            statement = self._get_statement(decision.statement_id)
-            validate_content_change(self._core, self._content_budget, decision.target_cell,
-                                    statement.content_utf8)
-            return self._atomic(
-                lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
-                lambda handle: self._handle_store.put(statement.statement_id, handle),
-            )
-        if decision.action == "move":
-            assert decision.existing_handle is not None and decision.target_cell is not None
-            self._get_statement(decision.statement_id)
-            validate_content_change(self._core, self._content_budget, decision.target_cell,
-                                    self._core.get(decision.existing_handle).payload_utf8,
-                                    removing=decision.existing_handle)
-            return self._atomic(
-                lambda: self._core.move(decision.existing_handle, decision.target_cell),
-                lambda handle: self._handle_store.move_handle(decision.existing_handle, handle),
-            )
-        if decision.action == "revision_current":
-            assert decision.existing_handle is not None
-            statement = self._get_statement(decision.statement_id)
-            validate_content_change(self._core, self._content_budget,
-                                    decision.existing_handle.geometry_address,
-                                    statement.content_utf8, removing=decision.existing_handle)
-            return self._atomic(
-                lambda: self._core.replace(decision.existing_handle, statement.content_utf8),
-                lambda handle: self._handle_store.revise_current(decision.existing_handle, statement.statement_id, handle),
-            )
-        if decision.action == "revision_keep_history":
-            assert decision.target_cell is not None
-            statement = self._get_statement(decision.statement_id)
-            validate_content_change(self._core, self._content_budget, decision.target_cell,
-                                    statement.content_utf8)
-            return self._atomic(
-                lambda: self._core.put(MemoryAtom(statement.statement_id, statement.content_utf8), decision.target_cell),
-                lambda handle: self._handle_store.put(statement.statement_id, handle),
-            )
+        if decision.action in {"new", "reuse", "revision_current", "revision_keep_history", "move", "forget"}:
+            handles = reorganization_handles((decision,))
+            return self._reorganize_locked(
+                (decision,), (), None, {}, handles, fresh_statement_ids=fresh_statement_ids,
+            )[0]
         if decision.action == "stitch":
             assert decision.bridge_spec is not None
             result = self._core.bridge_add(decision.bridge_spec)
@@ -229,13 +376,9 @@ class AccessRuntime:
             self._set_commit_state("committed")
             return result
         if decision.action == "defer":
+            if not self._evidence_store.exists(decision.statement_id):
+                raise FileNotFoundError("original Evidence is missing")
             return None
-        if decision.action == "forget":
-            assert decision.existing_handle is not None
-            return self._atomic(
-                lambda: self._core.remove(decision.existing_handle),
-                lambda _atom: self._handle_store.remove_handle(decision.existing_handle),
-            )
         raise AssertionError("unreachable Access action")
 
     def recall(self, request: AccessRecallRequest) -> AccessRecallResult:
@@ -261,7 +404,8 @@ class AccessRuntime:
                     if statement.content_utf8 != item.atom.payload_utf8:
                         items.append(AccessRecallItem(item.handle, statement.statement_id, None, item.score_q16, "evidence_payload_mismatch", item.path))
                     else:
-                        items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8, item.score_q16, path=item.path))
+                        items.append(AccessRecallItem(item.handle, statement.statement_id, statement.content_utf8,
+                                                      item.score_q16, path=item.path, statement=statement))
             return AccessRecallResult(result.request_id, tuple(items), result.budget_exhausted)
 
     def saved_handle(self, statement_id: str) -> AtomHandle:
@@ -272,36 +416,6 @@ class AccessRuntime:
         if hasattr(self._evidence_store, "get"):
             return self._evidence_store.get(statement_id)
         return self._evidence_store.get_original(statement_id)
-
-    def _atomic(self, core_action: object, binding_action: object) -> object:
-        core_before = self._core.export_state_bytes()
-        binding_before = self._handle_store.state_bytes()
-        try:
-            result = core_action()
-            self._set_commit_state("commit_state_unknown")
-            binding_action(result)
-            self._set_commit_state("committed")
-            return result
-        except Exception as original:
-            failures: list[AccessRollbackFailure] = []
-            try:
-                self._core.import_state_bytes(core_before)
-            except Exception as error:
-                failures.append(AccessRollbackFailure.from_error("core", error))
-            try:
-                self._handle_store.import_state(binding_before)
-            except Exception as error:
-                failures.append(AccessRollbackFailure.from_error("binding", error))
-            if failures:
-                self._mark_failed("commit_state_unknown")
-                raise AccessConsistencyError(original, tuple(failures)) from original
-            self._set_commit_state("rolled_back_failure")
-            raise
-        except BaseException:
-            # Exception subclasses receive rollback. Process-control BaseException
-            # subclasses are conservatively indeterminate and poison this runtime.
-            self._mark_failed("commit_state_unknown")
-            raise
 
     def _set_commit_state(self, state: str) -> None:
         with self._lifecycle_lock:

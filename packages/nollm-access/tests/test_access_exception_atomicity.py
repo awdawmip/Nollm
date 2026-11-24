@@ -108,7 +108,7 @@ def test_fatal_rollback_preserves_all_diagnostics_and_poisons_runtime(tmp_path, 
         raise PermissionError("core rollback failed")
 
     monkeypatch.setattr(store, "_write_bytes", fail_binding)
-    monkeypatch.setattr(core, "import_state_bytes", fail_core_rollback)
+    monkeypatch.setattr(core, "import_cell_state", fail_core_rollback)
     with pytest.raises(AccessConsistencyError) as raised:
         access.apply(decision("candidate", "new", target_cell=cell(0)))
 
@@ -127,7 +127,8 @@ def test_fatal_rollback_preserves_all_diagnostics_and_poisons_runtime(tmp_path, 
     core.close()
     with CoreRuntime(tmp_path / "core") as reopened_core:
         reopened = AccessRuntime(reopened_core, FileEvidenceStore(tmp_path), FileHandleStore(tmp_path))
-        assert reopened_core.placement_count() == 1
+        # Opening Access consumes the retained local recovery record before use.
+        assert reopened_core.placement_count() == 0
         with pytest.raises(KeyError):
             reopened.saved_handle("candidate")
 
@@ -140,7 +141,7 @@ def test_base_exception_is_indeterminate_and_poisons_runtime(tmp_path, monkeypat
     def interrupt(*_args: object) -> None:
         raise KeyboardInterrupt()
 
-    monkeypatch.setattr(core, "put", interrupt)
+    monkeypatch.setattr(core, "apply_batch", interrupt)
     with pytest.raises(KeyboardInterrupt):
         access.apply(decision("candidate", "new", target_cell=cell(0)))
     assert access.lifecycle_state == "FAILED"
@@ -155,14 +156,14 @@ def test_direct_core_mutation_waits_for_complete_access_transaction(tmp_path, mo
     binding_entered = Event()
     release_binding = Event()
     direct_done = Event()
-    original_put = store.put
+    original_replace = store.replace_handles
 
-    def blocked_binding(*args: object) -> None:
+    def blocked_binding(*args: object, **kwargs: object) -> None:
         binding_entered.set()
         assert release_binding.wait(5)
-        original_put(*args)
+        original_replace(*args, **kwargs)
 
-    monkeypatch.setattr(store, "put", blocked_binding)
+    monkeypatch.setattr(store, "replace_handles", blocked_binding)
     access_thread = Thread(target=lambda: access.apply(decision("access", "new", target_cell=cell(0))))
     direct_thread = Thread(target=lambda: (core.put(MemoryAtom("direct", "direct"), cell(1)), direct_done.set()))
     access_thread.start()

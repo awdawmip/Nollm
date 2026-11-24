@@ -49,7 +49,7 @@ class InstalledSkillTest(unittest.TestCase):
             def encounter(*args, **kwargs):
                 return project("encounter", "--cursor-file", cursor, *args, **kwargs)
 
-            empty = encounter()
+            empty = encounter("--prepare-write")
             self.assertEqual(empty["kind"], "physical")
             self.assertNotIn("entry", empty)
             local = encounter(empty["candidates"][0]["id"])
@@ -63,13 +63,15 @@ class InstalledSkillTest(unittest.TestCase):
             self.assertFalse(cursor.exists())
 
             page = encounter()
-            observed = []
-            while page["kind"] != "locality":
-                observed.append(page["kind"])
-                self.assertNotIn("entry", page)
-                page = encounter(page["candidates"][0]["id"])
-            self.assertIn("surface", observed)
-            self.assertIn("physical", observed)
+            self.assertEqual(page["kind"], "surface")
+            self.assertNotIn("entry", page)
+            candidate, = page["candidates"]
+            self.assertEqual(candidate["physical_cell"], local["entry"])
+            self.assertTrue(candidate["selects_single_physical_entry"])
+            page = encounter(candidate["id"])
+            self.assertEqual(page["kind"], "locality")
+            self.assertFalse(page["write_prepared"])
+            self.assertEqual(page["cells"], [])
             self.assertEqual([item["id"] for item in page["items"]], ["reader.v1"])
             recalled = encounter("--recall", "reader.v1")
             self.assertEqual(recalled["effect"], "recall")
