@@ -18,6 +18,7 @@ from nollm_core import (
 
 from coverage_cli import address, coords, require_field, surface
 from repo_notes import _commit, _git
+from source_snapshot import SourceSnapshot
 
 
 SCOPE = PhysicalFieldScope("default_dream_v1", "default", (0,), 0)
@@ -31,10 +32,22 @@ KERNELS = {
 
 
 def save(field, repo, rev, note_id, body, citations, at, revise, reuse=None, *,
-         layer=0, write_policy_id=ACTIVE_SEMANTIC_WRITE_POLICY_ID):
-    commit = _commit(repo, rev)
-    return save_statement(field, note_id, body, [f"{commit}:{citation}" for citation in citations],
+         layer=0, write_policy_id=ACTIVE_SEMANTIC_WRITE_POLICY_ID, snapshot=None):
+    sources = fixed_sources(repo, rev, citations, snapshot=snapshot)
+    return save_statement(field, note_id, body, sources,
                           at, revise, reuse, layer=layer, write_policy_id=write_policy_id)
+
+
+def fixed_sources(repo, rev, citations, *, snapshot=None):
+    """Pin Host-selected citations from one explicit source provider."""
+    if snapshot is not None:
+        if repo is not None:
+            raise ValueError("choose one source provider: Git repo or snapshot")
+        return SourceSnapshot(snapshot).citations(citations, rev)
+    if repo is None:
+        raise ValueError("source citations need --repo or --snapshot")
+    commit = _commit(repo, rev)
+    return [f"{commit}:{citation}" for citation in citations]
 
 
 def save_statement(field, note_id, body, sources, at, revise, reuse=None, *,
@@ -140,7 +153,11 @@ def _revision_continuation(field, statement):
     return {"scope": "native_revision_slot", "status": status, "candidates": candidates}
 
 
-def excerpt(repo, reference):
+def excerpt(repo, reference, *, snapshot=None):
+    if snapshot is not None:
+        if repo is not None:
+            raise ValueError("choose one source provider: Git repo or snapshot")
+        return SourceSnapshot(snapshot).excerpt(reference)
     blob, fragment = reference.rsplit("#L", 1)
     start, _, end = fragment.partition("-L")
     first, last = int(start), int(end or start)
@@ -674,7 +691,9 @@ def main(argv=None, *, default_field=None):
     decision.add_argument("--reorganize", type=Path, metavar="PLAN_JSON",
                           help="apply an explicit local reorganization plan to observed items and cells")
     meet.add_argument("--id", help="immutable statement version ID for new, reuse or revise")
-    meet.add_argument("--repo", type=Path, help="source Git checkout for new, reuse or revise")
+    meet_source = meet.add_mutually_exclusive_group()
+    meet_source.add_argument("--repo", type=Path, help="source Git checkout for new, reuse or revise")
+    meet_source.add_argument("--snapshot", type=Path, help="fixed portable source snapshot for new citations")
     meet.add_argument("--rev", default="HEAD", help="source revision for new citations")
     meet.add_argument("--cite", action="append", help="PATH#Lfirst-Llast (repeatable); statement body comes from stdin")
     search = commands.add_parser("find", help="case-insensitive literal in current IDs or bodies (auxiliary)")
@@ -698,7 +717,9 @@ def main(argv=None, *, default_field=None):
     placement.add_argument("--reuse", help="ID of the current judgment supported by this new expression")
     write.add_argument("--cite", action="append", required=True, help="PATH#Lfirst-Llast (repeatable)")
     for command in (source, write):
-        command.add_argument("--repo", type=Path, required=True, help="the source Git checkout paired with this field")
+        provider = command.add_mutually_exclusive_group(required=True)
+        provider.add_argument("--repo", type=Path, help="the source Git checkout paired with this field")
+        provider.add_argument("--snapshot", type=Path, help="fixed portable source snapshot paired with this field")
         command.add_argument("--rev", default="HEAD", help="source revision for a new citation or direct --at window")
 
     args = parser.parse_args(argv)
@@ -706,18 +727,21 @@ def main(argv=None, *, default_field=None):
         result = save(args.field, args.repo, args.rev, args.id, sys.stdin.read().strip(),
                       args.cite, args.at, args.revise, args.reuse, layer=args.layer,
                       write_policy_id=(EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID
-                                       if args.experimental_multilayer else ACTIVE_SEMANTIC_WRITE_POLICY_ID))
+                                       if args.experimental_multilayer else ACTIVE_SEMANTIC_WRITE_POLICY_ID),
+                      snapshot=args.snapshot)
     elif args.op == "show":
         result = describe(args.field, args.id)
     elif args.op == "source":
+        snapshot = SourceSnapshot(args.snapshot) if args.snapshot is not None else None
         if args.id is None:
-            reference = f"{_commit(args.repo, args.rev)}:{args.at}"
+            commit = snapshot.revision(args.rev) if snapshot else _commit(args.repo, args.rev)
+            reference = f"{commit}:{args.at}"
         else:
             sources = describe(args.field, args.id)["sources"]
             if not 1 <= args.number <= len(sources):
                 raise IndexError(f"choose source 1..{len(sources)}")
             reference = sources[args.number - 1]
-        print(excerpt(args.repo, reference))
+        print(snapshot.excerpt(reference) if snapshot else excerpt(args.repo, reference))
         return
     elif args.op == "walk":
         path = args.cursor_file
@@ -747,9 +771,9 @@ def main(argv=None, *, default_field=None):
         if selected is not None and args.ascend:
             parser.error("observe the returned focus before choosing an outcome")
         if selected is not None and selected[0] in {"new", "reuse", "revision"}:
-            if not args.id or args.repo is None or not args.cite:
-                parser.error("new, reuse and revise need --id, --repo and --cite, with the body on stdin")
-            sources = [f"{_commit(args.repo, args.rev)}:{citation}" for citation in args.cite]
+            if not args.id or (args.repo is None and args.snapshot is None) or not args.cite:
+                parser.error("new, reuse and revise need --id, --repo or --snapshot, and --cite, with the body on stdin")
+            sources = fixed_sources(args.repo, args.rev, args.cite, snapshot=args.snapshot)
             body = sys.stdin.read().strip()
         else:
             sources, body = None, None

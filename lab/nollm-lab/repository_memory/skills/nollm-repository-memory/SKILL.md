@@ -5,7 +5,8 @@ description: "用 Nollm 原生场理解和维护本地 Git 项目记忆。适用
 
 # Nollm 仓库记忆
 
-使用正在加载的本 skill 的 `scripts/memory.py`。需要 Python 3.11+ 和 Git。
+使用正在加载的本 skill 的 `scripts/memory.py`。需要 Python 3.11+；Git 来源使用 Git，
+显式便携来源快照可直接回源。
 普通项目记忆统一走 `project --field FIELD encounter`；进取数论的已有研究场走
 `em --field FIELD encounter`。Host 负责理解、选择入口和判断新内容的关系，Core 执行几何与持久化，
 Access 返回正文及固定来源。
@@ -122,6 +123,12 @@ python3 "$cli" project --field "$field" source --id "$statement_id" --number 1 -
 修订后旧版本仍可精确展开。`source` 返回固定提交的原文行。
 形成首条理解时，可用 `source --at PATH#Lfirst-Llast --repo "$repo" --rev COMMIT`
 打开指定源码窗口。
+
+独立部署附带固定原文快照时，用 `--snapshot SNAPSHOT_DIR` 替换 `--repo`；
+`source`、`save` 和相遇中的新建／支持／修订均支持这一来源。
+快照保存 `snapshot.json` 和 `files/原路径`，按已遇到的固定引用读取原文，
+不参与选择入口或召回。缺失原文、字节不符、不同提交和越界行号会明确报错。
+快照下的 `--rev HEAD` 指该快照的固定提交。
 
 代码变化后按 `git diff` 与已保存来源核查受影响的判断，由 Host 决定保留、补充、修订
 或调整连接。文件变化本身不触发全场重排。用 `links [ID]` 观察当前连接，

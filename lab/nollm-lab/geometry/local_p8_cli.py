@@ -19,8 +19,12 @@ import json
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path[:0] = [str(ROOT / "packages/nollm-core/src"), str(ROOT / "lab/nollm-lab")]
+HERE = Path(__file__).resolve()
+if (HERE.parent.parent / "nollm_core").is_dir():
+    sys.path.insert(0, str(HERE.parent.parent))
+else:
+    ROOT = HERE.parents[3]
+    sys.path[:0] = [str(ROOT / "packages/nollm-core/src"), str(ROOT / "lab/nollm-lab")]
 
 from nollm_core import GeometryAddress
 from geometry.rational_coverage import evaluate_rational_pressure, sampled_rational_coverage

@@ -18,6 +18,7 @@ AUXILIARY_TOOLS = {
     "check-marks": "check_marks.py",
     "aoci": "geometry_cli.py",
     "aoci-field": "native_geo.py",
+    "local-p8": "geometry/local_p8_cli.py",
 }
 BASELINE_TOOLS = {
     "recall": "task_recall.py",

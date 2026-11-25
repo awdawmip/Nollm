@@ -333,6 +333,7 @@ class AccessRuntime:
                     "stale_zero_write", None, False, current
                 )
             existed_before = self._evidence_store.exists(statement.statement_id)
+            self._set_commit_state("pre_commit")
             try:
                 if hasattr(self._evidence_store, "put"):
                     self._evidence_store.put(statement)
@@ -342,14 +343,12 @@ class AccessRuntime:
                     decision, fresh_statement_ids=frozenset((statement.statement_id,))
                     if not existed_before else frozenset(),
                 )
-            except Exception:
-                if not existed_before and hasattr(self._evidence_store, "discard_new"):
-                    self._evidence_store.discard_new(statement)
-                raise
             except BaseException:
+                # An unknown placement may still reference this Evidence. Keep
+                # it through recovery; clean up only an uncommitted attempt.
                 if (
                     not existed_before
-                    and self._last_commit_state == "pre_commit"
+                    and self._last_commit_state in {"pre_commit", "rolled_back_failure"}
                     and hasattr(self._evidence_store, "discard_new")
                 ):
                     self._evidence_store.discard_new(statement)

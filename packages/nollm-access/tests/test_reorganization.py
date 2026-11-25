@@ -1,5 +1,6 @@
 """Behavioral checks for final-layout, recoverable local Host reorganization."""
 from contextlib import contextmanager
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -7,11 +8,11 @@ import json
 import unittest
 
 from nollm_access import (
-    AccessDecision, AccessRuntime, ContentBudgetExceeded, ContentBudgetPolicy,
+    AccessConsistencyError, AccessDecision, AccessRuntime, ContentBudgetExceeded, ContentBudgetPolicy,
     EXPERIMENTAL_MULTILAYER_WRITE_POLICY_ID, FileHandleStore, FileStatementStore,
     LayerContentBudget, MemoryStatement,
 )
-from nollm_core import CoreRuntime, GeometryAddress
+from nollm_core import AtomHandle, CoreRuntime, GeometryAddress
 import nollm_access.runtime as runtime_module
 
 
@@ -251,6 +252,60 @@ class ReorganizationTests(unittest.TestCase):
                 first.apply(decision("shared", "new", target_cell=cell()))
             self.assertEqual(core.placement_count(), 1)
             self.assertEqual(first.handle_store.get("shared").geometry_address, cell(128))
+
+    def test_conditional_unknown_commit_preserves_evidence_through_recovery(self):
+        statement = MemoryStatement("candidate", "original input remains recoverable")
+        with opened(self.root) as (access, core):
+            expected = sha256(core.export_state_bytes()).hexdigest()
+            with patch.object(access.handle_store, "replace_handles", side_effect=OSError("binding write failed")), \
+                    patch.object(core, "import_cell_state", side_effect=OSError("core rollback failed")):
+                with self.assertRaises(AccessConsistencyError):
+                    access.apply_if_state(expected, statement,
+                                          decision("candidate", "new", target_cell=cell()))
+            self.assertEqual(access.last_commit_state, "commit_state_unknown")
+            self.assertEqual(core.get(AtomHandle(cell(), "candidate")).payload_utf8,
+                             statement.content_utf8)
+            self.assertEqual(access.statement_store.get("candidate"), statement)
+            self.assertTrue((self.root / "access/reorganization.pending.json").is_file())
+        with opened(self.root) as (access, core):
+            self.assertEqual(core.placement_count(), 0)
+            self.assertEqual(access.statement_store.get("candidate"), statement)
+            self.assertFalse((self.root / "access/reorganization.pending.json").exists())
+
+    def test_conditional_known_rollback_discards_only_its_new_statement(self):
+        with opened(self.root) as (access, core):
+            expected = sha256(core.export_state_bytes()).hexdigest()
+            replace = access.handle_store.replace_handles
+            failed = False
+
+            def fail_once(*args, **kwargs):
+                nonlocal failed
+                if not failed:
+                    failed = True
+                    raise OSError("binding write failed")
+                return replace(*args, **kwargs)
+
+            with patch.object(access.handle_store, "replace_handles", side_effect=fail_once):
+                with self.assertRaisesRegex(OSError, "binding write failed"):
+                    access.apply_if_state(expected, MemoryStatement("candidate", "input"),
+                                          decision("candidate", "new", target_cell=cell()))
+            self.assertEqual(access.last_commit_state, "rolled_back_failure")
+            self.assertEqual(core.placement_count(), 0)
+            self.assertFalse(access.statement_store.exists("candidate"))
+
+    def test_conditional_preflight_failure_after_success_preserves_old_capture(self):
+        self.configure(max_cell_atoms=1)
+        with opened(self.root) as (access, core):
+            existing = put(access, "original", "already committed")
+            original = access.statement_store.get("original")
+            expected = sha256(core.export_state_bytes()).hexdigest()
+            with self.assertRaises(ContentBudgetExceeded):
+                access.apply_if_state(expected, MemoryStatement("extra", "extra input"),
+                                      decision("extra", "new", target_cell=cell()))
+            self.assertEqual(access.last_commit_state, "pre_commit")
+            self.assertFalse(access.statement_store.exists("extra"))
+            self.assertEqual(access.statement_store.get("original"), original)
+            self.assertEqual(core.get(existing).payload_utf8, original.content_utf8)
 
 
 if __name__ == "__main__":

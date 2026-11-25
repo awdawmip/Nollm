@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, updated 2026-11-24.
+Repository memory feedback cycle, updated 2026-11-25.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -56,6 +56,14 @@ The original 69 Statement files and all checked detail paths remain; the frozen
 test branch keeps its original field while main carries this clarification.
 
 ## Current development: Nollm self-bootstrapping
+
+The [independent deployment implementation](NOLLM_PORTABLE_DEPLOYMENT_20261125.md)
+packages an explicitly selected native field with its runtime and fixed originals.
+It supports portable source windows without a Git checkout, keeps Lab local-p8
+separate from Core Q40/96, and corrects evidence cleanup after an unknown
+conditional commit. Forty-eight focused tests passed. Real-content deployments
+retain their own formation and independent-use records; exporting a field does
+not replace the receiving knowledge system's normal entry.
 
 The user's 2026-11-23 correction makes [stored Surface formation](NOLLM_STORED_SURFACE_FORMATION_20261123.md)
 the current organization priority: compact, independently meaningful judgments
