@@ -65,6 +65,13 @@ conditional commit. Forty-eight focused tests passed. Real-content deployments
 retain their own formation and independent-use records; exporting a field does
 not replace the receiving knowledge system's normal entry.
 
+The [native maintenance](../../sujiben/PORTABLE_MAINTENANCE_20261125.md) revises
+five encountered deployment, source and recovery judgments against fixed runtime
+`a30dafca126b2b533ee86868cab10d1bc7e5e51a`. All 81 predecessor expressions remain;
+the field has 86 versions and the same 43 handles, 41 occupied cells and two
+bridges. All 43 current judgments, including 23 details, were read back through
+the existing upper entrances.
+
 The user's 2026-11-23 correction makes [stored Surface formation](NOLLM_STORED_SURFACE_FORMATION_20261123.md)
 the current organization priority: compact, independently meaningful judgments
 belong in actual upper physical cells; conditions and details unfold through

@@ -16,7 +16,7 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 
 阅读返回的已保存正文预览。在同一命令的 `encounter` 后加入本次实际显示的候选 ID；需要下一页时加入 `next`。单物理成员候选显示 `physical_cell`，选择后直接进入 `locality`；多成员继续逐步选择。局部默认读取完整当前正文、固定来源和实际下降候选。准备新增或搬移时，先在同一会话执行 `--prepare-write` 观察写格；需要支撑建议时再显式 `--pressure`。预览的 `text_truncated` 表示正文被截短，`truncated` 表示该候选还有表达未展示。`project` 与 `em` 命令都需要显式指定 `--field`。
 
-当前场已形成三层：L−2 保存8条完整短判断，共401 UTF-8字节；L−1 保存12条条件和使用关系，共2,278字节；L0 保留23条详细判断，共22,318字节。默认入口只展示 L−2，选择一个物理入口后先展开相邻 L−1，再按实际显示的 `descent_candidates` 选择下一观察位置。下面的 `CELL_ID` 必须替换为本次实际显示的格 ID：
+当前场已形成三层：L−2 保存8条完整短判断，共401 UTF-8字节；L−1 保存12条条件和使用关系，共2,397字节；L0 保留23条详细判断，共22,367字节。默认入口只展示 L−2，选择一个物理入口后先展开相邻 L−1，再按实际显示的 `descent_candidates` 选择下一观察位置。下面的 `CELL_ID` 必须替换为本次实际显示的格 ID：
 
 ```bash
 python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/memory.py \
@@ -61,6 +61,10 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 
 一条表达可以引用多个窗口，`--number` 逐一展开。`current` 只说明当前绑定；它不表示该理解已经对最新源码复核。支持表达有自己的正文和来源，历史版本也继续可读。源码变更后，先回到受影响的局部理解和真实源码，再决定维持、支持、原位修订或新增；不要仅因为仓库 HEAD 改变就重写全部理解。
 
+便携部署附带固定来源时，可用 `--snapshot SNAPSHOT_DIR` 代替 `--repo`。
+安装器只复制运行时；[显式部署器](../lab/nollm-lab/repository_memory/PORTABLE_DEPLOYMENT.md)
+另外打包选定工作场及原文，记录实际物化范围，不自动改变普通读取入口。
+
 速记本的 `field`、执行命令的运行时、保存固定提交的源码仓库分别承担不同职责。更换运行时可以继续打开原场。搬迁速记本时保留整个 `field`，同时保留可以读取来源提交的 Git 仓库；Core 快照本身不包含 Access 的绑定和全部版本正文。这一边界的实现依据是 [Core 状态](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-core/src/nollm_core/state.py#L442-L465)、[Access 绑定](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/handle_store.py#L43-L84)、[表达存储](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-access/src/nollm_access/statement_store.py#L20-L65)和 [Snapshot 委托](https://github.com/awdawmip/Nollm/blob/beaafabfe8dec4ba1c154ecd324954fa81417489/packages/nollm-snapshot/src/nollm_snapshot/service.py#L7-L24)。
 
 [形成记录](FORMATION_20261122.md)说明速记本的继承起点与补充理解；[使用与 C4 维护记录](MAINTENANCE_20261122.md)说明两轮实际消费、独立安装与换源码仓库的结果，以及受影响版本的原位修订。这些记录解释具体形成和维护依据，日常使用仍从原生场开始。
@@ -91,3 +95,8 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 它也记录安装品的独立会话试用及来源窗口纠正，不将副本试用混入活跃场。
 
 [局部p8执行器维护记录](LOCAL_P8_MAINTENANCE_20261124.md)将已观察的中层精度判断及详细量化判断分别原位修订到v3，引用固定实现 `4dcc953f7f9631f715f1cfe9761abf1f5ad00365`。新局部p8的单位、规范锚、完整地址与测量结果由原入口读回；原79份表达保留，现有81份，43个handle、41个占用格、两条桥和其余41项当前绑定保持。当前速记本仍用Core Q40/96。
+
+[便携部署与条件写恢复维护](PORTABLE_MAINTENANCE_20261125.md)按固定实现
+`a30dafca` 原位修订五条已遇到判断，保留原81份表达，现有86份版本。
+两个相遇各自从原入口读回，随后全部43条当前判断、23条详情重新逐层返回。
+43个handle、41个占用格、两条桥、入口与容量配置保持。

@@ -1,0 +1,109 @@
+{
+  "schema": "nollm_portable_maintenance_v1",
+  "runtime_commit": "a30dafca126b2b533ee86868cab10d1bc7e5e51a",
+  "original_versions": 81,
+  "version_files": 86,
+  "old_bytes_retained": true,
+  "surface_statements": 8,
+  "current_handles": 43,
+  "detail_judgments_returned": 23,
+  "all_current_returned": 43,
+  "revised_ids": [
+    "nollm.formed.-1.runtime-field.v2",
+    "nollm.installation.v5",
+    "nollm.notebook-boundaries.v2",
+    "nollm.formed.-1.versions-commit.v3",
+    "nollm.core-commit.v4"
+  ],
+  "all_revisions_current": true,
+  "all_previous_versions_readable": true,
+  "configuration_and_bridges_unchanged": true,
+  "body_changes_only_in_existing_slots": true,
+  "source_windows_read_back": 8,
+  "source_files": 7,
+  "occupied_cells": 41,
+  "bridges": 2,
+  "layers": {
+    "-2": {
+      "statements": 8,
+      "bytes": 401,
+      "occupied_cells": 8
+    },
+    "-1": {
+      "statements": 12,
+      "bytes": 2397,
+      "occupied_cells": 12
+    },
+    "0": {
+      "statements": 23,
+      "bytes": 22367,
+      "occupied_cells": 21
+    }
+  },
+  "changes": [
+    {
+      "action": "revise",
+      "target": "nollm.formed.-1.runtime-field.v1",
+      "id": "nollm.formed.-1.runtime-field.v2",
+      "text": "运行时、工作场和原文各自维护；安装器只复制运行时。显式部署器可一并打包已完成写入的场与固定原文，搬移后从Surface读场、按来源窗口回源；普通入口是否接入仍由Host决定。",
+      "sources": [
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_PORTABLE_DEPLOYMENT_20261125.md#L5-L24",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/build_deployment.py#L52-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/source_snapshot.py#L42-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/install_skill.py#L33-L68"
+      ],
+      "reason": "Host revised the actually encountered judgment against the portable deployment implementation."
+    },
+    {
+      "action": "revise",
+      "target": "nollm.installation.v4",
+      "id": "nollm.installation.v5",
+      "text": "安装运行时与导出工作场是分别选择的操作\n安装器只复制共享API、Core/Access、CLI、skill说明及显式Lab局部p8工具，已有目的目录不会被覆盖。build_deployment另外选择已完成写入的field、固定来源snapshot和运行时代码提交，在新目录生成runtime、field、snapshot和run.py。启动器默认使用包内场与原文，搬移到其他工作目录后仍可从Surface相遇、修订已遇到判断和展开原来源，无须原Git工作树。原文清单记录声明数与实际本地文件数，部分物化会明确标注；同库发布可以复用固定Git原文树。安装和导出不自动接管账户skill或另一个知识库入口。局部p8是显式Lab求值，场仍按Core Q40/96工作；兼容运行时更新也不会自动更新场内current判断。",
+      "sources": [
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_PORTABLE_DEPLOYMENT_20261125.md#L5-L24",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/build_deployment.py#L52-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/source_snapshot.py#L42-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/install_skill.py#L33-L68"
+      ],
+      "reason": "Host revised the actually encountered judgment against the portable deployment implementation."
+    },
+    {
+      "action": "revise",
+      "target": "nollm.notebook-boundaries.v1",
+      "id": "nollm.notebook-boundaries.v2",
+      "text": "速记本、运行时与固定原文承担不同职责\n工作场保存当前判断、支持表达、全部历史与几何关系；运行时负责读取和维护。固定来源可以是保存Git提交的源码仓库，也可以是便携snapshot，原文按既有commit:path#Lfirst-Llast引用读取。snapshot清单只保留文件身份，不选择入口、分类或参与原生召回；source只打开已选来源，核对Git blob字节和行号，缺失、修改或不同提交明确报错。包内原文捕获数与LLM实际形成的判断数分别记录。更新运行时、原来源仍可读、当前绑定仍在，与理解是否适合最新代码是分别核对的事实。局部原文副本不足时可以真实报告缺口，不能把完整清单当作已读或已提炼。",
+      "sources": [
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_PORTABLE_DEPLOYMENT_20261125.md#L5-L24",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/build_deployment.py#L52-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/source_snapshot.py#L42-L99",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:lab/nollm-lab/repository_memory/install_skill.py#L33-L68"
+      ],
+      "reason": "Host revised the actually encountered judgment against the portable deployment implementation."
+    },
+    {
+      "action": "revise",
+      "target": "nollm.formed.-1.versions-commit.v2",
+      "id": "nollm.formed.-1.versions-commit.v3",
+      "text": "局部批次按最终容量提交并保留已捕获表达。条件写只有确定未提交或已回滚时才清理本次新增原文；提交状态不明时保留原文与恢复记录，下次Access打开恢复布局。独立Core读者无跨文件瞬时事务保证。",
+      "sources": [
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_PORTABLE_DEPLOYMENT_20261125.md#L26-L46",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:packages/nollm-access/src/nollm_access/runtime.py#L312-L376",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:packages/nollm-access/tests/test_reorganization.py#L256-L310"
+      ],
+      "reason": "Host clarified the conditional unknown-commit evidence retention after the reproduced correction."
+    },
+    {
+      "action": "revise",
+      "target": "nollm.core-commit.v3",
+      "id": "nollm.core-commit.v4",
+      "text": "Core与Access按局部记录恢复，条件写按已知提交状态清理\nCore批次保存触及格，分页写相关物理页；Access.reorganize先检查最终布局，再捕获表达并记录格、handle与配置，失败恢复旧布局，已捕获原文保留。apply_if_state仍先核对全Core状态，匹配后把本次状态设为pre_commit；只有确定pre_commit失败或rolled_back_failure，才可删除本次新建Statement，既有原文不删。若绑定写入与Core回滚同时失败而状态不明，Core可能还引用新正文，所以必须留下原文及pending记录，运行时停止继续使用，重开Access完成恢复。新增回归实际复现修复前的原文丢失，再验证修复后重开恢复、确定回滚清理与前次成功后的预检失败。局部批次、条件写与独立Core读者的跨文件可见性须分别理解。",
+      "sources": [
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_PORTABLE_DEPLOYMENT_20261125.md#L26-L46",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:packages/nollm-access/src/nollm_access/runtime.py#L312-L376",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:packages/nollm-access/tests/test_reorganization.py#L256-L310",
+        "a30dafca126b2b533ee86868cab10d1bc7e5e51a:docs/project/NOLLM_LOCAL_REORGANIZATION_AND_STORAGE_20261124.md#L47-L99"
+      ],
+      "reason": "Host clarified the conditional unknown-commit evidence retention after the reproduced correction."
+    }
+  ]
+}
