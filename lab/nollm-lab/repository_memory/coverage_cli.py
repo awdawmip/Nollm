@@ -150,7 +150,7 @@ def _resume_surface(navigator, cursor, choices):
 
 
 def surface(field, scope, order, choices, page_size, max_calls, cursor=None, with_cursor=False, *,
-            resolve_singletons=False):
+            resolve_singletons=False, replay_call_count=None):
     """Follow explicit Host choices, from the root or the last observed page."""
     require_field(field)
     navigator = AccessSurfaceNavigator(field)
@@ -159,7 +159,15 @@ def surface(field, scope, order, choices, page_size, max_calls, cursor=None, wit
         budget = replace(RECALL_SURFACE_BUDGET, page_size=3 if page_size is None else page_size, max_calls=max_calls)
         page, start = _start_surface(navigator, field, scope, order, budget, page_size is None)
     else:
+        if replay_call_count is not None:
+            previous = navigator.state_from_mapping(cursor["state"])
+            if replay_call_count >= previous.budget.max_calls:
+                raise RuntimeError("Surface traversal call limit reached")
         page, choices = _resume_surface(navigator, cursor, choices)
+        if replay_call_count is not None:
+            # Recreate the observed IDs against the live page, then account for
+            # this extra read using the encounter's current cumulative budget.
+            page = replace(page, state=replace(page.state, call_count=replay_call_count + 1))
     for index, choice in enumerate(choices):
         physical = isinstance(page, PhysicalEntryPage)
         if choice == "next":

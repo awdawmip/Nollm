@@ -16,6 +16,10 @@ python3 lab/nollm-lab/repository_memory/skills/nollm-repository-memory/scripts/m
 
 阅读返回的已保存正文预览。在同一命令的 `encounter` 后加入本次实际显示的候选 ID；需要下一页时加入 `next`。单物理成员候选显示 `physical_cell`，选择后直接进入 `locality`；多成员继续逐步选择。局部默认读取完整当前正文、固定来源和实际下降候选。准备新增或搬移时，先在同一会话执行 `--prepare-write` 观察写格；需要支撑建议时再显式 `--pressure`。预览的 `text_truncated` 表示正文被截短，`truncated` 表示该候选还有表达未展示。`project` 与 `em` 命令都需要显式指定 `--field`。
 
+翻页后仍可选择本次相遇已经显示过的候选。程序重开原生页核对候选，并将额外
+读取计入当前预算；选定物理入口后清除临时页历史。`--page-size` 的范围为1–8。
+升级前未记录页历史的游标，需要重新开始相遇观察。
+
 当前场已形成三层：L−2 保存8条完整短判断，共401 UTF-8字节；L−1 保存12条条件和使用关系，共2,397字节；L0 保留23条详细判断，共22,367字节。默认入口只展示 L−2，选择一个物理入口后先展开相邻 L−1，再按实际显示的 `descent_candidates` 选择下一观察位置。下面的 `CELL_ID` 必须替换为本次实际显示的格 ID：
 
 ```bash

@@ -26,7 +26,10 @@ python3 "$cli" project --field "$field" encounter --cursor-file "$session"
 ```
 
 首次接手仓库和回答局部问题都从这个入口观察。读取页面预览，根据当前问题选择
-**本页显示的**候选 ID，逐次传入同一会话文件。需要续页时选择 `next`。
+**本次相遇已显示过的**候选 ID，逐次传入同一会话文件。需要续页时选择 `next`。
+翻页后仍可选择先前观察到的候选；程序会重开该原生页核对候选，并把额外读取计入
+当前观察预算。已变化或不再可用的候选需要重新观察。`--page-size` 支持1至8，
+选择物理入口后继续保持该入口。
 
 ```sh
 python3 "$cli" project --field "$field" encounter "$candidate_id" --cursor-file "$session"

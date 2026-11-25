@@ -72,6 +72,14 @@ the field has 86 versions and the same 43 handles, 41 occupied cells and two
 bridges. All 43 current judgments, including 23 details, were read back through
 the existing upper entrances.
 
+The [Surface navigation follow-up](NOLLM_SURFACE_NAVIGATION_FIX_20261125.md)
+addresses two actual independent-reader failures. An encounter can select a
+candidate observed on an earlier page by reopening its native page within the
+current cumulative budget. CLI menu widths explicitly remain 1–8. Twenty-nine
+focused tests passed; the two failed selections and oversized-width request
+were replayed on the unchanged frozen field. Original blind-reader results
+remain separate from this targeted follow-up.
+
 The user's 2026-11-23 correction makes [stored Surface formation](NOLLM_STORED_SURFACE_FORMATION_20261123.md)
 the current organization priority: compact, independently meaningful judgments
 belong in actual upper physical cells; conditions and details unfold through

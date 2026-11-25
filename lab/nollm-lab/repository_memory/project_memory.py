@@ -460,9 +460,19 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
         if cursor is None and not (field / "core/current_state.json").exists():
             with CoreRuntime(field):
                 pass
+        surface_cursor = state.get("surface")
+        replay_call_count = None
+        if choices and choices[0] != "next":
+            for observed in reversed(state.get("surface_pages", ())):
+                if choices[0] in observed["candidate_ids"]:
+                    if observed["cursor"] != surface_cursor:
+                        surface_cursor = observed["cursor"]
+                        replay_call_count = state["surface_calls"]
+                    break
         page = surface(field, surface_scope, order if order is not None else defaults.get("order"), choices,
                        page_size if page_size is not None else defaults.get("page_size"), RECALL_SURFACE_BUDGET.max_calls,
-                       state.get("surface"), True, resolve_singletons=True)
+                       surface_cursor, True, resolve_singletons=True,
+                       replay_call_count=replay_call_count)
         state["surface_calls"] = page["surface_calls"]
         if page["kind"] != "entry":
             state["surface"] = page.pop("cursor")
@@ -470,6 +480,12 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
                 state.pop("surface")
                 state["seed"] = True
                 return encounter(field, cursor=state)
+            observed_pages = state.get("surface_pages", [])
+            if not any(observed["cursor"] == state["surface"] for observed in observed_pages):
+                state["surface_pages"] = [*observed_pages, {
+                    "cursor": state["surface"],
+                    "candidate_ids": [candidate["id"] for candidate in page["candidates"]],
+                }]
             # Keep Access's stored-statement excerpts. Full bodies arrive in the
             # locality; text_truncated reports clipped text, while truncated
             # reports omitted statements.
@@ -477,6 +493,7 @@ def encounter(field, choices=(), *, order=None, page_size=None, steps=None, limi
                     "physical_layers": list(selected_layers),
                     "compact": state["compact"], "cursor": state}
         state.pop("surface", None)
+        state.pop("surface_pages", None)
         state["entry"] = page["entry"]
     focus = state.get("focus", state["entry"])
     focus_path = state.get("focus_path", [state["entry"]])
@@ -622,6 +639,16 @@ def literal_matches(field, term):
                 yield {"id": note.statement_id, "preview": note.content_utf8.splitlines()[0]}
 
 
+def _surface_width(value):
+    try:
+        width = int(value)
+        if 1 <= width <= RECALL_SURFACE_BUDGET.page_size:
+            return width
+    except ValueError:
+        pass
+    raise argparse.ArgumentTypeError(f"choose a Surface page size from 1 to {RECALL_SURFACE_BUDGET.page_size}")
+
+
 def main(argv=None, *, default_field=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--field", type=Path, default=default_field, required=default_field is None,
@@ -630,7 +657,7 @@ def main(argv=None, *, default_field=None):
     browse = commands.add_parser("walk", help="observe a Surface page; selecting a physical candidate recalls its neighborhood")
     browse.add_argument("choices", nargs="*", help="successive candidate ids shown on pages, or next")
     browse.add_argument("--order", type=int, help="initial aggregation order; default: Access budget")
-    browse.add_argument("--page-size", type=int, help="pin the menu width (1 to 8); default starts at 3 and plans on overflow")
+    browse.add_argument("--page-size", type=_surface_width, help="pin the menu width (1 to 8); default starts at 3 and plans on overflow")
     browse.add_argument("--cursor-file", type=Path, help="keep the last page here; omit choices to start a new walk")
     connect = commands.add_parser("stitch", help="add a directed native link between the current cells of two notes")
     connect.add_argument("link_id")
@@ -650,11 +677,11 @@ def main(argv=None, *, default_field=None):
     browse.add_argument("--limit", type=int, default=5, help="maximum returned statements after traversal (default: 5)")
     browse.add_argument("--via", choices=KERNELS, default="local")
     meet = commands.add_parser("encounter", help="share Surface, one locality and a Host decision for queries or propositions")
-    meet.add_argument("choices", nargs="*", help="shown candidate IDs or next; omit to reopen the current page")
+    meet.add_argument("choices", nargs="*", help="candidate IDs observed in this encounter or next; omit to reopen the current page")
     meet.add_argument("--cursor-file", type=Path, required=True, help="disposable state for this encounter")
     meet.add_argument("--restart", action="store_true", help="start a new Surface traversal with this cursor file")
     meet.add_argument("--order", type=int, help="initial aggregation order; default: Access budget")
-    meet.add_argument("--page-size", type=int, help="initial menu width; default: adaptive Surface")
+    meet.add_argument("--page-size", type=_surface_width, help="initial menu width (1 to 8); default: field configuration or adaptive Surface")
     meet.add_argument("--steps", type=int, help="propagation steps; default: 1, or the current encounter budget")
     meet.add_argument("--beam", type=int, help="propagated cells per step; default: 16, or the current encounter budget")
     meet.add_argument("--limit", type=int, help="returned facts; default: 5, or the current encounter budget")
@@ -778,11 +805,14 @@ def main(argv=None, *, default_field=None):
         else:
             sources, body = None, None
         if selected is None:
-            result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
-                               steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor,
-                               layers=args.layers, surface_layers=args.surface_layers,
-                               descend=args.descend, ascend=args.ascend, compact=args.compact,
-                               prepare_write=args.prepare_write, pressure=args.pressure)
+            try:
+                result = encounter(args.field, args.choices, order=args.order, page_size=args.page_size,
+                                   steps=args.steps, limit=args.limit, via=args.via, beam=args.beam, cursor=cursor,
+                                   layers=args.layers, surface_layers=args.surface_layers,
+                                   descend=args.descend, ascend=args.ascend, compact=args.compact,
+                                   prepare_write=args.prepare_write, pressure=args.pressure)
+            except ValueError as error:
+                parser.error(str(error))
             path.write_text(json.dumps(result.pop("cursor"), separators=(",", ":")))
         else:
             if selected[0] == "reorganize":

@@ -1,0 +1,101 @@
+{
+  "schema": "nollm_surface_navigation_fix_v1",
+  "date": "2026-11-25",
+  "baseline_runtime_commit": "a30dafca126b2b533ee86868cab10d1bc7e5e51a",
+  "changes": [
+    "Temporary encounter page history retains only observed candidate IDs and native page cursors.",
+    "Previous-page selection reopens the native page and validates the original ID against current geometry.",
+    "The extra read advances the existing cumulative Surface call budget; history is discarded after one physical entry is chosen.",
+    "CLI page-size is parsed as 1 through 8 before opening a field; help documents the range.",
+    "Read-only encounter ValueErrors become clear CLI errors without traceback."
+  ],
+  "modified_files": [
+    "lab/nollm-lab/repository_memory/coverage_cli.py",
+    "lab/nollm-lab/repository_memory/project_memory.py",
+    "lab/nollm-lab/repository_memory/skills/nollm-repository-memory/SKILL.md",
+    "lab/nollm-lab/repository_memory/test_encounter_page_history.py"
+  ],
+  "red_run": {
+    "new_tests": 7,
+    "passed": 2,
+    "failures": 1,
+    "errors": 4,
+    "seconds": 0.348,
+    "note": "An initial test fixture omitted the required forget reason; it was corrected before recording this baseline."
+  },
+  "green_run": {
+    "new_tests": 7,
+    "passed": 7,
+    "seconds": 0.819
+  },
+  "existing_tests": {
+    "patterns": {
+      "test_project_encounter.py": 5,
+      "test_stored_surface_encounter.py": 8,
+      "test_encounter_local_cost.py": 8,
+      "test_coverage_install.py": 1
+    },
+    "tests_run": 22,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 8.427565481999409
+  },
+  "total_distinct_tests_passed": 29,
+  "same_input_probe": [
+    {
+      "version": "before",
+      "case": "previous_page_1",
+      "exitcode": 1,
+      "surface_calls": null,
+      "traceback": true,
+      "seconds": 0.2846480349999183
+    },
+    {
+      "version": "before",
+      "case": "previous_page_2",
+      "exitcode": 1,
+      "surface_calls": null,
+      "traceback": true,
+      "seconds": 0.23054901700015762
+    },
+    {
+      "version": "before",
+      "case": "page_size_16",
+      "exitcode": 1,
+      "traceback": true,
+      "clear_range": false,
+      "seconds": 0.25536775099863007
+    },
+    {
+      "version": "after",
+      "case": "previous_page_1",
+      "exitcode": 0,
+      "surface_calls": 4,
+      "traceback": false,
+      "seconds": 0.24905909700100892
+    },
+    {
+      "version": "after",
+      "case": "previous_page_2",
+      "exitcode": 0,
+      "surface_calls": 4,
+      "traceback": false,
+      "seconds": 0.23582787399936933
+    },
+    {
+      "version": "after",
+      "case": "page_size_16",
+      "exitcode": 2,
+      "traceback": false,
+      "clear_range": true,
+      "seconds": 0.24571173900039867
+    }
+  ],
+  "probe_field_bytes_unchanged": true,
+  "scope": [
+    "No geometry, stored field, frozen first-reader answers or grading was changed.",
+    "The actual two previous-page selections and oversized page-size request were replayed on a copy of the frozen 14-entry field.",
+    "The repeat is a targeted regression check, not another blinded reader trial.",
+    "Old cursors cannot recall pages that they never recorded; restart to observe those pages under the new runtime."
+  ]
+}
