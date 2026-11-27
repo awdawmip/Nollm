@@ -63,7 +63,7 @@ def build_local_gate_report(
         cwd=reference_python,
         detail="package hygiene",
     )
-    dream_manifest = _dream_manifest_component(root)
+    dream_manifest, forbidden_semantics = _dream_manifest_component(root)
     dream_triage = _dream_triage_component(root)
     if include_pytest:
         before_removed.extend(cleanup_runtime_cache_artifacts(root))
@@ -88,7 +88,6 @@ def build_local_gate_report(
         "dream_failure_triage": dream_triage.to_record(),
         "pytest": pytest_component.to_record(),
     }
-    forbidden_semantics = _forbidden_semantics_from_manifest(root)
     ok = all(bool(component["ok"]) for component in components.values()) and not any(
         forbidden_semantics.values()
     )
@@ -163,16 +162,17 @@ def write_local_gate_report(report: Mapping[str, object], output_path: Path | st
         handle.write("\n")
 
 
-def _dream_manifest_component(root: Path) -> GateComponent:
+def _dream_manifest_component(root: Path) -> tuple[GateComponent, dict[str, bool]]:
     try:
         manifest = build_all_dream_checks_manifest(root)
     except Exception as exc:
-        return GateComponent(ok=False, returncode=1, detail=f"dream checks manifest failed: {exc}")
+        return (GateComponent(ok=False, returncode=1, detail=f"dream checks manifest failed: {exc}"),
+                _forbidden_semantics_from_manifest({}))
     return GateComponent(
         ok=bool(manifest["ok"]),
         returncode=0 if manifest["ok"] else 1,
         detail="dream checks manifest",
-    )
+    ), _forbidden_semantics_from_manifest(manifest)
 
 
 def _dream_triage_component(root: Path) -> GateComponent:
@@ -187,12 +187,8 @@ def _dream_triage_component(root: Path) -> GateComponent:
     )
 
 
-def _forbidden_semantics_from_manifest(root: Path) -> dict[str, bool]:
-    try:
-        manifest = build_all_dream_checks_manifest(root)
-        flags = manifest.get("forbidden_semantics", {})
-    except Exception:
-        flags = {}
+def _forbidden_semantics_from_manifest(manifest: Mapping[str, object]) -> dict[str, bool]:
+    flags = manifest.get("forbidden_semantics", {})
     if not isinstance(flags, Mapping):
         flags = {}
     return {key: bool(flags.get(key, False)) for key in FORBIDDEN_FLAG_KEYS}
@@ -277,3 +273,4 @@ __all__ = [
     "validate_local_gate_report",
     "write_local_gate_report",
 ]
+
