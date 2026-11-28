@@ -1,6 +1,6 @@
 # Active Project Basis
 
-Repository memory feedback cycle, updated 2026-11-25.
+Repository memory feedback cycle, updated 2026-11-28.
 
 The V3.14 native OpenClaw memory-slot baseline and parity-preserving Q40 phase
 kernel are merged on main through PR #4 at `e798a72b34f1d62725cc31163a4e5ee144656932`.
@@ -30,6 +30,21 @@ gaps separately; batch acceptance does not establish functional readiness or ful
 migration. Canceled operations remain canceled. Actual access denials and platform
 restrictions remain binding; this scope does not authorize bypassing them or
 resuming canceled calls.
+
+## Current review and local execution plan
+
+The [2026-11-28 architecture review](NOLLM_ARCHITECTURE_REVIEW_20261128.md)
+examines the active paths at `d6e5e5c54a6c542bf66345b6f8f72bb9f3151e3d`.
+The [test–optimization plan](tasks/NOLLM_TEST_OPTIMIZATION_PLAN_20261128.md)
+and [local-agent handoff](tasks/NOLLM_LOCAL_AGENT_HANDOFF_20261128.md) define
+the user's next local execution: current regressions, complete rooted readback,
+shared CLI/provider encounter behavior, same-content quality comparisons, actual
+growth costs and an explicit same-profile production-p8 candidate.
+The repository-memory CLI and OpenClaw memory-slot currently use different
+orchestration paths; their integration and new independent evaluation remain
+execution work. This checkpoint supplies the review, plan and scoped document
+clarifications. The existing global-knowledge scheme and normal entry remain
+unchanged while private real-content trials use independent field copies.
 
 ## Fixed functional test snapshot
 
@@ -349,7 +364,7 @@ The [independent intake audit](../../lab/nollm-lab/repository_memory/enterprise_
 - Preserved V3.12 capability record: [AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md](AOLD_UNIFIED_FIELD_ENCOUNTER_REPORT.md)
 - Current mathematical unit, derivation, executable gates and limitations: [Ideal overlap enclosures](../architecture/CERTIFIED_OVERLAP.md)
 
-## Retained production kernel contract
+## Retained PR #4 kernel derivation (historical)
 
 `parity_preserving_q40_phase_kernel_v1` factors the admitted 96-sample algorithm
 into two directional stencils and counted relative footprints. With S=2^40,
@@ -364,6 +379,12 @@ implementation is exactly equivalent to the predecessor's bounded approximation;
 it is not exact real-area Coverage and is not eight translation templates.
 PR #4 records the completed 394-test and ownership/asset admission. Its original
 implementation derivation remains in Git history and the PR; it is not restarted.
+
+The current Core implementation is `parity_preserving_q40_residual_mask_kernel_v2`.
+It retains the Q40/96 sampled outputs and adds labeled residual projection masks;
+see the [residual implementation](NOLLM_EM_RESIDUAL_ALGORITHM_IMPROVEMENT_20261122.md)
+and the fixed test snapshot above. The v1 description in this section records the
+completed PR #4 derivation, rather than the current implementation label.
 
 ## Retained Lab unit and functional admission gates
 
