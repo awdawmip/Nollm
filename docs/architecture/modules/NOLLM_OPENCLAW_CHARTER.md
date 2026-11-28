@@ -8,7 +8,8 @@ Purpose: typed hooks, durable visible-turn Capture, recoverable absorption worke
 - Provider and model identity in runtime evidence comes from the actual Host session envelope. Task reports and summaries must not substitute a configured or expected provider identity.
 - Temporary state includes at most one provisional revision confirmation and one exact-target blacklist for the current Placement operation; neither is persistent.
 - Public API: native OpenClaw hooks/subagent runtime and Access public API. Channel `message_sent` is `AFTER_DELIVERY`; CLI/webchat `agent_end` is `AFTER_TURN`. Default Formation is `deliver=false` and absent from the main agent tool table.
-- Forbidden API: Core private access, memory-provider ownership, direct provider HTTP, Python semantic placement.
+- Native memory-slot ownership: the V3.14 `nollm-memory-provider` package owns the scoped OpenClaw memory capability. This supersedes the earlier companion-only restriction on memory-provider ownership. At the 2026-11-28 review, packaged Capture/Formation and the newer repository-memory encounter behavior still require integration; see [the current review](../../project/NOLLM_ARCHITECTURE_REVIEW_20261128.md).
+- Forbidden API: Core private access, direct provider HTTP, Python semantic placement.
 - Dependencies: Access; host OpenClaw SDK. It does not depend on Core private modules.
 - Failure: adapter actions may defer; Core correctness remains unchanged.
 - Revision confirmation reject, invalid output, and timeout are zero-write outcomes. Only a confirmed same-subject, same-slot supersession may reach Access atomic apply.
